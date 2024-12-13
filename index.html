@@ -15,7 +15,7 @@
         }
 
 
-        * {
+       * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -26,39 +26,83 @@
             line-height: 1.6;
             color: var(--text-color);
             background: #fff;
-        }
-
-        header {
-            background: var(--primary-color);
-            color: white;
-            padding: 2rem;
-            text-align: center;
-        }
-
-        nav {
-            background: var(--secondary-color);
-            padding: 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        nav ul {
-            list-style: none;
             display: flex;
-            justify-content: center;
-            gap: 2rem;
         }
 
-        nav a {
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--primary-color);
+            min-height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+
+        .nav-item {
+            position: relative;
+        }
+
+        .nav-button {
+            width: 100%;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--accent-color);
+        }
+
+        .dropdown {
+            position: absolute;
+            left: 100%;
+            top: 0;
+            width: 200px;
+            background: var(--secondary-color);
+            display: none;
+            z-index: 1000;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .nav-item:hover .dropdown {
+            display: block;
+        }
+
+        .dropdown a {
             color: white;
             text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
+            padding: 0.75rem 1rem;
+            display: block;
+            transition: background-color 0.3s;
         }
 
-        nav a:hover {
-            color: var(--accent-color);
+        .dropdown a:hover {
+            background: var(--accent-color);
+        }
+
+        .content-wrapper {
+            margin-left: var(--sidebar-width);
+            flex: 1;
         }
 
         main {
@@ -141,14 +185,29 @@
         }
 
         @media (max-width: 768px) {
-            nav ul {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
+            .sidebar {
+                width: 100%;
+                height: auto;
+                min-height: auto;
+                position: relative;
             }
 
-            .books-grid {
-                grid-template-columns: 1fr;
+            .content-wrapper {
+                margin-left: 0;
+            }
+
+            body {
+                flex-direction: column;
+            }
+
+            .dropdown {
+                position: static;
+                width: 100%;
+                margin-top: 0.5rem;
+            }
+
+            .nav-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
