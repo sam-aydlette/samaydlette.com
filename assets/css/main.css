@@ -35,8 +35,9 @@ body {
 .sidebar-header {
     padding: 0 1.5rem 2rem;
     text-align: center;
-    border-bottom: 1px solid rgba(11, 255, 110, 0.1);
+    border-bottom: 1px solid rgba(30, 132, 73, 0.1);
 }
+
 
 .nav-grid {
     display: flex;
@@ -66,7 +67,7 @@ body {
     background: var(--primary-color);
     color: var(--accent-color);
     border: 1px solid var(--accent-color);
-    box-shadow: 0 0 10px rgba(11, 255, 110, 0.2);
+    box-shadow: 0 0 10px rgba(30, 132, 73, 0.2);
 }
 
 .dropdown {
@@ -78,7 +79,7 @@ body {
     display: none;
     z-index: 1000;
     border-radius: 0 4px 4px 0;
-    border: 1px solid rgba(11, 255, 110, 0.2);
+    border: 1px solid rgba(30, 132, 73, 0.2);
 }
 
 .nav-item:hover .dropdown {
@@ -116,7 +117,7 @@ main {
     background: var(--primary-color);
     margin-bottom: 3rem;
     border-radius: 8px;
-    border: 1px solid rgba(11, 255, 110, 0.1);
+    border: 1px solid rgba(30, 132, 73, 0.1);
 }
 
 .books-grid {
@@ -132,7 +133,7 @@ main {
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s;
-    border: 1px solid rgba(11, 255, 110, 0.1);
+    border: 1px solid rgba(30, 132, 73, 0.1);
 }
 
 .book-card:hover {
@@ -160,7 +161,7 @@ main {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(11, 255, 110, 0.1);
+    border: 1px solid rgba(30, 132, 73, 0.1);
 }
 
 .article-meta {
@@ -176,7 +177,7 @@ footer {
     text-align: center;
     padding: 2rem;
     margin-top: 4rem;
-    border-top: 1px solid rgba(11, 255, 110, 0.1);
+    border-top: 1px solid rgba(30, 132, 73, 0.1);
 }
 
 .social-links {
