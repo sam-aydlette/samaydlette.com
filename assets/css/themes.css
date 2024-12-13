@@ -6,7 +6,7 @@
     --accent-color: #2c744c;
     --text-color: #1a1a1a;
     --light-bg: #fafafa;
-
+    
     /* Semantic Colors */
     --border-color: rgba(44, 116, 76, 0.1);
     --shadow-color: rgba(44, 116, 76, 0.2);
@@ -19,25 +19,4 @@
     /* Text Variations */
     --text-muted: #666666;
     --text-light: #ffffff;
-}
-
-/* Common Element Theme Classes */
-.theme-card {
-    background: var(--primary-color);
-    border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px var(--shadow-color);
-}
-
-.theme-button {
-    background: var(--secondary-color);
-    color: var(--text-color);
-    border: 1px solid transparent;
-    transition: all 0.3s ease;
-}
-
-.theme-button:hover {
-    background: var(--primary-color);
-    color: var(--accent-color);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 10px var(--shadow-color);
 }
