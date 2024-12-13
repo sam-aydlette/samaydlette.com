@@ -1,18 +1,18 @@
 /* theme.css */
 :root {
-
+    /* Layout */
     --sidebar-width: 250px;
-
-/* Base Colors */
-    --primary-color: #fdfbf7;
-    --secondary-color: #eae6dd;
-    --accent-color: #5c8d76;
-    --text-color: #2d2d2b;
-    --light-bg: #fbfaf8;
+    
+    /* Base Colors */
+    --primary-color: #f4f1ec;    /* Light stone */
+    --secondary-color: #e6e1d6;  /* Weathered bark */
+    --accent-color: #2d4f1e;     /* Deep forest green */
+    --text-color: #1f2b16;       /* Dark pine */
+    --light-bg: #f4f1ec;
     
     /* Semantic Colors */
-    --border-color: rgba(92, 141, 118, 0.1);  /* Updated to match new accent color */
-    --shadow-color: rgba(92, 141, 118, 0.2);  /* Updated to match new accent color */
+    --border-color: rgba(45, 79, 30, 0.1);  /* Based on accent color */
+    --shadow-color: rgba(45, 79, 30, 0.2);  /* Based on accent color */
     
     /* Interactive States */
     --hover-bg: var(--secondary-color);
@@ -20,5 +20,6 @@
     --hover-text: var(--accent-color);
     
     /* Text Variations */
-    --text-muted: #666666;
+    --text-muted: #4d5347;       /* Muted version of text color */
     --text-light: #ffffff;
+}
