@@ -14,7 +14,7 @@
             --sidebar-width: 250px;
         }
 
-        * {
+     * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
@@ -24,7 +24,7 @@
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             color: var(--text-color);
-            background: #fff;
+            background: var(--light-bg);
             display: flex;
         }
 
@@ -35,73 +35,50 @@
             position: fixed;
             left: 0;
             top: 0;
-            color: white;
+            color: var(--text-color);
             padding: 2rem 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
         }
 
         .sidebar-header {
             padding: 0 1.5rem 2rem;
             text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(11, 255, 110, 0.1);
         }
 
-        .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+        .nav-row {
+            display: flex;
+            justify-content: space-between;
             gap: 0.5rem;
             padding: 1rem;
         }
 
-        .nav-item {
-            position: relative;
-        }
-
         .nav-button {
-            width: 100%;
             background: var(--secondary-color);
-            color: white;
+            color: var(--text-color);
             border: none;
-            padding: 1rem;
-            text-align: center;
+            padding: 0.75rem;
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.3s ease;
+            flex: 1;
+            border: 1px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
         }
 
         .nav-button:hover {
-            background: var(--accent-color);
-        }
-
-        .dropdown {
-            position: absolute;
-            left: 100%;
-            top: 0;
-            width: 200px;
-            background: var(--secondary-color);
-            display: none;
-            z-index: 1000;
-            border-radius: 0 4px 4px 0;
-        }
-
-        .nav-item:hover .dropdown {
-            display: block;
-        }
-
-        .dropdown a {
-            color: white;
-            text-decoration: none;
-            padding: 0.75rem 1rem;
-            display: block;
-            transition: background-color 0.3s;
-        }
-
-        .dropdown a:hover {
-            background: var(--accent-color);
+            background: var(--primary-color);
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+            box-shadow: 0 0 15px rgba(11, 255, 110, 0.2);
         }
 
         .content-wrapper {
             margin-left: var(--sidebar-width);
             flex: 1;
+            padding: 2rem;
         }
 
         main {
@@ -113,64 +90,19 @@
         .hero {
             text-align: center;
             padding: 4rem 2rem;
-            background: var(--light-bg);
+            background: var(--primary-color);
             margin-bottom: 3rem;
             border-radius: 8px;
-        }
-
-        .books-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
-        }
-
-        .book-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s;
-        }
-
-        .book-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .book-card img {
-            width: 100%;
-            height: 300px;
-            object-fit: cover;
-        }
-
-        .book-info {
-            padding: 1.5rem;
-        }
-
-        .articles-list {
-            display: grid;
-            gap: 2rem;
-        }
-
-        .article-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .article-meta {
-            color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
+            border: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         footer {
             background: var(--primary-color);
-            color: white;
+            color: var(--text-color);
             text-align: center;
             padding: 2rem;
             margin-top: 4rem;
+            border-top: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .social-links {
@@ -178,9 +110,14 @@
         }
 
         .social-links a {
-            color: white;
+            color: var(--text-color);
             margin: 0 1rem;
             text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-color);
         }
 
         @media (max-width: 768px) {
@@ -191,22 +128,16 @@
                 position: relative;
             }
 
+            .nav-row {
+                flex-direction: column;
+            }
+
             .content-wrapper {
                 margin-left: 0;
             }
 
             body {
                 flex-direction: column;
-            }
-
-            .dropdown {
-                position: static;
-                width: 100%;
-                margin-top: 0.5rem;
-            }
-
-            .nav-grid {
-                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -218,30 +149,10 @@
             <p>Author and Cybersecurity Practitioner</p>
         </div>
         <div class="nav-row">
-            <div class="nav-item">
-                <button class="nav-button">Books</button>
-                <div class="dropdown">
-                    <a href="#fiction">American Values</a>
-                    <a href="#non-fiction">Dancing With My Fate</a>
-                </div>
-            </div>
-            <div class="nav-item">
-                <button class="nav-button">Articles</button>
-                <div class="dropdown">
-                    <a href="#essays">Technical Essays</a>
-                    <a href="#blog">Random Thoughts</a>
-                </div>
-            </div>
-            <div class="nav-item">
-                <button class="nav-button">About</button>
-                <div class="dropdown">
-                    <a href="#bio">Biography</a>
-                    <a href="#events">Events</a>
-                </div>
-            </div>
-            <div class="nav-item">
-                <button class="nav-button">Contact</button>
-            </div>
+            <button class="nav-button">Books</button>
+            <button class="nav-button">Articles</button>
+            <button class="nav-button">About</button>
+            <button class="nav-button">Contact</button>
         </div>
     </nav>
 
