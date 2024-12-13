@@ -14,7 +14,6 @@
             --sidebar-width: 250px;
         }
 
-
         * {
             margin: 0;
             padding: 0;
@@ -43,12 +42,12 @@
         .sidebar-header {
             padding: 0 1.5rem 2rem;
             text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .nav-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            display: flex;
+            flex-direction: column;
             gap: 0.5rem;
             padding: 1rem;
         }
@@ -63,16 +62,18 @@
             color: var(--text-color);
             border: none;
             padding: 1rem;
-            text-align: center;
+            text-align: left;
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
 
         .nav-button:hover {
             background: var(--primary-color);
             color: var(--accent-color);
             border: 1px solid var(--accent-color);
+            box-shadow: 0 0 10px rgba(11, 255, 110, 0.2);
         }
 
         .dropdown {
@@ -84,6 +85,7 @@
             display: none;
             z-index: 1000;
             border-radius: 0 4px 4px 0;
+            border: 1px solid rgba(11, 255, 110, 0.2);
         }
 
         .nav-item:hover .dropdown {
@@ -91,7 +93,7 @@
         }
 
         .dropdown a {
-            color: white;
+            color: var(--text-color);
             text-decoration: none;
             padding: 0.75rem 1rem;
             display: block;
@@ -99,19 +101,20 @@
         }
 
         .dropdown a:hover {
-            background: var(--accent-color);
+            background: var(--primary-color);
+            color: var(--accent-color);
         }
 
         .content-wrapper {
             margin-left: var(--sidebar-width);
             flex: 1;
+            background: var(--light-bg);
         }
 
         main {
             max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
-            background: var(--primary-color);
         }
 
         .hero {
@@ -120,6 +123,7 @@
             background: var(--primary-color);
             margin-bottom: 3rem;
             border-radius: 8px;
+            border: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .books-grid {
@@ -135,10 +139,12 @@
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s;
+            border: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .book-card:hover {
             transform: translateY(-5px);
+            border-color: var(--accent-color);
         }
 
         .book-card img {
@@ -161,10 +167,12 @@
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .article-meta {
-            color: #666;
+            color: var(--text-color);
+            opacity: 0.7;
             font-size: 0.9rem;
             margin-bottom: 1rem;
         }
@@ -175,18 +183,22 @@
             text-align: center;
             padding: 2rem;
             margin-top: 4rem;
+            border-top: 1px solid rgba(11, 255, 110, 0.1);
         }
 
         .social-links {
             margin-top: 1rem;
-            color: var(--text-color);
-
         }
 
         .social-links a {
             color: var(--accent-color);
             margin: 0 1rem;
             text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            text-shadow: 0 0 10px var(--accent-color);
         }
 
         @media (max-width: 768px) {
@@ -210,10 +222,6 @@
                 width: 100%;
                 margin-top: 0.5rem;
             }
-
-            .nav-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
     </style>
 </head>
@@ -233,11 +241,9 @@
             </div>
             <div class="nav-item">
                 <button class="nav-button">Articles</button>
-                </div>
             </div>
             <div class="nav-item">
                 <button class="nav-button">About</button>
-                </div>
             </div>
             <div class="nav-item">
                 <button class="nav-button">Contact</button>
