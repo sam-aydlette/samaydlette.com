@@ -62,38 +62,32 @@
                 </form>
             </section>
 
+            <!-- Add Formspree's JavaScript file -->
+            <script src="https://formspree.io/js/formspree.min.js"></script>
+            
             <script>
+                // Initialize Formspree form
                 const form = document.getElementById('contact-form');
                 const successMessage = document.getElementById('success-message');
-
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                        try {
-                            const response = await fetch(form.action, {
-                                method: 'POST',
-                                body: new FormData(form),
-                                headers: {
-                                    'Accept': 'application/json'
-                                }
-                            });
-            
-                            if (response.ok) {
-                                form.style.display = 'none';
-                                successMessage.style.display = 'block';
-                                form.reset();
-                            } else {
-                                throw new Error('Form submission failed');
-                            }
-                        } catch (error) {
+                
+                window.formspree.setup(form, {
+                    redirectDataLayer: false,
+                    callback: function (error, response) {
+                        if (!error) {
+                            form.style.display = 'none';
+                            successMessage.style.display = 'block';
+                            form.reset();
+                        } else {
                             alert('Sorry, there was a problem submitting your form. Please try again.');
                         }
-                    });
-                
-                    function resetForm() {
-                        successMessage.style.display = 'none';
-                        form.style.display = 'block';
-                    }                                
-                </script>
+                    }
+                });
+            
+                function resetForm() {
+                    successMessage.style.display = 'none';
+                    form.style.display = 'block';
+                }
+            </script>
         </main>
     </div>
 
