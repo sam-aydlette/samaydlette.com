@@ -9,7 +9,7 @@ body {
     line-height: 1.6;
     display: flex;
     color: var(--text-color);
-    background: var(--light-bg);
+    background: var(--primary-color);
     margin: 0;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
@@ -18,26 +18,25 @@ body {
 .content-wrapper {
     margin-left: var(--sidebar-width);
     flex: 1;
-    background: var(--light-bg);
+    padding: 2rem;
 }
 
 main {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
 }
 
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--primary-color);
-    border-right: 1px solid var(--border-color);
+    background: var(--accent-color);
     min-height: 100vh;
     position: fixed;
     left: 0;
     top: 0;
-    color: var(--text-color);
+    color: var(--text-light);
     padding: 2rem 0;
+    box-shadow: 1px 0 10px rgba(44, 44, 44, 0.1);
 }
 
 .sidebar-header {
@@ -47,7 +46,7 @@ main {
 }
 
 .sidebar-header h1 a {
-    color: var(--text-color);
+    color: var(--text-light);
     text-decoration: none;
 }
 
@@ -55,12 +54,8 @@ main {
 .nav-grid {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem;
-}
-
-.nav-item {
-    position: relative;
+    gap: 0.75rem;
+    padding: 1.5rem;
 }
 
 .nav-button {
@@ -80,6 +75,7 @@ main {
 .nav-button:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.2);
+    transform: translateX(4px);
 }
 
 /* Dropdown Menu */
@@ -91,9 +87,9 @@ main {
     background: var(--primary-color);
     display: none;
     z-index: 1000;
-    border-radius: 0 4px 4px 0;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(44, 44, 44, 0.08);
     border: 1px solid var(--border-color);
-    box-shadow: 0 4px 6px var(--shadow-color);
 }
 
 .nav-item:hover .dropdown {
@@ -105,7 +101,7 @@ main {
     text-decoration: none;
     padding: 0.75rem 1rem;
     display: block;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .dropdown a:hover {
@@ -116,10 +112,11 @@ main {
 .hero {
     text-align: center;
     padding: 4rem 2rem;
-    background: var(--primary-color);
     margin-bottom: 3rem;
     border-radius: 8px;
-    border: 1px solid var(--accent-color);
+    background: var(--primary-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(44, 44, 44, 0.05);
 }
 
 .hero h2 {
@@ -142,15 +139,17 @@ main {
     border-radius: 8px;
     overflow: hidden;
     transition: all 0.3s ease;
-    border: 1px solid var(--accent-color);
+    border: 1px solid var(--border-color);
     max-width: 300px;
     margin: 0 auto;
     width: 100%;
+    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
 }
 
 .book-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 12px var(--shadow-color);
+    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
+    border-color: var(--accent-color);
 }
 
 .book-card img {
@@ -179,13 +178,15 @@ main {
     background: var(--primary-color);
     padding: 2rem;
     border-radius: 8px;
-    border: 1px solid var(--accent-color);
+    border: 1px solid var(--border-color);
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
 }
 
 .article-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 12px var(--shadow-color);
+    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
+    border-color: var(--accent-color);
 }
 
 .article-meta {
@@ -201,12 +202,11 @@ h2, h3 {
 
 /* Footer */
 footer {
-    background: var(--primary-color);
-    color: var(--text-color);
     text-align: center;
     padding: 2rem;
     margin-top: 4rem;
-    border-top: 1px solid var(--accent-color);
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-color);
 }
 
 .social-links {
@@ -219,10 +219,25 @@ footer {
     text-decoration: none;
     font-weight: 500;
     transition: all 0.3s ease;
+    position: relative;
 }
 
-.social-links a:hover {
-    opacity: 0.8;
+.social-links a:after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 1px;
+    bottom: -2px;
+    left: 0;
+    background-color: var(--accent-color);
+    transform: scaleX(0);
+    transform-origin: bottom right;
+    transition: transform 0.3s ease;
+}
+
+.social-links a:hover:after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
 }
 
 /* Book Detail Page */
@@ -231,25 +246,8 @@ footer {
     border-radius: 8px;
     padding: 2rem;
     margin-bottom: 3rem;
-    border: 1px solid var(--accent-color);
-}
-
-.book-detail-grid {
-    display: grid;
-    grid-template-columns: minmax(200px, 250px) 1fr;
-    gap: 2rem;
-    align-items: start;
-}
-
-.book-cover img {
-    width: 100%;
-    height: auto;
-    border-radius: 4px;
-}
-
-.book-release {
-    color: var(--accent-color);
-    font-weight: 500;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 12px rgba(44, 44, 44, 0.05);
 }
 
 /* Responsive Design */
@@ -259,6 +257,7 @@ footer {
         height: auto;
         min-height: auto;
         position: relative;
+        box-shadow: 0 1px 10px rgba(44, 44, 44, 0.1);
     }
 
     .content-wrapper {
@@ -275,32 +274,7 @@ footer {
         margin-top: 0.5rem;
     }
 
-    .book-detail-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .book-cover {
-        max-width: 250px;
-        margin: 0 auto;
-    }
-
-    .books-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
-
-    .book-card {
-        max-width: 250px;
-    }
-}
-
-@media (max-width: 480px) {
-    .book-detail {
-        padding: 1rem;
-        margin: 0 0.5rem 2rem 0.5rem;
-    }
-
-    .books-grid {
-        gap: 1rem;
-        padding: 0 0.5rem;
+    .nav-button:hover {
+        transform: none;
     }
 }
