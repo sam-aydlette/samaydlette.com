@@ -30,7 +30,7 @@ main {
 /* Sidebar */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--accent-color);
+    background: var(--primary-color);
     border-right: 1px solid var(--border-color);
     min-height: 100vh;
     position: fixed;
