@@ -4,27 +4,23 @@
     --sidebar-width: 250px;
     
     /* Base Colors */
-    --primary-color: #e9e2d5;    /* Bolder stone */
-    --secondary-color: #d5cabb;  /* Deeper weathered bark */
-    --accent-color: #2d4f1e;     /* Deep forest green */
-    --text-color: #1f2b16;       /* Dark pine */
-    --light-bg: #e9e2d5;
+    --primary-color: #ffffff;      /* Pure white */
+    --secondary-color: #f9f9f9;    /* Light gray */
+    --accent-color: #2c2c2c;       /* Charcoal */
+    --text-color: #1a1a1a;         /* Dark charcoal for text */
+    --light-bg: #ffffff;           /* White background */
     
     /* Semantic Colors */
-    --border-color: rgba(45, 79, 30, 0.15);  /* Slightly stronger borders */
-    --shadow-color: rgba(45, 79, 30, 0.25);  /* More pronounced shadows */
+    --border-color: rgba(44, 44, 44, 0.1);    /* Transparent charcoal */
+    --shadow-color: rgba(44, 44, 44, 0.1);    /* Subtle shadow */
     
     /* Interactive States */
-    --hover-bg: #f0ebe1;         /* Lighter hover state */
+    --hover-bg: var(--secondary-color);
     --active-bg: var(--accent-color);
     --hover-text: var(--accent-color);
     
     /* Text Variations */
-    --text-muted: #4d5347;
-    --text-light: #ffffff;
-    
-    /* Accent Variations */
-    --accent-light: #3a682a;     /* Lighter accent for hover states */
-    --accent-dark: #203815;      /* Darker accent for active states */
-    --accent-bg: rgba(45, 79, 30, 0.1);  /* Very light accent for backgrounds */
+    --text-muted: #666666;         /* Medium gray for secondary text */
+    --text-light: #ffffff;         /* White text for dark backgrounds */
+}
 }
