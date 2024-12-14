@@ -43,7 +43,7 @@ main {
 .sidebar-header {
     padding: 0 1.5rem 2rem;
     text-align: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar-header h1 a {
@@ -72,15 +72,14 @@ main {
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     text-decoration: none;
     display: block;
 }
 
 .nav-button:hover {
-    background: var(--accent-light);
-    color: var(--text-light);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Dropdown Menu */
@@ -89,11 +88,12 @@ main {
     left: 100%;
     top: 0;
     width: 200px;
-    background: var(--secondary-color);
+    background: var(--primary-color);
     display: none;
     z-index: 1000;
     border-radius: 0 4px 4px 0;
     border: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px var(--shadow-color);
 }
 
 .nav-item:hover .dropdown {
@@ -105,12 +105,11 @@ main {
     text-decoration: none;
     padding: 0.75rem 1rem;
     display: block;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .dropdown a:hover {
-    background: var(--primary-color);
-    color: var(--accent-color);
+    background: var(--secondary-color);
 }
 
 /* Hero Section */
@@ -120,13 +119,13 @@ main {
     background: var(--primary-color);
     margin-bottom: 3rem;
     border-radius: 8px;
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--accent-color);
+    border: 1px solid var(--accent-color);
 }
 
 .hero h2 {
     color: var(--accent-color);
     margin-bottom: 1rem;
+    font-size: 2rem;
 }
 
 /* Book Grid */
@@ -142,17 +141,16 @@ main {
     background: var(--primary-color);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 2px 8px var(--shadow-color);
-    transition: transform 0.3s;
-    border: 1px solid var(--border-color);
-    border-top: 3px solid var(--accent-color);
+    transition: all 0.3s ease;
+    border: 1px solid var(--accent-color);
     max-width: 300px;
     margin: 0 auto;
     width: 100%;
 }
 
 .book-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .book-card img {
@@ -181,25 +179,19 @@ main {
     background: var(--primary-color);
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 8px var(--shadow-color);
-    border: 1px solid var(--border-color);
-    border-top: 3px solid var(--accent-color);
+    border: 1px solid var(--accent-color);
+    transition: all 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px var(--shadow-color);
 }
 
 .article-meta {
     color: var(--text-muted);
     font-size: 0.9rem;
     margin-bottom: 1rem;
-}
-
-/* Links */
-a {
-    color: var(--accent-color);
-    transition: color 0.3s ease;
-}
-
-a:hover {
-    color: var(--accent-light);
 }
 
 /* Headers */
@@ -209,12 +201,12 @@ h2, h3 {
 
 /* Footer */
 footer {
-    background: var(--accent-bg);
+    background: var(--primary-color);
     color: var(--text-color);
     text-align: center;
     padding: 2rem;
     margin-top: 4rem;
-    border-top: 2px solid var(--accent-color);
+    border-top: 1px solid var(--accent-color);
 }
 
 .social-links {
@@ -225,11 +217,12 @@ footer {
     color: var(--accent-color);
     margin: 0 1rem;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
 .social-links a:hover {
-    color: var(--accent-light);
+    opacity: 0.8;
 }
 
 /* Book Detail Page */
@@ -238,8 +231,7 @@ footer {
     border-radius: 8px;
     padding: 2rem;
     margin-bottom: 3rem;
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--accent-color);
+    border: 1px solid var(--accent-color);
 }
 
 .book-detail-grid {
@@ -257,25 +249,7 @@ footer {
 
 .book-release {
     color: var(--accent-color);
-    font-weight: bold;
-}
-
-/* Form Elements */
-.form-group input:focus,
-.form-group textarea:focus {
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px var(--accent-bg);
-}
-
-.submit-button {
-    background: var(--accent-color);
-    color: var(--text-light);
-    border: none;
-}
-
-.submit-button:hover {
-    background: var(--accent-light);
-    color: var(--text-light);
+    font-weight: 500;
 }
 
 /* Responsive Design */
