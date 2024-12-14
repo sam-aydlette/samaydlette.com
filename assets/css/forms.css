@@ -9,8 +9,7 @@
     background: var(--primary-color);
     padding: 2rem;
     border-radius: 8px;
-    border: 1px solid var(--border-color);
-    border-left: 4px solid var(--accent-color);
+    border: 1px solid var(--accent-color);
 }
 
 /* Form Groups */
@@ -43,16 +42,16 @@
 }
 
 /* Form States */
+.form-group input:hover,
+.form-group textarea:hover {
+    border-color: var(--accent-color);
+}
+
 .form-group input:focus,
 .form-group textarea:focus {
     outline: none;
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px var(--accent-bg);
-}
-
-.form-group input:hover,
-.form-group textarea:hover {
-    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px var(--border-color);
 }
 
 /* Submit Button */
@@ -69,12 +68,11 @@
 }
 
 .submit-button:hover {
-    background: var(--accent-light);
+    opacity: 0.9;
     transform: translateY(-1px);
 }
 
 .submit-button:active {
-    background: var(--accent-dark);
     transform: translateY(0);
 }
 
