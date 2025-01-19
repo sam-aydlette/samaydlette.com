@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProtonVPN Analysis - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/theme.css">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/animations.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <a href="/pages/books.html" class="nav-button">Books</a>
+            <a href="/pages/articles.html" class="nav-button">Articles</a>
+            <a href="/pages/about.html" class="nav-button">About</a>
+            <a href="/pages/contact.html" class="nav-button">Contact</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">January 15, 2024</span>
+                    <span class="article-category">Cybersecurity</span>
+                </div>
+                
+                <h2 class="article-title">Initial Insights: ProtonVPN's Aggressive Persistence</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <strong>TL;DR</strong> - I found that ProtonVPN aggressively persists after it is uninstalled. This is a problem because users should be able to uninstall software they don't want to use anymore without being IT experts. It also raises cybersecurity concerns.
+                    </div>
+
+                    <p>This all started when my wife said her computer was booting slower and "being weird." I booted her computer and noticed that indeed, it was booting up slowly. The computer was also flashing odd grey squares intermittently on the otherwise black screen in the bootup process. I began my investigation by checking the usual troublesome areas.</p>
+
+                    <h3>Initial Investigation</h3>
+                    <p>First I looked at any programs that start automatically upon system boot that may be slowing things down. To do this, I first checked for programs that automatically run at login. These programs are typically used for user-level services and background processes that need user interface access, such as menu bar apps, user-specific background services, or apps that need to display notifications.</p>
+                    
+                    <div class="code-block">
+                        <code>ls /Library/LaunchAgents</code>
+                    </div>
+                    
+                    <p>The above lists the launch agents that affect all users of the system, so I also checked for any launch agents that are only affecting my user role as well:</p>
+
+                    <div class="code-block">
+                        <code>ls ~/Library/LaunchAgents</code>
+                    </div>
+
+                    <p>Next, I checked for launch daemons. Launch daemons are processes that run at boot time, as opposed to login time for agents. They always run with "root" privileges (i.e. the maximum set of privileges). Unlike launch agents, launch daemons cannot access the user interface or user session. They are used for system services, network services, and other background processes that need to run continuously regardless of whether any user is logged in or not.</p>
+
+                    <div class="code-block">
+                        <code>ls /Library/LaunchDaemons</code>
+                    </div>
+
+                    <p>The above resulted in me finding a bunch of developer programs that I didn't need anymore and were still running in the background, so I removed them. I restarted and things were still running slowly and the odd grey squares were still there, so I decided to dig further to see what else I could find. I checked for system extensions:</p>
+
+                    <div class="code-block">
+                        <code>systemextensionsctl list</code>
+                    </div>
+
+                    <p>Oddly, I found that ProtonVPN had three related system extensions that were activated even though I had uninstalled the application a few weeks prior via the process recommended by the vendor, so seeing these system extensions still active gave me pause. The system extensions were ProtonVPN, OpenVPN, and OpenVPN-Extension.</p>
+
+                    <p>I attempted to uninstall the ProtonVPN system extension by running:</p>
+
+                    <div class="code-block">
+                        <code>systemextensionsctl uninstall [TEAM ID] [BUNDLE ID]</code>
+                    </div>
+
+                    <p>However, when I ran this command I found that it wouldn't execute due to System Integrity Protection (SIP) being enabled. SIP was implemented by Apple to protect critical system files and processes from being modified, even by users with root privileges. It is a great security addition to MacOS but I knew I had to disable it in order to uninstall the system extension. Before I did that though, I wanted to make sure I was removing the entire application and that there were no files that would re-install.</p>
+
+                    <p>To check this, I ran:</p>
+
+                    <div class="code-block">
+                        <code>ps aux | grep -i vpn</code>
+                    </div>
+
+                    <p>This is actually a set of commands rather than a single command. The commands search all running processes for those with "vpn" in the name. Breaking it down part by part:</p>
+                    <ul>
+                        <li>"ps" shows the status of actively running processes</li>
+                        <li>"aux" is not actually a command but rather flags that specify how the output returns</li>
+                        <li>" | " is called a pipe and it takes the results from the left command and runs the right command on that specific data set</li>
+                        <li>"grep" is a powerful search command for specific strings within a data set</li>
+                        <li>"-i" is another flag that specifies that the string search should be case-insensitive</li>
+                        <li>Finally, "vpn" is the string that is being searched for</li>
+                    </ul>
+
+                    <p>The result showed me that a process called "ch.protonvpn.ProtonVPNStarter" was still running in the background, even though I had uninstalled the software. Even more weirdly, nothing related to ProtonVPN was listed in Library/LaunchAgents, so it was unclear where the application was launching from. I tried to find the files that were re-launching the application:</p>
+
+                    <div class="code-block">
+                        <code>find ~/Library -iname "*proton*" 2>/dev/null</code>
+                        <code>sudo find /Library -iname "*proton*" 2>/dev/null</code>
+                    </div>
+
+                    <p>Let's break down these commands further:</p>
+                    <ul>
+                        <li>The "sudo" command elevated privileges so that the user (me) can read filenames in directories that are restricted from access by regular users</li>
+                        <li>The "find" command searches for strings in filenames across an entire directory, in this case the /Library directory</li>
+                        <li>The "-iname" is a flag that makes it case-insensitive</li>
+                        <li>"2>/dev/null" redirects standard errors to a special file that discards the data, reducing noise</li>
+                    </ul>
+
+                    <p>The results showed me that there were ProtonVPN related files in the following directories:</p>
+                    <div class="code-block">
+                        <code>/Users/username/Library/Saved Application State/ch.protonvpn.mac.savedState</code>
+                        <code>/Users/username/Library/Application Scripts/ch.protonvpn.mac</code>
+                        <code>/Users/username/Library/Application Scripts/group.ch.protonvpn.mac</code>
+                        <code>/Users/username/Library/Group Containers/group.ch.protonvpn.mac</code>
+                        <code>/Users/username/Library/Containers/ch.protonvpn.mac</code>
+                        <code>/Users/username/Library/Caches/ch.protonvpn.mac</code>
+                    </div>
+
+                    <p>So a container was running in the background despite my uninstallation! I couldn't remove the container because it was still active due to built-in MacOS protections. So I had to grant the terminal Full Disk access temporarily, and then removed all the files using:</p>
+
+                    <div class="code-block">
+                        <code>rm -rf ~/Library/Containers/ch.protonvpn.mac</code>
+                    </div>
+
+                    <p>However, when I checked again using ps aux, the container was installed and running again! I must have missed a file. I checked the PrivilegedHelperTools directory and found even more proton-related files:</p>
+
+                    <div class="code-block">
+                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension</code>
+                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension/Contents/MacOS/ch.protonvpn.mac.OpenVPN-Extension</code>
+                    </div>
+
+                    <p>I used lsof to find what files the process was using, and found it running from an unexpected place - the Trash!</p>
+
+                    <div class="code-block">
+                        <code>/Users/username/.Trash/ProtonVPN.app/Contents/Library/LoginItems/ProtonVPNStarter.app/Contents/MacOS/ProtonVPNStarter</code>
+                    </div>
+
+                    <h3>Lessons Learned</h3>
+                    <p>What a journey. I traversed hidden corners of the Unix-type operating system (MacOS is based on UNIX), had to temporarily disable security features, and got sneaky with files restarting processes from the Trash. The application employs multiple techniques commonly associated with malware, including running from the Trash after uninstallation, resisting termination commands, obscuring process names, and requiring system-level security features (SIP) to be disabled for complete removal.</p>
+
+                    <div class="conclusion">
+                        <p>In my opinion, there isn't a good reason that the application is architected this way. The persistence mechanisms go beyond reasonable requirements for an application, but especially for a privacy tool. What is more, if these deep system hooks were to be compromised, they could provide an attacker with significant system access.</p>
+                        
+                        <p>The moral of the story is that folks need to be vigilant when it comes to "security" and "privacy" software, even from ostensibly reputable companies. It truly is a jungle out there.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
