@@ -20,7 +20,7 @@
 }
 
 /* Image lazy loading */
-.lazy {
+/*.lazy {
     filter: blur(10px);
     transition: filter 0.3s;
 }
@@ -28,6 +28,7 @@
 .lazy.loaded {
     filter: blur(0);
 }
+*/
 
 /* Scroll Reveal Animations */
 .reveal-on-scroll {
