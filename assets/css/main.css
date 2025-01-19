@@ -38,27 +38,13 @@ body {
     font-size: 1.1rem;
 }
 
-/* Navigation */
-.navbar {
-    width: 250px;
-    padding: 2rem;
-    border-right: 1px solid var(--border-color);
-    background: var(--primary-color);
-    box-shadow: 2px 0 8px rgba(44, 44, 44, 0.05);
-}
-
-.nav-button:hover {
-    border-color: var(--accent-color);
-    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.1);
-    transform: translateX(4px);
-}
-
 /* Main Content */
 .content {
     flex: 1;
     padding: 0 2rem 2rem 2rem;
     max-width: 1200px;
     margin: 0 auto;
+    margin-left: var(--sidebar-width);
 }
 
 /* Section Headers */
@@ -176,36 +162,6 @@ footer {
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-    .main-container {
-        flex-direction: column;
-    }
-
-    .navbar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 1rem;
-    }
-
-    .nav-button:hover {
-        transform: none;
-    }
-
-    .content {
-        padding: 1rem;
-    }
-
-    .book-detail-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .book-cover {
-        max-width: 250px;
-        margin: 0 auto;
-    }
-}
-
 @media (max-width: 480px) {
     .header h1 {
         font-size: 2rem;
@@ -220,7 +176,8 @@ footer {
     }
 }
 
-.sidebar {
+/* Navigation Styles */
+.navbar {
     width: var(--sidebar-width);
     background: var(--primary-color);
     border-right: 1px solid var(--border-color);
@@ -233,19 +190,19 @@ footer {
     box-shadow: 2px 0 8px var(--shadow-color);
 }
 
-.sidebar-header {
+.navbar-header {
     padding: 0 1.5rem 2rem;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
 }
 
-.sidebar-header h1 {
+.navbar-header h1 {
     margin-bottom: 0.5rem;
     color: var(--accent-color);
     font-size: 1.5rem;
 }
 
-.sidebar-header p {
+.navbar-header p {
     color: var(--text-muted);
     font-size: 0.9rem;
 }
@@ -258,18 +215,17 @@ footer {
 }
 
 .nav-button {
+    display: block;
     width: 100%;
     background: var(--secondary-color);
     color: var(--text-color);
-    border: none;
+    border: 1px solid var(--border-color);
     padding: 1rem;
     text-align: left;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.3s ease;
-    border: 1px solid transparent;
     text-decoration: none;
-    display: block;
     font-size: 1rem;
 }
 
@@ -278,17 +234,21 @@ footer {
     color: var(--accent-color);
     border-color: var(--accent-color);
     box-shadow: 0 0 10px var(--shadow-color);
+    transform: translateX(4px);
 }
 
-/* Make sure these responsive styles are present */
+/* Responsive Design */
 @media (max-width: 768px) {
-    .sidebar {
+    .navbar {
         width: 100%;
         position: relative;
         min-height: auto;
         box-shadow: 0 2px 8px var(--shadow-color);
     }
 
+    .nav-button:hover {
+        transform: none;
+    }
     .content-wrapper {
         margin-left: 0;
         width: 100%;
@@ -303,3 +263,17 @@ footer {
         width: 100%;
         margin-top: 0.5rem;
     }
+    .content {
+        padding: 1rem;
+        margin-left: 0;
+    }
+
+    .book-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .book-cover {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+}
