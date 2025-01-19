@@ -1,0 +1,140 @@
+.article-content {
+    margin-top: 1.5rem;
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.article-content p {
+    margin-bottom: 1.5rem;
+}
+
+.article-content h3 {
+    margin: 2.5rem 0 1rem;
+    color: var(--accent-color);
+    font-size: 1.5rem;
+}
+
+.article-meta {
+    display: flex;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.article-category {
+    background: var(--secondary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    color: var(--accent-color);
+    font-weight: 500;
+}
+
+.disclaimer {
+    font-style: italic;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.article-summary {
+    background: var(--secondary-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+    border-left: 4px solid var(--accent-color);
+}
+
+.code-block {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    overflow-x: auto;
+}
+
+.code-block code {
+    display: block;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    margin: 0.5rem 0;
+    color: #2d3748;
+}
+
+.code-command {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+}
+
+.code-command code {
+    display: block;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    margin-bottom: 1rem;
+    color: #2d3748;
+}
+
+.command-explanation {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.command-explanation ul {
+    margin: 0.5rem 0 0 1.5rem;
+}
+
+.command-explanation li {
+    margin-bottom: 0.25rem;
+}
+
+.file-list, 
+.article-content ul,
+.article-content ol {
+    margin: 1rem 0 1.5rem 1.5rem;
+}
+
+.file-list li,
+.article-content li {
+    margin-bottom: 0.5rem;
+}
+
+.conclusion {
+    background: var(--secondary-color);
+    padding: 2rem;
+    border-radius: 8px;
+    margin-top: 3rem;
+}
+
+.conclusion h3 {
+    margin-top: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .article-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .article-content {
+        padding: 0 1rem;
+        font-size: 1rem;
+    }
+
+    .code-block,
+    .code-command {
+        margin: 1.5rem -1rem;
+        border-radius: 0;
+    }
+
+    .article-summary,
+    .conclusion {
+        margin: 1.5rem -1rem;
+        border-radius: 0;
+    }
+}
