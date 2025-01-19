@@ -20,4 +20,4 @@ export function setupScrollObserver() {
       el.classList.add('reveal-on-scroll');
       observer.observe(el);
     });
-  }
+  }}

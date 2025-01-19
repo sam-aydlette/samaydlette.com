@@ -73,4 +73,4 @@ export class FormHandler {
     message.textContent = text;
     this.form.insertAdjacentElement('beforebegin', message);
     setTimeout(() => message.remove(), 5000);
-  }
+  }}

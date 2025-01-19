@@ -22,4 +22,4 @@ export class ImageHandler {
         imageObserver.observe(img);
       });
     }
-  }
+  }}
