@@ -1,18 +1,15 @@
 /* theme.css */
 :root {
-    /* Layout */
-    --sidebar-width: 250px;
-    
     /* Base Colors */
-    --primary-color: #ffffff;      /* Pure white */
-    --secondary-color: #f9f9f9;    /* Light gray */
-    --accent-color: #2c2c2c;       /* Charcoal */
-    --text-color: #1a1a1a;         /* Dark charcoal for text */
-    --light-bg: #ffffff;           /* White background */
-    
+    --primary-color: #ffffff;
+    --secondary-color: #f5f7f5;
+    --accent-color: #2c744c;
+    --text-color: #1a1a1a;
+    --light-bg: #fafafa;
+
     /* Semantic Colors */
-    --border-color: rgba(44, 44, 44, 0.1);    /* Transparent charcoal */
-    --shadow-color: rgba(44, 44, 44, 0.1);    /* Subtle shadow */
+    --border-color: rgba(44, 116, 76, 0.1);
+    --shadow-color: rgba(44, 116, 76, 0.2);
     
     /* Interactive States */
     --hover-bg: var(--secondary-color);
@@ -20,7 +17,18 @@
     --hover-text: var(--accent-color);
     
     /* Text Variations */
-    --text-muted: #666666;         /* Medium gray for secondary text */
-    --text-light: #ffffff;         /* White text for dark backgrounds */
+    --text-muted: #666666;
+    --text-light: #ffffff;
 }
+
+/* Common Element Theme Classes */
+.theme-card {
+    background: var(--primary-color);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px var(--shadow-color);
 }
+
+.theme-button {
+    background: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid transparent;
