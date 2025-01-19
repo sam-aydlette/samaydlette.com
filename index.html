@@ -6,6 +6,7 @@
     <title>Samuel Aydlette</title>
     <link rel="stylesheet" href="/assets/css/theme.css">
     <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/animations.css">
 </head>
 <body>
     <header class="header">
@@ -29,7 +30,7 @@
                 <h2 class="section-title">Books</h2>
                 <div class="books-grid">
                     <article class="book-card">
-                        <img src="/assets/images/americanvaluescover.jpg" alt="American Values book cover">
+                        <img src="/assets/images/placeholder.jpg" data-src="/assets/images/americanvaluescover.jpg" alt="American Values book cover" class="lazy">                    
                         <div class="book-info">
                             <h3>American Values</h3>
                             <p>Join me on a journey across America, from eastern cities to western deserts, as I search for what's really valuable.</p>
@@ -37,7 +38,7 @@
                     </article>
 
                     <article class="book-card">
-                        <img src="/assets/images/dancingwithmyfatecover.jpg" alt="Dancing With My Fate book cover">
+                        <img src="/assets/images/dancingwithmyfatecover.jpg" data-src="/assets/images/dancingwithmyfatecover.jpg" alt="Dancing With My Fate book cover" class="lazy">
                         <div class="book-info">
                             <h3>Dancing With My Fate</h3>
                             <p>An open-minded exploration of reality using Occam's razor and the scientific method</p>
@@ -45,14 +46,19 @@
                     </article>
                 </div>
             </section>
-
-            <!-- Articles Section -->
+            <!---Articles Section-->
             <section class="articles-section">
                 <h2 class="section-title">Recent Articles</h2>
                 <article class="article-card">
-                    <div class="article-meta">To Be Published on January 15, 2024</div>
-                    <h3>Articles Coming Soon!</h3>
-                    <p>An article about troubling insights while attempting to uninstall ProtonVPN</p>
+                    <div class="article-meta">
+                        <span class="article-date">January 19, 2024</span>
+                        <span class="article-category">Cybersecurity</span>
+                    </div>
+                    <h3><a href="/pages/article-1.html">Investigating ProtonVPN's Persistence Mechanisms: A Security Deep Dive</a></h3>
+                    <p>Going down the rabbit hole while attempting to uninstall ProtonVPN - persistence mechanisms and security implications.</p>
+                    <div class="article-footer">
+                        <a href="/pages/article-1.html" class="read-more">Read Article →</a>
+                    </div>
                 </article>
             </section>
         </main>
@@ -64,9 +70,6 @@
             <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
         </div>
     </footer>
-</body>
-</html>
-
-    <script src="/assets/js/main.js"></script>
+    <script type="module" src="/assets/js/main.js"></script>
 </body>
 </html>
