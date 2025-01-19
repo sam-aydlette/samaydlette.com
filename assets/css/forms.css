@@ -1,4 +1,3 @@
-/* Contact Form Layout */
 .contact-section {
     max-width: 600px;
     margin: 0 auto;
@@ -9,11 +8,9 @@
     background: var(--primary-color);
     padding: 2rem;
     border-radius: 8px;
-    border: 1px solid var(--border-color);
-    box-shadow: 0 2px 12px rgba(44, 44, 44, 0.05);
+    border: 1px solid var(--secondary-color);
 }
 
-/* Form Groups */
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -22,75 +19,25 @@
     display: block;
     margin-bottom: 0.5rem;
     color: var(--text-color);
-    font-weight: 500;
 }
 
 .form-group input,
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    background: var(--primary-color);
-    border: 1px solid var(--border-color);
+    background: var(--light-bg);
+    border: 1px solid var(--secondary-color);
     border-radius: 4px;
     color: var(--text-color);
     font-family: inherit;
-    transition: all 0.2s ease;
 }
 
-.form-group textarea {
-    min-height: 150px;
-    resize: vertical;
-}
-
-/* Form States */
-.form-group input:hover,
-.form-group textarea:hover {
-    border-color: var(--accent-color);
-    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 4px 12px rgba(44, 44, 44, 0.1);
-}
-
-/* Submit Button */
 .submit-button {
-    background: var(--accent-color);
-    color: var(--text-light);
+    background: var(--secondary-color);
+    color: var(--text-color);
     padding: 0.75rem 1.5rem;
-    border: none;
+    border: 1px solid transparent;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.3s ease;
     font-size: 1rem;
-    font-weight: 500;
-    position: relative;
-    overflow: hidden;
-}
-
-.submit-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(44, 44, 44, 0.15);
-}
-
-.submit-button:active {
-    transform: translateY(0);
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    .contact-form {
-        padding: 1.5rem;
-    }
-    
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    
-    .submit-button {
-        width: 100%;
-    }
 }

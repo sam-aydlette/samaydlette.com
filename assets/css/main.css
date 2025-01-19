@@ -47,21 +47,6 @@ body {
     box-shadow: 2px 0 8px rgba(44, 44, 44, 0.05);
 }
 
-.nav-button {
-    display: block;
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    background: var(--primary-color);
-    color: var(--text-color);
-    text-decoration: none;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    transition: all 0.3s ease;
-    text-align: left;
-    font-size: 1rem;
-}
-
 .nav-button:hover {
     border-color: var(--accent-color);
     box-shadow: 0 2px 8px rgba(44, 44, 44, 0.1);
@@ -89,23 +74,6 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
     margin-bottom: 3rem;
-}
-
-.book-card {
-    background: var(--primary-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
-    max-width: 300px;
-    margin: 0 auto;
-}
-
-.book-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(44, 44, 44, 0.1);
-    border-color: var(--accent-color);
 }
 
 .book-card img {
