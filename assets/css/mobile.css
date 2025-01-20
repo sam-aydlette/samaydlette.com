@@ -116,13 +116,26 @@
     }
     
     /* Specific fixes for article pages */
-    .article-page .content {
-        display: block;
-        margin-top: 80px; /* Extra space for article pages */
+    .article-page .content,
+    .article-content {  /* Added article-content class */
+        display: block !important;
+        margin-top: 80px !important;
+        background: var(--primary-color);
+        position: relative;
+        z-index: 1;
     }
     
     .article-page .main-container {
-        display: block; /* Override flex for article pages */
+        display: block !important;
+        width: 100%;
+        position: relative;
+        z-index: 1;
+        padding-top: 60px;
+    }
+
+    /* Debug outlines */
+    .article-page * {
+        border: 1px solid rgba(255, 0, 0, 0.1);
     }
 
     /* Book grid adjustments */
