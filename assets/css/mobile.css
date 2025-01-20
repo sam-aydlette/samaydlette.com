@@ -78,6 +78,7 @@
 
     /* Navigation */
     .navbar {
+        display: none;
         position: fixed;
         top: 60px;
         left: 0;
@@ -86,14 +87,12 @@
         z-index: 99;
         padding: 0.5rem;
         border-bottom: 1px solid var(--border-color);
-        transform: translateY(-150%);
-        transition: transform 0.3s ease;
         width: 100%;
         box-sizing: border-box;
     }
 
     .navbar.active {
-        transform: translateY(0);
+        display: block;
     }
 
     .nav-button {
