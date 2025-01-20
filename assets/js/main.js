@@ -9,5 +9,5 @@ document.addEventListener('DOMContentLoaded', () => {
   new ImageHandler();
   new FormHandler();
   new MobileMenu();
-  //setupScrollObserver();
+  setupScrollObserver();
 });
