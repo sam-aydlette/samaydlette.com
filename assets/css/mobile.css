@@ -1,0 +1,132 @@
+/* mobile.css */
+
+/* Small devices (phones, 768px and down) */
+@media only screen and (max-width: 768px) {
+    /* Layout adjustments */
+    .main-container {
+        padding-top: 60px;
+        flex-direction: column;
+    }
+
+    /* Header styles */
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 1rem;
+        background: var(--primary-color);
+        box-shadow: 0 2px 4px var(--shadow-color);
+    }
+
+    .header h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Navigation adjustments */
+    .navbar {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        background: var(--primary-color);
+        z-index: 99;
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: none; /* Hidden by default, shown when menu is active */
+    }
+
+    .navbar.active {
+        display: block;
+    }
+
+    .nav-button {
+        padding: 1rem;
+        border-radius: 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    /* Content modifications */
+    .content {
+        padding: 1rem;
+        margin-top: 60px;
+    }
+
+    /* Book grid adjustments */
+    .books-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .book-card {
+        max-width: 100%;
+    }
+
+    /* Form improvements */
+    .contact-form {
+        padding: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 16px;
+        padding: 0.75rem;
+    }
+
+    .submit-button {
+        width: 100%;
+        padding: 1rem;
+    }
+
+    /* Article card adjustments */
+    .article-card {
+        margin: 1rem 0;
+        padding: 1rem;
+    }
+
+    /* Footer modifications */
+    footer {
+        padding: 1rem;
+        margin-top: 2rem;
+    }
+
+    .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+    }
+}
+
+/* Medium devices (tablets, between 768px and 1024px) */
+@media only screen and (min-width: 769px) and (max-width: 1024px) {
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .content {
+        padding: 1.5rem;
+    }
+}
+
+/* Handle device orientation */
+@media screen and (orientation: landscape) and (max-height: 500px) {
+    .header {
+        padding: 0.5rem;
+    }
+
+    .navbar {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #1a1a1a;
+        --secondary-color: #2d2d2d;
+        --text-color: #ffffff;
+        --border-color: #3d3d3d;
+    }
+}
