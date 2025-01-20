@@ -138,28 +138,88 @@
         transform: none !important;
     }
     
-    /* Specific fixes for article pages */
-    .article-page .content,
-    .article-content {  /* Added article-content class */
-        display: block !important;
-        margin-top: 80px !important;
-        background: var(--primary-color);
-        position: relative;
-        z-index: 1;
-    }
-    
-    .article-page .main-container {
-        display: block !important;
+    /* Article specific styles for mobile */
+@media only screen and (max-width: 768px) {
+    /* Article layout fixes */
+    .article-card {
         width: 100%;
-        position: relative;
-        z-index: 1;
-        padding-top: 60px;
+        margin: 0;
+        padding: 1rem;
+        box-sizing: border-box;
     }
 
-    /* Debug outlines */
-    .article-page * {
-        border: 1px solid rgba(255, 0, 0, 0.1);
+    .article-content {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        position: static;
     }
+
+    /* Code block adjustments */
+    .code-block {
+        width: 100%;
+        margin: 1rem 0;
+        padding: 1rem;
+        overflow-x: auto;
+        background: var(--secondary-color);
+        border-radius: 4px;
+    }
+
+    .code-block code {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* Article text adjustments */
+    .article-title {
+        font-size: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    .article-meta {
+        margin-bottom: 1rem;
+    }
+
+    .article-summary {
+        margin: 1rem 0;
+        padding: 1rem;
+        background: var(--secondary-color);
+        border-radius: 4px;
+    }
+
+    .disclaimer {
+        margin: 1rem 0;
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    /* Article list styles */
+    .article-content ul {
+        padding-left: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    .article-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Make sure content is visible */
+    .content {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        margin-top: 60px !important;
+        padding: 1rem !important;
+        position: static !important;
+    }
+
+    .article-content {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+}
 
     /* Book grid adjustments */
     .books-grid {
