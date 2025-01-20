@@ -1,16 +1,21 @@
 /* mobile.css */
 
-
 /* Hamburger Menu Icon */
 .menu-toggle {
     display: none;
 }
 
 @media only screen and (max-width: 768px) {
-    /* Layout adjustments */
+    /* Base layout fixes */
+    body {
+        padding: 0;
+        margin: 0;
+    }
+
     .main-container {
-        padding-top: 60px;
         flex-direction: column;
+        padding-top: 60px;
+        min-height: auto;
     }
 
     /* Header styles */
@@ -26,11 +31,16 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        height: 60px;
     }
 
     .header h1 {
         font-size: 1.5rem;
         margin-bottom: 0;
+    }
+
+    .header p {
+        display: none; /* Hide the subtitle on mobile */
     }
 
     /* Hamburger Menu */
@@ -74,10 +84,10 @@
         z-index: 99;
         padding: 0.5rem;
         border-bottom: 1px solid var(--border-color);
-        transform: translateY(-100%);
+        transform: translateY(-150%);
         transition: transform 0.3s ease;
-        display: block;
         width: 100%;
+        height: auto;
     }
 
     .navbar.active {
@@ -93,18 +103,72 @@
         border-radius: 4px;
     }
 
-    /* Content modifications */
+    /* Main content fixes */
     .content {
+        margin-left: 0;
         padding: 1rem;
-        margin-top: 60px;
         width: 100%;
+        box-sizing: border-box;
         overflow-x: hidden;
     }
 
-    /* Article specific adjustments */
-    .article-content {
+    /* Book grid adjustments */
+    .books-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+
+    .book-card {
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    /* Book detail adjustments */
+    .book-detail-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .book-cover {
+        max-width: 250px;
+        margin: 0 auto;
+    }
+
+    /* Form improvements */
+    .contact-section {
+        padding: 0;
+    }
+
+    .contact-form {
+        padding: 1rem;
+        margin: 1rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+        font-size: 16px;
+        padding: 0.75rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .submit-button {
         width: 100%;
         padding: 1rem;
+    }
+
+    /* Article card adjustments */
+    .article-card {
+        margin: 1rem 0;
+        padding: 1rem;
+        width: auto;
+    }
+
+    /* Article content fixes */
+    .article-content {
+        width: 100%;
+        padding: 0;
         overflow-x: hidden;
     }
 
@@ -120,65 +184,19 @@
         word-wrap: break-word;
     }
 
-    /* Code block adjustments */
-    pre code {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-
-    /* Book grid adjustments */
-    .books-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .book-card {
-        max-width: 100%;
-    }
-
-    /* Form improvements */
-    .contact-form {
-        padding: 1rem;
-    }
-
-    .form-group input,
-    .form-group textarea {
-        font-size: 16px;
-        padding: 0.75rem;
-    }
-
-    .submit-button {
-        width: 100%;
-        padding: 1rem;
-    }
-
-    /* Article card adjustments */
-    .article-card {
-        margin: 1rem 0;
-        padding: 1rem;
-    }
-
     /* Footer modifications */
     footer {
         padding: 1rem;
         margin-top: 2rem;
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     .social-links {
         display: flex;
         justify-content: center;
         gap: 1rem;
-    }
-}
-
-/* Medium devices (tablets, between 768px and 1024px) */
-@media only screen and (min-width: 769px) and (max-width: 1024px) {
-    .books-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .content {
-        padding: 1.5rem;
     }
 }
 
