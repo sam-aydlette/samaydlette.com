@@ -6,16 +6,16 @@
 }
 
 @media only screen and (max-width: 768px) {
-    /* Base layout fixes */
-    body {
-        padding: 0;
-        margin: 0;
+    /* Reset any animations that might affect visibility */
+    * {
+        animation: none !important;
+        transition: none !important;
     }
 
+    /* Layout adjustments */
     .main-container {
-        flex-direction: column;
         padding-top: 60px;
-        min-height: auto;
+        flex-direction: column;
     }
 
     /* Header styles */
@@ -31,16 +31,11 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        height: 60px;
     }
 
     .header h1 {
         font-size: 1.5rem;
         margin-bottom: 0;
-    }
-
-    .header p {
-        display: none; /* Hide the subtitle on mobile */
     }
 
     /* Hamburger Menu */
@@ -59,19 +54,6 @@
         height: 2px;
         margin: 5px 0;
         background: var(--text-color);
-        transition: all 0.3s ease;
-    }
-
-    .menu-toggle.active span:nth-child(1) {
-        transform: rotate(45deg) translate(5px, 5px);
-    }
-
-    .menu-toggle.active span:nth-child(2) {
-        opacity: 0;
-    }
-
-    .menu-toggle.active span:nth-child(3) {
-        transform: rotate(-45deg) translate(7px, -7px);
     }
 
     /* Navigation adjustments */
@@ -84,14 +66,6 @@
         z-index: 99;
         padding: 0.5rem;
         border-bottom: 1px solid var(--border-color);
-        transform: translateY(-150%);
-        transition: transform 0.3s ease;
-        width: 100%;
-        height: auto;
-    }
-
-    .navbar.active {
-        transform: translateY(0);
     }
 
     .nav-button {
@@ -103,60 +77,24 @@
         border-radius: 4px;
     }
 
-    /* Main content fixes */
-    .content {
-        margin-left: 0;
-        margin-top: 60px;
-        padding: 1rem;
-        width: 100%;
-        box-sizing: border-box;
-        overflow-x: hidden;
-        position: static;  /* Changed from relative */
-        z-index: auto;    /* Changed from 1 */
-    }
-
-    /* Reset any transforms that might be affecting the content */
-    .main-container {
-        transform: none !important;
-    }
-
-    /* Ensure article content is visible */
-    .article-content {
-        position: static;
-        width: 100%;
-        margin-top: 60px;
-        padding: 1rem;
-        box-sizing: border-box;
-    }
-
-    /* Force visibility for article elements */
-    article {
+    /* Critical content visibility fixes */
+    .content,
+    .article-content,
+    .article-card {
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
         position: static !important;
         transform: none !important;
-    }
-    
-    /* Article specific styles for mobile */
-@media only screen and (max-width: 768px) {
-    /* Article layout fixes */
-    .article-card {
-        width: 100%;
-        margin: 0;
-        padding: 1rem;
-        box-sizing: border-box;
+        margin-top: 60px !important;
+        padding: 1rem !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
-    .article-content {
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        position: static;
-    }
-
-    /* Code block adjustments */
+    /* Article specific styles */
     .code-block {
         width: 100%;
         margin: 1rem 0;
@@ -171,135 +109,11 @@
         word-break: break-word;
     }
 
-    /* Article text adjustments */
-    .article-title {
-        font-size: 1.5rem;
-        margin: 1rem 0;
-    }
-
-    .article-meta {
-        margin-bottom: 1rem;
-    }
-
-    .article-summary {
-        margin: 1rem 0;
-        padding: 1rem;
-        background: var(--secondary-color);
-        border-radius: 4px;
-    }
-
-    .disclaimer {
-        margin: 1rem 0;
-        font-size: 0.9rem;
-        font-style: italic;
-    }
-
-    /* Article list styles */
-    .article-content ul {
-        padding-left: 1.5rem;
-        margin: 1rem 0;
-    }
-
-    .article-content li {
-        margin-bottom: 0.5rem;
-    }
-
-    /* Make sure content is visible */
-    .content {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        margin-top: 60px !important;
-        padding: 1rem !important;
-        position: static !important;
-    }
-
-    .article-content {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-}
-
-    /* Book grid adjustments */
-    .books-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        margin: 1rem 0;
-    }
-
-    .book-card {
-        max-width: 100%;
-        margin: 0 auto;
-    }
-
-    /* Book detail adjustments */
-    .book-detail-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .book-cover {
-        max-width: 250px;
-        margin: 0 auto;
-    }
-
-    /* Form improvements */
-    .contact-section {
-        padding: 0;
-    }
-
-    .contact-form {
-        padding: 1rem;
-        margin: 1rem;
-    }
-
-    .form-group input,
-    .form-group textarea {
-        font-size: 16px;
-        padding: 0.75rem;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .submit-button {
-        width: 100%;
-        padding: 1rem;
-    }
-
-    /* Article card adjustments */
-    .article-card {
-        margin: 1rem 0;
-        padding: 1rem;
-        width: auto;
-    }
-
-    /* Article content fixes */
-    .article-content {
-        width: 100%;
-        padding: 0;
-        overflow-x: hidden;
-    }
-
-    .article-content img {
-        max-width: 100%;
-        height: auto;
-    }
-
-    .article-content pre {
-        max-width: 100%;
-        overflow-x: auto;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-    }
-
-    /* Footer modifications */
+    /* Footer adjustments */
     footer {
         padding: 1rem;
         margin-top: 2rem;
-        position: relative;
-        width: 100%;
-        box-sizing: border-box;
+        position: static;
     }
 
     .social-links {
@@ -309,14 +123,11 @@
     }
 }
 
-/* Handle device orientation */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-    .header {
-        padding: 0.5rem;
-    }
-
-    .navbar {
-        max-height: 80vh;
-        overflow-y: auto;
+/* Disable any scroll observers or reveal animations on mobile */
+@media only screen and (max-width: 768px) {
+    .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+        visibility: visible !important;
     }
 }
