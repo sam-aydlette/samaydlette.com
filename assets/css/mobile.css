@@ -106,10 +106,23 @@
     /* Main content fixes */
     .content {
         margin-left: 0;
+        margin-top: 60px; /* Add explicit top margin for header */
         padding: 1rem;
         width: 100%;
         box-sizing: border-box;
         overflow-x: hidden;
+        position: relative; /* Ensure proper stacking context */
+        z-index: 1; /* Keep content above background, below header/nav */
+    }
+    
+    /* Specific fixes for article pages */
+    .article-page .content {
+        display: block;
+        margin-top: 80px; /* Extra space for article pages */
+    }
+    
+    .article-page .main-container {
+        display: block; /* Override flex for article pages */
     }
 
     /* Book grid adjustments */
