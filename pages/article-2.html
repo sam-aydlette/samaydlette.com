@@ -41,7 +41,11 @@
                 <h2 class="section-title">Building a Compliance Automation Pipeline in AWS For Less than $5000</h2>
                 
                 <div class="article-content">
-                    <p>As organizations continue to migrate their infrastructure to the cloud and address technical debt from legacy cloud infrastructures, achieving and maintaining compliance has become increasingly complex and expensive. But it doesn't have to be. In this article, I'll share my experience implementing a compliance-as-code approach in AWS, focusing on automated security controls and continuous compliance monitoring. This approach saves enormous amounts of time and money.</p>
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+                    <div class="article-summary">
+                        As organizations continue to migrate their infrastructure to the cloud and address technical debt from legacy cloud infrastructures, achieving and maintaining compliance has become increasingly complex and expensive. But it doesn't have to be. In this article, I'll share my experience implementing a compliance-as-code approach in AWS, focusing on automated security controls and continuous compliance monitoring. This approach saves enormous amounts of time and money.                    </div>
                     <p></p>
                     <h3>The Foundation: Infrastructure as Code</h3>
                     <p>Control Tower serves as the core AWS service for establishing a secure multi-account architecture. Begin by setting up Control Tower to create your landing zone, which automatically configures your management account, security account, and log archive account following AWS best practices. Use Organizations to implement a hierarchical structure with Organizational Units (OUs) for different environments (Dev, Prod, etc.) and workload types. IAM Identity Center integration with Control Tower provides centralized access management and federated authentication across all accounts.</p>
