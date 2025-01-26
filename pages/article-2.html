@@ -52,13 +52,13 @@
                     <p>Implement AWS CloudFormation with resource tagging using a standardized metaschema to ensure consistent resource tracking and compliance. Define your metaschema to include mandatory tags such as Environment, CostCenter, DataClassification, and ComplianceFramework. Create custom CloudFormation hooks to enforce tagging compliance during resource creation. Use the AWS CDK to develop infrastructure as code, implementing these standards programmatically. Below is an example of CDK code:</p>
                         <div class="code-block">
                             <pre><code>
-                                const tagValidation = new CustomResource(this, 'TagValidation', {
-                                  serviceToken: tagValidationFunction.functionArn,
-                                  properties: {
-                                    requiredTags: ['Environment', 'CostCenter', 'DataClassification'],
-                                    resourceType: 'AWS::S3::Bucket'
-                                  }
-                              });</code></pre>
+                            const tagValidation = new CustomResource(this, 'TagValidation', {
+                              serviceToken: tagValidationFunction.functionArn,
+                              properties: {
+                                requiredTags: ['Environment', 'CostCenter', 'DataClassification'],
+                                resourceType: 'AWS::S3::Bucket'
+                                }
+                            });</code></pre>
                         </div>
                     
                     <h3>The Pipeline: Configuration-as-Code Using Config</h3>
