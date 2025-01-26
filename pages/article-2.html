@@ -51,19 +51,21 @@
                     <p>Control Tower serves as the core AWS service for establishing a secure multi-account architecture. Begin by setting up Control Tower to create your landing zone, which automatically configures your management account, security account, and log archive account following AWS best practices. Use Organizations to implement a hierarchical structure with Organizational Units (OUs) for different environments (Dev, Prod, etc.) and workload types. IAM Identity Center integration with Control Tower provides centralized access management and federated authentication across all accounts.</p>
                     <p>Implement AWS CloudFormation with resource tagging using a standardized metaschema to ensure consistent resource tracking and compliance. Define your metaschema to include mandatory tags such as Environment, CostCenter, DataClassification, and ComplianceFramework. Create custom CloudFormation hooks to enforce tagging compliance during resource creation. Use the AWS CDK to develop infrastructure as code, implementing these standards programmatically. Below is an example of CDK code:</p>
                         <div class="code-block">
-                            <pre><code>const tagValidation = new CustomResource(this, 'TagValidation', {
-                                serviceToken: tagValidationFunction.functionArn,
-                                properties: {
-                                  requiredTags: ['Environment', 'CostCenter', 'DataClassification'],
-                                  resourceType: 'AWS::S3::Bucket'
-                                }
+                            <pre><code>
+                                const tagValidation = new CustomResource(this, 'TagValidation', {
+                                  serviceToken: tagValidationFunction.functionArn,
+                                  properties: {
+                                    requiredTags: ['Environment', 'CostCenter', 'DataClassification'],
+                                    resourceType: 'AWS::S3::Bucket'
+                                  }
                               });</code></pre>
                         </div>
                     
                     <h3>The Pipeline: Configuration-as-Code Using Config</h3>
                     <p>Deploy Config rules across all accounts using conformance packs aligned with NIST 800-53 controls. AWS provides many conformance packs, or create a custom conformance pack that incorporates both AWS-managed and custom rules. Below is an example conformance pack configuration in yaml:</p>
                     <div class="code-block">
-                        <pre><code>Resources:
+                        <pre><code>
+                            Resources:
                             NISTBaselineConformancePack:
                               Type: AWS::Config::ConformancePack
                               Properties:
@@ -85,39 +87,42 @@
                     <h3>Control Validation: Verifying Implementation Using Security Hub</h3>
                     <p>Implement AWS Security Hub in your security account and enable it as a delegated administrator for your organization. Configure Security Hub to aggregate findings from GuardDuty, Config, and any custom security tools (SAST/DAST/SCA, Vulnerability Scanners, etc.). Create custom Lambda functions to automate security responses, such as quarantining compromised resources or rotating exposed credentials. Below is an example Lambda function written in python:</p>
                     <div class="code-block">
-                        <pre><code>def handle_security_finding(event, context):
-                            finding = event['detail']['findings'][0]
-                            if finding['Severity']['Label'] == 'CRITICAL':
-                                account_id = finding['AwsAccountId']
-                                resource_id = finding['Resources'][0]['Id']
-                                remediate_finding(account_id, resource_id)
+                        <pre><code>
+                            def handle_security_finding(event, context):
+                                finding = event['detail']['findings'][0]
+                                if finding['Severity']['Label'] == 'CRITICAL':
+                                    account_id = finding['AwsAccountId']
+                                    resource_id = finding['Resources'][0]['Id']
+                                    remediate_finding(account_id, resource_id)
                         </code></pre>
                     </div>
                     <h3>Control Monitoring: Monitoring Implementation Drift Using GuardDuty and EventBridge</h3>
                     <p>Configure GuardDuty across all accounts with the security account as the delegated administrator. Set up custom threat detection by implementing Lambda functions that process GuardDuty findings and correlate them with other security events. Use Security Hub as the central dashboard for security findings, with custom insights for specific compliance requirements and security metrics.
                         Create automated response workflows using EventBridge rules and Lambda functions. Implement a tagging-based security response system where resources with specific compliance requirements receive automated remediation based on their tags. Example EventBridge rule in json:</p>
                     <div class="code-block">
-                        <pre><code>{
-                            "source": ["aws.securityhub"],
-                            "detail-type": ["Security Hub Findings - Imported"],
-                            "detail": {
-                              "findings": [{
-                                "Severity": [{
-                                  "Label": ["CRITICAL"]
-                                }],
-                                "Tags": [{
-                                  "Key": ["ComplianceFramework"],
-                                  "Value": ["NIST800-53"]
-                                }]
-                              }]
-                            }
-                          }
+                        <pre><code>
+                            {
+                                "source": ["aws.securityhub"],
+                                "detail-type": ["Security Hub Findings - Imported"],
+                                "detail": {
+                                  "findings": [{
+                                    "Severity": [{
+                                      "Label": ["CRITICAL"]
+                                    }],
+                                    "Tags": [{
+                                      "Key": ["ComplianceFramework"],
+                                      "Value": ["NIST800-53"]
+                                    }]
+                                  }]
+                                }
+                              }
                         </code></pre>
                     </div>
                     <h3>Putting It All Together using GitOps</h3>
                     <p>Use GitHub for version control of your infrastructure code, implementing branch protection rules and required reviews for all infrastructure changes. Set up GitHub Actions workflows to automatically validate CloudFormation templates and CDK code before deployment using yaml:</p>
                     <div class="code-block">
-                        <pre><code>name: Infrastructure Validation
+                        <pre><code>
+                            name: Infrastructure Validation
                             on:
                             pull_request:
                                 paths:
@@ -135,36 +140,37 @@
                                     run: npx cdk synth
                                 - name: Validate CloudFormation
                                     run: |
-                                    for template in cdk.out/*.template.json; do
+                                      for template in cdk.out/*.template.json; do
                                         aws cloudformation validate-template --template-body file://$template
-                                    done
+                                      done
                         </code></pre>
                     </div>
 
                     <h3>Additional Security Measures</h3>
                     <p>Regularly review and update your security controls to maintain alignment with NIST 800-53 requirements. Implement a change management process that includes security review gates and automated compliance checks. Use AWS Organizations Service Control Policies (SCPs) to enforce security guardrails across all accounts:</p>
                     <div class="code-block">
-                        <pre><code>{
-                            "Version": "2012-10-17",
-                            "Statement": [
-                              {
-                                "Sid": "RequireResourceTags",
-                                "Effect": "Deny",
-                                "Action": [
-                                  "s3:CreateBucket",
-                                  "ec2:RunInstances"
-                                ],
-                                "Resource": "*",
-                                "Condition": {
-                                  "Null": {
-                                    "aws:RequestTag/Environment": "true",
-                                    "aws:RequestTag/CostCenter": "true",
-                                    "aws:RequestTag/DataClassification": "true"
+                        <pre><code>
+                            {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                  {
+                                    "Sid": "RequireResourceTags",
+                                    "Effect": "Deny",
+                                    "Action": [
+                                      "s3:CreateBucket",
+                                      "ec2:RunInstances"
+                                    ],
+                                    "Resource": "*",
+                                    "Condition": {
+                                      "Null": {
+                                        "aws:RequestTag/Environment": "true",
+                                        "aws:RequestTag/CostCenter": "true",
+                                        "aws:RequestTag/DataClassification": "true"
+                                      }
+                                    }
                                   }
-                                }
+                                ]
                               }
-                            ]
-                          }
                         </code></pre>
                     </div>
 
