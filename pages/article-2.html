@@ -36,14 +36,14 @@
                     <span class="article-date">February 1, 2025</span>
                     <span class="article-category">Cloud Security</span>
                 </div>
-                <h2 class="section-title">Building a Compliance-First AWS Architecture: A Practical Guide</h2>
+                <h2 class="section-title">Building a Compliance Automation Pipeline in AWS For Less than $5000</h2>
                 
                 <div class="article-content">
-                    <p>As organizations continue to migrate their infrastructure to the cloud and address technical debt, maintaining compliance has become increasingly complex. In this article, I'll share my experience implementing a compliance-as-code approach in AWS, focusing on automated security controls and continuous compliance monitoring.</p>
-
+                    <p>As organizations continue to migrate their infrastructure to the cloud and address technical debt from legacy cloud infrastructures, achieving and maintaining compliance has become increasingly complex. In this article, I'll share my experience implementing a compliance-as-code approach in AWS, focusing on automated security controls and continuous compliance monitoring.</p>
+                    <p></p>
                     <h3>The Foundation: Infrastructure as Code</h3>
-                    <p>AWS Control Tower serves as the foundation for establishing a secure multi-account architecture. Begin by setting up Control Tower to create your landing zone, which automatically configures your management account, security account, and log archive account following AWS best practices. Use AWS Organizations to implement a hierarchical structure with Organizational Units (OUs) for different environments (Dev, Prod, etc.) and workload types. AWS IAM Identity Center (formerly AWS SSO) integration with Control Tower provides centralized access management and federated authentication across all accounts.
-                        Implement AWS CloudFormation with resource tagging using a standardized metaschema to ensure consistent resource tracking and compliance. Define your metaschema to include mandatory tags such as Environment, CostCenter, DataClassification, and ComplianceFramework. Create custom CloudFormation hooks to enforce tagging compliance during resource creation. Use the AWS CDK to develop infrastructure as code, implementing these standards programmatically. Example CDK code:</p>
+                    <p>Control Tower serves as the foundational AWS service for establishing a secure multi-account architecture. Begin by setting up Control Tower to create your landing zone, which automatically configures your management account, security account, and log archive account following AWS best practices. Use Organizations to implement a hierarchical structure with Organizational Units (OUs) for different environments (Dev, Prod, etc.) and workload types. IAM Identity Center integration with Control Tower provides centralized access management and federated authentication across all accounts.</p>
+                    <p>Implement AWS CloudFormation with resource tagging using a standardized metaschema to ensure consistent resource tracking and compliance. Define your metaschema to include mandatory tags such as Environment, CostCenter, DataClassification, and ComplianceFramework. Create custom CloudFormation hooks to enforce tagging compliance during resource creation. Use the AWS CDK to develop infrastructure as code, implementing these standards programmatically. Below is an example of CDK code:</p>
                         <div class="code-block">
                             <pre><code>const tagValidation = new CustomResource(this, 'TagValidation', {
                                 serviceToken: tagValidationFunction.functionArn,
@@ -53,8 +53,9 @@
                                 }
                               });</code></pre>
                         </div>
-
-                    <p>Deploy AWS Config rules across all accounts using conformance packs aligned with NIST 800-53 controls. AWS provides many conformance packs, or create a custom conformance pack that incorporates both AWS-managed and custom rules. Example conformance pack configuration:</p>
+                    
+                    <h3>Control Implementation: Configuration-as-Code Using Config</h3>
+                    <p>Deploy Config rules across all accounts using conformance packs aligned with NIST 800-53 controls. AWS provides many conformance packs, or create a custom conformance pack that incorporates both AWS-managed and custom rules. Below is an example conformance pack configuration in yaml:</p>
                     <div class="code-block">
                         <pre><code>Resources:
                             NISTBaselineConformancePack:
@@ -75,7 +76,8 @@
                                           SourceIdentifier: IAM_PASSWORD_POLICY
                         </code></pre>
                     </div>
-                    <p>Implement AWS Security Hub in your security account and enable it as a delegated administrator for your organization. Configure Security Hub to aggregate findings from GuardDuty, Config, and custom security tools. Create custom Lambda functions to automate security responses, such as quarantining compromised resources or rotating exposed credentials. Example Lambda function:</p>
+                    <h3>Control Validation: Verifying Implementation Using Security Hub</h3>
+                    <p>Implement AWS Security Hub in your security account and enable it as a delegated administrator for your organization. Configure Security Hub to aggregate findings from GuardDuty, Config, and any custom security tools (SAST/DAST/SCA, Vulnerability Scanners, etc.). Create custom Lambda functions to automate security responses, such as quarantining compromised resources or rotating exposed credentials. Below is an example Lambda function written in python:</p>
                     <div class="code-block">
                         <pre><code>def handle_security_finding(event, context):
                             finding = event['detail']['findings'][0]
@@ -85,8 +87,9 @@
                                 remediate_finding(account_id, resource_id)
                         </code></pre>
                     </div>
-                    <p>Configure GuardDuty across all accounts with the security account as the delegated administrator. Set up custom threat detection by implementing Lambda functions that process GuardDuty findings and correlate them with other security events. Use AWS Security Hub as your central dashboard for security findings, with custom insights for specific compliance requirements and security metrics.
-                        Create automated response workflows using AWS EventBridge rules and Lambda functions. Implement a tagging-based security response system where resources with specific compliance requirements receive automated remediation based on their tags. Example EventBridge rule:</p>
+                    <h3>Control Monitoring: Monitoring Implementation Drift Using GuardDuty and EventBridge</h3>
+                    <p>Configure GuardDuty across all accounts with the security account as the delegated administrator. Set up custom threat detection by implementing Lambda functions that process GuardDuty findings and correlate them with other security events. Use Security Hub as the central dashboard for security findings, with custom insights for specific compliance requirements and security metrics.
+                        Create automated response workflows using EventBridge rules and Lambda functions. Implement a tagging-based security response system where resources with specific compliance requirements receive automated remediation based on their tags. Example EventBridge rule in json:</p>
                     <div class="code-block">
                         <pre><code>{
                             "source": ["aws.securityhub"],
@@ -105,7 +108,8 @@
                           }
                         </code></pre>
                     </div>
-                    <p>Use GitHub for version control of your infrastructure code, implementing branch protection rules and required reviews for all infrastructure changes. Set up GitHub Actions workflows to automatically validate CloudFormation templates and CDK code before deployment:</p>
+                    <h3>Putting It All Together using GitOps</h3>
+                    <p>Use GitHub for version control of your infrastructure code, implementing branch protection rules and required reviews for all infrastructure changes. Set up GitHub Actions workflows to automatically validate CloudFormation templates and CDK code before deployment using yaml:</p>
                     <div class="code-block">
                         <pre><code>name: Infrastructure Validation
                             on:
@@ -131,6 +135,7 @@
                         </code></pre>
                     </div>
 
+                    <h3>Additional Measures</h3>
                     <p>Regularly review and update your security controls to maintain alignment with NIST 800-53 requirements. Implement a change management process that includes security review gates and automated compliance checks. Use AWS Organizations Service Control Policies (SCPs) to enforce security guardrails across all accounts:</p>
                     <div class="code-block">
                         <pre><code>{
@@ -157,8 +162,9 @@
                         </code></pre>
                     </div>
 
-                    <p>Monitor and analyze Security Hub findings, GuardDuty alerts, and Config rules across all accounts to identify security trends and areas for improvement. Create custom dashboards in CloudWatch to track security metrics and compliance status. Implement automated reporting using Lambda functions that generate compliance reports and distribute them to stakeholders.</p>
-                    <p>This approach potentially costs less than $5,000 annually for a  SaaS running on serverless infrastructure</p>
+                    <p>Monitor and analyze Security Hub findings, GuardDuty alerts, and Config rules across all accounts to identify security trends and areas for improvement. Create custom dashboards in CloudWatch to track security metrics and compliance status. Implement automated reporting using Lambda functions that generate compliance reports and distribute them to stakeholders via an automated ticketing system.</p>
+                    <p></p>
+                    <p>And that's it, folks! The above approach potentially costs less than $5,000 annually for a  SaaS running on serverless infrastructure.</p>
 
                     <div class="article-tags">
                         <span class="tag">AWS</span>
