@@ -36,3 +36,21 @@
     color: var(--text-color);
     border: 1px solid transparent;
 }
+
+.code-block {
+    background: #f5f5f5;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.code-block pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.code-block code {
+    display: block;
+    line-height: 1.5;
+}
