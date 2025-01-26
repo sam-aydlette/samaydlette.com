@@ -48,13 +48,17 @@
 
 .code-block pre {
     margin: 0;
-    white-space: pre;
-    font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+    white-space: pre !important;
+    font-family: ui-monospace, monospace;
     font-size: 0.9rem;
     line-height: 1.5;
+    tab-size: 2;
 }
 
 .code-block code {
     display: block;
     color: var(--text-color);
+    padding: 0;
+    tab-size: 2;
+    -moz-tab-size: 2;
 }
