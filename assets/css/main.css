@@ -17,6 +17,7 @@ body {
     display: flex;
     min-height: 100vh;
     width: 100%;
+    overflow-x: hidden;
 }
 
 /* Header */
@@ -41,12 +42,13 @@ body {
 
 /* Main Content */
 .content {
-    flex: 1;
-    padding: 0 2rem 2rem 2rem;
+    flex: 1 1 auto;
+    padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
     margin-left: var(--sidebar-width);
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* Section Headers */
