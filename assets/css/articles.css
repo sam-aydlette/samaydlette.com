@@ -1,3 +1,62 @@
+/* Base article structure */
+.article-card {
+    background: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.article-content {
+    margin-top: 1.5rem;
+    line-height: 1.8;
+    font-size: 1.1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Code blocks and content spacing */
+.code-block {
+    background: var(--secondary-color);
+    padding: 1.5rem;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+}
+
+.code-block code {
+    display: block;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    white-space: pre;
+    width: 100%;
+}
+
+/* Lists and content elements */
+.article-content ul,
+.article-content ol {
+    padding-left: 2rem;
+    margin: 1rem 0 1.5rem;
+}
+
+.article-content p {
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+/* Meta information */
+.article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
 .article-content {
     margin-top: 1.5rem;
     line-height: 1.8;
