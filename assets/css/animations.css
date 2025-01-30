@@ -1,3 +1,18 @@
+.article-card {
+    opacity: 1;
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.article-card.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.article-card.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 /* Keyframe Definitions */
 @keyframes fadeSlideIn {
     from {
