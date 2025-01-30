@@ -8,16 +8,29 @@ export function setupScrollObserver() {
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
+        // Add this check
+        if (!entry.target.classList.contains('revealed')) {
+          entry.target.classList.add('reveal-on-scroll');
+        }
+        
         if (entry.isIntersecting) {
-          entry.target.classList.add('revealed');
+          // Small delay to ensure initial state is set
+          requestAnimationFrame(() => {
+            entry.target.classList.add('revealed');
+          });
           observer.unobserve(entry.target);
         }
       });
     }, options);
 
-    // Observe all sections and cards
-    document.querySelectorAll('.book-card, .article-card, section').forEach(el => {
-      el.classList.add('reveal-on-scroll');
+    // Modify the selector to be more specific
+    document.querySelectorAll('.article-card:not(.revealed)').forEach(el => {
       observer.observe(el);
     });
-  }}
+  } else {
+    // Fallback for browsers without IntersectionObserver
+    document.querySelectorAll('.article-card').forEach(el => {
+      el.classList.add('revealed');
+    });
+  }
+}
