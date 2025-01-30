@@ -1,3 +1,11 @@
+.article-card,
+.article-content,
+.reveal-on-scroll {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
+
 .article-card {
     opacity: 1;
     transition: opacity 0.6s ease-out, transform 0.6s ease-out;
