@@ -2,10 +2,13 @@
     margin-top: 1.5rem;
     line-height: 1.8;
     font-size: 1.1rem;
+    width: 100%;
+    position: relative;
 }
 
 .article-content p {
     margin-bottom: 1.5rem;
+    
 }
 
 .article-content h3 {
