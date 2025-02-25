@@ -1,4 +1,4 @@
-/* ===== Theme Variables (from theme.css) ===== */
+/* ===== Theme Variables ===== */
 :root {
     /* Layout */
     --sidebar-width: 280px;
@@ -24,7 +24,7 @@
     --text-light: #ffffff;
 }
 
-/* Common Element Theme Classes */
+/* ===== Common Element Theme Classes ===== */
 .theme-card {
     background: var(--primary-color);
     border: 1px solid var(--border-color);
@@ -75,6 +75,8 @@ body {
     color: var(--text-color);
     background: var(--primary-color);
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    overflow-x: hidden;
+    width: 100%;
 }
 
 /* ===== Layout Styles ===== */
@@ -112,7 +114,7 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     margin-left: var(--sidebar-width);
-    width: 100%;
+    width: calc(100% - var(--sidebar-width));
     box-sizing: border-box;
 }
 
@@ -165,6 +167,36 @@ body {
     line-height: 1.5;
 }
 
+/* Book Detail Page */
+.book-detail {
+    background: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 3rem;
+    box-shadow: 0 2px 8px rgba(44, 44, 44, 0.05);
+}
+
+.book-detail-grid {
+    display: grid;
+    grid-template-columns: minmax(200px, 250px) 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.book-cover img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+}
+
+.book-release {
+    color: var(--accent-color);
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
 /* ===== Navigation Styles ===== */
 .navbar {
     width: var(--sidebar-width);
@@ -178,6 +210,7 @@ body {
     padding: 2rem 0;
     box-shadow: 2px 0 8px var(--shadow-color);
     transition: transform 0.3s ease-in-out;
+    z-index: 100;
 }
 
 .navbar-header {
@@ -248,6 +281,18 @@ body {
     color: var(--text-muted);
     font-size: 0.9rem;
     margin-bottom: 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+
+.article-category {
+    background: var(--secondary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    color: var(--accent-color);
+    font-weight: 500;
 }
 
 /* ===== Footer Styles ===== */
@@ -256,6 +301,8 @@ footer {
     padding: 2rem;
     margin-top: 4rem;
     border-top: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .social-links {
@@ -315,44 +362,467 @@ footer {
     transform: translateY(0);
 }
 
-/* ===== Responsive Design (small part of mobile.css) ===== */
-@media (max-width: 768px) {
+/* ===== Form Styles ===== */
+.contact-section {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.contact-form {
+    background: var(--primary-color);
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid var(--secondary-color);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--light-bg);
+    border: 1px solid var(--secondary-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.submit-button {
+    background: var(--secondary-color);
+    color: var(--text-color);
+    padding: 0.75rem 1.5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+/* ===== Enhanced Responsive Design ===== */
+
+/* Hamburger Menu Icon */
+.menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    z-index: 101;
+}
+
+.menu-toggle span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    margin: 5px 0;
+    background: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+/* Large tablets and small desktops (992px-1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+    :root {
+        --sidebar-width: 250px;
+    }
+    
+    .header h1 {
+        font-size: 2.25rem;
+    }
+    
+    .section-title {
+        font-size: 1.6rem;
+        margin-bottom: 1.75rem;
+    }
+    
+    .content {
+        padding: 1.75rem;
+    }
+    
+    .book-info h3 {
+        font-size: 1.2rem;
+    }
+}
+
+/* Medium devices (tablets, 768px-991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+    :root {
+        --sidebar-width: 220px;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .header p {
+        font-size: 1rem;
+    }
+    
     .navbar {
+        padding: 1.5rem 0;
+    }
+    
+    .navbar-header h1 {
+        font-size: 1.25rem;
+    }
+    
+    .nav-button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .content {
+        padding: 1.5rem;
+    }
+    
+    .books-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .book-info {
+        padding: 1.25rem;
+    }
+    
+    .book-info h3 {
+        font-size: 1.1rem;
+    }
+    
+    .article-content {
+        font-size: 1.05rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.75rem;
+    }
+    
+    .article-card {
+        padding: 1.25rem;
+    }
+    
+    .code-block {
+        padding: 1.25rem;
+    }
+}
+
+/* Small devices (mobile phones, less than 768px) */
+@media (max-width: 767px) {
+    :root {
+        --sidebar-width: 100%;
+    }
+    
+    body {
+        overflow-x: hidden;
         width: 100%;
-        position: relative;
+    }
+    
+    .main-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        overflow-x: hidden;
+        padding-top: 60px;
+    }
+    
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 1rem;
+        background: var(--primary-color);
+        box-shadow: 0 2px 4px var(--shadow-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        box-sizing: border-box;
+        margin-bottom: 0;
+    }
+    
+    .header h1 {
+        font-size: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .header p {
+        display: none;
+    }
+    
+    .menu-toggle {
+        display: block;
+    }
+    
+    .menu-toggle.active span:nth-child(1) {
+        transform: rotate(45deg) translate(5px, 5px);
+    }
+    
+    .menu-toggle.active span:nth-child(2) {
+        opacity: 0;
+    }
+    
+    .menu-toggle.active span:nth-child(3) {
+        transform: rotate(-45deg) translate(7px, -7px);
+    }
+    
+    .navbar {
+        display: none;
+        position: fixed;
+        top: 60px;
+        left: 0;
+        right: 0;
+        background: var(--primary-color);
+        z-index: 99;
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+        box-sizing: border-box;
         min-height: auto;
         box-shadow: 0 2px 8px var(--shadow-color);
     }
-
+    
+    .navbar.active {
+        display: block;
+    }
+    
+    .nav-button {
+        display: block;
+        width: 100%;
+        padding: 1rem;
+        margin: 0.25rem 0;
+        text-align: center;
+        border-radius: 4px;
+    }
+    
     .nav-button:hover {
         transform: none;
     }
     
     .content {
+        width: 100%;
+        margin: 0;
         padding: 1rem;
-        margin-left: 0;
+        box-sizing: border-box;
+        overflow-x: hidden;
     }
-
+    
+    .books-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .book-card {
+        margin: 0 0 1rem 0;
+    }
+    
     .book-detail-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
     .book-cover {
         max-width: 250px;
         margin: 0 auto;
     }
+    
+    .article-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .article-content {
+        font-size: 1rem;
+    }
+    
+    .section-title {
+        font-size: 1.4rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .article-card {
+        width: 100%;
+        margin: 0 0 1rem 0;
+        padding: 1rem;
+        box-sizing: border-box;
+    }
+    
+    .contact-form {
+        padding: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        font-size: 16px; /* Prevents mobile zoom on input focus */
+        padding: 0.75rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .submit-button {
+        width: 100%;
+        padding: 1rem;
+    }
+    
+    .code-block,
+    .code-command {
+        width: 100%;
+        margin: 1rem 0;
+        padding: 1rem;
+        overflow-x: auto;
+        box-sizing: border-box;
+    }
+    
+    .code-block code {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    
+    /* Animation Overrides */
+    .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
 }
 
+/* Extra small devices (small phones, 480px and below) */
 @media (max-width: 480px) {
     .header h1 {
-        font-size: 2rem;
+        font-size: 1.4rem;
     }
-
+    
+    .section-title {
+        font-size: 1.25rem;
+        margin-bottom: 1.25rem;
+    }
+    
     .books-grid {
-        gap: 1rem;
+        grid-template-columns: 1fr; /* Single column */
     }
-
+    
     .book-card {
-        max-width: 250px;
+        max-width: 100%;
+        margin: 0 0 1.5rem 0;
+    }
+    
+    .article-card {
+        padding: 1rem;
+    }
+    
+    .content {
+        padding: 1rem 0.75rem;
+    }
+    
+    .footer {
+        padding: 1.5rem 1rem;
+        margin-top: 2rem;
+    }
+}
+
+/* Landscape orientation for mobile devices */
+@media screen and (max-width: 767px) and (orientation: landscape) {
+    .header {
+        padding: 0.5rem 1rem;
+    }
+    
+    .navbar.active {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .reveal-on-scroll {
+        opacity: 1;
+        transform: none;
+    }
+    
+    .book-card:hover,
+    .article-card:hover {
+        transform: none;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --shadow-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .book-card,
+    .article-card {
+        border: 2px solid var(--border-color);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .sidebar,
+    .contact-form,
+    .social-links,
+    .navbar,
+    .menu-toggle {
+        display: none;
+    }
+    
+    .content {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+    }
+    
+    .header {
+        text-align: left;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+    }
+    
+    .book-card,
+    .article-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    body {
+        font-size: 12pt;
+        color: #000;
+        background: #fff;
+    }
+    
+    a {
+        text-decoration: none;
+        color: #000;
+    }
+    
+    .section-title {
+        font-size: 18pt;
+        margin-bottom: 1rem;
     }
 }
