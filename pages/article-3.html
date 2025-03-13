@@ -42,7 +42,7 @@
                         The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
                     </div>
                     <div class="article-summary">
-                        Organizations today face the challenge of securing increasingly complex cloud environments while managing costs effectively. This article outlines how to build a comprehensive, automated vulnerability management pipeline for AWS-based serverless SaaS applications with a budget under $50,000. Our approach leverages cloud-native tools to deliver effective security operations across the full vulnerability lifecycle—from detection to remediation and reporting—without breaking the bank.
+                        Organizations today face the challenge of securing increasingly complex cloud environments while managing costs effectively. This article outlines how to build a comprehensive, automated vulnerability management pipeline for AWS-based serverless SaaS applications for under $50,000 annually. Our approach leverages cloud-native tools to deliver effective security operations across the full vulnerability lifecycle—from detection to remediation and reporting—without breaking the bank.
                     </div>
                     
                     <h3>Key AWS Services for Vulnerability Management</h3>
@@ -57,27 +57,13 @@
                         <li><strong>Amazon SNS</strong> - Notification service for alerting teams about security issues</li>
                         <li><strong>AWS Lambda</strong> - Serverless compute service for running remediation code without provisioning servers</li>
                         <li><strong>Amazon QuickSight</strong> - Business intelligence service for creating dashboards and reports</li>
-                        <li><strong>AWS CloudTrail</strong> - Service that enables governance, compliance, and operational auditing</li>
+                        <li><strong>AWS CloudTrail</strong> - Logging service that enables governance, compliance, and operational auditing</li>
                     </ul>
 
                     <h3>Step 1: Detection</h3>
                     <p>The first step in our pipeline is continuous detection of vulnerabilities across our serverless infrastructure. Configure AWS Inspector to perform automated assessments of your Lambda functions and container images. Enable GuardDuty to monitor for malicious activity and unauthorized behavior. Set up Security Hub as your central console for aggregating findings from these services.</p>
                     
                     <p>Implement a scheduled scanning cadence based on the criticality of different resources. For example, configure daily scans for critical production workloads and weekly scans for development environments. Use EventBridge rules to trigger additional, on-demand scans when new resources are deployed or significant changes are made to existing resources.</p>
-                    
-                    <div class="code-block">
-                        <code>
-# EventBridge rule to trigger Inspector scan on new Lambda deployment
-{
-  "source": ["aws.lambda"],
-  "detail-type": ["AWS API Call via CloudTrail"],
-  "detail": {
-    "eventSource": ["lambda.amazonaws.com"],
-    "eventName": ["UpdateFunctionCode20150331", "CreateFunction20150331"]
-  }
-}
-                        </code>
-                    </div>
 
                     <h3>Step 2: Triage</h3>
                     <p>Effective triage requires not just identifying vulnerabilities but understanding their actual risk to your environment. Implement a multi-faceted risk scoring approach using:</p>
@@ -90,78 +76,11 @@
                     </ul>
                     
                     <p>Configure Security Hub custom insights to automatically categorize findings based on your calculated risk scores. Implement tagging across AWS resources to associate vulnerabilities with specific applications, teams, and business functions. Set up EventBridge rules to trigger SNS notifications for high-risk findings, ensuring prompt attention from the relevant teams.</p>
-                    
-                    <div class="code-block">
-                        <code>
-# Lambda function to enrich vulnerability data with EPSS scores
-import boto3
-import requests
-import json
-
-def lambda_handler(event, context):
-    # Extract CVE ID from Security Hub finding
-    finding = event['detail']['findings'][0]
-    vulnerability = finding['Vulnerabilities'][0]
-    cve_id = vulnerability['Id']
-    
-    # Get EPSS score from API
-    epss_score = get_epss_score(cve_id)
-    
-    # Update Security Hub finding with EPSS score
-    securityhub = boto3.client('securityhub')
-    finding['Vulnerabilities'][0]['Metadata']['EPSSScore'] = str(epss_score)
-    
-    response = securityhub.batch_update_findings(
-        FindingIdentifiers=[
-            {
-                'Id': finding['Id'],
-                'ProductArn': finding['ProductArn']
-            },
-        ],
-        Note={
-            'Text': f'EPSS Score: {epss_score}',
-            'UpdatedBy': 'VulnEnrichment'
-        }
-    )
-    
-    return response
-
-def get_epss_score(cve_id):
-    # Call EPSS API to get score
-    # Implement appropriate error handling in production
-    response = requests.get(f"https://api.first.org/data/v1/epss?cve={cve_id}")
-    data = response.json()
-    if data['data'] and len(data['data']) > 0:
-        return data['data'][0]['epss']
-    return 0
-                        </code>
-                    </div>
 
                     <h3>Step 3: Tracking</h3>
                     <p>Create a structured system for tracking vulnerabilities through their lifecycle. Use Security Hub's integration with AWS Systems Manager to automatically create OpsItems from security findings. Implement a standardized set of status fields to track each vulnerability through states such as "identified," "in remediation," "awaiting verification," and "closed."</p>
                     
                     <p>Maintain clear ownership by mapping resources to responsible teams through AWS resource tags. Configure EventBridge rules to send reminders for vulnerabilities that remain open beyond defined SLAs. Use Security Hub's integration with Amazon S3 to maintain an immutable record of all findings and their resolution history for compliance and audit purposes.</p>
-                    
-                    <div class="code-block">
-                        <code>
-# AWS CloudFormation snippet for setting up vulnerability tracking tags
-Resources:
-  TagPolicy:
-    Type: AWS::ResourceGroups::Group
-    Properties:
-      Name: RequiredSecurityTags
-      Configuration:
-        Type: TAG_FILTERS_1_0
-        Parameters:
-          TagFilters:
-            - Key: SecurityOwner
-              Values: []
-            - Key: DataClassification
-              Values: []
-            - Key: PatchGroup
-              Values: []
-                        </code>
-                    </div>
 
                     <h3>Step 4: Remediation</h3>
                     <p>Automate remediation where possible to reduce manual effort and speed up vulnerability closure. Create Systems Manager Automation documents for standardized, repeatable fixes for common vulnerabilities. Design Lambda functions to implement patches or configuration changes for serverless resources when appropriate.</p>
@@ -169,145 +88,14 @@ Resources:
                     <p>For remediations requiring manual intervention, implement a workflow using Step Functions to coordinate the approval and implementation process. Configure AWS Config rules to enforce security standards and prevent deployment of non-compliant resources, shifting vulnerability management left in your development process.</p>
                     
                     <p>Maintain a knowledge base of common vulnerabilities and their solutions using AWS Systems Manager Documents, enabling teams to quickly implement proven fixes for recurring issues.</p>
-                    
-                    <div class="code-block">
-                        <code>
-# Systems Manager Automation Document for Lambda vulnerability remediation
-{
-  "schemaVersion": "0.3",
-  "description": "Remediate common Lambda vulnerabilities",
-  "parameters": {
-    "functionName": {
-      "type": "String",
-      "description": "Name of the Lambda function to remediate"
-    },
-    "vulnerabilityType": {
-      "type": "String",
-      "allowedValues": [
-        "OUTDATED_RUNTIME",
-        "OVER_PERMISSIVE_POLICY", 
-        "INSUFFICIENT_TIMEOUT",
-        "MISCONFIGURED_DLQ"
-      ]
-    }
-  },
-  "mainSteps": [
-    {
-      "name": "checkFunctionExists",
-      "action": "aws:executeAwsApi",
-      "inputs": {
-        "Service": "lambda",
-        "Api": "getFunction",
-        "FunctionName": "{{ functionName }}"
-      }
-    },
-    {
-      "name": "remediateBasedOnType",
-      "action": "aws:branch",
-      "inputs": {
-        "Choices": [
-          {
-            "NextStep": "updateRuntime",
-            "Variable": "{{ vulnerabilityType }}",
-            "StringEquals": "OUTDATED_RUNTIME"
-          },
-          {
-            "NextStep": "updateIamPolicy",
-            "Variable": "{{ vulnerabilityType }}",
-            "StringEquals": "OVER_PERMISSIVE_POLICY"
-          }
-        ]
-      }
-    },
-    {
-      "name": "updateRuntime",
-      "action": "aws:executeAwsApi",
-      "inputs": {
-        "Service": "lambda",
-        "Api": "updateFunctionConfiguration",
-        "FunctionName": "{{ functionName }}",
-        "Runtime": "nodejs18.x"
-      }
-    },
-    {
-      "name": "updateIamPolicy",
-      "action": "aws:executeScript",
-      "inputs": {
-        "Runtime": "python3.8",
-        "Handler": "script_handler",
-        "Script": "def script_handler(events, context):\n  # Implement least privilege policy update\n  return {'status': 'success'}"
-      }
-    }
-  ]
-}
-                        </code>
-                    </div>
 
                     <h3>Step 5: Reporting</h3>
                     <p>Implement comprehensive reporting to track progress and demonstrate compliance. Create QuickSight dashboards connected to Security Hub findings stored in S3, providing visibility into key metrics like mean time to remediation, open vulnerabilities by severity, and remediation success rates.</p>
                     
                     <p>Configure CloudWatch to monitor the performance of your vulnerability management pipeline itself. Set up scheduled exports of security findings to S3 for long-term storage and compliance reporting. Implement CloudTrail for comprehensive auditing of all security-related actions, creating an audit trail that can be used to demonstrate compliance with regulatory requirements.</p>
-                    
-                    <div class="code-block">
-                        <code>
-# AWS Lambda function to generate and export vulnerability metrics
-import boto3
-import json
-import datetime
-
-def lambda_handler(event, context):
-    # Get Security Hub findings
-    securityhub = boto3.client('securityhub')
-    findings = get_all_findings(securityhub)
-    
-    # Calculate metrics
-    metrics = calculate_metrics(findings)
-    
-    # Export to S3
-    s3 = boto3.client('s3')
-    date_str = datetime.datetime.now().strftime('%Y-%m-%d')
-    s3.put_object(
-        Body=json.dumps(metrics),
-        Bucket='vulnerability-metrics-bucket',
-        Key=f'metrics/{date_str}.json'
-    )
-    
-    return metrics
-
-def get_all_findings(client):
-    # Implement pagination for production use
-    response = client.get_findings(
-        Filters={
-            'ProductName': [{'Value': 'Inspector', 'Comparison': 'EQUALS'}],
-            'RecordState': [{'Value': 'ACTIVE', 'Comparison': 'EQUALS'}]
-        },
-        MaxResults=100
-    )
-    return response['Findings']
-
-def calculate_metrics(findings):
-    # Calculate key metrics from findings
-    severity_counts = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
-    resource_type_counts = {}
-    
-    for finding in findings:
-        severity = finding['Severity']['Label']
-        resource_type = finding['Resources'][0]['Type']
-        
-        severity_counts[severity] = severity_counts.get(severity, 0) + 1
-        resource_type_counts[resource_type] = resource_type_counts.get(resource_type, 0) + 1
-    
-    return {
-        'timestamp': datetime.datetime.now().isoformat(),
-        'total_findings': len(findings),
-        'by_severity': severity_counts,
-        'by_resource_type': resource_type_counts
-    }
-                        </code>
-                    </div>
 
                     <h3>Augmenting Your Pipeline with a Bigger Budget</h3>
-                    <p>If your budget allows for additional investment beyond the cloud-native approach, consider these enhancements:</p>
+                    <p>If your budget allows for additional investment beyond $50,000, consider these enhancements:</p>
                     
                     <h4>Third-Party Security Tools</h4>
                     <ul>
