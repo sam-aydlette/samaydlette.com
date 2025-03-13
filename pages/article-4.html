@@ -71,7 +71,7 @@
                         source llm-env/bin/activate
                         </code></pre>
                     </div>
-                    <p>You'll know the environment is active when your command prompt shows <code>(llm-env)</code> at the beginning.</p>
+                    <p>You'll know the environment is active when your command prompt shows <i>(llm-env)</i> at the beginning.</p>
 
                 <h3>Step 2: Installing Dependencies</h3>
                     <p>With our environment ready, let's install the necessary packages:</p>
@@ -182,13 +182,17 @@
                     </div>
                     <p>Make it executable:</p>
                     <div class="code-block">
-                        <pre><code>chmod +x run_llm.sh</code></pre>
+                        <pre><code>
+                        chmod +x run_llm.sh
+                        </code></pre>
                     </div>
 
                 <h3>Step 5: Running TinyLlama</h3>
                     <p>Now, let's launch our local LLM:</p>
                     <div class="code-block">
-                        <pre><code>./run_llm.sh</code></pre>
+                        <pre><code>
+                        ./run_llm.sh
+                        </code></pre>
                     </div>
                     <p>The first time you run this, it will download the TinyLlama model, which is about 600MB. This may take a few minutes depending on your internet connection.</p>
                     <p>Once loaded, you'll see a prompt asking for input. Type your question or request, and TinyLlama will generate a response. Keep in mind that on a CPU, generation will be slower than commercial cloud-based services. Expect 20-60 seconds for a response depending on your hardware.</p>
