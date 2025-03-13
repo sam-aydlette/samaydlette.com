@@ -43,16 +43,16 @@
                     </div>
                     <div class="article-summary">
 
-                        <p>In the age of AI assistants like ChatGPT and Claude, having your own locally-run language model gives you privacy, offline access, and complete control over your AI interactions. In this guide, I'll walk you through setting up TinyLlama, which is a compact yet capable 1.1B parameter language model, on a standard laptop. This setup will even work on laptops with limited resources.</p>
+                        <p>ISubscriptions to cloud-based LLMs like ChatGPT and Claude are great, but having your own locally-run language model is free and provides better privacy as well as offline access. In this guide, I'll walk you through setting up TinyLlama on a standard consumer laptop.</p>
                     </div>
                 <h3>Why TinyLlama?</h3>
-                    <p>While larger models like Llama 2 (13B) and Mistral (7B) offer impressive capabilities, they demand substantial computing resources. TinyLlama, at just 1.1B parameters, offers a compelling compromise:</p>
+                    <p>While larger models like Llama 2 (13B) and Mistral (7B) offer impressive capabilities, they demand significant computing resources. TinyLlama, at just 1.1B parameters, offers a compelling compromise. TinyLlama:</p>
                     <ul>
                         <li>Runs on consumer-grade hardware</li>
                         <li>Works with limited RAM (4-6GB)</li>
-                        <li>CPU-only friendly (no expensive GPU required)</li>
+                        <li>Is CPU-only friendly (no expensive GPU required)</li>
                         <li>Downloads quickly (~600MB vs 4GB+ for larger models)</li>
-                        <li>Fully open source with no authentication requirements</li>
+                        <li>Is fully open source with no authentication requirements</li>
                     </ul>
 
                 <h3>Prerequisites</h3>
@@ -61,15 +61,14 @@
                         <li>A laptop with at least 4GB RAM</li>
                         <li>About 2GB of free disk space</li>
                         <li>Python 3.8 or newer</li>
-                        <li>Basic comfort with command line operations</li>
                     </ul>
-                    <p>This guide works on any Linux distribution. Windows and macOS users may need minor adjustments.</p>
+                    <p>The code examples below work for Linux and Mac users. For Windows users, the commands require minor adjustments.</p>
 
                 <h3>Step 1: Setting Up the Environment</h3>
                     <p>First, let's create a dedicated Python virtual environment to keep our dependencies organized:</p>
                     <div class="code-block">
                         <pre><code>
-                        # Create a directory for our project
+                        # Create a directory for our project (make sure you're in the directory you'd like the project to be in)
                         mkdir -p ~/llm-project
                         cd ~/llm-project
 
@@ -99,7 +98,7 @@
                     <p>Installing the CPU version of PyTorch significantly reduces download size and memory requirements, making this setup more accessible for laptops with limited resources.</p>
 
                 <h3>Step 3: Creating the TinyLlama Script</h3>
-                    <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <code>run_tinyllama.py</code>:</p>
+                    <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <i>run_tinyllama.py</i></p>
                     <div class="code-block">
                         <pre><code>
                         import torch
@@ -180,7 +179,7 @@
                         </code></pre>
                     </div>
                 <h3>Step 4: Creating a Convenient Launcher</h3>
-                    <p>For ease of use, let's create a simple bash script that will activate our environment and run our Python script. Create a file called <code>run_llm.sh</code>:</p>
+                    <p>For ease of use, let's create a simple bash script that will activate our environment and run our Python script. Create a file called <i>run_llm.sh</i></p>
                     <div class="code-block"> 
                         <pre><code>
                         #!/bin/bash
@@ -200,17 +199,7 @@
                         <pre><code>./run_llm.sh</code></pre>
                     </div>
                     <p>The first time you run this, it will download the TinyLlama model, which is about 600MB. This may take a few minutes depending on your internet connection.</p>
-                    <p>Once loaded, you'll see a prompt asking for input. Type your question or request, and TinyLlama will generate a response. Keep in mind that on a CPU, generation will be slower than commercial services - expect 20-60 seconds for a response depending on your hardware.</p>
-
-                <h3>Understanding the Limitations</h3>
-                    <p>While TinyLlama is impressive for its size, it's important to understand its limitations:</p>
-                    <ul>
-                        <li><strong>Knowledge cutoff</strong>: Like all LLMs, it doesn't know about events after its training cutoff</li>
-                        <li><strong>Reasoning</strong>: Smaller models have more limited reasoning capabilities than larger ones</li>
-                        <li><strong>Creative writing</strong>: Output quality will be noticeably different from models like GPT-4</li>
-                        <li><strong>Speed</strong>: Generation on CPU is significantly slower than commercial services</li>
-                        <li><strong>Context window</strong>: TinyLlama has a smaller context window than larger models</li>
-                    </ul>
+                    <p>Once loaded, you'll see a prompt asking for input. Type your question or request, and TinyLlama will generate a response. Keep in mind that on a CPU, generation will be slower than commercial cloud-based services. Expect 20-60 seconds for a response depending on your hardware.</p>
 
                 <h3>Optimization Tips</h3>
                     <p>If you're experiencing slow performance or memory issues, try these optimizations:</p>
@@ -221,19 +210,9 @@
                         <li><strong>Try overnight</strong>: Run complex or creative generations when you don't need immediate responses</li>
                     </ol>
 
-                <h3>Next Steps and Alternatives</h3>
-                    <p>Once you're comfortable with TinyLlama, you might want to explore:</p>
-                    <ul>
-                        <li><strong>Phi-2</strong>: Microsoft's 2.7B parameter model, still small but more capable</li>
-                        <li><strong>GPU acceleration</strong>: If you have a compatible GPU with 4GB+ VRAM</li>
-                        <li><strong>Fine-tuning</strong>: Adapt TinyLlama to specific tasks or knowledge domains</li>
-                        <li><strong>Quantization</strong>: If you have bitsandbytes-cuda installed, try 4-bit quantization</li>
-                        <li><strong>API wrapper</strong>: Build a simple REST API around your model</li>
-                    </ul>
-
                 <h3>Conclusion</h3>
-                    <p>Running TinyLlama locally gives you a private, offline AI assistant that, while not as powerful as commercial offerings, provides remarkable utility considering its modest resource requirements. This setup demonstrates that AI is becoming increasingly accessible – you don't need expensive cloud services or specialized hardware to start experimenting with language models.</p>
-                    <p>The future of AI isn't just about the most powerful models that require an expensive subscription to use. It's also about personal, private models running right on our own devices.</p>
+                    <p>Running TinyLlama locally gives you a private, offline AI that, while not as powerful as commercial offerings, provides remarkable value considering its modest resource requirements. This setup demonstrates that AI is becoming increasingly accessible. You don't need expensive subscriptions or specialized hardware to start experimenting with artificial intelligence!</p>
+                    <p>The future of AI isn't just about the most powerful models that require an expensive subscription to use. It's also about personal, private models running right on our own devices. If you followed the instructions in this article and would like to share your experience, please reach out via the Contact Me page!</p>
             </article>
         </main>
     </div>
