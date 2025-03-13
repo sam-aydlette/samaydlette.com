@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS Vulnerability Management - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-header">
+            <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+            <p>Author and Cybersecurity Practitioner</p>
+        </div>
+        <div class="nav-grid">
+            <a href="/pages/books.html" class="nav-button">Books</a>
+            <a href="/pages/articles.html" class="nav-button">Articles</a>
+            <a href="/pages/about.html" class="nav-button">About</a>
+            <a href="/pages/contact.html" class="nav-button">Contact</a>
+        </div>
+    </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">March 13, 2025</span>
+                    <span class="article-category">Artificial Intelligence</span>
+                </div>
+                <h2 class="section-title">DIY AI: Running an LLM On Any Standard Laptop For Free, Offline Use</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+                    <div class="article-summary">
+
+            <p>In the age of AI assistants like ChatGPT and Claude, having your own locally-run language model gives you privacy, offline access, and complete control over your AI interactions. In this guide, I'll walk you through setting up TinyLlama, which is a compact yet capable 1.1B parameter language model, on a standard laptop. This setup will even work on laptops with limited resources.</p>
+
+            <h2>Why TinyLlama?</h2>
+            <p>While larger models like Llama 2 (13B) and Mistral (7B) offer impressive capabilities, they demand substantial computing resources. TinyLlama, at just 1.1B parameters, offers a compelling compromise:</p>
+            <ul>
+                <li>Runs on consumer-grade hardware</li>
+                <li>Works with limited RAM (4-6GB)</li>
+                <li>CPU-only friendly (no expensive GPU required)</li>
+                <li>Downloads quickly (~600MB vs 4GB+ for larger models)</li>
+                <li>Fully open source with no authentication requirements</li>
+            </ul>
+
+            <h2>Prerequisites</h2>
+            <p>Before we begin, you'll need:</p>
+            <ul>
+                <li>A laptop with at least 4GB RAM</li>
+                <li>About 2GB of free disk space</li>
+                <li>Python 3.8 or newer</li>
+                <li>Basic comfort with command line operations</li>
+            </ul>
+            <p>This guide works on any Linux distribution. Windows and macOS users may need minor adjustments.</p>
+
+            <h2>Step 1: Setting Up the Environment</h2>
+            <p>First, let's create a dedicated Python virtual environment to keep our dependencies organized:</p>
+            <pre><code>
+# Create a directory for our project
+mkdir -p ~/llm-project
+cd ~/llm-project
+
+# Create a Python virtual environment
+python3 -m venv llm-env
+
+# Activate the environment
+source llm-env/bin/activate
+            </code></pre>
+            <p>You'll know the environment is active when your command prompt shows <code>(llm-env)</code> at the beginning.</p>
+
+            <h2>Step 2: Installing Dependencies</h2>
+            <p>With our environment ready, let's install the necessary packages:</p>
+            <pre><code>
+# Upgrade pip
+pip install --upgrade pip
+
+# Install PyTorch (CPU version to save space)
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Install Transformers and related libraries
+pip install transformers sentencepiece protobuf
+            </code></pre>
+            <p>Installing the CPU version of PyTorch significantly reduces download size and memory requirements, making this setup more accessible for laptops with limited resources.</p>
+
+            <h2>Step 3: Creating the TinyLlama Script</h2>
+            <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <code>run_tinyllama.py</code>:</p>
+            <pre><code>
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import gc
+import time
+
+def generate_response(prompt, max_length=256):
+    start_time = time.time()
+    print("Loading tokenizer...")
+    
+    # TinyLlama - open source, no auth required
+    model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    print(f"Loading model: {model_name}...")
+    # CPU-only mode for compatibility
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        low_cpu_mem_usage=True,
+        device_map="cpu"
+    )
+    
+    print(f"Model loaded in {time.time() - start_time:.2f} seconds")
+    
+    # Format prompt correctly for chat format
+    messages = [
+        {"role": "user", "content": prompt}
+    ]
+    
+    encoded_input = tokenizer.apply_chat_template(
+        messages,
+        return_tensors="pt"
+    )
+    
+    print("Generating response...")
+    # Generate text
+    outputs = model.generate(
+        encoded_input,
+        max_new_tokens=max_length,
+        temperature=0.7,
+        top_p=0.9,
+        do_sample=True
+    )
+    
+    # Decode and return
+    full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    # Clean up to save memory
+    del model, tokenizer, outputs, encoded_input
+    gc.collect()
+    
+    print(f"Generation completed in {time.time() - start_time:.2f} seconds")
+    return full_output
+
+if __name__ == "__main__":
+    print("TinyLlama 1.1B Chat")
+    print("-------------------")
+    print("Note: First run will download the model (~600MB)")
+    print("This will be slow on CPU, please be patient")
+    
+    while True:
+        prompt = input("\nEnter your prompt (or 'quit' to exit):\n")
+        if prompt.lower() == 'quit':
+            break
+            
+        try:
+            print("\nProcessing...")
+            response = generate_response(prompt)
+            print("\nResponse:")
+            print(response)
+        except Exception as e:
+            print(f"Error: {e}")
+            
+        # Force cleanup
+        gc.collect()
+            </code></pre>
+
+            <h2>Step 4: Creating a Convenient Launcher</h2>
+            <p>For ease of use, let's create a simple bash script that will activate our environment and run our Python script. Create a file called <code>run_llm.sh</code>:</p>
+            <pre><code>
+#!/bin/bash
+cd ~/llm-project
+source llm-env/bin/activate
+python run_tinyllama.py
+            </code></pre>
+            <p>Make it executable:</p>
+            <pre><code>chmod +x run_llm.sh</code></pre>
+
+            <h2>Step 5: Running TinyLlama</h2>
+            <p>Now, let's launch our local LLM:</p>
+            <pre><code>./run_llm.sh</code></pre>
+            <p>The first time you run this, it will download the TinyLlama model, which is about 600MB. This may take a few minutes depending on your internet connection.</p>
+            <p>Once loaded, you'll see a prompt asking for input. Type your question or request, and TinyLlama will generate a response. Keep in mind that on a CPU, generation will be slower than commercial services - expect 20-60 seconds for a response depending on your hardware.</p>
+
+            <h2>Understanding the Limitations</h2>
+            <p>While TinyLlama is impressive for its size, it's important to understand its limitations:</p>
+            <ul>
+                <li><strong>Knowledge cutoff</strong>: Like all LLMs, it doesn't know about events after its training cutoff</li>
+                <li><strong>Reasoning</strong>: Smaller models have more limited reasoning capabilities than larger ones</li>
+                <li><strong>Creative writing</strong>: Output quality will be noticeably different from models like GPT-4</li>
+                <li><strong>Speed</strong>: Generation on CPU is significantly slower than commercial services</li>
+                <li><strong>Context window</strong>: TinyLlama has a smaller context window than larger models</li>
+            </ul>
+
+            <h2>Optimization Tips</h2>
+            <p>If you're experiencing slow performance or memory issues, try these optimizations:</p>
+            <ol>
+                <li><strong>Reduce max_length</strong>: Change <code>max_length=256</code> to a smaller value like 128 or 64</li>
+                <li><strong>Close other applications</strong>: Free up memory by closing unnecessary programs</li>
+                <li><strong>Add swap space</strong>: If your system supports it, adding swap space can prevent out-of-memory errors</li>
+                <li><strong>Try overnight</strong>: Run complex or creative generations when you don't need immediate responses</li>
+            </ol>
+
+            <h2>Next Steps and Alternatives</h2>
+            <p>Once you're comfortable with TinyLlama, you might want to explore:</p>
+            <ul>
+                <li><strong>Phi-2</strong>: Microsoft's 2.7B parameter model, still small but more capable</li>
+                <li><strong>GPU acceleration</strong>: If you have a compatible GPU with 4GB+ VRAM</li>
+                <li><strong>Fine-tuning</strong>: Adapt TinyLlama to specific tasks or knowledge domains</li>
+                <li><strong>Quantization</strong>: If you have bitsandbytes-cuda installed, try 4-bit quantization</li>
+                <li><strong>API wrapper</strong>: Build a simple REST API around your model</li>
+            </ul>
+
+            <h2>Conclusion</h2>
+            <p>Running TinyLlama locally gives you a private, offline AI assistant that, while not as powerful as commercial offerings, provides remarkable utility considering its modest resource requirements. This setup demonstrates that AI is becoming increasingly accessible – you don't need expensive cloud services or specialized hardware to start experimenting with language models.</p>
+            <p>The future of AI isn't just about the most powerful models that require an expensive subscription to use. It's also about personal, private models running right on our own devices.</p>
+        </article>
+    </main>
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
