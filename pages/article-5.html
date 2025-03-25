@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>See What Attackers See - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-header">
+            <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+            <p>Author and Cybersecurity Practitioner</p>
+        </div>
+        <div class="nav-grid">
+            <a href="/pages/books.html" class="nav-button">Books</a>
+            <a href="/pages/articles.html" class="nav-button">Articles</a>
+            <a href="/pages/about.html" class="nav-button">About</a>
+            <a href="/pages/contact.html" class="nav-button">Contact</a>
+        </div>
+    </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">March 25, 2025</span>
+                    <span class="article-category">Security Assessment</span>
+                </div>
+                
+                <h2 class="article-title">See What Attackers See: Validating the Security of Public Asset Inventories Using Free, Open-Source Tools</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <strong>TL;DR</strong> - This tutorial demonstrates how to objectively validate that organizations are performing adequate inventory management using free, unintrusive tools available to anyone. You'll learn how to ethically assess the thoroughness of public asset inventory practices using tools like Nmap, Masscan, Amass, and Shodan.
+                    </div>
+
+                    <h3>Introduction: The Foundation of Cybersecurity</h3>
+                    <p>Effective inventory management is the foundation upon which robust cybersecurity and risk management programs are built. The old truism remains valid - you can't secure what you don't know exists. Organizations frequently struggle with maintaining accurate inventories of their digital assets, creating significant security blind spots that leave them vulnerable to attacks.</p>
+                    
+                    <p>This tutorial addresses a critical need in the cybersecurity ecosystem: the ability to objectively validate that vendors and organizations are performing adequate inventory management. Using free, unintrusive tools available to anyone, you can ethically assess the thoroughness of public asset inventory practices (with permission, of course). This capability is particularly valuable for security professionals evaluating vendor risk.</p>
+                    
+                    <p>By following this tutorial, you'll learn how to validate that the foundation of an organization's security program is solid before building additional controls on top.</p>
+
+                    <h3>Before You Dive In: Legal and Ethical Considerations</h3>
+                    <p>A great way to practice this material is to target a public asset that you personally own and control. For example, to create this tutorial I targeted my own website www.samaydlette.com which is hosted on AWS. But before trying these methods yourself, there are important boundaries to respect, even for assets you own:</p>
+                    
+                    <ul>
+                        <li><strong>Hosting Provider Terms:</strong> Your web hosting agreement may have specific clauses about security scanning. Review these before proceeding.</li>
+                        <li><strong>Shared Hosting Caution:</strong> If your website shares server resources with others, aggressive scanning could impact innocent bystanders.</li>
+                        <li><strong>AWS-Specific Policies:</strong> For CloudFront/S3-hosted websites, AWS has particular rules regarding security testing:
+                            <ul>
+                                <li>Some basic scanning is permitted without approval</li>
+                                <li>More intensive tests may require explicit permission</li>
+                                <li>Aggressive scanning might trigger AWS's protection mechanisms, potentially limiting your own access</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    
+                    <p>The golden rule is to document everything you do, scan during low-traffic periods, and respect rate limits to avoid triggering defensive measures.</p>
+
+                    <h3>Prerequisites: Your Security Testing Toolkit</h3>
+                    <p>Here's what you'll need:</p>
+                    <ul>
+                        <li>Kali Linux</li>
+                        <li>Python 3.x</li>
+                        <li>Shodan API key</li>
+                        <li>At least one public domain to target (legally and ethically)</li>
+                    </ul>
+                    
+                    <p>How to install Kali Linux is outside the scope of this tutorial, but documentation for that can be found at www.kali.org.</p>
+                    
+                    <p>Nmap is a powerful open-source network scanner that comes pre-installed on Kali Linux that is used for discovering hosts and services on computer networks, creating a "map" of the network. Masscan, also pre-installed on Kali Linux, is an Internet-scale port scanner, designed for high-speed scanning of large networks with a specialized focus on raw packet performance. Amass, developed by OWASP (Open Web Application Security Project), performs network mapping of attack surfaces and external asset discovery using open source information gathering and active reconnaissance techniques. Shodan is a web-accessible search engine for Internet-connected devices that allows users to find specific types of devices, vulnerable systems, and gather intelligence about network infrastructure. Shodan is not included in Kali Linux. It is a web application with a CLI. The free tier includes basic search functionality with limited results, while the paid tier provides more comprehensive scanning capabilities and higher query limits.</p>
+
+                    <h3>Accessing Shodan</h3>
+                    <p>Sign Up: Visit https://shodan.io and create a free account API Key: After registration, find your API key in your account settings</p>
+                    <p>CLI Installation:</p>
+                    <div class="code-block">
+                        <code>
+                        # Install pip if needed
+                        sudo apt update 
+                        sudo apt install python3-pip
+
+                        # Install the virtual environment package if needed
+                        sudo apt install python3-venv
+
+                        # Create and activate the virtual environment
+                        python3 -m venv ~/shodan-env
+                        source ~/shodan-env/bin/activate
+
+                        # Now install shodan within the virtual environment
+                        pip install shodan
+
+                        # Initialize your API key
+                        shodan init YOUR_API_KEY_HERE
+                        </code>
+                    </div>
+                    
+                    <p>It should return <em>Successfully Initialized</em></p>
+
+                    <h3>The Tutorial: Mapping Your Digital Territory</h3>
+                    <h4>Step 1: Gather Basic Website Information</h4>
+                    <p>First, let's identify your website's basic footprint:</p>
+                    <div class="code-block">
+                        <code>
+                        # Get your website's IP address
+                        host yourdomain.com
+
+                        # Get DNS information
+                        dig yourdomain.com
+
+                        # Store the IP for later use (work smarter, not harder!)
+                        export TARGET_IP=$(dig +short yourdomain.com)
+                        echo $TARGET_IP
+                        </code>
+                    </div>
+                    
+                    <p>Think of this as creating a basic map before the expedition. You're identifying the coordinates and street address of your digital property.</p>
+
+                    <h4>Step 2: Initial Reconnaissance with Nmap</h4>
+                    <p>Time to see what services are visible from the outside:</p>
+                    <div class="code-block">
+                        <code>
+                        # Format the IPs for Nmap by saving the IPs to a file and scan using the file 
+                        echo $TARGET_IP > target_ips.txt 
+
+                        # Basic port scan
+                        sudo nmap -sV -iL target_ips.txt | tee initial_scan.txt
+                        </code>
+                    </div>
+                    
+                    <p>The -sV flag identifies service versions. Other arguments, like <em>-A</em> can enable OS detection, version detection, script scanning, and traceroute.</p>
+                    <p>These scans reveal what services are running and potentially vulnerable. To take the property analogy one step further, this is checking which doors and windows are visible from the street.</p>
+
+                    <h4>Step 3: Shodan Intelligence Gathering</h4>
+                    <p>Shodan shows what information is already publicly indexed about your website. Many of Shodan's rich functionality are disabled at the free tier, however some are available:</p>
+                    <div class="code-block">
+                        <code>
+                        # Search for your domain
+                        shodan domain yourdomain.com
+
+                        # Search for your IP directly
+                        shodan host $TARGET_IP
+
+                        # Look for historical data (what changed over time?)
+                        shodan host $TARGET_IP --history
+                        </code>
+                    </div>
+                    
+                    <p>This is akin to checking what information a curious stranger could easily find about your property without even visiting it (blueprint, home inspection report, etc.)</p>
+
+                    <h4>Step 4: Advanced Port Scanning with Masscan</h4>
+                    <p>Let's use Masscan's speed to discover ports that might be missed by other tools:</p>
+                    <div class="code-block">
+                        <code>
+                        # Full port scan of your website (at a reasonable rate)
+                        sudo masscan -p1-65535 $TARGET_IP --rate=1000 -oJ masscan_results.json
+
+                        # Compare with Nmap results (spot any differences!)
+                        cat masscan_results.json | jq '.[]| .ports[].port' | sort -n > masscan_ports.txt
+                        grep "open" detailed_scan.txt | grep -v "filtered" | awk '{print $1}' | sort -n > nmap_ports.txt
+                        diff masscan_ports.txt nmap_ports.txt
+                        </code>
+                    </div>
+                    
+                    <p>Why use both Nmap and Masscan? They're like different detectives with unique investigation styles:</p>
+                    <ul>
+                        <li>Different technologies: Nmap uses TCP/IP fingerprinting; Masscan uses asynchronous transmission</li>
+                        <li>Speed vs. depth: Masscan is fast but less detailed; Nmap provides richer context</li>
+                        <li>Cross-verification: Discrepancies between tools often reveal interesting security insights</li>
+                        <li>Edge case detection: Some services respond differently to different scanning techniques</li>
+                    </ul>
+                    
+                    <p>This combination gives you both breadth and depth in your reconnaissance.</p>
+
+                    <h4>Step 5: Domain Intelligence with Amass</h4>
+                    <p>Now let's discover subdomains and related information:</p>
+                    <div class="code-block">
+                        <code>
+                        # Passive reconnaissance
+                        amass enum -passive -d yourdomain.com -o amass_passive.txt
+
+                        # More active enumeration
+                        amass enum -active -d yourdomain.com -o amass_active.txt
+                        </code>
+                    </div>
+                    
+                    <p>This reveals your domain's broader attack surface—like discovering not just your main property but all the connected outbuildings that someone might target.</p>
+
+                    <h4>Step 6: Creating Your Assessment Report</h4>
+                    <p>Time to compile everything into a comprehensive report:</p>
+                    <div class="code-block">
+                        <code>
+                        # Create report directory
+                        mkdir website_assessment
+                        cd website_assessment
+
+                        # Move all results to report directory
+                        mv ../initial_scan.txt ../detailed_scan.txt ../masscan_results.json ../amass_*.txt ./
+
+                        # Generate a basic report
+                        echo "Website Security Assessment Report" > assessment_report.txt
+                        echo "Target: yourdomain.com ($TARGET_IP)" >> assessment_report.txt
+                        echo "Date: $(date)" >> assessment_report.txt
+                        echo "----------------------------------------" >> assessment_report.txt
+
+                        # Add open ports and services
+                        echo "OPEN PORTS AND SERVICES:" >> assessment_report.txt
+                        grep "open" detailed_scan.txt | grep -v "filtered" >> assessment_report.txt
+                        echo "----------------------------------------" >> assessment_report.txt
+
+                        # Add discovered subdomains
+                        echo "DISCOVERED SUBDOMAINS:" >> assessment_report.txt
+                        cat amass_*.txt | sort | uniq >> assessment_report.txt
+                        echo "----------------------------------------" >> assessment_report.txt
+
+                        # Add Shodan intelligence
+                        echo "SHODAN INTELLIGENCE:" >> assessment_report.txt
+                        shodan host $TARGET_IP | grep -v "Last update" >> assessment_report.txt
+                        </code>
+                    </div>
+
+                    <h3>Conclusion: Putting It All Together</h3>
+                    <p>Congratulations! You've now created a comprehensive security assessment of your own website using professional-grade tools. This assessment gives you valuable insights into:</p>
+                    <ul>
+                        <li>Visible services: What ports and services are exposed to the internet</li>
+                        <li>Domain footprint: Your broader attack surface including subdomains</li>
+                        <li>Public intelligence: What information is already being collected about your site</li>
+                        <li>Potential vulnerabilities: Areas that might require additional hardening</li>
+                    </ul>
+                    
+                    <p>This knowledge allows you to make informed security decisions before potential attackers discover weaknesses.</p>
+                    
+                    <div class="conclusion">
+                        <p>Remember, in security, what you don't know CAN hurt you. By regularly scanning your own website, you're taking a proactive approach to digital security—seeing yourself as others see you online, and addressing vulnerabilities before they become incidents.</p>
+                        
+                        <p>Now go forth and scan responsibly—your future uncompromised self will thank you!</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
