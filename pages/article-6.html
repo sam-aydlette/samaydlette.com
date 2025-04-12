@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>See What Attackers See (Part II) - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-header">
+            <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+            <p>Author and Cybersecurity Practitioner</p>
+        </div>
+        <div class="nav-grid">
+            <a href="/pages/books.html" class="nav-button">Books</a>
+            <a href="/pages/articles.html" class="nav-button">Articles</a>
+            <a href="/pages/about.html" class="nav-button">About</a>
+            <a href="/pages/contact.html" class="nav-button">Contact</a>
+        </div>
+    </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">April 10, 2025</span>
+                    <span class="article-category">Container Security</span>
+                </div>
+                
+                <h2 class="article-title">See What Attackers See (Part II): Defining and Tracking An Inventory of Ephemeral Components</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <p>In Part I of this series, we explored how attackers (or researchers) can validate a public inventory using open source tools. Today, we explore how organizations can define and track ephemeral technology components, particularly focusing on containerized environments.</p>
+                    </div>
+
+                    <p>Listen up, cloud enthusiasts and container aficionados! Today I'm taking the gloves off and we're diving into the controversial topic of inventory management. I know what you're thinking: "Inventory? That's so legacy IT!" Well buckle up, because I'm about to change your mind faster than a container can restart itself.</p>
+
+                    <h3>The Hard Truth: It's Container Chaos Out There</h3>
+                    <p>Let's be honest: your Kubernetes environment probably looks like my living room after I put my kids to bed each night - things everywhere, no idea where they came from, and a vague sense that something important might be shoved under the couch cushions. You're deploying containers left and right, patting yourself on the back for being "cloud-native," all while having absolutely no idea what's actually running in your environment.</p>
+
+                    <p>Sound familiar? I thought so.</p>
+
+                    <p>Here's the thing: maintaining an accurate inventory isn't some outdated practice from the dark ages of physical servers. It's the cornerstone of effective system governance, establishing clear system boundaries and data flows. It's the map that makes everything else possible — security, compliance, operations, the whole shebang.</p>
+
+                    <h3>"But Containers Are EPHEMERAL!"</h3>
+                    <p>I can hear some of you typing furiously in the comments already:</p>
+
+                    <p><em>"Containers are EPHEMERAL by design! They come and go! That's the whole point! Why inventory something that's designed to disappear? Next you'll tell me I need to document every AWS Lambda execution!"</em></p>
+
+                    <p>Let me pour you a steaming hot cup of reality.</p>
+
+                    <p>Yes, containers are ephemeral. But just because something doesn't stick around forever doesn't mean you don't need to know it exists. It only takes an attacker a moment to exploit an open vulnerability. And general purpose, non-hardened container images are riddled with vulnerabilities.</p>
+
+                    <p>In fact, the ephemerality of containers is even more reason to maintain robust inventory practices. Because they come and go so quickly, you need automated ways to track:</p>
+                    <ul>
+                        <li>What images are running</li>
+                        <li>Where they came from</li>
+                        <li>Who deployed them</li>
+                        <li>How they are configured</li>
+                        <li>What secrets they're accessing</li>
+                        <li>What data they're processing</li>
+                    </ul>
+
+                    <p>Without this visibility, you're essentially running a "security through obscurity" strategy — except the person left in the dark is yourself. As I described in Part 1, attackers can simply use Nmap and Shodan to know exactly what you're running (as well as vulnerabilities and misconfigurations that may be present).</p>
+
+                    <h3>How to Track a Container Inventory</h3>
+                    <p>Fortunately, there are several viable approaches to maintaining an accurate container inventory:</p>
+
+                    <p><strong>1. Cloud Platform Services</strong>: AWS, GCP, and Azure all offer specialized container inventory management tools. AWS Config and ECR, GCP Cloud Asset Inventory, and Azure Container Registry all provide baked-in ways to maintain visibility into your containers.</p>
+
+                    <p><strong>2. Custom Resource Definitions (CRDs)</strong>: For those running on-premises or hybrid environments, Kubernetes CRDs provide a powerful approach to inventory management. They allow you to extend the Kubernetes API to track physical host information alongside container deployments.</p>
+
+                    <p>I'm particularly fond of the CRD approach because it lets you stay within the Kubernetes ecosystem. You can use familiar <code>kubectl</code> commands to query your entire container inventory, visualize deployment patterns, and enforce compliance requirements.</p>
+
+                    <p>Here's how you might implement inventory management with CRDs:</p>
+
+                    <p><strong>Define your custom resource:</strong> You create a CRD called ContainerImage that tracks key information like:</p>
+                    <ul>
+                        <li>Image name and version</li>
+                        <li>Registry source</li>
+                        <li>Deployment locations (which pods/namespaces)</li>
+                        <li>Creation timestamps</li>
+                        <li>Security scan results</li>
+                    </ul>
+
+                    <p><strong>Create a controller:</strong> Deploy a small Python controller that watches for pod creation/deletion events across your cluster. Whenever a container is deployed or removed, it automatically updates your inventory records.</p>
+                    
+                    <p><strong>Query your inventory:</strong> With this system in place, your security team can run commands like:</p>
+                    <div class="code-block">
+                        <code>
+# List all containers using vulnerable log4j versions
+kubectl get containerimage -l "vulnerabilities=CVE-2021-44228"
+
+# Find containers from unapproved registries
+kubectl get containerimage --field-selector "spec.registry!=acme-approved-registry.com"
+
+# Get deployment history of a specific image
+kubectl describe containerimage payment-processer-2
+                        </code>
+                    </div>
+
+                    <p><strong>Integrate with deployment and security tools:</strong> Container inventory becomes even more powerful when integrated into a GitOps workflow. By storing your inventory definitions and policies as code in Git, you create a single source of truth for both what should exist and what actually exists in your environment.</p>
+                    
+                    <p>This closed-loop system where inventory definitions live in Git, deployments are automated through pipelines, and inventory controllers continuously reconcile desired state with actual state provides the ultimate defense against configuration drift and unauthorized deployments.</p>
+                    
+                    <p>When a security scanner flags a vulnerable container, your GitOps pipeline can automatically create a pull request to update the affected deployments, ensuring that intended changes flow through the same auditable process as all other infrastructure modifications.</p>
+                    
+                    <p>The same is true for SecOps. For example, your SOC team connects this inventory to your SIEM. Now when an alert fires, they immediately know what image was involved, its deployment history, and whether it contains known vulnerabilities.</p>
+                    
+                    <p>What makes this approach powerful is that it works uniformly across your entire estate. The same kubectl commands work whether the container is running in your AWS EKS clusters or your on-premises data center. Your teams use familiar Kubernetes tools and don't need to learn different inventory systems for different environments.</p>
+
+                    <h3>Conclusion: You Are What You are Running</h3>
+                    <p>In the "Wild West" world of cloud, knowing what you have is the first step to managing it effectively. Yes, containers are ephemeral, but that's all the more reason to keep track of them. Think of your container inventory as less of a static document and more of a cybernetic feedback loop - just like your container environment itself.</p>
+
+                    <div class="conclusion">
+                        <p>So go forth and inventory, my container-loving friends! Your future non-breached system will thank you.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
