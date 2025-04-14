@@ -44,17 +44,17 @@
                     </div>
 
                     <div class="article-summary">
-                        <p>In Part I of this series, we explored how attackers (or researchers) can see the details of public-facing components using open source tools. Today, we explore how organizations can define and track ephemeral technology components in containerized environments.</p>
+                        <p>In Part I of this series, we explored how attackers (or researchers) can discover the details of public-facing components using open source tools. Today, we explore how organizations can define and track ephemeral technology components in containerized environments.</p>
                     </div>
 
-                    <p>Listen up, cloud enthusiasts and container aficionados! Today I'm taking the gloves off and we're diving into the controversial topic of inventory management. I know what you're thinking: "Inventory? That's so legacy IT!" Well buckle up, because I'm about to change your mind faster than a container can restart itself.</p>
+                    <p>Listen up, cloud enthusiasts and container aficionados! Today I'm taking the gloves off and we're diving into the controversial topic of inventory management. I know what you're thinking: "Inventory management? That's so legacy IT!" Well buckle up, because I'm about to change your mind faster than a container can restart itself.</p>
 
                     <h3>The Hard Truth: It's Container Chaos Out There</h3>
-                    <p>Let's be honest: your Kubernetes environment probably looks like my living room after I put my kids to bed each night - things everywhere, no idea where they came from, and a vague sense that something important might be shoved under the couch cushions. You're deploying containers left and right, patting yourself on the back for being "cloud-native," all while having absolutely no idea what's actually running in your environment.</p>
+                    <p>Let's be honest: many Kubernetes environments look like my living room after I put my kids to bed each night - things everywhere, no idea where they came from, and a vague sense that something important might be shoved under the couch cushions. You're deploying containers left and right, patting yourself on the back for being "cloud-native," all while having absolutely no idea what's actually running in your environment.</p>
 
-                    <p>Sound familiar? I thought so.</p>
+                    <p>Sound familiar? If so, you're definitely not alone.</p>
 
-                    <p>Look, I get it, and I don't mean to sound flippant. Teams are stretched thin and no one has time to do extra work. But here's the thing: maintaining an accurate inventory isn't some outdated practice from the dark ages of physical servers. It's the cornerstone of effective system governance, establishing clear system boundaries and data flows. It's the map that makes everything else possible — security, compliance, operations, the whole shebang.</p>
+                    <p>Look, I get it, and I don't mean to sound flippant. Teams are stretched thin and no one has time to do extra work. But here's the thing: maintaining an accurate inventory isn't some outdated practice from the dark ages of physical servers. It's the cornerstone of effective system governance, establishing clear system boundaries and data flows. It's the map that makes everything else possible - security, compliance, operations, the whole shebang.</p>
 
                     <h3>"But Containers Are EPHEMERAL!"</h3>
                     <p>I can hear some of you typing furiously in the comments already:</p>
@@ -75,7 +75,7 @@
                         <li>What data they're processing</li>
                     </ul>
 
-                    <p>Without this visibility, you're essentially running a "security through obscurity" strategy — except the person left in the dark is yourself. As I described in Part 1, attackers can simply use Nmap and Shodan to know exactly what you're running (as well as vulnerabilities and misconfigurations that may be present).</p>
+                    <p>Without this visibility you're essentially running a "security through obscurity" strategy, except the person left in the dark is yourself. As I described in Part 1, attackers can simply use tools like Nmap and Shodan to know exactly what you're running (as well as vulnerabilities and misconfigurations that may be present).</p>
 
                     <h3>How to Track a Container Inventory</h3>
                     <p>Fortunately, there are several viable approaches to maintaining an accurate container inventory:</p>
@@ -146,14 +146,14 @@ kubectl describe containerimage payment-processer-2
                     
                     <p>The same is true for SecOps. For example, your SOC team connects this inventory to your SIEM. Now when an alert fires, they immediately know what image was involved, its deployment history, and whether it contains known vulnerabilities.</p>
                     
-                    <p>What makes this approach powerful is that it works uniformly across your entire estate. The same kubectl commands work whether the container is running in your AWS EKS clusters or your on-premises data center. Your teams use familiar Kubernetes tools and don't need to learn different inventory systems for different environments.</p>
+                    <p>What makes this approach powerful is that it works uniformly across your entire environment. The same kubectl commands work whether the container is running in your AWS EKS clusters or your on-premises data center. Your teams use familiar Kubernetes tools and don't need to learn a bunch of different inventory management systems.</p>
 
                     <h3>Conclusion: You Are What You are Running</h3>
-                    <p>In the "Wild West" world of cloud computing, knowing what you are running is the first step to managing it effectively. Yes, containers are ephemeral, but that's all the more reason to keep track of them. Think of your container inventory as less of a static document and more of a cybernetic feedback loop - just like your container environment itself.</p>
+                    <p>In the fast-paced world of cloud computing, knowing what you are running is the first step to managing it effectively. Yes, containers are ephemeral, but that's all the more reason to keep track of them. Think of your container inventory as less of a static document and more of a cybernetic feedback loop - just like your container environment itself.</p>
 
                     <div class="conclusion">
                         <p>So go forth and inventory, my container-loving friends! Your future non-breached system will thank you.</p>
-                        <p>If you followed the instructions in this article and would like to share your experience, please reach out via the Contact Me page!</p>
+                        <p>If you implemented anything in this article and would like to share your experience, please reach out via the Contact Me page!</p>
 
                         <p></p>
                     </div>
