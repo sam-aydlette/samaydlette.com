@@ -81,17 +81,17 @@
                     <p>Fortunately, there are several viable approaches to maintaining an accurate container inventory:</p>
 
                     <p><strong>1. Cloud Platform Services</strong>: AWS, GCP, and Azure all offer specialized container inventory management tools.</p>
-                        <p><strong>AWS Services</strong></p>
+                        <p><strong>AWS Services:</strong></p>
                         <ul>
                             <li><strong>Amazon Elastic Container Registry (ECR)</strong>: A managed Docker container registry.</li>
                             <li><strong>Amazon Elastic Container Service (ECS)</strong>: A managed container orchestration service.</li>
                             <li><strong>Amazon Elastic Kubernetes Service (EKS)</strong>: A managed Kubernetes service. EKS offers more granular control over container deployment through Kubernetes pods.</li>
                             <li><strong>AWS Config</strong>: Provides a detailed view of AWS resources and their configurations, including container-related resources. This service supports ECS, ECR, and EKS, allowing you to track configuration changes to container assets and maintain compliance.</li>
                             <li><strong>AWS Systems Manager</strong>: Helps manage container instances with inventory capabilities that track installed applications, configuration details, and patch compliance status.</li>
-                            <li><strong>AWS Inspector</strong>: Automatically discovers container images in Amazon ECR repositories and immediately begins scanning them with no manual configuration required. integrating with AWS Config and Systems Manager to maintain a comprehensive view of container assets and their security status.</strong></li>
+                            <li><strong>AWS Inspector</strong>: Automatically discovers container images in Amazon ECR repositories and immediately begins scanning them for vulnerabilities with no manual configuration required.</li>
                         </ul>
 
-                        <p><strong>Google Cloud Platform (GCP) Services</strong></p>
+                        <p><strong>Google Cloud Platform (GCP) Services:</strong></p>
                         <ul>
                             <li><strong>Google Cloud Asset Inventory</strong>: Provides inventory services based on a time series database that maintains a history of Google Cloud asset metadata. This service allows you to track containers and related resources across your GCP environment.</li>
                             <li><strong>Google Kubernetes Engine (GKE)</strong>: A managed Kubernetes service that automatically integrates with Cloud Asset Inventory to maintain visibility into your container deployments.</li>
@@ -99,7 +99,7 @@
                             <li><strong>Google Cloud Monitoring</strong>: Provides insights into the health, performance, and availability of your containerized applications.</li>
                         </ul>
 
-                        <p><strong>Microsoft Azure Services</strong></p>
+                        <p><strong>Microsoft Azure Services:</strong></p>
                         <ul>
                             <li><strong>Azure Container Registry (ACR)</strong>: A managed registry service where you can store and manage container images and related artifacts.</li>
                             <li><strong>Azure Kubernetes Service (AKS)</strong>: A managed Kubernetes service that integrates with Azure Monitor and other Azure services for comprehensive inventory management.</li>
