@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harden First, Patch Less - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-header">
+                <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+                <p>Author and Cybersecurity Practitioner</p>
+            </div>
+            <div class="nav-grid">
+                <a href="/pages/books.html" class="nav-button">Books</a>
+                <a href="/pages/articles.html" class="nav-button">Articles</a>
+                <a href="/pages/about.html" class="nav-button">About</a>
+                <a href="/pages/contact.html" class="nav-button">Contact</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">April 20, 2025</span>
+                    <span class="article-category">Cloud Security</span>
+                </div>
+                
+                <h2 class="article-title">Harden First, Patch Less: The Economics of Secure DevSecOps Pipelines</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        Cloud service providers entering regulated markets should consider what every NYC restauranteur knows well - you won't get far without a skilled host. By focusing on a "select clientele," restaurant hosts preserve the exclusivity of hot nightlife locations. Similarly, having a CI/CD pipeline that enforces the use of hardened components is like having a skilled host for your deployments - very selective of who gets in and unimpressed by your excuses about why your sketchy package should be on the list. Cloud service providers can elevate their security, unlock opportunities in regulated markets, and lower overall operating costs by ensuring that what is deployed into production is already secure.
+                    </div>
+
+                    <h3>Why Hardening is Necessary: The Big Picture</h3>
+                    <p>Hardening addresses security at the component level. Standard, non-hardened images typically include unnecessary services, open ports and even default credentials. Using general purpose images is especially risky because supply chain attacks are increasing. Sophisticated threat actors aren't just knocking on your front door anymore, they're targeting your software vendors to create a master key to every door before you even install them. Ensuring adequate provenance and integrity of your components is no longer optional. Simply put, organizations that aren't hardening will get breached, if they haven't already. The 2024 Sophos State of ransomware report indicated that organizations with unpatched vulnerabilities were 2.8 times more likely to experience ransomware.</p>
+
+                    <p>Due to this heightened threat landscape, maintaining a continuous hardened inventory of components via a "shift left" approach has become the foundation for continuous monitoring that <em>all</em> compliance frameworks are moving towards these days. You can't patch once a quarter anymore and expect to squeak through an audit for much longer. Ignore this at your peril, unless you enjoy explaining audit findings to executives who suddenly develop an intense interest in the technical details of your "SSH into EC2 and then use Vim" approach to code deployments.</p>
+
+                    <p>By using hardened cloud components, organizations can continuously eliminate many vulnerabilities before deployment rather than frantically patching systems retroactively. Integrating security into CI/CD also provides organizations with the flexibility to more easily modularize their cloud model to enter different regulated markets using the same hardened tech stack across multiple compliance requirements and sovereign geographic locations.</p>
+
+                    <h3>How to Implement Hardening</h3>
+                    <p>Organizations seeking to implement hardened components in their cloud environments have two options: building an internal hardening process (the "we enjoy pain" approach) or leveraging pre-hardened images from specialized vendors (the "please take my money and make this problem go away" approach).</p>
+
+                    <h3>DIY Hardening</h3>
+                    <p>Hardening objectives are often based on established frameworks like Security Technical Implementation Guides (STIGs) developed by the Defense Information Systems Agency (DISA). STIGs are meant to apply to your entire stack and many options exist for operating systems, databases, applications and network devices.</p>
+
+                    <p>Applying STIGs across an environment typically involves a five-step process that combines bureaucracy, technical challenges, and existential dread:</p>
+                    <ol>
+                        <li><strong>Baseline creation</strong>: Developing hardened base images for each component you are deploying.</li>
+                        <li><strong>Automated configuration management</strong>: Using configuration management and validation tools to maintain consistency.</li>
+                        <li><strong>Deviation management</strong>: Creating exceptions where you either accept or lower the risk of not applying a specific hardening rule.</li>
+                        <li><strong>Continuous monitoring</strong>: Constantly verifying that nobody has quietly disabled all your security controls when you weren't looking</li>
+                    </ol>
+
+                    <div class="article-image" style="margin: 2rem 0; text-align: center;">
+                      <svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
+                          <!-- Background -->
+                          <rect width="900" height="400" fill="#f5f7fa"/>
+                          
+                          <!-- CI/CD Pipeline Base -->
+                          <rect x="50" y="150" width="800" height="80" fill="#e1e8ed" rx="10"/>
+                          
+                          <!-- Pipeline Stages -->
+                          <g>
+                              <!-- Source Code -->
+                              <rect x="70" y="170" width="80" height="40" fill="#3498db" rx="5"/>
+                              <text x="110" y="195" font-family="Arial" font-size="14" text-anchor="middle" fill="white">Source</text>
+                              
+                              <!-- Build -->
+                              <rect x="210" y="170" width="80" height="40" fill="#2ecc71" rx="5"/>
+                              <text x="250" y="195" font-family="Arial" font-size="14" text-anchor="middle" fill="white">Build</text>
+                              
+                              <!-- Test -->
+                              <rect x="350" y="170" width="80" height="40" fill="#9b59b6" rx="5"/>
+                              <text x="390" y="195" font-family="Arial" font-size="14" text-anchor="middle" fill="white">Test</text>
+                              
+                              <!-- Deploy -->
+                              <rect x="490" y="170" width="80" height="40" fill="#e74c3c" rx="5"/>
+                              <text x="530" y="195" font-family="Arial" font-size="14" text-anchor="middle" fill="white">Deploy</text>
+                              
+                              <!-- Production -->
+                              <rect x="750" y="170" width="80" height="40" fill="#34495e" rx="5"/>
+                              <text x="790" y="195" font-family="Arial" font-size="14" text-anchor="middle" fill="white">Prod</text>
+                              
+                              <!-- Arrows (all equal length: 60px) -->
+                              <path d="M150 190 L210 190" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                              <path d="M290 190 L350 190" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                              <path d="M430 190 L490 190" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                              <path d="M570 190 L630 190" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                              <path d="M690 190 L750 190" stroke="#34495e" stroke-width="2" marker-end="url(#arrowhead)"/>
+                              
+                              <!-- Hardening (Hamster Wheel) - centered between Deploy and Prod -->
+                              <g transform="translate(660, 140)">
+                                  <!-- Wheel Base -->
+                                  <circle cx="0" cy="50" r="45" fill="none" stroke="#34495e" stroke-width="3"/>
+                                  <circle cx="0" cy="50" r="40" fill="none" stroke="#34495e" stroke-width="2"/>
+                                  
+                                  <!-- Wheel Spokes -->
+                                  <line x1="0" y1="5" x2="0" y2="95" stroke="#34495e" stroke-width="2"/>
+                                  <line x1="-45" y1="50" x2="45" y2="50" stroke="#34495e" stroke-width="2"/>
+                                  <line x1="-32" y1="18" x2="32" y2="82" stroke="#34495e" stroke-width="2"/>
+                                  <line x1="-32" y1="82" x2="32" y2="18" stroke="#34495e" stroke-width="2"/>
+                                  
+                                  <!-- Hamster -->
+                                  <g transform="translate(-20, 30)">
+                                      <!-- Body -->
+                                      <ellipse cx="20" cy="20" rx="25" ry="18" fill="#f39c12"/>
+                                      <!-- Head -->
+                                      <circle cx="42" cy="15" r="12" fill="#f39c12"/>
+                                      <!-- Eye -->
+                                      <circle cx="47" cy="12" r="2" fill="black"/>
+                                      <!-- Ear -->
+                                      <circle cx="40" cy="5" r="4" fill="#f39c12"/>
+                                      <!-- Legs -->
+                                      <rect x="10" y="35" width="5" height="10" fill="#f39c12" rx="2"/>
+                                      <rect x="25" y="35" width="5" height="10" fill="#f39c12" rx="2"/>
+                                      <!-- Tail -->
+                                      <path d="M-5 20 Q-10 25 -5 30" stroke="#f39c12" stroke-width="3" fill="none"/>
+                                  </g>
+                                  
+                                  <!-- Label -->
+                                  <text x="0" y="120" font-family="Arial" font-size="16" text-anchor="middle" fill="#e74c3c" font-weight="bold">SECURITY</text>
+                                  <text x="0" y="140" font-family="Arial" font-size="12" text-anchor="middle" fill="#34495e">"Running in circles"</text>
+                              </g>
+                          </g>
+                          
+                          <!-- Title - centered -->
+                          <text x="450" y="40" font-family="Arial" font-size="24" text-anchor="middle" font-weight="bold" fill="#2c3e50">Patching in Production: The Unhardened Image Experience</text>
+                          
+                          <!-- Arrow Head Marker -->
+                          <defs>
+                              <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                              refX="9" refY="3.5" orient="auto">
+                                  <polygon points="0 0, 10 3.5, 0 7" fill="#34495e"/>
+                              </marker>
+                          </defs>
+                          
+                          <!-- Sweat drops from hamster -->
+                          <g fill="#3498db" opacity="0.6">
+                              <circle cx="680" cy="140" r="3"/>
+                              <circle cx="690" cy="130" r="2"/>
+                              <circle cx="700" cy="145" r="3"/>
+                          </g>
+                          
+                          <!-- Footnote - centered -->
+                          <text x="450" y="380" font-family="Arial" font-size="12" text-anchor="middle" fill="#95a5a6">
+                              *Actual hamster may be replaced by overworked security engineer
+                          </text>
+                      </svg>
+                    </div>
+
+                    <h4>Limitations of Internal Hardening</h4>
+                    <p>While effective in theory, this approach comes with its share of challenges.</p>
+                    <ul>
+                        <li><strong>Resource intensive</strong>: Every time new vendor patches are released or STIGs are updated, a new build is required. This ongoing process of building images to strip unneeded functionality and remove CVEs is resource intensive.</li>
+                        <li><strong>Expertise requirements</strong>: Organizations need specialized knowledge across multiple technologies, and these unicorn employees are hard to find and retain.</li>
+                        <li><strong>Management overhead</strong>: Hardened components must be thoroughly tested to ensure they don't break application functionality. The more complex the tech stack becomes, the more dependencies become increasingly unwieldy.</li>
+                    </ul>
+
+                    <p>Generally speaking, only the largest or most advanced organizations have the expertise and the economy of scale necessary to make "in house" component hardening worth it. Even then, it's hard to pull off. For everyone else, it's probably better to pay someone to do it for you.</p>
+
+                    <h3>Pre-Hardened Images from Specialized Vendors</h3>
+                    <p>The alternative approach is leveraging pre-hardened images from specialized vendors, who provide components specifically designed with security as a primary focus. This is the "I have money and would prefer to keep my sanity" solution.</p>
+
+                    <h4>Cost Considerations</h4>
+                    <p>While likely less expensive than doing everything yourself, buying pre-hardened images from a vendor is not cheap, and there are still additional costs. These include:</p>
+                    <ul>
+                        <li><strong>Licensing costs</strong>: Subscription fees based on deployment scale</li>
+                        <li><strong>Integration expenses</strong>: Resources required to incorporate hardened images into existing pipelines</li>
+                        <li><strong>Training requirements</strong>: Staff may need training on new tooling</li>
+                        <li><strong>Support costs</strong>: Enterprise support agreements for when things inevitably break at 3 AM on a holiday weekend</li>
+                    </ul>
+
+                    <p>Point being, there are costs either way. Basic vendor solutions start around $20-50 per month per instance. If I figure out how to make money without investing any, I'll probably stop writing these articles.</p>
+
+                    <h4>Flexibility Advantages</h4>
+                    <p>Vendor solutions offer flexibility advantages over in-house as well:</p>
+                    <ul>
+                        <li><strong>Broad ecosystem support</strong>: Vendors typically provide hardened versions of popular components (NGINX, Redis, PostgreSQL, etc.) faster than your team could possibly harden them all</li>
+                        <li><strong>Cloud provider integration</strong>: Pre-built solutions for major cloud platforms that work (almost) perfectly out of the box</li>
+                        <li><strong>Customization options</strong>: Ability to tailor hardened images to specific requirements</li>
+                        <li><strong>Deployment flexibility</strong>: Support for various environmental needs, from VMs to containers to whatever new deployment paradigm emerges next week</li>
+                    </ul>
+
+                    <h3>The Compounding Benefits of Deploying Hardened Components</h3>
+                    <p>Regardless of implementation approach, hardened components deliver significant security advantages for cloud environments.</p>
+
+                    <h4>Minimal CVEs with Improved Detection and Response</h4>
+                    <p>Hardened components dramatically reduce the number of potential vulnerabilities by:</p>
+                    <ul>
+                        <li><strong>Eliminating unnecessary packages</strong>: Removing software that isn't required but is just there, such as development tools, documentation files, or unused language runtimes</li>
+                        <li><strong>Configuring secure defaults</strong>: Because the default settings are typically about as secure as using "password" as your password</li>
+                        <li><strong>Regular updates</strong>: Maintained images receive security patches promptly, instead of sitting in your "I'll get to it later" queue for six months</li>
+                    </ul>
+
+                    <p>This approach improves security metrics across the board, giving you impressive slides for executive presentations:</p>
+                    <ul>
+                        <li><strong>Mean Time to Detection (MTTD)</strong>: With fewer components to monitor, security teams can identify issues faster</li>
+                        <li><strong>Mean Time to Remediation (MTTR)</strong>: Standardized environments make patching and updates more straightforward</li>
+                        <li><strong>Overall risk posture improvement</strong>: The attack surface is reduced so significantly you might actually get to sleep through the night occasionally</li>
+                    </ul>
+
+                    <h4>Multi-Cloud Inventory with PURL</h4>
+                    <p>Package URL (PURL) has emerged as a crucial standard for component identification across diverse ecosystems. As a precise, decentralized identification method, PURL offers significant advantages, bringing order to chaos like a particularly effective librarian. The best part of using PURL is that it works across any tech stack or cloud infrastructure - you can deploy hardened images and identify them with PURL regardless of whether they are running in AWS, Azure, GCP or on-premise:</p>
+                    <ul>
+                        <li><strong>Unambiguous identification</strong>: Each component is uniquely identifiable regardless of source or repository, eliminating the "which version is this again?" problem</li>
+                        <li><strong>Cross-platform consistency</strong>: Works the same across languages, package managers, and deployment models</li>
+                        <li><strong>Automation support</strong>: Enables automated inventory tracking and vulnerability correlation</li>
+                        <li><strong>Supply chain transparency</strong>: Facilitates clear tracking of component origins and dependencies</li>
+                    </ul>
+
+                    <p>Organizations leveraging PURL can maintain accurate inventories of all deployed components across complex tech stacks, enabling rapid identification of affected systems when new vulnerabilities emerge. Below is an example of a PURL for a specific PostgreSQL image:</p>
+                    <div class="code-block">
+                        <code>pkg:docker/postgres@14.5-alpine</code>
+                    </div>
+
+                    <h4>Supply Chain Security with Build-Time SBOMs</h4>
+                    <p>Software Bills of Materials (SBOMs) are another essential artifact for demonstrating security, the "list of ingredients" that lets you proudly show your customers what exactly they are consuming on an ongoing basis. Generating built-time SBOMs from hardened components facilitates:</p>
+                    <ul>
+                        <li><strong>Comprehensive dependency visibility</strong>: Clear documentation of all included software, including the dependencies of dependencies of dependencies</li>
+                        <li><strong>Provenance verification</strong>: Evidence of component origins and build processes</li>
+                        <li><strong>Automated policy enforcement</strong>: SBOMs enable automated checks against security policies, catching violations before they make it into production</li>
+                        <li><strong>Compliance documentation</strong>: Ready evidence for regulatory requirements, saving you from panic-generating documentation the night before an audit</li>
+                    </ul>
+
+                    <p>Build-time SBOM generation ensures that security is integrated from the earliest stages of deployment rather than being assessed retroactively.</p>
+
+                    <div class="conclusion">
+                        <h3>Conclusion</h3>
+                        <p>As cloud environments grow more complex, the security fundamentals become increasingly important. Using hardened components provides a strong foundation by minimizing vulnerabilities, reducing attack surfaces, and improving visibility across the environment.</p>
+
+                        <p>Whether organizations choose to develop internal hardening processes (the masochist's path) or leverage specialized vendor solutions (the capitalist's choice), the implementation of hardened components represents a strategic security investment. The resulting benefits - including reduced vulnerabilities, improved incident response, better inventory management, and enhanced supply chain security - position organizations to maintain robust cloud security postures even as threats continue to evolve.</p>
+
+                        <p>The use of hardened components is essential for any organization serious about security. Or, you could be serious about never selling to regulated markets or becoming the next embarrassing data breach headline.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
