@@ -44,18 +44,18 @@
                     </div>
 
                     <p>
-                        Cloud service providers entering regulated markets should consider what NYC restaurateurs know. You won't get far without a skilled host. By focusing on an "upscale clientele," restaurant hosts preserve the exclusivity of hot nightlife locations. Similarly, having a CI/CD pipeline that enforces the use of hardened components is like having a skilled host for your deployments - very selective of who gets in and unimpressed by your excuses about why your sketchy package should be on the list. Cloud service providers can elevate their security, lower overall operating costs, and unlock opportunities in multiple regulated markets by ensuring that what is deployed into production is already secure.
+                        Cloud service providers entering regulated markets should consider what NYC restaurateurs know. You won't get far without a skilled maître d'. By focusing on an "upscale clientele," the maître d preserves the exclusivity of hot nightlife locations. Similarly, having a CI/CD pipeline that enforces the use of hardened components is like having a skilled maître d' for your deployments - very selective of who gets in and unimpressed by your excuses about why your sketchy package should be on the list. Cloud service providers can elevate their security, lower overall operating costs, and unlock opportunities in multiple regulated markets by ensuring that what is deployed into production is already secure.
                     </p>
 
                     <h3>Why Hardening Your Components is Necessary: The Big Picture</h3>
-                    <p>General purpose images typically include unnecessary services, open ports and default credentials. Using general purpose images is especially risky because supply chain attacks are increasing. Sophisticated threat actors aren't just targeting your perimeter anymore, they're targeting your software vendors to create a master key to every door before you even install them. Ensuring adequate provenance and integrity of your components is no longer optional. Simply put, organizations that aren't hardening will get breached, if they haven't been already. The 2024 Sophos State of ransomware report indicated that organizations with unpatched vulnerabilities were 2.8 times more likely to experience ransomware.</p>
+                    <p>General purpose images typically include unnecessary services, unused libraries and default credentials. Using general purpose images is especially risky because supply chain attacks are increasing. Sophisticated threat actors aren't just targeting your perimeter anymore, they're targeting your software vendors to create a master key to every door before you even install them. Ensuring adequate provenance and integrity of your components is no longer optional. Simply put, organizations that aren't hardening will get breached, if they haven't been already. The 2024 Sophos State of ransomware report indicated that organizations with unpatched vulnerabilities were 2.8 times more likely to experience ransomware.</p>
 
-                    <p>Due to this heightened threat landscape, maintaining a continuous inventory of hardened components has become the foundation that <em>all</em> compliance frameworks are rapidly moving towards these days. You can't patch once a quarter and expect to squeak through an audit for much longer. Ignore this at your peril, unless you enjoy explaining audit findings to executives who suddenly develop an intense interest in the technical details of your "SSH into EC2 and then use Vim" approach to code deployments.</p>
+                    <p>Due to this heightened threat landscape, maintaining a continuous inventory of hardened components has become the foundation that <em>all</em> compliance frameworks are rapidly moving towards these days. You can't patch once a quarter and expect to squeak through an audit for much longer. Ignore this at your peril, unless you enjoy explaining audit findings to executives who suddenly develop an intense interest in the technical details of your "SSH into EC2 and then run bash scripts" approach to code deployments.</p>
 
-                    <p>By using hardened cloud components, organizations can eliminate vulnerabilities before deployment rather than frantically patching systems retroactively. Integrating security into CI/CD also provides organizations with the flexibility to more easily modularize their cloud model to enter different regulated markets using the same hardened tech stack across multiple compliance requirements and sovereign geographic locations.</p>
+                    <p>By using hardened cloud components, organizations can eliminate vulnerabilities before deployment rather than frantically patching systems on live production hosts while praying that nothing breaks too badly. Integrating security into CI/CD also provides organizations with the flexibility to more easily modularize their cloud model to enter different regulated markets using the same hardened tech stack across multiple compliance requirements and sovereign geographic locations.</p>
 
                     <h3>How to Implement Hardening</h3>
-                    <p>Organizations seeking to implement hardened components in their cloud environments have two options: building an internal hardening process (the "we enjoy pain" approach) or leveraging pre-hardened images from specialized vendors (the "please take my money and make this problem go away" approach).</p>
+                    <p>Organizations seeking to implement hardened components in their cloud environments have two options: building an internal hardening process (the "we own the pain" approach) or leveraging pre-hardened images from specialized vendors (the "please take my money and make this problem go away" approach).</p>
 
                     <h3>Option 1: DIY Hardening</h3>
                     <p>Hardening objectives are often based on established frameworks like Security Technical Implementation Guides (STIGs) developed by the Defense Information Systems Agency (DISA). STIGs are meant to apply to your entire stack and many options exist for operating systems, databases, applications and network devices.</p>
@@ -71,7 +71,7 @@
                     <p>While effective in theory, this approach comes with its share of challenges.</p>
                     <ul>
                         <li><strong>Resource intensive</strong>: Every time new vendor patches are released or STIGs are updated, a new build is required. This ongoing process of building images to strip unneeded functionality and remove CVEs is resource intensive.</li>
-                        <li><strong>Expertise requirements</strong>: Organizations need specialized knowledge across multiple technologies, and these unicorn employees are hard to find and retain.</li>
+                        <li><strong>Expertise requirements</strong>: Organizations need specialized knowledge across multiple technologies, and these unicorn employees are hard to find and even harder to retain.</li>
                         <li><strong>Management overhead</strong>: Hardened components must be thoroughly tested to ensure they don't break application functionality. The more complex the tech stack becomes, the more dependencies become increasingly unwieldy.</li>
                     </ul>
 
@@ -88,8 +88,11 @@
                         <li><strong>Training requirements</strong>: Staff may need training on new tooling</li>
                         <li><strong>Support costs</strong>: Enterprise support agreements for when things inevitably break at 3 AM on a holiday weekend</li>
                     </ul>
+                    
+                    <h4>Vendor Reliance</h4>
+                    <p>Relying on a 3rd party vendor for hardened images also means that you are adding risk to your supply chain. A vendor may go out of business suddenly or get acquired and decide to stop supporting that business. If this happens, you may have to quickly migrate off of the purchased images en masse, which is a risky endeavor</p>
 
-                    <p>Point being, there are costs either way. If I figure out how to make money without investing any, I'll probably stop writing these articles. However, buying pre-hardened images from a quality vendor provides a number of advantages:</p>
+                    <p>Point being, there are substantial costs either way. If I figure out how to make money without investing any, I'll probably stop writing these articles. However, buying pre-hardened images from a quality vendor provides a number of advantages:</p>
 
                     <ul>
                         <li><strong>Broad ecosystem support</strong>: Vendors typically provide hardened versions of popular components (NGINX, Redis, PostgreSQL, etc.) faster than your team could possibly harden them all</li>
@@ -141,6 +144,9 @@
 
                     <p>Build-time SBOM generation ensures that security is integrated from the earliest stages of deployment rather than being assessed retroactively.</p>
 
+                    <h4>Achieving Economies of Scale</h4>
+                    <p>Many cloud service providers leverage the same or similar sets of components. For example, many vendors likely use Amazon Linux 2 (AL2) container images running on a Red Hat OpenShift Container Platform and using an NGINX web server and MongoDB database. These and similar sets of hardened components may be offered as a consolidated product that takes advantage of maximized efficiency to lower overall cost to different groups within a broader organization or even the cloud industry as a whole.</p>
+                    
                     <div class="conclusion">
                         <h3>Conclusion</h3>
                         <p>Using hardened components provides a strong foundation by minimizing vulnerabilities, reducing attack surfaces, and improving visibility across the environment.</p>
