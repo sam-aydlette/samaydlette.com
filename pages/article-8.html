@@ -47,7 +47,7 @@
                         Cloud service providers entering regulated markets should consider what NYC restaurateurs know. You won't get far without a skilled maître d'. By focusing on an "upscale clientele," the maître d' preserves the exclusivity of hot nightlife locations. Similarly, having a CI/CD pipeline that enforces the use of hardened components is like having a skilled maître d' for your deployments - very selective of who gets in and unimpressed by your excuses about why your sketchy package should be on the list. Cloud service providers can elevate their security, lower overall operating costs, and unlock opportunities in multiple regulated markets by ensuring that what is deployed into production is already secure.
                     </p>
 
-                    <h3>Why Hardening Your Components is Necessary: The Big Picture</h3>
+                    <h3>Why Deploying Hardened Components via DevSecOps is Necessary: The Big Picture</h3>
                     <p>General purpose images typically include unnecessary services, unused libraries and default credentials. Using general purpose images is especially risky because supply chain attacks are increasing. Sophisticated threat actors aren't just targeting your perimeter anymore, they're targeting your software vendors to create a master key to every door before you even install them. Ensuring adequate provenance and integrity of your components is no longer optional. Simply put, organizations that aren't hardening will get breached, if they haven't been already. The 2024 Sophos State of ransomware report indicated that organizations with unpatched vulnerabilities were 2.8 times more likely to experience ransomware.</p>
 
                     <p>Due to this heightened threat landscape, maintaining a continuous inventory of hardened components has become the foundation that <em>all</em> compliance frameworks are rapidly moving towards these days. You can't patch once a quarter and expect to squeak through an audit for much longer. Ignore this at your peril, unless you enjoy explaining audit findings to executives who suddenly develop an intense interest in the technical details of your "SSH into EC2 and then run bash scripts" approach to code deployments.</p>
@@ -90,7 +90,7 @@
                     </ul>
                     
                     <h4>Vendor Reliance</h4>
-                    <p>Relying on a 3rd party vendor for hardened images also means that you are adding risk to your supply chain. A vendor may go out of business suddenly or get acquired and decide to stop supporting that business. If this happens, you may have to quickly migrate off of the purchased images en masse, which is a risky endeavor</p>
+                    <p>Relying on a 3rd party vendor for hardened images also means that you are adding risk to your supply chain. A vendor may go out of business suddenly or get acquired and decide to stop supporting the images you use. If this happens, you may have to quickly migrate off of the purchased images en masse, which is risky.</p>
 
                     <p>Point being, there are substantial costs either way. If I figure out how to make money without investing any, I'll probably stop writing these articles. However, buying pre-hardened images from a quality vendor provides a number of advantages:</p>
 
