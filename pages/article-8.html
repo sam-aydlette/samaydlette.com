@@ -146,16 +146,14 @@
                     <p>Build-time SBOM generation ensures that security is integrated from the earliest stages of deployment rather than being assessed retroactively.</p>
 
                     <h4>Build Integrity with SLSA Framework</h4>
-                    <p>Supply chain Levels for Software Artifacts (SLSA, pronounced "salsa") is a framework that provides a  “chain of custody” demonstrating that your deployment hasn't been tampered with. SLSA offers a security framework with progressive levels of maturity. Organizations implementing SLSA alongside hardened components gain significant advantages:
-                    - **Build provenance**: Cryptographically verifiable records of how, when, and where your components were built
-                    - **Chain of custody**: Complete visibility into every handoff in your pipeline, ensuring nothing suspicious happened between source code and deployment
-                    - **Automated verification**: Integration into CI/CD to automatically reject components that don't meet your required SLSA level
-                    - **Progressive security maturity**: The ability to start simply and gradually increase your security posture in measurable increments
-                    
-                    Here's an example of SLSA provenance data for the hardened component that we identified with PURL earlier:
-                    </p>
-                    <h4>Bonus: Achieving Economies of Scale</h4>
-                    <p>Many cloud service providers leverage the same or similar sets of components. For example, many vendors likely use Alpine Linux container images, NGINX web servers, and MongoDB databases. These and similar sets of hardened components, or alternatives like Chainguard's Wolfi that offer similar functionality, may be offered as a consolidated product that takes advantage of maximized efficiency to lower overall cost to different groups within a broader organization and the cloud industry as a whole.</p>
+                    <p>Supply chain Levels for Software Artifacts (SLSA, pronounced "salsa") is a framework that provides a “chain of custody” demonstrating that your deployment hasn't been tampered with. SLSA offers a security framework with progressive levels of maturity. Organizations implementing SLSA alongside hardened components gain significant advantages:</p>
+                    <ul>
+                        <li><strong>Build provenance</strong>: Cryptographically verifiable records of how, when, and where your components were built</li>
+                        <li><strong>Chain of custody</strong>: Complete visibility into every handoff in your pipeline, ensuring nothing suspicious happened between source code and deployment</li>
+                        <li><strong>Automated verification</strong>: Integration into CI/CD to automatically reject components that don't meet your required SLSA level</li>
+                        <li><strong>Progressive security maturity</strong>: The ability to start simply and gradually increase your security posture in measurable increments</li>
+                    </ul>
+                    <p>Here's an example of SLSA provenance data for the hardened component that we identified with PURL earlier:</p>
                     <div class="code-block">
                         <code>
 {
@@ -167,12 +165,15 @@
 }
                         </code>
                     </div>
-                    <p>SLSA doesn't just tell you that your components were hardened; it provides cryptographic proof of exactly how they were hardened and that they haven't been compromised since.</p>
+                    
+                    <h4>Bonus: Achieving Economies of Scale</h4>
+                    
+                    <p>Many cloud service providers leverage the same or similar sets of components. For example, many vendors likely use Alpine Linux container images, NGINX web servers, and MongoDB databases. These and similar sets of hardened components, or alternatives like Chainguard's Wolfi that offer similar functionality, may be offered as a consolidated product that takes advantage of maximized efficiency to lower overall cost to different groups within a broader organization and the cloud industry as a whole.</p>
+                    
 
                     <h4>Putting It Together: Enforcing Security Outcomes with Infrastructure as Code</h4>
-                    <p>Infrastructure as Code (IaC) serves as the mechanism that integrates hardened components, PURL tracking, SBOM documentation, and SLSA validation into a cohesive security posture. IaC enables automated policy enforcement throughout your software development lifecycle, ensuring that all components meet specific security outcomes before they reach production. Your CI/CD pipelines become security checkpoints, automatically rejecting builds that incorporate vulnerable components or lack proper provenance and attestation.
-
-When hardened components are managed through IaC, your build environments maintain their integrity through immutable infrastructure principles. Each deployment uses pre-vetted, minimal-CVE images that remain consistent across environments, eliminating configuration drift and unauthorized modifications. The PURL identification system seamlessly integrates with this approach, creating a universal addressing scheme that uniquely identifies each component regardless of its source ecosystem. This standardized identification enables precise tracking across disparate environments and simplifies vulnerability correlation. SLSA is also applied directly in your deployment pipeline code. Each build generates cryptographically signed attestations that verify the integrity of your software supply chain, creating an unbroken chain of custody from source to deployment. This approach is complemented by automated SBOM generation, which documents all dependencies for every deployment artifact. The result is a comprehensive security framework where images must come from approved registries, contain verifiable documentation, include signed attestations, and pass vulnerability scans before deployment. This integrated approach creates a multiplicative security effect. Your CI/CD pipeline becomes an end-to-end trust model for your deployments, the ultimate maître d' for your production environment.​​​​​​​​​​​​​​​​</p>
+                    <p>Infrastructure as Code (IaC) serves as the mechanism that integrates hardened components, PURL tracking, SBOM documentation, and SLSA validation into a cohesive security posture. IaC enables automated policy enforcement throughout your software development lifecycle, ensuring that all components meet specific security outcomes before they reach production. Your CI/CD pipelines become security checkpoints, automatically rejecting builds that incorporate vulnerable components or lack proper provenance and attestation.</p>
+                    <p>When hardened components are managed through IaC, your build environments maintain their integrity through immutable infrastructure principles. Each deployment uses pre-vetted, minimal-CVE images that remain consistent across environments, eliminating configuration drift and unauthorized modifications. The PURL identification system seamlessly integrates with this approach, creating a universal addressing scheme that uniquely identifies each component regardless of its source ecosystem. This standardized identification enables precise tracking across disparate environments and simplifies vulnerability correlation. SLSA is also applied directly in your deployment pipeline code. Each build generates cryptographically signed attestations that verify the integrity of your software supply chain, creating an unbroken chain of custody from source to deployment. This approach is complemented by automated SBOM generation, which documents all dependencies for every deployment artifact. The result is a comprehensive security framework where images must come from approved registries, contain verifiable documentation, include signed attestations, and pass vulnerability scans before deployment. This integrated approach creates a multiplicative security effect. Your CI/CD pipeline becomes an end-to-end trust model for your deployments, the ultimate maître d' for your production environment.​​​​​​​​​​​​​​​​</p>
                     <div class="conclusion">
                         <h3>Conclusion</h3>
                         <p>Deploying hardened components via secure DevSecOps pipelines provides a strong foundation by minimizing vulnerabilities, reducing attack surfaces, and improving visibility across the environment.</p>
