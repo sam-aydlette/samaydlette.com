@@ -13,4 +13,4 @@ Personal website showcasing my books, articles, and cybersecurity insights.
 
 ## Development
 
-This site is built with pure HTML, CSS, and JavaScript, and is hosted on GitHub Pages.
+This site is built with pure HTML, CSS, and JavaScript.
