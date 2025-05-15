@@ -84,19 +84,19 @@
                     <h3>Why SBOMs Are Essential, Not Just Nice-to-Have</h3>
                     <p>Software Bill Of Materials (SBOMs) are essential for modern software environments. While implementation challenges exist, the trajectory is clear: SBOMs are becoming a non-negotiable component of software security and regulatory compliance. Organizations that embrace them proactively will gain significant advantages in risk management, incident response, and customer trust. Here's why they matter to those of us building and securing cloud environments:</p>
 
-                    <h3>Visibility into Supply Chain, Distributed Components and Infrastructure as Code</h3>
+                    <h4>Visibility into Supply Chain, Distributed Components and Infrastructure as Code</h4>
                     <p>In containerized and serverless environments, tracking what's actually running across your infrastructure can be difficult and expensive without proper automation and tooling. SBOMs give you instant visibility into every component across your Kubernetes clusters, serverless functions, and microservices. They help answer the question: "What's actually in production right now?"</p>
                     <p>Similarly, when your infrastructure is defined as code, SBOMs help you identify vulnerable dependencies in your Terraform modules, CloudFormation templates, or Pulumi stacks. By integrating SBOM generation into your IaC pipelines, you can catch security issues before they reach your cloud environment.</p>
                     <p>Those container images you're pulling from Docker Hub or ECR? An SBOM reveals exactly what's inside, including base images, installed packages, and applications. This allows organizations to analyze supply chain risk across every dependency.</p>
                     <p>This visibility is invaluable when investigating security events to quickly determine if suspicious behavior is related to vulnerable components and prioritize responses.</p>
                     <p>The integration of SBOMs into vulnerability management can also dramatically reduce alert fatigue. Teams can focus on actual exploitable vulnerabilities rather than wasting time determining whether tickets are findings versus false positives, making remediation efforts more efficient and targeted. When the next Log4Shell happens (and it will), having current SBOMs means you can immediately identify every affected resource.</p>
 
-                    <h3>Cloud Cost Optimization</h3>
+                    <h4>Cloud Cost Optimization</h4>
                     <p>Beyond security, SBOMs help identify redundant or outdated components consuming cloud resources. By eliminating unnecessary dependencies, you can reduce container sizes, decrease memory footprints, and ultimately lower your monthly cloud bill.</p>
                     <p>SBOMs also provide critical visibility into licensing requirements for open source components, helping organizations track compliance with license terms. This visibility reduces legal risk by ensuring proper attribution, identifying components with restrictive licenses, and preventing unintentional violations that could lead to costly litigation or unplanned licensing costs</p>
                     <p>SBOM generation fits into existing CI/CD approaches. With free, open source tools like Grype, you can automatically generate SBOMs during container builds and gate deployments based on security findings without adding any friction or undue cost.</p>
 
-                    <h3>Security Metrics That Matter</h3>
+                    <h4>Security Metrics That Matter</h4>
                     <p>SBOMs enable near real-time security metrics and insights that resonate with executive leadership. Some ideas for reporting include Mean Time To Remediate (MTTR), the percentage of late critical findings, or the percentage of findings per engineering team, component, or vendor. These metrics help justify security investments and demonstrate the effectiveness of a security program far beyond traditional compliance checkboxes.</p>
 
                     <h3>Getting Started with SBOMs: A Practical Guide</h3>
