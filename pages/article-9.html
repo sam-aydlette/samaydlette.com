@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Many Uses of an SBOM - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="navbar-header">
+            <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+            <p>Author and Cybersecurity Practitioner</p>
+        </div>
+        <div class="nav-grid">
+            <a href="/pages/books.html" class="nav-button">Books</a>
+            <a href="/pages/articles.html" class="nav-button">Articles</a>
+            <a href="/pages/about.html" class="nav-button">About</a>
+            <a href="/pages/contact.html" class="nav-button">Contact</a>
+        </div>
+    </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">May 10, 2025</span>
+                    <span class="article-category">Cloud Security</span>
+                </div>
+                
+                <h2 class="article-title">The Many Uses of an SBOM: A Cloud Practitioner's Perspective</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <strong>TL;DR</strong> - Software Bill Of Materials (SBOMs) are becoming essential for modern cloud environments. They provide real-time visibility into components, enhance security, accelerate incident response, and help with compliance. Organizations that adopt SBOMs gain advantages in risk management and build customer trust, while those that don't risk falling behind in security practices.
+                    </div>
+
+                    <p>Software Bill Of Materials (SBOMs) are essential infrastructure for modern software environments. While implementation challenges exist, the trajectory is clear: SBOMs are becoming a non-negotiable component of software security and regulatory compliance. Organizations that embrace them proactively will gain significant advantages in risk management, incident response, and customer trust. Here's why they matter to those of us building and securing cloud environments:</p>
+
+                    <h3>Real-time Visibility into Distributed Components</h3>
+                    <p>In containerized and serverless environments, tracking what's actually running across your infrastructure can be difficult and expensive without proper automation and tooling. SBOMs give you instant visibility into every component across your Kubernetes clusters, serverless functions, and microservices. They help answer the question: "What's actually in production right now?"</p>
+
+                    <h3>Infrastructure as Code Security</h3>
+                    <p>When your infrastructure is defined as code, SBOMs help you identify vulnerable dependencies in your Terraform modules, CloudFormation templates, or Pulumi stacks. By integrating SBOM generation into your IaC pipelines, you can catch security issues before they reach your cloud environment.</p>
+
+                    <h3>Supply Chain Transparency</h3>
+                    <p>Those container images you're pulling from Docker Hub or ECR? An SBOM reveals exactly what's inside, including base images, installed packages, and application dependencies. This transparency is crucial when managing supply chain risk, especially to meet compliance requirements in regulated environments.</p>
+
+                    <h3>Accelerated Incident Response</h3>
+                    <p>When the next Log4Shell happens (and it will), having current SBOMs means you can immediately identify affected resources across your entire cloud estate. Instead of scrambling to scan everything reactively, you'll know exactly which systems need patching, reducing your mean time to remediate from days to minutes.</p>
+
+                    <h3>Cloud Cost Optimization</h3>
+                    <p>Beyond security, SBOMs help identify redundant or outdated components consuming cloud resources. By eliminating unnecessary dependencies, you can reduce container sizes, decrease memory footprints, and ultimately lower your monthly cloud bill.</p>
+
+                    <h3>DevSecOps Integration That Actually Works</h3>
+                    <p>SBOM generation fits perfectly into CI/CD pipelines. With tools like Grype or Anchore, you can automatically generate SBOMs during container builds and gate deployments based on security findings without adding any friction to your deployment process.</p>
+
+                    <h3>Real-time Visibility for Proactive Threat Hunting</h3>
+                    <p>SBOMs provide security teams with precise component inventories across cloud infrastructure. This visibility is invaluable when investigating security events to quickly determine if suspicious behavior is related to vulnerable components and prioritize responses.</p>
+
+                    <h3>Streamlined Vulnerability Management Workflow</h3>
+                    <p>The integration of SBOMs into vulnerability management can dramatically reduce Mean Time To Recovery (MTTR) and alert fatigue. Teams can focus on actual exploitable vulnerabilities rather than wasting time determining whether tickets are findings versus false positives, making remediation efforts more efficient and targeted.</p>
+
+                    <h3>Third-Party Risk Mitigation</h3>
+                    <p>Security and risk management teams can use SBOMs to evaluate the security posture of vendors and open-source projects before they enter production environments, identifying and blocking risky dependencies before deployment.</p>
+
+                    <h3>Security Metrics That Matter</h3>
+                    <p>SBOMs enable metrics that resonate with executive leadership, such as MTTR and the number of unique vulnerabilities across an entire inventory. These metrics help justify security investments and demonstrate the effectiveness of a security program far beyond traditional compliance checkboxes.</p>
+
+                    <div class="conclusion">
+                        <p>SBOMs bridge the visibility gap between cloud infrastructure and security controls, enabling organizations to protect modern environments at the speed and scale of cloud development. Cloud security and engineering leaders need practical security solutions that work at scale without compromising the speed and flexibility that makes cloud computing powerful. SBOMs provide exactly that.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
