@@ -49,8 +49,8 @@
 
                     <p>Most cloud vendors treat public sector compliance as an afterthought, resulting in half-baked solutions that turn their streamlined commercial offerings into Frankenstein monsters. OPA flips this model on its head by making compliance an impetus for building a world-class architecture.</p>
 
-                    <h3>The Business Objectives that OPA Enables</h3>
-                    <p>Most vendors think compliance means higher costs and slower delivery. But that's simply not true.</p>
+                    <h3>The Business Model Everyone Misses</h3>
+                    <p>Most people think compliance means higher costs and slower delivery. But that's simply not true.</p>
                     
                     <p>OPA enables a business model that offers lower costs with greater flexibility. Here's how it works:</p>
                     
@@ -64,9 +64,9 @@
                     
                     <p>The math works out and the profits start stacking up. Engineering costs drop because you maintain fewer codebases. Compliance costs drop because policies are reusable. Speed to market increases because deployment becomes configuration, not development. Revenue grows because you can serve any customer in any region without architectural changes. Forward thinking organizations are already adopting this model, while others are increasingly being left behind. The business landscape is changing quickly.</p>
 
-                    <h3>Real-World Use Cases</h3>
+                    <h3>OPA in the Trenches: Real-World Use Cases</h3>
                     
-                    <h4>CI/CD Via Infrastructure as Code</h4>
+                    <h4>The CI/CD Gate That Pays for Itself</h4>
                     <p>Consider a SaaS provider that wants to also offer sovereign cloud deployments across AWS, Azure, and Google Cloud. They need to enforce encryption at rest for all storage buckets and ensure compute instances meet specific hardening requirements.</p>
                     
                     <p>With OPA, they write policies that check:</p>
@@ -81,7 +81,7 @@
                     
                     <p>They also enforce tagging policies for cost allocation and data classification. Every resource must have CostCenter, DataClassification, and ComplianceScope tags. OPA rejects any Terraform plan, CloudFormation template, or ARM template that doesn't comply. No more orphaned resources bleeding money or storing sensitive data in unknown locations. No more discovering that your unmarked S3 bucket was actually storing customer PII when the auditors show up.</p>
 
-                    <h4>Runtime Example: Steampipe + OPA</h4>
+                    <h4>Runtime Enforcement: Steampipe + OPA</h4>
                     <p>OPA is a policy engine, not a resource scanner. It evaluates rules but doesn't query your infrastructure. That's where Steampipe integration can take things to the next level with a single policy set to rule them all. Steampipe queries your cloud resources across AWS, Azure, and GCP, transforming them into SQL-queryable data. Here's how they work together:</p>
                     
                     <p><strong>Step 1: Steampipe Queries Resources</strong></p>
@@ -191,7 +191,7 @@ remediate = false {
                     <p>That number? That's your weekly ROI from adopting OPA. The migration path isn't an insurmountable mountain to climb. It's a series of profitable steps, each one making the next one easier. The question isn't "How do I migrate?" It's "How much money am I losing by not starting today?"</p>
 
                     <div class="conclusion">
-                        <h3>Conclusion: The Honest Truth (Or Perhaps Not?)</h3>
+                        <h3>Conclusion: The Choice Is Yours (But Not Really)</h3>
                         <p>Many organizations won't adopt OPA quickly because it means admitting that they've invested millions in manual processes, compliance teams, and specialized architectures that are now largely obsolete.</p>
                         
                         <p>But for forward-thinking organizations willing to take a risk when there is a compelling opportunity, OPA offers something incredibly valuable: the ability to treat compliance as a competitive advantage rather than a cost center. For business opportunities that demand cloud-native solutions, the organizations that master policy-as-code will eat the lunch of those still manually creating monthly compliance reports. Some organizations are already moving towards this, and a few are already there now. The question isn't whether to adopt OPA, but rather who will lead and who will be left behind.</p>
