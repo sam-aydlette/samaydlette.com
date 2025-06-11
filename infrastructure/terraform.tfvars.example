@@ -1,0 +1,32 @@
+# terraform.tfvars.example
+# Copy this file to terraform.tfvars and customize the values
+
+domain_name     = "samaydlette.com"
+aws_region      = "us-east-2"  # Your main region (S3, Lambda, etc.)
+environment     = "prod"
+cost_center     = "website-ops"
+owner_email     = "sam@samaydlette.com"
+
+# SSL Certificate Options (choose one):
+
+# Option 1: Auto-create certificate (recommended)
+create_certificate = true
+ssl_certificate_arn = ""
+
+# Option 2: Use existing certificate ARN (must be in us-east-1)
+# create_certificate = false
+# ssl_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+
+# CloudFront price class - controls which edge locations are used
+# PriceClass_100: US, Canada, Europe
+# PriceClass_200: US, Canada, Europe, Asia, Middle East, Africa  
+# PriceClass_All: All edge locations
+cloudfront_price_class = "PriceClass_100"
+
+# Whether to manage DNS with Route53
+manage_dns = true
+
+# How often to run compliance checks
+compliance_check_schedule = "rate(1 day)"
+
+# Section 508 compliance level to enforce

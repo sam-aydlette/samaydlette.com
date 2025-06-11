@@ -1,0 +1,21 @@
+{
+  "name": "opa-compliance-lambda",
+  "version": "1.0.0",
+  "description": "Lambda function for OPA-based compliance checking",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1400.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "aws",
+    "lambda", 
+    "opa",
+    "compliance",
+    "section508"
+  ],
+  "author": "Samuel Aydlette",
+  "license": "MIT"
