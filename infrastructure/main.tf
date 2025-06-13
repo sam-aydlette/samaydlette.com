@@ -1,4 +1,4 @@
-# main.tf
+# main.tf - Complete Terraform configuration for existing website with OPA compliance
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -20,7 +20,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# S3 bucket for website hosting
+# S3 bucket for website hosting - EXISTING RESOURCE
 resource "aws_s3_bucket" "website" {
   bucket = var.domain_name
 
@@ -55,7 +55,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
   }
 }
 
-# S3 bucket public access block
+# S3 bucket public access block - ALLOW public access for website hosting
 resource "aws_s3_bucket_public_access_block" "website" {
   bucket = aws_s3_bucket.website.id
 
@@ -65,7 +65,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
   restrict_public_buckets = false
 }
 
-# S3 bucket policy for website access
+# S3 bucket policy for public website access
 resource "aws_s3_bucket_policy" "website" {
   bucket = aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
@@ -97,17 +97,9 @@ resource "aws_s3_bucket_website_configuration" "website" {
   }
 }
 
-# CloudFront Origin Access Control
-resource "aws_cloudfront_origin_access_control" "website" {
-  name                              = "${var.domain_name}-oac"
-  description                       = "OAC for ${var.domain_name}"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-# SSL Certificate - MUST be in us-east-1 for CloudFront
+# SSL Certificate - Only create if requested
 resource "aws_acm_certificate" "website" {
+  count    = var.create_certificate ? 1 : 0
   provider = aws.us_east_1
   
   domain_name               = var.domain_name
@@ -127,31 +119,62 @@ resource "aws_acm_certificate" "website" {
   }
 }
 
-# Route53 records for certificate validation (if managing DNS)
+# Route53 hosted zone - EXISTING RESOURCE (only if managing DNS)
+resource "aws_route53_zone" "website" {
+  count = var.manage_dns ? 1 : 0
+  name  = var.domain_name
+
+  tags = {
+    Name                = var.domain_name
+    Environment         = var.environment
+    CostCenter          = var.cost_center
+    DataClassification  = "Public"
+    Owner               = var.owner_email
+  }
+}
+
+# Route53 records for certificate validation (if managing DNS and creating certificate)  
 resource "aws_route53_record" "cert_validation" {
-  provider = aws.us_east_1
-  count    = var.manage_dns ? length(aws_acm_certificate.website.domain_validation_options) : 0
+  for_each = var.manage_dns && var.create_certificate ? {
+    for dvo in aws_acm_certificate.website[0].domain_validation_options : dvo.domain_name => {
+      name   = dvo.resource_record_name
+      record = dvo.resource_record_value
+      type   = dvo.resource_record_type
+    }
+  } : {}
   
   allow_overwrite = true
-  name            = tolist(aws_acm_certificate.website.domain_validation_options)[count.index].resource_record_name
-  records         = [tolist(aws_acm_certificate.website.domain_validation_options)[count.index].resource_record_value]
+  name            = each.value.name
+  records         = [each.value.record]
   ttl             = 60
-  type            = tolist(aws_acm_certificate.website.domain_validation_options)[count.index].resource_record_type
+  type            = each.value.type
   zone_id         = aws_route53_zone.website[0].zone_id
 }
 
 # Certificate validation
 resource "aws_acm_certificate_validation" "website" {
   provider = aws.us_east_1
-  count    = var.manage_dns ? 1 : 0
+  count    = var.manage_dns && var.create_certificate ? 1 : 0
   
-  certificate_arn         = aws_acm_certificate.website.arn
-  validation_record_fqdns = aws_route53_record.cert_validation[*].fqdn
+  certificate_arn         = aws_acm_certificate.website[0].arn
+  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 
   timeouts {
     create = "5m"
   }
 }
+
+# CloudFront Origin Access Control
+resource "aws_cloudfront_origin_access_control" "website" {
+  name                              = "${var.domain_name}-oac"
+  description                       = "OAC for ${var.domain_name}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+# CloudFront distribution - EXISTING RESOURCE
+resource "aws_cloudfront_distribution" "website" {
   aliases = [var.domain_name, "www.${var.domain_name}"]
 
   origin {
@@ -191,6 +214,7 @@ resource "aws_acm_certificate_validation" "website" {
   }
 
   viewer_certificate {
+    # Use existing certificate (since we're not creating a new one)
     acm_certificate_arn      = var.ssl_certificate_arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
@@ -202,20 +226,6 @@ resource "aws_acm_certificate_validation" "website" {
     CostCenter          = var.cost_center
     DataClassification  = "Public"
     ComplianceScope     = "Section508"
-    Owner               = var.owner_email
-  }
-}
-
-# Route53 hosted zone (if managing DNS)
-resource "aws_route53_zone" "website" {
-  count = var.manage_dns ? 1 : 0
-  name  = var.domain_name
-
-  tags = {
-    Name                = var.domain_name
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
     Owner               = var.owner_email
   }
 }
@@ -251,7 +261,7 @@ resource "aws_route53_record" "website_www" {
 # Lambda function for OPA compliance checking
 resource "aws_lambda_function" "opa_compliance" {
   filename         = "opa-compliance.zip"
-  function_name    = "${var.domain_name}-opa-compliance"
+  function_name    = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   role            = aws_iam_role.lambda_opa.arn
   handler         = "index.handler"
   runtime         = "nodejs18.x"
@@ -283,7 +293,7 @@ data "archive_file" "opa_lambda_zip" {
 
 # IAM role for Lambda function
 resource "aws_iam_role" "lambda_opa" {
-  name = "${var.domain_name}-lambda-opa-role"
+  name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -309,7 +319,7 @@ resource "aws_iam_role" "lambda_opa" {
 
 # IAM policy for Lambda function
 resource "aws_iam_role_policy" "lambda_opa" {
-  name = "${var.domain_name}-lambda-opa-policy"
+  name = "${replace(var.domain_name, ".", "-")}-lambda-opa-policy"
   role = aws_iam_role.lambda_opa.id
 
   policy = jsonencode({
@@ -341,7 +351,7 @@ resource "aws_iam_role_policy" "lambda_opa" {
 
 # EventBridge rule to trigger compliance checks
 resource "aws_cloudwatch_event_rule" "opa_compliance" {
-  name                = "${var.domain_name}-opa-compliance"
+  name                = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   description         = "Trigger OPA compliance checks"
   schedule_expression = var.compliance_check_schedule
 
@@ -368,3 +378,4 @@ resource "aws_lambda_permission" "allow_eventbridge" {
   function_name = aws_lambda_function.opa_compliance.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.opa_compliance.arn
+}

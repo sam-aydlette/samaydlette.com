@@ -82,3 +82,4 @@ variable "section_508_compliance_level" {
     ], var.section_508_compliance_level)
     error_message = "Section 508 compliance level must be A, AA, or AAA."
   }
+}

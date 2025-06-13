@@ -1,0 +1,319 @@
+# .github/workflows/deploy-with-opa.yml
+# GitHub Actions workflow for automated deployment with OPA compliance
+
+name: Deploy Website with OPA Compliance
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+
+env:
+  AWS_REGION: us-east-2  # Changed from us-east-1 to match your current setup
+  TERRAFORM_VERSION: 1.5.0
+  OPA_VERSION: 0.57.0
+  NODE_VERSION: 18
+
+jobs:
+  compliance-check:
+    name: OPA Compliance Check
+    runs-on: ubuntu-latest
+    outputs:
+      compliant: ${{ steps.compliance.outputs.compliant }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+        terraform_wrapper: false
+
+    - name: Setup OPA
+      run: |
+        curl -L -o opa https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static
+        chmod 755 ./opa
+        sudo mv opa /usr/local/bin
+        opa version
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: lambda/package-lock.json
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Create terraform.tfvars
+      run: |
+        cat > terraform.tfvars << EOF
+        domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
+        aws_region      = "${{ env.AWS_REGION }}"
+        environment     = "${{ github.event.inputs.environment || 'prod' }}"
+        cost_center     = "${{ vars.COST_CENTER || 'website-ops' }}"
+        owner_email     = "${{ vars.OWNER_EMAIL || 'sam@samaydlette.com' }}"
+        ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
+        cloudfront_price_class = "${{ vars.CLOUDFRONT_PRICE_CLASS || 'PriceClass_100' }}"
+        manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
+        compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
+        section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
+        EOF
+
+    - name: Install Lambda dependencies
+      working-directory: lambda
+      run: npm ci --production
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Validate
+      run: terraform validate
+
+    - name: Terraform Plan
+      run: terraform plan -out=tfplan
+
+    - name: Run OPA Compliance Check
+      id: compliance
+      run: |
+        # Make script executable
+        chmod +x terraform-plan.sh
+        
+        # Run compliance check
+        if ./terraform-plan.sh; then
+          echo "compliant=true" >> $GITHUB_OUTPUT
+          echo "✅ All compliance checks passed"
+        else
+          echo "compliant=false" >> $GITHUB_OUTPUT
+          echo "❌ Compliance violations found"
+          exit 1
+        fi
+
+    - name: Upload Terraform Plan
+      uses: actions/upload-artifact@v3
+      with:
+        name: terraform-plan
+        path: |
+          tfplan
+          tfplan.json
+        retention-days: 5
+
+  deploy:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: compliance-check
+    if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
+    environment: ${{ github.event.inputs.environment || 'prod' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ${{ env.TERRAFORM_VERSION }}
+        terraform_wrapper: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: lambda/package-lock.json
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Create terraform.tfvars
+      run: |
+        cat > terraform.tfvars << EOF
+        domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
+        aws_region      = "${{ env.AWS_REGION }}"
+        environment     = "${{ github.event.inputs.environment || 'prod' }}"
+        cost_center     = "${{ vars.COST_CENTER || 'website-ops' }}"
+        owner_email     = "${{ vars.OWNER_EMAIL || 'sam@samaydlette.com' }}"
+        ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
+        cloudfront_price_class = "${{ vars.CLOUDFRONT_PRICE_CLASS || 'PriceClass_100' }}"
+        manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
+        compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
+        section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
+        EOF
+
+    - name: Install Lambda dependencies
+      working-directory: lambda
+      run: npm ci --production
+
+    - name: Download Terraform Plan
+      uses: actions/download-artifact@v3
+      with:
+        name: terraform-plan
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve tfplan
+
+    - name: Sync Website Content
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        echo "Syncing content to bucket: $BUCKET_NAME"
+        
+        aws s3 sync . s3://$BUCKET_NAME/ \
+          --exclude "*.tf" \
+          --exclude "*.tfvars*" \
+          --exclude "*.tfstate*" \
+          --exclude ".terraform/*" \
+          --exclude "lambda/*" \
+          --exclude "*.sh" \
+          --exclude "*.rego" \
+          --exclude "*.json" \
+          --exclude ".git/*" \
+          --exclude ".github/*" \
+          --exclude "README.md" \
+          --exclude "Makefile" \
+          --exclude ".gitignore" \
+          --delete
+
+    - name: Invalidate CloudFront Cache
+      run: |
+        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
+        echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+        
+        aws cloudfront create-invalidation \
+          --distribution-id $DISTRIBUTION_ID \
+          --paths "/*"
+
+    - name: Run Post-Deployment Compliance Check
+      run: |
+        LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name)
+        echo "Running compliance check via Lambda: $LAMBDA_FUNCTION"
+        
+        aws lambda invoke \
+          --function-name $LAMBDA_FUNCTION \
+          --payload '{}' \
+          compliance-result.json
+        
+        echo "Compliance check results:"
+        cat compliance-result.json | jq '.'
+        
+        # Check if compliant
+        COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
+        if [ "$COMPLIANT" = "true" ]; then
+          echo "✅ Post-deployment compliance check passed"
+        else
+          echo "❌ Post-deployment compliance violations found"
+          echo "::warning::Compliance violations detected in deployed infrastructure"
+        fi
+
+    - name: Save Deployment Outputs
+      run: |
+        terraform output -json > deployment-outputs.json
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
+        echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
+        echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Compliance Report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: compliance-report
+        path: compliance-result.json
+        retention-days: 30
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run tfsec
+      uses: aquasecurity/tfsec-action@v1.0.0
+      with:
+        soft_fail: true
+
+    - name: Run Checkov
+      id: checkov
+      uses: bridgecrewio/checkov-action@master
+      with:
+        directory: .
+        framework: terraform
+        soft_fail: true
+        output_format: sarif
+        output_file_path: checkov-results.sarif
+
+    - name: Upload Checkov Results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [compliance-check, deploy]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
+    
+    steps:
+    - name: Send Slack Notification
+      if: vars.SLACK_WEBHOOK_URL
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+
+    - name: Create Issue on Failure
+      if: github.event_name == 'push'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Deployment Failed: ${context.workflow}`,
+            body: `
+            ## Deployment Failure Report
+            
+            **Workflow**: ${context.workflow}
+            **Run ID**: ${context.runId}
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            
+            The deployment failed during the compliance check or deployment phase.
+            Please review the workflow logs and compliance reports.
+            
+            [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})
+            `,
+            labels: ['deployment', 'failure', 'urgent']
