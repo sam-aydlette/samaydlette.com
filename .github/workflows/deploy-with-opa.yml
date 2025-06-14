@@ -69,6 +69,7 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Create terraform.tfvars
+      working-directory: infrastructure
       run: |
         cat > terraform.tfvars << EOF
         domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
@@ -88,15 +89,19 @@ jobs:
       run: npm install --production
 
     - name: Terraform Init
+      working-directory: infrastructure
       run: terraform init
 
     - name: Terraform Validate
+      working-directory: infrastructure 
       run: terraform validate
 
     - name: Terraform Plan
+      working-directory: infrastructure
       run: terraform plan -out=tfplan
 
     - name: Run OPA Compliance Check
+      working-directory: infrastructure
       id: compliance
       run: |
         # Make script executable
@@ -157,6 +162,7 @@ jobs:
         aws-region: ${{ env.AWS_REGION }}
 
     - name: Create terraform.tfvars
+      working-directory: infrastructure
       run: |
         cat > terraform.tfvars << EOF
         domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
@@ -181,6 +187,7 @@ jobs:
         name: terraform-plan
 
     - name: Terraform Init
+      working-directory: infrastructure
       run: terraform init
 
     - name: Terraform Apply
