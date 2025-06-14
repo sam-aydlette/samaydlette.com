@@ -84,7 +84,7 @@ jobs:
         EOF
 
     - name: Install Lambda dependencies
-      working-directory: lambda
+      working-directory: infrastructure/lambda
       run: npm ci --production
 
     - name: Terraform Init
@@ -172,7 +172,7 @@ jobs:
         EOF
 
     - name: Install Lambda dependencies
-      working-directory: lambda
+      working-directory: infrastructure/lambda
       run: npm ci --production
 
     - name: Download Terraform Plan
