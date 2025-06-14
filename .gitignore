@@ -1,0 +1,94 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+.terraform/
+.terraform.lock.hcl
+tfplan
+tfplan.json
+
+# Lambda deployment packages
+*.zip
+lambda/node_modules/
+lambda/policies.rego
+
+# OPA temporary files
+opa-input.json
+resource-input.json
+opa-result.json
+compliance-result.json
+
+# AWS CLI output
+aws-cli-output.json
+
+# Logs
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Coverage reports
+coverage/
+*.lcov
+
+# Dependency directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# SSL certificates (if stored locally)
+*.pem
+*.key
+*.crt
+
+# Compliance reports (if generated locally)
+
+# Infrastructure directory specific
+infrastructure/node_modules/
+infrastructure/package*.json
+infrastructure/*.zip
+infrastructure/*-test.json
+infrastructure/test-results/
+infrastructure/ponse*
+infrastructure/lambda\ invoke*
