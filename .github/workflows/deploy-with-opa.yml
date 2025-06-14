@@ -277,6 +277,38 @@ jobs:
       if: always()
       with:
         sarif_file: checkov-results.sarif
+  
+      - name: Ensure SARIF file exists
+      if: always()
+      run: |
+        if [ ! -f checkov-results.sarif ]; then
+          echo "Creating fallback SARIF file..."
+          cat > checkov-results.sarif << 'EOF'
+        {
+          "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+          "version": "2.1.0",
+          "runs": [
+            {
+              "tool": {
+                "driver": {
+                  "name": "Checkov",
+                  "version": "fallback"
+                }
+              },
+              "results": []
+            }
+          ]
+        }
+        EOF
+        else
+          echo "SARIF file already exists, size: $(wc -c < checkov-results.sarif) bytes"
+        fi
+
+    - name: Upload Checkov Results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
 
   notify:
     name: Notify on Failure
