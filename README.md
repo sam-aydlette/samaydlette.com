@@ -1,6 +1,6 @@
-# Website Deployment with OPA Compliance
+# Sam's Website for Everything Going On
 
-This repository contains Terraform configuration and OPA policies to deploy the samaydlette.com website to AWS S3 with CloudFront, including automated compliance checking for infrastructure security and Section 508 accessibility standards.
+This is the central hub for what's going on with me. The repository contains Terraform configuration and OPA policies to deploy the samaydlette.com website to AWS S3 with CloudFront, including automated compliance checking for infrastructure security and Section 508 accessibility standards.
 
 ## Features
 
@@ -10,7 +10,7 @@ This repository contains Terraform configuration and OPA policies to deploy the 
 -  **Comprehensive tagging strategy** for cost allocation and governance
 -  **Pre-deployment validation** to catch violations before they reach production
 -  **Automated compliance reporting** with Lambda-based monitoring
--  **Route53 DNS management** (optional)
+-  **Route53 DNS management**
 -  **SSL/TLS certificate integration** with AWS Certificate Manager
 
 ## Architecture
@@ -27,69 +27,21 @@ This repository contains Terraform configuration and OPA policies to deploy the 
 │   (Compliance)  │    │   (Monitoring)   │    │   (DNS)         │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
+## File Structure
 
-## Quick Start
-
-### Prerequisites
-
-- AWS CLI configured with appropriate permissions
-- Terraform >= 1.0
-- Node.js (for Lambda function)
-- jq (for JSON processing)
-- OPA (will be installed automatically)
-
-### 1. Clone and Configure
-
-```bash
-git clone <this-repo>
-cd website-terraform-opa
-
-# Copy and customize variables
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your domain and settings
 ```
-
-### 2. Create SSL Certificate
-
-**Option A: Auto-create (Recommended)**
-```bash
-# Certificate will be created automatically in us-east-1
-# Just ensure create_certificate = true in terraform.tfvars
+├── main.tf                     # Main Terraform configuration
+├── variables.tf                # Input variables
+├── outputs.tf                  # Output values
+├── terraform.tfvars.example    # Example variables file
+├── policies.rego              # OPA compliance policies
+├── lambda/
+│   ├── index.js               # Lambda function code
+│   ├── package.json           # Node.js dependencies
+├── terraform-plan.sh          # Pre-deployment compliance check
+├── deploy.sh                  # Complete deployment script
+└── README.md                  # This file
 ```
-
-**Option B: Use existing certificate**
-```bash
-# If you have an existing certificate in us-east-1:
-aws acm list-certificates --region us-east-1
-# Add the ARN to terraform.tfvars and set create_certificate = false
-```
-
-**Option C: Create manually**
-```bash
-# Create certificate manually (must be in us-east-1 for CloudFront)
-aws acm request-certificate \
-    --domain-name samaydlette.com \
-    --subject-alternative-names *.samaydlette.com \
-    --validation-method DNS \
-    --region us-east-1
-
-# Complete DNS validation in ACM console
-# Add certificate ARN to terraform.tfvars
-```
-
-### 3. Deploy with Compliance Checking
-
-```bash
-# Make scripts executable
-chmod +x deploy.sh terraform-plan.sh
-
-# Run deployment (includes OPA compliance checks)
-./deploy.sh
-```
-
-### 4. Sync Website Content
-
-The deployment script will automatically sync your website files to S3, excluding infrastructure files.
 
 ## OPA Compliance Policies
 
@@ -126,70 +78,14 @@ custom_violation contains violation if {
 }
 ```
 
-## Configuration Options
-
-### terraform.tfvars
-
-```hcl
-domain_name     = "samaydlette.com"
-aws_region      = "us-east-2"  # Your main region
-environment     = "prod"
-cost_center     = "website-ops"
-owner_email     = "sam@samaydlette.com"
-
-# SSL Certificate (choose one option):
-create_certificate = true         # Auto-create certificate
-ssl_certificate_arn = ""         # Leave empty when auto-creating
-
-# OR use existing certificate:
-# create_certificate = false
-# ssl_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."
-
-cloudfront_price_class = "PriceClass_100"
-manage_dns = true
-compliance_check_schedule = "rate(1 day)"
-section_508_compliance_level = "AA"
-```
-
-### Pre-deployment Validation
-
-The `terraform-plan.sh` script runs OPA compliance checks against your Terraform plan before deployment:
-
-```bash
-./terraform-plan.sh
-```
-
-This will:
-1. Generate Terraform plan
-2. Extract resource configurations
-3. Run OPA evaluation on each resource
-4. Report compliance violations
-5. Block deployment if violations found
-
 ### Compliance Monitoring
 
-A Lambda function runs daily (configurable) to check:
+A Lambda function runs daily to check:
 
 - Infrastructure compliance via AWS APIs
 - Section 508 compliance by scanning HTML files
 - Generates reports stored in S3
 - Sends alerts for violations
-
-## File Structure
-
-```
-├── main.tf                     # Main Terraform configuration
-├── variables.tf                # Input variables
-├── outputs.tf                  # Output values
-├── terraform.tfvars.example    # Example variables file
-├── policies.rego              # OPA compliance policies
-├── lambda/
-│   ├── index.js               # Lambda function code
-│   ├── package.json           # Node.js dependencies
-├── terraform-plan.sh          # Pre-deployment compliance check
-├── deploy.sh                  # Complete deployment script
-└── README.md                  # This file
-```
 
 ## Manual Operations
 
@@ -204,7 +100,7 @@ terraform show -json tfplan > tfplan.json
 opa eval -d policies.rego -i tfplan.json "data.terraform.compliance.compliance_report"
 ```
 
-### Trigger Lambda Compliance Check
+### Trigger Lambda Compliance Check Manually
 
 ```bash
 aws lambda invoke \
@@ -215,7 +111,7 @@ aws lambda invoke \
 cat result.json | jq '.'
 ```
 
-### Update Website Content
+### Update Website Content Manually
 
 ```bash
 # Sync files to S3
@@ -229,21 +125,6 @@ aws cloudfront create-invalidation \
     --distribution-id E1234567890123 \
     --paths "/*"
 ```
-
-## Cost Estimation
-
-Monthly AWS costs (approximate):
-
-- **S3 Storage**: $1-5 (depending on content size)
-- **CloudFront**: $5-20 (depending on traffic)  
-- **Route53**: $0.50 per hosted zone
-- **Lambda**: <$1 (minimal usage for compliance checks)
-- **ACM Certificate**: Free
-- **Cross-region data transfer**: <$1 (minimal for certificate validation)
-
-**Total**: ~$10-30/month for typical static website
-
-*Note: Resources are primarily in us-east-2, with SSL certificate in us-east-1 as required by AWS.*
 
 ## Troubleshooting
 
@@ -292,14 +173,6 @@ export AWS_CLI_FILE_ENCODING=UTF-8
 - No hardcoded secrets in code
 - Regular compliance monitoring
 
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add/modify OPA policies as needed
-4. Test with `terraform-plan.sh`
-5. Submit a pull request
-
 ## License
 
 MIT License - see LICENSE file for details.
@@ -309,4 +182,3 @@ MIT License - see LICENSE file for details.
 For issues or questions:
 - Check the troubleshooting section above
 - Review AWS CloudWatch logs
-- Open an issue in this repository
