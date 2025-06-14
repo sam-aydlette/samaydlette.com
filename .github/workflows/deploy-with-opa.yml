@@ -26,6 +26,12 @@ env:
   OPA_VERSION: 0.57.0
   NODE_VERSION: 18
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  security-events: write
+
 jobs:
   compliance-check:
     name: OPA Compliance Check
@@ -54,8 +60,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: infrastructure/lambda/package-lock.json
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
