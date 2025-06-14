@@ -105,10 +105,10 @@ jobs:
       id: compliance
       run: |
         # Make script executable
-        chmod +x terraform-plan.sh
+        chmod +x ../scripts/terraform-plan.sh
         
         # Run compliance check
-        if ./terraform-plan.sh; then
+        if ../scripts/terraform-plan.sh; then
           echo "compliant=true" >> $GITHUB_OUTPUT
           echo "✅ All compliance checks passed"
         else
