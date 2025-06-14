@@ -196,8 +196,8 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
 resource "aws_route53_query_log" "website" {
   count                            = var.manage_dns ? 1 : 0
   depends_on                       = [aws_cloudwatch_log_group.route53_query_log]
-  destination_arn                  = aws_cloudwatch_log_group.route53_query_log[0].arn
-  hosted_zone_id                   = aws_route53_zone.website[0].zone_id
+  cloudwatch_log_group_arn         = aws_cloudwatch_log_group.route53_query_log[0].arn
+  zone_id                          = aws_route53_zone.website[0].zone_id
 }
 
 # Route53 DNSSEC key-signing key
@@ -323,7 +323,7 @@ resource "aws_cloudfront_distribution" "website" {
   # CloudFront access logging
   logging_config {
     include_cookies = false
-    bucket          = aws_s3_bucket.cloudfront_logs.domain_name
+    bucket          = aws_s3_bucket.cloudfront_logs.bucket_domain_name
     prefix          = "access-logs/"
   }
 
