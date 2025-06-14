@@ -183,20 +183,7 @@ jobs:
         BUCKET_NAME=$(terraform output -raw s3_bucket_name)
         echo "Syncing content to bucket: $BUCKET_NAME"
         
-        aws s3 sync . s3://$BUCKET_NAME/ \
-          --exclude "*.tf" \
-          --exclude "*.tfvars*" \
-          --exclude "*.tfstate*" \
-          --exclude ".terraform/*" \
-          --exclude "lambda/*" \
-          --exclude "*.sh" \
-          --exclude "*.rego" \
-          --exclude "*.json" \
-          --exclude ".git/*" \
-          --exclude ".github/*" \
-          --exclude "README.md" \
-          --exclude "Makefile" \
-          --exclude ".gitignore" \
+        aws s3 sync website/ s3://$BUCKET_NAME/ \
           --delete
 
     - name: Invalidate CloudFront Cache
