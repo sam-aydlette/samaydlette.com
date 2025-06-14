@@ -55,7 +55,7 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: lambda/package-lock.json
+        cache-dependency-path: infrastructure/lambda/package-lock.json
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
@@ -120,6 +120,10 @@ jobs:
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     needs: compliance-check
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
@@ -238,6 +242,9 @@ jobs:
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     if: github.event_name == 'pull_request'
     
     steps:
