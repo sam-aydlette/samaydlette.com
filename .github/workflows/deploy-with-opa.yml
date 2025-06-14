@@ -259,13 +259,7 @@ jobs:
         output_format: sarif
         output_file_path: checkov-results.sarif
 
-    - name: Upload Checkov Results
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: checkov-results.sarif
-  
-      - name: Ensure SARIF file exists
+    - name: Ensure SARIF file exists
       if: always()
       run: |
         if [ ! -f checkov-results.sarif ]; then
@@ -315,15 +309,14 @@ jobs:
 
     - name: Create Issue on Failure
       if: github.event_name == 'push'
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
           github.rest.issues.create({
             owner: context.repo.owner,
             repo: context.repo.repo,
             title: `Deployment Failed: ${context.workflow}`,
-            body: `
-            ## Deployment Failure Report
+            body: `## Deployment Failure Report
             
             **Workflow**: ${context.workflow}
             **Run ID**: ${context.runId}
@@ -333,6 +326,6 @@ jobs:
             The deployment failed during the compliance check or deployment phase.
             Please review the workflow logs and compliance reports.
             
-            [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})
-            `,
+            [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
             labels: ['deployment', 'failure', 'urgent']
+          })
