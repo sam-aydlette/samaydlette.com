@@ -59,37 +59,15 @@ resource "aws_s3_bucket_versioning" "website" {
   }
 }
 
-# S3 bucket encryption - Updated to use KMS for compliance
+# S3 bucket encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
   bucket = aws_s3_bucket.website.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.s3_key.arn
+      sse_algorithm     = "AES256"
     }
-    bucket_key_enabled = true
   }
-}
-
-# KMS key for S3 encryption
-resource "aws_kms_key" "s3_key" {
-  description             = "KMS key for S3 bucket encryption"
-  deletion_window_in_days = 7
-
-  tags = {
-    Name                = "${var.domain_name}-s3-key"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    Owner               = var.owner_email
-  }
-}
-
-# KMS key alias
-resource "aws_kms_alias" "s3_key_alias" {
-  name          = "alias/${replace(var.domain_name, ".", "-")}-s3-key"
-  target_key_id = aws_kms_key.s3_key.key_id
 }
 
 # S3 bucket public access block - FIXED: Block public access and use CloudFront OAC
@@ -271,40 +249,6 @@ resource "aws_cloudfront_origin_access_control" "website" {
   signing_protocol                  = "sigv4"
 }
 
-# S3 bucket for CloudFront access logs
-resource "aws_s3_bucket" "cloudfront_logs" {
-  bucket = "${var.domain_name}-cloudfront-logs"
-
-  tags = {
-    Name                = "${var.domain_name}-cloudfront-logs"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Internal"
-    Owner               = var.owner_email
-  }
-}
-
-# CloudFront logs bucket encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "cloudfront_logs" {
-  bucket = aws_s3_bucket.cloudfront_logs.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-# CloudFront logs bucket public access block
-resource "aws_s3_bucket_public_access_block" "cloudfront_logs" {
-  bucket = aws_s3_bucket.cloudfront_logs.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
 # CloudFront distribution - EXISTING RESOURCE with compliance fixes
 resource "aws_cloudfront_distribution" "website" {
   aliases = [var.domain_name, "www.${var.domain_name}"]
@@ -319,13 +263,6 @@ resource "aws_cloudfront_distribution" "website" {
   is_ipv6_enabled     = true
   default_root_object = "index.html"
   price_class         = var.cloudfront_price_class
-
-  # CloudFront access logging
-  logging_config {
-    include_cookies = false
-    bucket          = aws_s3_bucket.cloudfront_logs.bucket_domain_name
-    prefix          = "access-logs/"
-  }
 
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
