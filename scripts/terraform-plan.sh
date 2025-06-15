@@ -94,7 +94,15 @@ for resource in plan['planned_values']['root_module']['resources']:
         bucket_ref = resource['values'].get('bucket', '')
         for r in resources:
             if r['type'] == 'aws_s3_bucket' and r['name'] in bucket_ref:
-                r['encryption_enabled'] = True
+                # Check if encryption rule exists and has valid algorithm
+                rules = resource['values'].get('rule', [])
+                if rules and len(rules) > 0:
+                    encryption_config = rules[0].get('apply_server_side_encryption_by_default', [])
+                    if encryption_config and len(encryption_config) > 0:
+                        algorithm = encryption_config[0].get('sse_algorithm', '')
+                        # Accept both AES256 and aws:kms as valid
+                        if algorithm in ['AES256', 'aws:kms']:
+                            r['encryption_enabled'] = True
 
 # Update the input file
 with open('opa-input.json', 'r') as f:
@@ -122,7 +130,7 @@ for resource in $(cat opa-input.json | jq -r '.resources[] | @base64'); do
     opa eval -d policies.rego -i resource-input.json "data.terraform.compliance.compliance_report" > opa-result.json
     
     # Check if compliant
-    COMPLIANT=$(cat opa-result.json | jq -r '.result.compliant // true')
+    COMPLIANT=$(cat opa-result.json | jq -r '.result[0].expressions[0].value.compliant // true')
     
     if [ "$COMPLIANT" = "false" ]; then
         VIOLATIONS_FOUND=true
