@@ -212,49 +212,82 @@ jobs:
 
     - name: Run Post-Deployment Compliance Check
       run: |
+        echo "Debug: Current working directory"
+        pwd
+        echo "Debug: Directory contents before Lambda check"
+        ls -la
+        
         LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name)
-        echo "Running compliance check via Lambda: $LAMBDA_FUNCTION"
+        echo "Lambda function name: $LAMBDA_FUNCTION"
         
         # Check if Lambda function exists before invoking
         if aws lambda get-function --function-name $LAMBDA_FUNCTION >/dev/null 2>&1; then
+          echo "✅ Lambda function exists, invoking..."
           aws lambda invoke \
             --function-name $LAMBDA_FUNCTION \
             --payload '{}' \
             compliance-result.json
           
-          echo "Compliance check results:"
-          cat compliance-result.json | jq '.'
+          echo "Debug: Directory contents after Lambda invoke"
+          ls -la
           
-          # Check if compliant
-          COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
-          if [ "$COMPLIANT" = "true" ]; then
-            echo "✅ Post-deployment compliance check passed"
+          if [ -f compliance-result.json ]; then
+            echo "✅ compliance-result.json created successfully"
+            echo "Compliance check results:"
+            cat compliance-result.json | jq '.'
+            
+            # Check if compliant
+            COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
+            if [ "$COMPLIANT" = "true" ]; then
+              echo "✅ Post-deployment compliance check passed"
+            else
+              echo "❌ Post-deployment compliance violations found"
+              echo "::warning::Compliance violations detected in deployed infrastructure"
+            fi
           else
-            echo "❌ Post-deployment compliance violations found"
-            echo "::warning::Compliance violations detected in deployed infrastructure"
+            echo "❌ compliance-result.json was not created by Lambda invoke"
+            echo '{"message":"Lambda invoke failed to create file","compliant":false}' > compliance-result.json
           fi
         else
-          echo "⚠️ Lambda function not found, skipping post-deployment compliance check"
+          echo "⚠️ Lambda function not found, creating placeholder compliance result"
           echo '{"message":"Lambda function not available during initial deployment","compliant":true}' > compliance-result.json
         fi
+        
+        echo "Debug: Final directory contents"
+        ls -la
+        echo "Debug: Checking if compliance-result.json exists"
+        if [ -f compliance-result.json ]; then
+          echo "✅ compliance-result.json exists"
+          cat compliance-result.json
+        else
+          echo "❌ compliance-result.json still missing"
+        fi
 
-    - name: Save Deployment Outputs
-      run: |
-        terraform output -json > deployment-outputs.json
-        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-        echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
-        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
-        echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
-        echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
-
-    - name: Upload Compliance Report
-      uses: actions/upload-artifact@v4
+    - name: Debug - List files before upload
       if: always()
-      with:
-        name: compliance-report
-        path: compliance-result.json
-        retention-days: 30
+      run: |
+        echo "Pre-upload debug:"
+        pwd
+        ls -la
+        find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
+
+        - name: Save Deployment Outputs
+          run: |
+            terraform output -json > deployment-outputs.json
+            echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+            echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
+            echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
+            echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
+
+        - name: Upload Compliance Report
+          uses: actions/upload-artifact@v4
+          if: always()
+          with:
+            name: compliance-report
+            path: compliance-result.json
+            retention-days: 30
 
   security-scan:
     name: Security Scan
