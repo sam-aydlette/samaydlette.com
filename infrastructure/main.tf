@@ -170,6 +170,10 @@ resource "aws_route53_query_log" "website" {
   zone_id                 = data.aws_route53_zone.website[0].zone_id
 }
 
+data "local_file" "lambda_zip" {
+  filename = "./opa-compliance.zip"
+}
+
 # IAM role for Lambda function
 resource "aws_iam_role" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
