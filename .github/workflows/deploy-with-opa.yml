@@ -211,6 +211,17 @@ jobs:
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm install --production
+  
+    - name: Create Lambda deployment package
+      working-directory: infrastructure
+      run: |
+        echo "Creating Lambda deployment package..."
+        cd lambda
+        cp ../policies.rego .
+        zip -r ../opa-compliance.zip .
+        cd ..
+        echo "Lambda package created:"
+        ls -la opa-compliance.zip
 
     - name: Terraform Init
       working-directory: infrastructure
