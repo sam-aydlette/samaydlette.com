@@ -263,14 +263,14 @@ jobs:
           echo "❌ compliance-result.json still missing"
         fi
 
-    - name: Debug - List files before upload
-      if: always()
-      run: |
-        echo "Pre-upload debug:"
-        pwd
-        ls -la
-        find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
-
+        - name: Debug - List files before upload
+        if: always()
+        run: |
+          echo "Pre-upload debug:"
+          pwd
+          ls -la
+          find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
+      
         - name: Save Deployment Outputs
           run: |
             terraform output -json > deployment-outputs.json
@@ -280,7 +280,7 @@ jobs:
             echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
             echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
             echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
-
+        
         - name: Upload Compliance Report
           uses: actions/upload-artifact@v4
           if: always()
