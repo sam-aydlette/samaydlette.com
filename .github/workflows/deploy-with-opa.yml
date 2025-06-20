@@ -1,6 +1,4 @@
 # .github/workflows/deploy-with-opa.yml
-# GitHub Actions workflow for automated deployment with OPA compliance
-
 name: Deploy Website with OPA Compliance
 
 on:
@@ -38,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       compliant: ${{ steps.compliance.outputs.compliant }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -95,7 +93,7 @@ jobs:
       run: terraform init
 
     - name: Terraform Validate
-      working-directory: infrastructure 
+      working-directory: infrastructure
       run: terraform validate
 
     - name: Terraform Plan
@@ -106,10 +104,7 @@ jobs:
       working-directory: infrastructure
       id: compliance
       run: |
-        # Make script executable
         chmod +x ../scripts/terraform-plan.sh
-        
-        # Run compliance check
         if ../scripts/terraform-plan.sh; then
           echo "compliant=true" >> $GITHUB_OUTPUT
           echo "✅ All compliance checks passed"
@@ -119,13 +114,20 @@ jobs:
           exit 1
         fi
 
-    - name: Upload Terraform Plan
+    - name: Upload Terraform Plan Artifact
       uses: actions/upload-artifact@v4
       with:
         name: terraform-plan
         path: |
           infrastructure/tfplan
           infrastructure/tfplan.json
+        retention-days: 5
+
+    - name: Upload tfvars Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: terraform-tfvars
+        path: infrastructure/terraform.tfvars
         retention-days: 5
 
   deploy:
@@ -138,7 +140,7 @@ jobs:
     needs: compliance-check
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -163,36 +165,28 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
-    - name: Create terraform.tfvars
-      working-directory: infrastructure
-      run: |
-        cat > terraform.tfvars << EOF
-        domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
-        aws_region      = "${{ env.AWS_REGION }}"
-        environment     = "${{ github.event.inputs.environment || 'prod' }}"
-        cost_center     = "${{ vars.COST_CENTER || 'website-ops' }}"
-        owner_email     = "${{ vars.OWNER_EMAIL || 'sam@samaydlette.com' }}"
-        ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
-        cloudfront_price_class = "${{ vars.CLOUDFRONT_PRICE_CLASS || 'PriceClass_100' }}"
-        manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
-        compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
-        section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
-        EOF
+    - name: Download tfvars Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: terraform-tfvars
+        path: infrastructure/
+
+    - name: Download Terraform Plan Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: terraform-plan
+        path: infrastructure/
 
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm install --production
-
-    - name: Download Terraform Plan
-      uses: actions/download-artifact@v4
-      with:
-        name: terraform-plan
 
     - name: Terraform Init
       working-directory: infrastructure
       run: terraform init
 
     - name: Terraform Apply
+      working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
 
     - name: Sync Website Content
