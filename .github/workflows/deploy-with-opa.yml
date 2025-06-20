@@ -105,6 +105,20 @@ jobs:
         echo "=== File structure tree ==="
         find . -type f -name "*.js" -o -name "*.json" -o -name "*.rego" | head -10
 
+    - name: Create Lambda zip file 
+      working-directory: infrastructure
+      run: |
+        echo "Creating Lambda deployment package..."
+        cd lambda
+        zip -r ../opa-compliance.zip .
+        cd ..
+        echo "Zip file created:"
+        ls -la opa-compliance.zip
+
+    - name: Terraform Init
+      working-directory: infrastructure
+      run: terraform init
+
     - name: Terraform Init
       working-directory: infrastructure
       run: terraform init
