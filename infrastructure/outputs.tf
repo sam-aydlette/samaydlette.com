@@ -48,27 +48,27 @@ output "ssl_certificate_arn" {
 
 output "lambda_function_name" {
   description = "Name of the OPA compliance Lambda function"
-  value       = try(data.aws_lambda_function.existing_opa_compliance.function_name, aws_lambda_function.opa_compliance[0].function_name, "Not created")
+  value       = var.create_lambda_compliance ? aws_lambda_function.opa_compliance[0].function_name : "Not created"
 }
 
 output "lambda_function_arn" {
   description = "ARN of the OPA compliance Lambda function"
-  value       = try(data.aws_lambda_function.existing_opa_compliance.arn, aws_lambda_function.opa_compliance[0].arn, "Not created")
+  value       = var.create_lambda_compliance ? aws_lambda_function.opa_compliance[0].arn : "Not created"
 }
 
 output "iam_role_name" {
   description = "Name of the Lambda IAM role"
-  value       = try(data.aws_iam_role.existing_lambda_opa.name, aws_iam_role.lambda_opa[0].name, "Not created")
+  value       = aws_iam_role.lambda_opa.name
 }
 
 output "iam_role_arn" {
   description = "ARN of the Lambda IAM role"
-  value       = try(data.aws_iam_role.existing_lambda_opa.arn, aws_iam_role.lambda_opa[0].arn, "Not created")
+  value       = aws_iam_role.lambda_opa.arn
 }
 
 output "eventbridge_rule_name" {
   description = "Name of the EventBridge compliance rule"
-  value       = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, aws_cloudwatch_event_rule.opa_compliance[0].name, "Not created")
+  value       = var.create_eventbridge_rules ? aws_cloudwatch_event_rule.opa_compliance[0].name : "Not created"
 }
 
 output "route53_logging_enabled" {
@@ -101,9 +101,9 @@ output "infrastructure_status" {
       ssl_certificate     = "Referenced (existing)"
     }
     managed_resources = {
-      lambda_function     = try(data.aws_lambda_function.existing_opa_compliance.function_name, null) != null ? "Referenced (existing)" : length(aws_lambda_function.opa_compliance) > 0 ? "Created by Terraform" : "Not created"
-      iam_role           = try(data.aws_iam_role.existing_lambda_opa.name, null) != null ? "Referenced (existing)" : length(aws_iam_role.lambda_opa) > 0 ? "Created by Terraform" : "Not created"
-      eventbridge_rule   = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, null) != null ? "Referenced (existing)" : length(aws_cloudwatch_event_rule.opa_compliance) > 0 ? "Created by Terraform" : "Not created"
+      lambda_function     = var.create_lambda_compliance ? "Created by Terraform" : "Not created"
+      iam_role           = "Created by Terraform"
+      eventbridge_rule   = var.create_eventbridge_rules ? "Created by Terraform" : "Not created"
       s3_bucket_policy   = "Managed by Terraform"
       s3_encryption      = "Managed by Terraform"
       s3_versioning      = "Managed by Terraform"

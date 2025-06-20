@@ -23,6 +23,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    archive = {
+      source  = "hashicorp/archive"
+      version = "~> 2.0"
+    }
   }
 }
 
@@ -165,51 +169,6 @@ resource "aws_route53_query_log" "website" {
   zone_id                 = data.aws_route53_zone.website[0].zone_id
 }
 
-# Check if Lambda function already exists
-data "aws_lambda_function" "existing_opa_compliance" {
-  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
-  
-  # This will fail if function doesn't exist, which is what we want
-  lifecycle {
-    postcondition {
-      condition     = self.function_name != null
-      error_message = "Lambda function does not exist yet."
-    }
-  }
-}
-
-# Lambda function for OPA compliance checking - CREATE ONLY IF NOT EXISTS
-resource "aws_lambda_function" "opa_compliance" {
-  count = try(data.aws_lambda_function.existing_opa_compliance.function_name, null) == null ? 1 : 0
-  
-  filename      = "opa-compliance.zip"
-  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
-  role         = aws_iam_role.lambda_opa[0].arn
-  handler      = "index.handler"
-  runtime      = "nodejs18.x"
-  timeout      = 60
-
-  depends_on = [data.archive_file.opa_lambda_zip]
-
-  environment {
-    variables = {
-      S3_BUCKET = data.aws_s3_bucket.website.id
-    }
-  }
-
-  tags = {
-    Name               = "${var.domain_name}-opa-compliance"
-    Environment        = var.environment
-    CostCenter         = var.cost_center
-    DataClassification = "Internal"
-    Owner              = var.owner_email
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 # Create zip file for Lambda function
 data "archive_file" "opa_lambda_zip" {
   type        = "zip"
@@ -217,22 +176,8 @@ data "archive_file" "opa_lambda_zip" {
   output_path = "${path.module}/opa-compliance.zip"
 }
 
-# Check if IAM role already exists
-data "aws_iam_role" "existing_lambda_opa" {
-  name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
-  
-  lifecycle {
-    postcondition {
-      condition     = self.name != null
-      error_message = "IAM role does not exist yet."
-    }
-  }
-}
-
-# IAM role for Lambda function - CREATE ONLY IF NOT EXISTS
+# IAM role for Lambda function
 resource "aws_iam_role" "lambda_opa" {
-  count = try(data.aws_iam_role.existing_lambda_opa.name, null) == null ? 1 : 0
-  
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
 
   assume_role_policy = jsonencode({
@@ -255,16 +200,12 @@ resource "aws_iam_role" "lambda_opa" {
     DataClassification = "Internal"
     Owner              = var.owner_email
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# IAM policy for Lambda function - ALWAYS MANAGE (policies can be updated)
+# IAM policy for Lambda function
 resource "aws_iam_role_policy" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-policy"
-  role = try(data.aws_iam_role.existing_lambda_opa.name, aws_iam_role.lambda_opa[0].id)
+  role = aws_iam_role.lambda_opa.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -293,21 +234,36 @@ resource "aws_iam_role_policy" "lambda_opa" {
   })
 }
 
-# Check if EventBridge rule already exists
-data "aws_cloudwatch_event_rule" "existing_opa_compliance" {
-  name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+# Lambda function for OPA compliance checking
+resource "aws_lambda_function" "opa_compliance" {
+  count = var.create_lambda_compliance ? 1 : 0
   
-  lifecycle {
-    postcondition {
-      condition     = self.name != null
-      error_message = "EventBridge rule does not exist yet."
+  filename      = data.archive_file.opa_lambda_zip.output_path
+  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+  role         = aws_iam_role.lambda_opa.arn
+  handler      = "index.handler"
+  runtime      = "nodejs18.x"
+  timeout      = 60
+  source_code_hash = data.archive_file.opa_lambda_zip.output_base64sha256
+
+  environment {
+    variables = {
+      S3_BUCKET = data.aws_s3_bucket.website.id
     }
+  }
+
+  tags = {
+    Name               = "${var.domain_name}-opa-compliance"
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Internal"
+    Owner              = var.owner_email
   }
 }
 
-# EventBridge rule to trigger compliance checks - CREATE ONLY IF NOT EXISTS
+# EventBridge rule to trigger compliance checks
 resource "aws_cloudwatch_event_rule" "opa_compliance" {
-  count = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, null) == null ? 1 : 0
+  count = var.create_eventbridge_rules ? 1 : 0
   
   name                = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   description         = "Trigger OPA compliance checks"
@@ -320,28 +276,24 @@ resource "aws_cloudwatch_event_rule" "opa_compliance" {
     DataClassification = "Internal"
     Owner              = var.owner_email
   }
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
-# EventBridge target - MANAGE ONLY IF RULE EXISTS/IS CREATED
+# EventBridge target
 resource "aws_cloudwatch_event_target" "lambda" {
-  count = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, null) != null || length(aws_cloudwatch_event_rule.opa_compliance) > 0 ? 1 : 0
+  count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
   
-  rule      = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, aws_cloudwatch_event_rule.opa_compliance[0].name)
+  rule      = aws_cloudwatch_event_rule.opa_compliance[0].name
   target_id = "TriggerLambdaTarget"
-  arn       = try(data.aws_lambda_function.existing_opa_compliance.arn, aws_lambda_function.opa_compliance[0].arn)
+  arn       = aws_lambda_function.opa_compliance[0].arn
 }
 
-# Lambda permission for EventBridge - MANAGE ONLY IF LAMBDA EXISTS/IS CREATED
+# Lambda permission for EventBridge
 resource "aws_lambda_permission" "allow_eventbridge" {
-  count = try(data.aws_lambda_function.existing_opa_compliance.function_name, null) != null || length(aws_lambda_function.opa_compliance) > 0 ? 1 : 0
+  count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
   
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
-  function_name = try(data.aws_lambda_function.existing_opa_compliance.function_name, aws_lambda_function.opa_compliance[0].function_name)
+  function_name = aws_lambda_function.opa_compliance[0].function_name
   principal     = "events.amazonaws.com"
-  source_arn    = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.arn, aws_cloudwatch_event_rule.opa_compliance[0].arn)
+  source_arn    = aws_cloudwatch_event_rule.opa_compliance[0].arn
 }
