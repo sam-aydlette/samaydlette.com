@@ -44,7 +44,7 @@ variable "existing_s3_bucket_name" {
   default     = ""
   
   validation {
-    condition = var.existing_s3_bucket_name == "" || var.existing_s3_bucket_name == var.domain_name
+    condition     = var.existing_s3_bucket_name != ""
     error_message = "If provided, existing_s3_bucket_name must match domain_name."
   }
 }
