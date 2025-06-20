@@ -232,13 +232,13 @@ resource "aws_iam_role_policy" "lambda_opa" {
 resource "aws_lambda_function" "opa_compliance" {
   count = var.create_lambda_compliance ? 1 : 0
   
-  filename = "${path.module}/opa-compliance.zip"
-  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
-  role         = aws_iam_role.lambda_opa.arn
-  handler      = "index.handler"
-  runtime      = "nodejs18.x"
-  timeout      = 60
-  source_code_hash = filebase64sha256("./opa-compliance.zip")
+  filename        = "./opa-compliance.zip"
+  function_name   = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+  role            = aws_iam_role.lambda_opa.arn
+  handler         = "index.handler"
+  runtime         = "nodejs18.x"
+  timeout         = 60
+  source_code_hash = data.local_file.lambda_zip.content_base64sha256
 
   environment {
     variables = {
