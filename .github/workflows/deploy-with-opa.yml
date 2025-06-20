@@ -89,6 +89,21 @@ jobs:
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm install --production
+    
+    - name: Debug Lambda directory
+      working-directory: infrastructure
+      run: |
+        echo "=== Current directory ==="
+        pwd
+        echo "=== Infrastructure directory contents ==="
+        ls -la
+        echo "=== Lambda directory contents ==="
+        ls -la lambda/ || echo "❌ Lambda dir missing"
+        echo "=== Test zip creation ==="
+        cd lambda && zip -r ../test-opa-compliance.zip . && cd ..
+        ls -la test-opa-compliance.zip || echo "❌ Test zip failed"
+        echo "=== File structure tree ==="
+        find . -type f -name "*.js" -o -name "*.json" -o -name "*.rego" | head -10
 
     - name: Terraform Init
       working-directory: infrastructure
