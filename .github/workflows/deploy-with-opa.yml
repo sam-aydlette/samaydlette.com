@@ -124,8 +124,8 @@ jobs:
       with:
         name: terraform-plan
         path: |
-          tfplan
-          tfplan.json
+          infrastructure/tfplan
+          infrastructure/tfplan.json
         retention-days: 5
 
   deploy:
