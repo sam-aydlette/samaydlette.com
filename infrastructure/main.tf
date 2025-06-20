@@ -1,4 +1,5 @@
-# main.tf - Complete Terraform configuration for existing website with OPA compliance
+# main.tf - Terraform configuration for existing website with OPA compliance
+# This configuration manages existing resources safely and adds new compliance functionality
 # Suppress unnecessary/expensive checks for static website hosting
 #checkov:skip=CKV_AWS_144:Cross-region replication not cost-effective for static website
 #checkov:skip=CKV_AWS_23:S3 event notifications not required for static content
@@ -36,53 +37,83 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# S3 bucket for website hosting - EXISTING RESOURCE
-resource "aws_s3_bucket" "website" {
-  bucket = var.domain_name
+# DATA SOURCES FOR EXISTING RESOURCES
+# =================================
 
-  tags = {
-    Name                = var.domain_name
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    ComplianceScope     = "Section508"
-    Owner               = var.owner_email
-    AutomationExempt    = "false"
-  }
+# Reference existing S3 bucket
+data "aws_s3_bucket" "website" {
+  bucket = var.domain_name
 }
 
-# S3 bucket versioning
+# Reference existing CloudFront distribution
+data "aws_cloudfront_distribution" "website" {
+  id = var.existing_cloudfront_distribution_id
+}
+
+# Reference existing Route53 hosted zone
+data "aws_route53_zone" "website" {
+  count = var.manage_dns ? 1 : 0
+  name  = var.domain_name
+}
+
+# Reference existing SSL certificate
+data "aws_acm_certificate" "website" {
+  provider = aws.us_east_1
+  domain   = var.domain_name
+  statuses = ["ISSUED"]
+}
+
+# MANAGED RESOURCES (will be created/managed)
+# ==========================================
+
+# S3 bucket versioning - safe to manage on existing bucket
 resource "aws_s3_bucket_versioning" "website" {
-  bucket = aws_s3_bucket.website.id
+  bucket = data.aws_s3_bucket.website.id
+  
   versioning_configuration {
     status = "Enabled"
   }
-}
 
-# S3 bucket encryption
-resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
-  bucket = aws_s3_bucket.website.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm     = "AES256"
-    }
+  lifecycle {
+    # Prevent destruction if versioning is already enabled
+    prevent_destroy = true
   }
 }
 
-# S3 bucket public access block - FIXED: Block public access and use CloudFront OAC
+# S3 bucket encryption - safe to manage on existing bucket
+resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
+  bucket = data.aws_s3_bucket.website.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+
+  lifecycle {
+    # Prevent destruction of encryption configuration
+    prevent_destroy = true
+  }
+}
+
+# S3 bucket public access block - safe to manage on existing bucket
 resource "aws_s3_bucket_public_access_block" "website" {
-  bucket = aws_s3_bucket.website.id
+  bucket = data.aws_s3_bucket.website.id
 
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+
+  lifecycle {
+    # Prevent destruction of security settings
+    prevent_destroy = true
+  }
 }
 
-# S3 bucket policy - FIXED: Restrict to CloudFront OAC only
+# S3 bucket policy - manage policy on existing bucket
 resource "aws_s3_bucket_policy" "website" {
-  bucket = aws_s3_bucket.website.id
+  bucket     = data.aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
 
   policy = jsonencode({
@@ -95,10 +126,10 @@ resource "aws_s3_bucket_policy" "website" {
           Service = "cloudfront.amazonaws.com"
         }
         Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.website.arn}/*"
+        Resource = "${data.aws_s3_bucket.website.arn}/*"
         Condition = {
           StringEquals = {
-            "AWS:SourceArn" = "arn:aws:cloudfront::975050324277:distribution/EV1H3IU8N3K5S"
+            "AWS:SourceArn" = data.aws_cloudfront_distribution.website.arn
           }
         }
       }
@@ -106,258 +137,76 @@ resource "aws_s3_bucket_policy" "website" {
   })
 }
 
-# S3 bucket website configuration
-resource "aws_s3_bucket_website_configuration" "website" {
-  bucket = aws_s3_bucket.website.id
+# CloudWatch Log Group for Route53 query logging - NEW RESOURCE
+resource "aws_cloudwatch_log_group" "route53_query_log" {
+  count             = var.manage_dns && var.enable_route53_logging ? 1 : 0
+  name              = "/aws/route53/${var.domain_name}"
+  retention_in_days = 7
 
-  index_document {
-    suffix = "index.html"
+  tags = {
+    Name               = "${var.domain_name}-route53-logs"
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Public"
+    Owner              = var.owner_email
   }
-
-  error_document {
-    key = "error.html"
-  }
-}
-
-# SSL Certificate - Only create if requested
-resource "aws_acm_certificate" "website" {
-  count    = var.create_certificate ? 1 : 0
-  provider = aws.us_east_1
-  
-  domain_name               = var.domain_name
-  subject_alternative_names = ["*.${var.domain_name}"]
-  validation_method         = "DNS"
 
   lifecycle {
+    # Only create if it doesn't exist
     create_before_destroy = true
   }
-
-  tags = {
-    Name                = "${var.domain_name}-certificate"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    Owner               = var.owner_email
-  }
 }
 
-# Route53 hosted zone - EXISTING RESOURCE (only if managing DNS)
-resource "aws_route53_zone" "website" {
-  count = var.manage_dns ? 1 : 0
-  name  = var.domain_name
-
-  tags = {
-    Name                = var.domain_name
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    Owner               = var.owner_email
-  }
-}
-
-# CloudWatch Log Group for Route53 query logging
-resource "aws_cloudwatch_log_group" "route53_query_log" {
-  count             = var.manage_dns ? 1 : 0
-  name              = "/aws/route53/${var.domain_name}"
-  retention_in_days = 7  # Short retention to minimize costs
-
-  tags = {
-    Name                = "${var.domain_name}-route53-logs"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    Owner               = var.owner_email
-  }
-}
-
-# Route53 query logging configuration
+# Route53 query logging configuration - NEW RESOURCE
 resource "aws_route53_query_log" "website" {
-  count                            = var.manage_dns ? 1 : 0
-  depends_on                       = [aws_cloudwatch_log_group.route53_query_log]
-  cloudwatch_log_group_arn         = aws_cloudwatch_log_group.route53_query_log[0].arn
-  zone_id                          = aws_route53_zone.website[0].zone_id
+  count                    = var.manage_dns && var.enable_route53_logging ? 1 : 0
+  depends_on              = [aws_cloudwatch_log_group.route53_query_log]
+  cloudwatch_log_group_arn = aws_cloudwatch_log_group.route53_query_log[0].arn
+  zone_id                 = data.aws_route53_zone.website[0].zone_id
 }
 
-# Route53 DNSSEC key-signing key
-resource "aws_route53_key_signing_key" "website" {
-  count                      = var.manage_dns ? 1 : 0
-  hosted_zone_id             = aws_route53_zone.website[0].id
-  key_management_service_arn = aws_kms_key.route53_dnssec[0].arn
-  name                       = "dnssec_key"
-}
-
-# KMS key for Route53 DNSSEC
-resource "aws_kms_key" "route53_dnssec" {
-  count                   = var.manage_dns ? 1 : 0
-  customer_master_key_spec = "ECC_NIST_P256"
-  deletion_window_in_days = 7
-  key_usage               = "SIGN_VERIFY"
+# Check if Lambda function already exists
+data "aws_lambda_function" "existing_opa_compliance" {
+  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   
-  tags = {
-    Name                = "${var.domain_name}-dnssec-key"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    Owner               = var.owner_email
-  }
-}
-
-# Enable DNSSEC signing
-resource "aws_route53_hosted_zone_dnssec" "website" {
-  count      = var.manage_dns ? 1 : 0
-  depends_on = [aws_route53_key_signing_key.website]
-  hosted_zone_id = aws_route53_key_signing_key.website[0].hosted_zone_id
-}
-
-# Route53 records for certificate validation (if managing DNS and creating certificate)  
-resource "aws_route53_record" "cert_validation" {
-  for_each = var.manage_dns && var.create_certificate ? {
-    for dvo in aws_acm_certificate.website[0].domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  } : {}
-  
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = aws_route53_zone.website[0].zone_id
-}
-
-# Certificate validation
-resource "aws_acm_certificate_validation" "website" {
-  provider = aws.us_east_1
-  count    = var.manage_dns && var.create_certificate ? 1 : 0
-  
-  certificate_arn         = aws_acm_certificate.website[0].arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
-
-  timeouts {
-    create = "5m"
-  }
-}
-
-# CloudFront Origin Access Control
-resource "aws_cloudfront_origin_access_control" "website" {
-  name                              = "${var.domain_name}-oac"
-  description                       = "OAC for ${var.domain_name}"
-  origin_access_control_origin_type = "s3"
-  signing_behavior                  = "always"
-  signing_protocol                  = "sigv4"
-}
-
-# CloudFront distribution - EXISTING RESOURCE with compliance fixes
-resource "aws_cloudfront_distribution" "website" {
-  aliases = [var.domain_name, "www.${var.domain_name}"]
-
-  origin {
-    domain_name              = aws_s3_bucket.website.bucket_regional_domain_name
-    origin_access_control_id = aws_cloudfront_origin_access_control.website.id
-    origin_id                = "S3-${var.domain_name}"
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-  price_class         = var.cloudfront_price_class
-
-  default_cache_behavior {
-    allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "S3-${var.domain_name}"
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
-
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
-  }
-
-  # Geo restriction (set to none but structure in place for compliance)
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
+  # This will fail if function doesn't exist, which is what we want
+  lifecycle {
+    postcondition {
+      condition     = self.function_name != null
+      error_message = "Lambda function does not exist yet."
     }
   }
-
-  viewer_certificate {
-    # Use existing certificate (since we're not creating a new one)
-    acm_certificate_arn      = var.ssl_certificate_arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
-  }
-
-  tags = {
-    Name                = "${var.domain_name}-cdn"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Public"
-    ComplianceScope     = "Section508"
-    Owner               = var.owner_email
-  }
 }
 
-# Route53 A record for apex domain
-resource "aws_route53_record" "website_apex" {
-  count   = var.manage_dns ? 1 : 0
-  zone_id = aws_route53_zone.website[0].zone_id
-  name    = var.domain_name
-  type    = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.website.domain_name
-    zone_id                = aws_cloudfront_distribution.website.hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-# Route53 A record for www subdomain
-resource "aws_route53_record" "website_www" {
-  count   = var.manage_dns ? 1 : 0
-  zone_id = aws_route53_zone.website[0].zone_id
-  name    = "www.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = aws_cloudfront_distribution.website.domain_name
-    zone_id                = aws_cloudfront_distribution.website.hosted_zone_id
-    evaluate_target_health = false
-  }
-}
-
-# Lambda function for OPA compliance checking
+# Lambda function for OPA compliance checking - CREATE ONLY IF NOT EXISTS
 resource "aws_lambda_function" "opa_compliance" {
-  filename         = "opa-compliance.zip"
-  function_name    = "${replace(var.domain_name, ".", "-")}-opa-compliance"
-  role            = aws_iam_role.lambda_opa.arn
-  handler         = "index.handler"
-  runtime         = "nodejs18.x"
-  timeout         = 60
+  count = try(data.aws_lambda_function.existing_opa_compliance.function_name, null) == null ? 1 : 0
+  
+  filename      = "opa-compliance.zip"
+  function_name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+  role         = aws_iam_role.lambda_opa[0].arn
+  handler      = "index.handler"
+  runtime      = "nodejs18.x"
+  timeout      = 60
 
   depends_on = [data.archive_file.opa_lambda_zip]
 
   environment {
     variables = {
-      S3_BUCKET = aws_s3_bucket.website.id
+      S3_BUCKET = data.aws_s3_bucket.website.id
     }
   }
 
   tags = {
-    Name                = "${var.domain_name}-opa-compliance"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Internal"
-    Owner               = var.owner_email
+    Name               = "${var.domain_name}-opa-compliance"
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Internal"
+    Owner              = var.owner_email
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
@@ -368,8 +217,22 @@ data "archive_file" "opa_lambda_zip" {
   output_path = "${path.module}/opa-compliance.zip"
 }
 
-# IAM role for Lambda function
+# Check if IAM role already exists
+data "aws_iam_role" "existing_lambda_opa" {
+  name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
+  
+  lifecycle {
+    postcondition {
+      condition     = self.name != null
+      error_message = "IAM role does not exist yet."
+    }
+  }
+}
+
+# IAM role for Lambda function - CREATE ONLY IF NOT EXISTS
 resource "aws_iam_role" "lambda_opa" {
+  count = try(data.aws_iam_role.existing_lambda_opa.name, null) == null ? 1 : 0
+  
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
 
   assume_role_policy = jsonencode({
@@ -386,18 +249,22 @@ resource "aws_iam_role" "lambda_opa" {
   })
 
   tags = {
-    Name                = "${var.domain_name}-lambda-opa-role"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Internal"
-    Owner               = var.owner_email
+    Name               = "${var.domain_name}-lambda-opa-role"
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Internal"
+    Owner              = var.owner_email
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
-# IAM policy for Lambda function
+# IAM policy for Lambda function - ALWAYS MANAGE (policies can be updated)
 resource "aws_iam_role_policy" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-policy"
-  role = aws_iam_role.lambda_opa.id
+  role = try(data.aws_iam_role.existing_lambda_opa.name, aws_iam_role.lambda_opa[0].id)
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -418,41 +285,63 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "s3:ListBucket"
         ]
         Resource = [
-          aws_s3_bucket.website.arn,
-          "${aws_s3_bucket.website.arn}/*"
+          data.aws_s3_bucket.website.arn,
+          "${data.aws_s3_bucket.website.arn}/*"
         ]
       }
     ]
   })
 }
 
-# EventBridge rule to trigger compliance checks
+# Check if EventBridge rule already exists
+data "aws_cloudwatch_event_rule" "existing_opa_compliance" {
+  name = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+  
+  lifecycle {
+    postcondition {
+      condition     = self.name != null
+      error_message = "EventBridge rule does not exist yet."
+    }
+  }
+}
+
+# EventBridge rule to trigger compliance checks - CREATE ONLY IF NOT EXISTS
 resource "aws_cloudwatch_event_rule" "opa_compliance" {
+  count = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, null) == null ? 1 : 0
+  
   name                = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   description         = "Trigger OPA compliance checks"
   schedule_expression = var.compliance_check_schedule
 
   tags = {
-    Name                = "${var.domain_name}-opa-compliance"
-    Environment         = var.environment
-    CostCenter          = var.cost_center
-    DataClassification  = "Internal"
-    Owner               = var.owner_email
+    Name               = "${var.domain_name}-opa-compliance"
+    Environment        = var.environment
+    CostCenter         = var.cost_center
+    DataClassification = "Internal"
+    Owner              = var.owner_email
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
-# EventBridge target
+# EventBridge target - MANAGE ONLY IF RULE EXISTS/IS CREATED
 resource "aws_cloudwatch_event_target" "lambda" {
-  rule      = aws_cloudwatch_event_rule.opa_compliance.name
+  count = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, null) != null || length(aws_cloudwatch_event_rule.opa_compliance) > 0 ? 1 : 0
+  
+  rule      = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.name, aws_cloudwatch_event_rule.opa_compliance[0].name)
   target_id = "TriggerLambdaTarget"
-  arn       = aws_lambda_function.opa_compliance.arn
+  arn       = try(data.aws_lambda_function.existing_opa_compliance.arn, aws_lambda_function.opa_compliance[0].arn)
 }
 
-# Lambda permission for EventBridge
+# Lambda permission for EventBridge - MANAGE ONLY IF LAMBDA EXISTS/IS CREATED
 resource "aws_lambda_permission" "allow_eventbridge" {
+  count = try(data.aws_lambda_function.existing_opa_compliance.function_name, null) != null || length(aws_lambda_function.opa_compliance) > 0 ? 1 : 0
+  
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.opa_compliance.function_name
+  function_name = try(data.aws_lambda_function.existing_opa_compliance.function_name, aws_lambda_function.opa_compliance[0].function_name)
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.opa_compliance.arn
+  source_arn    = try(data.aws_cloudwatch_event_rule.existing_opa_compliance.arn, aws_cloudwatch_event_rule.opa_compliance[0].arn)
 }
