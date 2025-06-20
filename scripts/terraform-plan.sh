@@ -20,6 +20,9 @@ if ! command -v terraform &> /dev/null; then
     exit 1
 fi
 
+# Remove any stale plan files
+rm -f tfplan tfplan.json
+
 # Initialize Terraform
 echo "Initializing Terraform..."
 terraform init
