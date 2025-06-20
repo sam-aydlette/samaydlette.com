@@ -238,7 +238,7 @@ resource "aws_lambda_function" "opa_compliance" {
   handler      = "index.handler"
   runtime      = "nodejs18.x"
   timeout      = 60
-  source_code_hash = filebase64sha256("${path.module}/opa-compliance.zip")
+  source_code_hash = filebase64sha256("./opa-compliance.zip")
 
   environment {
     variables = {
