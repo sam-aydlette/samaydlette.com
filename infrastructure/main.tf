@@ -170,13 +170,6 @@ resource "aws_route53_query_log" "website" {
   zone_id                 = data.aws_route53_zone.website[0].zone_id
 }
 
-# Create zip file for Lambda function
-data "archive_file" "opa_lambda_zip" {
-  type        = "zip"
-  source_dir  = "${path.module}/lambda"
-  output_path = "${path.module}/opa-compliance.zip"
-}
-
 # IAM role for Lambda function
 resource "aws_iam_role" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
@@ -245,8 +238,8 @@ resource "aws_lambda_function" "opa_compliance" {
   handler      = "index.handler"
   runtime      = "nodejs18.x"
   timeout      = 60
-  source_code_hash = data.archive_file.opa_lambda_zip.output_base64sha256
-
+  source_code_hash = filebase64sha256("${path.module}/opa-compliance.zip")
+  
   environment {
     variables = {
       S3_BUCKET = data.aws_s3_bucket.website.id
