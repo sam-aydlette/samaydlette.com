@@ -79,6 +79,7 @@ jobs:
         owner_email     = "${{ vars.OWNER_EMAIL || 'sam@samaydlette.com' }}"
         existing_ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
         existing_cloudfront_distribution_id = "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+        existing_s3_bucket_name = "samaydlette.com"
         cloudfront_price_class = "${{ vars.CLOUDFRONT_PRICE_CLASS || 'PriceClass_100' }}"
         manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
         compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
