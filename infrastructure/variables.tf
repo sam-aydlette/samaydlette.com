@@ -42,11 +42,6 @@ variable "existing_s3_bucket_name" {
   description = "Name of the existing S3 bucket (should match domain_name)"
   type        = string
   default     = ""
-  
-  validation {
-    condition     = var.existing_s3_bucket_name != ""
-    error_message = "If provided, existing_s3_bucket_name must match domain_name."
-  }
 }
 
 variable "existing_route53_zone_id" {
