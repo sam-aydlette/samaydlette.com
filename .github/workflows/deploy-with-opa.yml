@@ -223,7 +223,35 @@ jobs:
       working-directory: infrastructure
       run: terraform init
 
-    - name: Import existing Lambda function if needed
+    - name: Clean up conflicting IAM resources
+      working-directory: infrastructure
+      run: |
+        echo "Cleaning up existing IAM role if it exists..."
+        
+        # Check if role exists
+        if aws iam get-role --role-name samaydlette-com-lambda-opa-role >/dev/null 2>&1; then
+          echo "IAM role exists, checking if it's in Terraform state..."
+          
+          if ! terraform state show 'aws_iam_role.lambda_opa' >/dev/null 2>&1; then
+            echo "Role exists in AWS but not in Terraform state, cleaning up..."
+            
+            # Delete inline policies first
+            echo "Deleting inline policies..."
+            aws iam list-role-policies --role-name samaydlette-com-lambda-opa-role --query 'PolicyNames[]' --output text | xargs -I {} aws iam delete-role-policy --role-name samaydlette-com-lambda-opa-role --policy-name {} || true
+            
+            # Delete the role
+            echo "Deleting IAM role..."
+            aws iam delete-role --role-name samaydlette-com-lambda-opa-role || true
+            
+            echo "IAM role cleanup completed"
+          else
+            echo "IAM role already managed by Terraform"
+          fi
+        else
+          echo "IAM role doesn't exist, will be created by Terraform"
+        fi
+
+    - name: Import existing Lambda function and permissions if needed
       working-directory: infrastructure
       run: |
         # Check if Lambda function exists in AWS but not in state
@@ -232,12 +260,29 @@ jobs:
           if ! terraform state show 'aws_lambda_function.opa_compliance[0]' >/dev/null 2>&1; then
             echo "Importing existing Lambda function into Terraform state..."
             terraform import 'aws_lambda_function.opa_compliance[0]' samaydlette-com-opa-compliance
+            echo "Lambda function imported"
           else
             echo "Lambda function already in Terraform state"
+          fi
+          
+          # Check if Lambda permission exists and import it too
+          if aws lambda get-policy --function-name samaydlette-com-opa-compliance >/dev/null 2>&1; then
+            echo "Lambda policy exists, checking if permission is in Terraform state..."
+            if ! terraform state show 'aws_lambda_permission.allow_eventbridge[0]' >/dev/null 2>&1; then
+              echo "Importing existing Lambda permission into Terraform state..."
+              terraform import 'aws_lambda_permission.allow_eventbridge[0]' samaydlette-com-opa-compliance/AllowExecutionFromEventBridge
+              echo "Lambda permission imported"
+            else
+              echo "Lambda permission already in Terraform state"
+            fi
           fi
         else
           echo "Lambda function doesn't exist in AWS, will be created"
         fi
+    
+    - name: Generate fresh Terraform plan
+      working-directory: infrastructure
+      run: terraform plan -out=tfplan
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
