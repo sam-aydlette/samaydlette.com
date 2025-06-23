@@ -294,20 +294,63 @@ jobs:
 
     - name: Sync Website Content
       run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        echo "Syncing content to bucket: $BUCKET_NAME"
+        echo "Getting S3 bucket name from Terraform outputs..."
+        cd infrastructure
+        
+        # Get bucket name with proper error handling
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
+        
+        if [ -z "$BUCKET_NAME" ]; then
+          echo "❌ Could not get S3 bucket name from Terraform outputs"
+          echo "Available outputs:"
+          terraform output 2>/dev/null || echo "No outputs available"
+          exit 1
+        fi
+        
+        echo "✅ S3 bucket name: $BUCKET_NAME"
+        echo "Syncing website content..."
+        
+        # Go back to root directory for website files
+        cd ..
         
         aws s3 sync website/ s3://$BUCKET_NAME/ \
+          --exclude "*.tf" \
+          --exclude "*.tfvars*" \
+          --exclude "*.tfstate*" \
+          --exclude ".terraform/*" \
+          --exclude "infrastructure/*" \
+          --exclude "scripts/*" \
+          --exclude ".git/*" \
+          --exclude "README.md" \
+          --exclude "Makefile" \
+          --exclude ".gitignore" \
+          --exclude ".github/*" \
           --delete
+        
+        echo "✅ Website content synced successfully"
 
     - name: Invalidate CloudFront Cache
       run: |
-        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id)
-        echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
+        echo "Getting CloudFront distribution ID..."
+        cd infrastructure
+        
+        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
+        
+        if [ -z "$DISTRIBUTION_ID" ]; then
+          echo "❌ Could not get CloudFront distribution ID"
+          echo "Available outputs:"
+          terraform output 2>/dev/null || echo "No outputs available"
+          exit 1
+        fi
+        
+        echo "✅ CloudFront distribution ID: $DISTRIBUTION_ID"
+        echo "Creating cache invalidation..."
         
         aws cloudfront create-invalidation \
           --distribution-id $DISTRIBUTION_ID \
           --paths "/*"
+        
+        echo "✅ CloudFront cache invalidation created"
 
     - name: Run Post-Deployment Compliance Check
       run: |
