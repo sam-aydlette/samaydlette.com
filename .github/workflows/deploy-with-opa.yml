@@ -287,10 +287,6 @@ jobs:
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
-
-    - name: Terraform Apply
-      working-directory: infrastructure
-      run: terraform apply -auto-approve tfplan
     
     - name: Disable Lambda environment variable encryption
       run: |
@@ -304,10 +300,6 @@ jobs:
           --function-name samaydlette-com-opa-compliance
         
         echo "✅ Lambda environment variables are now unencrypted"
-    
-    - name: Sync Website Content
-      run: |
-        # ... your existing sync code
 
     - name: Sync Website Content
       run: |
