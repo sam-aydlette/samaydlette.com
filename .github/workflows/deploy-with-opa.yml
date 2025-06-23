@@ -359,39 +359,50 @@ jobs:
         echo "Debug: Directory contents before Lambda check"
         ls -la
         
-        LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name)
+        # Change to infrastructure directory for terraform commands
+        cd infrastructure
+        
+        LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name 2>/dev/null || echo "")
         echo "Lambda function name: $LAMBDA_FUNCTION"
         
+        # Go back to root directory for file operations
+        cd ..
+        
         # Check if Lambda function exists before invoking
-        if aws lambda get-function --function-name $LAMBDA_FUNCTION >/dev/null 2>&1; then
-          echo "✅ Lambda function exists, invoking..."
-          aws lambda invoke \
-            --function-name $LAMBDA_FUNCTION \
-            --payload '{}' \
-            compliance-result.json
-          
-          echo "Debug: Directory contents after Lambda invoke"
-          ls -la
-          
-          if [ -f compliance-result.json ]; then
-            echo "✅ compliance-result.json created successfully"
-            echo "Compliance check results:"
-            cat compliance-result.json | jq '.'
+        if [ -n "$LAMBDA_FUNCTION" ] && [ "$LAMBDA_FUNCTION" != "Not created" ]; then
+          if aws lambda get-function --function-name $LAMBDA_FUNCTION >/dev/null 2>&1; then
+            echo "✅ Lambda function exists, invoking..."
+            aws lambda invoke \
+              --function-name $LAMBDA_FUNCTION \
+              --payload '{}' \
+              compliance-result.json
             
-            # Check if compliant
-            COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
-            if [ "$COMPLIANT" = "true" ]; then
-              echo "✅ Post-deployment compliance check passed"
+            echo "Debug: Directory contents after Lambda invoke"
+            ls -la
+            
+            if [ -f compliance-result.json ]; then
+              echo "✅ compliance-result.json created successfully"
+              echo "Compliance check results:"
+              cat compliance-result.json | jq '.'
+              
+              # Check if compliant
+              COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
+              if [ "$COMPLIANT" = "true" ]; then
+                echo "✅ Post-deployment compliance check passed"
+              else
+                echo "❌ Post-deployment compliance violations found"
+                echo "::warning::Compliance violations detected in deployed infrastructure"
+              fi
             else
-              echo "❌ Post-deployment compliance violations found"
-              echo "::warning::Compliance violations detected in deployed infrastructure"
+              echo "❌ compliance-result.json was not created by Lambda invoke"
+              echo '{"message":"Lambda invoke failed to create file","compliant":false}' > compliance-result.json
             fi
           else
-            echo "❌ compliance-result.json was not created by Lambda invoke"
-            echo '{"message":"Lambda invoke failed to create file","compliant":false}' > compliance-result.json
+            echo "⚠️ Lambda function not found in AWS, creating placeholder compliance result"
+            echo '{"message":"Lambda function not found in AWS","compliant":true}' > compliance-result.json
           fi
         else
-          echo "⚠️ Lambda function not found, creating placeholder compliance result"
+          echo "⚠️ Lambda function not available during initial deployment"
           echo '{"message":"Lambda function not available during initial deployment","compliant":true}' > compliance-result.json
         fi
         
@@ -404,32 +415,35 @@ jobs:
         else
           echo "❌ compliance-result.json still missing"
         fi
-
-        - name: Debug - List files before upload
-        if: always()
-        run: |
-          echo "Pre-upload debug:"
-          pwd
-          ls -la
-          find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
-      
-        - name: Save Deployment Outputs
-          run: |
-            terraform output -json > deployment-outputs.json
-            echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-            echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
-            echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
-            echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
-        
-        - name: Upload Compliance Report
-          uses: actions/upload-artifact@v4
-          if: always()
-          with:
-            name: compliance-report
-            path: compliance-result.json
-            retention-days: 30
+  
+    - name: Debug - List files before upload
+      if: always()
+      run: |
+        echo "Pre-upload debug:"
+        pwd
+        ls -la
+        find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
+    
+    - name: Save Deployment Outputs
+      run: |
+        cd infrastructure
+        terraform output -json > ../deployment-outputs.json
+        cd ..
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Output | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        cd infrastructure
+        echo "| S3 Bucket | $(terraform output -raw s3_bucket_name) |" >> $GITHUB_STEP_SUMMARY
+        echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
+        echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload Compliance Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: compliance-report
+        path: compliance-result.json
+        retention-days: 30
 
   security-scan:
     name: Security Scan
