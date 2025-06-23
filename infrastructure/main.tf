@@ -234,11 +234,6 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "kms:Decrypt"
         ]
         Resource = "*"
-        Condition = {
-          StringEquals = {
-            "kms:ViaService" = "lambda.${var.aws_region}.amazonaws.com"
-          }
-        }
       }
     ]
   })
