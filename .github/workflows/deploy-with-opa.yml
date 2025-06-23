@@ -288,6 +288,25 @@ jobs:
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
     
+    - name: Force recreate Lambda function to clear KMS issues
+      working-directory: infrastructure
+      run: |
+        echo "Destroying and recreating Lambda function to clear KMS configuration..."
+        
+        # Remove from Terraform state
+        terraform state rm 'aws_lambda_function.opa_compliance[0]' || true
+        
+        # Delete the actual Lambda function
+        aws lambda delete-function --function-name samaydlette-com-opa-compliance || true
+        
+        # Wait a moment
+        sleep 10
+        
+        # Apply Terraform again to recreate it
+        terraform apply -auto-approve
+        
+        echo "✅ Lambda function recreated from scratch"
+    
     - name: Disable Lambda environment variable encryption
       run: |
         echo "Removing KMS encryption from Lambda environment variables..."
