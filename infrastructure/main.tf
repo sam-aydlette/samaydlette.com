@@ -227,6 +227,18 @@ resource "aws_iam_role_policy" "lambda_opa" {
           data.aws_s3_bucket.website.arn,
           "${data.aws_s3_bucket.website.arn}/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "kms:Decrypt"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "lambda.${var.aws_region}.amazonaws.com"
+          }
+        }
       }
     ]
   })
