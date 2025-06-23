@@ -239,6 +239,10 @@ jobs:
           echo "Lambda function doesn't exist in AWS, will be created"
         fi
 
+    - name: Generate fresh Terraform plan
+      working-directory: infrastructure
+      run: terraform plan -out=tfplan
+
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
