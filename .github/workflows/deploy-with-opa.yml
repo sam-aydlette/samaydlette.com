@@ -284,10 +284,6 @@ jobs:
       working-directory: infrastructure
       run: terraform plan -out=tfplan
 
-    - name: Generate fresh Terraform plan
-      working-directory: infrastructure
-      run: terraform plan -out=tfplan
-
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
