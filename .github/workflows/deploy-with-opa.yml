@@ -292,6 +292,27 @@ jobs:
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
 
+    - name: Terraform Apply
+      working-directory: infrastructure
+      run: terraform apply -auto-approve tfplan
+    
+    - name: Disable Lambda environment variable encryption
+      run: |
+        echo "Removing KMS encryption from Lambda environment variables..."
+        aws lambda update-function-configuration \
+          --function-name samaydlette-com-opa-compliance \
+          --kms-key-arn ""
+        
+        echo "Waiting for update to complete..."
+        aws lambda wait function-updated \
+          --function-name samaydlette-com-opa-compliance
+        
+        echo "✅ Lambda environment variables are now unencrypted"
+    
+    - name: Sync Website Content
+      run: |
+        # ... your existing sync code
+
     - name: Sync Website Content
       run: |
         echo "Getting S3 bucket name from Terraform outputs..."
