@@ -1,19 +1,16 @@
-# Sam's Website for Everything Going On
+# Sam's Website for Everything Going On With Me
 
 This is the central hub for what's going on with me. The repository contains Terraform configuration and OPA policies to deploy the samaydlette.com website to AWS S3 with CloudFront, including automated compliance checking for infrastructure security and Section 508 accessibility standards.
 
-## Features
+## What My Website Demonstrates
 
--  **Automated S3 + CloudFront deployment** with proper security configurations
--  **OPA-based compliance checking** for infrastructure and accessibility
--  **Section 508 accessibility validation** for web content
--  **Comprehensive tagging strategy** for cost allocation and governance
--  **Pre-deployment validation** to catch violations before they reach production
--  **Automated compliance reporting** with Lambda-based monitoring
--  **Route53 DNS management**
--  **SSL/TLS certificate integration** with AWS Certificate Manager
+- Compliance-as-Code: OPA policies that prevent non-compliant resources from reaching production
+- Infrastructure-as-Code: Terraform configuration with proper state management and security
+- Automated Security: Pre-deployment validation and continuous compliance monitoring
+- Real-World Cost Optimization: Practical trade-offs between security and operational costs
+- DevSecOps Pipeline: GitHub Actions workflow with security scanning and automated deployment
 
-## Architecture
+## Architecture Overview
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -27,20 +24,60 @@ This is the central hub for what's going on with me. The repository contains Ter
 │   (Compliance)  │    │   (Monitoring)   │    │   (DNS)         │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
 ```
+
 ## File Structure
 
 ```
-├── main.tf                     # Main Terraform configuration
-├── variables.tf                # Input variables
-├── outputs.tf                  # Output values
-├── terraform.tfvars.example    # Example variables file
-├── policies.rego              # OPA compliance policies
-├── lambda/
-│   ├── index.js               # Lambda function code
-│   ├── package.json           # Node.js dependencies
-├── terraform-plan.sh          # Pre-deployment compliance check
-├── deploy.sh                  # Complete deployment script
-└── README.md                  # This file
+├── infrastructure/
+│   ├── main.tf                    # Primary Terraform configuration
+│   ├── variables.tf               # Input variables and validation
+│   ├── outputs.tf                 # Resource outputs and URLs
+│   ├── policies.rego             # OPA compliance policies
+│   ├── lambda/
+│   │   ├── index.js              # Compliance monitoring function
+│   │   └── package.json          # Dependencies
+│   └── terraform.tfvars.example  # Configuration template
+├── website/                       # Static website files
+├── scripts/
+│   ├── deploy.sh                 # Complete deployment automation
+│   ├── terraform-plan.sh         # Pre-deployment compliance check
+│   └── test-policies.sh          # OPA policy testing
+├── .github/workflows/
+│   └── deploy-with-opa.yml       # GitHub Actions CI/CD pipeline
+├── Makefile                      # Common operations
+└── README.md                     # This file
+```
+
+## Quick Start (5 Minutes)
+
+### Prerequisites:
+- AWS CLI configured with appropriate permissions
+- Terraform >= 1.0
+- Node.js >= 18 (for Lambda function)
+
+### Existing Resources Required:
+This project manages compliance for existing AWS infrastructure. You need:
+- S3 bucket (named after your domain)
+- CloudFront distribution
+- SSL certificate in ACM (us-east-1 region)
+- Route53 hosted zone (optional)
+
+```
+# 1. Clone and setup
+git clone <your-repo-url>
+cd <repo-name>
+
+# 2. Install OPA (automated in scripts)
+curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+chmod 755 ./opa && sudo mv opa /usr/local/bin
+
+# 3. Configure your deployment
+cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
+# Edit terraform.tfvars with your AWS resource IDs
+
+# 4. Deploy with compliance checking
+cd infrastructure
+make pipeline
 ```
 
 ## OPA Compliance Policies
@@ -126,59 +163,153 @@ aws cloudfront create-invalidation \
     --paths "/*"
 ```
 
-## Troubleshooting
+### Conscious Security Trade-offs
+These features were excluded to balance security with cost for a personal website:
+
+| Feature | Security Benefit | Cost Impact | Decision |
+|---------|------------------|-------------|----------|
+| CloudFront WAF | DDoS/attack protection | +$120/year | Skipped - static content low risk |
+| Lambda in VPC | Network isolation | +$540/year | Skipped - no sensitive data processing |
+| S3 access logging | Detailed audit trail | +$180/year | Skipped - CloudTrail provides sufficient logging |
+| Multi-AZ deployment | High availability | +$300/year | Skipped - acceptable downtime for personal site |
+
+**For Enterprise Use:** Re-enable these features by removing the `#checkov:skip` comments and adjusting budget accordingly.
+
+## Troubleshooting Guide
 
 ### Common Issues
 
-1. **Certificate Validation Timeout**
-   ```bash
-   # Check certificate status
-   aws acm describe-certificate --certificate-arn <arn> --region us-east-1
-   ```
-
-2. **OPA Policy Failures**
-   ```bash
-   # Test policy locally
-   opa eval -d policies.rego -i test-input.json "data.terraform.compliance"
-   ```
-
-3. **Lambda Function Errors**
-   ```bash
-   # Check Lambda logs
-   aws logs tail /aws/lambda/samaydlette-com-opa-compliance
-   ```
-
-4. **S3 Sync Issues**
-   ```bash
-   # Check bucket policy and permissions
-   aws s3api get-bucket-policy --bucket samaydlette.com
-   ```
-
-### Debug Mode
-
-Enable debug output:
-
+**1. OPA Policy Failures**
 ```bash
-export TF_LOG=DEBUG
-export AWS_CLI_FILE_ENCODING=UTF-8
-./deploy.sh
+# Check policy syntax
+opa fmt policies.rego
+
+# Test against sample data
+echo '{"resource":{"type":"aws_s3_bucket","tags":{}}}' | opa eval -I -d policies.rego "data.terraform.compliance"
 ```
 
-## Security Considerations
+**2. Terraform State Issues**
+```bash
+# Initialize with backend configuration
+terraform init -backend-config="bucket=your-state-bucket"
 
-- SSL certificate auto-renewal via ACM
-- S3 bucket encryption at rest
-- CloudFront HTTPS enforcement
-- IAM least-privilege access
-- No hardcoded secrets in code
-- Regular compliance monitoring
+# Import existing resources if needed
+terraform import aws_s3_bucket.website your-bucket-name
+```
+
+**3. AWS Permission Errors**
+Required IAM permissions for deployment:
+- S3: GetBucket*, PutBucket*, DeleteBucket*
+- CloudFront: Get*, List*, CreateInvalidation
+- Lambda: CreateFunction, UpdateFunction, InvokeFunction
+- IAM: CreateRole, AttachRolePolicy, PassRole
+
+**4. SSL Certificate Issues**
+```bash
+# Verify certificate exists in us-east-1
+aws acm list-certificates --region us-east-1
+
+# Check certificate validation status
+aws acm describe-certificate --certificate-arn <arn> --region us-east-1
+```
+
+## Cost Monitoring
+
+Monitor actual costs with:
+```bash
+# Get current month's Lambda costs
+aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics BlendedCost --group-by Type=DIMENSION,Key=SERVICE
+
+# Check compliance function execution frequency
+aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/samaydlette-com-opa-compliance"
+```
+
+## Advanced Configuration
+
+### Multi-Environment Setup
+```bash
+# Deploy to staging
+ENVIRONMENT=staging make deploy
+
+# Production deployment
+ENVIRONMENT=prod make deploy
+```
+
+### Custom Compliance Policies
+Add new policies to `policies.rego`:
+```rego
+# Example: Enforce naming conventions
+naming_violations[violation] {
+    input.resource.type == "aws_s3_bucket"
+    not startswith(input.resource.name, "company-")
+    violation := {
+        "type": "naming_convention",
+        "message": "Bucket name must start with 'company-'",
+        "severity": "MEDIUM"
+    }
+}
+```
+
+## Contributing
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-policy`)
+3. **Test** your changes (`make test-policies`)
+4. **Commit** with clear messages (`git commit -m 'Add cost optimization policy'`)
+5. **Push** to your branch (`git push origin feature/amazing-policy`)
+6. **Submit** a pull request
+
+### Development Guidelines
+- All new policies must include test cases
+- Terraform changes require `checkov` scan approval
+- Documentation updates required for new features
+- Cost impact analysis required for infrastructure changes
+
+## Real-World Applications
+
+This repository demonstrates patterns used in:
+- **Startup infrastructure:** Cost-conscious compliance automation
+- **Enterprise security:** Policy-as-code implementation
+- **DevSecOps training:** Practical compliance integration
+- **Consulting projects:** Client infrastructure templates
+
+## Monitoring & Alerts
+
+### Built-in Monitoring
+- **Compliance violations:** Logged to CloudWatch
+- **Deployment status:** GitHub Actions notifications
+- **Cost anomalies:** AWS Cost Anomaly Detection (configure separately)
+
+### Optional Integrations
+```bash
+# Add Slack notifications
+echo "SLACK_WEBHOOK_URL=https://hooks.slack.com/..." >> .env
+
+# Enable email alerts
+aws sns create-topic --name compliance-alerts
+```
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - feel free to use this for personal or commercial projects.
 
-## Support
+## Support & Community
 
-For issues or questions:
-- Check the troubleshooting section above
-- Review AWS CloudWatch logs
+- **Issues:** Use GitHub Issues for bugs and feature requests
+- **Discussions:** GitHub Discussions for questions and ideas
+- **Security:** Email security issues privately to [your-email]
+
+## Acknowledgments
+
+- **OPA Community:** Policy examples and best practices
+- **AWS Well-Architected Framework:** Security and cost optimization guidance
+- **HashiCorp:** Terraform configuration patterns
+- **Open Source Contributors:** Various tools and libraries used
+
+---
+
+**Important Notes:**
+- This configuration is designed for existing AWS resources - it won't create your initial infrastructure
+- Always test in a non-production environment first
+- Review all security trade-offs against your specific requirements
+- Costs may vary significantly based on traffic and usage patterns
