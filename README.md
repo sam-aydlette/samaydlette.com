@@ -289,6 +289,15 @@ echo "SLACK_WEBHOOK_URL=https://hooks.slack.com/..." >> .env
 aws sns create-topic --name compliance-alerts
 ```
 
+## Future Roadmap
+Currently, the S3 backend works without DynamoDB locking. This is because I am the sole developer on this project. For enterprise, I'd recommend adding a DynamoDB table for state management:
+```bash
+# Future team expansion
+aws dynamodb create-table --table-name terraform-locks ...
+# Update backend config
+# terraform init -reconfigure
+```
+
 ## License
 
 MIT License - feel free to use this for personal or commercial projects.
