@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliance Reporting Is Easy - Validation Is The Hard Part - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Sam Aydlette</h1>
+        <p>Author and Cybersecurity Practitioner</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-header">
+                <h1><a href="/index.html" style="text-decoration: none; color: inherit;">Sam Aydlette</a></h1>
+                <p>Author and Cybersecurity Practitioner</p>
+            </div>
+            <div class="nav-grid">
+                <a href="/pages/books.html" class="nav-button">Books</a>
+                <a href="/pages/articles.html" class="nav-button">Articles</a>
+                <a href="/pages/about.html" class="nav-button">About</a>
+                <a href="/pages/contact.html" class="nav-button">Contact</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">June 8, 2025</span>
+                    <span class="article-category">Compliance Automation</span>
+                </div>
+                
+                <h2 class="article-title">Compliance Reporting Is Easy - Validation Is The Hard Part</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <p>Everyone is talking about the benefits of compliance automation now. Consultants sell it. Vendors promise it. Executives demand it. Yet most compliance automation today focuses on reporting automation. While important, superficial reporting, or even excellent reporting of poor security outcomes, is not helpful on its own. The part separating marketing from actual security is in automating control validation.</p>
+                    </div>
+
+                    <p>This is where compliance automation crashes into engineering reality, and where most initiatives die a quiet death in the gap between two worlds.</p>
+
+                    <h3>The Complexity Challenge</h3>
+                    <p>Compliance professionals live in a world of control reporting. Cryptographic protection, configuration management and vulnerability scanning controls exist as abstract requirements that are elegant in their simplicity.</p>
+                    
+                    <p>Engineers live in a world of extremely diverse and complex technology stacks, each with its own quirks and failure modes. This is where the abstract meets the concrete, and where most compliance automation efforts have historically failed.</p>
+                    
+                    <p>The traditional approach treats these as separate problems. Compliance teams define policies, and engineering teams implement controls. Auditors verify compliance through techniques shrouded in mystery. Everyone pretends this works until there's a breach, and then congress yells, "something must be done!" and the dysfunctional cycle repeats itself.</p>
+
+                    <h3>The Paradigm Shift - Treating Compliance Outcomes as Unit and Function Tests</h3>
+                    <p>Software engineering actually solved this problem decades ago, they just haven't applied it to compliance. Via unit and function tests, every piece of code is tested to ensure that it does what it claims to do.</p>
+                    
+                    <p>The same principle applies to compliance controls. The only way to truly know that FIPS is enabled is to test it. The only way to truly know if STIGs are applied and vulnerabilities remediated or mitigated is to scan for them and validate the results.</p>
+                    
+                    <p>Specific, comprehensive unit and function testing for compliance outcomes baked into the deployment and monitoring process is the only approach that scales across the complex, heterogeneous environments that modern organizations actually run. And it's the only way to bridge the gap between compliance requirements and engineering implementation.</p>
+
+                    <h3>The Engineering Approach to Compliance</h3>
+                    <p>Let's take a concrete example. Consider the challenge of validating that SC-13 (cryptographic protection), CM-3 (configuration management), and RA-5 (vulnerability scanning) are implemented for Ubuntu 24.04 containers running Apache Tomcat web servers in AWS Elastic Container Service.</p>
+                    
+                    <p>The compliance requirement is straightforward: use FIPS-approved cryptography, apply security configurations, scan for vulnerabilities. The engineering reality is messier: verify FIPS mode at both kernel and OpenSSL levels, validate STIG implementation across the entire stack, scan container images while filtering out false positives and adjusting for actual risk.</p>
+                    
+                    <p>Here's how you build unit tests for compliance that actually work:</p>
+
+                    <h4>Testing FIPS Implementation</h4>
+                    <p>FIPS compliance is a cryptographic state that must be verified at multiple layers. The most reliable test exploits a fundamental property of FIPS mode: non-approved algorithms simply don't work.</p>
+                    
+                    <div class="code-block">
+                        <pre><code># Test: OpenSSL FIPS mode  
+test_openssl_fips() {
+  # In FIPS mode, MD5 is disabled and should fail
+  if echo "test" | openssl md5 >/dev/null 2>&1; then
+    echo "FAIL: OpenSSL FIPS mode not enabled (MD5 succeeded)"
+    return 1
+  fi
+  echo "PASS: OpenSSL FIPS mode enabled"
+  return 0
+}</code></pre>
+                    </div>
+                    
+                    <p>This simple test case is objective, repeatable, and impossible to fake. Either FIPS mode is properly implemented, or the tests fail. No interpretation required.</p>
+                    
+                    <p>For STIG and vulnerability verification, apply these same type of test as the example above but define specific failure thresholds and fail the test if those thresholds are exceeded. Tools like OpenSCAP and Grype may be used directly in the pipeline itself to verify status. Grype is nice because it even integrates with CISA KEV, VEX and Vulnrichment and EPSS for easy triage within the pipeline itself.</p>
+
+                    <h3>Putting It All Together: CI/CD Pipeline Integration</h3>
+                    <p>The individual tests mean nothing in isolation. The power comes from integrating them into your development workflows, where they run automatically on every build and deployment.</p>
+                    
+                    <p>This pipeline runs the same way on every commit, whether you're using GitHub Actions, Jenkins, GitLab CI, or any other automation platform. The specific technology doesn't actually matter, only the principle does. Compliant outcomes become part of the development process.</p>
+
+                    <h3>Beyond the Theater</h3>
+                    <p>This approach scales across technology stacks precisely because it's based on verifiable technical properties rather than trust or documentation. Whether you're running Windows containers with IIS, Linux VMs with NGINX, or Kubernetes clusters with microservices, the same principle applies: test the actual implementation, not the intended implementation.</p>
+                    
+                    <p>The compliance evidence generated by these tests is structured data that proves specific controls are implemented correctly. This data can be fed into policy engines for automated decision-making, and even directly into real-time customer facing dashboards, but that's another story entirely.</p>
+
+                    <div class="conclusion">
+                        <h3>Conclusion</h3>
+                        <p>The hardest part of compliance automation is verifying that your systems actually implement the controls you claim they do. But by treating compliance outcomes as standard unit and function tests, it empowers engineering teams to bake compliance into the build itself. Reporting becomes as simple as letting your data tell your customers how trustworthy you are.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
