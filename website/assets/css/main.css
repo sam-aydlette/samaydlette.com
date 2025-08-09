@@ -694,13 +694,85 @@ footer {
     transition: all 0.3s ease;
 }
 
-/* ===== Animation Classes ===== */
-.article-card,
-.article-content,
-.reveal-on-scroll {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
+/* ===== Code Examples for Books/About Pages ===== */
+.code-example {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    padding: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 1.5rem 0;
+    position: relative;
+    overflow-x: auto;
+}
+
+.code-example::before {
+    content: 'code';
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-dim);
+    padding: 0 0.5rem;
+    font-size: 0.7rem;
+}
+
+.code-keyword {
+    color: var(--accent-secondary);
+    font-weight: 500;
+}
+
+.code-string {
+    color: var(--accent-tertiary);
+}
+
+.code-comment {
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* ===== Bio Section Specific Styles ===== */
+.bio-section .article-card {
+    margin-bottom: 2rem;
+}
+
+.bio-section p {
+    margin: 1.5rem 0;
+    line-height: 1.7;
+}
+
+/* ===== Form Enhancements ===== */
+.form-group textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-group textarea::placeholder {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-style: italic;
+}
+
+/* ===== Book Description Enhancements ===== */
+.book-description {
+    width: 100%;
+}
+
+.book-description p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.book-description .code-example {
+    margin: 1rem 0 1.5rem 0;
+}
+
+.book-description .read-more {
+    margin-top: 1rem;
+    display: inline-block;
 }
 
 .reveal-on-scroll {
@@ -824,6 +896,7 @@ footer {
         right: 0;
         z-index: 100;
         padding: 1rem;
+        padding-left: 1rem; /* Override desktop sidebar offset */
         background: var(--bg-secondary);
         box-shadow: 0 2px 4px var(--shadow-subtle);
         display: flex;
@@ -835,8 +908,10 @@ footer {
     }
     
     .header h1 {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
         margin-bottom: 0;
+        white-space: nowrap;
+        overflow: hidden;
     }
     
     .header p {
@@ -891,6 +966,7 @@ footer {
         text-align: center;
         border-radius: 4px;
         border-left: none;
+        background: var(--bg-tertiary);
     }
     
     .nav-button::before {
@@ -900,6 +976,7 @@ footer {
     .nav-button:hover {
         transform: none;
         padding-left: 1rem;
+        background: var(--bg-primary);
     }
     
     .content {
@@ -965,15 +1042,18 @@ footer {
         padding: 1rem;
     }
     
-    .code-block {
+    .code-block,
+    .code-example {
         width: 100%;
         margin: 1rem 0;
         padding: 1rem;
         overflow-x: auto;
         box-sizing: border-box;
+        font-size: 0.8rem;
     }
     
-    .code-block code {
+    .code-block code,
+    .code-example {
         white-space: pre-wrap;
         word-break: break-word;
     }
@@ -1069,15 +1149,62 @@ footer {
     }
 }
 
-/* Accessibility */
+/* ===== Accessibility & Performance Enhancements ===== */
+
+/* Focus states for keyboard navigation */
 .nav-button:focus,
 .read-more:focus,
-.submit-button:focus {
-    outline: 1px solid var(--accent-primary);
+.submit-button:focus,
+a:focus {
+    outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+    border-radius: 2px;
 }
 
-/* Print Styles */
+/* High contrast support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #666666;
+        --shadow-subtle: rgba(0, 212, 170, 0.8);
+        --text-dim: #999999;
+    }
+    
+    .book-card,
+    .article-card {
+        border: 2px solid var(--border-color);
+    }
+    
+    .code-example,
+    .code-block {
+        border: 2px solid var(--accent-primary);
+    }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .reveal-on-scroll {
+        opacity: 1;
+        transform: none;
+    }
+    
+    .book-card:hover,
+    .article-card:hover {
+        transform: none;
+    }
+    
+    .read-more::after {
+        transform: none !important;
+    }
+}
+
+/* Print styles */
 @media print {
     .navbar,
     .contact-form,
@@ -1096,6 +1223,8 @@ footer {
         text-align: left;
         padding: 1rem 0;
         margin-bottom: 1rem;
+        position: static;
+        padding-left: 0 !important;
     }
     
     .book-card,
@@ -1124,5 +1253,11 @@ footer {
     .section-title {
         font-size: 18pt;
         margin-bottom: 1rem;
+    }
+    
+    .code-example,
+    .code-block {
+        background: #f5f5f5;
+        border: 1px solid #ccc;
     }
 }
