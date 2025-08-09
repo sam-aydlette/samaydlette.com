@@ -116,14 +116,19 @@ a:active {
     text-align: left;
     position: relative;
     margin-bottom: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .header h1 {
     color: var(--text-primary);
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 300;
     margin-bottom: 0.5rem;
     font-family: var(--font-mono);
+    word-break: keep-all;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 .header h1::before {
@@ -138,6 +143,8 @@ a:active {
     font-weight: 400;
     margin-left: 2rem;
     position: relative;
+    word-break: keep-all;
+    white-space: nowrap;
 }
 
 .header p::before {
@@ -207,7 +214,7 @@ a:active {
 
 .navbar-header {
     padding: 0 1.5rem 2rem;
-    text-align: left;
+    text-align: center;
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 2rem;
 }
@@ -215,9 +222,11 @@ a:active {
 .navbar-header h1 {
     margin-bottom: 0.5rem;
     color: var(--accent-primary);
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-family: var(--font-mono);
-    font-weight: 500;
+    font-weight: 400;
+    word-break: keep-all;
+    white-space: nowrap;
 }
 
 .navbar-header p {
