@@ -113,6 +113,7 @@ a:active {
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
     padding: 2rem;
+    padding-left: calc(var(--sidebar-width) + 2rem);
     text-align: left;
     position: relative;
     margin-bottom: 0;
