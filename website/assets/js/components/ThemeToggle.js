@@ -1,5 +1,4 @@
-// ThemeToggle.js - Theme switching component
-
+// Updated ThemeToggle.js with explicit positioning
 export class ThemeToggle {
     constructor() {
         this.currentTheme = this.getStoredTheme() || this.getPreferredTheme();
@@ -10,7 +9,7 @@ export class ThemeToggle {
         // Apply initial theme
         this.applyTheme(this.currentTheme);
         
-        // Create toggle element if it doesn't exist
+        // Create toggle element
         this.createToggleElement();
         
         // Setup event listeners
@@ -24,13 +23,11 @@ export class ThemeToggle {
         try {
             return localStorage.getItem('theme');
         } catch (e) {
-            // localStorage might not be available
             return null;
         }
     }
 
     getPreferredTheme() {
-        // Default to dark theme to match existing site
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             return 'light';
         }
@@ -59,25 +56,111 @@ export class ThemeToggle {
 
         const toggle = document.createElement('div');
         toggle.className = 'theme-toggle';
+        
+        // Use explicit inline styles to ensure positioning works
+        const isDark = this.currentTheme === 'dark';
+        const bgColor = isDark ? '#252525' : '#ffffff';
+        const textColor = isDark ? '#888888' : '#6c757d';
+        const borderColor = isDark ? '#404040' : '#dee2e6';
+        
+        toggle.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            background: ${bgColor};
+            border: 1px solid ${borderColor};
+            border-radius: 20px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            font-family: 'JetBrains Mono', monospace;
+        `;
+        
         toggle.setAttribute('role', 'button');
         toggle.setAttribute('tabindex', '0');
         toggle.setAttribute('aria-label', 'Toggle between light and dark themes');
         
-        toggle.innerHTML = `
-            <span class="toggle-label">${this.currentTheme}</span>
-            <div class="toggle-button"></div>
+        const toggleButton = document.createElement('div');
+        toggleButton.className = 'toggle-button';
+        toggleButton.style.cssText = `
+            width: 40px;
+            height: 20px;
+            background: ${isDark ? '#555555' : '#007a6b'};
+            border-radius: 10px;
+            position: relative;
+            transition: all 0.3s ease;
         `;
-
+        
+        const toggleSlider = document.createElement('div');
+        toggleSlider.className = 'toggle-slider';
+        toggleSlider.style.cssText = `
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: ${bgColor};
+            border-radius: 50%;
+            top: 2px;
+            left: ${isDark ? '2px' : '22px'};
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        `;
+        
+        const label = document.createElement('span');
+        label.className = 'toggle-label';
+        label.textContent = this.currentTheme;
+        label.style.cssText = `
+            font-size: 0.8rem;
+            color: ${textColor};
+            min-width: 30px;
+            text-align: center;
+        `;
+        
+        toggleButton.appendChild(toggleSlider);
+        toggle.appendChild(label);
+        toggle.appendChild(toggleButton);
+        
         document.body.appendChild(toggle);
         this.toggleElement = toggle;
+        
+        console.log('Theme toggle created and positioned at top right');
     }
 
     updateToggleState() {
         if (!this.toggleElement) return;
         
+        const isDark = this.currentTheme === 'dark';
+        const bgColor = isDark ? '#252525' : '#ffffff';
+        const textColor = isDark ? '#888888' : '#6c757d';
+        const borderColor = isDark ? '#404040' : '#dee2e6';
+        
+        // Update toggle background and border
+        this.toggleElement.style.background = bgColor;
+        this.toggleElement.style.borderColor = borderColor;
+        
+        // Update label
         const label = this.toggleElement.querySelector('.toggle-label');
         if (label) {
             label.textContent = this.currentTheme;
+            label.style.color = textColor;
+        }
+        
+        // Update button
+        const button = this.toggleElement.querySelector('.toggle-button');
+        if (button) {
+            button.style.background = isDark ? '#555555' : '#007a6b';
+        }
+        
+        // Update slider position
+        const slider = this.toggleElement.querySelector('.toggle-slider');
+        if (slider) {
+            slider.style.left = isDark ? '2px' : '22px';
+            slider.style.background = bgColor;
         }
     }
 
@@ -103,10 +186,12 @@ export class ThemeToggle {
         this.applyTheme(newTheme);
         this.storeTheme(newTheme);
         
-        // Dispatch custom event for other components that might need to know
+        // Dispatch custom event
         window.dispatchEvent(new CustomEvent('themeChanged', {
             detail: { theme: newTheme }
         }));
+        
+        console.log('Theme switched to:', newTheme);
     }
 
     watchSystemTheme() {
@@ -114,26 +199,22 @@ export class ThemeToggle {
 
         const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
         
-        // Only auto-switch if user hasn't manually set a preference
         const handleSystemThemeChange = (e) => {
             const storedTheme = this.getStoredTheme();
             if (!storedTheme) {
-                // No stored preference, follow system
                 const systemTheme = e.matches ? 'light' : 'dark';
                 this.applyTheme(systemTheme);
             }
         };
 
-        // Modern browsers
         if (mediaQuery.addEventListener) {
             mediaQuery.addEventListener('change', handleSystemThemeChange);
         } else {
-            // Fallback for older browsers
             mediaQuery.addListener(handleSystemThemeChange);
         }
     }
 
-    // Public method to programmatically set theme
+    // Public methods
     setTheme(theme) {
         if (theme === 'light' || theme === 'dark') {
             this.applyTheme(theme);
@@ -141,7 +222,6 @@ export class ThemeToggle {
         }
     }
 
-    // Public method to get current theme
     getTheme() {
         return this.currentTheme;
     }
