@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beyond the CVE: Contextualizing Findings for Holistic Vulnerability Management - Samuel Aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <header class="header">
+        <h1>sam_aydlette</h1>
+        <p>author && cybersecurity_practitioner</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="navbar-header">
+                <h1><a href="/index.html" style="text-decoration: none; color: inherit;"></a>sam_aydlette</h1>
+                <p>// everything is reversible</p>
+            </div>
+            <div class="nav-grid">
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/contact.html" class="nav-button">contact</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">August 11, 2025</span>
+                    <span class="article-category">vulnerability_management</span>
+                </div>
+                
+                <h2 class="article-title">Beyond the CVE: Contextualizing Findings for Holistic Vulnerability Management</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="article-summary">
+                        <p>CVEs get a lot of attention, but they are at the tip of a pyramid when it comes to vulnerability management. This article contextualizes CVE findings to show teams how to build a solid foundation for effective vulnerability management.</p>
+                    </div>
+
+                    <p>Most organizations struggle with an overwhelming number of "critical" and "high" severity findings, making it difficult to prioritize remediation efforts effectively. CVEs get a lot of attention, but they are at the tip of a pyramid when it comes to vulnerability management. Most organizations struggle with an overwhelming number of "critical" and "high" severity findings, making it difficult to prioritize remediation efforts effectively. This article contextualizes CVE findings to show teams how to build a solid foundation for effective vulnerability management.</p>
+
+                    <h3>Step 1: Knowing Where to Look - Properly Tracking Inventory Components</h3>
+                    <p>Before you can manage vulnerabilities, you need to know what assets you're protecting. Teams can track their dependencies and assets by using a combination of <strong>purl</strong> (Package URL) and <strong>Common Platform Enumeration (CPE)</strong>.</p>
+
+                    <p>A <strong>purl</strong> is a standardized identifier format used to uniquely identify software packages and components across different ecosystems and package managers. Purls follow a structured format like:</p>
+
+                    <div class="code-block">
+                        <code>pkg:type/namespace/name@version?qualifiers#subpath</code>
+                    </div>
+
+                    <p>where:</p>
+                    <ul>
+                        <li><strong>type</strong> specifies the package ecosystem (npm, maven, pypi, docker, etc.)</li>
+                        <li><strong>namespace</strong> is the package namespace/organization</li>
+                        <li><strong>name</strong> is the package name</li>
+                        <li><strong>version</strong> is the specific version</li>
+                    </ul>
+
+                    <p>Purls enable you to track your dependencies, and the vulnerabilities they contain, across your entire supply chain.</p>
+
+                    <p>A <strong>CPE</strong> covers broader IT assets including operating systems, hardware, applications, and software packages. CPE identifiers use a structured format like:</p>
+
+                    <div class="code-block">
+                        <code>cpe:2.3:a:vendor:product:version:update:edition:language:sw_edition:target_sw:target_hw:other</code>
+                    </div>
+
+                    <h4>How CPE and Purl Intersect</h4>
+                    <p>Use purl for modern application dependency tracking and CPE for comprehensive infrastructure asset management. Purl handles the "developed" components and CPE covers the "deployed" infrastructure.</p>
+
+                    <p>A typical cloud application might have:</p>
+                    <ul>
+                        <li><strong>Application layer</strong>: Node.js packages, Python libraries → <strong>purl</strong></li>
+                        <li><strong>Runtime layer</strong>: Apache, Nginx, PostgreSQL → <strong>CPE</strong></li>
+                        <li><strong>OS layer</strong>: Ubuntu 22.04, Alpine Linux → <strong>CPE</strong></li>
+                        <li><strong>Infrastructure layer</strong>: AWS ALB, Kubernetes → <strong>CPE</strong></li>
+                    </ul>
+
+                    <p>This dual approach ensures comprehensive coverage across your technology stack.</p>
+
+                    <h4>How This Works in Practice</h4>
+                    <p><strong>SBOM Generation Tools</strong> like Syft automatically extract purl identifiers from package manifests (package.json, requirements.txt, pom.xml) and container images. Asset management platforms like Lansweeper, Device42, and cloud-native solutions like AWS Config or Azure Resource Graph generate CPE identifiers for infrastructure components, often leveraging network discovery tools like nmap or masscan for the underlying service detection.</p>
+
+                    <p>Modern vulnerability scanners consume both identifier types. Build-time tools like Grype, Snyk and Dependabot focus heavily on purl-identified dependencies, while enterprise scanners like Qualys VMDR and Rapid7 InsightVM use CPE data for broader infrastructure coverage. The key integration point is ensuring your asset inventory feeds both identifier types into your vulnerability management platform.</p>
+
+                    <h3>Step 2: Knowing What to Fix - Vulnerability Findings</h3>
+                    <p>Once you have comprehensive asset visibility, you need to understand what vulnerabilities actually mean. This requires familiarity with two key classification systems.</p>
+
+                    <p><strong>Common Vulnerabilities and Exposures (CVE)</strong> represents the actual vulnerability. Each CVE entry represents a specific vulnerability discovered in real-world software or hardware, assigned a unique identifier like CVE-2021-44228 (the infamous Log4j vulnerability). When a security researcher discovers a vulnerability, it receives a CVE identifier that allows everyone in the security community to reference that exact vulnerability unambiguously.</p>
+
+                    <p><strong>Common Weakness Enumeration (CWE)</strong> is a catalog that classifies the types of software weaknesses that can lead to vulnerabilities. Rather than identifying specific instances, CWE focuses on fundamental flaws in software design, implementation, or configuration. For instance, CVE-2021-44228 (Log4j) references CWE-502 (Deserialization of Untrusted Data) and CWE-400 (Uncontrolled Resource Consumption), helping security professionals understand not just that Log4j has a vulnerability, but what type of weakness enables the attack and how similar problems might be prevented in the future.</p>
+
+                    <p>This <strong>CWE</strong> classification enables more sophisticated vulnerability management strategies by allowing teams to identify patterns across their vulnerability landscape, focus secure development training on the most common weakness types in their environment, and build detection rules that catch entire classes of vulnerabilities rather than individual CVEs.</p>
+
+                    <p>Organizations can use <strong>CVE</strong> data for immediate patching decisions while leveraging <strong>CWE</strong> classifications to identify patterns in their vulnerabilities and improve their secure development practices.</p>
+
+                    <h4>How This Works in Practice</h4>
+                    <p><strong>Vulnerability Scanners</strong> like Nessus, OpenVAS, and cloud-native tools automatically match your asset inventory (identified via purl/CPE) against vulnerability databases to surface relevant CVEs. The <strong>National Vulnerability Database (NVD)</strong> serves as the central CVE repository, while tools like CVE Details and security intelligence platforms provide API access for automated integration.</p>
+
+                    <p>Most vulnerability management platforms consume NVD feeds and cross-reference <strong>CWE</strong> data to provide context-rich vulnerability reports. This integration allows security teams to move beyond simple vulnerability counts to understand the root causes driving their risk exposure.</p>
+
+                    <h3>Step 3: Knowing When to Fix - CVSS, VEX and Vulnrichment</h3>
+                    <p>Raw vulnerability data, even when properly classified, still overwhelms most security teams. Effective prioritization requires additional context about severity, applicability, and real-world threat activity.</p>
+
+                    <p><strong>Common Vulnerability Scoring System (CVSS)</strong> is a standardized framework for rating the severity of security vulnerabilities, providing a numerical score from 0.0 to 10.0 (with 10.0 being the most severe). However, <strong>CVSS</strong> scores should be considered alongside business context and threat intelligence rather than used as the sole determinant of remediation priority.</p>
+
+                    <p><strong>VEX</strong> is a standardized data format to communicate the exploitability status of vulnerabilities in specific products or systems. <strong>VEX</strong> documents allow software vendors, system integrators, and security teams to provide authoritative statements about whether a CVE actually affects their particular implementation. <strong>VEX</strong> answers "yes, this CVE applies to our product" or "no, this CVE doesn't affect our product because of how we implemented it, configured it, or because the vulnerable code path isn't reachable."</p>
+
+                    <p><strong>Vulnrichment</strong> adds critical contextual information to CVE entries, focusing on whether vulnerabilities are known to be exploited in the wild. This allows organizations to prioritize based on actual likelihood of exploitability rather than theoretical risk alone.</p>
+
+                    <h4>How This Works in Practice</h4>
+                    <p><strong>CVSS Integration</strong> happens automatically in most vulnerability scanners. Tools like Nessus, Rapid7, and Qualys pull <strong>CVSS</strong> scores from the NVD and display them alongside scan results. <strong>VEX Documents</strong> are increasingly supported by software vendors (Microsoft, Red Hat, Google) who publish <strong>VEX</strong> statements alongside security advisories, and tools like Grype and Trivy can consume <strong>VEX</strong> data to filter false positives from container scans.</p>
+
+                    <p><strong>CISA's Vulnrichment</strong> data is available through the NVD API and is integrated into enterprise security platforms. Leading vulnerability management platforms now highlight CISA's "Known Exploited Vulnerabilities" catalog, automatically flagging CVEs with evidence of active exploitation for immediate attention.</p>
+
+                    <h3>Putting It All Together</h3>
+                    <p>Vulnerability management teams can track software, hardware and firmware components with <strong>purl</strong> and <strong>CPE</strong>, identify relevant CVEs within that scope, and then layer on contextual intelligence to make informed remediation decisions.</p>
+
+                    <h4>Building Your Integrated Workflow</h4>
+                    <ul>
+                        <li><strong>Start with Asset Discovery</strong>: Deploy tools that generate both purl (for dependencies) and CPE (for infrastructure) identifiers. Consolidate this inventory in a centralized asset management system.</li>
+                        
+                        <li><strong>Layer in Vulnerability Detection</strong>: Configure scanners to consume your asset inventory and automatically correlate against CVE databases. Ensure your tools can ingest <strong>VEX</strong> documents from your software vendors and leverage CISA's vulnrichment data.</li>
+                        
+                        <li><strong>Implement Risk-Based Prioritization</strong>: Rather than relying solely on <strong>CVSS</strong> scores, create workflows that elevate vulnerabilities with active exploitation evidence (vulnrichment) while deprioritizing those with <strong>VEX</strong> attestations showing non-applicability to your environment.</li>
+                        
+                        <li><strong>Consolidate Reporting</strong>: Centrally track contextualized findings and provide near-real-time reporting on overall vulnerability remediation status across your entire technology stack.</li>
+                    </ul>
+
+                    <div class="conclusion">
+                        <p>The result is a vulnerability management program that moves beyond simple CVE counting toward risk-informed decision making that reflects your actual threat exposure. Adopting this approach leads to process efficiencies and increased trust with stakeholders.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
