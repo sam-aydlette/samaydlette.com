@@ -344,11 +344,18 @@ a:active {
     color: var(--accent-tertiary);
     font-weight: 500;
     text-transform: lowercase;
+    position: relative;
 }
 
 .article-category::before {
     content: 'tag: ';
     color: var(--text-dim);
+}
+
+.article-category::after {
+    content: ' •';
+    color: var(--accent-tertiary);
+    font-weight: bold;
 }
 
 .article-title {
