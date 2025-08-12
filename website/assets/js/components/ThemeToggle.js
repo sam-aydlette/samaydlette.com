@@ -1,4 +1,4 @@
-// Theme toggle that always defaults to dark mode
+// Updated ThemeToggle.js for Option 1 Design
 export class ThemeToggle {
     constructor() {
         // Always default to dark mode unless user has explicitly chosen light
@@ -44,11 +44,9 @@ export class ThemeToggle {
         
         // Always apply dark mode first, then light if needed
         if (theme === 'light') {
-            document.documentElement.setAttribute('data-theme', 'light');
-        } else {
-            // Remove the attribute to use default dark styles
             document.documentElement.removeAttribute('data-theme');
-            // Or explicitly set dark
+        } else {
+            // Explicitly set dark
             document.documentElement.setAttribute('data-theme', 'dark');
         }
         
@@ -67,60 +65,16 @@ export class ThemeToggle {
         // Check if toggle already exists
         if (document.querySelector('.theme-toggle')) {
             this.toggleElement = document.querySelector('.theme-toggle');
+            this.updateToggleState();
             return;
         }
 
         const toggle = document.createElement('div');
         toggle.className = 'theme-toggle';
         toggle.innerHTML = `
-            <span class="label">${this.currentTheme}</span>
-            <div class="button">
-                <div class="slider"></div>
-            </div>
+            <span class="toggle-label">${this.currentTheme}</span>
+            <div class="toggle-button"></div>
         `;
-        
-        // Apply styles directly
-        Object.assign(toggle.style, {
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            zIndex: '9999',
-            background: this.currentTheme === 'dark' ? '#252525' : '#ffffff',
-            border: '1px solid ' + (this.currentTheme === 'dark' ? '#404040' : '#dee2e6'),
-            borderRadius: '20px',
-            padding: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: '12px',
-            transition: 'all 0.3s ease'
-        });
-        
-        const button = toggle.querySelector('.button');
-        const slider = toggle.querySelector('.slider');
-        
-        Object.assign(button.style, {
-            width: '40px',
-            height: '20px',
-            background: this.currentTheme === 'dark' ? '#555555' : '#007a6b',
-            borderRadius: '10px',
-            position: 'relative',
-            transition: 'all 0.3s ease'
-        });
-        
-        Object.assign(slider.style, {
-            position: 'absolute',
-            width: '16px',
-            height: '16px',
-            background: this.currentTheme === 'dark' ? '#252525' : '#ffffff',
-            borderRadius: '50%',
-            top: '2px',
-            left: this.currentTheme === 'dark' ? '2px' : '22px',
-            transition: 'left 0.3s ease',
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)'
-        });
         
         // Make focusable
         toggle.setAttribute('tabindex', '0');
@@ -129,31 +83,16 @@ export class ThemeToggle {
         
         document.body.appendChild(toggle);
         this.toggleElement = toggle;
+        this.updateToggleState();
     }
 
     updateToggleState() {
         if (!this.toggleElement) return;
         
-        const isDark = this.currentTheme === 'dark';
-        const label = this.toggleElement.querySelector('.label');
-        const button = this.toggleElement.querySelector('.button');
-        const slider = this.toggleElement.querySelector('.slider');
+        const label = this.toggleElement.querySelector('.toggle-label');
         
         if (label) {
             label.textContent = this.currentTheme;
-            label.style.color = isDark ? '#888888' : '#6c757d';
-        }
-        
-        this.toggleElement.style.background = isDark ? '#252525' : '#ffffff';
-        this.toggleElement.style.borderColor = isDark ? '#404040' : '#dee2e6';
-        
-        if (button) {
-            button.style.background = isDark ? '#555555' : '#007a6b';
-        }
-        
-        if (slider) {
-            slider.style.background = isDark ? '#252525' : '#ffffff';
-            slider.style.left = isDark ? '2px' : '22px';
         }
     }
 

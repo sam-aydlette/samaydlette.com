@@ -1,4 +1,4 @@
-// mobile-menu.js
+// Updated mobile-menu.js for Option 1 Design
 export class MobileMenu {
     constructor() {
         this.init();
@@ -58,6 +58,18 @@ export class MobileMenu {
                     menuToggle.classList.remove('active');
                     navbar.classList.remove('active');
                 }
+            });
+
+            // Close menu when clicking on nav links (mobile)
+            const navLinks = navbar.querySelectorAll('.nav-button');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768 && isMenuOpen) {
+                        isMenuOpen = false;
+                        menuToggle.classList.remove('active');
+                        navbar.classList.remove('active');
+                    }
+                });
             });
         }
     }
