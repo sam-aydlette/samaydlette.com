@@ -1,39 +1,38 @@
-// Updated ThemeToggle.js for Option 1 Design
+// Updated ThemeToggle.js - Light Mode Default, No Flash
 export class ThemeToggle {
     constructor() {
-        // Always default to dark mode unless user has explicitly chosen light
-        this.currentTheme = localStorage.getItem('theme') || 'dark';
+        // Default to light mode unless user has explicitly chosen dark
+        this.currentTheme = localStorage.getItem('theme') || 'light';
         
-        // Force dark mode as default (ignore system preferences)
-        if (!localStorage.getItem('theme')) {
-            this.currentTheme = 'dark';
-        }
+        // Apply theme IMMEDIATELY to prevent flash
+        this.applyThemeImmediate(this.currentTheme);
         
         this.init();
     }
 
-    init() {
-        // Wait for stylesheets to load before applying theme
-        this.waitForCSS(() => {
-            // Apply initial theme without transition to prevent flash
-            this.applyTheme(this.currentTheme, true);
-            
-            // Create toggle element
-            this.createToggleElement();
-            
-            // Setup event listeners
-            this.setupEventListeners();
-            
-            console.log('Theme system initialized - default: dark, current:', this.currentTheme);
-        });
+    applyThemeImmediate(theme) {
+        // Apply theme synchronously without waiting for CSS load
+        if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        this.currentTheme = theme;
     }
 
-    waitForCSS(callback) {
-        if (document.readyState === 'complete') {
-            callback();
+    init() {
+        // Wait for DOM to be ready for UI elements
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                this.createToggleElement();
+                this.setupEventListeners();
+            });
         } else {
-            window.addEventListener('load', callback);
+            this.createToggleElement();
+            this.setupEventListeners();
         }
+        
+        console.log('Theme system initialized - default: light, current:', this.currentTheme);
     }
 
     applyTheme(theme, skipTransition = false) {
@@ -42,12 +41,11 @@ export class ThemeToggle {
             document.documentElement.style.transition = 'none';
         }
         
-        // Always apply dark mode first, then light if needed
-        if (theme === 'light') {
-            document.documentElement.removeAttribute('data-theme');
-        } else {
-            // Explicitly set dark
+        // Apply theme
+        if (theme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
         }
         
         this.currentTheme = theme;
@@ -114,9 +112,9 @@ export class ThemeToggle {
     }
 
     toggleTheme() {
-        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
         this.applyTheme(newTheme);
-        // Only save to localStorage when user manually toggles
+        // Save user preference
         localStorage.setItem('theme', newTheme);
         console.log('User toggled to:', newTheme);
         
