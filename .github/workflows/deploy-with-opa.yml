@@ -314,6 +314,28 @@ jobs:
       working-directory: infrastructure
       run: terraform plan -out=tfplan
 
+    # Import any existing resources that Terraform doesn't know about yet
+    - name: Import Existing IAM Role (if needed)
+      working-directory: infrastructure
+      run: |
+        echo "Checking if IAM role needs to be imported..."
+        
+        # Check if role exists in AWS but not in Terraform state
+        if aws iam get-role --role-name "samaydlette-com-lambda-opa-role" >/dev/null 2>&1; then
+          echo "IAM role exists in AWS"
+          
+          # Check if it's in Terraform state
+          if ! terraform state show aws_iam_role.lambda_opa >/dev/null 2>&1; then
+            echo "Role not in Terraform state - importing..."
+            terraform import aws_iam_role.lambda_opa "samaydlette-com-lambda-opa-role"
+            echo "✅ IAM role imported successfully"
+          else
+            echo "Role already in Terraform state"
+          fi
+        else
+          echo "No existing IAM role found - will be created"
+        fi
+
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
