@@ -308,9 +308,8 @@ jobs:
       run: terraform init
     
     # -------------------------------------------------------------------------
-    # BUILD THE INFRASTRUCTURE
+    # BUILD THE INFRASTRUCTURE  
     # -------------------------------------------------------------------------
-
     - name: Import Existing Resources (if needed)
       working-directory: infrastructure
       run: |
@@ -330,6 +329,20 @@ jobs:
           echo "No existing IAM role found - will be created"
         fi
         
+        # Import IAM role policy if it exists
+        if aws iam get-role-policy --role-name "samaydlette-com-lambda-opa-role" --policy-name "samaydlette-com-lambda-opa-policy" >/dev/null 2>&1; then
+          echo "IAM role policy exists in AWS"
+          if ! terraform state show aws_iam_role_policy.lambda_opa >/dev/null 2>&1; then
+            echo "Importing IAM role policy..."
+            terraform import aws_iam_role_policy.lambda_opa "samaydlette-com-lambda-opa-role:samaydlette-com-lambda-opa-policy"
+            echo "✅ IAM role policy imported"
+          else
+            echo "IAM role policy already in Terraform state"
+          fi
+        else
+          echo "No existing IAM role policy found - will be created"
+        fi
+        
         # Import Lambda function if it exists
         if aws lambda get-function --function-name "samaydlette-com-opa-compliance" >/dev/null 2>&1; then
           echo "Lambda function exists in AWS"
@@ -343,11 +356,53 @@ jobs:
         else
           echo "No existing Lambda function found - will be created"
         fi
+        
+        # Import EventBridge rule if it exists
+        if aws events describe-rule --name "samaydlette-com-opa-compliance" >/dev/null 2>&1; then
+          echo "EventBridge rule exists in AWS"
+          if ! terraform state show 'aws_cloudwatch_event_rule.opa_compliance[0]' >/dev/null 2>&1; then
+            echo "Importing EventBridge rule..."
+            terraform import 'aws_cloudwatch_event_rule.opa_compliance[0]' "samaydlette-com-opa-compliance"
+            echo "✅ EventBridge rule imported"
+          else
+            echo "EventBridge rule already in Terraform state"
+          fi
+        else
+          echo "No existing EventBridge rule found - will be created"
+        fi
+        
+        # Import EventBridge target if it exists (targets are part of the rule, check if targets exist)
+        if aws events list-targets-by-rule --rule "samaydlette-com-opa-compliance" --query 'Targets[?Id==`TriggerLambdaTarget`]' --output text >/dev/null 2>&1; then
+          echo "EventBridge target exists in AWS"
+          if ! terraform state show 'aws_cloudwatch_event_target.lambda[0]' >/dev/null 2>&1; then
+            echo "Importing EventBridge target..."
+            terraform import 'aws_cloudwatch_event_target.lambda[0]' "samaydlette-com-opa-compliance/TriggerLambdaTarget"
+            echo "✅ EventBridge target imported"
+          else
+            echo "EventBridge target already in Terraform state"
+          fi
+        else
+          echo "No existing EventBridge target found - will be created"
+        fi
+        
+        # Import Lambda permission if it exists
+        if aws lambda get-policy --function-name "samaydlette-com-opa-compliance" >/dev/null 2>&1; then
+          echo "Lambda function has permissions configured"
+          if ! terraform state show 'aws_lambda_permission.allow_eventbridge[0]' >/dev/null 2>&1; then
+            echo "Importing Lambda permission..."
+            terraform import 'aws_lambda_permission.allow_eventbridge[0]' "samaydlette-com-opa-compliance/AllowExecutionFromEventBridge"
+            echo "✅ Lambda permission imported"
+          else
+            echo "Lambda permission already in Terraform state"
+          fi
+        else
+          echo "No existing Lambda permissions found - will be created"
+        fi
     
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -out=tfplan
-
+    
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
