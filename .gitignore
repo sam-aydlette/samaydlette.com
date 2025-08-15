@@ -7,6 +7,10 @@
 .terraform.lock.hcl
 tfplan
 tfplan.json
+infrastructure/*.tfstate
+infrastructure/*.tfstate.*
+infrastructure/tfplan
+compliance-result.json
 
 # Lambda deployment packages
 *.zip

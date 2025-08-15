@@ -2,16 +2,16 @@
 # =============================================================================
 # TERRAFORM PLAN WITH OPA COMPLIANCE CHECK + SECTION 508 ACCESSIBILITY
 # =============================================================================
-# This script is the security guard for your infrastructure AND website content.
-# It looks at what Terraform wants to build and checks it against your security
-# rules, PLUS it checks your website content for accessibility compliance.
-# If anything violates your policies, deployment is blocked.
+# This script is the security guard for my infrastructure AND website content.
+# It looks at what Terraform wants to build and checks it against my security
+# rules, PLUS it checks my website content for accessibility compliance.
+# If anything violates my policies, deployment is blocked.
 #
 # What this does:
 # 1. Checks that required tools are installed
 # 2. Creates a plan showing what infrastructure will be built
 # 3. Converts that plan into a format security tools can read
-# 4. Checks each resource against your security policies
+# 4. Checks each resource against my security policies
 # 5. Checks HTML files for Section 508 accessibility compliance
 # 6. Blocks deployment if any violations are found
 # =============================================================================
@@ -168,7 +168,7 @@ PYTHON_SCRIPT
 # =============================================================================
 # RUN INFRASTRUCTURE SECURITY CHECKS
 # =============================================================================
-# Check each AWS resource against your infrastructure security policies
+# Check each AWS resource against my infrastructure security policies
 # =============================================================================
 echo "Running infrastructure compliance checks..."
 VIOLATIONS_FOUND=false

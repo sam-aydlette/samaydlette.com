@@ -71,27 +71,27 @@ provider "aws" {
 # =============================================================================
 # FIND EXISTING AWS RESOURCES
 # =============================================================================
-# These sections locate your existing AWS resources that were created manually,
+# These sections locate my existing AWS resources that were created manually,
 # so Terraform can work with them without breaking anything
 # =============================================================================
 
-# Find your existing S3 bucket that holds the website files
+# Find my existing S3 bucket that holds the website files
 data "aws_s3_bucket" "website" {
   bucket = var.domain_name
 }
 
-# Find your existing CloudFront distribution that serves the website
+# Find my existing CloudFront distribution that serves the website
 data "aws_cloudfront_distribution" "website" {
   id = var.existing_cloudfront_distribution_id
 }
 
-# Find your existing Route53 hosted zone for DNS (if you manage DNS)
+# Find my existing Route53 hosted zone for DNS (if you manage DNS)
 data "aws_route53_zone" "website" {
   count = var.manage_dns ? 1 : 0
   name  = var.domain_name
 }
 
-# Find your existing SSL certificate for HTTPS
+# Find my existing SSL certificate for HTTPS
 data "aws_acm_certificate" "website" {
   provider = aws.us_east_1
   domain   = var.domain_name
@@ -102,7 +102,7 @@ data "aws_acm_certificate" "website" {
 # =============================================================================
 # SECURE YOUR EXISTING S3 BUCKET
 # =============================================================================
-# Add security features to your existing S3 bucket without breaking it
+# Add security features to my existing S3 bucket without breaking it
 # =============================================================================
 
 # Turn on file versioning so you can recover deleted or changed files
@@ -118,7 +118,7 @@ resource "aws_s3_bucket_versioning" "website" {
   }
 }
 
-# Encrypt files stored in your S3 bucket
+# Encrypt files stored in my S3 bucket
 resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
   bucket = data.aws_s3_bucket.website.id
 
@@ -147,7 +147,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
   }
 }
 
-# Set up permissions so only CloudFront can access your S3 bucket
+# Set up permissions so only CloudFront can access my S3 bucket
 resource "aws_s3_bucket_policy" "website" {
   bucket     = data.aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
@@ -176,7 +176,7 @@ resource "aws_s3_bucket_policy" "website" {
 # =============================================================================
 # SET UP DNS MONITORING (OPTIONAL)
 # =============================================================================
-# These resources monitor your DNS queries if you want that information. These resources are only created if you enable DNS logging.
+# These resources monitor my DNS queries if you want that information. These resources are only created if you enable DNS logging.
 # =============================================================================
 
 # Create a place to store DNS query logs
@@ -291,7 +291,7 @@ resource "aws_iam_role_policy" "lambda_opa" {
 # =============================================================================
 # CREATE COMPLIANCE MONITORING FUNCTION
 # =============================================================================
-# This function runs daily to check if your infrastructure is still secure
+# This function runs daily to check if my infrastructure is still secure
 # =============================================================================
 
 # Create the actual monitoring function
