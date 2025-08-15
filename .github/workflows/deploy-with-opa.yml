@@ -1,6 +1,20 @@
-# .github/workflows/deploy-with-opa.yml
+# =============================================================================
+# GitHub Actions Workflow: Deploy Website with OPA Compliance
+# =============================================================================
+# This workflow stops bad infrastructure from reaching production by checking
+# security rules before deployment. If the infrastructure passes security
+# checks, it gets deployed. If not, deployment is blocked.
+#
+# The process: Check security → Deploy if safe → Verify it worked
+# =============================================================================
+
 name: Deploy Website with OPA Compliance
 
+# =============================================================================
+# WHEN THIS RUNS
+# =============================================================================
+# Automatically when code changes, during code reviews, or manually
+# =============================================================================
 on:
   push:
     branches: [ main ]
@@ -18,12 +32,22 @@ on:
         - staging
         - prod
 
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+# Tool versions and AWS region used everywhere
+# =============================================================================
 env:
   AWS_REGION: us-east-2
   TERRAFORM_VERSION: 1.5.0
   OPA_VERSION: 0.57.0
   NODE_VERSION: 18
 
+# =============================================================================
+# WHAT THIS WORKFLOW CAN DO
+# =============================================================================
+# Permissions needed to read code, create issues, and upload security results
+# =============================================================================
 permissions:
   contents: read
   issues: write
@@ -31,6 +55,12 @@ permissions:
   security-events: write
 
 jobs:
+  # ===========================================================================
+  # JOB 1: SECURITY CHECK
+  # ===========================================================================
+  # Acts like a security guard - checks if infrastructure is safe before
+  # allowing deployment. This is the main protection against bad deployments.
+  # ===========================================================================
   compliance-check:
     name: OPA Compliance Check
     runs-on: ubuntu-latest
@@ -38,15 +68,22 @@ jobs:
       compliant: ${{ steps.compliance.outputs.compliant }}
 
     steps:
+    # -------------------------------------------------------------------------
+    # GET READY TO CHECK SECURITY
+    # -------------------------------------------------------------------------
+    # Download code and install the tools needed for security checking
+    # -------------------------------------------------------------------------
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Install infrastructure management tool
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
 
+    # Install security policy checking tool
     - name: Setup OPA
       run: |
         curl -L -o opa https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static
@@ -54,6 +91,7 @@ jobs:
         sudo mv opa /usr/local/bin
         opa version
 
+    # Install JavaScript runtime for Lambda functions
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
@@ -61,6 +99,7 @@ jobs:
         cache: 'npm'
         cache-dependency-path: infrastructure/lambda/package-lock.json
 
+    # Connect to AWS using stored credentials
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -68,6 +107,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    # -------------------------------------------------------------------------
+    # CREATE CONFIGURATION FILE
+    # -------------------------------------------------------------------------
+    # Build settings file from stored secrets and variables
+    # -------------------------------------------------------------------------
     - name: Create terraform.tfvars
       working-directory: infrastructure
       run: |
@@ -86,10 +130,16 @@ jobs:
         section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
         EOF
 
+    # -------------------------------------------------------------------------
+    # PREPARE MONITORING FUNCTION
+    # -------------------------------------------------------------------------
+    # Package up the code that will monitor security after deployment
+    # -------------------------------------------------------------------------
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm install --production
     
+    # Debug step to see what files exist (helpful for troubleshooting)
     - name: Debug Lambda directory
       working-directory: infrastructure
       run: |
@@ -105,6 +155,7 @@ jobs:
         echo "=== File structure tree ==="
         find . -type f -name "*.js" -o -name "*.json" -o -name "*.rego" | head -10
 
+    # Package monitoring function for deployment
     - name: Create Lambda zip file 
       working-directory: infrastructure
       run: |
@@ -115,6 +166,11 @@ jobs:
         echo "Zip file created:"
         ls -la opa-compliance.zip
 
+    # -------------------------------------------------------------------------
+    # CHECK WHAT INFRASTRUCTURE WILL BE BUILT
+    # -------------------------------------------------------------------------
+    # Look at the infrastructure plan before building anything
+    # -------------------------------------------------------------------------
     - name: Terraform Init
       working-directory: infrastructure
       run: terraform init
@@ -123,10 +179,17 @@ jobs:
       working-directory: infrastructure
       run: terraform validate
 
+    # Create a plan showing what will be built
     - name: Terraform Plan
       working-directory: infrastructure
       run: terraform plan -out=tfplan
 
+    # -------------------------------------------------------------------------
+    # THE ACTUAL SECURITY CHECK
+    # -------------------------------------------------------------------------
+    # This is where we check if the planned infrastructure is safe
+    # If this fails, nothing gets deployed
+    # -------------------------------------------------------------------------
     - name: Run OPA Compliance Check
       working-directory: infrastructure
       id: compliance
@@ -141,6 +204,11 @@ jobs:
           exit 1
         fi
 
+    # -------------------------------------------------------------------------
+    # SAVE WORK FOR NEXT STEP
+    # -------------------------------------------------------------------------
+    # Keep the validated plan and settings for the deployment job
+    # -------------------------------------------------------------------------
     - name: Upload Terraform Plan Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -157,6 +225,12 @@ jobs:
         path: infrastructure/terraform.tfvars
         retention-days: 5
 
+  # ===========================================================================
+  # JOB 2: DEPLOY INFRASTRUCTURE
+  # ===========================================================================
+  # Only runs if security check passed. Builds the infrastructure,
+  # uploads the website, and verifies everything works.
+  # ===========================================================================
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
@@ -165,10 +239,14 @@ jobs:
       issues: write
       pull-requests: write
     needs: compliance-check
+    # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
 
     steps:
+    # -------------------------------------------------------------------------
+    # SET UP SAME ENVIRONMENT AS SECURITY CHECK
+    # -------------------------------------------------------------------------
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -192,6 +270,9 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
+    # -------------------------------------------------------------------------
+    # GET BACK THE VALIDATED PLAN
+    # -------------------------------------------------------------------------
     - name: Download tfvars Artifact
       uses: actions/download-artifact@v4
       with:
@@ -204,6 +285,9 @@ jobs:
         name: terraform-plan
         path: infrastructure/
 
+    # -------------------------------------------------------------------------
+    # REBUILD MONITORING FUNCTION
+    # -------------------------------------------------------------------------
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm install --production
@@ -222,64 +306,10 @@ jobs:
     - name: Terraform Init
       working-directory: infrastructure
       run: terraform init
-
-    - name: Clean up conflicting IAM resources
-      working-directory: infrastructure
-      run: |
-        echo "Cleaning up existing IAM role if it exists..."
-        
-        # Check if role exists
-        if aws iam get-role --role-name samaydlette-com-lambda-opa-role >/dev/null 2>&1; then
-          echo "IAM role exists, checking if it's in Terraform state..."
-          
-          if ! terraform state show 'aws_iam_role.lambda_opa' >/dev/null 2>&1; then
-            echo "Role exists in AWS but not in Terraform state, cleaning up..."
-            
-            # Delete inline policies first
-            echo "Deleting inline policies..."
-            aws iam list-role-policies --role-name samaydlette-com-lambda-opa-role --query 'PolicyNames[]' --output text | xargs -I {} aws iam delete-role-policy --role-name samaydlette-com-lambda-opa-role --policy-name {} || true
-            
-            # Delete the role
-            echo "Deleting IAM role..."
-            aws iam delete-role --role-name samaydlette-com-lambda-opa-role || true
-            
-            echo "IAM role cleanup completed"
-          else
-            echo "IAM role already managed by Terraform"
-          fi
-        else
-          echo "IAM role doesn't exist, will be created by Terraform"
-        fi
-
-    - name: Import existing Lambda function and permissions if needed
-      working-directory: infrastructure
-      run: |
-        # Check if Lambda function exists in AWS but not in state
-        if aws lambda get-function --function-name samaydlette-com-opa-compliance >/dev/null 2>&1; then
-          echo "Lambda function exists in AWS, checking Terraform state..."
-          if ! terraform state show 'aws_lambda_function.opa_compliance[0]' >/dev/null 2>&1; then
-            echo "Importing existing Lambda function into Terraform state..."
-            terraform import 'aws_lambda_function.opa_compliance[0]' samaydlette-com-opa-compliance
-            echo "Lambda function imported"
-          else
-            echo "Lambda function already in Terraform state"
-          fi
-          
-          # Check if Lambda permission exists and import it too
-          if aws lambda get-policy --function-name samaydlette-com-opa-compliance >/dev/null 2>&1; then
-            echo "Lambda policy exists, checking if permission is in Terraform state..."
-            if ! terraform state show 'aws_lambda_permission.allow_eventbridge[0]' >/dev/null 2>&1; then
-              echo "Importing existing Lambda permission into Terraform state..."
-              terraform import 'aws_lambda_permission.allow_eventbridge[0]' samaydlette-com-opa-compliance/AllowExecutionFromEventBridge
-              echo "Lambda permission imported"
-            else
-              echo "Lambda permission already in Terraform state"
-            fi
-          fi
-        else
-          echo "Lambda function doesn't exist in AWS, will be created"
-        fi
     
+    # -------------------------------------------------------------------------
+    # BUILD THE INFRASTRUCTURE
+    # -------------------------------------------------------------------------
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -out=tfplan
@@ -287,45 +317,17 @@ jobs:
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
-    
-    - name: Force recreate Lambda function to clear KMS issues
-      working-directory: infrastructure
-      run: |
-        echo "Destroying and recreating Lambda function to clear KMS configuration..."
-        
-        # Remove from Terraform state
-        terraform state rm 'aws_lambda_function.opa_compliance[0]' || true
-        
-        # Delete the actual Lambda function
-        aws lambda delete-function --function-name samaydlette-com-opa-compliance || true
-        
-        # Wait a moment
-        sleep 10
-        
-        # Apply Terraform again to recreate it
-        terraform apply -auto-approve
-        
-        echo "✅ Lambda function recreated from scratch"
-    
-    - name: Disable Lambda environment variable encryption
-      run: |
-        echo "Removing KMS encryption from Lambda environment variables..."
-        aws lambda update-function-configuration \
-          --function-name samaydlette-com-opa-compliance \
-          --kms-key-arn ""
-        
-        echo "Waiting for update to complete..."
-        aws lambda wait function-updated \
-          --function-name samaydlette-com-opa-compliance
-        
-        echo "✅ Lambda environment variables are now unencrypted"
 
+    # -------------------------------------------------------------------------
+    # UPLOAD WEBSITE FILES
+    # -------------------------------------------------------------------------
+    # Put the actual website files on the internet
+    # -------------------------------------------------------------------------
     - name: Sync Website Content
       run: |
         echo "Getting S3 bucket name from Terraform outputs..."
         cd infrastructure
         
-        # Get bucket name with proper error handling
         BUCKET_NAME=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
         
         if [ -z "$BUCKET_NAME" ]; then
@@ -338,9 +340,9 @@ jobs:
         echo "✅ S3 bucket name: $BUCKET_NAME"
         echo "Syncing website content..."
         
-        # Go back to root directory for website files
         cd ..
         
+        # Upload website files, skip infrastructure code
         aws s3 sync website/ s3://$BUCKET_NAME/ \
           --exclude "*.tf" \
           --exclude "*.tfvars*" \
@@ -357,6 +359,11 @@ jobs:
         
         echo "✅ Website content synced successfully"
 
+    # -------------------------------------------------------------------------
+    # REFRESH WEBSITE CACHE
+    # -------------------------------------------------------------------------
+    # Tell the CDN to show the new website immediately
+    # -------------------------------------------------------------------------
     - name: Invalidate CloudFront Cache
       run: |
         echo "Getting CloudFront distribution ID..."
@@ -374,12 +381,18 @@ jobs:
         echo "✅ CloudFront distribution ID: $DISTRIBUTION_ID"
         echo "Creating cache invalidation..."
         
+        # Tell CDN to refresh all cached content
         aws cloudfront create-invalidation \
           --distribution-id $DISTRIBUTION_ID \
           --paths "/*"
         
         echo "✅ CloudFront cache invalidation created"
 
+    # -------------------------------------------------------------------------
+    # VERIFY EVERYTHING WORKED
+    # -------------------------------------------------------------------------
+    # Run the monitoring function to make sure deployment was successful
+    # -------------------------------------------------------------------------
     - name: Run Post-Deployment Compliance Check
       run: |
         echo "Debug: Current working directory"
@@ -387,16 +400,14 @@ jobs:
         echo "Debug: Directory contents before Lambda check"
         ls -la
         
-        # Change to infrastructure directory for terraform commands
         cd infrastructure
         
         LAMBDA_FUNCTION=$(terraform output -raw lambda_function_name 2>/dev/null || echo "")
         echo "Lambda function name: $LAMBDA_FUNCTION"
         
-        # Go back to root directory for file operations
         cd ..
         
-        # Check if Lambda function exists before invoking
+        # Test the monitoring function if it exists
         if [ -n "$LAMBDA_FUNCTION" ] && [ "$LAMBDA_FUNCTION" != "Not created" ]; then
           if aws lambda get-function --function-name $LAMBDA_FUNCTION >/dev/null 2>&1; then
             echo "✅ Lambda function exists, invoking..."
@@ -413,7 +424,6 @@ jobs:
               echo "Compliance check results:"
               cat compliance-result.json | jq '.'
               
-              # Check if compliant
               COMPLIANT=$(cat compliance-result.json | jq -r '.body' | jq -r '.compliant // false')
               if [ "$COMPLIANT" = "true" ]; then
                 echo "✅ Post-deployment compliance check passed"
@@ -444,6 +454,7 @@ jobs:
           echo "❌ compliance-result.json still missing"
         fi
   
+    # Help debug file system issues
     - name: Debug - List files before upload
       if: always()
       run: |
@@ -452,6 +463,9 @@ jobs:
         ls -la
         find . -name "*compliance*" -type f 2>/dev/null || echo "No compliance files found anywhere"
     
+    # -------------------------------------------------------------------------
+    # SAVE DEPLOYMENT SUMMARY
+    # -------------------------------------------------------------------------
     - name: Save Deployment Outputs
       run: |
         cd infrastructure
@@ -465,6 +479,7 @@ jobs:
         echo "| CloudFront Distribution | $(terraform output -raw cloudfront_distribution_id) |" >> $GITHUB_STEP_SUMMARY
         echo "| Website URL | $(terraform output -json website_urls | jq -r '.domain // .cloudfront') |" >> $GITHUB_STEP_SUMMARY
     
+    # Keep compliance results for audit records
     - name: Upload Compliance Report
       uses: actions/upload-artifact@v4
       if: always()
@@ -473,6 +488,11 @@ jobs:
         path: compliance-result.json
         retention-days: 30
 
+  # ===========================================================================
+  # JOB 3: EXTRA SECURITY SCANS
+  # ===========================================================================
+  # Runs additional security tools during code review to catch more issues
+  # ===========================================================================
   security-scan:
     name: Security Scan
     runs-on: ubuntu-latest
@@ -485,11 +505,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Scan infrastructure code for security issues
     - name: Run tfsec
       uses: aquasecurity/tfsec-action@v1.0.3
       with:
         soft_fail: true
 
+    # Another security scanner with different focus
     - name: Run Checkov
       id: checkov
       uses: bridgecrewio/checkov-action@master
@@ -500,6 +522,7 @@ jobs:
         output_format: sarif
         output_file_path: checkov-results.sarif
 
+    # Make sure results file exists even if scan failed
     - name: Ensure SARIF file exists
       if: always()
       run: |
@@ -526,12 +549,18 @@ jobs:
           echo "SARIF file already exists, size: $(wc -c < checkov-results.sarif) bytes"
         fi
 
+    # Upload results to GitHub Security tab
     - name: Upload Checkov Results
       uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
         sarif_file: checkov-results.sarif
 
+  # ===========================================================================
+  # JOB 4: ALERT WHEN THINGS BREAK
+  # ===========================================================================
+  # Sends notifications and creates tickets when deployment fails
+  # ===========================================================================
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
@@ -539,15 +568,7 @@ jobs:
     if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
     
     steps:
-    - name: Send Slack Notification
-      if: vars.SLACK_WEBHOOK_URL
-      uses: 8398a7/action-slack@v3
-      with:
-        status: failure
-        channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-
+    # Create GitHub issue so failure doesn't get forgotten
     - name: Create Issue on Failure
       if: github.event_name == 'push'
       uses: actions/github-script@v7
