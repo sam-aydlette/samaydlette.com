@@ -1,6 +1,22 @@
-# main.tf - Terraform configuration for existing website with OPA compliance
-# This configuration manages existing resources safely and adds new compliance functionality
-# Suppress unnecessary/expensive checks for static website hosting
+# =============================================================================
+# TERRAFORM CONFIGURATION: Website Infrastructure with OPA Compliance
+# =============================================================================
+# This file sets up AWS infrastructure for a static website with security
+# compliance monitoring.
+#
+# What this creates:
+# - References existing S3 bucket and CloudFront distribution
+# - Adds security settings to existing resources
+# - Creates a Lambda function to monitor compliance
+# - Sets up automated compliance checking
+# =============================================================================
+
+# =============================================================================
+# SKIP EXPENSIVE SECURITY CHECKS FOR STATIC WEBSITES
+# =============================================================================
+# These comments tell security scanners to skip checks that don't make sense
+# for a simple static website, avoiding unnecessary costs and complexity
+# =============================================================================
 #checkov:skip=CKV_AWS_144:Cross-region replication not cost-effective for static website
 #checkov:skip=CKV_AWS_23:S3 event notifications not required for static content
 #checkov:skip=CKV_AWS_18:S3 access logging generates additional costs and storage for static site
@@ -16,6 +32,11 @@
 #checkov:skip=CKV_AWS_73:Lambda X-Ray tracing adds costs for minimal benefit on compliance checks
 #checkov:skip=CKV_AWS_50:Lambda code signing not required for basic compliance functions
 
+# =============================================================================
+# TERRAFORM REQUIREMENTS
+# =============================================================================
+# Specify which version of Terraform and which cloud providers to use
+# =============================================================================
 terraform {
   required_version = ">= 1.0"
   required_providers {
@@ -30,37 +51,47 @@ terraform {
   }
 }
 
-# Primary provider for main resources (us-east-2)
+# =============================================================================
+# AWS CONNECTION SETUP
+# =============================================================================
+# Tell Terraform how to connect to AWS in different regions
+# =============================================================================
+
+# Main AWS connection for most resources
 provider "aws" {
   region = var.aws_region
 }
 
-# Secondary provider for SSL certificates (required to be us-east-1 for CloudFront)
+# Special connection for SSL certificates (they must be in us-east-1 for CloudFront)
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
 }
 
-# DATA SOURCES FOR EXISTING RESOURCES
-# =================================
+# =============================================================================
+# FIND EXISTING AWS RESOURCES
+# =============================================================================
+# These sections locate your existing AWS resources that were created manually,
+# so Terraform can work with them without breaking anything
+# =============================================================================
 
-# Reference existing S3 bucket
+# Find your existing S3 bucket that holds the website files
 data "aws_s3_bucket" "website" {
   bucket = var.domain_name
 }
 
-# Reference existing CloudFront distribution
+# Find your existing CloudFront distribution that serves the website
 data "aws_cloudfront_distribution" "website" {
   id = var.existing_cloudfront_distribution_id
 }
 
-# Reference existing Route53 hosted zone
+# Find your existing Route53 hosted zone for DNS (if you manage DNS)
 data "aws_route53_zone" "website" {
   count = var.manage_dns ? 1 : 0
   name  = var.domain_name
 }
 
-# Reference existing SSL certificate
+# Find your existing SSL certificate for HTTPS
 data "aws_acm_certificate" "website" {
   provider = aws.us_east_1
   domain   = var.domain_name
@@ -68,10 +99,13 @@ data "aws_acm_certificate" "website" {
   most_recent = true
 }
 
-# MANAGED RESOURCES (will be created/managed)
-# ==========================================
+# =============================================================================
+# SECURE YOUR EXISTING S3 BUCKET
+# =============================================================================
+# Add security features to your existing S3 bucket without breaking it
+# =============================================================================
 
-# S3 bucket versioning - safe to manage on existing bucket
+# Turn on file versioning so you can recover deleted or changed files
 resource "aws_s3_bucket_versioning" "website" {
   bucket = data.aws_s3_bucket.website.id
   
@@ -80,28 +114,26 @@ resource "aws_s3_bucket_versioning" "website" {
   }
 
   lifecycle {
-    # Prevent destruction if versioning is already enabled
-    prevent_destroy = true
+    prevent_destroy = true  # Don't accidentally delete this setting
   }
 }
 
-# S3 bucket encryption - safe to manage on existing bucket
+# Encrypt files stored in your S3 bucket
 resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
   bucket = data.aws_s3_bucket.website.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm = "AES256"  # Use AWS's free encryption
     }
   }
 
   lifecycle {
-    # Prevent destruction of encryption configuration
-    prevent_destroy = true
+    prevent_destroy = true  # Don't accidentally remove encryption
   }
 }
 
-# S3 bucket public access block - safe to manage on existing bucket
+# Block public access to prevent accidental exposure
 resource "aws_s3_bucket_public_access_block" "website" {
   bucket = data.aws_s3_bucket.website.id
 
@@ -111,12 +143,11 @@ resource "aws_s3_bucket_public_access_block" "website" {
   restrict_public_buckets = true
 
   lifecycle {
-    # Prevent destruction of security settings
-    prevent_destroy = true
+    prevent_destroy = true  # Keep security settings safe
   }
 }
 
-# S3 bucket policy - manage policy on existing bucket
+# Set up permissions so only CloudFront can access your S3 bucket
 resource "aws_s3_bucket_policy" "website" {
   bucket     = data.aws_s3_bucket.website.id
   depends_on = [aws_s3_bucket_public_access_block.website]
@@ -142,7 +173,13 @@ resource "aws_s3_bucket_policy" "website" {
   })
 }
 
-# CloudWatch Log Group for Route53 query logging - NEW RESOURCE
+# =============================================================================
+# SET UP DNS MONITORING (OPTIONAL)
+# =============================================================================
+# These resources monitor your DNS queries if you want that information. These resources are only created if you enable DNS logging.
+# =============================================================================
+
+# Create a place to store DNS query logs
 resource "aws_cloudwatch_log_group" "route53_query_log" {
   count             = var.manage_dns && var.enable_route53_logging ? 1 : 0
   name              = "/aws/route53/${var.domain_name}"
@@ -157,12 +194,11 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
   }
 
   lifecycle {
-    # Only create if it doesn't exist
     create_before_destroy = true
   }
 }
 
-# Route53 query logging configuration - NEW RESOURCE
+# Actually start logging DNS queries
 resource "aws_route53_query_log" "website" {
   count                    = var.manage_dns && var.enable_route53_logging ? 1 : 0
   depends_on              = [aws_cloudwatch_log_group.route53_query_log]
@@ -170,11 +206,24 @@ resource "aws_route53_query_log" "website" {
   zone_id                 = data.aws_route53_zone.website[0].zone_id
 }
 
+# =============================================================================
+# PREPARE COMPLIANCE MONITORING FUNCTION
+# =============================================================================
+# Get the deployment package ready for the Lambda function
+# =============================================================================
+
+# Find the zip file containing the monitoring function code
 data "local_file" "lambda_zip" {
   filename = "./opa-compliance.zip"
 }
 
-# IAM role for Lambda function
+# =============================================================================
+# CREATE PERMISSIONS FOR MONITORING FUNCTION
+# =============================================================================
+# Set up AWS permissions so the Lambda function can do its job
+# =============================================================================
+
+# Create a role that defines what the monitoring function is allowed to do
 resource "aws_iam_role" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-role"
 
@@ -200,7 +249,7 @@ resource "aws_iam_role" "lambda_opa" {
   }
 }
 
-# IAM policy for Lambda function
+# Define the specific permissions the monitoring function needs
 resource "aws_iam_role_policy" "lambda_opa" {
   name = "${replace(var.domain_name, ".", "-")}-lambda-opa-policy"
   role = aws_iam_role.lambda_opa.id
@@ -239,7 +288,13 @@ resource "aws_iam_role_policy" "lambda_opa" {
   })
 }
 
-# Lambda function for OPA compliance checking
+# =============================================================================
+# CREATE COMPLIANCE MONITORING FUNCTION
+# =============================================================================
+# This function runs daily to check if your infrastructure is still secure
+# =============================================================================
+
+# Create the actual monitoring function
 resource "aws_lambda_function" "opa_compliance" {
   count = var.create_lambda_compliance ? 1 : 0
   
@@ -266,7 +321,13 @@ resource "aws_lambda_function" "opa_compliance" {
   }
 }
 
-# EventBridge rule to trigger compliance checks
+# =============================================================================
+# SET UP AUTOMATIC COMPLIANCE CHECKING
+# =============================================================================
+# Schedule the monitoring function to run regularly
+# =============================================================================
+
+# Create a schedule that triggers compliance checks
 resource "aws_cloudwatch_event_rule" "opa_compliance" {
   count = var.create_eventbridge_rules ? 1 : 0
   
@@ -283,7 +344,7 @@ resource "aws_cloudwatch_event_rule" "opa_compliance" {
   }
 }
 
-# EventBridge target
+# Connect the schedule to the monitoring function
 resource "aws_cloudwatch_event_target" "lambda" {
   count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
   
@@ -292,7 +353,7 @@ resource "aws_cloudwatch_event_target" "lambda" {
   arn       = aws_lambda_function.opa_compliance[0].arn
 }
 
-# Lambda permission for EventBridge
+# Give the schedule permission to run the monitoring function
 resource "aws_lambda_permission" "allow_eventbridge" {
   count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
   

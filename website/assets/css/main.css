@@ -1,44 +1,77 @@
-/* ===== Option 1: Minimalist Professional Hacker Design - Light Mode Default ===== */
+/* =============================================================================
+   WEBSITE STYLES: Professional Hacker Theme with Light/Dark Mode
+   =============================================================================
+   This CSS file creates a clean, professional website with a programming theme.
+   It supports both light and dark modes and works well on all device sizes.
+   
+   Key features:
+   - Light mode by default, dark mode when toggled
+   - Responsive design that works on phones, tablets, and desktops
+   - Programming-inspired design elements (code snippets, terminal feel)
+   - Accessibility features for screen readers and keyboard navigation
+   
+   Organization:
+   1. Color themes and fonts
+   2. Theme toggle functionality  
+   3. Basic page layout
+   4. Navigation and header
+   5. Content areas and articles
+   6. Forms and interactive elements
+   7. Mobile responsive adjustments
+   ============================================================================= */
+
+/* =============================================================================
+   IMPORT FONTS
+   ============================================================================= */
+/* Load modern fonts from Google Fonts for better typography */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
+/* =============================================================================
+   COLOR THEMES AND TYPOGRAPHY
+   ============================================================================= */
+/* Define all colors and fonts in one place for easy maintenance */
+
 :root {
-    /* Light mode (default) */
-    --bg-primary: #fafafa;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f5f5f5;
-    --accent-primary: #0066cc;
-    --accent-secondary: #ff6b35;
-    --accent-tertiary: #0066cc;
-    --text-primary: #1a1a1a;
-    --text-secondary: #4a4a4a;
-    --text-muted: #888888;
-    --border-color: #e0e0e0;
-    --border-accent: #0066cc;
-    --shadow-subtle: rgba(0, 0, 0, 0.05);
-    --shadow-strong: rgba(0, 0, 0, 0.15);
+    /* LIGHT MODE COLORS (default) */
+    --bg-primary: #fafafa;          /* Main background color */
+    --bg-secondary: #ffffff;        /* Card and section backgrounds */
+    --bg-tertiary: #f5f5f5;         /* Code blocks and form inputs */
+    --accent-primary: #0066cc;      /* Links and highlights */
+    --accent-secondary: #ff6b35;    /* Orange accents and warnings */
+    --accent-tertiary: #0066cc;     /* Additional accent color */
+    --text-primary: #1a1a1a;        /* Main text color */
+    --text-secondary: #4a4a4a;      /* Subheadings and descriptions */
+    --text-muted: #888888;          /* Less important text */
+    --border-color: #e0e0e0;        /* Borders and dividers */
+    --border-accent: #0066cc;       /* Highlighted borders */
+    --shadow-subtle: rgba(0, 0, 0, 0.05);   /* Light shadows */
+    --shadow-strong: rgba(0, 0, 0, 0.15);   /* Darker shadows */
     
-    /* Typography */
-    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
-    --font-size-xs: 0.75rem;
-    --font-size-sm: 0.875rem;
-    --font-size-base: 1rem;
-    --font-size-lg: 1.125rem;
-    --font-size-xl: 1.25rem;
-    --font-size-2xl: 1.5rem;
-    --font-size-3xl: 1.875rem;
-    --font-size-4xl: 2.25rem;
+    /* FONT DEFINITIONS */
+    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;     /* Body text */
+    --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;          /* Code and terminal text */
     
-    /* Spacing */
-    --space-xs: 0.25rem;
-    --space-sm: 0.5rem;
-    --space-md: 1rem;
-    --space-lg: 1.5rem;
-    --space-xl: 2rem;
-    --space-2xl: 3rem;
-    --space-3xl: 4rem;
+    /* FONT SIZES */
+    --font-size-xs: 0.75rem;        /* Very small text */
+    --font-size-sm: 0.875rem;       /* Small text */
+    --font-size-base: 1rem;         /* Normal text */
+    --font-size-lg: 1.125rem;       /* Large text */
+    --font-size-xl: 1.25rem;        /* Extra large text */
+    --font-size-2xl: 1.5rem;        /* Headings */
+    --font-size-3xl: 1.875rem;      /* Large headings */
+    --font-size-4xl: 2.25rem;       /* Main page title */
     
-    /* Legacy color mappings for compatibility */
+    /* SPACING SYSTEM */
+    --space-xs: 0.25rem;            /* 4px */
+    --space-sm: 0.5rem;             /* 8px */
+    --space-md: 1rem;               /* 16px */
+    --space-lg: 1.5rem;             /* 24px */
+    --space-xl: 2rem;               /* 32px */
+    --space-2xl: 3rem;              /* 48px */
+    --space-3xl: 4rem;              /* 64px */
+    
+    /* LEGACY COMPATIBILITY */
+    /* These map new variables to old names for existing code */
     --primary-color: var(--bg-secondary);
     --secondary-color: var(--bg-tertiary);
     --accent-color: var(--accent-primary);
@@ -54,23 +87,24 @@
     --shadow-color: var(--shadow-subtle);
 }
 
-/* Dark mode (when data-theme="dark" is applied) */
+/* DARK MODE COLORS */
+/* When someone toggles to dark mode, these colors replace the light mode ones */
 [data-theme="dark"] {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #1a1a1a;
-    --bg-tertiary: #252525;
-    --accent-primary: #00ff88;
-    --accent-secondary: #ff7b54;
-    --accent-tertiary: #00ff88;
-    --text-primary: #ffffff;
-    --text-secondary: #cccccc;
-    --text-muted: #888888;
-    --border-color: #333333;
-    --border-accent: #00ff88;
-    --shadow-subtle: rgba(0, 255, 136, 0.05);
-    --shadow-strong: rgba(0, 255, 136, 0.15);
+    --bg-primary: #0a0a0a;          /* Very dark background */
+    --bg-secondary: #1a1a1a;        /* Dark card backgrounds */
+    --bg-tertiary: #252525;         /* Dark code blocks */
+    --accent-primary: #00ff88;      /* Green accent for dark mode */
+    --accent-secondary: #ff7b54;    /* Orange accent */
+    --accent-tertiary: #00ff88;     /* Green accent */
+    --text-primary: #ffffff;        /* White text */
+    --text-secondary: #cccccc;      /* Light gray text */
+    --text-muted: #888888;          /* Muted text stays the same */
+    --border-color: #333333;        /* Dark borders */
+    --border-accent: #00ff88;       /* Green highlighted borders */
+    --shadow-subtle: rgba(0, 255, 136, 0.05);   /* Green tinted shadows */
+    --shadow-strong: rgba(0, 255, 136, 0.15);   /* Stronger green shadows */
     
-    /* Update legacy mappings for dark mode */
+    /* Update legacy color mappings for dark mode */
     --primary-color: var(--bg-secondary);
     --secondary-color: var(--bg-tertiary);
     --accent-color: var(--accent-primary);
@@ -87,33 +121,40 @@
     --shadow-color: var(--shadow-subtle);
 }
 
-/* ===== Theme Toggle Styles ===== */
+/* =============================================================================
+   THEME TOGGLE COMPONENT
+   ============================================================================= */
+/* The button that lets users switch between light and dark mode */
+
+/* Main toggle button container */
 .theme-toggle {
-    position: fixed;
+    position: fixed;                /* Stays in same place when scrolling */
     top: var(--space-lg);
     right: var(--space-lg);
-    z-index: 1000;
+    z-index: 1000;                  /* Appears above other content */
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 50px;
+    border-radius: 50px;            /* Rounded pill shape */
     padding: var(--space-sm) var(--space-md);
     display: flex;
     align-items: center;
     gap: var(--space-sm);
-    cursor: pointer;
-    font-family: var(--font-mono);
+    cursor: pointer;                /* Shows it's clickable */
+    font-family: var(--font-mono);  /* Monospace font for tech feel */
     font-size: var(--font-size-xs);
     color: var(--text-secondary);
-    transition: all 0.3s ease;
+    transition: all 0.3s ease;      /* Smooth hover effects */
     box-shadow: 0 4px 12px var(--shadow-subtle);
 }
 
+/* Hover effect for theme toggle */
 .theme-toggle:hover {
     border-color: var(--accent-primary);
     color: var(--accent-primary);
     box-shadow: 0 4px 16px var(--shadow-strong);
 }
 
+/* The sliding toggle switch inside the button */
 .toggle-button {
     width: 36px;
     height: 18px;
@@ -123,28 +164,31 @@
     transition: all 0.3s ease;
 }
 
+/* The circle that slides inside the toggle switch */
 .toggle-button::before {
     content: '';
     position: absolute;
     width: 14px;
     height: 14px;
     background: var(--bg-secondary);
-    border-radius: 50%;
+    border-radius: 50%;             /* Perfect circle */
     top: 2px;
     left: 2px;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* Dark mode toggle state */
+/* Dark mode toggle appearance */
 [data-theme="dark"] .toggle-button {
     background: var(--accent-primary);
 }
 
+/* Move the circle to the right in dark mode */
 [data-theme="dark"] .toggle-button::before {
     transform: translateX(18px);
 }
 
+/* Text label showing current theme */
 .toggle-label {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
@@ -153,25 +197,34 @@
     text-align: center;
 }
 
-/* Rest of CSS remains exactly the same as before... */
-/* ===== Reset and Base Styles ===== */
+/* =============================================================================
+   BASIC PAGE SETUP
+   ============================================================================= */
+/* Reset browser defaults and set up the basic page structure */
+
+/* Remove browser default margins and set consistent box sizing */
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box;
+    box-sizing: border-box;         /* Include padding/border in element width */
 }
 
+/* Main page styling */
 body {
     font-family: var(--font-primary);
     font-size: var(--font-size-base);
-    line-height: 1.6;
+    line-height: 1.6;               /* Comfortable reading spacing */
     color: var(--text-primary);
     background: var(--bg-primary);
-    transition: all 0.3s ease;
-    overflow-x: hidden;
+    transition: all 0.3s ease;      /* Smooth theme transitions */
+    overflow-x: hidden;             /* Prevent horizontal scrolling */
 }
 
-/* ===== Link Styles ===== */
+/* =============================================================================
+   LINK STYLING
+   ============================================================================= */
+/* Consistent styling for all links throughout the site */
+
 a {
     color: var(--link-color);
     text-decoration: none;
@@ -195,39 +248,50 @@ a:active {
     color: var(--link-active);
 }
 
-/* ===== Layout Styles ===== */
+/* =============================================================================
+   PAGE LAYOUT STRUCTURE
+   ============================================================================= */
+/* The overall structure that holds all page content */
+
 .main-container {
     display: flex;
-    flex-direction: column;
-    min-height: 100vh;
+    flex-direction: column;          /* Stack header, content, footer vertically */
+    min-height: 100vh;              /* At least full screen height */
     width: 100%;
 }
 
-/* ===== Header Styles ===== */
+/* =============================================================================
+   HEADER AND SITE TITLE
+   ============================================================================= */
+/* The top section with site name and description */
+
 .header {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 800px;              /* Limit width for readability */
+    margin: 0 auto;                /* Center on page */
     padding: var(--space-3xl) var(--space-lg) var(--space-2xl);
     text-align: center;
     width: 100%;
     box-sizing: border-box;
 }
 
+/* Main site title */
 .header h1 {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono);  /* Monospace for coding theme */
     font-size: var(--font-size-4xl);
-    font-weight: 300;
+    font-weight: 300;               /* Light weight for modern look */
     color: var(--text-primary);
     margin-bottom: var(--space-md);
     transition: color 0.3s ease;
 }
 
+/* Add terminal-style prompt before title */
 .header h1::before {
-    content: '> ';
+    content: '> ';                  /* Terminal prompt symbol */
     color: var(--accent-primary);
     font-weight: 400;
 }
 
+/* Site description under title */
 .header p {
     font-size: var(--font-size-lg);
     color: var(--text-secondary);
@@ -236,13 +300,18 @@ a:active {
     transition: color 0.3s ease;
 }
 
+/* Add comment-style prefix to description */
 .header p::before {
-    content: '// ';
+    content: '// ';                 /* Comment symbol from programming */
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
 
-/* ===== Navigation Styles ===== */
+/* =============================================================================
+   NAVIGATION MENU
+   ============================================================================= */
+/* The main navigation links below the header */
+
 .navbar {
     display: flex;
     justify-content: center;
@@ -256,10 +325,12 @@ a:active {
     box-sizing: border-box;
 }
 
+/* Hide the old navbar header (not used in new layout) */
 .navbar-header {
-    display: none; /* Hide in new layout */
+    display: none;
 }
 
+/* Container for navigation buttons */
 .nav-grid {
     display: flex;
     justify-content: center;
@@ -267,8 +338,9 @@ a:active {
     width: 100%;
 }
 
+/* Individual navigation buttons */
 .nav-button {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono);  /* Monospace for coding theme */
     font-size: var(--font-size-sm);
     color: var(--text-secondary);
     text-decoration: none;
@@ -278,11 +350,13 @@ a:active {
     position: relative;
 }
 
+/* Hover effect for navigation buttons */
 .nav-button:hover {
     color: var(--accent-primary);
     background: var(--bg-tertiary);
 }
 
+/* Add square brackets around nav buttons for coding theme */
 .nav-button::before {
     content: '[';
     color: var(--text-muted);
@@ -295,16 +369,24 @@ a:active {
     margin-left: var(--space-xs);
 }
 
-/* ===== Main Content Styles ===== */
+/* =============================================================================
+   MAIN CONTENT AREA
+   ============================================================================= */
+/* The container that holds articles, books, and other content */
+
 .content {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 800px;              /* Limit width for readability */
+    margin: 0 auto;                /* Center on page */
     padding: 0 var(--space-lg);
     width: 100%;
     box-sizing: border-box;
 }
 
-/* ===== Section Headers ===== */
+/* =============================================================================
+   SECTION HEADINGS
+   ============================================================================= */
+/* Styling for major section titles like "Articles" or "Books" */
+
 .section-title {
     color: var(--text-primary);
     font-size: var(--font-size-2xl);
@@ -315,13 +397,19 @@ a:active {
     transition: color 0.3s ease;
 }
 
+/* Add hash symbol before section titles (like markdown) */
 .section-title::before {
     content: '# ';
     color: var(--accent-secondary);
     font-weight: 400;
 }
 
-/* ===== Articles Styles ===== */
+/* =============================================================================
+   ARTICLE AND BOOK CARDS
+   ============================================================================= */
+/* Styling for the cards that contain articles and book information */
+
+/* Individual article or book card */
 .article-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -334,12 +422,14 @@ a:active {
     position: relative;
 }
 
+/* Hover effect for cards - subtle lift and highlight */
 .article-card:hover {
     border-color: var(--border-accent);
     box-shadow: 0 4px 20px var(--shadow-subtle);
-    transform: translateY(-2px);
+    transform: translateY(-2px);    /* Slight upward movement */
 }
 
+/* Article metadata (date, category) */
 .article-meta {
     font-family: var(--font-mono);
     font-size: var(--font-size-xs);
@@ -348,14 +438,16 @@ a:active {
     display: flex;
     gap: var(--space-lg);
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: wrap;                /* Wrap on small screens */
 }
 
+/* Style for article date */
 .article-date::before {
     content: 'date: ';
     color: var(--accent-secondary);
 }
 
+/* Category badge styling */
 .article-category {
     background: var(--bg-tertiary);
     padding: var(--space-xs) var(--space-sm);
@@ -369,15 +461,17 @@ a:active {
     color: var(--text-muted);
 }
 
+/* Article titles */
 .article-title {
     color: var(--text-primary);
     font-size: var(--font-size-2xl);
     font-weight: 600;
     margin-bottom: var(--space-md);
-    line-height: 1.3;
+    line-height: 1.3;              /* Tighter line height for titles */
     transition: color 0.3s ease;
 }
 
+/* General heading styles for articles */
 .article-card h2,
 .article-card h3 {
     color: var(--text-primary);
@@ -388,6 +482,7 @@ a:active {
     transition: color 0.3s ease;
 }
 
+/* Linked headings */
 .article-card h2 a,
 .article-card h3 a {
     color: inherit;
@@ -400,15 +495,17 @@ a:active {
     color: var(--accent-primary);
 }
 
+/* Article text content */
 .article-card p {
     color: var(--text-secondary);
-    line-height: 1.7;
+    line-height: 1.7;              /* Generous spacing for readability */
     margin-bottom: var(--space-lg);
     font-weight: 400;
     width: 100%;
     transition: color 0.3s ease;
 }
 
+/* "Read more" links */
 .read-more {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
@@ -421,59 +518,73 @@ a:active {
     display: inline-block;
 }
 
+/* Hover effect for read more links */
 .read-more:hover {
     background: var(--accent-primary);
     color: var(--bg-primary);
 }
 
+/* Add terminal command prefix */
 .read-more::before {
     content: 'cat ';
     opacity: 0.7;
 }
 
+/* Add arrow after read more links */
 .read-more::after {
     content: ' →';
     transition: transform 0.3s ease;
 }
 
+/* Move arrow on hover */
 .read-more:hover::after {
     transform: translateX(4px);
 }
 
-/* ===== Books Styles ===== */
+/* =============================================================================
+   BOOK SPECIFIC STYLING
+   ============================================================================= */
+/* Special layouts and styling for the books section */
+
+/* Grid layout for book cards */
 .books-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));  /* Responsive columns */
     gap: var(--space-2xl);
     margin-bottom: var(--space-3xl);
 }
 
+/* Individual book card */
 .book-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     transition: all 0.3s ease;
     position: relative;
-    overflow: hidden;
+    overflow: hidden;              /* Clip content to card boundaries */
 }
 
+/* Book card hover effect */
 .book-card:hover {
     border-color: var(--border-accent);
     box-shadow: 0 4px 20px var(--shadow-subtle);
     transform: translateY(-2px);
 }
 
+/* Book cover images */
 .book-card img {
     width: 100%;
     height: auto;
     display: block;
-    object-fit: cover;
+    object-fit: cover;             /* Maintain aspect ratio */
 }
 
+/* Book information section */
 .book-info {
     padding: var(--space-lg);
 }
 
+/* Book titles */
 .book-info h3 {
     color: var(--text-primary);
     margin-bottom: var(--space-sm);
@@ -482,6 +593,7 @@ a:active {
     transition: color 0.3s ease;
 }
 
+/* Linked book titles */
 .book-info h3 a {
     color: inherit;
     text-decoration: none;
@@ -492,12 +604,14 @@ a:active {
     color: var(--accent-primary);
 }
 
+/* Book descriptions */
 .book-info p {
     color: var(--text-secondary);
     line-height: 1.6;
     transition: color 0.3s ease;
 }
 
+/* Book release date */
 .book-release {
     color: var(--accent-tertiary);
     font-weight: 500;
@@ -512,7 +626,7 @@ a:active {
     color: var(--text-muted);
 }
 
-/* Book Detail Page */
+/* Book detail page layout */
 .book-detail {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -523,13 +637,15 @@ a:active {
     transition: all 0.3s ease;
 }
 
+/* Two-column layout for book details */
 .book-detail-grid {
     display: grid;
-    grid-template-columns: minmax(200px, 250px) 1fr;
+    grid-template-columns: minmax(200px, 250px) 1fr;  /* Fixed image, flexible content */
     gap: var(--space-2xl);
     align-items: start;
 }
 
+/* Book cover in detail view */
 .book-cover img {
     width: 100%;
     height: auto;
@@ -537,7 +653,12 @@ a:active {
     display: block;
 }
 
-/* ===== Code Blocks ===== */
+/* =============================================================================
+   CODE BLOCKS AND PROGRAMMING ELEMENTS
+   ============================================================================= */
+/* Styling for code snippets and programming-themed elements */
+
+/* Code blocks */
 .code-block {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -546,32 +667,38 @@ a:active {
     margin: var(--space-lg) 0;
     width: 100%;
     box-sizing: border-box;
-    overflow-x: auto;
+    overflow-x: auto;              /* Horizontal scroll for long lines */
     position: relative;
     transition: all 0.3s ease;
 }
 
+/* Preformatted text inside code blocks */
 .code-block pre {
     margin: 0;
-    white-space: pre !important;
+    white-space: pre !important;   /* Preserve formatting */
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
     line-height: 1.5;
-    tab-size: 2;
+    tab-size: 2;                   /* Tab width */
     color: var(--text-secondary);
 }
 
+/* Code elements */
 .code-block code {
     display: block;
     color: var(--text-secondary);
     padding: 0;
     tab-size: 2;
-    -moz-tab-size: 2;
+    -moz-tab-size: 2;              /* Firefox compatibility */
     font-family: var(--font-mono);
     transition: color 0.3s ease;
 }
 
-/* ===== Footer Styles ===== */
+/* =============================================================================
+   FOOTER
+   ============================================================================= */
+/* Bottom section with copyright and social links */
+
 footer {
     text-align: center;
     padding: var(--space-3xl) var(--space-lg);
@@ -584,6 +711,7 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Social links in footer */
 .social-links {
     margin-top: var(--space-md);
 }
@@ -598,6 +726,7 @@ footer {
     font-size: var(--font-size-sm);
 }
 
+/* Add SSH command prefix to social links */
 .social-links a::before {
     content: 'ssh ';
     color: var(--text-muted);
@@ -607,13 +736,19 @@ footer {
     opacity: 0.8;
 }
 
-/* ===== Form Styles ===== */
+/* =============================================================================
+   FORMS AND INTERACTIVE ELEMENTS
+   ============================================================================= */
+/* Styling for contact forms and other user input elements */
+
+/* Contact form container */
 .contact-section {
     max-width: 600px;
     margin: 0 auto;
     padding: 0 var(--space-md);
 }
 
+/* Main contact form */
 .contact-form {
     background: var(--bg-secondary);
     padding: var(--space-2xl);
@@ -622,10 +757,12 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Form field groups */
 .form-group {
     margin-bottom: var(--space-lg);
 }
 
+/* Form labels */
 .form-group label {
     display: block;
     margin-bottom: var(--space-sm);
@@ -635,11 +772,13 @@ footer {
     transition: color 0.3s ease;
 }
 
+/* Add terminal prompt to form labels */
 .form-group label::before {
     content: '> ';
     color: var(--accent-primary);
 }
 
+/* Form inputs and text areas */
 .form-group input,
 .form-group textarea {
     width: 100%;
@@ -653,6 +792,7 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Focus state for form inputs */
 .form-group input:focus,
 .form-group textarea:focus {
     outline: none;
@@ -660,6 +800,7 @@ footer {
     box-shadow: 0 0 0 1px var(--accent-primary);
 }
 
+/* Submit buttons */
 .submit-button {
     background: var(--accent-primary);
     color: var(--bg-primary);
@@ -673,19 +814,26 @@ footer {
     transition: all 0.2s ease;
 }
 
+/* Add terminal command prefix to buttons */
 .submit-button::before {
     content: 'exec ';
     opacity: 0.8;
 }
 
+/* Submit button hover effect */
 .submit-button:hover {
     background: var(--bg-primary);
     color: var(--accent-primary);
 }
 
-/* ===== Hamburger Menu (Hidden by default, shown on mobile) ===== */
+/* =============================================================================
+   MOBILE HAMBURGER MENU
+   ============================================================================= */
+/* Hidden by default, shown on mobile devices */
+
+/* Hamburger menu button (hidden on desktop) */
 .menu-toggle {
-    display: none;
+    display: none;                  /* Hidden by default */
     background: none;
     border: none;
     padding: var(--space-sm);
@@ -694,6 +842,7 @@ footer {
     position: relative;
 }
 
+/* Hamburger menu lines */
 .menu-toggle span {
     display: block;
     width: 24px;
@@ -703,7 +852,11 @@ footer {
     transition: all 0.3s ease;
 }
 
-/* ===== Code Examples for Books/About Pages ===== */
+/* =============================================================================
+   CODE EXAMPLES FOR SPECIAL PAGES
+   ============================================================================= */
+/* Styled code blocks for books and about pages */
+
 .code-example {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -719,21 +872,26 @@ footer {
     transition: all 0.3s ease;
 }
 
+/* Syntax highlighting for code examples */
 .code-keyword {
-    color: var(--accent-secondary);
+    color: var(--accent-secondary);  /* Keywords in orange */
     font-weight: 500;
 }
 
 .code-string {
-    color: var(--accent-tertiary);
+    color: var(--accent-tertiary);   /* Strings in accent color */
 }
 
 .code-comment {
-    color: var(--text-muted);
+    color: var(--text-muted);        /* Comments in muted text */
     font-style: italic;
 }
 
-/* ===== Bio Section Specific Styles ===== */
+/* =============================================================================
+   BIOGRAPHY SECTION SPECIFIC STYLES
+   ============================================================================= */
+/* Special styling for the about page */
+
 .bio-section .article-card {
     margin-bottom: var(--space-2xl);
 }
@@ -743,19 +901,29 @@ footer {
     line-height: 1.7;
 }
 
-/* ===== Form Enhancements ===== */
+/* =============================================================================
+   FORM ENHANCEMENTS
+   ============================================================================= */
+/* Additional form styling and functionality */
+
+/* Textarea specific styling */
 .form-group textarea {
     min-height: 120px;
-    resize: vertical;
+    resize: vertical;               /* Allow vertical resizing only */
 }
 
+/* Placeholder text styling */
 .form-group textarea::placeholder {
     color: var(--text-muted);
     font-family: var(--font-mono);
     font-style: italic;
 }
 
-/* ===== Book Description Enhancements ===== */
+/* =============================================================================
+   BOOK DESCRIPTION ENHANCEMENTS
+   ============================================================================= */
+/* Additional styling for book detail pages */
+
 .book-description {
     width: 100%;
 }
@@ -774,6 +942,7 @@ footer {
     display: inline-block;
 }
 
+/* Scroll animations for content reveal */
 .reveal-on-scroll {
     opacity: 0;
     transform: translateY(20px);
@@ -785,9 +954,11 @@ footer {
     transform: translateY(0);
 }
 
-/* ===== Responsive Design ===== */
+/* =============================================================================
+   RESPONSIVE DESIGN: MEDIUM SCREENS (TABLETS)
+   ============================================================================= */
+/* Adjustments for tablet-sized screens (768px-991px) */
 
-/* Medium devices (tablets, 768px-991px) */
 @media (min-width: 768px) and (max-width: 991px) {
     .header {
         padding: var(--space-2xl) var(--space-lg) var(--space-xl);
@@ -828,24 +999,31 @@ footer {
     }
 }
 
-/* Small devices (mobile phones, less than 768px) */
+/* =============================================================================
+   RESPONSIVE DESIGN: SMALL SCREENS (MOBILE PHONES)
+   ============================================================================= */
+/* Major layout changes for mobile devices (less than 768px) */
+
 @media (max-width: 767px) {
+    /* Prevent horizontal scrolling on mobile */
     body {
         overflow-x: hidden;
         width: 100%;
     }
     
+    /* Adjust main container for mobile */
     .main-container {
         display: flex;
         flex-direction: column;
         width: 100%;
         overflow-x: hidden;
-        padding-top: 60px;
+        padding-top: 60px;          /* Account for fixed header */
     }
     
+    /* Adjust theme toggle for mobile */
     .theme-toggle {
         top: var(--space-md);
-        right: 60px;
+        right: 60px;                /* Make room for hamburger menu */
         padding: 6px;
         gap: 6px;
         border-radius: 16px;
@@ -870,6 +1048,7 @@ footer {
         min-width: 24px;
     }
     
+    /* Fixed header for mobile navigation */
     .header {
         position: fixed;
         top: 0;
@@ -896,14 +1075,17 @@ footer {
         overflow: hidden;
     }
     
+    /* Hide site description on mobile */
     .header p {
         display: none;
     }
     
+    /* Show hamburger menu on mobile */
     .menu-toggle {
         display: block;
     }
     
+    /* Animate hamburger menu when active */
     .menu-toggle.active span:nth-child(1) {
         transform: rotate(45deg) translate(5px, 5px);
     }
@@ -916,8 +1098,9 @@ footer {
         transform: rotate(-45deg) translate(7px, -7px);
     }
     
+    /* Mobile navigation menu */
     .navbar {
-        display: none;
+        display: none;              /* Hidden by default */
         position: fixed;
         top: 60px;
         left: 0;
@@ -937,10 +1120,12 @@ footer {
         margin: 0;
     }
     
+    /* Show navigation when menu is active */
     .navbar.active {
         display: flex;
     }
     
+    /* Stack navigation buttons vertically on mobile */
     .nav-grid {
         flex-direction: column;
         width: 100%;
@@ -948,6 +1133,7 @@ footer {
         gap: var(--space-sm);
     }
     
+    /* Full-width navigation buttons on mobile */
     .nav-button {
         display: block;
         width: 90%;
@@ -960,6 +1146,7 @@ footer {
         background: var(--bg-tertiary);
     }
     
+    /* Remove brackets from mobile nav buttons */
     .nav-button::before,
     .nav-button::after {
         display: none;
@@ -970,6 +1157,7 @@ footer {
         background: var(--bg-primary);
     }
     
+    /* Adjust content area for mobile */
     .content {
         width: 100%;
         margin: 0;
@@ -978,6 +1166,7 @@ footer {
         overflow-x: hidden;
     }
     
+    /* Single column grid for books on mobile */
     .books-grid {
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: var(--space-md);
@@ -987,6 +1176,7 @@ footer {
         margin: 0 0 var(--space-md) 0;
     }
     
+    /* Stack book detail layout on mobile */
     .book-detail-grid {
         grid-template-columns: 1fr;
         gap: var(--space-md);
@@ -997,6 +1187,7 @@ footer {
         margin: 0 auto;
     }
     
+    /* Stack article metadata on mobile */
     .article-meta {
         flex-direction: column;
         align-items: flex-start;
@@ -1008,6 +1199,7 @@ footer {
         margin-bottom: var(--space-lg);
     }
     
+    /* Smaller article cards on mobile */
     .article-card {
         width: 100%;
         margin: 0 0 var(--space-md) 0;
@@ -1015,14 +1207,16 @@ footer {
         box-sizing: border-box;
     }
     
+    /* Adjust forms for mobile */
     .contact-form {
         padding: var(--space-md);
         margin: var(--space-md) 0;
     }
     
+    /* Larger touch targets for mobile */
     .form-group input,
     .form-group textarea {
-        font-size: 16px;
+        font-size: 16px;            /* Prevents zoom on iOS */
         padding: var(--space-sm);
         width: 100%;
         box-sizing: border-box;
@@ -1033,6 +1227,7 @@ footer {
         padding: var(--space-md);
     }
     
+    /* Adjust code blocks for mobile */
     .code-block,
     .code-example {
         width: 100%;
@@ -1043,13 +1238,14 @@ footer {
         font-size: var(--font-size-xs);
     }
     
+    /* Allow text wrapping in code on mobile */
     .code-block code,
     .code-example {
         white-space: pre-wrap;
         word-break: break-word;
     }
     
-    /* Animation Overrides */
+    /* Disable scroll animations on mobile for performance */
     .reveal-on-scroll {
         opacity: 1 !important;
         transform: none !important;
@@ -1057,7 +1253,11 @@ footer {
     }
 }
 
-/* Extra small devices (small phones, 480px and below) */
+/* =============================================================================
+   RESPONSIVE DESIGN: EXTRA SMALL SCREENS (SMALL PHONES)
+   ============================================================================= */
+/* Additional adjustments for very small phones (480px and below) */
+
 @media (max-width: 480px) {
     .theme-toggle {
         right: 50px;
@@ -1072,6 +1272,7 @@ footer {
         margin-bottom: var(--space-md);
     }
     
+    /* Single column for books on very small screens */
     .books-grid {
         grid-template-columns: 1fr;
     }
@@ -1095,15 +1296,19 @@ footer {
     }
 }
 
-/* Landscape orientation for mobile devices */
+/* =============================================================================
+   RESPONSIVE DESIGN: LANDSCAPE ORIENTATION ON MOBILE
+   ============================================================================= */
+/* Special handling for mobile devices in landscape mode */
+
 @media screen and (max-width: 767px) and (orientation: landscape) {
     .header {
         padding: var(--space-sm) var(--space-md);
     }
     
     .navbar.active {
-        max-height: 80vh;
-        overflow-y: auto;
+        max-height: 80vh;           /* Limit height in landscape */
+        overflow-y: auto;           /* Allow scrolling if needed */
     }
     
     .books-grid {
@@ -1111,7 +1316,12 @@ footer {
     }
 }
 
-/* Reduced Motion Preferences */
+/* =============================================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ============================================================================= */
+/* Improved experience for users with accessibility needs */
+
+/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;
@@ -1135,7 +1345,7 @@ footer {
     }
 }
 
-/* High Contrast Mode Support */
+/* Enhanced contrast for users who need it */
 @media (prefers-contrast: high) {
     :root {
         --border-color: #666666;
@@ -1159,9 +1369,11 @@ footer {
     }
 }
 
-/* ===== Accessibility & Performance Enhancements ===== */
+/* =============================================================================
+   KEYBOARD NAVIGATION AND FOCUS STATES
+   ============================================================================= */
+/* Better experience for keyboard users */
 
-/* Focus states for keyboard navigation */
 .nav-button:focus,
 .read-more:focus,
 .submit-button:focus,
@@ -1172,8 +1384,13 @@ a:focus,
     border-radius: 2px;
 }
 
-/* Print styles */
+/* =============================================================================
+   PRINT STYLES
+   ============================================================================= */
+/* Optimized layout when users print the page */
+
 @media print {
+    /* Hide interactive elements when printing */
     .navbar,
     .contact-form,
     .social-links,
@@ -1189,6 +1406,7 @@ a:focus,
         max-width: none;
     }
     
+    /* Simplify header for printing */
     .header {
         text-align: left;
         padding: var(--space-md) 0;
@@ -1201,6 +1419,7 @@ a:focus,
         border-bottom: 1px solid #ddd;
     }
     
+    /* Prevent page breaks inside cards */
     .book-card,
     .article-card {
         break-inside: avoid;
@@ -1209,6 +1428,7 @@ a:focus,
         border: 1px solid #ddd;
     }
     
+    /* Use print-friendly colors */
     body {
         font-size: 12pt;
         color: #000;
@@ -1226,7 +1446,8 @@ a:focus,
         border: 1px solid #ccc;
     }
 }
-/* Hide skip links visually but keep them for screen readers */
+
+/* Hidden accessibility skip links */
 .skip-links {
     position: absolute;
     left: -10000px;
