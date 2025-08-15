@@ -310,9 +310,6 @@ jobs:
     # -------------------------------------------------------------------------
     # BUILD THE INFRASTRUCTURE
     # -------------------------------------------------------------------------
-    - name: Generate fresh Terraform plan
-      working-directory: infrastructure
-      run: terraform plan -out=tfplan
 
     # Import any existing resources that Terraform doesn't know about yet
     - name: Import Existing IAM Role (if needed)
@@ -335,6 +332,9 @@ jobs:
         else
           echo "No existing IAM role found - will be created"
         fi
+    - name: Generate fresh Terraform plan
+      working-directory: infrastructure
+      run: terraform plan -out=tfplan
 
     - name: Terraform Apply
       working-directory: infrastructure
