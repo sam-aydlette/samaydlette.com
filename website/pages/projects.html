@@ -7,8 +7,9 @@
     <script>
         (function() {
             const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', 'dark');
-            if (theme === 'light') {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
                 document.documentElement.removeAttribute('data-theme');
             }
         })();
@@ -37,9 +38,7 @@
         <!-- Main Content -->
         <main class="content">
             <section class="projects-section">
-                <h2 class="section-title">Projects</h2>
-                <p>I have multiple GitHub projects that I maintain. Below are links and descriptions to some of the stuff I'm working on.</p>
-                
+                <h2 class="section-title">Projects</h2>                
                 <div class="projects-list">
                     <div class="article-card">
                         <h3 class="article-title">

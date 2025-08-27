@@ -7,8 +7,9 @@
     <script>
         (function() {
             const theme = localStorage.getItem('theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', 'dark');
-            if (theme === 'light') {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
                 document.documentElement.removeAttribute('data-theme');
             }
         })();
