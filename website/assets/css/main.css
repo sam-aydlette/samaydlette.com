@@ -542,6 +542,21 @@ a:active {
 }
 
 /* =============================================================================
+   PROJECTS SPECIFIC STYLING
+   ============================================================================= */
+/* Special layouts and styling for the projects section */
+
+.projects-section {
+    margin-bottom: var(--space-3xl);
+}
+
+.projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+}
+
+/* =============================================================================
    BOOK SPECIFIC STYLING
    ============================================================================= */
 /* Special layouts and styling for the books section */
