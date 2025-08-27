@@ -2,8 +2,8 @@
 export class ThemeToggle {
     constructor() {
         // Default to light mode unless user has explicitly chosen dark
-        this.currentTheme = localStorage.getItem('theme') || 'light';
-        
+        this.currentTheme = localStorage.getItem('theme') || 'dark';
+                
         // Apply theme IMMEDIATELY to prevent flash
         this.applyThemeImmediate(this.currentTheme);
         
@@ -32,7 +32,7 @@ export class ThemeToggle {
             this.setupEventListeners();
         }
         
-        console.log('Theme system initialized - default: light, current:', this.currentTheme);
+        console.log('Theme system initialized - default: dark, current:', this.currentTheme);
     }
 
     applyTheme(theme, skipTransition = false) {
