@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>projects - $ sam_aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', 'dark');
+            if (theme === 'light') {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/contact.html" class="nav-button">contact</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <section class="projects-section">  <!-- fix -->
+                <div class="projects-list"> <!-- fix -->
+                    <h2 class="section-title">Projects</h2>
+                        <p>I have multiple GitHub projects that I maintain. Below are links and descriptions to some of the stuff I'm working on</p>
+                    <!-- links to some of my projects on GitHub with descriptions. Start with: https://github.com/sam-aydlette/samaydlette.com with a description of my website as well as the PoC for using policy as code to enforce accessibility. -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">linkedin</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
