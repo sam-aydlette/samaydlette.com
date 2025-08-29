@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building My Own Presidential Daily Brief - Samuel Aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+    
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/index.html" class="nav-button">home</a>
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/projects.html" class="nav-button">projects</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/contact.html" class="nav-button">contact</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">August 29, 2025</span>
+                    <span class="article-category">Intelligence Systems</span>
+                </div>
+                
+                <h2 class="article-title">Building My Own Presidential Daily Brief: How I Created a Personal Intelligence System</h2>
+                
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>Every morning at 6:00 AM, the President of the United States receives a classified document that transforms the overwhelming chaos of global events into actionable intelligence. The Presidential Daily Brief distills massive amounts of raw data from dozens of intelligence agencies into insights that enable decision-making at the highest level.</p>
+
+                    <p>For decades, this kind of intelligence capability was the exclusive domain of governments and multinational corporations. Not anymore!</p>
+
+                    <h3>The Value Proposition: Building a Personal OODA Loop</h3>
+
+                    <p>Military strategist John Boyd developed the OODA loop (Observe, Orient, Decide, Act) as a framework for decision-making under uncertainty. Most of us are fumbling along in the dark for the first two steps. We observe through social media feeds designed to maximize engagement, not accuracy. We orient using fragmented news sources that prioritize outrage over context.</p>
+
+                    <p>My personal intelligence briefing system fixes this by providing:</p>
+
+                    <p><strong>Tailored Strategic Awareness:</strong> Instead of consuming random news, I get information relevant to my role as a cybersecurity professional who needs to understand geopolitical trends. When nation-state actors launch cyber campaigns, I see them in the context of broader diplomatic tensions. When new technology export controls are announced, I understand the strategic implications.</p>
+
+                    <p><strong>Actionable Intelligence for Multiple Contexts:</strong> Each briefing helps me answer three questions:</p>
+                    <ul>
+                        <li>What decisions should I make right now?</li>
+                        <li>What should I recommend to colleagues, clients, or stakeholders in different positions?</li>
+                        <li>What societal or policy changes should I support or advocate for?</li>
+                    </ul>
+
+                    <p><strong>Multi-Perspective Analysis:</strong> By aggregating sources from Reuters, Al Jazeera, South China Morning Post, The Hindu, Deutsche Welle, and dozens of other international outlets, I see how different regions frame the same events. This reveals blind spots and biases that single-perspective news consumption creates.</p>
+
+                    <h3>The Democratization of Intelligence</h3>
+
+                    <p>Until recently, building this capability required enormous resources. Professional intelligence analysis demanded human linguists to monitor foreign media, intelligence analysts to synthesize information across sources, massive budgets for data acquisition and processing and secure communication networks.</p>
+
+                    <p>But for personal strategic awareness, I can now obtain all of the above for free (or at least cheap).</p>
+
+                    <p>Open Source Intelligence (OSINT) means critical information is publicly available. RSS feeds provide structured access to global news sources. Natural language processing libraries can extract entities, sentiment, and relationships from text. Cloud computing platforms offer free tiers sufficient for personal use.</p>
+
+                    <p>The software that I used to build my system costs nothing and runs entirely on free infrastructure.</p>
+
+                    <h3>The Information War Around Us</h3>
+
+                    <p>Using a personal intelligence system is more than just a convenience, or even a leg up professionally. Information warfare is real, and we're all targets.</p>
+
+                    <p>Nation-states and private sector organizations invest billions in shaping narratives and managing global perception. China's Belt and Road media investments, Russia's RT network, American soft power projection and many more initiatives all directly influence the information environment we consume daily.</p>
+
+                    <p>Social media algorithms optimize for engagement over truth. They surface content that provokes strong emotional responses because anger and outrage drive clicks, which drives revenue. The business model rewards sensationalism over accuracy.</p>
+
+                    <p>Traditional media companies, struggling with declining revenues, must compete in the attention economy through clickbait headlines and partisan positioning. The incentive structure prioritizes what keeps us scrolling, not what we need to know.</p>
+
+                    <p>Meanwhile, the tools for building your own intelligence pipeline have never been more accessible. More than ever before, we don't have to accept someone else's curation of what's important.</p>
+
+                    <h3>How I Built It</h3>
+
+                    <p>My system aggregates over 40 high-quality sources spanning different major regions and analytical perspectives:</p>
+
+                    <p><strong>Global News Sources:</strong> Reuters, AP, BBC, along with Al Jazeera (Middle Eastern perspective), SCMP (Asia-Pacific), The Hindu (South Asian), Deutsche Welle (European), and others.</p>
+
+                    <p><strong>Think Tanks and Analysis:</strong> CFR, CSIS, Chatham House, Carnegie Endowment, plus regional specialists like ISS Africa and Americas Quarterly.</p>
+
+                    <p><strong>Cybersecurity Intelligence:</strong> KrebsOnSecurity, filtered Hacker News, Threatpost, and Bellingcat's OSINT investigations.</p>
+
+                    <p><strong>Economic and Defense:</strong> Financial Times, Defense News, Jane's Defence Weekly for the economic and military dimensions of geopolitical events.</p>
+
+                    <p>The technical architecture is deliberately simple. Python scripts handle RSS parsing, content analysis, and email generation. SQLite provides local storage with automatic archiving of older data. GitHub Actions runs the system daily at 7 AM with zero maintenance. Gmail SMTP delivers formatted briefings directly to my inbox.</p>[]
+
+                    <p>Key features include cross-referencing for fact-checking, smart deduplication of the same stories across sources, and clear separation between factual reporting and analytical assessment.</p>
+
+                    <p>But the real value is in the automated information analysis. The system provides strategic context, identifies patterns across seemingly unrelated events, and maintains a coherent narrative structure for ongoing developments.</p>
+
+                    <div class="conclusion">
+                        <h3>The Core Principle</h3>
+
+                        <p>The President gets intelligence briefings because information is power. In an era where information warfare is a primary tool of statecraft, that power shouldn't be exclusive to governments and corporations. And it doesn't have to be.</p>
+
+                        <p>The tools exist for anyone to build their own intelligence capabilities just like I did. RSS feeds, APIs, natural language processing libraries, cloud computing resources - all of the tools we need are available and cost very little. People are free to use my tool for themselves as well (with attribution).</p>
+
+                        <p>All we have to do is decide that our attention is worth protecting. In a world where information shapes power, let's choose to be active participants rather than passive consumers.</p>
+
+                        <p>The complete system architecture and source code are available at [GitHub repository]. For cybersecurity professionals interested in geopolitical intelligence, this approach provides a practical foundation for staying informed without information overload.</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <script src="/assets/js/theme-toggle.js"></script>
+</body>
+</html>
