@@ -32,20 +32,20 @@
 /* Define all colors and fonts in one place for easy maintenance */
 
 :root {
-    /* LIGHT MODE COLORS (Newspaper theme) */
-    --bg-primary: #F3DFC1;          /* Main background color - a warm, off-white "Dutch White" */
-    --bg-secondary: #F8F4E9;        /* Card and section backgrounds - a slightly lighter paper tone */
-    --bg-tertiary: #EAE3D2;         /* Code blocks and form inputs - a muted, aged paper color */
-    --accent-primary: #A42415;      /* Links and highlights - a classic, warm red from printed accents */
-    --accent-secondary: #AB6B60;    /* Secondary accents - a muted, reddish-brown for subtle highlights */
-    --accent-tertiary: #3C444C;     /* Additional accent color - a cool, dark tone for balance */
-    --text-primary: #1A1C1A;        /* Main text color - an "Eerie Black" for an inky, high-contrast feel */
-    --text-secondary: #3C444C;      /* Subheadings and descriptions - a softer, "Arsenic" gray */
-    --text-muted: #8F8C81;          /* Less important text - a soft, warm gray */
-    --border-color: #D2CDC2;        /* Borders and dividers - a subtle, dusty tone */
-    --border-accent: #A42415;       /* Highlighted borders - warm red accent */
-    --shadow-subtle: rgba(26, 28, 26, 0.08);   /* Light shadows - derived from the dark text */
-    --shadow-strong: rgba(26, 28, 26, 0.2);    /* Darker shadows - derived from the dark text */
+    /* LIGHT MODE COLORS */
+    --bg-primary: #fcfcfc; /* Main background color */
+    --bg-secondary: #ffffff; /* Card and section backgrounds */
+    --bg-tertiary: #f2f2f2; /* Code blocks and form inputs */
+    --accent-primary: #1a1a1a; /* Links and highlights */
+    --accent-secondary: #555555; /* Gray accents and warnings */
+    --accent-tertiary: #d8d8d8; /* Additional accent color */
+    --text-primary: #1a1a1a; /* Main text color */
+    --text-secondary: #696969; /* Subheadings and descriptions */
+    --text-muted: #a9a9a9; /* Less important text */
+    --border-color: #d3d3d3; /* Borders and dividers */
+    --border-accent: #696969; /* Highlighted borders */
+    --shadow-subtle: rgba(0, 0, 0, 0.04); /* Light shadows */
+    --shadow-strong: rgba(0, 0, 0, 0.12); /* Darker shadows */
 
     /* FONT DEFINITIONS */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;     /* Body text */
@@ -92,9 +92,9 @@
     --bg-primary: #0a0a0a;          /* Very dark background */
     --bg-secondary: #1a1a1a;        /* Dark card backgrounds */
     --bg-tertiary: #252525;         /* Dark code blocks */
-    --accent-primary: #00cc6e;      /* Muted green accent for dark mode */
+    --accent-primary: #50864C;      /* Muted green accent for dark mode */
     --accent-secondary: #cc6244;    /* Muted orange accent */
-    --accent-tertiary: #00cc6e;     /* Muted green accent */
+    --accent-tertiary: #50864C;     /* Muted green accent */
     --text-primary: #ffffff;        /* White text */
     --text-secondary: #cccccc;      /* Light gray text */
     --text-muted: #888888;          /* Muted text stays the same */
@@ -113,10 +113,10 @@
     --active-bg: var(--accent-primary);
     --hover-text: var(--accent-primary);
     --link-color: var(--accent-primary);
-    --link-color: #00cc6e;
-    --link-visited: #00b35f;
-    --link-hover: #00d477;
-    --link-active: #00a357;
+    --link-color: #50864C;
+    --link-visited: #3E6A3D;
+    --link-hover: #7E9D7C;
+    --link-active: #B1F2A7;
     --shadow-color: var(--shadow-subtle);
 }
 
