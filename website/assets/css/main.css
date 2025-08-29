@@ -32,21 +32,21 @@
 /* Define all colors and fonts in one place for easy maintenance */
 
 :root {
-    /* LIGHT MODE COLORS (default) */
-    --bg-primary: #fafafa;          /* Main background color */
-    --bg-secondary: #ffffff;        /* Card and section backgrounds */
-    --bg-tertiary: #f5f5f5;         /* Code blocks and form inputs */
-    --accent-primary: #0066cc;      /* Links and highlights */
-    --accent-secondary: #ff6b35;    /* Orange accents and warnings */
-    --accent-tertiary: #0066cc;     /* Additional accent color */
-    --text-primary: #1a1a1a;        /* Main text color */
-    --text-secondary: #4a4a4a;      /* Subheadings and descriptions */
-    --text-muted: #888888;          /* Less important text */
-    --border-color: #e0e0e0;        /* Borders and dividers */
-    --border-accent: #0066cc;       /* Highlighted borders */
-    --shadow-subtle: rgba(0, 0, 0, 0.05);   /* Light shadows */
-    --shadow-strong: rgba(0, 0, 0, 0.15);   /* Darker shadows */
-    
+    /* LIGHT MODE COLORS (Newspaper theme) */
+    --bg-primary: #F3DFC1;          /* Main background color - a warm, off-white "Dutch White" */
+    --bg-secondary: #F8F4E9;        /* Card and section backgrounds - a slightly lighter paper tone */
+    --bg-tertiary: #EAE3D2;         /* Code blocks and form inputs - a muted, aged paper color */
+    --accent-primary: #A42415;      /* Links and highlights - a classic, warm red from printed accents */
+    --accent-secondary: #AB6B60;    /* Secondary accents - a muted, reddish-brown for subtle highlights */
+    --accent-tertiary: #3C444C;     /* Additional accent color - a cool, dark tone for balance */
+    --text-primary: #1A1C1A;        /* Main text color - an "Eerie Black" for an inky, high-contrast feel */
+    --text-secondary: #3C444C;      /* Subheadings and descriptions - a softer, "Arsenic" gray */
+    --text-muted: #8F8C81;          /* Less important text - a soft, warm gray */
+    --border-color: #D2CDC2;        /* Borders and dividers - a subtle, dusty tone */
+    --border-accent: #A42415;       /* Highlighted borders - warm red accent */
+    --shadow-subtle: rgba(26, 28, 26, 0.08);   /* Light shadows - derived from the dark text */
+    --shadow-strong: rgba(26, 28, 26, 0.2);    /* Darker shadows - derived from the dark text */
+
     /* FONT DEFINITIONS */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;     /* Body text */
     --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;          /* Code and terminal text */
@@ -87,22 +87,21 @@
     --shadow-color: var(--shadow-subtle);
 }
 
-/* DARK MODE COLORS */
-/* When someone toggles to dark mode, these colors replace the light mode ones */
+/* DARK MODE COLORS (Hacker Theme) */
 [data-theme="dark"] {
     --bg-primary: #0a0a0a;          /* Very dark background */
     --bg-secondary: #1a1a1a;        /* Dark card backgrounds */
     --bg-tertiary: #252525;         /* Dark code blocks */
-    --accent-primary: #00ff88;      /* Green accent for dark mode */
-    --accent-secondary: #ff7b54;    /* Orange accent */
-    --accent-tertiary: #00ff88;     /* Green accent */
+    --accent-primary: #00cc6e;      /* Muted green accent for dark mode */
+    --accent-secondary: #cc6244;    /* Muted orange accent */
+    --accent-tertiary: #00cc6e;     /* Muted green accent */
     --text-primary: #ffffff;        /* White text */
     --text-secondary: #cccccc;      /* Light gray text */
     --text-muted: #888888;          /* Muted text stays the same */
     --border-color: #333333;        /* Dark borders */
-    --border-accent: #00ff88;       /* Green highlighted borders */
-    --shadow-subtle: rgba(0, 255, 136, 0.05);   /* Green tinted shadows */
-    --shadow-strong: rgba(0, 255, 136, 0.15);   /* Stronger green shadows */
+    --border-accent: #00cc6e;       /* Muted green highlighted borders */
+    --shadow-subtle: rgba(0, 204, 110, 0.05);   /* Muted green tinted shadows */
+    --shadow-strong: rgba(0, 204, 110, 0.15);   /* Stronger muted green shadows */
     
     /* Update legacy color mappings for dark mode */
     --primary-color: var(--bg-secondary);
@@ -114,10 +113,10 @@
     --active-bg: var(--accent-primary);
     --hover-text: var(--accent-primary);
     --link-color: var(--accent-primary);
-    --link-color: #00ff88;
-    --link-visited: #00e67a;
-    --link-hover: #00ff99;
-    --link-active: #00cc6a;
+    --link-color: #00cc6e;
+    --link-visited: #00b35f;
+    --link-hover: #00d477;
+    --link-active: #00a357;
     --shadow-color: var(--shadow-subtle);
 }
 
