@@ -33,12 +33,12 @@
 
 :root {
     /* LIGHT MODE COLORS */
-    --bg-primary: #fcfcfc; /* Main background color */
+    --bg-primary: #f5f5f5; /* Slightly darker gray background */
     --bg-secondary: #ffffff; /* Card and section backgrounds */
     --bg-tertiary: #f2f2f2; /* Code blocks and form inputs */
     --accent-primary: #1a1a1a; /* Links and highlights */
-    --accent-secondary: #555555; /* Gray accents and warnings */
-    --accent-tertiary: #d8d8d8; /* Additional accent color */
+    --accent-secondary: #2563EB; /* Bright blue for navigation and topics */
+    --accent-tertiary: #B8312F; /* Lighthouse red accent */
     --text-primary: #1a1a1a; /* Main text color */
     --text-secondary: #696969; /* Subheadings and descriptions */
     --text-muted: #a9a9a9; /* Less important text */
@@ -87,6 +87,51 @@
     --shadow-color: var(--shadow-subtle);
 }
 
+/* Light mode navigation and topic colors */
+:root .nav-button {
+    color: var(--accent-secondary);
+}
+
+:root .article-category {
+    color: var(--accent-secondary);
+}
+
+/* Light mode read-more links with pine green */
+:root .read-more {
+    color: #1B4D3E !important;
+    border-color: #1B4D3E !important;
+}
+
+:root .read-more::before {
+    color: #0F3A2E !important;  /* Darker green for "cat " */
+}
+
+:root .read-more:hover {
+    background: #1B4D3E !important;
+    color: var(--bg-primary) !important;
+}
+
+:root .read-more:hover::before {
+    color: #26624D !important;  /* Lighter green for "cat " on hover */
+}
+
+:root .read-more:visited {
+    color: #0F3A2E !important;
+    border-color: #0F3A2E !important;
+}
+
+:root .read-more:active {
+    color: #26624D !important;
+    border-color: #26624D !important;
+}
+
+/* Light mode form input effects - match dark mode exactly */
+:root .form-group input:focus,
+:root .form-group textarea:focus {
+    border-color: #1B4D3E !important;
+    box-shadow: 0 0 0 1px #1B4D3E !important;
+}
+
 /* DARK MODE COLORS (Hacker Theme) */
 [data-theme="dark"] {
     --bg-primary: #0a0a0a;          /* Very dark background */
@@ -94,7 +139,7 @@
     --bg-tertiary: #252525;         /* Dark code blocks */
     --accent-primary: #50864C;      /* Muted green accent for dark mode */
     --accent-secondary: #7A9BB5;    /* Brighter blue accent */
-    --accent-tertiary: #cc6244;     /* Muted blue accent */
+    --accent-tertiary: #B8312F;     /* Lighthouse red accent */
     --text-primary: #f0f0f0;        /* White text */
     --text-secondary: #cccccc;      /* Light gray text */
     --text-muted: #888888;          /* Muted text stays the same */
@@ -304,7 +349,7 @@ a:active {
 /* Add terminal-style prompt before title */
 .header h1::before {
     content: '> ';                  /* Terminal prompt symbol */
-    color: var(--accent-primary);
+    color: #1B4D3E;
     font-weight: 400;
 }
 
@@ -526,10 +571,10 @@ a:active {
 .read-more {
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
-    color: var(--accent-primary);
+    color: #1B4D3E;
     text-decoration: none;
     padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--accent-primary);
+    border: 1px solid #1B4D3E;
     border-radius: 4px;
     transition: all 0.3s ease;
     display: inline-block;
@@ -537,8 +582,23 @@ a:active {
 
 /* Hover effect for read more links */
 .read-more:hover {
-    background: var(--accent-primary);
+    background: #1B4D3E;
     color: var(--bg-primary);
+}
+
+.read-more:visited {
+    color: #0F3A2E;
+    border-color: #0F3A2E;
+}
+
+.read-more:visited:hover {
+    background: #0F3A2E;
+    color: var(--bg-primary);
+}
+
+.read-more:active {
+    color: #26624D;
+    border-color: #26624D;
 }
 
 /* Add terminal command prefix */
@@ -807,7 +867,7 @@ footer {
 /* Add terminal prompt to form labels */
 .form-group label::before {
     content: '> ';
-    color: var(--accent-primary);
+    color: #1B4D3E;
 }
 
 /* Form inputs and text areas */
