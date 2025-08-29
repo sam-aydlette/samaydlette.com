@@ -93,15 +93,15 @@
     --bg-secondary: #1a1a1a;        /* Dark card backgrounds */
     --bg-tertiary: #252525;         /* Dark code blocks */
     --accent-primary: #50864C;      /* Muted green accent for dark mode */
-    --accent-secondary: #cc6244;    /* Muted orange accent */
-    --accent-tertiary: #50864C;     /* Muted green accent */
-    --text-primary: #ffffff;        /* White text */
+    --accent-secondary: #7A9BB5;    /* Brighter blue accent */
+    --accent-tertiary: #cc6244;     /* Muted blue accent */
+    --text-primary: #f0f0f0;        /* White text */
     --text-secondary: #cccccc;      /* Light gray text */
     --text-muted: #888888;          /* Muted text stays the same */
-    --border-color: #333333;        /* Dark borders */
-    --border-accent: #00cc6e;       /* Muted green highlighted borders */
-    --shadow-subtle: rgba(0, 204, 110, 0.05);   /* Muted green tinted shadows */
-    --shadow-strong: rgba(0, 204, 110, 0.15);   /* Stronger muted green shadows */
+    --border-color: #282828;        /* Dark borders */
+    --border-accent: #50864C;       /* Muted green highlighted borders */
+    --shadow-subtle-blue: rgba(100, 134, 159, 0.1);
+    --shadow-strong-green: rgba(80, 134, 76, 0.3);
     
     /* Update legacy color mappings for dark mode */
     --primary-color: var(--bg-secondary);
@@ -118,6 +118,24 @@
     --link-hover: #7E9D7C;
     --link-active: #B1F2A7;
     --shadow-color: var(--shadow-subtle);
+}
+
+/* Dark mode navigation link colors */
+[data-theme="dark"] .nav-button {
+    color: var(--accent-secondary);
+}
+
+[data-theme="dark"] .nav-button:visited {
+    color: #64869F;
+}
+
+[data-theme="dark"] .nav-button:active {
+    color: #9BBDD1;
+}
+
+/* Dark mode topic colors */
+[data-theme="dark"] .article-category {
+    color: var(--accent-secondary);
 }
 
 /* =============================================================================
@@ -351,7 +369,7 @@ a:active {
 
 /* Hover effect for navigation buttons */
 .nav-button:hover {
-    color: var(--accent-primary);
+    color: var(--accent-secondary);
     background: var(--bg-tertiary);
 }
 
@@ -399,7 +417,7 @@ a:active {
 /* Add hash symbol before section titles (like markdown) */
 .section-title::before {
     content: '# ';
-    color: var(--accent-secondary);
+    color: var(--accent-tertiary);
     font-weight: 400;
 }
 
@@ -443,7 +461,7 @@ a:active {
 /* Style for article date */
 .article-date::before {
     content: 'date: ';
-    color: var(--accent-secondary);
+    color: var(--accent-tertiary);
 }
 
 /* Category badge styling */
@@ -457,7 +475,7 @@ a:active {
 
 .article-category::before {
     content: 'topic: ';
-    color: var(--text-muted);
+    color: var(--accent-tertiary);
 }
 
 /* Article titles */
