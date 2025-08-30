@@ -1286,11 +1286,6 @@ footer {
 /* Enhanced contrast for users who need it */
 @media (prefers-contrast: high) {
     :root {
-        --border-color: #666666;
-        --shadow-subtle: rgba(0, 0, 0, 0.3);
-    }
-    
-    [data-theme="dark"] {
         --border-color: #999999;
         --shadow-subtle: rgba(255, 255, 255, 0.3);
         --text-muted: #aaaaaa;
@@ -1315,8 +1310,8 @@ footer {
 .nav-button:focus,
 .read-more:focus,
 .submit-button:focus,
-a:focus,
-.theme-toggle:focus {
+.menu-toggle:focus,
+a:focus {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 2px;
