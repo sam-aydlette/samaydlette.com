@@ -926,14 +926,13 @@ footer {
 }
 
 .portrait-image {
-    width: 100%;
-    max-width: 220px;
+    width: auto;                   /* Let image maintain natural proportions */
+    max-width: 180px;              /* Reasonable max size for desktop */
     height: auto;
     border-radius: 8px;
     box-shadow: 0 4px 12px var(--shadow-subtle);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-    object-fit: cover;
-    aspect-ratio: 3/4;
+    object-fit: contain;           /* Maintain original aspect ratio */
 }
 
 .portrait-image:hover {
@@ -953,7 +952,14 @@ footer {
     }
     
     .portrait-image {
-        max-width: 200px;
+        max-width: 140px;              /* Smaller on mobile */
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .portrait-image {
+        max-width: 120px;              /* Even smaller on tiny screens */
     }
 }
 
