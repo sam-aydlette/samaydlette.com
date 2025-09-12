@@ -295,10 +295,6 @@ a:active {
     box-sizing: border-box;
 }
 
-/* Hide the old navbar header (not used in new layout) */
-.navbar-header {
-    display: none;
-}
 
 /* Container for navigation buttons */
 .nav-grid {
@@ -326,29 +322,6 @@ a:active {
     background: var(--bg-tertiary);
 }
 
-/* Terminal-style decorations */
-.terminal-brackets::before {
-    content: '[';
-    color: var(--text-muted);
-    margin-right: var(--space-xs);
-}
-
-.terminal-brackets::after {
-    content: ']';
-    color: var(--text-muted);
-    margin-left: var(--space-xs);
-}
-
-.terminal-prompt::before {
-    content: '> ';
-    color: var(--read-more-color);
-}
-
-.terminal-comment::before {
-    content: '// ';
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-}
 
 /* Apply terminal styling to navigation buttons */
 .nav-button::before {
@@ -586,22 +559,29 @@ a:active {
    ============================================================================= */
 /* Special layouts and styling for the books section */
 
-/* Grid layout for book cards */
+/* Consistent spacing for all sections */
+.articles-section,
+.books-section {
+    margin-bottom: var(--space-3xl);
+}
+
+/* Book cards layout - stack vertically like articles */
 .books-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));  /* Responsive columns */
-    gap: var(--space-2xl);
+    display: block;                /* Simple block layout like articles */
     margin-bottom: var(--space-3xl);
 }
 
 .book-card {
-    overflow: hidden;              /* Clip content to card boundaries */
+    padding: var(--space-2xl);     /* Match article card padding */
+    margin-bottom: var(--space-2xl); /* Match article card spacing */
+    width: 100%;                   /* Match article card width */
+    box-sizing: border-box;        /* Match article card box model */
 }
 
 /* Book cover images */
 .book-card img {
     width: 100%;
-    max-width: 300px;              /* Prevent oversized images on large screens */
+    max-width: 250px;              /* Smaller max width for better proportion */
     height: auto;
     display: block;
     object-fit: cover;             /* Maintain aspect ratio */
@@ -928,6 +908,53 @@ footer {
 .bio-section p {
     margin: var(--space-lg) 0;
     line-height: 1.7;
+}
+
+/* About page grid layout */
+.about-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    align-items: center;
+}
+
+/* Portrait image styling */
+.portrait-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.portrait-image {
+    width: 100%;
+    max-width: 220px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px var(--shadow-subtle);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    object-fit: cover;
+    aspect-ratio: 3/4;
+}
+
+.portrait-image:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow-strong);
+}
+
+/* Bio content area */
+.bio-content {
+    flex: 1;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 767px) {
+    .about-grid {
+        gap: var(--space-lg);
+    }
+    
+    .portrait-image {
+        max-width: 200px;
+    }
 }
 
 /* =============================================================================
