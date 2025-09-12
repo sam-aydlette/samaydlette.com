@@ -129,7 +129,15 @@
     }
     
     .nav-button {
-        color: var(--accent-secondary);
+        color: var(--accent-primary);
+    }
+    
+    .nav-button:visited {
+        color: var(--accent-primary);
+    }
+    
+    .nav-button:active {
+        color: var(--accent-primary);
     }
     
     .article-category {
@@ -593,9 +601,11 @@ a:active {
 /* Book cover images */
 .book-card img {
     width: 100%;
+    max-width: 300px;              /* Prevent oversized images on large screens */
     height: auto;
     display: block;
     object-fit: cover;             /* Maintain aspect ratio */
+    margin: 0 auto;                /* Center image if smaller than container */
 }
 
 /* Book information section */
