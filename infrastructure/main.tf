@@ -302,7 +302,7 @@ resource "aws_lambda_function" "opa_compliance" {
   function_name   = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   role            = aws_iam_role.lambda_opa.arn
   handler         = "index.handler"
-  runtime         = "nodejs18.x"
+  runtime         = "nodejs20.x"
   timeout         = 60
   source_code_hash = data.local_file.lambda_zip.content_base64sha256
 
