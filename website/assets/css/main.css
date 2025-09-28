@@ -34,14 +34,14 @@
     --bg-primary: #f5f5f5;          /* Light gray background */
     --bg-secondary: #ffffff;        /* White card backgrounds */
     --bg-tertiary: #f2f2f2;         /* Light gray code blocks */
-    --accent-primary: #4A90E2;      /* Light blue accent (was green) */
-    --accent-secondary: #2563EB;    /* Brighter blue accent */
+    --accent-primary: #1D4ED8;      /* Light blue accent */
+    --accent-secondary: #4A90E2;    /* Brighter blue accent */
     --accent-tertiary: #B8312F;     /* Lighthouse red accent */
     --text-primary: #1a1a1a;        /* Dark text */
     --text-secondary: #696969;      /* Gray text */
     --text-muted: #a9a9a9;          /* Muted text */
     --border-color: #d3d3d3;        /* Light borders */
-    --border-accent: #4A90E2;       /* Light blue highlighted borders */
+    --border-accent: var(--accent-primary); /* Bold blue highlighted borders */
     --shadow-subtle: rgba(0, 0, 0, 0.04); /* Light shadows */
     --shadow-strong: rgba(0, 0, 0, 0.12); /* Darker shadows */
 
@@ -67,8 +67,8 @@
     --space-xl: 2rem;               /* 32px */
     --space-2xl: 3rem;              /* 48px */
     --space-3xl: 4rem;              /* 64px */
-    
-    /* LEGACY COMPATIBILITY */
+
+    /* COMPONENT-SPECIFIC COLORS */
     --primary-color: var(--bg-secondary);
     --secondary-color: var(--bg-tertiary);
     --accent-color: var(--accent-primary);
@@ -77,19 +77,23 @@
     --hover-bg: var(--bg-tertiary);
     --active-bg: var(--accent-primary);
     --hover-text: var(--accent-primary);
-    --link-color: #4A90E2;
-    --link-visited: #3A7BC8;
-    --link-hover: #6AA5E8;
-    --link-active: #7FB5F2;
     --shadow-color: var(--shadow-subtle);
-    
-    /* Default colors */
+
+    /* LINK COLORS */
+    --link-color: var(--accent-primary);
+    --link-visited: var(--accent-secondary);
+    --link-hover: var(--accent-primary);
+    --link-active: var(--accent-primary);
+
+    /* READ-MORE BUTTON COLORS */
     --read-more-color: var(--accent-primary);
     --read-more-hover: var(--accent-primary);
-    --read-more-visited: #3A7BC8;
-    --read-more-active: #7FB5F2;
+    --read-more-visited: var(--accent-secondary);
+    --read-more-active: var(--accent-primary);
     --read-more-cat: var(--text-secondary);
     --read-more-cat-hover: var(--text-primary);
+
+    /* FORM COLORS */
     --form-focus-color: var(--accent-primary);
 }
 
@@ -350,11 +354,7 @@ a:active {
 
 /* Article category tags */
 .article-category {
-    background: var(--bg-tertiary);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: 12px;
-    color: var(--accent-secondary);
-    font-weight: 500;
+    color: var(--text-muted);
 }
 
 .article-category::before {
@@ -1030,9 +1030,9 @@ footer {
 /* High contrast mode improvements */
 @media (prefers-contrast: high) {
     :root {
-        --border-color: #999999;
+        --border-color: var(--text-secondary);
         --shadow-subtle: rgba(0, 0, 0, 0.3);
-        --text-muted: #666666;
+        --text-muted: var(--text-secondary);
     }
     
     .book-card,
@@ -1118,7 +1118,7 @@ a:focus {
         max-width: none;
         box-shadow: none;
         background: none;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid var(--border-color);
     }
     
     /* Prevent page breaks inside cards */
@@ -1127,14 +1127,14 @@ a:focus {
         break-inside: avoid;
         page-break-inside: avoid;
         box-shadow: none;
-        border: 1px solid #ddd;
+        border: 1px solid var(--border-color);
     }
     
     /* Use print-friendly colors */
     body {
         font-size: 12pt;
-        color: #000;
-        background: #fff;
+        color: var(--text-primary);
+        background: var(--bg-secondary);
     }
     
     .section-title {
@@ -1144,7 +1144,7 @@ a:focus {
     
     .code-example,
     .code-block {
-        background: #f5f5f5;
-        border: 1px solid #ccc;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
     }
 }
