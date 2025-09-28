@@ -30,6 +30,34 @@
         <!-- Main Content -->
         <main class="content" id="main-content">
             <h2 class="section-title">all_articles</h2>
+
+            <!-- Search and Filter Section -->
+            <div class="article-card">
+                <div class="search-filter-section">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="search articles..." onkeyup="filterArticles()">
+                    </div>
+                    <div class="category-filters">
+                        <button class="filter-btn active" onclick="filterByCategory('all')">all</button>
+                        <button class="filter-btn" onclick="filterByCategory('military_values')">military_values</button>
+                        <button class="filter-btn" onclick="filterByCategory('intelligence_systems')">intelligence_systems</button>
+                        <button class="filter-btn" onclick="filterByCategory('ai_vulnerability_management')">ai_vulnerability_management</button>
+                        <button class="filter-btn" onclick="filterByCategory('vulnerability_management')">vulnerability_management</button>
+                        <button class="filter-btn" onclick="filterByCategory('digital_transformation')">digital_transformation</button>
+                        <button class="filter-btn" onclick="filterByCategory('compliance_automation')">compliance_automation</button>
+                        <button class="filter-btn" onclick="filterByCategory('opa_policy')">opa_policy</button>
+                        <button class="filter-btn" onclick="filterByCategory('sbom')">sbom</button>
+                        <button class="filter-btn" onclick="filterByCategory('devsecops')">devsecops</button>
+                        <button class="filter-btn" onclick="filterByCategory('cybersec_strategy')">cybersec_strategy</button>
+                        <button class="filter-btn" onclick="filterByCategory('container_security')">container_security</button>
+                        <button class="filter-btn" onclick="filterByCategory('cybersecurity')">cybersecurity</button>
+                        <button class="filter-btn" onclick="filterByCategory('artificial_intelligence')">artificial_intelligence</button>
+                        <button class="filter-btn" onclick="filterByCategory('cloud_security')">cloud_security</button>
+                        <button class="filter-btn" onclick="filterByCategory('compliance_as_code')">compliance_as_code</button>
+                        <button class="filter-btn" onclick="filterByCategory('vpn_analysis')">vpn_analysis</button>
+                    </div>
+                </div>
+            </div>
             <article class="article-card">
                 <div class="article-meta">
                     <span class="article-date">2025-09-11</span>
@@ -241,6 +269,47 @@
             <a href="https://www.linkedin.com/in/sa2/">linkedin</a>
         </div>
     </footer>
+
+    <script>
+        function filterArticles() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const articles = document.querySelectorAll('article.article-card');
+
+            articles.forEach(article => {
+                const title = article.querySelector('h3').textContent.toLowerCase();
+                const content = article.querySelector('p').textContent.toLowerCase();
+
+                if (title.includes(searchInput) || content.includes(searchInput)) {
+                    article.style.display = 'block';
+                } else {
+                    article.style.display = 'none';
+                }
+            });
+        }
+
+        function filterByCategory(category) {
+            const articles = document.querySelectorAll('article.article-card');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+
+            // Update active button
+            filterBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Clear search input
+            document.getElementById('searchInput').value = '';
+
+            articles.forEach(article => {
+                const articleCategory = article.querySelector('.article-category').textContent.trim();
+
+                if (category === 'all' || articleCategory === category) {
+                    article.style.display = 'block';
+                } else {
+                    article.style.display = 'none';
+                }
+            });
+        }
+    </script>
+
     <script type="module" src="/assets/js/main.js"></script>
 </body>
 </html>

@@ -486,6 +486,27 @@ footer a:active {
 }
 
 /* =============================================================================
+   HERO SECTION STYLING
+   ============================================================================= */
+/* Styling for the homepage hero/value proposition section */
+
+.hero-section {
+    margin-bottom: var(--space-3xl);
+}
+
+.hero-content {
+    font-size: var(--font-size-lg);
+    line-height: 1.7;
+}
+
+.hero-content p {
+    margin-top: var(--space-xl);
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+}
+
+/* =============================================================================
    BOOK SPECIFIC STYLING
    ============================================================================= */
 /* Special layouts and styling for the books section */
@@ -674,6 +695,64 @@ footer {
 
 .social-links a:hover {
     opacity: 0.8;
+}
+
+/* =============================================================================
+   SEARCH AND FILTER STYLES
+   ============================================================================= */
+.search-filter-section {
+    padding: var(--space-lg);
+}
+
+.search-box {
+    margin-bottom: var(--space-lg);
+}
+
+.search-box input {
+    width: 100%;
+    padding: var(--space-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-mono);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.category-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+
+.filter-btn {
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.filter-btn:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+}
+
+.filter-btn.active {
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
 }
 
 /* =============================================================================
@@ -999,6 +1078,16 @@ footer {
     .social-links a {
         display: block;
         margin: var(--space-sm) 0;
+    }
+
+    /* Search and filter responsive adjustments */
+    .category-filters {
+        justify-content: center;
+    }
+
+    .filter-btn {
+        font-size: 0.75rem;
+        padding: var(--space-xs) var(--space-sm);
     }
 }
 
