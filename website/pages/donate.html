@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>donate - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <style>
+        /* Donation-specific styles */
+        .donate-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: var(--space-2xl);
+            margin-bottom: var(--space-2xl);
+            box-shadow: 0 2px 8px var(--shadow-subtle);
+            transition: all 0.3s ease;
+        }
+
+        .donate-header {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+
+        .coffee-emoji {
+            font-size: var(--font-size-3xl);
+            margin-bottom: var(--space-md);
+        }
+
+        .donate-title {
+            font-size: var(--font-size-2xl);
+            color: var(--text-primary);
+            margin-bottom: var(--space-md);
+        }
+
+        .donate-description {
+            color: var(--text-secondary);
+            font-size: var(--font-size-base);
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .donation-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .donation-button {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: var(--space-lg);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .donation-button:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-strong);
+        }
+
+        .donation-amount {
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+            margin-bottom: var(--space-sm);
+            font-family: var(--font-mono);
+        }
+
+        .donation-label {
+            font-size: var(--font-size-sm);
+            color: var(--text-secondary);
+        }
+
+        .custom-donation {
+            margin-top: var(--space-xl);
+            text-align: center;
+            padding-top: var(--space-xl);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .stripe-button {
+            display: inline-block;
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+            padding: var(--space-md) var(--space-xl);
+            border-radius: 4px;
+            text-decoration: none;
+            font-family: var(--font-mono);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: var(--font-size-base);
+        }
+
+        .stripe-button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-strong);
+        }
+
+        .payment-info {
+            margin-top: var(--space-2xl);
+            padding-top: var(--space-xl);
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .payment-info p {
+            color: var(--text-muted);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .code-comment {
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            font-size: var(--font-size-sm);
+        }
+
+        @media (max-width: 767px) {
+            .donation-options {
+                grid-template-columns: 1fr;
+                max-width: 250px;
+            }
+
+            .donate-container {
+                padding: var(--space-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-links">main_content</a>
+    
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/index.html" class="nav-button">home</a>
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/projects.html" class="nav-button">projects</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/contact.html" class="nav-button">contact</a>
+                <a href="/pages/donate.html" class="nav-button">donate</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content" id="main-content">
+            <h2 class="section-title">buy_me_coffee</h2>
+            
+            <div class="donate-container">
+                <div class="donate-header">
+                    <div class="coffee-emoji">☕</div>
+                    <h3 class="donate-title">Support My Work</h3>
+                    <p class="donate-description">
+                        If you find value in my writing, research, or open-source projects, 
+                        consider buying me a cup of coffee. Your support helps me continue 
+                        creating content and contributing to the cybersecurity community.
+                    </p>
+                </div>
+
+                <div class="custom-donation">
+                    <p class="code-comment">// Choose your own amount</p>
+                    <a href="https://buy.stripe.com/5kQfZh0fM0ivcjG00b" class="stripe-button">donate_custom_amount</a>
+                </div>
+
+                <div class="payment-info">
+                    <p class="code-comment">// Secure payment powered by Stripe</p>
+                    <p>All transactions are processed securely through Stripe.<br>
+                    Your payment information is never stored on this site.</p>
+                </div>
+            </div>
+
+            <!-- Thank you message section -->
+            <div class="article-card" style="text-align: center;">
+                <div class="code-example">
+                    <span class="code-comment">// Your support means a lot</span><br>
+                    <span class="code-keyword">const</span> <span class="code-string">gratitude</span> = {<br>
+                    &nbsp;&nbsp;level: <span class="code-string">"infinite"</span>,<br>
+                    &nbsp;&nbsp;message: <span class="code-string">"Thank you for supporting independent creators"</span><br>
+                    };
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+            <div class="social-links">
+                <a href="https://www.linkedin.com/in/sa2/">linkedin</a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Your Stripe Payment Link
+        const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/5kQfZh0fM0ivcjG00b';
+        
+        function handleDonation(suggestedAmount) {
+            // Redirect to Stripe with a suggested amount
+            // The user can still change it on the Stripe page
+            window.location.href = `${STRIPE_PAYMENT_LINK}?prefilled_amount=${suggestedAmount}00`;
+        }
+    </script>
+    
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
