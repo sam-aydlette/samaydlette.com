@@ -68,7 +68,8 @@
     --space-2xl: 3rem;              /* 48px */
     --space-3xl: 4rem;              /* 64px */
 
-    /* COMPONENT-SPECIFIC COLORS */
+    /* COMPONENT-SPECIFIC COLORS - Derived from base colors above */
+    /* Legacy support - these map to the base color system */
     --primary-color: var(--bg-secondary);
     --secondary-color: var(--bg-tertiary);
     --accent-color: var(--accent-primary);
@@ -79,13 +80,17 @@
     --hover-text: var(--accent-primary);
     --shadow-color: var(--shadow-subtle);
 
-    /* LINK COLORS */
+    /* NAVIGATION COLORS - Override in component styles */
+    /* Navigation buttons inherit --text-primary by default */
+    /* Hover/active states use --accent-primary */
+
+    /* CONTENT LINK COLORS - Used by .content links */
     --link-color: var(--accent-primary);
     --link-visited: var(--accent-secondary);
     --link-hover: var(--accent-primary);
     --link-active: var(--accent-primary);
 
-    /* READ-MORE BUTTON COLORS */
+    /* READ-MORE BUTTON COLORS - Used by .read-more buttons */
     --read-more-color: var(--accent-primary);
     --read-more-hover: var(--accent-primary);
     --read-more-visited: var(--accent-secondary);
@@ -93,7 +98,7 @@
     --read-more-cat: var(--text-secondary);
     --read-more-cat-hover: var(--text-primary);
 
-    /* FORM COLORS */
+    /* FORM COLORS - Used by form elements */
     --form-focus-color: var(--accent-primary);
 }
 
@@ -121,30 +126,43 @@ body {
 }
 
 /* =============================================================================
-   LINK STYLING
+   LINK STYLING HIERARCHY
    ============================================================================= */
-/* Consistent styling for all links throughout the site */
+/* Cascading link styles - specific selectors override general ones */
 
+/* 1. BASE: Default for all links */
 a {
-    color: var(--link-color);
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
-a:link {
+/* 2. CONTENT LINKS: Standard text links within content areas */
+.content a:not(.nav-button):not(.read-more),
+.article-card a:not(.read-more),
+.book-card a,
+footer a {
     color: var(--link-color);
 }
 
-a:visited {
+.content a:not(.nav-button):not(.read-more):visited,
+.article-card a:not(.read-more):visited,
+.book-card a:visited,
+footer a:visited {
     color: var(--link-visited);
 }
 
-a:hover {
+.content a:not(.nav-button):not(.read-more):hover,
+.article-card a:not(.read-more):hover,
+.book-card a:hover,
+footer a:hover {
     color: var(--link-hover);
     text-decoration: underline;
 }
 
-a:active {
+.content a:not(.nav-button):not(.read-more):active,
+.article-card a:not(.read-more):active,
+.book-card a:active,
+footer a:active {
     color: var(--link-active);
 }
 
@@ -237,7 +255,7 @@ a:active {
 .nav-button {
     font-family: var(--font-mono);  /* Monospace for coding theme */
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);   /* Gray color by default */
+    color: var(--text-primary);     /* Black color to match header */
     text-decoration: none;
     padding: var(--space-sm) var(--space-md);
     border-radius: 4px;
@@ -251,9 +269,9 @@ a:active {
     background: var(--bg-tertiary);
 }
 
-/* Maintain gray color for visited and active states */
+/* Maintain black color for visited state */
 .nav-button:visited {
-    color: var(--text-secondary);   /* Stay gray */
+    color: var(--text-primary);     /* Stay black */
 }
 
 .nav-button:active {
