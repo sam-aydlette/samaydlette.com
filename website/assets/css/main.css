@@ -1,23 +1,22 @@
 /* =============================================================================
-   WEBSITE STYLES: Professional Hacker Theme with Light/Dark Mode
+   WEBSITE STYLES: Professional Theme - Light Mode Only
    =============================================================================
    This CSS file creates a clean, professional website with a programming theme.
-   It supports both light and dark modes and works well on all device sizes.
+   Light mode only with light blue accents.
    
    Key features:
-   - Dark mode by default, light mode when toggled
+   - Light mode only (no dark mode)
    - Responsive design that works on phones, tablets, and desktops
    - Programming-inspired design elements (code snippets, terminal feel)
    - Accessibility features for screen readers and keyboard navigation
    
    Organization:
    1. Color themes and fonts
-   2. Theme toggle functionality  
-   3. Basic page layout
-   4. Navigation and header
-   5. Content areas and articles
-   6. Forms and interactive elements
-   7. Mobile responsive adjustments
+   2. Basic page layout
+   3. Navigation and header
+   4. Content areas and articles
+   5. Forms and interactive elements
+   6. Mobile responsive adjustments
    ============================================================================= */
 
 /* =============================================================================
@@ -27,25 +26,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
 
 /* =============================================================================
-   COLOR THEMES AND TYPOGRAPHY
+   COLOR THEMES AND TYPOGRAPHY - LIGHT MODE ONLY
    ============================================================================= */
 /* Define all colors and fonts in one place for easy maintenance */
 
 :root {
-    /* DEFAULT COLORS (DARK MODE) */
-    --bg-primary: #0a0a0a;          /* Very dark background */
-    --bg-secondary: #1a1a1a;        /* Dark card backgrounds */
-    --bg-tertiary: #252525;         /* Dark code blocks */
-    --accent-primary: #50864C;      /* Muted green accent for dark mode */
-    --accent-secondary: #7A9BB5;    /* Brighter blue accent */
+    /* LIGHT MODE COLORS ONLY */
+    --bg-primary: #f5f5f5;          /* Light gray background */
+    --bg-secondary: #ffffff;        /* White card backgrounds */
+    --bg-tertiary: #f2f2f2;         /* Light gray code blocks */
+    --accent-primary: #4A90E2;      /* Light blue accent (was green) */
+    --accent-secondary: #2563EB;    /* Brighter blue accent */
     --accent-tertiary: #B8312F;     /* Lighthouse red accent */
-    --text-primary: #f0f0f0;        /* White text */
-    --text-secondary: #cccccc;      /* Light gray text */
-    --text-muted: #888888;          /* Muted text */
-    --border-color: #282828;        /* Dark borders */
-    --border-accent: #50864C;       /* Muted green highlighted borders */
-    --shadow-subtle: rgba(0, 0, 0, 0.3); /* Dark shadows */
-    --shadow-strong: rgba(0, 0, 0, 0.5); /* Darker shadows */
+    --text-primary: #1a1a1a;        /* Dark text */
+    --text-secondary: #696969;      /* Gray text */
+    --text-muted: #a9a9a9;          /* Muted text */
+    --border-color: #d3d3d3;        /* Light borders */
+    --border-accent: #4A90E2;       /* Light blue highlighted borders */
+    --shadow-subtle: rgba(0, 0, 0, 0.04); /* Light shadows */
+    --shadow-strong: rgba(0, 0, 0, 0.12); /* Darker shadows */
 
     /* FONT DEFINITIONS */
     --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;     /* Body text */
@@ -79,93 +78,38 @@
     --hover-bg: var(--bg-tertiary);
     --active-bg: var(--accent-primary);
     --hover-text: var(--accent-primary);
-    --link-color: #50864C;
-    --link-visited: #3E6A3D;
-    --link-hover: #7E9D7C;
-    --link-active: #B1F2A7;
+    --link-color: #4A90E2;
+    --link-visited: #3A7BC8;
+    --link-hover: #6AA5E8;
+    --link-active: #7FB5F2;
     --shadow-color: var(--shadow-subtle);
     
     /* Default colors */
     --read-more-color: var(--accent-primary);
     --read-more-hover: var(--accent-primary);
-    --read-more-visited: #3E6A3D;
-    --read-more-active: #B1F2A7;
+    --read-more-visited: #3A7BC8;
+    --read-more-active: #7FB5F2;
     --read-more-cat: var(--text-secondary);
     --read-more-cat-hover: var(--text-primary);
     --form-focus-color: var(--accent-primary);
 }
 
-/* =============================================================================
-   LIGHT MODE (System Preference)
-   ============================================================================= */
-@media (prefers-color-scheme: light) {
-    :root {
-        --bg-primary: #f5f5f5;
-        --bg-secondary: #ffffff;
-        --bg-tertiary: #f2f2f2;
-        --accent-primary: #1a1a1a;
-        --accent-secondary: #2563EB;
-        --accent-tertiary: #B8312F;
-        --text-primary: #1a1a1a;
-        --text-secondary: #696969;
-        --text-muted: #a9a9a9;
-        --border-color: #d3d3d3;
-        --border-accent: #696969;
-        --shadow-subtle: rgba(0, 0, 0, 0.04);
-        --shadow-strong: rgba(0, 0, 0, 0.12);
-        
-        --link-color: var(--accent-primary);
-        --link-visited: #005a9e;
-        --link-hover: #0088ff;
-        --link-active: #004080;
-        
-        --read-more-color: #1B4D3E;
-        --read-more-hover: #1B4D3E;
-        --read-more-visited: #0F3A2E;
-        --read-more-active: #26624D;
-        --read-more-cat: #0F3A2E;
-        --read-more-cat-hover: #26624D;
-        --form-focus-color: #1B4D3E;
-    }
-    
-    .nav-button {
-        color: var(--accent-primary);
-    }
-    
-    .nav-button:visited {
-        color: var(--accent-primary);
-    }
-    
-    .nav-button:active {
-        color: var(--accent-primary);
-    }
-    
-    .article-category {
-        color: var(--accent-secondary);
-    }
+/* Navigation button styling */
+.nav-button {
+    color: var(--accent-primary);
 }
 
-/* =============================================================================
-   DARK MODE SPECIFIC OVERRIDES (System Preference)
-   ============================================================================= */
-@media (prefers-color-scheme: dark) {
-    .nav-button {
-        color: var(--accent-secondary);
-    }
-    
-    .nav-button:visited {
-        color: #64869F;
-    }
-    
-    .nav-button:active {
-        color: #9BBDD1;
-    }
-    
-    .article-category {
-        color: var(--accent-secondary);
-    }
+.nav-button:visited {
+    color: var(--accent-primary);
 }
 
+.nav-button:active {
+    color: var(--accent-primary);
+}
+
+.article-category {
+    color: var(--accent-secondary);
+}
 
 /* =============================================================================
    BASIC PAGE SETUP
@@ -186,7 +130,7 @@ body {
     line-height: 1.6;               /* Comfortable reading spacing */
     color: var(--text-primary);
     background: var(--bg-primary);
-    transition: all 0.3s ease;      /* Smooth theme transitions */
+    transition: all 0.3s ease;      /* Smooth transitions */
     overflow-x: hidden;             /* Prevent horizontal scrolling */
 }
 
@@ -295,7 +239,6 @@ a:active {
     box-sizing: border-box;
 }
 
-
 /* Container for navigation buttons */
 .nav-grid {
     display: flex;
@@ -321,7 +264,6 @@ a:active {
     color: var(--accent-secondary);
     background: var(--bg-tertiary);
 }
-
 
 /* Apply terminal styling to navigation buttons */
 .nav-button::before {
@@ -357,114 +299,89 @@ a:active {
 .section-title {
     color: var(--text-primary);
     font-size: var(--font-size-2xl);
-    font-weight: 600;
     margin-bottom: var(--space-2xl);
+    font-weight: 300;
     font-family: var(--font-mono);
     position: relative;
-    transition: color 0.3s ease;
 }
 
-/* Add hash symbol before section titles (like markdown) */
+/* Add decorative command prefix to section titles */
 .section-title::before {
-    content: '# ';
-    color: var(--accent-tertiary);
+    content: '$ ';
+    color: var(--accent-primary);
     font-weight: 400;
 }
 
 /* =============================================================================
    ARTICLE AND BOOK CARDS
    ============================================================================= */
-/* Styling for the cards that contain articles and book information */
+/* Cards that display article previews and book information */
 
-/* Base card styling */
-.card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: var(--space-2xl);
-    margin-bottom: var(--space-2xl);
-    width: 100%;
-    box-sizing: border-box;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.card:hover {
-    border-color: var(--border-accent);
-    box-shadow: 0 4px 20px var(--shadow-subtle);
-    transform: translateY(-2px);
-}
-
-/* Apply base card styling to specific card types */
+/* General card styling */
 .article-card,
 .book-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.article-card {
     padding: var(--space-2xl);
     margin-bottom: var(--space-2xl);
-    width: 100%;
-    box-sizing: border-box;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px var(--shadow-subtle);
 }
 
+/* Hover effects for cards */
 .article-card:hover,
 .book-card:hover {
-    border-color: var(--border-accent);
-    box-shadow: 0 4px 20px var(--shadow-subtle);
+    box-shadow: 0 4px 12px var(--shadow-strong);
     transform: translateY(-2px);
 }
 
 /* Article metadata (date, category) */
 .article-meta {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    color: var(--text-muted);
-    margin-bottom: var(--space-lg);
     display: flex;
     gap: var(--space-lg);
-    align-items: center;
-    flex-wrap: wrap;                /* Wrap on small screens */
-}
-
-/* Style for article date */
-.article-date::before {
-    content: 'date: ';
-    color: var(--accent-tertiary);
-}
-
-/* Category badge styling */
-.article-category {
-    background: var(--bg-tertiary);
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: 4px;
-    color: var(--accent-primary);
-    transition: all 0.3s ease;
-}
-
-.article-category::before {
-    content: 'topic: ';
-    color: var(--accent-tertiary);
-}
-
-
-/* General heading styles for articles */
-.article-card h2,
-.article-card h3,
-.article-title {
-    color: var(--text-primary);
-    font-size: var(--font-size-2xl);
-    font-weight: 600;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
     margin-bottom: var(--space-md);
-    line-height: 1.3;
+    font-family: var(--font-mono);
     transition: color 0.3s ease;
 }
 
-/* Linked headings */
+/* Article date styling */
+.article-date {
+    color: var(--text-muted);
+}
+
+.article-date::before {
+    content: 'commit: ';
+    color: var(--text-muted);
+}
+
+/* Article category tags */
+.article-category {
+    background: var(--bg-tertiary);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: 12px;
+    color: var(--accent-secondary);
+    font-weight: 500;
+}
+
+/* Article footer section */
+.article-footer {
+    margin-top: var(--space-lg);
+}
+
+/* Article titles */
+.article-card h2,
+.article-card h3 {
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    transition: color 0.3s ease;
+}
+
+/* Linked article titles */
 .article-card h2 a,
 .article-card h3 a {
     color: inherit;
@@ -883,7 +800,7 @@ footer {
 
 /* Syntax highlighting for code examples */
 .code-keyword {
-    color: var(--accent-secondary);  /* Keywords in orange */
+    color: var(--accent-secondary);  /* Keywords in blue */
     font-weight: 500;
 }
 
@@ -899,212 +816,49 @@ footer {
 /* =============================================================================
    BIOGRAPHY SECTION SPECIFIC STYLES
    ============================================================================= */
-/* Special styling for the about page */
 
-.bio-section .article-card {
+.bio-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-2xl);
     margin-bottom: var(--space-2xl);
 }
 
-.bio-section p {
-    margin: var(--space-lg) 0;
-    line-height: 1.7;
-}
-
-/* About page grid layout */
-.about-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
-    align-items: center;
-}
-
-/* Portrait image styling */
-.portrait-section {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-}
-
-.portrait-image {
-    width: auto;                   /* Let image maintain natural proportions */
-    max-width: 180px;              /* Reasonable max size for desktop */
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px var(--shadow-subtle);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    object-fit: contain;           /* Maintain original aspect ratio */
-}
-
-.portrait-image:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px var(--shadow-strong);
-}
-
-/* Bio content area */
 .bio-content {
-    flex: 1;
-}
-
-/* Mobile responsive layout */
-@media (max-width: 767px) {
-    .about-grid {
-        gap: var(--space-lg);
-    }
-    
-    .portrait-image {
-        max-width: 140px;              /* Smaller on mobile */
-    }
-}
-
-/* Very small screens */
-@media (max-width: 480px) {
-    .portrait-image {
-        max-width: 120px;              /* Even smaller on tiny screens */
-    }
+    font-size: var(--font-size-lg);
+    line-height: 1.8;
+    color: var(--text-secondary);
 }
 
 /* =============================================================================
-   FORM ENHANCEMENTS
+   MOBILE RESPONSIVE DESIGN
    ============================================================================= */
-/* Additional form styling and functionality */
+/* Adjustments for smaller screens */
 
-/* Textarea specific styling */
-.form-group textarea {
-    min-height: 120px;
-    resize: vertical;               /* Allow vertical resizing only */
-}
-
-/* Placeholder text styling */
-.form-group textarea::placeholder {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-style: italic;
-}
-
-/* =============================================================================
-   BOOK DESCRIPTION ENHANCEMENTS
-   ============================================================================= */
-/* Additional styling for book detail pages */
-
-.book-description {
-    width: 100%;
-}
-
-.book-description p {
-    margin-bottom: var(--space-md);
-    line-height: 1.6;
-}
-
-.book-description .code-example {
-    margin: var(--space-md) 0 var(--space-lg) 0;
-}
-
-.book-description .read-more {
-    margin-top: var(--space-md);
-    display: inline-block;
-}
-
-/* Scroll animations for content reveal */
-.reveal-on-scroll {
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.reveal-on-scroll.revealed {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* =============================================================================
-   RESPONSIVE DESIGN: TABLETS AND MEDIUM SCREENS
-   ============================================================================= */
-@media (min-width: 768px) and (max-width: 991px) {
-    .header { padding: var(--space-2xl) var(--space-lg) var(--space-xl); }
-    .header h1 { font-size: var(--font-size-3xl); }
-    .navbar { gap: var(--space-lg); }
-    .content { padding: 0 var(--space-lg); }
-    .books-grid { 
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: var(--space-lg);
-    }
-    .book-info { padding: var(--space-md); }
-    .section-title { 
-        font-size: var(--font-size-xl);
-        margin-bottom: var(--space-xl);
-    }
-    .article-card { padding: var(--space-xl); }
-    .code-block { padding: var(--space-md); }
-}
-
-/* =============================================================================
-   RESPONSIVE DESIGN: SMALL SCREENS (MOBILE PHONES)
-   ============================================================================= */
-/* Major layout changes for mobile devices (less than 768px) */
-
-@media (max-width: 767px) {
-    /* Basic mobile layout adjustments */
-    body, .main-container {
-        overflow-x: hidden;
-        width: 100%;
-    }
-    
-    .main-container {
-        padding-top: 60px;          /* Account for fixed header */
-    }
-    
-    
-    /* Fixed header for mobile navigation */
+@media (max-width: 768px) {
+    /* Header adjustments */
     .header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 100;
-        padding: var(--space-md);
-        background: var(--bg-secondary);
-        box-shadow: 0 2px 4px var(--shadow-subtle);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 60px;
-        box-sizing: border-box;
-        margin-bottom: 0;
-        max-width: none;
-        text-align: center;
+        padding: var(--space-2xl) var(--space-md) var(--space-xl);
     }
     
     .header h1 {
-        font-size: var(--font-size-lg);
-        margin-bottom: 0;
-        white-space: nowrap;
-        overflow: hidden;
-    }
-    
-    /* Hide site description on mobile */
-    .header p {
-        display: none;
+        font-size: var(--font-size-3xl);
     }
     
     /* Show hamburger menu on mobile */
     .menu-toggle {
         display: block;
+        position: fixed;
+        top: var(--space-lg);
+        right: var(--space-lg);
+        z-index: 101;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        box-shadow: 0 2px 8px var(--shadow-subtle);
     }
     
-    /* Animate hamburger menu when active */
-    .menu-toggle.active span:nth-child(1) {
-        transform: rotate(45deg) translate(5px, 5px);
-    }
-    
-    .menu-toggle.active span:nth-child(2) {
-        opacity: 0;
-    }
-    
-    .menu-toggle.active span:nth-child(3) {
-        transform: rotate(-45deg) translate(7px, -7px);
-    }
-    
-    /* Mobile navigation menu */
+    /* Hide navigation by default on mobile */
     .navbar {
         display: none;              /* Hidden by default */
         position: fixed;
@@ -1214,97 +968,93 @@ footer {
         width: 100%;
         box-sizing: border-box;
     }
-    .submit-button { width: 100%; padding: var(--space-md); }
     
     /* Code block adjustments */
     .code-block,
     .code-example {
-        width: 100%;
-        margin: var(--space-md) 0;
         padding: var(--space-md);
-        overflow-x: auto;
-        box-sizing: border-box;
         font-size: var(--font-size-xs);
-        white-space: pre-wrap;
-        word-break: break-word;
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
     }
     
-    /* Disable scroll animations on mobile for performance */
-    .reveal-on-scroll {
-        opacity: 1 !important;
-        transform: none !important;
-        transition: none !important;
+    /* Footer adjustments */
+    footer { padding: var(--space-2xl) var(--space-md); }
+    
+    /* Social links adjustments */
+    .social-links a {
+        display: block;
+        margin: var(--space-sm) 0;
     }
 }
 
-/* =============================================================================
-   RESPONSIVE DESIGN: EXTRA SMALL SCREENS (SMALL PHONES)
-   ============================================================================= */
-/* Additional adjustments for very small phones (480px and below) */
-
+/* Very small screens (phones in portrait) */
 @media (max-width: 480px) {
+    .header h1 { font-size: var(--font-size-2xl); }
+    .header p { font-size: var(--font-size-base); }
     
-    .header h1 {
-        font-size: var(--font-size-base);
+    .article-card h2,
+    .article-card h3 { font-size: var(--font-size-lg); }
+    
+    .book-card img { max-width: 200px; }
+}
+
+/* =============================================================================
+   ACCESSIBILITY FEATURES
+   ============================================================================= */
+/* Improve experience for users with disabilities */
+
+/* Skip navigation links for screen readers */
+.skip-links {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.skip-links:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--accent-primary);
+    color: var(--bg-primary);
+    text-decoration: none;
+    z-index: 1000;
+}
+
+/* Ensure readable focus states */
+*:focus {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* High contrast mode improvements */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #999999;
+        --shadow-subtle: rgba(0, 0, 0, 0.3);
+        --text-muted: #666666;
     }
     
-    .section-title {
-        font-size: var(--font-size-lg);
-        margin-bottom: var(--space-md);
-    }
-    
-    /* Single column for books on very small screens */
-    .books-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .book-card {
-        max-width: 100%;
-        margin: 0 0 var(--space-lg) 0;
-    }
-    
+    .book-card,
     .article-card {
-        padding: var(--space-md);
+        border: 2px solid var(--border-color);
     }
     
-    .content {
-        padding: var(--space-md) var(--space-sm);
-    }
-    
-    footer {
-        padding: var(--space-lg) var(--space-md);
-        margin-top: var(--space-xl);
+    .code-example,
+    .code-block {
+        border: 2px solid var(--accent-primary);
     }
 }
 
-/* =============================================================================
-   RESPONSIVE DESIGN: LANDSCAPE ORIENTATION ON MOBILE
-   ============================================================================= */
-/* Special handling for mobile devices in landscape mode */
-
-@media screen and (max-width: 767px) and (orientation: landscape) {
-    .header {
-        padding: var(--space-sm) var(--space-md);
-    }
-    
-    .navbar.active {
-        max-height: 80vh;           /* Limit height in landscape */
-        overflow-y: auto;           /* Allow scrolling if needed */
-    }
-    
-    .books-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* =============================================================================
-   ACCESSIBILITY ENHANCEMENTS
-   ============================================================================= */
-/* Improved experience for users with accessibility needs */
-
-/* Respect user's motion preferences */
+/* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-    * {
+    *,
+    *::before,
+    *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -1323,25 +1073,6 @@ footer {
     
     .read-more::after {
         transform: none !important;
-    }
-}
-
-/* Enhanced contrast for users who need it */
-@media (prefers-contrast: high) {
-    :root {
-        --border-color: #999999;
-        --shadow-subtle: rgba(255, 255, 255, 0.3);
-        --text-muted: #aaaaaa;
-    }
-    
-    .book-card,
-    .article-card {
-        border: 2px solid var(--border-color);
-    }
-    
-    .code-example,
-    .code-block {
-        border: 2px solid var(--accent-primary);
     }
 }
 
@@ -1420,14 +1151,4 @@ a:focus {
         background: #f5f5f5;
         border: 1px solid #ccc;
     }
-}
-
-/* Hidden accessibility skip links */
-.skip-links {
-    position: absolute;
-    left: -10000px;
-    top: auto;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
 }
