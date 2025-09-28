@@ -5,7 +5,6 @@
    Light mode only with light blue accents.
    
    Key features:
-   - Light mode only (no dark mode)
    - Responsive design that works on phones, tablets, and desktops
    - Programming-inspired design elements (code snippets, terminal feel)
    - Accessibility features for screen readers and keyboard navigation
@@ -92,23 +91,6 @@
     --read-more-cat: var(--text-secondary);
     --read-more-cat-hover: var(--text-primary);
     --form-focus-color: var(--accent-primary);
-}
-
-/* Navigation button styling */
-.nav-button {
-    color: var(--accent-primary);
-}
-
-.nav-button:visited {
-    color: var(--accent-primary);
-}
-
-.nav-button:active {
-    color: var(--accent-primary);
-}
-
-.article-category {
-    color: var(--accent-secondary);
 }
 
 /* =============================================================================
@@ -251,7 +233,7 @@ a:active {
 .nav-button {
     font-family: var(--font-mono);  /* Monospace for coding theme */
     font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    color: var(--text-secondary);   /* Gray color by default */
     text-decoration: none;
     padding: var(--space-sm) var(--space-md);
     border-radius: 4px;
@@ -261,8 +243,17 @@ a:active {
 
 /* Hover effect for navigation buttons */
 .nav-button:hover {
-    color: var(--accent-secondary);
+    color: var(--accent-primary);   /* Light blue on hover */
     background: var(--bg-tertiary);
+}
+
+/* Maintain gray color for visited and active states */
+.nav-button:visited {
+    color: var(--text-secondary);   /* Stay gray */
+}
+
+.nav-button:active {
+    color: var(--accent-primary);   /* Blue when clicked */
 }
 
 /* Apply terminal styling to navigation buttons */
@@ -307,8 +298,8 @@ a:active {
 
 /* Add decorative command prefix to section titles */
 .section-title::before {
-    content: '$ ';
-    color: var(--accent-primary);
+    content: '# ';
+    color: var(--accent-tertiary);  /* Red color, same as original */
     font-weight: 400;
 }
 
@@ -353,8 +344,8 @@ a:active {
 }
 
 .article-date::before {
-    content: 'commit: ';
-    color: var(--text-muted);
+    content: 'date: ';
+    color: var(--accent-tertiary);  /* Red color */
 }
 
 /* Article category tags */
@@ -364,6 +355,11 @@ a:active {
     border-radius: 12px;
     color: var(--accent-secondary);
     font-weight: 500;
+}
+
+.article-category::before {
+    content: 'topic: ';
+    color: var(--accent-tertiary);  /* Red color */
 }
 
 /* Article footer section */
