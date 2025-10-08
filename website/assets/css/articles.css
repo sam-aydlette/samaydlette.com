@@ -171,6 +171,30 @@
     margin-top: 0;
 }
 
+/* Article images */
+.article-image {
+    text-align: center;
+    margin: 2rem 0;
+    width: 100%;
+}
+
+.article-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    display: block;
+    margin: 0 auto;
+}
+
+.image-caption {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
 @media (max-width: 768px) {
     .article-meta {
         flex-direction: column;
