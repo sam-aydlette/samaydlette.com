@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Why You Can't Buy Security (But You Can Build It) - sam_aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-links">main_content</a>
+
+<div class="main-container">
+    <header class="header">
+        <h1>sam_aydlette</h1>
+        <p>cybersecurity engineer & author</p>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-grid">
+            <a href="/index.html" class="nav-button">home</a>
+            <a href="/pages/books.html" class="nav-button">books</a>
+            <a href="/pages/articles.html" class="nav-button">articles</a>
+            <a href="/pages/projects.html" class="nav-button">projects</a>
+            <a href="/pages/about.html" class="nav-button">about</a>
+            <a href="/pages/donate.html" class="nav-button">donate</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" id="main-content">
+        <div class="article-card">
+            <div class="article-meta">
+                <span class="article-date">2025-10-22</span>
+                <span class="article-category">Cybersecurity</span>
+            </div>
+
+            <h1>Why You Can't Buy Security (But You Can Build It)</h1>
+
+            <div class="article-content">
+                <div class="disclaimer">
+                    The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                </div>
+
+                <div class="article-summary">
+                    <p>The enterprise security industry has convinced a generation of executives that security is something you can buy a subscription for. If you have the right tools, you will pass compliance audits, and voila, you're secure. This narrative is profitable for vendors and consultants, but a decade's worth of catastrophic breaches proves it wrong.</p>
+                </div>
+
+                <p>Security is achieved by capable teams. And capabilities require people who understand systems deeply enough to make them secure whether they use commercial tools with all the bells and whistles or open source alternatives.</p>
+
+                <p>Many organizations have outsourced not just security tools to vendors, but security understanding itself. They know which vendors they pay, but not how their systems actually work. When budgets tighten, vendors get acquired, or something breaks at 2am, this dependency becomes an expensive and fragile liability.</p>
+
+                <p>Most security leaders already know this. The problem is execution. The organizational, economic, and political structures of modern enterprises make building security capability nearly impossible, even when security leaders recognize it is necessary.</p>
+
+                <h3>Why Security Leaders Can't Execute What They Know</h3>
+
+                <p>Before we discuss why security engineering capability matters, we need to acknowledge why so few organizations invest in it despite knowing they should. The barriers are structural:</p>
+
+                <p><strong>Budget politics favor tools over people.</strong> Getting $300K approved for a commercial EDR tool is straightforward. Getting $650K approved for three security engineers is a battle. Tools are CapEx with clear vendor accountability and a defined end date. Headcount is permanent OpEx that shows up in every quarterly review. When the CFO asks what happens if your security engineers fail, the answer is uncomfortable: that failure lands on the CISO. When tools fail, you can blame the vendor.</p>
+
+                <p><strong>Cultural disconnect frustrates talented engineers.</strong> You can sign a contract with a security vendor today and have tools deployed within weeks. Finding senior security engineers who can do infrastructure as code, identity architecture, and incident response isn't easy. It also requires discernment to know what to look for in people, which many organizations lack. If you can find them, retaining good security engineers requires a culture of fostering ongoing investment in curious experimentation and self-improvement that many organizations won't sustain.</p>
+
+                <p><strong>Career safety demands conformity.</strong> When a breach happens after you bought industry-standard tools, you keep your job. You had all the Gartner magic quadrant vendors just like everyone else, even though you configured them with vendor defaults. The board might be unhappy, but they don't have enough context to fault your judgment. When a breach happens after you asked for $1.5 million to build a state-of-the-art security program full of expert engineers, your career is over. "Why didn't you just buy the premium support package like everyone else?" becomes the question that ends your tenure. Many security leaders are acting rationally for career survival, and the incentive structure punishes innovative approaches even if they are more effective.</p>
+
+                <p><strong>Complexity across siloes kills capability initiatives.</strong> Building security capability requires sustained executive support across multiple years, cooperation from engineering and operations teams (who already have full roadmaps full of feature development), and cultural change that treats security as everyone's responsibility rather than a separate department's problem. Buying tools requires a purchase order, a vendor implementation project, and a dashboard to show progress. One path requires a grounded strategic vision, political capital and long-term commitment. The other path requires a signature.</p>
+
+                <p><strong>Short-term pressure demands immediate results.</strong> Tools produce metrics instantly. "Threats blocked: 10,000!" looks great in the quarterly board presentation. Capability building takes 18-24 months before you see meaningful results, during which time you're asking executives to trust that the investment will pay off while competitors tout their latest security tool purchases. When every quarter brings pressure to show progress, long-term capability development feels like a luxury few can afford.</p>
+
+                <p>This is the reality of how corporate organizations function. It's dysfunctional, but we have to work within it. If building security capability were easy, more organizations would do it. The fact that they don't, despite widespread knowledge that it's necessary, tells us the barriers are real and substantial.</p>
+
+                <p>But the barriers being real doesn't make them insurmountable. And it doesn't change the fact that buying tools without building capability leads to breaches.</p>
+
+                <h3>Why Security Engineering Capability Matters More Than Your Tool Stack</h3>
+
+                <p>Bread and butter security work like network segmentation, least privilege access, hardened configurations, and rapid incident response prevents breaches. None of these come out of a box. You can't click "buy now" and have them magically implemented.</p>
+
+                <p>Consider identity and access management. Regardless of what IAM tools you use, you still need engineers who understand SAML, OIDC, and LDAP well enough to implement least privilege access. The commercial tools provide a better dashboard and vendor support, but in the end no matter what you're using it requires expert security engineering work to be effective.</p>
+
+                <p>The same pattern applies across your stack. Monitoring requires engineers who can write meaningful correlation rules and tune alerts. Vulnerability management requires engineers who can prioritize findings and drive remediation. EDR requires engineers who can investigate suspicious activity and respond to incidents.</p>
+
+                <p>In 2020, approximately 18,000 SolarWinds Orion customers received a compromised software update. Organizations with robust network segmentation limited lateral movement after compromise. Those with flat networks faced complete infrastructure compromise, even though many of those organizations had expensive tools and large budgets (<a href="https://www.cisa.gov/news-events/cybersecurity-advisories/aa20-352a" target="_blank" rel="noopener noreferrer">CISA Advisory</a>).</p>
+
+                <p>The difference came down to whether they had security engineers who understood their systems well enough to architect proper isolation.</p>
+
+                <p>Similarly, in 2024, the Cyber Safety Review Board examined a Microsoft breach where a valid signing key from 2016 that was stored insecurely allowed attackers to forge authentication tokens for months (<a href="https://www.cisa.gov/resources-tools/resources/CSRB-Review-Summer-2023-MEO-Intrusion" target="_blank" rel="noopener noreferrer">CSRB Review</a>). Automated key rotation would have prevented this. So would IP whitelisting for service accounts. These aren't premium features. They're security engineering fundamentals that require someone who understands identity systems well enough to implement them.</p>
+
+                <p>The organizations that will survive the tumultuous future are the ones with security engineers who can build and maintain effective security capabilities. Everyone else will struggle, even if they have expensive tools that are configured to vendor defaults.</p>
+
+                <h3>Building Security Engineering Capability That Scales</h3>
+
+                <p>Good security engineers are expensive, and all the structural barriers we discussed earlier are real. But for organizations with the resources and leadership commitment to overcome those barriers, building security engineering capability provides compounding returns that far exceed the initial investment:</p>
+
+                <p><strong>Force multiplication through infrastructure as code.</strong> Define your entire infrastructure once. Servers, networks, policies, monitoring - everything lives in Git. When you deploy you don't manually configure dozens of servers one by one. You run commands once and your infrastructure provisions consistently. This is how a few people secure what used to require large teams.</p>
+
+                <p><strong>Operational efficiency that improves over time.</strong> When security is codified, you can objectively demonstrate secure outcomes to auditors and customers. The audit trail exists in Git commits.</p>
+
+                <p><strong>Better security outcomes through understanding.</strong> Security engineers who build infrastructure develop intuition that produces faster incident response and vulnerability detection. They understand attack surfaces because they designed the surfaces. They can implement defense in depth because they comprehend how layers interact. This understanding prevents entire categories of breaches that no tool can stop.</p>
+
+                <p>If you're a startup or operate in an industry with very thin margins, investing in a full security team that can accomplish the above may not be financially viable. But you can still work towards this goal incrementally while achieving quick wins. There are many actions small organizations can take that dramatically reduce risk. For example, you can implement MFA on privileged accounts essentially for free, which prevents 99% of credential-based attacks (<a href="https://www.cisa.gov/topics/cybersecurity-best-practices/multifactor-authentication" target="_blank" rel="noopener noreferrer">CISA MFA Guidance</a>). The average data breach costs $4.4 million in 2025 (<a href="https://www.ibm.com/reports/data-breach" target="_blank" rel="noopener noreferrer">IBM Data Breach Report</a>) and fifty percent of organizations experienced a breach in the past 12 months (<a href="https://www.gov.uk/government/statistics/cyber-security-breaches-survey-2024/cyber-security-breaches-survey-2024" target="_blank" rel="noopener noreferrer">UK Cyber Security Breaches Survey</a>). The ROI for security spending is through the roof if it prevents even a single breach. It is foolish to ignore security spending as a business opportunity.</p>
+
+                <h3>How The Hard Work Pays Off</h3>
+
+                <p>Here's what organizations get in return for investing in security capabilities:</p>
+
+                <p><strong>Security outcomes lead to trust, which drives revenue.</strong> Today, trust may be the most important market differentiator for your brand. Customers increasingly select vendors based on demonstrated security competence. Organizations that can credibly explain how they are mitigating risks and can help their customers do the same win deals. Those that can only recite which tools they bought lose. The metrics tools provide may satisfy your board today, but they won't satisfy enterprise customers evaluating you tomorrow. When customers (or auditors) ask how you secure their data, you can explain your architecture with authority because your engineers designed it. Security based on sound security principles makes it easy to earn trust and enter regulated markets.</p>
+
+                <p><strong>Operational efficiency that improves margins.</strong> When security processes are automated and codified, you scale without proportionally increasing headcount. A security team of three engineers securing 1000 servers is achievable when infrastructure as code is applied consistently. Yes, it takes 18-24 months to get there. But once you do, those efficiency gains compound every quarter while vendor costs scale linearly with growth.</p>
+
+                <p><strong>Resilience when vendors fail.</strong> And they do fail. Commercial tools have outages. Vendors get acquired. Pricing models change. Products get discontinued. Organizations with deep security engineering capability adapt. Those dependent on vendors scramble. The organizational complexity of building capability is real, but it's an upfront cost. Vendor dependency is an ongoing risk that never goes away.</p>
+
+                <h3>Making The Case For Investment In Building Security Capabilities</h3>
+
+                <p>For security leaders navigating these structural barriers, here's how to build the political capital needed to invest in capability:</p>
+
+                <p><strong>Don't be a purist.</strong> While I would personally respect you for this, don't propose ripping out existing tools to build the "most efficient" open source stack in-house on bare metal. Instead, propose hiring three senior security engineers to make your existing tools more effective. Show concrete examples of security gaps your current tools can't fill without engineering work. Make the case that tools plus capability beats tools alone.</p>
+
+                <p><strong>Make the TCO argument.</strong> Yes, three security engineers cost $650K annually. But popular enterprise security platforms with full support and integration expenses combined can approach or exceed that and they don't deliver their full value if they're just configured with vendor defaults and never monitored (which, let's be honest, happens more often than it should). CFOs respond to TCO analysis that demonstrates tools plus capability returns more ROI than tools alone.</p>
+
+                <p><strong>Build retention into the plan.</strong> Talent scarcity is real, but it's not insurmountable. Competitive compensation matters, but so does interesting work, autonomy, and learning opportunities. Security engineers who get to build infrastructure, make architectural decisions, and see their work matter directly in preventing breaches are more likely to stay than those who spend their days tuning vendor dashboards. Make retention part of your proposal, not an afterthought.</p>
+
+                <p><strong>Frame it as strategic necessity, not tactical choice.</strong> When boards understand that buying tools without capability leads to breaches, the conversation shifts. Reference public breach post-mortems where organizations had expensive tools but lacked the capability to use them effectively. Make it clear that the question isn't "build versus buy" but rather "survive the next five years or not."</p>
+
+                <h3>The Path Forward</h3>
+
+                <p>Security is risk management, not perfection. The goal isn't stopping every attack. The goal is making the cost to breach you exceed the value an attacker gets. This threshold is achievable with reasonable spending, competent staff, and actual security engineering work.</p>
+
+                <p>Whether you implement that work using commercial tools or open source alternatives matters less than having engineers who can do the work effectively. That capability can't be purchased. It must be built.</p>
+
+                <p>The structural barriers are real. But they're also not insurmountable, and the cost of not building capability is breaches that could have been prevented. This is increasingly an unacceptable cost for both organizations and society as a whole.</p>
+
+                <p>The incentive structures that make it hard for security leaders to go against the status quo ultimately make everyone less secure. But there is a clear business case for investing in security capabilities, we just have to make that case evident to business leaders. The path is harder than signing a contract and moving on, but the outcomes are worth it.</p>
+
+                <div class="article-callback">
+                    <p>Like this article? Here's another you might enjoy...</p>
+                    <div class="article-footer">
+                        <a href="/pages/article-17.html" class="read-more">fedramp_20x_cybernetic_risk.md</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
