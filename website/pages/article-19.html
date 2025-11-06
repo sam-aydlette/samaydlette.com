@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Assess Risk in 15 Minutes - sam_aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-links">main_content</a>
+
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/index.html" class="nav-button">home</a>
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/projects.html" class="nav-button">projects</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/donate.html" class="nav-button">donate</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content" id="main-content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2025-11-06</span>
+                    <span class="article-category">risk_assessment</span>
+                </div>
+
+                <h2>How to Assess Risk in 15 Minutes</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <div class="warning-label">
+                        <p><strong>⚠️ Warning Label:</strong> While I hope to draw readers in with my edgy claim of 15 minute risk assessment, I am not advocating for replacing comprehensive risk assessment with the below approach. You still need a robust security program and formal third-party audits. Ok, PSA over. Let's continue.</p>
+                    </div>
+
+                    <p>The approach I'm using draws from General Stanley McChrystal in his excellent book <em>The Risk Immune System</em>. Gen. McChrystal insightfully notes that, "Assessment is relatively simple. It consists of three parts: A quantitative assessment, a qualitative assessment, and a mature judgment of whether things are working as they should be" (page 231). While Gen. McChrystal is drawing primarily from his military experience, this approach works equally well for assessing risks for cloud services. The best use case is for internal security teams conducting rapid risk reviews between formal third-party assessments, but it also works well for third-party assessors augmenting formal methods or authorizing officials conducting oversight checks.</p>
+
+                    <h3>Quantitative Risk Assessment</h3>
+
+                    <p>Quantitative risk assessment is achievable today for cloud service offerings of all sizes. In fact, for cloud systems built on underlying cloud infrastructure (i.e. AWS, GCP, Azure) it's very straightforward. The <a href="https://www.fedramp.gov/2024-09-24-fedramp-launches-20x-transformational-initiative/">FedRAMP 20x initiative</a> (which aims to reduce authorization time from 20+ months to under 30 days) aims to automate up to 80% of control validation. For cloud systems built on AWS, GCP, or Azure, tools like <a href="https://steampipe.io/">Steampipe</a> or <a href="https://github.com/prowler-cloud/prowler">Prowler</a> make this achievable by directly querying infrastructure and reporting in real-time. Here's how to do it using Prowler. First, set up proper credentials: AWS IAM roles, Azure service principals, GCP service accounts. Then run the desired script in your terminal:</p>
+
+                    <div class="code-block">
+                        <code># NIST 800-53 Revision 5
+prowler aws --compliance nist_800_53_revision_5
+prowler azure --compliance nist_800_53_revision_5
+prowler gcp --compliance nist_800_53_revision_5
+
+# FedRAMP 20x KSI Low
+prowler aws --compliance fedramp_20x_ksi_low_aws
+prowler azure --compliance fedramp_20x_ksi_low_azure
+prowler gcp --compliance fedramp_20x_ksi_low_gcp</code>
+                    </div>
+
+                    <p><em>Note: As of this writing, the FedRAMP 20x compliance checks are currently under review and have not yet been merged into Prowler's main branch.</em></p>
+
+                    <p>You'll have insightful reporting in minutes. I highly recommend folks set up a test environment and try the above out for themselves. It's eye-opening what you can accomplish.</p>
+
+                    <h3>Qualitative Risk Assessment</h3>
+
+                    <p>Qualitative risk assessment requires a bit more experience, but is still easily achievable, and a skilled practitioner can use their CLI to spot check while waiting for the Prowler scan results to complete. However, it requires discernment to know when to pull the thread on things that seem off. Is network segmentation being implemented appropriately? Are resource tags standardized and meaningful? Does their incident response process actually have an up-to-date and out-of-band comms tree? Do permissions look like they are actually implementing least privilege (particularly for third party permissions)? These are all common sense questions that a skilled practitioner can evaluate using CLI commands.</p>
+
+                    <p><strong>Example 1: Checking for overly permissive network access</strong></p>
+
+                    <p>One of the most critical qualitative checks is identifying security groups that allow unrestricted inbound access from the internet. This often indicates a misconfiguration or technical debt that creates unnecessary attack surface:</p>
+
+                    <div class="code-block">
+                        <code># AWS - Find security groups allowing unrestricted access
+aws ec2 describe-security-groups \
+  --query 'SecurityGroups[?IpPermissions[?IpRanges[?CidrIp==`0.0.0.0/0`]]].{GroupId:GroupId,GroupName:GroupName,VpcId:VpcId}' \
+  --output table</code>
+                    </div>
+
+                    <p>If you see <code>[]</code> (empty results), that's good - no security groups have unrestricted access. If you get results showing security group IDs and names, investigate whether they're actually necessary. Often overly permissive rules are remnants from quick troubleshooting that were never cleaned up. The presence of these rules doesn't automatically mean high risk, but it's a signal worth investigating.</p>
+
+                    <p><strong>Example 2: Validating cross-account IAM role security</strong></p>
+
+                    <p>Cross-account access is a common attack vector when not properly configured. Check whether IAM roles that allow cross-account access include ExternalId conditions to prevent the confused deputy problem:</p>
+
+                    <div class="code-block">
+                        <code># AWS - List cross-account IAM roles and check for ExternalId
+aws iam list-roles --output json | \
+  jq -r '.Roles[] | select(.AssumeRolePolicyDocument.Statement[]?.Principal.AWS? != null) | .RoleName' | \
+  while read role; do
+    echo "Checking role: $role"
+    aws iam get-role --role-name "$role" --query 'Role.AssumeRolePolicyDocument.Statement[?Principal.AWS].Condition' --output json
+  done</code>
+                    </div>
+
+                    <p>Roles that allow cross-account access without ExternalId conditions may be vulnerable to privilege escalation if an attacker compromises the trusted account. This is especially important for third-party integrations where you can't control the security posture of the other account.</p>
+
+                    <h3>Mature Judgment</h3>
+
+                    <p>Finally, mature judgment is necessary because everything is messy in real life. No one is doing security perfectly. There is a judgment call that needs to be made around whether teams are trustworthy enough to be accountable for ongoing security outcomes. This is inherently a gut decision that cannot be fully quantified, though it certainly can and should be informed by historical data and how teams have performed in the past. This judgment draws on signals like team responsiveness to previous findings, ratio of open to remediated issues, and whether security debt is being allowed to accumulate without ownership. This is actually the hardest part and requires years of experience, understanding of organizational culture, and political savvy.</p>
+
+                    <div class="conclusion">
+                        <p>Of course, a 15 minute risk assessment doesn't replace formal methods. It doesn't factor in things like demonstrating objectivity via a third party, provenance, etc. What it does do is give decision makers pretty damn good visibility into actual risks very quickly. It is incredible how effective this kind of approach can be, and given today's threat environment, every organization should be doing it.</p>
+                    </div>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-18.html" class="read-more">build_security_capability.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
