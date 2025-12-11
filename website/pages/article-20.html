@@ -82,15 +82,13 @@
 
                     <p>The combination is powerful. You can take controls that appear manual and non-technical, decompose them into measurable components, and automate the measurement and reporting.</p>
 
-                    <p>The key insight is that most controls aren't asking you to automate judgment. They're asking you to demonstrate certain conditions exist. And conditions can be measured.</p>
-
                     <h3>Beyond Awareness and Training</h3>
 
-                    <p>AT-2 is just the beginning. Look at CM-3, configuration change control, which requires you to document changes and get approval before implementation. Traditional approaches involve change advisory boards meeting weekly to review spreadsheets. Modern approaches encode approval requirements in CI/CD pipelines, validate changes against policy engines before merge, and automatically document everything in git commits and pull request threads. The CAB still meets, but they're reviewing exceptions and edge cases, not every single change.</p>
+                    <p>AT-2 is just the beginning. Look at CM-3, configuration change control, which requires you to document changes and get approval before implementation. Traditional approaches involve change advisory boards meeting weekly to review spreadsheets. Automated approaches encode approval requirements in CI/CD pipelines, validate changes against policy engines before merge, and automatically document everything in git commits and pull request threads. The CAB still meets, but they're reviewing exceptions and edge cases, not every single change.</p>
 
                     <p>Or consider IR-4, incident handling, which requires you to track incidents from detection through resolution. Traditional incident management involves someone manually updating spreadsheets or creating tickets with status information. Automated approaches integrate your SIEM, ticketing system, and communication platforms so incident data flows automatically. Detection creates a ticket, response actions update it, timeline reconstruction happens programmatically, and post-incident reviews pull from actual system logs rather than reconstructed narratives.</p>
 
-                    <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems. All of these examples are both objective in terms of validating the control outcome and achievable by organizations with in-house engineering expertise (i.e. cloud service providers).</p>
+                    <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems. All of these examples are both objective in terms of validating the control outcome and achievable by organizations with in-house engineering expertise (presumably, cloud service providers!)</p>
 
                     <h3>The Future: Interactive Compliance</h3>
 
@@ -116,15 +114,15 @@
 
                     <p>Incident response decisions during novel attacks require humans. When you're facing an intrusion that doesn't match known patterns and you need to decide whether to shut down systems or keep them running while you investigate, that requires judgment developed through experience. Automation can provide the data you need to make the decision, but it can't make the decision for you.</p>
 
-                    <p>Creative problem-solving for architectural challenges requires humans. When you're designing a new system and need to figure out how to meet security requirements while maintaining operational effectiveness, that requires architectural thinking. Policy engines can validate whether your design meets requirements, but they can't generate novel designs.</p>
+                    <p>Creative problem-solving for architectural challenges requires humans. When you're designing a new system and need to figure out how to meet security requirements while maintaining operational effectiveness, that requires outside-the-box thinking. Policy engines can validate whether your design meets requirements, but they can't decide what ought to be designed.</p>
 
                     <p>The goal of compliance automation shouldn't be to remove human judgement but rather to position humans as the conductors and let automation handle shoveling coal into the engine. Let the machines do what machines do well and humans do what humans do well.</p>
 
                     <h3>For Those Still Skeptical…</h3>
 
-                    <p>The skepticism about compliance automation is understandable. We've been burned by "automated compliance" tools that are vaporware and marketing hype. We're rightly suspicious of anything that promises to make compliance easy because we know security is genuinely hard.</p>
+                    <p>The skepticism around compliance automation is understandable. We've been burned by "automated compliance" tools that are vaporware and marketing hype. We're rightly suspicious of anything that promises to make compliance easy because we know security is genuinely hard.</p>
 
-                    <p>But the alternative is unsustainable. The current approach scales linearly with system complexity while threats scale exponentially. We cannot manually assess our way to security in cloud environments where infrastructure changes hundreds of times per day. The only path forward is building technical systems that embed compliance as an emergent property rather than a post-hoc attestation.</p>
+                    <p>But the alternative is unsustainable. The manual approach scales linearly while complexity scales exponentially. We cannot manually assess our way to security in cloud environments where infrastructure changes hundreds of times per day. The only path forward is building technical systems that embed compliance as an emergent property rather than a post-hoc attestation.</p>
 
                     <p>The controls that seemingly can't be automated probably can be, at least partially. The question we should be asking is, "what aspects of this control can we measure programmatically and what aspects genuinely require human judgment." The answer is usually that more can be automated than not, and the parts that require human judgment become clearer and more focused.</p>
 
