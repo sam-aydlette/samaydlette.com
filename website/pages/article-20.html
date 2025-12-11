@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yes, You Can Automate That - sam_aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-links">main_content</a>
+
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/index.html" class="nav-button">home</a>
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/projects.html" class="nav-button">projects</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/donate.html" class="nav-button">donate</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content" id="main-content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2025-12-11</span>
+                    <span class="article-category">compliance_automation</span>
+                </div>
+
+                <h2>Yes, You Can Automate That: How A Shift In Perspective Opens Up Automated Validation and Reporting (Even for 'Non-Technical' Controls) And Why This Matters</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>"Some controls just can't be automated."</p>
+
+                    <p>I hear this often, usually delivered with the confidence of someone who's spent years navigating compliance frameworks. They're not entirely wrong. There are certainly aspects of security programs that resist automation. But the problem with this statement is how often it's used as a blanket dismissal, a thought-terminating cliche that shuts down exploration before it begins.</p>
+
+                    <p>The reality is both more nuanced and more interesting. Controls that seem inherently manual often have automatable components hiding in plain sight. The key is understanding what we're actually trying to measure and then building the technical infrastructure to capture that measurement when it needs to be measured. Sometimes that is continuous, other times it is periodic.</p>
+
+                    <h3>From Paper Trails to Data Pipelines</h3>
+
+                    <p>Consider AT-2, the awareness and training control from NIST 800-53. On the surface, this looks like the epitome of a "non-technical" control. It requires organizations to ensure personnel receive appropriate security awareness training and that privileged users get role-based training. Traditionally, this means someone manually compares training completion records against employee rosters, generates a report, and updates it quarterly or annually.</p>
+
+                    <p>That approach worked in a pre-cloud era when organizations moved slowly and access management was relatively static. But in modern cloud environments where infrastructure changes constantly and engineers can spin up and assign access to production resources in minutes, quarterly attestations about who completed training last year tell you almost nothing about who has taken the training and has access right now.</p>
+
+                    <p>Much more helpful is a live view of compliance status that answers the question authorizing officials actually care about: "Do the people who can access sensitive systems right now have the training they need?" Not "did they have training at some point in the past," but now, today, as the system exists at this moment.</p>
+
+                    <p>CSPs participating in the FedRAMP 20x Phase 2 pilot are proving that this works. I strongly encourage people to watch the public demonstrations where CSPs have shown this approach in action.</p>
+
+                    <h3>The Three Pillars of Compliance Automation</h3>
+
+                    <p>What makes this possible? Three technical capabilities that work together: APIs, policy engines, and GitOps workflows.</p>
+
+                    <p>APIs provide the connective tissue. Every modern SaaS application exposes programmatic interfaces. Identity providers, HR systems, training platforms, ticketing systems, code repositories - all of them speak JSON and can be queried in real time. This means data that previously existed in silos, accessible only through manual export and reconciliation, can now flow freely between systems.</p>
+
+                    <p>Policy engines like Open Policy Agent, Steampipe, and Kyverno provide the logic layer. They evaluate conditions, enforce rules, and make decisions based on data flowing through APIs. In my previous work on the FedRAMP Agile Delivery Pilot, which helped inform FedRAMP 20x, I identified four types of policies that work together: immutable policies that encode non-negotiable requirements, threshold policies that provide flexible boundaries, intelligent decision policies that categorize and route based on context, and escalation policies that identify when human judgment is needed. These four policy types cover almost every use case you need.</p>
+
+                    <p>GitOps workflows provide the orchestration. Infrastructure as code (terraform, cloudformation, ansible scripts, etc.) and GitOps practices mean your entire technical environment is defined in version-controlled configuration files. When compliance requirements change, you update policies in git, and the system propagates those changes across your infrastructure. This creates an audit trail automatically while ensuring consistent policy enforcement.</p>
+
+                    <p>The combination is powerful. You can take controls that appear manual and non-technical, decompose them into measurable components, and automate the measurement and reporting.</p>
+
+                    <p>The key insight is that most controls aren't asking you to automate judgment. They're asking you to demonstrate certain conditions exist. And conditions can be measured.</p>
+
+                    <h3>Beyond Awareness and Training</h3>
+
+                    <p>AT-2 is just the beginning. Look at CM-3, configuration change control, which requires you to document changes and get approval before implementation. Traditional approaches involve change advisory boards meeting weekly to review spreadsheets. Modern approaches encode approval requirements in CI/CD pipelines, validate changes against policy engines before merge, and automatically document everything in git commits and pull request threads. The CAB still meets, but they're reviewing exceptions and edge cases, not every single change.</p>
+
+                    <p>Or consider IR-4, incident handling, which requires you to track incidents from detection through resolution. Traditional incident management involves someone manually updating spreadsheets or creating tickets with status information. Automated approaches integrate your SIEM, ticketing system, and communication platforms so incident data flows automatically. Detection creates a ticket, response actions update it, timeline reconstruction happens programmatically, and post-incident reviews pull from actual system logs rather than reconstructed narratives.</p>
+
+                    <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems.</p>
+
+                    <p>In each case, you're not automating human judgment about whether risks are acceptable. You're automating the collection and synthesis of evidence that enables humans to make better informed judgments faster. And just like with any tool, organizations that have the capability to automate this orchestra will be successful, and those who do not will struggle regardless of whether they buy an expensive GRC tool or not.</p>
+
+                    <h3>The Future: Interactive Compliance</h3>
+
+                    <p>Forward-thinking organizations are already demonstrating that the approaches I'm describing work today. But for these approaches to transform government-wide risk management, we need something more fundamental. We need a trust infrastructure.</p>
+
+                    <p>Consider how certificate authorities and PKI enable secure communications at internet scale. No one manually verifies the identity of every website they visit. Instead, we built a trust infrastructure that makes identity verification automatic and ubiquitous. The infrastructure does the heavy lifting; browsers and servers just use it.</p>
+
+                    <p>PKI isn't perfect, but it has worked well enough to enable relatively seamless online commerce for decades. We need similar infrastructure for cybersecurity compliance. Not just tools for individual agencies or CSPs, but an ecosystem that makes continuous compliance monitoring as natural as HTTPS.</p>
+
+                    <p>What would this infrastructure look like? Here are some potential building blocks:</p>
+
+                    <p>First, standardized data formats. OSCAL (Open Security Controls Assessment Language) is creating machine-readable formats for security controls and assessment results. When compliance data is standardized and machine-readable, it becomes portable across tools and organizations. This enables automated comparison, aggregation, and analysis at scales previously impossible. Government agencies will be able to integrate compliance data directly into their GRC tooling, creating truly interactive data feeds from cloud service provider infrastructure to agency authorizing officials and back again.</p>
+
+                    <p>Second, standardized control sets. Using standardized data sets to measure risk will enable comparison of apples-to-apples risks across multiple offerings, industries, or mission areas. But this is less effective when different systems get assessed using different baselines and methodologies. When assessment data is automated, standardized, and continuously updated, stakeholders can see real-time risk across a portfolio and make informed decisions about where to invest resources. FedRAMP, DoD SRG, CJIS, CIRCIA, and even industry-focused frameworks can map to each other and objectively measure specific outcomes in the same way even when the technology itself is different, facilitating effective risk management across the enterprise.</p>
+
+                    <p>Third, transparent governance. FedRAMP 20x has embraced the principle of building in public, and this is amazing but should expand across the government. All policy development on public repositories, not closed-door meetings. Anyone can see proposed changes, provide feedback, and contribute improvements. Similarly, decisions should include public justification with reference to community input.</p>
+
+                    <p>The technology already exists and is being built today. What's missing is the infrastructure layer that would let this data flow from CSPs to government agencies and back again.</p>
+
+                    <h3>What Still Requires Humans</h3>
+
+                    <p>Policy decisions that involve balancing competing values require humans. When you're deciding whether to accept the risk of using a particular third-party service because it provides critical capabilities not available elsewhere, that's not an algorithmic decision. It requires understanding mission context, threat landscape, risk appetite, and strategic priorities.</p>
+
+                    <p>Incident response decisions during novel attacks require humans. When you're facing an intrusion that doesn't match known patterns and you need to decide whether to shut down systems or keep them running while you investigate, that requires judgment developed through experience. Automation can provide the data you need to make the decision, but it can't make the decision for you.</p>
+
+                    <p>Creative problem-solving for architectural challenges requires humans. When you're designing a new system and need to figure out how to meet security requirements while maintaining operational effectiveness, that requires architectural thinking. Policy engines can validate whether your design meets requirements, but they can't generate novel designs.</p>
+
+                    <p>The goal of compliance automation shouldn't be to remove human judgement but rather to position humans as the conductors and let automation handle shoveling coal into the engine. Let the machines do what machines do well and humans do what humans do well.</p>
+
+                    <h3>For Those Still Skeptical…</h3>
+
+                    <p>The skepticism about compliance automation is understandable. We've been burned by "automated compliance" tools that are vaporware and marketing hype. We're rightly suspicious of anything that promises to make compliance easy because we know security is genuinely hard.</p>
+
+                    <p>But the alternative is unsustainable. The current approach scales linearly with system complexity while threats scale exponentially. We cannot manually assess our way to security in cloud environments where infrastructure changes hundreds of times per day. The only path forward is building technical systems that embed compliance as an emergent property rather than a post-hoc attestation.</p>
+
+                    <p>The controls you think can't be automated probably can be, at least partially. The question isn't as simple as categorizing "technical vs. non-technical controls" but rather "what aspects of this control can we measure programmatically and what aspects genuinely require human judgment." The answer is usually that more can be automated than you initially assume, and the parts that require human judgment become clearer and more focused when you remove the automation-friendly busywork.</p>
+
+                    <p>So next time someone says "some controls just can't be automated," ask them which specific aspect they're talking about. Chances are, there's an API for that.</p>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-19.html" class="read-more">rapid_risk_assessment.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
