@@ -47,7 +47,7 @@
                     <span class="article-category">compliance_automation</span>
                 </div>
 
-                <h2>Yes, You Can Automate That: How A Shift In Perspective Opens Up Automated Validation and Reporting (Even for 'Non-Technical' Controls) And Why This Matters</h2>
+                <h2>Yes, You Can Automate That: How A Shift In Perspective Opens Up Automated Compliance Validation and Reporting (Even for 'Non-Technical' Controls) And Why This Matters</h2>
 
                 <div class="article-content">
                     <div class="disclaimer">
@@ -56,9 +56,9 @@
 
                     <p>"Some controls just can't be automated."</p>
 
-                    <p>I hear this often, usually delivered with the confidence of someone who's spent years navigating compliance frameworks. They're not entirely wrong. There are certainly aspects of security programs that resist automation. But the problem with this statement is how often it's used as a blanket dismissal that shuts down exploration before it begins.</p>
+                    <p>I hear this often, usually delivered with the confidence of someone who's spent years navigating compliance frameworks. The sentiment is not entirely wrong. There are certainly aspects of security programs that resist automation. But the problem with this statement is how often it's used as a blanket dismissal that shuts down the possibility of exploration before it begins.</p>
 
-                    <p>The reality is both more nuanced and more interesting. Controls that seem inherently manual often have automatable components hiding in plain sight. The key is understanding what we're actually trying to measure and then building the technical infrastructure to capture that measurement when it needs to be measured. Sometimes that is continuous, other times it is periodic.</p>
+                    <p>In my view, things are both more nuanced and more interesting. Controls that seem inherently manual often have automatable components hiding in plain sight. The key is understanding what we're actually trying to measure and then building the technical infrastructure to capture that measurement when it needs to be measured. Sometimes the timing is continuous, other times it is periodic, but it happens automatically.</p>
 
                     <h3>From Paper Trails to Data Pipelines</h3>
 
@@ -90,9 +90,7 @@
 
                     <p>Or consider IR-4, incident handling, which requires you to track incidents from detection through resolution. Traditional incident management involves someone manually updating spreadsheets or creating tickets with status information. Automated approaches integrate your SIEM, ticketing system, and communication platforms so incident data flows automatically. Detection creates a ticket, response actions update it, timeline reconstruction happens programmatically, and post-incident reviews pull from actual system logs rather than reconstructed narratives.</p>
 
-                    <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems.</p>
-
-                    <p>In each case, you're not automating human judgment about whether risks are acceptable. You're automating the collection and synthesis of evidence that enables humans to make better informed judgments faster. And just like with any tool, organizations that have the capability to automate this orchestra will be successful, and those who do not will struggle regardless of whether they buy an expensive GRC tool or not.</p>
+                    <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems. All of these examples are both objective in terms of validating the control outcome and achievable by organizations with in-house engineering expertise (i.e. cloud service providers).</p>
 
                     <h3>The Future: Interactive Compliance</h3>
 
@@ -114,7 +112,7 @@
 
                     <h3>What Still Requires Humans</h3>
 
-                    <p>Policy decisions that involve balancing competing values require humans. When you're deciding whether to accept the risk of using a particular third-party service because it provides critical capabilities not available elsewhere, that's not an algorithmic decision. It requires understanding mission context, threat landscape, risk appetite, and strategic priorities.</p>
+                    <p>Policy decisions that involve balancing competing values require humans. When you're deciding whether to accept the risk of using a particular third-party service because it provides critical capabilities not available elsewhere, that's requires understanding mission context, threat landscape, risk appetite, and strategic priorities.</p>
 
                     <p>Incident response decisions during novel attacks require humans. When you're facing an intrusion that doesn't match known patterns and you need to decide whether to shut down systems or keep them running while you investigate, that requires judgment developed through experience. Automation can provide the data you need to make the decision, but it can't make the decision for you.</p>
 
@@ -128,9 +126,9 @@
 
                     <p>But the alternative is unsustainable. The current approach scales linearly with system complexity while threats scale exponentially. We cannot manually assess our way to security in cloud environments where infrastructure changes hundreds of times per day. The only path forward is building technical systems that embed compliance as an emergent property rather than a post-hoc attestation.</p>
 
-                    <p>The controls you think can't be automated probably can be, at least partially. The question isn't as simple as categorizing "technical vs. non-technical controls" but rather "what aspects of this control can we measure programmatically and what aspects genuinely require human judgment." The answer is usually that more can be automated than you initially assume, and the parts that require human judgment become clearer and more focused when you remove the automation-friendly busywork.</p>
+                    <p>The controls that seemingly can't be automated probably can be, at least partially. The question we should be asking is, "what aspects of this control can we measure programmatically and what aspects genuinely require human judgment." The answer is usually that more can be automated than not, and the parts that require human judgment become clearer and more focused.</p>
 
-                    <p>So next time someone says "some controls just can't be automated," ask them which specific aspect they're talking about. Chances are, there's an API for that.</p>
+                    <p>So next time you hear "some controls just can't be automated," ask them which specific aspect they're talking about. There could just be a way to automate it.</p>
 
                     <div class="article-callback">
                         <p>Like this article? Here's another you might enjoy...</p>
