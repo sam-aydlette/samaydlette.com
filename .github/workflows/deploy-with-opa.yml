@@ -86,7 +86,22 @@ jobs:
     # Install security policy checking tool
     - name: Setup OPA
       run: |
-        curl -L -o opa https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static
+        # Download with retry logic to handle network issues
+        for i in 1 2 3; do
+          echo "Download attempt $i..."
+          if curl -L --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 60 \
+            -o opa https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static; then
+            echo "✅ Download successful"
+            break
+          else
+            echo "❌ Download attempt $i failed"
+            if [ $i -eq 3 ]; then
+              echo "All download attempts failed"
+              exit 1
+            fi
+            sleep 5
+          fi
+        done
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
         opa version

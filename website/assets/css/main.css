@@ -34,8 +34,8 @@
     --bg-primary: #f5f5f5;          /* Light gray background */
     --bg-secondary: #ffffff;        /* White card backgrounds */
     --bg-tertiary: #f2f2f2;         /* Light gray code blocks */
-    --accent-primary: #1D4ED8;      /* Light blue accent */
-    --accent-secondary: #4A90E2;    /* Brighter blue accent */
+    --accent-primary: #3B5998;      /* Option 4: Indigo-Leaning - Very subdued */
+    --accent-secondary: #5B7BBD;    /* Option 4: Gentle secondary */
     --accent-tertiary: #B8312F;     /* Lighthouse red accent */
     --text-primary: #1a1a1a;        /* Dark text */
     --text-secondary: #696969;      /* Gray text */
@@ -450,8 +450,9 @@ footer a:active {
 }
 
 .read-more:visited:hover {
-    background: var(--read-more-visited);
-    color: var(--bg-primary);
+    background: rgba(74, 144, 226, 0.1);
+    color: var(--accent-secondary);
+    border-color: var(--accent-secondary);
 }
 
 .read-more:active {
