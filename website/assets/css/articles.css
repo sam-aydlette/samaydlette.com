@@ -18,24 +18,6 @@
     box-sizing: border-box;
 }
 
-/* Code blocks and content spacing */
-.code-block {
-    background: var(--secondary-color);
-    padding: 1.5rem;
-    border-radius: 6px;
-    margin: 1.5rem 0;
-    width: 100%;
-    box-sizing: border-box;
-    overflow-x: auto;
-}
-
-.code-block code {
-    display: block;
-    font-family: var(--font-mono);
-    white-space: pre;
-    width: 100%;
-}
-
 /* Lists and content elements */
 .article-content ul,
 .article-content ol {
@@ -112,20 +94,6 @@
     border-left: 4px solid var(--accent-color);
 }
 
-.code-block {
-    background: var(--bg-tertiary);
-    padding: 1rem;
-    border-radius: 6px;
-    margin: 1.5rem 0;
-    overflow-x: auto;
-}
-
-.code-block code {
-    display: block;
-    font-family: var(--font-mono);
-    margin: 0.5rem 0;
-    color: var(--text-primary);
-}
 
 .code-command {
     background: var(--bg-tertiary);
@@ -138,7 +106,7 @@
     display: block;
     font-family: var(--font-mono);
     margin-bottom: 1rem;
-    color: var(--text-primary);
+    color: var(--text-secondary);
 }
 
 .command-explanation {

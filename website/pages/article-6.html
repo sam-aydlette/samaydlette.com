@@ -123,7 +123,7 @@
                     <p><strong>Create a controller:</strong> Deploy a small Python controller that watches for pod creation/deletion events across your cluster. Whenever a container is deployed or removed, it automatically updates your inventory records.</p>
                     
                     <p><strong>Query your inventory:</strong> With this system in place, your security team can run commands like:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
 # List all containers using vulnerable log4j versions
 kubectl get containerimage -l "vulnerabilities=CVE-2021-44228"
@@ -133,7 +133,7 @@ kubectl get containerimage --field-selector "spec.registry!=acme-approved-regist
 
 # Get deployment history of a specific image
 kubectl describe containerimage payment-processer-2
-                        </code>
+                        </code></pre>
                     </div>
 
                     <p><strong>Integrate with deployment and security tools:</strong> Container inventory becomes even more powerful when integrated into a GitOps workflow. By storing your inventory definitions and policies as code in Git, you create a single source of truth for both what should exist and what actually exists in your environment.</p>

@@ -85,7 +85,7 @@
                     <h3>Accessing Shodan</h3>
                     <p>Sign Up: Visit https://shodan.io and create a free account API Key: After registration, find your API key in your account settings</p>
                     <p>CLI Installation:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Install pip if needed
                         sudo apt update 
@@ -103,7 +103,7 @@
 
                         # Initialize your API key
                         shodan init YOUR_API_KEY_HERE
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>It should return <em>Successfully Initialized</em></p>
@@ -111,7 +111,7 @@
                     <h3>The Tutorial: Mapping Your Digital Territory</h3>
                     <h4>Step 1: Gather Basic Website Information</h4>
                     <p>First, let's identify your website's basic footprint:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Get your website's IP address
                         host yourdomain.com
@@ -122,21 +122,21 @@
                         # Store the IP for later use (work smarter, not harder!)
                         export TARGET_IP=$(dig +short yourdomain.com)
                         echo $TARGET_IP
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>Think of this as creating a basic map before the expedition. You're identifying the coordinates and street address of your digital property.</p>
 
                     <h4>Step 2: Initial Reconnaissance with Nmap</h4>
                     <p>Time to see what services are visible from the outside:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Format the IPs for Nmap by saving the IPs to a file and scan using the file 
                         echo $TARGET_IP > target_ips.txt 
 
                         # Basic port scan
                         sudo nmap -sV -iL target_ips.txt | tee initial_scan.txt
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>The -sV flag identifies service versions. Other arguments, like <em>-A</em> can enable OS detection, version detection, script scanning, and traceroute.</p>
@@ -144,7 +144,7 @@
 
                     <h4>Step 3: Shodan Intelligence Gathering</h4>
                     <p>Shodan shows what information is already publicly indexed about your website. Many of Shodan's rich functionality are disabled at the free tier, however some are available:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Search for your domain
                         shodan domain yourdomain.com
@@ -154,14 +154,14 @@
 
                         # Look for historical data (what changed over time?)
                         shodan host $TARGET_IP --history
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>This is akin to checking what information a curious stranger could easily find about your property without even visiting it (blueprint, home inspection report, etc.)</p>
 
                     <h4>Step 4: Advanced Port Scanning with Masscan</h4>
                     <p>Let's use Masscan's speed to discover ports that might be missed by other tools:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Full port scan of your website (at a reasonable rate)
                         sudo masscan -p1-65535 $TARGET_IP --rate=1000 -oJ masscan_results.json
@@ -170,7 +170,7 @@
                         cat masscan_results.json | jq '.[]| .ports[].port' | sort -n > masscan_ports.txt
                         grep "open" detailed_scan.txt | grep -v "filtered" | awk '{print $1}' | sort -n > nmap_ports.txt
                         diff masscan_ports.txt nmap_ports.txt
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>Why use both Nmap and Masscan? They're like different detectives with unique investigation styles:</p>
@@ -185,21 +185,21 @@
 
                     <h4>Step 5: Domain Intelligence with Amass</h4>
                     <p>Now let's discover subdomains and related information:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Passive reconnaissance
                         amass enum -passive -d yourdomain.com -o amass_passive.txt
 
                         # More active enumeration
                         amass enum -active -d yourdomain.com -o amass_active.txt
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>This reveals your domain's broader attack surface—like discovering not just your main property but all the connected outbuildings that someone might target.</p>
 
                     <h4>Step 6: Creating Your Assessment Report</h4>
                     <p>Time to compile everything into a comprehensive report:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
                         # Create report directory
                         mkdir website_assessment
@@ -227,7 +227,7 @@
                         # Add Shodan intelligence
                         echo "SHODAN INTELLIGENCE:" >> assessment_report.txt
                         shodan host $TARGET_IP | grep -v "Last update" >> assessment_report.txt
-                        </code>
+                        </code></pre>
                     </div>
 
                     <h3>Conclusion: Putting It All Together</h3>

@@ -62,7 +62,7 @@
                     <p>Control Tower serves as the core AWS service for establishing a secure multi-account architecture. Begin by setting up Control Tower to create your landing zone, which automatically configures your management account, security account, and log archive account following AWS best practices. Use Organizations to implement a hierarchical structure with Organizational Units (OUs) for different environments (Dev, Prod, etc.) and workload types.</p>
                     
                     <p>A key success factor is implementing strict naming conventions and tagging strategies from the start. Here's an example tagging strategy that satisfies most compliance frameworks:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         const tagDefinitions = {
                           Environment: ['dev', 'stage', 'prod'],
@@ -87,7 +87,7 @@
                     
                     <h3>The Pipeline: Configuration-as-Code Using Config</h3>
                     <p>AWS Config is the backbone of your compliance monitoring. Here's a practical example of a conformance pack that implements NIST 800-53 AC-2 (Account Management) and AC-3 (Access Enforcement) controls:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         Resources:
                           NIST80053ConformancePack:
@@ -132,7 +132,7 @@
 
                     <h3>Control Validation: Automated Remediation with Security Hub</h3>
                     <p>Security Hub findings should trigger automated remediation where possible. Here's an example of a Lambda function that automatically remediates common security issues:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         import boto3
                         from typing import Dict, Any
@@ -174,7 +174,7 @@
 
                     <h3>Control Monitoring: Real-time Compliance Monitoring</h3>
                     <p>Implement a comprehensive monitoring strategy using EventBridge rules that trigger based on compliance-related events. Here's an example that monitors for critical compliance violations:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         {
                             "source": ["aws.securityhub"],
@@ -199,7 +199,7 @@
 
                     <h3>GitOps Implementation</h3>
                     <p>Implement a GitOps workflow that ensures all infrastructure changes go through proper security review. Here's an example GitHub Actions workflow that includes security scanning:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         name: Infrastructure Security Validation
                         on:
@@ -244,7 +244,7 @@
                     <h3>Container Security: Pre-hardened Images and Fargate</h3>
                     <p>While many modern SaaS applications can run entirely on serverless infrastructure like Lambda, you may need containers for specific workloads. When using containers, AWS Fargate provides a serverless container runtime that maintains much of the operational simplicity of Lambda while supporting containerized workloads. Here's how to implement container security in your compliance pipeline:</p>
 
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         # CDK code for secure Fargate service
                         const taskDefinition = new ecs.FargateTaskDefinition(this, 'SecureTask', {
@@ -293,7 +293,7 @@
                     </ul>
 
                     <p>Here's an example of a hardened Dockerfile using multi-stage builds:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         # Build stage
                         FROM amazonlinux:2023 AS builder
@@ -341,7 +341,7 @@
                     </div>
 
                     <p>Add Config rules to monitor container compliance:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         Resources:
                           ContainerSecurityPack:

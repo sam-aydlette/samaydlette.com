@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converging on Trust - sam_aydlette</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+        })();
+    </script>
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="stylesheet" href="/assets/css/articles.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-links">main_content</a>
+
+    <div class="main-container">
+        <header class="header">
+            <h1>sam_aydlette</h1>
+            <p>cybersecurity engineer & author</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <div class="nav-grid">
+                <a href="/index.html" class="nav-button">home</a>
+                <a href="/pages/books.html" class="nav-button">books</a>
+                <a href="/pages/articles.html" class="nav-button">articles</a>
+                <a href="/pages/projects.html" class="nav-button">projects</a>
+                <a href="/pages/about.html" class="nav-button">about</a>
+                <a href="/pages/donate.html" class="nav-button">donate</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="content" id="main-content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2025-12-18</span>
+                    <span class="article-category">FedRAMP 20x</span>
+                </div>
+
+                <h2>Converging on Trust: Measuring The Effectiveness Of Security Outcomes Across Public and Private Incentives</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>"How effective is this security outcome?" is missing the point. The better question is, "effective for whom?"</p>
+
+                    <p>When government agencies ask cloud vendors to measure the effectiveness of security outcomes, they're glossing over something deeper: private companies and government agencies want different things. Perhaps it's the fact that I've straddled industry and government for most of my career and have grappled with this from multiple angles, but I see it very clearly. For agencies, effectiveness means managing risk against their mission. For private sector companies, effectiveness means profitability and growth.</p>
+
+                    <p>Prescriptive policy requirements that aren't rooted in structural incentives can lead to compliance theater instead of actual security. To make the government's use of private sector cloud work, organizations with different incentive structures must converge on shared security goals.</p>
+
+                    <p>Incentive alignment between the public and private sectors becomes viable when you identify what both parties actually want: trust. Neither side has to fully conform to the other. They just have to agree on how to measure specific capabilities that demonstrate trust, and then determine whether that measurement is sufficient for the relationship to work.</p>
+
+                    <h3>Two Different Incentive Structures</h3>
+
+                    <p>Mission misalignment doesn't make commercial vendors inherently evil or reckless, it just makes them optimize differently than the government does.</p>
+
+                    <p>Consider what happens when a zero-day vulnerability appears. Government agencies want immediate patching regardless of operational impact because their mission is public service and the risk of compromise outweighs downtime. Vendors want to coordinate patching with their next release cycle because unplanned outages damage commercial customer relationships and emergency deployments are expensive. Both positions are rational given their respective incentive structures, but they're incompatible.</p>
+
+                    <p>For this reason, unless you've built compliance into your product as a feature (which we'll get into shortly), it's hard to make the economics of selling a single cloud offering to both commercial and government customers work well. The solution many cloud providers have turned to is government-specific cloud offerings with separate infrastructure and separate pricing. This approach does work but requires large up-front investment, is expensive to maintain, and limits innovation transfer.</p>
+
+                    <p>This business model is also very difficult to achieve for small businesses, and virtually impossible for startups. Not because they are incompetent, but because investor pressure to rapidly turn a profit makes it hard to justify investing in big-bets with uncertain returns. These businesses must be optimized for speed to market when the government needs assurance.</p>
+
+                    <p>This situation is really inconvenient for a lot of people. Vendors want to serve all markets. The government wants to use commercial innovation. But pretending mission alignment doesn't matter is how we end up with breaches, and no one wants that.</p>
+
+                    <h3>Trust: Something You Earn By Doing</h3>
+
+                    <p>Trust in this context isn't a feeling or a reputation, it's a data-driven capability measured continuously. When I say an organization is trustworthy, I mean they can prove, through objective metrics, that they consistently meet defined security outcomes. Trust is the bridge that shows a vendor's capabilities are real and verifiable, creating the foundation for agencies to then determine if those capabilities meet their mission requirements.</p>
+
+                    <p>Expanding on the previous zero-day example, consider mean time to remediate (MTTR) for zero-day vulnerabilities. A vendor tracks time from initial detection to remediation. They measure this continuously and report it as a key security indicator (for FedRAMP 20x, that's KSI-AFR-04).</p>
+
+                    <p>For agencies, the MTTR metric demonstrates whether a vendor's remediation speed is compatible with the threats against the agency's mission. If adversaries can weaponize zero-days within 72 hours and this vendor's MTTR is 30 days, the math doesn't work. But if the vendor consistently remediates zero-day vulnerabilities within 24 hours, that telemetry provides assurance that their operational posture aligns with mission requirements. The agency isn't concerned with how the vendor achieves that speed or what it costs them. They only care that the demonstrated capability is valid and meets the mission threshold.</p>
+
+                    <p>Vendors are also incentivized to maintain a low MTTR, and not just because government customers demand it. The incentive comes from multiple business drivers that make rapid remediation economically rational. First, low MTTR mitigates reputational risk. After dozens of high profile breaches, the ability to demonstrate rapid response capability becomes a marketing asset, not just a security metric. Enterprise customers across all sectors increasingly demand proof of security capabilities before signing contracts. A vendor that can continuously demonstrate 24-hour MTTR differentiates itself from competitors who can only promise it.</p>
+
+                    <p>Beyond marketing, operational excellence that enables fast remediation reduces total incident costs. The same engineering practices that support rapid zero-day patches also reduce the frequency and impact of incidents overall. You're building reliable engineering that serves all customers while reducing operational overhead. Trust becomes a revenue-generating feature of the product itself, incentivized by customer demand, risk mitigation, and operational efficiency rather than merely compliance requirements.</p>
+
+                    <p>The vendor's goal is to drive MTTR down while keeping costs predictable and sustainable. Achieving a reasonably low MTTR is possible for large enterprises and startups alike, but it takes expertise. When it stops making business sense to iterate faster, businesses don't have to overextend themselves. To the degree that they can achieve this outcome, mission alignment occurs naturally.</p>
+
+                    <h3>Trust vs Assurance</h3>
+
+                    <p>You may ask, is MTTR effective for mission assurance? But this is a different question. A vendor running multi-tenant infrastructure with an extremely low MTTR can be highly trustworthy and still not be able to provide the same assurance as physically isolated infrastructure, because the architecture doesn't support it. This isn't a failure, just a constraint.</p>
+
+                    <p>The mistake is treating trust and assurance as the same problem. They're not. Trust is about effective capability. It asks if what you're doing meets defined security outcomes. This can be measured. Assurance is about managing risk. It asks whether mission owners are appropriately mitigating risk against their particular mission. Risk, while potentially measurable, is certainly more subjective and much harder to quantify than trust. Additionally, business risk and mission risk can be different and still converge on the same outcome.</p>
+
+                    <h3>The Efficiency of Trust</h3>
+
+                    <p>When convergence on trust becomes the shared objective, the market rewards vendors who invest in real security rather than compliance theater.</p>
+
+                    <p>This extends beyond the government-vendor relationship. Organizations that build trust through demonstrated capability become better partners, better competitors, and better members of the overall IT ecosystem. The same principles that align public and private incentives also align engineering and business teams, vendors and customers, security and operations.</p>
+
+                    <p>Converging on trust isn't just good policy. It's good business, good engineering, and good citizenship.</p>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-20.html" class="read-more">automate_compliance.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>

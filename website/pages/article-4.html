@@ -56,7 +56,7 @@
 
                 <h3>Step 1: Setting Up the Environment</h3>
                     <p>First, let's create a dedicated Python virtual environment to keep our dependencies organized:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         # Create a directory for our project (make sure you're in the directory you'd like the project to be in)
                         mkdir -p ~/llm-project
@@ -73,7 +73,7 @@
 
                 <h3>Step 2: Installing Dependencies</h3>
                     <p>With our environment ready, let's install the necessary packages:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         # Upgrade pip
                         pip install --upgrade pip
@@ -89,7 +89,7 @@
 
                 <h3>Step 3: Creating the TinyLlama Script</h3>
                     <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <i>run_tinyllama.py</i></p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         import torch
                         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -179,7 +179,7 @@
                         </code></pre>
                     </div>
                     <p>Make it executable:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         chmod +x run_llm.sh
                         </code></pre>
@@ -187,7 +187,7 @@
 
                 <h3>Step 5: Running TinyLlama</h3>
                     <p>Now, let's launch our local LLM:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code>
                         ./run_llm.sh
                         </code></pre>

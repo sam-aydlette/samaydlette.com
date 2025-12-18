@@ -125,8 +125,8 @@
                     </ul>
 
                     <p>Organizations leveraging PURL can maintain accurate inventories of all deployed components across complex tech stacks, enabling rapid identification of affected systems when new vulnerabilities emerge. Below is an example of a PURL for a specific PostgreSQL image:</p>
-                    <div class="code-block">
-                        <code>pkg:docker/postgres@14.5-alpine</code>
+                    <div class="code-block"><pre>
+                        <code>pkg:docker/postgres@14.5-alpine</code></pre>
                     </div>
 
                     <h4>Supply Chain Security with Build-Time SBOMs</h4>
@@ -149,7 +149,7 @@
                         <li><strong>Progressive security maturity</strong>: The ability to start simply and gradually increase your security posture in measurable increments</li>
                     </ul>
                     <p>Here's an example of SLSA provenance data for the hardened component that we identified with PURL earlier:</p>
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
 {
   "buildType": "https://slsa.dev/provenance/v1",
@@ -158,7 +158,7 @@
     {"uri": "pkg:docker/postgres@14.5-alpine", "digest": {"sha256": "a5fe7ff380ba22c9f55e5f8..."}}
   ]
 }
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <h4>Bonus: Achieving Economies of Scale</h4>

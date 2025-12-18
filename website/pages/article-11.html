@@ -71,7 +71,7 @@
                     <h4>Testing FIPS Implementation</h4>
                     <p>FIPS compliance is a cryptographic state that must be verified at multiple layers. The most reliable test exploits a fundamental property of FIPS mode: non-approved algorithms simply don't work.</p>
                     
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <pre><code># Test: OpenSSL FIPS mode  
 test_openssl_fips() {
   # In FIPS mode, MD5 is disabled and should fail

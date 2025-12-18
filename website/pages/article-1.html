@@ -50,42 +50,42 @@
                     <h3>Initial Investigation</h3>
                     <p>First I looked at any programs that start automatically upon system boot that may be slowing things down. To do this, I checked for programs that automatically run at login. These programs are typically used for user-level services and background processes that need user interface access, such as menu bar apps, user-specific background services, or apps that need to display notifications.</p>
                     
-                    <div class="code-block">
-                        <code>ls /Library/LaunchAgents</code>
+                    <div class="code-block"><pre>
+                        <code>ls /Library/LaunchAgents</code></pre>
                     </div>
                     
                     <p>The above lists the launch agents that affect all users of the system, so I also checked for any launch agents that are only affecting my user role as well:</p>
 
-                    <div class="code-block">
-                        <code>ls ~/Library/LaunchAgents</code>
+                    <div class="code-block"><pre>
+                        <code>ls ~/Library/LaunchAgents</code></pre>
                     </div>
 
                     <p>Next, I checked for launch daemons. Launch daemons are processes that run at boot time, as opposed to login time for agents. They always run with "root" privileges (i.e. the maximum set of privileges). Unlike launch agents, launch daemons cannot access the user interface or user session. They are used for system services, network services, and other background processes that need to run continuously regardless of whether any user is logged in or not.</p>
 
-                    <div class="code-block">
-                        <code>ls /Library/LaunchDaemons</code>
+                    <div class="code-block"><pre>
+                        <code>ls /Library/LaunchDaemons</code></pre>
                     </div>
 
                     <p>The above resulted in me finding a bunch of developer programs that I didn't need anymore and were still running in the background, so I removed them. I restarted and things were still running slowly and the odd grey squares were still there, so I decided to dig further to see what else I could find. I checked for system extensions:</p>
 
-                    <div class="code-block">
-                        <code>systemextensionsctl list</code>
+                    <div class="code-block"><pre>
+                        <code>systemextensionsctl list</code></pre>
                     </div>
 
                     <p>Oddly, I found that ProtonVPN had three related system extensions that were activated even though I had uninstalled the application a few weeks prior via the process recommended by the vendor, so seeing these system extensions still active gave me pause. The system extensions were ProtonVPN, OpenVPN, and OpenVPN-Extension.</p>
 
                     <p>I attempted to uninstall the ProtonVPN system extension by running:</p>
 
-                    <div class="code-block">
-                        <code>systemextensionsctl uninstall [TEAM ID] [BUNDLE ID]</code>
+                    <div class="code-block"><pre>
+                        <code>systemextensionsctl uninstall [TEAM ID] [BUNDLE ID]</code></pre>
                     </div>
 
                     <p>However, when I ran this command I found that it wouldn't execute due to System Integrity Protection (SIP) being enabled. SIP was implemented by Apple to protect critical system files and processes from being modified, even by users with root privileges. It is a great security addition to MacOS but I knew I had to disable it in order to uninstall the system extension. Before I did that though, I wanted to make sure I was removing the entire application and that there were no files that would re-install.</p>
 
                     <p>To check this, I ran:</p>
 
-                    <div class="code-block">
-                        <code>ps aux | grep -i vpn</code>
+                    <div class="code-block"><pre>
+                        <code>ps aux | grep -i vpn</code></pre>
                     </div>
 
                     <p>This is actually a set of commands rather than a single command. The commands search all running processes for those with "vpn" in the name. Breaking it down part by part:</p>
@@ -100,9 +100,9 @@
 
                     <p>The result showed me that a process called "ch.protonvpn.ProtonVPNStarter" was still running in the background, even though I had uninstalled the software. Even more weirdly, nothing related to ProtonVPN was listed in Library/LaunchAgents, so it was unclear where the application was launching from. I tried to find the files that were re-launching the application:</p>
 
-                    <div class="code-block">
-                        <code>find ~/Library -iname "*proton*" 2>/dev/null</code>
-                        <code>sudo find /Library -iname "*proton*" 2>/dev/null</code>
+                    <div class="code-block"><pre>
+                        <code>find ~/Library -iname "*proton*" 2>/dev/null</code></pre>
+                        <code>sudo find /Library -iname "*proton*" 2>/dev/null</code></pre>
                     </div>
 
                     <p>Let's break down these commands further:</p>
@@ -114,32 +114,32 @@
                     </ul>
 
                     <p>The results showed me that there were ProtonVPN related files in the following directories:</p>
-                    <div class="code-block">
-                        <code>/Users/username/Library/Saved Application State/ch.protonvpn.mac.savedState</code>
-                        <code>/Users/username/Library/Application Scripts/ch.protonvpn.mac</code>
-                        <code>/Users/username/Library/Application Scripts/group.ch.protonvpn.mac</code>
-                        <code>/Users/username/Library/Group Containers/group.ch.protonvpn.mac</code>
-                        <code>/Users/username/Library/Containers/ch.protonvpn.mac</code>
-                        <code>/Users/username/Library/Caches/ch.protonvpn.mac</code>
+                    <div class="code-block"><pre>
+                        <code>/Users/username/Library/Saved Application State/ch.protonvpn.mac.savedState</code></pre>
+                        <code>/Users/username/Library/Application Scripts/ch.protonvpn.mac</code></pre>
+                        <code>/Users/username/Library/Application Scripts/group.ch.protonvpn.mac</code></pre>
+                        <code>/Users/username/Library/Group Containers/group.ch.protonvpn.mac</code></pre>
+                        <code>/Users/username/Library/Containers/ch.protonvpn.mac</code></pre>
+                        <code>/Users/username/Library/Caches/ch.protonvpn.mac</code></pre>
                     </div>
 
                     <p>So a container was running in the background despite my uninstallation! I couldn't remove the container because it was still active due to built-in MacOS protections. So I had to grant the terminal Full Disk access temporarily, and then removed all the files using:</p>
 
-                    <div class="code-block">
-                        <code>rm -rf ~/Library/Containers/ch.protonvpn.mac</code>
+                    <div class="code-block"><pre>
+                        <code>rm -rf ~/Library/Containers/ch.protonvpn.mac</code></pre>
                     </div>
 
                     <p>However, when I checked again using ps aux, the container was installed and running again! I must have missed a file. I checked the PrivilegedHelperTools directory and found even more proton-related files:</p>
 
-                    <div class="code-block">
-                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension</code>
-                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension/Contents/MacOS/ch.protonvpn.mac.OpenVPN-Extension</code>
+                    <div class="code-block"><pre>
+                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension</code></pre>
+                        <code>/Library/SystemExtensions/[UUID]/ch.protonvpn.mac.OpenVPN-Extension.systemextension/Contents/MacOS/ch.protonvpn.mac.OpenVPN-Extension</code></pre>
                     </div>
 
                     <p>I used lsof to find what files the process was using, and found it running from an unexpected place - the Trash!</p>
 
-                    <div class="code-block">
-                        <code>/Users/username/.Trash/ProtonVPN.app/Contents/Library/LoginItems/ProtonVPNStarter.app/Contents/MacOS/ProtonVPNStarter</code>
+                    <div class="code-block"><pre>
+                        <code>/Users/username/.Trash/ProtonVPN.app/Contents/Library/LoginItems/ProtonVPNStarter.app/Contents/MacOS/ProtonVPNStarter</code></pre>
                     </div>
 
                     <h3>Lessons Learned</h3>

@@ -46,7 +46,7 @@
                     
                     <p>Here's what a simple SBOM might look like in CycloneDX format:</p>
                     
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
 {
   "bomFormat": "CycloneDX",
@@ -74,7 +74,7 @@
     }
   ]
 }
-                        </code>
+                        </code></pre>
                     </div>
 
                     <p>This SBOM reveals your application uses three components: acme-library, spring-core, and log4j-core. When a vulnerability appears in log4j, you'll know exactly what to patch.</p>
@@ -120,7 +120,7 @@
                     <h4>Step 2: Integrate with Your CI/CD Pipeline</h4>
                     <p>SBOM generation should be automated in your build process. Here's how to integrate with common CI/CD platforms:</p>
                     
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
 # GitHub Actions Example
 name: Generate SBOM
@@ -146,12 +146,12 @@ jobs:
         with:
           name: sbom
           path: sbom.json
-                        </code>
+                        </code></pre>
                     </div>
                     
                     <p>For Jenkins, you can use a pipeline script:</p>
                     
-                    <div class="code-block">
+                    <div class="code-block"><pre>
                         <code>
 pipeline {
     agent any
@@ -165,7 +165,7 @@ pipeline {
         }
     }
 }
-                        </code>
+                        </code></pre>
                     </div>
 
                     <h3>Common Challenges and How to Overcome Them</h3>
