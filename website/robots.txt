@@ -1,0 +1,12 @@
+# robots.txt for samaydlette.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://samaydlette.com/sitemap.xml
+
+# Disallow common directories that shouldn't be indexed
+Disallow: /assets/
+Disallow: /*.js$
+Disallow: /*.css$
