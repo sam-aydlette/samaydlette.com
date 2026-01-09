@@ -6,29 +6,51 @@
     <title>about - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1766154770906">
     <link rel="stylesheet" href="/assets/css/forms.css?v=1766154770906">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
-<body>
-    <div class="main-container">
-        <header class="header">
-            <h1>sam_aydlette</h1>
-            <p>cybersecurity engineer & author</p>
-        </header>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
 
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-grid">
-                <a href="/index.html" class="nav-button">home</a>
-                <a href="/pages/books.html" class="nav-button">books</a>
-                <a href="/pages/articles.html" class="nav-button">articles</a>
-                <a href="/pages/projects.html" class="nav-button">projects</a>
-                <a href="/pages/activities.html" class="nav-button">activities</a>
-                <a href="/pages/about.html" class="nav-button">about</a>
-                <a href="/pages/donate.html" class="nav-button">donate</a>
-            </div>
-        </nav>
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link active">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">◐</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <main class="content">
+    <!-- Main Content -->
+    <main id="main-content" class="content">
             <h2 class="section-title">about_me</h2>
             <section class="about-content">
                 <div class="bio-section">
@@ -40,7 +62,7 @@
                                     <span class="code-comment">// Personal profile configuration</span><br>
                                     <span class="code-keyword">const</span> <span class="code-string">sam_aydlette</span> = {<br>
                                     &nbsp;&nbsp;military_experience: [<span class="code-string">"82nd_airborne"</span>, <span class="code-string">"infantry"</span>],<br>
-                                    &nbsp;&nbsp;current_role: <span class="code-string">"cybersecurity_engineer"</span>,<br>
+                                    &nbsp;&nbsp;current_role: <span class="code-string">"cybersecurity_practitioner"</span>,<br>
                                     &nbsp;&nbsp;side_hustle: <span class="code-string">"author"</span>,<br>
                                     &nbsp;&nbsp;delusion: <span class="code-string">"amateur_philosopher"</span>,<br>
                                     &nbsp;&nbsp;location: <span class="code-string">"washington_dc_metro"</span>,<br>
@@ -57,98 +79,42 @@
                     </div>
                 </div>
             </section>
+    </main>
 
-            <!-- Contact Section -->
-            <h2 class="section-title">contact_me</h2>
-            <section class="about-content">
-                <div class="bio-section">
-                    <div id="success-message" style="display: none;" class="article-card">
-                        <div class="book-info" style="text-align: center; padding: var(--space-2xl);">
-                            <h3 style="color: var(--accent-primary); margin-bottom: var(--space-md);">Message Sent Successfully!</h3>
-                            <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);">Thank you for reaching out. I'll get back to you soon.</p>
-                            <button onclick="resetForm()" class="submit-button">Send Another Message</button>
-                        </div>
-                    </div>
-
-                    <div class="article-card">
-                        <div class="about-grid">
-                            <div class="bio-content">
-                                <form id="contact-form" class="contact-form" action="https://formspree.io/f/xeoqwbdz" method="POST">
-                                    <input type="hidden" name="_next" value="https://sam-aydlette.github.io/pages/success.html">
-
-                                    <div class="code-example">
-                                        <span class="code-comment">// Establishing secure connection...</span><br>
-                                        <span class="code-keyword">const</span> <span class="code-string">message_protocol</span> = {<br>
-                                        &nbsp;&nbsp;encryption: <span class="code-string">"not_end_to_end"</span>,<br>
-                                        &nbsp;&nbsp;delivery: <span class="code-string">"guaranteed"</span>,<br>
-                                        &nbsp;&nbsp;response_time: <span class="code-string">"< 48_hours"</span><br>
-                                        };
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="name">name</label>
-                                        <input type="text" id="name" name="name" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="email">email</label>
-                                        <input type="email" id="email" name="email" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="subject">subject</label>
-                                        <input type="text" id="subject" name="subject" required>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label for="message">message</label>
-                                        <textarea id="message" name="message" required placeholder="// Enter your message here..."></textarea>
-                                    </div>
-
-                                    <input type="text" name="_gotcha" style="display:none">
-
-                                    <button type="submit" class="submit-button">send_message</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
+    <!-- Rich Footer -->
     <footer>
-        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
-        <div class="social-links">
-            <a href="https://www.linkedin.com/in/sa2/">linkedin</a>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
         </div>
     </footer>
-
-    <script src="https://formspree.io/js/formspree.min.js"></script>
-
-    <script>
-        // Initialize Formspree form
-        const form = document.getElementById('contact-form');
-        const successMessage = document.getElementById('success-message');
-
-        window.formspree.setup(form, {
-            redirectDataLayer: false,
-            callback: function (error, response) {
-                if (!error) {
-                    form.style.display = 'none';
-                    successMessage.style.display = 'block';
-                    form.reset();
-                } else {
-                    alert('Sorry, there was a problem submitting your form. Please try again.');
-                }
-            }
-        });
-
-        function resetForm() {
-            successMessage.style.display = 'none';
-            form.style.display = 'block';
-        }
-    </script>
 
     <script type="module" src="/assets/js/main.js?v=1766154770906"></script>
 </body>

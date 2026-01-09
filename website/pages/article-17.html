@@ -5,43 +5,53 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>while true: manage_risk() - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1766154770906">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1766154770906">
+    <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
-            const theme = localStorage.getItem('theme') || 'dark';
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
             }
         })();
     </script>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1766154770906">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1766154770906">
 </head>
-<body>
-    <a href="#main-content" class="skip-links">main_content</a>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
 
-<div class="main-container">
-    <header class="header">
-        <h1>sam_aydlette</h1>
-        <p>cybersecurity engineer & author</p>
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">◐</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
     </header>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="nav-grid">
-            <a href="/index.html" class="nav-button">home</a>
-            <a href="/pages/books.html" class="nav-button">books</a>
-            <a href="/pages/articles.html" class="nav-button">articles</a>
-            <a href="/pages/projects.html" class="nav-button">projects</a>
-                <a href="/pages/activities.html" class="nav-button">activities</a>
-            <a href="/pages/about.html" class="nav-button">about</a>
-            <a href="/pages/donate.html" class="nav-button">donate</a>
-        </div>
-    </nav>
-
     <!-- Main Content -->
-    <main class="content" id="main-content">
+    <main id="main-content" class="content">
         <div class="article-card">
             <div class="article-meta">
                 <span class="article-date">2025-10-08</span>
@@ -81,7 +91,7 @@
                 
                 <p>Cybernetic systems use feedback loops for dynamic adaptation rather than static planning. Ancient maps told you where things were; modern cybernetic systems tell you how to get where you want to go, even as the situation continually changes. The difference isn't just technological, it's philosophical. Cybernetic systems accept that perfect information is impossible and instead aim for continuous course correction based on the best available data.</p>
 
-                <p style="text-align: center; font-style: italic;">Traditional security frameworks, like ancient maps, provide static representations of risk at a specific point in time. They don't help us navigate the constantly shifting landscape of emerging threats, evolving technology, and changing business requirements.</p>
+                <p class="italic-centered">Traditional security frameworks, like ancient maps, provide static representations of risk at a specific point in time. They don't help us navigate the constantly shifting landscape of emerging threats, evolving technology, and changing business requirements.</p>
 
                 <p>FedRAMP 20x represents the cybernetic evolution of compliance. Instead of annual authorization cycles, FedRAMP 20x envisions continuous authorization based on real-time risk information. This approach requires extensive automation, but it doesn't remove humans from the loop. Rather, it positions them where they add the most value. Humans excel at contextual decision-making, ethical reasoning, and strategic planning. Machines excel at data processing, pattern recognition, and consistent execution. FedRAMP 20x leverages the strengths of both while compensating for the limitations of each. Instead of providing Authorizing Officials paper maps and saying "good luck," it positions them as informed navigators of cyberspace, capable of making continuous risk decisions based on current intelligence.</p>
 
@@ -185,8 +195,40 @@
             </div>
         </div>
     </main>
-</div>
 
-<script type="module" src="/assets/js/main.js?v=1766154770906"></script>
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js?v=1766154770906"></script>
 </body>
 </html>

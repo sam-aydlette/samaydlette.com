@@ -1,6 +1,13 @@
+/* =============================================================================
+   ARTICLES.CSS - Article-specific styles
+   =============================================================================
+   NOTE: This file provides supplementary styles for article pages beyond what's
+   in main.css. Consider consolidating into main.css in future refactoring.
+   ============================================================================= */
+
 /* Base article structure */
 .article-card {
-    background: var(--primary-color);
+    background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 2rem;
@@ -16,6 +23,18 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    position: relative;
+}
+
+.article-content p {
+    margin-bottom: 1.5rem;
+    width: 100%;
+}
+
+.article-content h3 {
+    margin: 2.5rem 0 1rem;
+    color: var(--accent-primary);
+    font-size: 1.5rem;
 }
 
 /* Lists and content elements */
@@ -25,9 +44,9 @@
     margin: 1rem 0 1.5rem;
 }
 
-.article-content p {
-    margin-bottom: 1.5rem;
-    width: 100%;
+.file-list li,
+.article-content li {
+    margin-bottom: 0.5rem;
 }
 
 /* Meta information */
@@ -37,40 +56,15 @@
     gap: 1rem;
     margin-bottom: 1.5rem;
     align-items: center;
-}
-
-.article-content {
-    margin-top: 1.5rem;
-    line-height: 1.8;
-    font-size: 1.1rem;
-    width: 100%;
-    position: relative;
-}
-
-.article-content p {
-    margin-bottom: 1.5rem;
-    
-}
-
-.article-content h3 {
-    margin: 2.5rem 0 1rem;
-    color: var(--accent-color);
-    font-size: 1.5rem;
-}
-
-.article-meta {
-    display: flex;
-    gap: 1rem;
     color: var(--text-muted);
     font-size: 0.9rem;
-    align-items: center;
-    margin-bottom: 1rem;
 }
 
 .article-category {
     color: var(--text-muted);
 }
 
+/* Disclaimer and special sections */
 .disclaimer {
     font-style: italic;
     color: var(--text-muted);
@@ -87,14 +81,14 @@
 }
 
 .article-summary {
-    background: var(--secondary-color);
+    background: var(--bg-tertiary);
     padding: 1.5rem;
     border-radius: 8px;
     margin: 1.5rem 0;
-    border-left: 4px solid var(--accent-color);
+    border-left: 4px solid var(--accent-primary);
 }
 
-
+/* Code sections */
 .code-command {
     background: var(--bg-tertiary);
     padding: 1.5rem;
@@ -125,19 +119,9 @@
     margin-bottom: 0.25rem;
 }
 
-.file-list, 
-.article-content ul,
-.article-content ol {
-    margin: 1rem 0 1.5rem 1.5rem;
-}
-
-.file-list li,
-.article-content li {
-    margin-bottom: 0.5rem;
-}
-
+/* Conclusion section */
 .conclusion {
-    background: var(--secondary-color);
+    background: var(--bg-tertiary);
     padding: 2rem;
     border-radius: 8px;
     margin-top: 3rem;
@@ -147,6 +131,7 @@
     margin-top: 0;
 }
 
+/* Article callback */
 .article-callback {
     margin-top: 3rem;
     padding-top: 2rem;
@@ -183,20 +168,24 @@
     text-align: center;
 }
 
+/* =============================================================================
+   RESPONSIVE STYLES
+   ============================================================================= */
+
 @media (max-width: 768px) {
     .article-meta {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
     }
-    
+
     .article-content {
         padding: 0;
         font-size: 1rem;
         width: 100%;
         box-sizing: border-box;
     }
-    
+
     .code-block,
     .code-command {
         width: 100%;
@@ -205,7 +194,7 @@
         padding: 1rem;
         box-sizing: border-box;
     }
-    
+
     .article-summary,
     .conclusion {
         width: 100%;

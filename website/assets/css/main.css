@@ -22,7 +22,7 @@
    IMPORT FONTS
    ============================================================================= */
 /* Load modern fonts from Google Fonts for better typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
 
 /* =============================================================================
    COLOR THEMES AND TYPOGRAPHY - LIGHT MODE ONLY
@@ -30,67 +30,159 @@
 /* Define all colors and fonts in one place for easy maintenance */
 
 :root {
-    /* LIGHT MODE COLORS ONLY */
-    --bg-primary: #f5f5f5;          /* Light gray background */
-    --bg-secondary: #ffffff;        /* White card backgrounds */
-    --bg-tertiary: #f2f2f2;         /* Light gray code blocks */
-    --accent-primary: #3B5998;      /* Option 4: Indigo-Leaning - Very subdued */
-    --accent-secondary: #5B7BBD;    /* Option 4: Gentle secondary */
-    --accent-tertiary: #B8312F;     /* Lighthouse red accent */
-    --text-primary: #1a1a1a;        /* Dark text */
-    --text-secondary: #696969;      /* Gray text */
-    --text-muted: #a9a9a9;          /* Muted text */
-    --border-color: #d3d3d3;        /* Light borders */
-    --border-accent: var(--accent-primary); /* Bold blue highlighted borders */
-    --shadow-subtle: rgba(0, 0, 0, 0.04); /* Light shadows */
-    --shadow-strong: rgba(0, 0, 0, 0.12); /* Darker shadows */
+    /* HACKER PALETTE - LIGHT MODE */
+    --bg-primary: #f8f9fa;              /* Light gray background */
+    --bg-secondary: #ffffff;            /* Pure white cards */
+    --bg-tertiary: #e9ecef;             /* Tertiary background */
+    --bg-code: #1a1d23;                 /* Dark code blocks */
 
-    /* FONT DEFINITIONS */
-    --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;     /* Body text */
-    --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;          /* Code and terminal text */
-    
-    /* FONT SIZES */
-    --font-size-xs: 0.75rem;        /* Very small text */
-    --font-size-sm: 0.875rem;       /* Small text */
-    --font-size-base: 1rem;         /* Normal text */
-    --font-size-lg: 1.125rem;       /* Large text */
-    --font-size-xl: 1.25rem;        /* Extra large text */
-    --font-size-2xl: 1.5rem;        /* Headings */
-    --font-size-3xl: 1.875rem;      /* Large headings */
-    --font-size-4xl: 2.25rem;       /* Main page title */
-    
-    /* SPACING SYSTEM */
-    --space-xs: 0.25rem;            /* 4px */
-    --space-sm: 0.5rem;             /* 8px */
-    --space-md: 1rem;               /* 16px */
-    --space-lg: 1.5rem;             /* 24px */
-    --space-xl: 2rem;               /* 32px */
-    --space-2xl: 3rem;              /* 48px */
-    --space-3xl: 4rem;              /* 64px */
+    /* MATRIX GREEN ACCENT (cohesive hacker theme) */
+    --color-green-50: #ecfdf5;
+    --color-green-100: #d1fae5;
+    --color-green-400: #34d399;
+    --color-green-500: #10b981;
+    --color-green-600: #059669;
+    --color-green-700: #047857;
 
-    /* COMPONENT-SPECIFIC COLORS - Derived from base colors above */
-    /* Legacy support - these map to the base color system */
-    --primary-color: var(--bg-secondary);
-    --secondary-color: var(--bg-tertiary);
-    --accent-color: var(--accent-primary);
-    --text-color: var(--text-primary);
-    --light-bg: var(--bg-tertiary);
-    --hover-bg: var(--bg-tertiary);
-    --active-bg: var(--accent-primary);
-    --hover-text: var(--accent-primary);
-    --shadow-color: var(--shadow-subtle);
+    /* TERMINAL BLUE */
+    --color-blue-400: #60a5fa;
+    --color-blue-500: #3b82f6;
+    --color-blue-600: #2563eb;
+    --color-blue-700: #1d4ed8;
 
-    /* NAVIGATION COLORS - Override in component styles */
-    /* Navigation buttons inherit --text-primary by default */
-    /* Hover/active states use --accent-primary */
+    /* CYBER CYAN */
+    --color-cyan-400: #22d3ee;
+    --color-cyan-500: #06b6d4;
+    --color-cyan-600: #0891b2;
 
-    /* CONTENT LINK COLORS - Used by .content links */
+    /* NEUTRAL SCALE */
+    --color-neutral-50: #f8f9fa;
+    --color-neutral-100: #e9ecef;
+    --color-neutral-200: #dee2e6;
+    --color-neutral-300: #ced4da;
+    --color-neutral-400: #adb5bd;
+    --color-neutral-500: #6c757d;
+    --color-neutral-600: #495057;
+    --color-neutral-700: #343a40;
+    --color-neutral-800: #212529;
+    --color-neutral-900: #0a0c0e;
+
+    /* SEMANTIC ASSIGNMENTS - LIGHT MODE */
+    --accent-primary: var(--color-green-600);       /* Matrix green */
+    --accent-secondary: var(--color-cyan-500);      /* Cyber cyan */
+    --accent-tertiary: var(--color-blue-500);       /* Terminal blue */
+
+    --text-primary: var(--color-neutral-900);
+    --text-secondary: var(--color-neutral-600);
+    --text-muted: var(--color-neutral-500);         /* Updated for WCAG AA 4.5:1 contrast */
+    --text-code: #d1fae5;                           /* Light green on dark */
+
+    --border-color: var(--color-neutral-200);
+    --border-accent: var(--accent-primary);
+
+    /* SHADOWS */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.20);
+
+    /* Legacy aliases */
+    --shadow-subtle: var(--shadow-sm);
+    --shadow-strong: var(--shadow-md);
+}
+
+/* DARK MODE */
+[data-theme="dark"] {
+    /* DARK MODE BACKGROUNDS */
+    --bg-primary: #0a0c0e;              /* Very dark background */
+    --bg-secondary: #1a1d23;            /* Dark cards */
+    --bg-tertiary: #25292f;             /* Tertiary background */
+    --bg-code: #0d0f12;                 /* Even darker code blocks */
+
+    /* SEMANTIC ASSIGNMENTS - DARK MODE */
+    --accent-primary: var(--color-green-400);       /* Brighter matrix green */
+    --accent-secondary: var(--color-cyan-400);      /* Brighter cyber cyan */
+    --accent-tertiary: var(--color-blue-400);       /* Brighter terminal blue */
+
+    --text-primary: #e9ecef;
+    --text-secondary: #adb5bd;
+    --text-muted: #6c757d;
+    --text-code: #d1fae5;
+
+    --border-color: #343a40;
+    --border-accent: var(--accent-primary);
+
+    /* DARK MODE SHADOWS (more pronounced) */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
+}
+
+:root {
+    /* FONT DEFINITIONS (HACKER AESTHETIC) */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Monaco', 'Courier New', monospace;
+    --font-primary: var(--font-sans);   /* Alias for body text */
+
+    /* TYPE SCALE (1.333 ratio - perfect fourth) */
+    --font-size-xs: 0.75rem;       /* 12px */
+    --font-size-sm: 0.875rem;      /* 14px */
+    --font-size-base: 1.0625rem;   /* 17px */
+    --font-size-lg: 1.25rem;       /* 20px */
+    --font-size-xl: 1.5rem;        /* 24px */
+    --font-size-2xl: 2rem;         /* 32px */
+    --font-size-3xl: 2.5rem;       /* 40px */
+    --font-size-4xl: 3.5rem;       /* 56px */
+
+    /* LINE HEIGHTS */
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.6;
+    --line-height-relaxed: 1.75;
+
+    /* LETTER SPACING */
+    --letter-spacing-tight: -0.02em;
+    --letter-spacing-normal: 0;
+    --letter-spacing-wide: 0.025em;
+
+    /* GENEROUS SPACING SYSTEM (100px sections) */
+    --space-xs: 0.25rem;      /* 4px */
+    --space-sm: 0.5rem;       /* 8px */
+    --space-md: 1rem;         /* 16px */
+    --space-lg: 1.5rem;       /* 24px */
+    --space-xl: 2rem;         /* 32px */
+    --space-2xl: 3rem;        /* 48px */
+    --space-3xl: 4rem;        /* 64px */
+    --space-4xl: 6.25rem;     /* 100px - matching reference */
+    --space-5xl: 8rem;        /* 128px */
+
+    /* =============================================================================
+       LEGACY VARIABLE SUPPORT - DEPRECATED
+       =============================================================================
+       These variables are deprecated and maintained only for backwards compatibility.
+       They are currently used in articles.css and forms.css.
+       TODO: Update articles.css and forms.css to use semantic variables directly,
+       then remove this section entirely.
+       ============================================================================= */
+    --primary-color: var(--bg-secondary);           /* DEPRECATED: Use --bg-secondary */
+    --secondary-color: var(--bg-tertiary);          /* DEPRECATED: Use --bg-tertiary */
+    --accent-color: var(--accent-primary);          /* DEPRECATED: Use --accent-primary */
+    --text-color: var(--text-primary);              /* DEPRECATED: Use --text-primary */
+    --light-bg: var(--bg-tertiary);                 /* DEPRECATED: Use --bg-tertiary */
+    --hover-bg: var(--bg-tertiary);                 /* DEPRECATED: Use --bg-tertiary */
+    --active-bg: var(--accent-primary);             /* DEPRECATED: Use --accent-primary */
+    --hover-text: var(--accent-primary);            /* DEPRECATED: Use --accent-primary */
+    --shadow-color: var(--shadow-subtle);           /* DEPRECATED: Use --shadow-subtle */
+
+    /* CONTENT LINK COLORS */
     --link-color: var(--accent-primary);
     --link-visited: var(--accent-secondary);
     --link-hover: var(--accent-primary);
     --link-active: var(--accent-primary);
 
-    /* READ-MORE BUTTON COLORS - Used by .read-more buttons */
+    /* READ-MORE BUTTON COLORS */
     --read-more-color: var(--accent-primary);
     --read-more-hover: var(--accent-primary);
     --read-more-visited: var(--accent-secondary);
@@ -98,7 +190,7 @@
     --read-more-cat: var(--text-secondary);
     --read-more-cat-hover: var(--text-primary);
 
-    /* FORM COLORS - Used by form elements */
+    /* FORM COLORS */
     --form-focus-color: var(--accent-primary);
 }
 
@@ -116,13 +208,27 @@
 
 /* Main page styling */
 body {
-    font-family: var(--font-primary);
+    font-family: var(--font-sans);
     font-size: var(--font-size-base);
-    line-height: 1.6;               /* Comfortable reading spacing */
+    line-height: var(--line-height-relaxed);  /* 1.75 for better readability */
     color: var(--text-primary);
     background: var(--bg-primary);
-    transition: all 0.3s ease;      /* Smooth transitions */
-    overflow-x: hidden;             /* Prevent horizontal scrolling */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-x: hidden;
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Headings use monospace for hacker aesthetic */
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--letter-spacing-normal);
+    color: var(--text-primary);
 }
 
 /* =============================================================================
@@ -184,9 +290,9 @@ footer a:active {
 /* The top section with site name and description */
 
 .header {
-    max-width: 800px;              /* Limit width for readability */
-    margin: 0 auto;                /* Center on page */
-    padding: var(--space-3xl) var(--space-lg) var(--space-2xl);
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-4xl) var(--space-xl) var(--space-3xl);  /* Generous 100px top padding */
     text-align: center;
     width: 100%;
     box-sizing: border-box;
@@ -226,6 +332,231 @@ footer a:active {
 }
 
 /* =============================================================================
+   FIXED HEADER (NEW MODERN DESIGN)
+   ============================================================================= */
+/* Sticky header that appears at top of page */
+
+.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);  /* Safari support */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: var(--space-lg) var(--space-xl);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.site-header.scrolled {
+    background: rgba(255, 255, 255, 0.95);
+    padding: var(--space-md) var(--space-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Dark mode overrides for fixed header */
+[data-theme="dark"] .site-header {
+    background: rgba(10, 12, 14, 0.85);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .site-header.scrolled {
+    background: rgba(10, 12, 14, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.site-logo {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.site-logo:hover {
+    color: var(--accent-primary);
+}
+
+.site-logo::before {
+    content: '> ';
+    font-family: var(--font-mono);
+    color: var(--accent-tertiary);
+    margin-right: var(--space-xs);
+}
+
+.main-nav {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    /* Fixed header adjustments for mobile */
+    .site-header {
+        padding: var(--space-md) var(--space-lg);
+    }
+
+    /* Hide main navigation on mobile by default */
+    .main-nav {
+        display: none;
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: var(--bg-secondary);
+        z-index: 99;
+        padding: var(--space-md);
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+        box-sizing: border-box;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    /* Show navigation when menu is active */
+    .main-nav.active {
+        display: flex;
+    }
+
+    /* Mobile nav link styles */
+    .nav-link {
+        display: block;
+        width: 90%;
+        max-width: 300px;
+        padding: var(--space-md);
+        margin: var(--space-xs) 0;
+        text-align: center;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-tertiary);
+    }
+
+    /* Remove decorative elements from mobile nav */
+    .nav-link::before,
+    .nav-link::after {
+        display: none;
+    }
+
+    .nav-link:hover {
+        transform: none;
+        background: var(--bg-primary);
+    }
+
+    /* Theme toggle on mobile - keep it in header */
+    .theme-toggle {
+        position: relative;
+        margin-top: var(--space-md);
+    }
+
+    /* Dark mode mobile nav */
+    [data-theme="dark"] .main-nav {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .nav-link {
+        background: var(--bg-tertiary);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="dark"] .nav-link:hover {
+        background: var(--bg-primary);
+    }
+}
+
+.nav-link {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    padding: var(--space-sm) 0;
+    position: relative;
+    transition: color 0.3s ease;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link:hover {
+    color: var(--accent-primary);
+}
+
+.nav-link:hover::after {
+    transform: scaleX(1);
+}
+
+.nav-link.active {
+    color: var(--accent-primary);
+}
+
+.nav-link.active::after {
+    transform: scaleX(1);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    padding: var(--space-sm) var(--space-md);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.theme-toggle:hover {
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
+    background: var(--bg-tertiary);
+}
+
+.theme-toggle-icon {
+    font-size: var(--font-size-lg);
+}
+
+/* Add top padding to body when using fixed header */
+body.fixed-header {
+    padding-top: 0;  /* Removed - using margin on main instead */
+}
+
+/* Add top margin to main content when using fixed header */
+body.fixed-header main.content {
+    margin-top: 120px;  /* Space for fixed header + breathing room */
+}
+
+/* =============================================================================
    NAVIGATION MENU
    ============================================================================= */
 /* The main navigation links below the header */
@@ -234,9 +565,9 @@ footer a:active {
     display: flex;
     justify-content: center;
     gap: var(--space-xl);
-    margin-bottom: var(--space-2xl);
-    padding: 0 var(--space-lg);
-    max-width: 800px;
+    margin-bottom: var(--space-4xl);  /* Generous spacing */
+    padding: 0 var(--space-xl);
+    max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
     width: 100%;
@@ -299,9 +630,18 @@ footer a:active {
 /* The container that holds articles, books, and other content */
 
 .content {
-    max-width: 800px;              /* Limit width for readability */
-    margin: 0 auto;                /* Center on page */
-    padding: 0 var(--space-lg);
+    max-width: 1200px;             /* Increased from 800px for modern displays */
+    margin: 0 auto;
+    padding: 0 max(var(--space-xl), 5vw);  /* Fluid padding */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Narrow container for article content */
+.container-narrow {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 max(var(--space-xl), 5vw);
     width: 100%;
     box-sizing: border-box;
 }
@@ -328,7 +668,43 @@ footer a:active {
 }
 
 /* =============================================================================
-   ARTICLE AND BOOK CARDS
+   ARTICLES GRID LAYOUT (WITH GOLDEN RATIO)
+   ============================================================================= */
+/* Modern grid system for article cards */
+
+.articles-section {
+    padding: var(--space-4xl) 0;
+}
+
+.articles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-2xl);
+    margin-bottom: var(--space-4xl);
+}
+
+/* Featured article spans both columns and uses golden ratio */
+.article-card.featured {
+    grid-column: span 2;
+    display: grid;
+    grid-template-columns: 61.8fr 38.2fr;
+    gap: var(--space-3xl);
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .articles-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .article-card.featured {
+        grid-column: span 1;
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =============================================================================
+   ARTICLE AND BOOK CARDS (ENHANCED DESIGN)
    ============================================================================= */
 /* Cards that display article previews and book information */
 
@@ -337,18 +713,19 @@ footer a:active {
 .book-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: var(--space-3xl);
-    margin-bottom: var(--space-3xl);
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px var(--shadow-subtle);
+    margin-bottom: var(--space-4xl);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-sm);
+    position: relative;
 }
 
 /* Hover effects for cards */
 .article-card:hover,
 .book-card:hover {
-    box-shadow: 0 8px 25px var(--shadow-strong);
-    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-6px);
     border-color: var(--accent-primary);
 }
 
@@ -485,7 +862,7 @@ footer a:active {
 /* Special layouts and styling for the projects section */
 
 .projects-section {
-    margin-bottom: var(--space-3xl);
+    margin-bottom: var(--space-4xl);
 }
 
 .projects-list {
@@ -495,12 +872,85 @@ footer a:active {
 }
 
 /* =============================================================================
-   HERO SECTION STYLING
+   THREE-COLUMN FEATURE CARDS
+   ============================================================================= */
+/* Modern 3-column grid for features/services */
+
+.features-section {
+    padding: var(--space-4xl) 0;
+    background: transparent;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xl);
+    margin-top: var(--space-3xl);
+}
+
+.feature-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;            /* Less rounded for hacker aesthetic */
+    padding: var(--space-3xl);
+    text-align: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--accent-primary);
+}
+
+.feature-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto var(--space-lg);
+    background: var(--accent-primary);    /* Solid color instead of gradient */
+    border-radius: 6px;                   /* Sharp corners for hacker feel */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xl);
+    color: white;
+    font-weight: 700;
+    border: 2px solid var(--accent-secondary);
+}
+
+.feature-title {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xl);
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+    line-height: var(--line-height-tight);
+}
+
+.feature-description {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+}
+
+@media (max-width: 900px) {
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-xl);
+    }
+}
+
+/* =============================================================================
+   HERO SECTION STYLING (HACKER CODE INTRO)
    ============================================================================= */
 /* Styling for the homepage hero/value proposition section */
 
 .hero-section {
-    margin-bottom: var(--space-3xl);
+    margin-bottom: var(--space-4xl);
 }
 
 .hero-content {
@@ -512,7 +962,46 @@ footer a:active {
     margin-top: var(--space-xl);
     color: var(--text-secondary);
     font-size: var(--font-size-base);
-    line-height: 1.6;
+    line-height: 1.8;
+}
+
+/* Button styles for CTAs */
+.btn {
+    display: inline-block;
+    padding: var(--space-md) var(--space-2xl);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid;
+}
+
+.btn-primary {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.btn-primary:hover {
+    background: var(--color-green-700);
+    border-color: var(--color-green-700);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
+}
+
+.btn-secondary:hover {
+    background: var(--accent-primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
 }
 
 /* =============================================================================
@@ -624,86 +1113,202 @@ footer a:active {
 }
 
 /* =============================================================================
-   CODE BLOCKS AND PROGRAMMING ELEMENTS
+   CODE BLOCKS WITH TERMINAL CHROME
    ============================================================================= */
-/* Styling for code snippets and programming-themed elements */
+/* Enhanced code blocks with terminal window styling */
 
-/* Code blocks */
+/* Code blocks with terminal window chrome */
 .code-block {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: var(--space-lg);
-    margin: var(--space-lg) 0;
+    background: var(--bg-code);
+    color: var(--text-code);
+    border-radius: 12px;
+    padding: var(--space-2xl);
+    margin: var(--space-3xl) 0;
     width: 100%;
     box-sizing: border-box;
-    overflow-x: auto;              /* Horizontal scroll for long lines */
+    overflow-x: auto;
     position: relative;
-    transition: all 0.3s ease;
+    font-family: var(--font-mono);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Terminal window chrome (top bar) */
+.code-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: var(--bg-tertiary);
+    border-radius: 12px 12px 0 0;
+}
+
+/* Terminal window dots (red, yellow, green) */
+.code-block::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff5f56;
+    box-shadow:
+        16px 0 0 #ffbd2e,
+        32px 0 0 #27c93f;
 }
 
 /* Preformatted text inside code blocks */
 .code-block pre {
     margin: 0;
-    white-space: pre !important;   /* Preserve formatting */
+    margin-top: 40px;  /* Space for terminal chrome */
+    white-space: pre !important;
     font-family: var(--font-mono);
     font-size: var(--font-size-sm);
-    line-height: 1.5;
-    tab-size: 2;                   /* Tab width */
-    color: var(--text-secondary);
+    line-height: 1.8;
+    tab-size: 2;
+    color: var(--text-code);
 }
 
 /* Code elements */
 .code-block code {
     display: block;
-    color: var(--text-secondary);
+    color: var(--text-code);
     padding: 0;
     tab-size: 2;
-    -moz-tab-size: 2;              /* Firefox compatibility */
+    -moz-tab-size: 2;
     font-family: var(--font-mono);
-    transition: color 0.3s ease;
 }
 
 /* =============================================================================
-   FOOTER
+   RICH FOOTER (3-COLUMN GRID)
    ============================================================================= */
-/* Bottom section with copyright and social links */
+/* Enhanced footer with multiple columns */
 
 footer {
-    text-align: center;
-    padding: var(--space-3xl) var(--space-lg);
-    margin-top: var(--space-3xl);
+    background: linear-gradient(to bottom,
+        var(--bg-secondary),
+        var(--bg-tertiary));
     border-top: 1px solid var(--border-color);
-    width: 100%;
-    box-sizing: border-box;
-    background: var(--bg-secondary);
+    padding: var(--space-4xl) 0 var(--space-2xl);
+    margin-top: var(--space-4xl);
     color: var(--text-secondary);
-    transition: all 0.3s ease;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--space-xl);
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--space-3xl);
+    margin-bottom: var(--space-3xl);
+}
+
+.footer-about h3 {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xl);
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+}
+
+.footer-about p {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+    margin-bottom: var(--space-md);
+}
+
+.footer-section h4 {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: var(--letter-spacing-wide);
+    margin-bottom: var(--space-lg);
+}
+
+.footer-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-links li {
+    margin-bottom: var(--space-sm);
+}
+
+.footer-links a {
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-links a:hover {
+    color: var(--accent-primary);
+}
+
+.footer-bottom {
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--space-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
 }
 
 /* Social links in footer */
 .social-links {
-    margin-top: var(--space-md);
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
 }
 
 .social-links a {
-    color: var(--accent-primary);
+    color: var(--text-secondary);
     text-decoration: none;
-    margin: 0 var(--space-md);
+    font-size: var(--font-size-base);
+    font-family: var(--font-sans);
     font-weight: 500;
-    transition: color 0.3s ease;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
-}
-
-/* Add SSH command prefix to social links */
-.social-links a::before {
-    content: 'ssh ';
-    color: var(--text-muted);
+    transition: all 0.3s ease;
 }
 
 .social-links a:hover {
-    opacity: 0.8;
+    color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+/* Remove SSH prefix from social links in new design */
+.footer-bottom .social-links a::before {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-2xl);
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        gap: var(--space-md);
+        text-align: center;
+    }
+
+    .social-links {
+        justify-content: center;
+    }
 }
 
 /* =============================================================================
@@ -811,9 +1416,9 @@ a[href*="linkedin.com"]::after {
 
 /* Contact form container */
 .contact-section {
-    max-width: 600px;
+    /* Removed max-width to match standard content width */
     margin: 0 auto;
-    padding: 0 var(--space-md);
+    padding: 0;
 }
 
 /* Main contact form */
@@ -928,32 +1533,63 @@ a[href*="linkedin.com"]::after {
 /* Styled code blocks for books and about pages */
 
 .code-example {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    color: var(--text-secondary);
-    padding: var(--space-lg);
+    background: var(--bg-code);
+    color: var(--text-code);
+    border-radius: 12px;
+    padding: var(--space-2xl);
     font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
-    line-height: 1.6;
-    margin: var(--space-lg) 0;
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    margin: var(--space-3xl) 0;
     position: relative;
     overflow-x: auto;
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg);
 }
 
-/* Syntax highlighting for code examples */
+/* Terminal chrome for code examples */
+.code-example::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: var(--bg-tertiary);
+    border-radius: 12px 12px 0 0;
+}
+
+.code-example::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff5f56;
+    box-shadow:
+        16px 0 0 #ffbd2e,
+        32px 0 0 #27c93f;
+}
+
+/* Content inside code examples */
+.code-example > * {
+    margin-top: 40px;  /* Space for terminal chrome */
+}
+
+/* Syntax highlighting for code examples (cohesive hacker colors) */
 .code-keyword {
-    color: var(--accent-secondary);  /* Keywords in blue */
+    color: var(--accent-tertiary);   /* Keywords in terminal blue */
     font-weight: 500;
 }
 
 .code-string {
-    color: var(--accent-tertiary);   /* Strings in accent color */
+    color: var(--accent-primary);    /* Strings in matrix green */
+    font-weight: 400;
 }
 
 .code-comment {
-    color: var(--text-muted);        /* Comments in muted text */
+    color: var(--text-secondary);    /* Comments in secondary text */
     font-style: italic;
 }
 
@@ -981,15 +1617,20 @@ a[href*="linkedin.com"]::after {
 /* Adjustments for smaller screens */
 
 @media (max-width: 768px) {
+    /* Reduce fixed header margin on mobile */
+    body.fixed-header main.content {
+        margin-top: 80px;  /* Less space needed on mobile */
+    }
+
     /* Header adjustments */
     .header {
         padding: var(--space-2xl) var(--space-md) var(--space-xl);
     }
-    
+
     .header h1 {
         font-size: var(--font-size-3xl);
     }
-    
+
     /* Show hamburger menu on mobile */
     .menu-toggle {
         display: block;
@@ -1140,6 +1781,31 @@ a[href*="linkedin.com"]::after {
         font-size: 0.75rem;
         padding: var(--space-xs) var(--space-sm);
     }
+
+    /* Ensure buttons have proper touch targets (min 44x44px) */
+    .submit-button,
+    .read-more,
+    .btn {
+        min-height: 44px;
+        padding: var(--space-sm) var(--space-lg);
+    }
+
+    /* Site logo more readable on mobile */
+    .site-logo {
+        font-size: var(--font-size-xl);
+    }
+
+    /* Ensure images don't overflow */
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Features grid stacks on mobile */
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-lg);
+    }
 }
 
 /* Very small screens (phones in portrait) */
@@ -1179,10 +1845,15 @@ a[href*="linkedin.com"]::after {
     z-index: 1000;
 }
 
-/* Ensure readable focus states */
-*:focus {
+/* Enhanced focus states for accessibility */
+*:focus-visible {
     outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
+    outline-offset: 3px;                     /* Increased from 2px */
+    border-radius: 2px;
+}
+
+*:focus:not(:focus-visible) {
+    outline: none;
 }
 
 /* High contrast mode improvements */
@@ -1212,19 +1883,22 @@ a[href*="linkedin.com"]::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    html {
         scroll-behavior: auto !important;
     }
-    
+
     .reveal-on-scroll {
         opacity: 1;
         transform: none;
     }
-    
+
     .book-card:hover,
     .article-card:hover {
         transform: none;
     }
-    
+
     .read-more::after {
         transform: none !important;
     }
@@ -1243,6 +1917,109 @@ a:focus {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 2px;
+}
+
+/* =============================================================================
+   ERROR AND SUCCESS PAGES
+   ============================================================================= */
+/* Styling for 404 error and success pages */
+
+.error-page,
+.success-page {
+    text-align: center;
+    padding: var(--space-2xl);
+}
+
+.code-error {
+    margin-bottom: var(--space-xl);
+}
+
+.error-title {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--space-md);
+}
+
+.error-message {
+    font-size: var(--font-size-lg);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2xl);
+}
+
+.error-actions {
+    display: flex;
+    gap: var(--space-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.connect-options {
+    margin-top: var(--space-2xl);
+}
+
+/* =============================================================================
+   UTILITY CLASSES
+   ============================================================================= */
+/* Common utility classes to avoid inline styles */
+
+.centered {
+    text-align: center;
+}
+
+.section-footer.centered {
+    margin-top: var(--space-3xl);
+}
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    margin: 1.5rem 0;
+}
+
+.video-container iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.iframe-wrapper {
+    margin: 1.5rem 0;
+}
+
+.iframe-wrapper iframe {
+    border: none;
+}
+
+.italic-centered {
+    text-align: center;
+    font-style: italic;
+}
+
+.hidden {
+    display: none;
+}
+
+.honeypot {
+    display: none;
+}
+
+.success-message-card {
+    text-align: center;
+    padding: var(--space-2xl);
+}
+
+.success-message-card h3 {
+    color: var(--accent-primary);
+    margin-bottom: var(--space-md);
+}
+
+.success-message-card p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg);
 }
 
 /* =============================================================================

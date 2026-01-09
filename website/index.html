@@ -3,130 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>sam_aydlette</title>
+    <title>Sam Aydlette - Cybersecurity practitioner & Author</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1766154770906">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
-<body>
-    <a href="#main-content" class="skip-links">main_content</a>
-    
-    <div class="main-container">
-        <header class="header">
-            <h1>sam_aydlette</h1>
-            <p>cybersecurity engineer & author</p>
-        </header>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
 
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-grid">
-                <a href="/index.html" class="nav-button">home</a>
-                <a href="/pages/books.html" class="nav-button">books</a>
-                <a href="/pages/articles.html" class="nav-button">articles</a>
-                <a href="/pages/projects.html" class="nav-button">projects</a>
-                <a href="/pages/activities.html" class="nav-button">activities</a>
-                <a href="/pages/about.html" class="nav-button">about</a>
-                <a href="/pages/donate.html" class="nav-button">donate</a>
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link active">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">◐</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" class="content">
+        <!-- Hero Section with Code Intro -->
+        <section class="hero-section">
+            <div class="article-card">
+                <div class="hero-content">
+                    <div class="code-example">
+                        <span class="code-comment">// Welcome to my digital space</span><br>
+                        <span class="code-keyword">const</span> <span class="code-string">mission</span> = {<br>
+                        &nbsp;&nbsp;focus: [<span class="code-string">"cybersecurity"</span>, <span class="code-string">"compliance_automation"</span>, <span class="code-string">"philosophy"</span>],<br>
+                        &nbsp;&nbsp;perspective: <span class="code-string">"military + industry + government + curious people"</span><br>
+                        };
+                    </div>
+                    <p>Welcome to my website, where I write about cybersecurity, compliance automation, policy-as-code, and philosophy. I share practical insights and personal observations that I've picked up over the years, based on my unique perspective that draws from military, industry, government, and personal experience.</p>
+                </div>
             </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="content" id="main-content">
-            <!-- Hero Section -->
-            <section class="hero-section">
-                <div class="article-card">
-                    <div class="hero-content">
-                        <div class="code-example">
-                            <span class="code-comment">// Welcome to my digital space</span><br>
-                            <span class="code-keyword">const</span> <span class="code-string">mission</span> = {<br>
-                            &nbsp;&nbsp;focus: [<span class="code-string">"cybersecurity"</span>, <span class="code-string">"compliance_automation"</span>, <span class="code-string">"philosophy"</span>],<br>
-                            &nbsp;&nbsp;perspective: <span class="code-string">"military + industry + government + curious people"</span><br>
-                            };
+        </section>
+        <!-- Featured Articles Section -->
+        <section class="articles-section">
+            <h2 class="section-title">Recent Articles</h2>
+                <div class="articles-grid">
+                    <!-- Featured Article (spans 2 columns) -->
+                    <article class="article-card featured">
+                        <div class="article-content">
+                            <div class="article-meta">
+                                <span class="article-date">2025-12-18</span>
+                                <span class="article-category">FedRAMP 20x</span>
+                            </div>
+                            <h3><a href="/pages/article-21.html">Converging on Trust: Measuring The Effectiveness Of Security Outcomes Across Public and Private Incentives</a></h3>
+                            <p>How public and private sector organizations with different incentive structures can converge on shared security goals through measurable trust.</p>
+                            <div class="article-footer">
+                                <a href="/pages/article-21.html" class="read-more" aria-label="Read full article: Converging on Trust">Read Article</a>
+                            </div>
                         </div>
-                        <p>Welcome to my website, where I write about cybersecurity, compliance automation, policy-as-code, and philosophy. I share practical insights and personal observations that I've picked up over the years, based on my unique perspective that draws from military, industry, government, and personal experience.</p>
-                    </div>
+                    </article>
+
+                    <!-- Regular Articles -->
+                    <article class="article-card">
+                        <div class="article-meta">
+                            <span class="article-date">2025-12-11</span>
+                            <span class="article-category">compliance_automation</span>
+                        </div>
+                        <h3><a href="/pages/article-20.html">Yes, You Can Automate That</a></h3>
+                        <p>How a shift in perspective opens up automated validation and reporting, even for "non-technical" controls.</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-20.html" class="read-more" aria-label="Read full article: Yes, You Can Automate That">Read Article</a>
+                        </div>
+                    </article>
+
+                    <article class="article-card">
+                        <div class="article-meta">
+                            <span class="article-date">2025-11-06</span>
+                            <span class="article-category">risk_assessment</span>
+                        </div>
+                        <h3><a href="/pages/article-19.html">How to Assess Risk in 15 Minutes</a></h3>
+                        <p>What if you could assess risk across any Cloud Service Provider in 15 minutes with nothing but a laptop?</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-19.html" class="read-more" aria-label="Read full article: How to Assess Risk in 15 Minutes">Read Article</a>
+                        </div>
+                    </article>
                 </div>
-            </section>
 
-            <!-- Articles Section -->
-            <section class="articles-section">
-                <h2 class="section-title">recent_articles</h2>
-                <article class="article-card">
-                    <div class="article-meta">
-                        <span class="article-date">2025-12-18</span>
-                        <span class="article-category">FedRAMP 20x</span>
-                    </div>
-                    <h3><a href="/pages/article-21.html">Converging on Trust: Measuring The Effectiveness Of Security Outcomes Across Public and Private Incentives</a></h3>
-                    <p>How public and private sector organizations with different incentive structures can converge on shared security goals through measurable trust.</p>
-                    <div class="article-footer">
-                        <a href="/pages/article-21.html" class="read-more" aria-label="Read full article: Converging on Trust">converging_on_trust.md</a>
-                    </div>
-                </article>
-                <article class="article-card">
-                    <div class="article-meta">
-                        <span class="article-date">2025-12-11</span>
-                        <span class="article-category">compliance_automation</span>
-                    </div>
-                    <h3><a href="/pages/article-20.html">Yes, You Can Automate That</a></h3>
-                    <p>How a shift in perspective opens up automated validation and reporting, even for "non-technical" controls, and why this matters for modern compliance.</p>
-                    <div class="article-footer">
-                        <a href="/pages/article-20.html" class="read-more" aria-label="Read full article: Yes, You Can Automate That">automate_compliance.md</a>
-                    </div>
-                </article>
-                <article class="article-card">
-                    <div class="article-meta">
-                        <span class="article-date">2025-11-06</span>
-                        <span class="article-category">risk_assessment</span>
-                    </div>
-                    <h3><a href="/pages/article-19.html">How to Assess Risk in 15 Minutes</a></h3>
-                    <p>What if you could assess risk across any Cloud Service Provider in 15 minutes with nothing but a laptop, and repeat it continuously?</p>
-                    <div class="article-footer">
-                        <a href="/pages/article-19.html" class="read-more" aria-label="Read full article: How to Assess Risk in 15 Minutes">rapid_risk_assessment.md</a>
-                    </div>
-                </article>
+            <!-- View All Articles Link -->
+            <div class="section-footer centered">
+                <a href="/pages/articles.html" class="btn btn-secondary">View All Articles</a>
+            </div>
+        </section>
 
-                <!-- View All Articles Link -->
-                <div class="section-footer">
-                    <a href="/pages/articles.html" class="read-more view-all">view_all_articles</a>
-                </div>
-            </section>
-
-            <!-- Books Section -->
-            <section class="books-section">
-                <h2 class="section-title">published_works</h2>
+        <!-- Books Section -->
+        <section class="books-section">
+            <h2 class="section-title">Published Works</h2>
                 <div class="books-grid">
                     <article class="book-card">
-                        <img src="/assets/images/americanvaluescover.jpg" data-src="/assets/images/americanvaluescover.jpg" alt="Book cover of American Values by Samuel Aydlette featuring a road stretching into desert landscape" class="lazy">                    
+                        <img src="/assets/images/americanvaluescover.jpg"
+                             data-src="/assets/images/americanvaluescover.jpg"
+                             alt="Book cover of American Values by Samuel Aydlette featuring a road stretching into desert landscape"
+                             class="lazy">
                         <div class="book-info">
                             <h3><a href="https://www.lulu.com/shop/samuel-aydlette/american-values/paperback/product-gm86dv.html">American Values</a></h3>
                             <p class="book-release">2023</p>
-                            <p>Join me on a journey across America, from eastern cities to western deserts, as I search for what's really valuable</p>
+                            <p>Join me on a journey across America, from eastern cities to western deserts, as I search for what's really valuable.</p>
                             <div class="article-footer">
-                                <a href="/pages/books.html" class="read-more">learn_more.md</a>
+                                <a href="/pages/books.html" class="read-more">Learn More</a>
                             </div>
                         </div>
                     </article>
 
                     <article class="book-card">
-                        <img src="/assets/images/dancingwithmyfatecover.jpg" data-src="/assets/images/dancingwithmyfatecover.jpg" alt="Book cover of Dancing With My Fate by Samuel Aydlette with abstract geometric design" class="lazy">
+                        <img src="/assets/images/dancingwithmyfatecover.jpg"
+                             data-src="/assets/images/dancingwithmyfatecover.jpg"
+                             alt="Book cover of Dancing With My Fate by Samuel Aydlette with abstract geometric design"
+                             class="lazy">
                         <div class="book-info">
                             <h3><a href="https://www.lulu.com/shop/samuel-aydlette/dancing-with-my-fate/paperbook/product-zep5e8.html">Dancing With My Fate</a></h3>
                             <p class="book-release">2021</p>
-                            <p>An open-minded exploration of reality using Occam's razor and the scientific method</p>
+                            <p>An open-minded exploration of reality using Occam's razor and the scientific method.</p>
                             <div class="article-footer">
-                                <a href="/pages/books.html" class="read-more">learn_more.md</a>
+                                <a href="/pages/books.html" class="read-more">Learn More</a>
                             </div>
                         </div>
                     </article>
                 </div>
-            </section>
-        </main>
-    </div>
+        </section>
+    </main>
 
+    <!-- Rich Footer -->
     <footer>
-        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
-        <div class="social-links">
-            <a href="https://www.linkedin.com/in/sa2/">linkedin</a>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
         </div>
     </footer>
+
     <script type="module" src="/assets/js/main.js?v=1766154770906"></script>
 </body>
 </html>

@@ -6,29 +6,51 @@
     <title>Beyond the CVE Part 2: AI-Enhanced Contextual Vulnerability Management - Samuel Aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1766154770906">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1766154770906">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
-<body>
-    <div class="main-container">
-        <header class="header">
-            <h1>sam_aydlette</h1>
-            <p>cybersecurity engineer & author</p>
-        </header>
-    
-        <!-- Navigation -->
-        <nav class="navbar">
-            <div class="nav-grid">
-                <a href="/index.html" class="nav-button">home</a>
-                <a href="/pages/books.html" class="nav-button">books</a>
-                <a href="/pages/articles.html" class="nav-button">articles</a>
-                <a href="/pages/projects.html" class="nav-button">projects</a>
-                <a href="/pages/activities.html" class="nav-button">activities</a>
-                <a href="/pages/about.html" class="nav-button">about</a>
-                <a href="/pages/donate.html" class="nav-button">donate</a>
-            </div>
-        </nav>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">◐</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
 
         <!-- Main Content -->
-        <main class="content">
+        <main id="main-content" class="content">
             <article class="article-card">
                 <div class="article-meta">
                     <span class="article-date">August 13, 2025</span>
@@ -117,12 +139,38 @@
                 </div>
             </article>
         </main>
-    </div>
 
     <footer>
-        <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
-        <div class="social-links">
-            <a href="https://www.linkedin.com/in/sa2/">LinkedIn</a>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
         </div>
     </footer>
     <script type="module" src="/assets/js/main.js?v=1766154770906"></script>

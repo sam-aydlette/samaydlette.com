@@ -6,8 +6,9 @@ export class MobileMenu {
 
     init() {
         // Create and insert hamburger menu button
-        const header = document.querySelector('.header');
-        if (!header.querySelector('.menu-toggle')) {
+        // Support both .site-header (modern pages) and .header (article pages)
+        const header = document.querySelector('.site-header') || document.querySelector('.header');
+        if (!header || !header.querySelector('.menu-toggle')) {
             const menuToggle = document.createElement('button');
             menuToggle.className = 'menu-toggle';
             menuToggle.setAttribute('aria-label', 'Toggle menu');
@@ -21,7 +22,8 @@ export class MobileMenu {
 
         // Setup event listeners
         const menuToggle = document.querySelector('.menu-toggle');
-        const navbar = document.querySelector('.navbar');
+        // Support both .main-nav (modern pages) and .navbar (article pages)
+        const navbar = document.querySelector('.main-nav') || document.querySelector('.navbar');
         let isMenuOpen = false;
 
         if (menuToggle && navbar) {
@@ -61,7 +63,8 @@ export class MobileMenu {
             });
 
             // Close menu when clicking on nav links (mobile)
-            const navLinks = navbar.querySelectorAll('.nav-button');
+            // Support both .nav-link (modern pages) and .nav-button (article pages)
+            const navLinks = navbar.querySelectorAll('.nav-link, .nav-button');
             navLinks.forEach(link => {
                 link.addEventListener('click', () => {
                     if (window.innerWidth <= 768 && isMenuOpen) {

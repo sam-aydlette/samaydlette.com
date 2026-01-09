@@ -1,14 +1,22 @@
+/* =============================================================================
+   FORMS.CSS - Form-specific styles
+   =============================================================================
+   NOTE: This file provides supplementary form styles for pages with forms.
+   Main.css already contains comprehensive form styling. Consider consolidating
+   in future refactoring.
+   ============================================================================= */
+
 .contact-section {
-    max-width: 600px;
+    /* Removed max-width to match standard content width */
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0;
 }
 
 .contact-form {
-    background: var(--primary-color);
+    background: var(--bg-secondary);
     padding: 2rem;
     border-radius: 8px;
-    border: 1px solid var(--secondary-color);
+    border: 1px solid var(--bg-tertiary);
 }
 
 .form-group {
@@ -18,23 +26,23 @@
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 .form-group input,
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    background: var(--light-bg);
-    border: 1px solid var(--secondary-color);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-tertiary);
     border-radius: 4px;
-    color: var(--text-color);
+    color: var(--text-primary);
     font-family: inherit;
 }
 
 .submit-button {
-    background: var(--secondary-color);
-    color: var(--text-color);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
     padding: 0.75rem 1.5rem;
     border: 1px solid transparent;
     border-radius: 4px;
