@@ -5,10 +5,11 @@ export class MobileMenu {
     }
 
     init() {
-        // Create and insert hamburger menu button
+        // Create and insert hamburger menu button if it doesn't exist
         // Support both .site-header (modern pages) and .header (article pages)
         const header = document.querySelector('.site-header') || document.querySelector('.header');
-        if (!header || !header.querySelector('.menu-toggle')) {
+
+        if (header && !header.querySelector('.menu-toggle')) {
             const menuToggle = document.createElement('button');
             menuToggle.className = 'menu-toggle';
             menuToggle.setAttribute('aria-label', 'Toggle menu');
@@ -20,7 +21,7 @@ export class MobileMenu {
             header.appendChild(menuToggle);
         }
 
-        // Setup event listeners
+        // Setup event listeners (whether button was created or already exists)
         const menuToggle = document.querySelector('.menu-toggle');
         // Support both .main-nav (modern pages) and .navbar (article pages)
         const navbar = document.querySelector('.main-nav') || document.querySelector('.navbar');
