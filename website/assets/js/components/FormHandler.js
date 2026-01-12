@@ -46,6 +46,7 @@ export class FormHandler {
 
   async handleSubmit(event) {
     event.preventDefault();
+
     if (!this.form.checkValidity()) {
       return;
     }
@@ -84,9 +85,8 @@ export class FormHandler {
        ============================================================================= */
 
     try {
-      // OPTION 1: Formspree (UNCOMMENT THIS BLOCK)
-      /*
-      const response = await fetch('https://formspree.io/f/YOUR_FORM_ID', {
+      // Formspree submission
+      const response = await fetch('https://formspree.io/f/xeoqwbdz', {
         method: 'POST',
         body: formData,
         headers: {
@@ -97,40 +97,6 @@ export class FormHandler {
       if (!response.ok) {
         throw new Error('Form submission failed');
       }
-      */
-
-      // OPTION 2: Netlify Forms (UNCOMMENT THIS BLOCK)
-      /*
-      const response = await fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(formData).toString()
-      });
-
-      if (!response.ok) {
-        throw new Error('Form submission failed');
-      }
-      */
-
-      // OPTION 3: Custom Backend (UNCOMMENT THIS BLOCK)
-      /*
-      const response = await fetch('YOUR_API_ENDPOINT_HERE', {
-        method: 'POST',
-        body: JSON.stringify(Object.fromEntries(formData)),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Form submission failed');
-      }
-      */
-
-      // TEMPORARY: Simulated submission for testing
-      // Remove this block once you've configured a real submission method
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.warn('⚠️  FORM SUBMISSION IS SIMULATED - Configure a real endpoint in FormHandler.js');
 
       // Success handling
       this.showMessage('message_sent_successfully', 'success');
