@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>See What Attackers See - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1768226922062">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1768226922062">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1768322266959">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1768322266959">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -125,22 +125,22 @@
                     <p>CLI Installation:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Install pip if needed
-                        sudo apt update 
-                        sudo apt install python3-pip
+# Install pip if needed
+sudo apt update 
+sudo apt install python3-pip
 
-                        # Install the virtual environment package if needed
-                        sudo apt install python3-venv
+# Install the virtual environment package if needed
+sudo apt install python3-venv
 
-                        # Create and activate the virtual environment
-                        python3 -m venv ~/shodan-env
-                        source ~/shodan-env/bin/activate
+# Create and activate the virtual environment
+python3 -m venv ~/shodan-env
+source ~/shodan-env/bin/activate
 
-                        # Now install shodan within the virtual environment
-                        pip install shodan
+# Now install shodan within the virtual environment
+pip install shodan
 
-                        # Initialize your API key
-                        shodan init YOUR_API_KEY_HERE
+# Initialize your API key
+shodan init YOUR_API_KEY_HERE
                         </code></pre>
                     </div>
                     
@@ -151,15 +151,15 @@
                     <p>First, let's identify your website's basic footprint:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Get your website's IP address
-                        host yourdomain.com
+# Get your website's IP address
+host yourdomain.com
 
-                        # Get DNS information
-                        dig yourdomain.com
+# Get DNS information
+dig yourdomain.com
 
-                        # Store the IP for later use (work smarter, not harder!)
-                        export TARGET_IP=$(dig +short yourdomain.com)
-                        echo $TARGET_IP
+# Store the IP for later use (work smarter, not harder!)
+export TARGET_IP=$(dig +short yourdomain.com)
+echo $TARGET_IP
                         </code></pre>
                     </div>
                     
@@ -169,11 +169,11 @@
                     <p>Time to see what services are visible from the outside:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Format the IPs for Nmap by saving the IPs to a file and scan using the file 
-                        echo $TARGET_IP > target_ips.txt 
+# Format the IPs for Nmap by saving the IPs to a file and scan using the file 
+echo $TARGET_IP > target_ips.txt 
 
-                        # Basic port scan
-                        sudo nmap -sV -iL target_ips.txt | tee initial_scan.txt
+# Basic port scan
+sudo nmap -sV -iL target_ips.txt | tee initial_scan.txt
                         </code></pre>
                     </div>
                     
@@ -184,14 +184,14 @@
                     <p>Shodan shows what information is already publicly indexed about your website. Many of Shodan's rich functionality are disabled at the free tier, however some are available:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Search for your domain
-                        shodan domain yourdomain.com
+# Search for your domain
+shodan domain yourdomain.com
 
-                        # Search for your IP directly
-                        shodan host $TARGET_IP
+# Search for your IP directly
+shodan host $TARGET_IP
 
-                        # Look for historical data (what changed over time?)
-                        shodan host $TARGET_IP --history
+# Look for historical data (what changed over time?)
+shodan host $TARGET_IP --history
                         </code></pre>
                     </div>
                     
@@ -201,13 +201,13 @@
                     <p>Let's use Masscan's speed to discover ports that might be missed by other tools:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Full port scan of your website (at a reasonable rate)
-                        sudo masscan -p1-65535 $TARGET_IP --rate=1000 -oJ masscan_results.json
+# Full port scan of your website (at a reasonable rate)
+sudo masscan -p1-65535 $TARGET_IP --rate=1000 -oJ masscan_results.json
 
-                        # Compare with Nmap results (spot any differences!)
-                        cat masscan_results.json | jq '.[]| .ports[].port' | sort -n > masscan_ports.txt
-                        grep "open" detailed_scan.txt | grep -v "filtered" | awk '{print $1}' | sort -n > nmap_ports.txt
-                        diff masscan_ports.txt nmap_ports.txt
+# Compare with Nmap results (spot any differences!)
+cat masscan_results.json | jq '.[]| .ports[].port' | sort -n > masscan_ports.txt
+grep "open" detailed_scan.txt | grep -v "filtered" | awk '{print $1}' | sort -n > nmap_ports.txt
+diff masscan_ports.txt nmap_ports.txt
                         </code></pre>
                     </div>
                     
@@ -225,11 +225,11 @@
                     <p>Now let's discover subdomains and related information:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Passive reconnaissance
-                        amass enum -passive -d yourdomain.com -o amass_passive.txt
+# Passive reconnaissance
+amass enum -passive -d yourdomain.com -o amass_passive.txt
 
-                        # More active enumeration
-                        amass enum -active -d yourdomain.com -o amass_active.txt
+# More active enumeration
+amass enum -active -d yourdomain.com -o amass_active.txt
                         </code></pre>
                     </div>
                     
@@ -239,32 +239,32 @@
                     <p>Time to compile everything into a comprehensive report:</p>
                     <div class="code-block"><pre>
                         <code>
-                        # Create report directory
-                        mkdir website_assessment
-                        cd website_assessment
+# Create report directory
+mkdir website_assessment
+cd website_assessment
 
-                        # Move all results to report directory
-                        mv ../initial_scan.txt ../detailed_scan.txt ../masscan_results.json ../amass_*.txt ./
+# Move all results to report directory
+mv ../initial_scan.txt ../detailed_scan.txt ../masscan_results.json ../amass_*.txt ./
 
-                        # Generate a basic report
-                        echo "Website Security Assessment Report" > assessment_report.txt
-                        echo "Target: yourdomain.com ($TARGET_IP)" >> assessment_report.txt
-                        echo "Date: $(date)" >> assessment_report.txt
-                        echo "----------------------------------------" >> assessment_report.txt
+# Generate a basic report
+echo "Website Security Assessment Report" > assessment_report.txt
+echo "Target: yourdomain.com ($TARGET_IP)" >> assessment_report.txt
+echo "Date: $(date)" >> assessment_report.txt
+echo "----------------------------------------" >> assessment_report.txt
 
-                        # Add open ports and services
-                        echo "OPEN PORTS AND SERVICES:" >> assessment_report.txt
-                        grep "open" detailed_scan.txt | grep -v "filtered" >> assessment_report.txt
-                        echo "----------------------------------------" >> assessment_report.txt
+# Add open ports and services
+echo "OPEN PORTS AND SERVICES:" >> assessment_report.txt
+grep "open" detailed_scan.txt | grep -v "filtered" >> assessment_report.txt
+echo "----------------------------------------" >> assessment_report.txt
 
-                        # Add discovered subdomains
-                        echo "DISCOVERED SUBDOMAINS:" >> assessment_report.txt
-                        cat amass_*.txt | sort | uniq >> assessment_report.txt
-                        echo "----------------------------------------" >> assessment_report.txt
+# Add discovered subdomains
+echo "DISCOVERED SUBDOMAINS:" >> assessment_report.txt
+cat amass_*.txt | sort | uniq >> assessment_report.txt
+echo "----------------------------------------" >> assessment_report.txt
 
-                        # Add Shodan intelligence
-                        echo "SHODAN INTELLIGENCE:" >> assessment_report.txt
-                        shodan host $TARGET_IP | grep -v "Last update" >> assessment_report.txt
+# Add Shodan intelligence
+echo "SHODAN INTELLIGENCE:" >> assessment_report.txt
+shodan host $TARGET_IP | grep -v "Last update" >> assessment_report.txt
                         </code></pre>
                     </div>
 
@@ -328,6 +328,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1768226922062"></script>
+    <script type="module" src="/assets/js/main.js?v=1768322266959"></script>
 </body>
 </html>

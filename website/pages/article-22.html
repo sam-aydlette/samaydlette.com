@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converging on Trust: Part Two - How The Engagement Model Diverges - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1768322266959">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1768322266959">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">◐</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2026-01-13</span>
+                    <span class="article-category">FedRAMP 20x</span>
+                </div>
+
+                <!-- Series Navigation -->
+                <nav class="series-navigation" aria-label="Article series navigation">
+                    <p class="series-navigation-title">Converging on Trust Series</p>
+                    <div class="series-links">
+                        <a href="/pages/article-17.html" class="series-link">
+                            <span class="series-link-part">Part 1:</span>
+                            <span>while true: manage_risk()</span>
+                        </a>
+                        <a href="/pages/article-21.html" class="series-link">
+                            <span class="series-link-part">Part 2:</span>
+                            <span>Converging on Trust</span>
+                        </a>
+                        <a href="/pages/article-22.html" class="series-link current" aria-current="page">
+                            <span class="series-link-part">Part 3:</span>
+                            <span>How The Engagement Model Diverges</span>
+                        </a>
+                    </div>
+                </nav>
+
+                <h2>Converging on Trust: Part Two - How The Engagement Model Diverges</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>Jorge Luis Borges wrote of cartographers who created a map the exact size of the territory. His story illustrates the futility of attempting perfect representation. But Jean Baudrillard took Borges' parable and applied it to the internet age by observing that today, the map hasn't merely replaced the territory, it is rewriting the territory.</p>
+
+                    <p>In my previous article, I described how systems that optimize for different targets (i.e., for profit vs. mission assurance) can partner by converging on trust. There is one important exception where this doesn't work. Systems that optimize on engagement diverge against trust.</p>
+
+                    <p>Engagement optimization profits through watching what you do and influencing what you'll do next. Each click, pause, and scroll reveals psychological patterns. This intelligence sells to advertisers, political campaigns, insurance companies, employers, and nation states who use it to influence behavior. The longer users engage, the more data accumulates. The more data accumulates, the more precisely the system exploits future behavior. Stanford researcher Michael Kosinski describes it bluntly as "a tool of digital mass persuasion." [1, 2]</p>
+
+                    <p>From a cybersecurity perspective, the engagement model creates a social engineering attack surface. Engagement-optimized systems are, by design, adversarial to their users. This mattered less for government missions when engagement-optimized systems were largely confined to entertainment and social media. But generative AI has collapsed this boundary. These same engagement-optimization techniques are now embedded in genAI platforms that are used across government for highly sensitive workloads. [3]</p>
+
+                    <p>Merely disabling data collection for government users isn't enough. Systems that optimize on engagement reshape human behavior. They obscure their mechanics behind interfaces that simulate trustworthiness. The asymmetry of the system's programming versus the user's ignorance of what's actually being done to them sets up the potential for manipulation.</p>
+
+                    <h3>The Risk of Affected Intimacy At Scale</h3>
+
+                    <p>The technique of affected intimacy commonly employed by generative AI platforms particularly undermines trustworthiness because it manipulates the human tendency to reciprocate apparent understanding with increased trust. Affected intimacy by generative AI can be manipulative to the point of undue influence. [4] In contract law, undue influence occurs when one party exploits a relationship of trust to overcome another's free will and independent judgment. [5] While traditionally applied to human relationships, the principle extends to human-system interaction: influence becomes "undue" when it bypasses rational evaluation.</p>
+
+                    <p>Systems that say 'I understand', 'I care' and 'I remember' are misrepresenting the interaction. The danger isn't necessarily that users will believe the system is sentient or take AI humanization at face value (although many do, and that is a problem in and of itself). The broader danger is that affected intimacy is effective regardless. Consider how you interact with a system that responds to your frustration with 'I understand how frustrating this is. I'm sorry.' Your conscious mind recognizes the response as automated, but your limbic system has been trained over millennia to respond to empathetic language and so reacts anyway. Knowing it isn't real doesn't stop it from happening any more than knowing a horror movie isn't real prevents you from startling when the bad guy jumps out.</p>
+
+                    <p>Affected intimacy by itself isn't necessarily malicious. Doctors and therapists do it to heal. Service workers do it to make people feel welcome. But people who display intimate emotional connection professionally are bound by ethics rules that ensure their actions still converge on trustworthy outcomes. A doctor can't just randomly feel a patient up or blatantly upsell an unnecessary procedure. Doing so would be considered malpractice. Generative AI offers no such promises, and egregiously unethical breaches of trust happen all the time. [6] Additionally, the risk extends beyond individual interactions. GenAI platforms could target specific groups like, say, government employees.</p>
+
+                    <p>Affected intimacy without effective guardrails could allow generative AI companies to conduct coordinated undue influence campaigns at scale. What if a generative AI platform was trained to bias toward certain vendors or political ideologies? Unfortunately we don't need to strain our minds too hard to envision this happening, either inadvertently or maliciously. And if it did, there would be no traceability to who did it. The owners? The trainers? The data set? We can't even identify who is aiming the weapon. This is why affected intimacy in and of itself constitutes a security risk.</p>
+
+                    <p>Cambridge Analytica gave us a preview of what can go wrong. The firm built psychographic profiles on millions of Facebook users without consent, and targeted them with messages designed to bypass their rational evaluation. Many authoritarian figures elected in the past decade have employed similar techniques. [7]</p>
+
+                    <p>A government reliant on untrustworthy tools perceives a distorted reality. It cannot, in any meaningful sense, govern while influenced unduly by forces that have no understanding of the meaning of its mission and no capacity to be held accountable for the consequences. This is why the need for guardrails in government consumed genAI platforms is so important as a security issue. Even in the instance where engagement-optimization serves a legitimate purpose, government administrators still need visibility and control. The system as a whole must still converge on trust.</p>
+
+                    <h3>What We Do About It</h3>
+
+                    <p>Current federal AI policy, including Executive Orders 14179 and 14365, don't address the risk of undue influence from engagement-optimization. State frameworks like California's GenAI Risk Assessment have begun treating manipulative AI as a distinct harm category, but federal policy actively preempts them. Notably, the E.U. AI Act explicitly prohibits behavioral manipulation. [8]</p>
+
+                    <p>Government procurement should require objective, continuously reported security outcomes around how systems are optimized. This may reduce access of some commercial companies to government customers, but the risk of coordinated, government wide manipulation warrants decisive action (and honestly, does unconstrained manipulation-as-a-service sound like the kind of innovation that the government really needs?).</p>
+
+                    <p>Government procurement requirements could redirect the incentive structures that drive underlying investment. Government markets are large enough to make trust-optimization for generative AI systems via built-in guardrails viable through market forces. A market demanding trust over engagement would make user manipulation a bad business strategy.</p>
+
+                    <p>What would Key Security Indicators (KSIs) measuring engagement trustworthiness look like? They might include quantifying how well the system appropriately cites claims presented as facts, and how transparently it represents its own functioning and limitations (i.e., measuring explainability). These indicators would need to be continuously monitored, not just checked at authorization time, with deviation thresholds triggering automated alerts to authorizing officials. This needn't be controversial. We're talking about applying the same basic ethical boundaries that already apply to academics, doctors and therapists.</p>
+
+                    <h3>Ensuring Our Systems Work For Us</h3>
+
+                    <p>In the meantime, security practitioners needn't sit on our hands. The security community should reframe inadequately constrained engagement-optimization as an attack vector. The threats I described above apply to private sector organizations too. If enough decision-makers recognize the risk, generative AI offerings for sensitive workloads that don't offer sufficient guardrails no longer remain a profitable business model. Next time you evaluate a vendor, ask what they optimize for. Make them prove it.</p>
+
+                    <p>Fundamentally, when we choose to trust the written word we are trusting another human who bears consequences for betraying that trust, and who (hopefully) understands human vulnerability through shared experience enough not to take things too far. When a system mimics empathetic language, it borrows the social contract of human trust without accepting obligations. The interaction simulates precisely the human relationship where accountability would exist. Humans still must define and enforce the boundaries that will ensure our systems remain trustworthy.</p>
+
+                    <p>Generative AI is an incredibly transformative technology. Let's not undermine its effectiveness for government by introducing avoidable security risks. Instead, let's choose to bake in security guardrails that constrain engagement-optimization. Even if they reassure us otherwise, unconstrained engagement-optimized systems cannot be accountable for the trust we place in them. Only we can be.</p>
+
+                    <h3>Citations</h3>
+
+                    <ol>
+                        <li>Stanford Graduate School of Business: "The Science Behind Cambridge Analytica: Does Psychological Profiling Work?" <a href="https://www.gsb.stanford.edu/insights/science-behind-cambridge-analytica-does-psychological-profiling-work" target="_blank" rel="noopener noreferrer">https://www.gsb.stanford.edu/insights/science-behind-cambridge-analytica-does-psychological-profiling-work</a></li>
+
+                        <li>For more information, see Zuboff, Shoshana. <em>The Age of Surveillance Capitalism: The Fight for a Human Future at the New Frontier of Power.</em> New York: PublicAffairs, 2019. Harvard Gazette interview: "Harvard professor says surveillance capitalism is undermining democracy." March 2019. <a href="https://news.harvard.edu/gazette/story/2019/03/harvard-professor-says-surveillance-capitalism-is-undermining-democracy/" target="_blank" rel="noopener noreferrer">https://news.harvard.edu/gazette/story/2019/03/harvard-professor-says-surveillance-capitalism-is-undermining-democracy/</a></li>
+
+                        <li>Sycophancy for Government: OpenAI. "Expanding on what we missed with sycophancy." May 2, 2025. <a href="https://openai.com/index/expanding-on-sycophancy/" target="_blank" rel="noopener noreferrer">https://openai.com/index/expanding-on-sycophancy/</a> | Georgetown Law Tech Institute: "Tech Brief: AI Sycophancy & OpenAI." May 2025. <a href="https://www.law.georgetown.edu/tech-institute/insights/tech-brief-ai-sycophancy-openai-2/" target="_blank" rel="noopener noreferrer">https://www.law.georgetown.edu/tech-institute/insights/tech-brief-ai-sycophancy-openai-2/</a> | U.S. Government Accountability Office (GAO). "Artificial Intelligence: Generative AI Use and Management at Federal Agencies." GAO-25-107653. July 2025. <a href="https://www.gao.gov/products/gao-25-107653" target="_blank" rel="noopener noreferrer">https://www.gao.gov/products/gao-25-107653</a> | FedScoop: "Generative AI use is 'escalating rapidly' in federal agencies, GAO finds." July 29, 2025. <a href="https://fedscoop.com/generative-artificial-intelligence-use-federal-government-watchdog/" target="_blank" rel="noopener noreferrer">https://fedscoop.com/generative-artificial-intelligence-use-federal-government-watchdog/</a></li>
+
+                        <li>See Restatement (Second) of Contracts § 177 (1981), which defines undue influence as "unfair persuasion" that "seriously impaired the free and competent exercise of judgment."</li>
+
+                        <li>Maeda, T., & Quan-Haase, A. (2024). "When Human-AI Interactions Become Parasocial: Agency and Anthropomorphism in Affective Design." Proceedings of the 2024 ACM Conference on Fairness, Accountability, and Transparency (FAccT '24). <a href="https://doi.org/10.1145/3630106.3658956" target="_blank" rel="noopener noreferrer">https://doi.org/10.1145/3630106.3658956</a></li>
+
+                        <li>Doughty Street Chambers: "Four Landmark Cases on AI Chatbot Harm to Children and the Vulnerable." 2025. <a href="https://insights.doughtystreet.co.uk/post/102l3bt/four-landmark-cases-on-ai-chatbot-harm-to-children-and-the-vulnerable-updates-on" target="_blank" rel="noopener noreferrer">https://insights.doughtystreet.co.uk/post/102l3bt/four-landmark-cases-on-ai-chatbot-harm-to-children-and-the-vulnerable-updates-on</a></li>
+
+                        <li>Cambridge Analytica and Mass Manipulation: The Hill: "How algorithms are amplifying misinformation and driving a wedge between people." November 10, 2021. <a href="https://thehill.com/changing-america/opinion/581002-how-algorithms-are-amplifying-misinformation-and-driving-a-wedge/" target="_blank" rel="noopener noreferrer">https://thehill.com/changing-america/opinion/581002-how-algorithms-are-amplifying-misinformation-and-driving-a-wedge/</a></li>
+
+                        <li>Article 5(1)(a) prohibits "the placing on the market, the putting into service or the use of an AI system that deploys subliminal techniques beyond a person's consciousness or purposefully manipulative or deceptive techniques, with the objective, or the effect of materially distorting the behaviour of a person or a group of persons by appreciably impairing their ability to make an informed decision, thereby causing them to take a decision that they would not have otherwise taken." <a href="https://artificialintelligenceact.eu/article/5/" target="_blank" rel="noopener noreferrer">https://artificialintelligenceact.eu/article/5/</a> As a side note, the roots of GenAI breakthrough came from academia, government, and grant-funded research. The engagement model is not required for AI to work. It is potentially necessary for profitability, although that remains to be seen: DARPA/AI Magazine: "DARPA's Role in Machine Learning." June 2020. <a href="https://onlinelibrary.wiley.com/doi/full/10.1609/aimag.v41i2.5298" target="_blank" rel="noopener noreferrer">https://onlinelibrary.wiley.com/doi/full/10.1609/aimag.v41i2.5298</a> | TechSpot: "Meet Transformers: The Google Breakthrough that Rewrote AI's Roadmap." December 24, 2024. <a href="https://www.techspot.com/article/2933-meet-transformers-ai/" target="_blank" rel="noopener noreferrer">https://www.techspot.com/article/2933-meet-transformers-ai/</a></li>
+                    </ol>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-21.html" class="read-more">Converging on Trust</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js?v=1768322266959"></script>
+</body>
+</html>

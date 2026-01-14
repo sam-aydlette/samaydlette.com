@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AWS Compliance as Code - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1768226922062">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1768226922062">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1768322266959">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1768322266959">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -87,24 +87,24 @@
                     <p>A key success factor is implementing strict naming conventions and tagging strategies from the start. Here's an example tagging strategy that satisfies most compliance frameworks:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        const tagDefinitions = {
-                          Environment: ['dev', 'stage', 'prod'],
-                          CostCenter: ['product-*', 'infrastructure-*'],
-                          DataClassification: ['public', 'internal', 'confidential', 'restricted'],
-                          ComplianceFramework: ['NIST800-53', 'SOC2', 'PCI', 'HIPAA'],
-                          SecurityZone: ['dmz', 'private', 'restricted'],
-                          Owner: 'email@domain.com',
-                          AutomationExempt: ['true', 'false']
-                        };
+const tagDefinitions = {
+  Environment: ['dev', 'stage', 'prod'],
+  CostCenter: ['product-*', 'infrastructure-*'],
+  DataClassification: ['public', 'internal', 'confidential', 'restricted'],
+  ComplianceFramework: ['NIST800-53', 'SOC2', 'PCI', 'HIPAA'],
+  SecurityZone: ['dmz', 'private', 'restricted'],
+  Owner: 'email@domain.com',
+  AutomationExempt: ['true', 'false']
+};
 
-                        const tagValidation = new CustomResource(this, 'TagValidation', {
-                          serviceToken: tagValidationFunction.functionArn,
-                          properties: {
-                            requiredTags: Object.keys(tagDefinitions),
-                            tagPatterns: tagDefinitions,
-                            resourceType: 'AWS::S3::Bucket'
-                          }
-                        });
+const tagValidation = new CustomResource(this, 'TagValidation', {
+  serviceToken: tagValidationFunction.functionArn,
+  properties: {
+    requiredTags: Object.keys(tagDefinitions),
+    tagPatterns: tagDefinitions,
+    resourceType: 'AWS::S3::Bucket'
+  }
+});
                         </code></pre>
                     </div>
                     
@@ -112,44 +112,44 @@
                     <p>AWS Config is the backbone of your compliance monitoring. Here's a practical example of a conformance pack that implements NIST 800-53 AC-2 (Account Management) and AC-3 (Access Enforcement) controls:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        Resources:
-                          NIST80053ConformancePack:
-                            Type: AWS::Config::ConformancePack
-                            Properties:
-                              ConformancePackName: nist-800-53-baseline
-                              TemplateBody: |
-                                Parameters:
-                                  MaxPasswordAge:
-                                    Type: String
-                                    Default: "90"
-                                Resources:
-                                  IAMPasswordPolicy:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: iam-password-policy
-                                      InputParameters:
-                                        MaxPasswordAge: ${MaxPasswordAge}
-                                      Source:
-                                        Owner: AWS
-                                        SourceIdentifier: IAM_PASSWORD_POLICY
-                                  
-                                  # AC-3: Access Enforcement
-                                  S3PublicReadProhibited:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: s3-bucket-public-read-prohibited
-                                      Source:
-                                        Owner: AWS
-                                        SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
-                                  
-                                  # Custom rule for session management
-                                  MaxSessionDuration:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: iam-role-max-session-duration
-                                      Source:
-                                        Owner: CUSTOM_LAMBDA
-                                        SourceIdentifier: ${MaxSessionDurationFunctionArn}
+Resources:
+NIST80053ConformancePack:
+  Type: AWS::Config::ConformancePack
+  Properties:
+    ConformancePackName: nist-800-53-baseline
+    TemplateBody: |
+      Parameters:
+        MaxPasswordAge:
+          Type: String
+          Default: "90"
+      Resources:
+        IAMPasswordPolicy:
+          Type: AWS::Config::ConfigRule
+          Properties:
+            ConfigRuleName: iam-password-policy
+            InputParameters:
+              MaxPasswordAge: ${MaxPasswordAge}
+            Source:
+              Owner: AWS
+              SourceIdentifier: IAM_PASSWORD_POLICY
+        
+        # AC-3: Access Enforcement
+        S3PublicReadProhibited:
+          Type: AWS::Config::ConfigRule
+          Properties:
+            ConfigRuleName: s3-bucket-public-read-prohibited
+            Source:
+              Owner: AWS
+              SourceIdentifier: S3_BUCKET_PUBLIC_READ_PROHIBITED
+        
+        # Custom rule for session management
+        MaxSessionDuration:
+          Type: AWS::Config::ConfigRule
+          Properties:
+            ConfigRuleName: iam-role-max-session-duration
+            Source:
+              Owner: CUSTOM_LAMBDA
+              SourceIdentifier: ${MaxSessionDurationFunctionArn}
                         </code></pre>
                     </div>
 
@@ -157,41 +157,41 @@
                     <p>Security Hub findings should trigger automated remediation where possible. Here's an example of a Lambda function that automatically remediates common security issues:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        import boto3
-                        from typing import Dict, Any
+import boto3
+from typing import Dict, Any
 
-                        def handle_security_finding(event: Dict[str, Any], context: Any) -> None:
-                            finding = event['detail']['findings'][0]
-                            
-                            # Define remediation mappings
-                            remediation_actions = {
-                                'S3_BUCKET_PUBLIC_READ_PROHIBITED': remediate_public_s3,
-                                'IAM_PASSWORD_POLICY': remediate_password_policy,
-                                'EXPOSED_ACCESS_KEYS': rotate_access_keys
-                            }
-                            
-                            # Execute appropriate remediation
-                            rule_id = finding['Types'][0].split('/')[1]
-                            if rule_id in remediation_actions:
-                                remediation_actions[rule_id](finding)
-                                
-                            # Log remediation for compliance
-                            log_remediation(finding)
+def handle_security_finding(event: Dict[str, Any], context: Any) -> None:
+    finding = event['detail']['findings'][0]
+    
+    # Define remediation mappings
+    remediation_actions = {
+        'S3_BUCKET_PUBLIC_READ_PROHIBITED': remediate_public_s3,
+        'IAM_PASSWORD_POLICY': remediate_password_policy,
+        'EXPOSED_ACCESS_KEYS': rotate_access_keys
+    }
+    
+    # Execute appropriate remediation
+    rule_id = finding['Types'][0].split('/')[1]
+    if rule_id in remediation_actions:
+        remediation_actions[rule_id](finding)
+        
+    # Log remediation for compliance
+    log_remediation(finding)
 
-                        def remediate_public_s3(finding: Dict[str, Any]) -> None:
-                            s3 = boto3.client('s3')
-                            bucket_name = finding['Resources'][0]['Id'].split('/')[-1]
-                            
-                            # Block public access
-                            s3.put_public_access_block(
-                                Bucket=bucket_name,
-                                PublicAccessBlockConfiguration={
-                                    'BlockPublicAcls': True,
-                                    'IgnorePublicAcls': True,
-                                    'BlockPublicPolicy': True,
-                                    'RestrictPublicBuckets': True
-                                }
-                            )
+def remediate_public_s3(finding: Dict[str, Any]) -> None:
+    s3 = boto3.client('s3')
+    bucket_name = finding['Resources'][0]['Id'].split('/')[-1]
+    
+    # Block public access
+    s3.put_public_access_block(
+        Bucket=bucket_name,
+        PublicAccessBlockConfiguration={
+            'BlockPublicAcls': True,
+            'IgnorePublicAcls': True,
+            'BlockPublicPolicy': True,
+            'RestrictPublicBuckets': True
+        }
+    )
                         </code></pre>
                     </div>
 
@@ -199,24 +199,24 @@
                     <p>Implement a comprehensive monitoring strategy using EventBridge rules that trigger based on compliance-related events. Here's an example that monitors for critical compliance violations:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        {
-                            "source": ["aws.securityhub"],
-                            "detail-type": ["Security Hub Findings - Imported"],
-                            "detail": {
-                                "findings": [{
-                                    "Severity": {
-                                        "Label": ["CRITICAL"]
-                                    },
-                                    "Types": ["Software and Configuration Checks/Industry and Regulatory Standards/NIST-800-53"],
-                                    "Compliance": {
-                                        "Status": ["FAILED"]
-                                    },
-                                    "Workflow": {
-                                        "Status": ["NEW"]
-                                    }
-                                }]
-                            }
-                        }
+{
+    "source": ["aws.securityhub"],
+    "detail-type": ["Security Hub Findings - Imported"],
+    "detail": {
+        "findings": [{
+            "Severity": {
+                "Label": ["CRITICAL"]
+            },
+            "Types": ["Software and Configuration Checks/Industry and Regulatory Standards/NIST-800-53"],
+            "Compliance": {
+                "Status": ["FAILED"]
+            },
+            "Workflow": {
+                "Status": ["NEW"]
+            }
+        }]
+    }
+}
                         </code></pre>
                     </div>
 
@@ -224,43 +224,43 @@
                     <p>Implement a GitOps workflow that ensures all infrastructure changes go through proper security review. Here's an example GitHub Actions workflow that includes security scanning:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        name: Infrastructure Security Validation
-                        on:
-                          pull_request:
-                            paths:
-                              - 'infrastructure/**'
-                              - 'compliance/**'
-                        
-                        jobs:
-                          security-validation:
-                            runs-on: ubuntu-latest
-                            steps:
-                              - uses: actions/checkout@v2
-                              
-                              - name: Configure AWS Credentials
-                                uses: aws-actions/configure-aws-credentials@v1
-                              
-                              - name: Setup Node.js
-                                uses: actions/setup-node@v2
-                              
-                              - name: Install dependencies
-                                run: npm install
-                              
-                              - name: Run Security Scan
-                                run: |
-                                  # Scan IaC templates
-                                  npx cfn-lint cdk.out/*.template.json
-                                  npx cfn-nag-scan cdk.out/*.template.json
-                                  
-                                  # Validate against compliance rules
-                                  ./scripts/validate-compliance.sh
-                              
-                              - name: Check for Sensitive Data
-                                uses: trufflesecurity/trufflehog@v3
-                                with:
-                                  path: "."
-                                  base: ${{ github.event.pull_request.base.sha }}
-                                  head: ${{ github.event.pull_request.head.sha }}
+name: Infrastructure Security Validation
+on:
+  pull_request:
+    paths:
+      - 'infrastructure/**'
+      - 'compliance/**'
+
+jobs:
+  security-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Run Security Scan
+        run: |
+          # Scan IaC templates
+          npx cfn-lint cdk.out/*.template.json
+          npx cfn-nag-scan cdk.out/*.template.json
+          
+          # Validate against compliance rules
+          ./scripts/validate-compliance.sh
+      
+      - name: Check for Sensitive Data
+        uses: trufflesecurity/trufflehog@v3
+        with:
+          path: "."
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
                         </code></pre>
                     </div>
 
@@ -269,40 +269,40 @@
 
                     <div class="code-block"><pre>
                         <pre><code>
-                        # CDK code for secure Fargate service
-                        const taskDefinition = new ecs.FargateTaskDefinition(this, 'SecureTask', {
-                          cpu: 256,
-                          memoryLimitMiB: 512,
-                          executionRole: executionRole,
-                          taskRole: taskRole,
-                        });
+# CDK code for secure Fargate service
+const taskDefinition = new ecs.FargateTaskDefinition(this, 'SecureTask', {
+  cpu: 256,
+  memoryLimitMiB: 512,
+  executionRole: executionRole,
+  taskRole: taskRole,
+});
 
-                        // Use hardened base image
-                        const container = taskDefinition.addContainer('AppContainer', {
-                          image: ecs.ContainerImage.fromAsset('../app', {
-                            // Use multi-stage build with hardened base image
-                            file: 'Dockerfile.secure',
-                            buildArgs: {
-                              BASE_IMAGE: 'amazonlinux:2023-minimal'
-                            }
-                          }),
-                          logging: new ecs.AwsLogDriver({
-                            streamPrefix: 'secure-app',
-                            mode: ecs.AwsLogDriverMode.NON_BLOCKING
-                          }),
-                          environment: {
-                            NODE_ENV: 'production',
-                            // Inject secrets at runtime
-                            DB_SECRET: secrets.secretFromSecretsManager('db-secret').secretValue
-                          }
-                        });
+// Use hardened base image
+const container = taskDefinition.addContainer('AppContainer', {
+  image: ecs.ContainerImage.fromAsset('../app', {
+    // Use multi-stage build with hardened base image
+    file: 'Dockerfile.secure',
+    buildArgs: {
+      BASE_IMAGE: 'amazonlinux:2023-minimal'
+    }
+  }),
+  logging: new ecs.AwsLogDriver({
+    streamPrefix: 'secure-app',
+    mode: ecs.AwsLogDriverMode.NON_BLOCKING
+  }),
+  environment: {
+    NODE_ENV: 'production',
+    // Inject secrets at runtime
+    DB_SECRET: secrets.secretFromSecretsManager('db-secret').secretValue
+  }
+});
 
-                        // Apply security group rules
-                        const securityGroup = new ec2.SecurityGroup(this, 'ServiceSG', {
-                          vpc,
-                          description: 'Security group for Fargate service',
-                          allowAllOutbound: false  // Explicitly manage outbound rules
-                        });
+// Apply security group rules
+const securityGroup = new ec2.SecurityGroup(this, 'ServiceSG', {
+  vpc,
+  description: 'Security group for Fargate service',
+  allowAllOutbound: false  // Explicitly manage outbound rules
+});
                         </code></pre>
                     </div>
 
@@ -318,84 +318,84 @@
                     <p>Here's an example of a hardened Dockerfile using multi-stage builds:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        # Build stage
-                        FROM amazonlinux:2023 AS builder
-                        
-                        # Install only necessary build dependencies
-                        RUN dnf update -y && \
-                            dnf install -y nodejs npm && \
-                            dnf clean all
-                        
-                        WORKDIR /build
-                        COPY package*.json ./
-                        
-                        # Install production dependencies only
-                        RUN npm ci --only=production
-                        
-                        # Copy application code
-                        COPY . .
-                        
-                        # Final stage
-                        FROM amazonlinux:2023-minimal
-                        
-                        # Install runtime dependencies only
-                        RUN dnf update -y && \
-                            dnf install -y nodejs && \
-                            dnf clean all
-                        
-                        # Create non-root user
-                        RUN useradd -r -s /bin/false appuser
-                        
-                        # Copy only necessary files from builder
-                        WORKDIR /app
-                        COPY --from=builder --chown=appuser:appuser /build/node_modules ./node_modules
-                        COPY --from=builder --chown=appuser:appuser /build/dist ./dist
-                        
-                        # Switch to non-root user
-                        USER appuser
-                        
-                        # Set secure defaults
-                        ENV NODE_ENV=production \
-                            NPM_CONFIG_LOGLEVEL=error \
-                            NODE_OPTIONS='--max-old-space-size=2048 --max-http-header-size=16384'
-                        
-                        CMD ["node", "dist/index.js"]
+# Build stage
+FROM amazonlinux:2023 AS builder
+
+# Install only necessary build dependencies
+RUN dnf update -y && \
+    dnf install -y nodejs npm && \
+    dnf clean all
+
+WORKDIR /build
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy application code
+COPY . .
+
+# Final stage
+FROM amazonlinux:2023-minimal
+
+# Install runtime dependencies only
+RUN dnf update -y && \
+    dnf install -y nodejs && \
+    dnf clean all
+
+# Create non-root user
+RUN useradd -r -s /bin/false appuser
+
+# Copy only necessary files from builder
+WORKDIR /app
+COPY --from=builder --chown=appuser:appuser /build/node_modules ./node_modules
+COPY --from=builder --chown=appuser:appuser /build/dist ./dist
+
+# Switch to non-root user
+USER appuser
+
+# Set secure defaults
+ENV NODE_ENV=production \
+    NPM_CONFIG_LOGLEVEL=error \
+    NODE_OPTIONS='--max-old-space-size=2048 --max-http-header-size=16384'
+
+CMD ["node", "dist/index.js"]
                         </code></pre>
                     </div>
 
                     <p>Add Config rules to monitor container compliance:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        Resources:
-                          ContainerSecurityPack:
-                            Type: AWS::Config::ConformancePack
-                            Properties:
-                              ConformancePackName: container-security
-                              TemplateBody: |
-                                Resources:
-                                  ECRImageScanningEnabled:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: ecr-image-scanning-enabled
-                                      Source:
-                                        Owner: AWS
-                                        SourceIdentifier: ECR_PRIVATE_IMAGE_SCANNING_ENABLED
-                                  
-                                  FargateInsightsEnabled:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: fargate-insights-enabled
-                                      Source:
-                                        Owner: CUSTOM_LAMBDA
-                                        SourceIdentifier: ${FargateInsightsFunctionArn}
-                                  
-                                  ContainerLoggingEnabled:
-                                    Type: AWS::Config::ConfigRule
-                                    Properties:
-                                      ConfigRuleName: container-logging-enabled
-                                      Source:
-                                        Owner: CUSTOM_LAMBDA
-                                        SourceIdentifier: ${ContainerLoggingFunctionArn}
+Resources:
+  ContainerSecurityPack:
+    Type: AWS::Config::ConformancePack
+    Properties:
+      ConformancePackName: container-security
+      TemplateBody: |
+        Resources:
+          ECRImageScanningEnabled:
+            Type: AWS::Config::ConfigRule
+            Properties:
+              ConfigRuleName: ecr-image-scanning-enabled
+              Source:
+                Owner: AWS
+                SourceIdentifier: ECR_PRIVATE_IMAGE_SCANNING_ENABLED
+          
+          FargateInsightsEnabled:
+            Type: AWS::Config::ConfigRule
+            Properties:
+              ConfigRuleName: fargate-insights-enabled
+              Source:
+                Owner: CUSTOM_LAMBDA
+                SourceIdentifier: ${FargateInsightsFunctionArn}
+          
+          ContainerLoggingEnabled:
+            Type: AWS::Config::ConfigRule
+            Properties:
+              ConfigRuleName: container-logging-enabled
+              Source:
+                Owner: CUSTOM_LAMBDA
+                SourceIdentifier: ${ContainerLoggingFunctionArn}
                         </code></pre>
                     </div>
 
@@ -456,6 +456,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1768226922062"></script>
+    <script type="module" src="/assets/js/main.js?v=1768322266959"></script>
 </body>
 </html>

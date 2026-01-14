@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DIY AI - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1768226922062">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1768226922062">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1768322266959">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1768322266959">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -81,15 +81,15 @@
                     <p>First, let's create a dedicated Python virtual environment to keep our dependencies organized:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        # Create a directory for our project (make sure you're in the directory you'd like the project to be in)
-                        mkdir -p ~/llm-project
-                        cd ~/llm-project
+# Create a directory for our project (make sure you're in the directory you'd like the project to be in)
+mkdir -p ~/llm-project
+cd ~/llm-project
 
-                        # Create a Python virtual environment
-                        python3 -m venv llm-env
+# Create a Python virtual environment
+python3 -m venv llm-env
 
-                        # Activate the environment
-                        source llm-env/bin/activate
+# Activate the environment
+source llm-env/bin/activate
                         </code></pre>
                     </div>
                     <p>You'll know the environment is active when your command prompt shows <i>(llm-env)</i> at the beginning.</p>
@@ -98,14 +98,14 @@
                     <p>With our environment ready, let's install the necessary packages:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        # Upgrade pip
-                        pip install --upgrade pip
+# Upgrade pip
+pip install --upgrade pip
 
-                        # Install PyTorch (CPU version to save space)
-                        pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Install PyTorch (CPU version to save space)
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 
-                        # Install Transformers and related libraries
-                        pip install transformers sentencepiece protobuf
+# Install Transformers and related libraries
+pip install transformers sentencepiece protobuf
                         </code></pre>
                     </div>
                     <p>Installing the CPU version of PyTorch significantly reduces download size and memory requirements, making this setup more accessible for laptops with limited resources.</p>
@@ -114,97 +114,97 @@
                     <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <i>run_tinyllama.py</i></p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        import torch
-                        from transformers import AutoModelForCausalLM, AutoTokenizer
-                        import gc
-                        import time
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import gc
+import time
 
-                        def generate_response(prompt, max_length=256):
-                            start_time = time.time()
-                            print("Loading tokenizer...")
-                            
-                            # TinyLlama - open source, no auth required
-                            model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
-                            
-                            tokenizer = AutoTokenizer.from_pretrained(model_name)
-                            
-                            print(f"Loading model: {model_name}...")
-                            # CPU-only mode for compatibility
-                            model = AutoModelForCausalLM.from_pretrained(
-                                model_name,
-                                low_cpu_mem_usage=True,
-                                device_map="cpu"
-                            )
-                            
-                            print(f"Model loaded in {time.time() - start_time:.2f} seconds")
-                            
-                            # Format prompt correctly for chat format
-                            messages = [
-                                {"role": "user", "content": prompt}
-                            ]
-                            
-                            encoded_input = tokenizer.apply_chat_template(
-                                messages,
-                                return_tensors="pt"
-                            )
-                            
-                            print("Generating response...")
-                            # Generate text
-                            outputs = model.generate(
-                                encoded_input,
-                                max_new_tokens=max_length,
-                                temperature=0.7,
-                                top_p=0.9,
-                                do_sample=True
-                            )
-                            
-                            # Decode and return
-                            full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-                            
-                            # Clean up to save memory
-                            del model, tokenizer, outputs, encoded_input
-                            gc.collect()
-                            
-                            print(f"Generation completed in {time.time() - start_time:.2f} seconds")
-                            return full_output
+def generate_response(prompt, max_length=256):
+    start_time = time.time()
+    print("Loading tokenizer...")
+    
+    # TinyLlama - open source, no auth required
+    model_name = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    print(f"Loading model: {model_name}...")
+    # CPU-only mode for compatibility
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        low_cpu_mem_usage=True,
+        device_map="cpu"
+    )
+    
+    print(f"Model loaded in {time.time() - start_time:.2f} seconds")
+    
+    # Format prompt correctly for chat format
+    messages = [
+        {"role": "user", "content": prompt}
+    ]
+    
+    encoded_input = tokenizer.apply_chat_template(
+        messages,
+        return_tensors="pt"
+    )
+    
+    print("Generating response...")
+    # Generate text
+    outputs = model.generate(
+        encoded_input,
+        max_new_tokens=max_length,
+        temperature=0.7,
+        top_p=0.9,
+        do_sample=True
+    )
+    
+    # Decode and return
+    full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    # Clean up to save memory
+    del model, tokenizer, outputs, encoded_input
+    gc.collect()
+    
+    print(f"Generation completed in {time.time() - start_time:.2f} seconds")
+    return full_output
 
-                        if __name__ == "__main__":
-                            print("TinyLlama 1.1B Chat")
-                            print("-------------------")
-                            print("Note: First run will download the model (~600MB)")
-                            print("This will be slow on CPU, please be patient")
-                            
-                            while True:
-                                prompt = input("\nEnter your prompt (or 'quit' to exit):\n")
-                                if prompt.lower() == 'quit':
-                                    break
-                                    
-                                try:
-                                    print("\nProcessing...")
-                                    response = generate_response(prompt)
-                                    print("\nResponse:")
-                                    print(response)
-                                except Exception as e:
-                                    print(f"Error: {e}")
-                                    
-                                # Force cleanup
-                                gc.collect()
+if __name__ == "__main__":
+    print("TinyLlama 1.1B Chat")
+    print("-------------------")
+    print("Note: First run will download the model (~600MB)")
+    print("This will be slow on CPU, please be patient")
+    
+    while True:
+        prompt = input("\nEnter your prompt (or 'quit' to exit):\n")
+        if prompt.lower() == 'quit':
+            break
+            
+        try:
+            print("\nProcessing...")
+            response = generate_response(prompt)
+            print("\nResponse:")
+            print(response)
+        except Exception as e:
+            print(f"Error: {e}")
+            
+        # Force cleanup
+        gc.collect()
                         </code></pre>
                     </div>
                 <h3>Step 4: Creating a Convenient Launcher</h3>
                     <p>For ease of use, let's create a simple bash script that will activate our environment and run our Python script. Create a file called <i>run_llm.sh</i></p>
                     <div class="code-block"> 
                         <pre><code>
-                        #!/bin/bash
-                        cd ~/llm-project
-                        source llm-env/bin/activate
-                        python run_tinyllama.py
+#!/bin/bash
+cd ~/llm-project
+source llm-env/bin/activate
+python run_tinyllama.py
                         </code></pre>
                     </div>
                     <p>Make it executable:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        chmod +x run_llm.sh
+chmod +x run_llm.sh
                         </code></pre>
                     </div>
 
@@ -212,7 +212,7 @@
                     <p>Now, let's launch our local LLM:</p>
                     <div class="code-block"><pre>
                         <pre><code>
-                        ./run_llm.sh
+./run_llm.sh
                         </code></pre>
                     </div>
                     <p>The first time you run this, it will download the TinyLlama model, which is about 600MB. This may take a few minutes depending on your internet connection.</p>
@@ -274,6 +274,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1768226922062"></script>
+    <script type="module" src="/assets/js/main.js?v=1768322266959"></script>
 </body>
 </html>
