@@ -1,0 +1,10 @@
+{
+  "name": "samaydlette-website",
+  "version": "1.0.0",
+  "description": "Personal website for Sam Aydlette",
+  "scripts": {
+    "cache-bust": "node update-cache-version.js"
+  },
+  "author": "Samuel Aydlette",
+  "license": "ISC"
+}

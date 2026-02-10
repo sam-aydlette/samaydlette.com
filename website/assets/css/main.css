@@ -178,7 +178,7 @@
 
     /* CONTENT LINK COLORS */
     --link-color: var(--accent-primary);
-    --link-visited: var(--accent-secondary);
+    --link-visited: var(--accent-primary);
     --link-hover: var(--accent-primary);
     --link-active: var(--accent-primary);
 
