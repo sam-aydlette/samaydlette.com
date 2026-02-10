@@ -43,6 +43,12 @@
     font-size: 1.25rem;
 }
 
+.article-content h5 {
+    margin: 1.5rem 0 0.5rem;
+    color: var(--accent-primary);
+    font-size: 1.1rem;
+}
+
 /* Lists and content elements */
 .article-content ul,
 .article-content ol {
