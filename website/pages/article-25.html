@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRC Engineering is Just... Engineering - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+</head>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#x25D0;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2026-03-05</span>
+                    <span class="article-category">FedRAMP 20x</span>
+                </div>
+
+                <h2>GRC Engineering is Just&hellip; Engineering</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>I attended the FedRAMP Community Working Group around GRC Engineering this week, and there seemed to be a lot of pushback in the Q&amp;A. Some folks thought that it was nothing but a vendor pitch. Others felt like it was being unfair to small (or large) CSPs. In my mind though, we need to shift the way we are thinking about all of this. FedRAMP 20x isn&rsquo;t an overhaul of compliance. It is an extension of engineering best practices into compliance. In other words, compliance is now a function of Site Reliability Engineering. Let me explain.</p>
+
+                    <h3>The Misunderstanding</h3>
+
+                    <p>Most of the confusion around FedRAMP 20x comes from folks perceiving it solely as a compliance policy change. The pushback in the CWG would be reasonable if FedRAMP 20x was simply compliance reform. But it isn&rsquo;t.</p>
+
+                    <p>FedRAMP 20x is an engineering initiative disguised as compliance. The core move is the same one that SRE made against traditional operations a decade ago.</p>
+
+                    <p>Understanding FedRAMP 20x as an extension of SRE gives practitioners an existing body of practice to draw from, and gives authorizing officials a clearer picture of what they should actually be asking for.</p>
+
+                    <h3>SRE in Brief</h3>
+
+                    <p>Site Reliability Engineering emerged from Google in 2003. SRE is what happens when you treat operations as a software engineering problem instead of just a staffing problem. Per the <a href="https://www.sre-manifesto.org/sre/manifesto/">SRE Manifesto</a>, eight core principles define the discipline:</p>
+
+                    <ol>
+                        <li>SREs make sure their systems are reliable and not just available and resilient.</li>
+                        <li>SREs guarantee all systems and applications are observable and under monitoring.</li>
+                        <li>SREs manage systems, services, and infrastructure to learn how to automate toil.</li>
+                        <li>SREs use data science and statistical methods to understand the observability of data.</li>
+                        <li>SREs identify, measure, and reduce toil arising from operational and engineering work.</li>
+                        <li>SREs implement test cases, execute software delivery tests, and stay ahead with capacity planning.</li>
+                        <li>SREs employ chaos engineering to unveil systemic weaknesses in production.</li>
+                        <li>SREs respond to meaningful incidents, implement complex changes, and conduct blameless postmortems.</li>
+                    </ol>
+
+                    <p>This is the model FedRAMP 20x is now extending into compliance.</p>
+
+                    <h3>A Rose Is A Rose By Any Other Name (In This Case, GRC Engineering)</h3>
+
+                    <p>SRE has already influenced FedRAMP&rsquo;s approach to continuous monitoring, at least for monthly deliverables. GRC Engineering is the next step in that propagation.</p>
+
+                    <p>What changes is that compliance controls stop being documented policies and start being tested, measured engineering outcomes. CSPs participating in the FedRAMP 20x Phase 2 pilot are already demonstrating this. During the call, it was brought up that automated AT-2 validation, for example, works by querying identity provider and training platform APIs continuously to produce a live answer to &ldquo;do the people who can access sensitive systems right now have the required training?&rdquo; rather than a quarterly attestation about the past. None of this requires inventing new concepts. It just requires applying existing ones to a new domain.</p>
+
+                    <h3>The Open Source Stack</h3>
+
+                    <p>Whatever you call it &mdash; SRE for compliance, GRC engineering, compliance automation &mdash; it doesn&rsquo;t have to rely on expensive vendors. The tooling is largely open source, and most of it already has SRE lineage. The core stack practitioners should know:</p>
+
+                    <ul>
+                        <li><strong>Policy enforcement:</strong> <a href="https://www.openpolicyagent.org/">Open Policy Agent (OPA)</a> and <a href="https://kyverno.io/">Kyverno</a></li>
+                        <li><strong>Observability:</strong> <a href="https://opentelemetry.io/">OpenTelemetry</a> and <a href="https://steampipe.io/">Steampipe</a></li>
+                        <li><strong>Machine-readable compliance:</strong> <a href="https://pages.nist.gov/OSCAL/">OSCAL</a></li>
+                        <li><strong>Configuration baselines:</strong> <a href="https://www.cisa.gov/resources-tools/services/secure-cloud-business-applications-scuba-project">SCuBA</a></li>
+                        <li><strong>Supply chain integrity:</strong> <a href="https://slsa.dev/">SLSA</a>, <a href="https://www.cisa.gov/sbom">SBOMs</a>, and <a href="https://github.com/sigstore/cosign">Cosign</a></li>
+                        <li><strong>Vulnerability intelligence:</strong> <a href="https://www.cve.org/">CVE</a>, <a href="https://www.first.org/cvss/">CVSS</a>, <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog">KEV</a>, <a href="https://www.cisa.gov/resources-tools/resources/minimum-requirements-vulnerability-exploitability-exchange-vex">VEX</a>, and <a href="https://github.com/cisagov/vulnrichment">Vulnrichment</a></li>
+                    </ul>
+
+                    <p>For those who want to read more, I&rsquo;ve written articles on how to apply these technologies <a href="/pages/article-10.html">here</a>, <a href="/pages/article-9.html">here</a>, and <a href="/pages/article-20.html">here</a>.</p>
+
+                    <h3>What This Means</h3>
+
+                    <p>For practitioners, FedRAMP 20x is a bridge that spans the engineering practices you already use for reliability and security into compliance. If your organization has mature observability, policy-as-code enforcement, and CI/CD security gates, you are closer to FedRAMP 20x readiness than an organization with a complete SSP and no automation.</p>
+
+                    <p>GRC Engineering isn&rsquo;t just a vendor pitch, and it isn&rsquo;t inaccessible. The open source nature of this stack is precisely what levels the playing field. A small CSP with strong engineering practice and OPA, OpenTelemetry, and OSCAL is on equal footing with a large one running expensive commercial tooling. The advantage goes to solid engineering over big budgets.</p>
+
+                    <p>More than that though, GRC engineering is just another name for the same thing that made cloud computing so successful in the first place. In fact, the thread goes all the way back to Claude Shannon and Norbert Wiener in the 1950s. But that&rsquo;s for another blog post.</p>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-24.html" class="read-more">meditation_on_writing.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+</body>
+</html>
