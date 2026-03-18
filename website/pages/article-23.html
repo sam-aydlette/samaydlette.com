@@ -1,11 +1,420 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=/research/tuning-the-eigenvalue.html">
-    <title>Redirecting...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Living at the Threshold: Dynamical Systems Theory for Security Operations - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
-<body>
-    <p>Redirecting to <a href="/research/tuning-the-eigenvalue.html">Tuning the Eigenvalue</a>...</p>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#x25D0;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2026-02-08</span>
+                    <span class="article-category">cybersec_strategy</span>
+                </div>
+
+                <h2>Living at the Threshold: Dynamical Systems Theory for Security Operations</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>In the past few weeks, I&rsquo;ve been using generative AI to explore general and special relativity, quantum mechanics and its applications across physics, chemistry, and philosophy, and how these theories intersect and diverge. I took college courses in these subjects, but I never understood them like I do now. But now, hours of simulated conversation with an interlocutor who can meet me where I am, answer follow-up questions without judgment, go down rabbit holes without annoyance, and generate visualizations on demand has done what years of traditional instruction could not.</p>
+
+                    <p>What I&rsquo;ve been learning is dynamical systems theory. The mathematics of feedback, stability, and thresholds. It maps directly onto cybersecurity.</p>
+
+                    <p>This is a paradigm shift, and most organizations haven&rsquo;t absorbed what it means. The assumptions underlying &ldquo;best practice&rdquo; were formed in a world that no longer exists. The cost of exploration has collapsed. The penalty for not exploring is growing. What follows is my attempt to bring that vocabulary across. To describe how security operations actually works, and how to measure whether it&rsquo;s working.</p>
+
+                    <p>Consider the security analyst three hours into her shift, triaging the same categories of alerts she triaged yesterday. Somewhere in the queue, between the noise, sits a finding that matters. She might catch it. She might not. It depends on a myriad of factors, from how many alerts arrived before it to how much sleep she got. Her attention, her fatigue, the quality of her telemetry, etc. are all variables in a system whose behavior emerges from their interaction. None of them alone determines the outcome. The dynamics do.</p>
+
+                    <p>Her queue has been growing for three weeks. Recovery time after each incident is longer than last month. Something is wrong, but the vocabulary she&rsquo;s been given (controls, compliance, risk ratings) doesn&rsquo;t capture it. She knows the system is drifting. She just can&rsquo;t name where.</p>
+
+                    <p>Dynamical systems theory provides the name.</p>
+
+                    <h3>The Problem: State-Based Thinking</h3>
+
+                    <p>Most security models pretend posture is a state. A &ldquo;control&rdquo; is implemented or not, passing or failing. A SOC 2 Type II report captures a moment. Between that moment and the next audit, configurations drift, services deploy, staff turns over, and the snapshot becomes a historical document about a system that no longer exists.</p>
+
+                    <p>Within this paradigm, our analyst plays whack-a-mole. Scan, find, patch, repeat. Each vulnerability is treated as an isolated event rather than a symptom of system behavior. She remediates the finding but never addresses why vulnerabilities accumulate faster than she can remediate them. The perimeter she&rsquo;s defending dissolved years ago. Workloads span providers. Data flows through APIs no one fully controls. Identity determines access, not network topology. Meanwhile the actual dynamics go unexamined.</p>
+
+                    <p>These are symptoms of the same underlying problem: treating security as a fixed property rather than an emergent behavior.</p>
+
+                    <h3>The Reframe: Your Environment Is a Dynamical System</h3>
+
+                    <p>The concepts physicists use to study systems (attractors, feedback loops, thresholds, coupling, bifurcation) translate directly into how security operations actually work. Not as metaphors. They describe the structure of what security practitioners navigate every day. The goal is to make that structure explicit. To work with it deliberately rather than by feel.</p>
+
+                    <p>Thresholds are where influence concentrates. In dynamical systems, a threshold is the boundary between basins of attraction. On one side of it, the system recovers from perturbation and returns to a secure equilibrium. On the other, it drifts toward compromise. The threshold is where the system&rsquo;s fate gets determined, and security teams live there whether they recognize it or not.</p>
+
+                    <div class="article-image">
+                        <img src="/assets/images/phase_portrait.png" alt="Two attractor basins in a projection of security state space, showing trajectories spiraling toward either a secure or compromised attractor, with a threshold boundary between them.">
+                        <p class="image-caption"><strong>Figure 1:</strong> Two attractor basins in a projection of security state space. The x-axis captures aggregate exposure accumulation: how fast vulnerabilities, configuration drift, and attack surface grow. The y-axis captures corrective feedback strength: how effectively detection, triage, and remediation push back. Every trajectory spirals toward one attractor or the other. The threshold boundary between them is where the system&rsquo;s fate is determined.</p>
+                    </div>
+
+                    <p>Multiple thresholds coexist. Alert volume has one: above it, triage quality collapses. Staffing has one: below it, response capacity can&rsquo;t keep pace. Vulnerability accumulation has one: beyond it, remediation debt becomes unserviceable. Each operates semi-independently. Each can trigger cascades when crossed.</p>
+
+                    <h3>Critical Slowing Down: The Early Warning</h3>
+
+                    <p>Systems approaching a threshold produce warning signatures before they cross it.</p>
+
+                    <p>Recovery time increases. Independent metrics start correlating. Variance grows. Queue depths trend upward. Physicists call this critical slowing down. It tells you where the system is heading, not just where it sits.</p>
+
+                    <p>Our analyst&rsquo;s queue has been growing for three weeks. Her recovery time after each incident is longer than it was last month. These are the signatures. A system that passes every audit but shows critical slowing down is closer to compromise than one with open findings and fast recovery.</p>
+
+                    <p>Monitor for threshold proximity, not just state.</p>
+
+                    <h3>Example: A Guitarist Inside the Loop</h3>
+
+                    <p>A guitarist sustaining a note at the edge of feedback lives at the same kind of boundary. Too much pressure kills the note. Too little and it screeches into noise. The skill is maintaining dynamic equilibrium through continuous modulation. And the guitarist is inside the loop: vibration through pickup through amplifier through speaker through air through string through finger. The finger doesn&rsquo;t observe the feedback. It participates in it.</p>
+
+                    <p>Security operators participate in their systems the same way. Their attention, fatigue, judgment, and response speed are state variables. They are not outside the system looking in. They are part of what determines where it goes.</p>
+
+                    <p>This is the difference between a thermostat and a living being. The thermostat regulates: deviation triggers correction, mechanically. The guitarist modulates: staying at the edge, feeling the system, adjusting continuously. You cannot &ldquo;control&rdquo; a complex system from outside. You can only tune it from within.</p>
+
+                    <h3>The Eigenvalue: One Number Governs Stability</h3>
+
+                    <p>Behind the observable signatures of critical slowing down is a single mathematical quantity: the dominant eigenvalue.</p>
+
+                    <p>The eigenvalue governs how fast the system recovers from perturbation. When it&rsquo;s strongly negative, the system snaps back quickly. Stable, with margin. As it approaches zero, recovery slows, variance accumulates, and correlations spike. If it crosses zero and goes positive, the system diverges &mdash; perturbations amplify rather than decay.</p>
+
+                    <p>This is why all the critical slowing down signatures co-occur: they&rsquo;re all consequences of the eigenvalue approaching zero.</p>
+
+                    <p>The operational translation: MTTR is a direct proxy for the eigenvalue. Recovery time &tau; &asymp; 1/|&lambda;|. When your Mean Time to Remediate rises, your eigenvalue is falling. You&rsquo;re approaching a threshold. When MTTR is stable and low, you have margin.</p>
+
+                    <p>This transforms abstract math into something actionable. You&rsquo;re already measuring MTTR. Now you know what it means.</p>
+
+                    <h3>FedRAMP 20x: The Infrastructure for Eigenvalue Governance</h3>
+
+                    <p>FedRAMP 20x, read through a dynamical systems lens, is an attempt to make system stability observable and governable.</p>
+
+                    <p>The framework&rsquo;s core innovations map directly to the concepts above:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>FedRAMP 20x Concept</th>
+                                <th>Dynamical Systems Translation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Deterministic telemetry</td>
+                                <td>State observation &mdash; making the system&rsquo;s trajectory visible</td>
+                            </tr>
+                            <tr>
+                                <td>Persistent validation</td>
+                                <td>Continuous measurement of dynamics, not periodic snapshots</td>
+                            </tr>
+                            <tr>
+                                <td>Capability-based assessment</td>
+                                <td>Evaluating attractor health, not just control presence</td>
+                            </tr>
+                            <tr>
+                                <td>Automated evidence collection</td>
+                                <td>Closing the feedback loop between state and response</td>
+                            </tr>
+                            <tr>
+                                <td>Risk-based prioritization</td>
+                                <td>Focusing on threshold proximity, not uniform control coverage</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>The demand for &ldquo;deterministic telemetry&rdquo; is the key. FedRAMP 20x requires that security claims be backed by data, not narrative. This is what&rsquo;s needed to estimate eigenvalues. The numbers that tell you whether your system is stable, approaching a threshold, or already diverging.</p>
+
+                    <h3>From KSIs to Eigenvalues</h3>
+
+                    <p>FedRAMP environments already generate the data needed for eigenvalue estimation. The Key Security Indicators mandated by continuous monitoring programs are, in effect, time series of state variables:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>FedRAMP 20x KSI</th>
+                                <th>State Variable</th>
+                                <th>What It Measures</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Monitoring, Logging, and Auditing (KSI-MLA-RVL)</td>
+                                <td>Q</td>
+                                <td>Alert queue depth and backlog accumulation</td>
+                            </tr>
+                            <tr>
+                                <td>Service Configuration (KSI-SVC-ACM)</td>
+                                <td>C</td>
+                                <td>Drift from secure baseline</td>
+                            </tr>
+                            <tr>
+                                <td>Change Management (KSI-CMT-VTD)</td>
+                                <td>V</td>
+                                <td>Perturbation rate and accumulated exposure from changes</td>
+                            </tr>
+                            <tr>
+                                <td>Incident Response (KSI-INR-AAR)</td>
+                                <td>&tau;</td>
+                                <td>Recovery speed (&asymp; 1/|&lambda;|)</td>
+                            </tr>
+                            <tr>
+                                <td>Recovery Planning (KSI-RPL-TRC)</td>
+                                <td>R</td>
+                                <td>Capacity to restore equilibrium after disruption</td>
+                            </tr>
+                            <tr>
+                                <td>Supply Chain Risk (KSI-SCR-MON)</td>
+                                <td>S</td>
+                                <td>Coupling strength to external perturbation sources</td>
+                            </tr>
+                            <tr>
+                                <td>Identity and Access Management (KSI-IAM-ELP)</td>
+                                <td>A</td>
+                                <td>Access surface and zero trust enforcement</td>
+                            </tr>
+                            <tr>
+                                <td>Policy and Inventory (KSI-PIY-GIV)</td>
+                                <td>P</td>
+                                <td>Completeness of state observation across resources</td>
+                            </tr>
+                            <tr>
+                                <td>Cloud Native Architecture (KSI-CNA-MAT)</td>
+                                <td>D</td>
+                                <td>Architectural resilience and decoupling</td>
+                            </tr>
+                            <tr>
+                                <td>Cybersecurity Education (KSI-CED-RST)</td>
+                                <td>E</td>
+                                <td>Human operator readiness within the feedback loop</td>
+                            </tr>
+                            <tr>
+                                <td>Authorization by FedRAMP (KSI-AFR-PVA)</td>
+                                <td>&Sigma;</td>
+                                <td>Aggregate system compliance with governance thresholds</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>The data exists. The interpretation is missing. Three methods to bridge the gap:</p>
+
+                    <ol>
+                        <li><strong>Track MTTR trends, not just MTTR values.</strong> A rising trend signals threshold approach even if the absolute value is still &ldquo;acceptable.&rdquo;</li>
+                        <li><strong>Watch for correlation spikes.</strong> When previously independent KSIs start moving together (vulnerability count rises as patch compliance falls as queue depth grows), the system is entering the threshold region.</li>
+                        <li><strong>Measure recovery after perturbations.</strong> When a new CVE drops or a major deployment occurs, how fast do your metrics return to baseline? Slower recovery = closer to threshold.</li>
+                    </ol>
+
+                    <h3>Course Correction: Tuning the Eigenvalue</h3>
+
+                    <p>If the eigenvalue tells you where you are, tuning it is how you steer. The goal is to shift the underlying dynamics. Push &lambda; further from zero, widen your stability margin.</p>
+
+                    <p>Interventions that shift eigenvalues toward stability:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Intervention</th>
+                                <th>How It Shifts &lambda;</th>
+                                <th>Observable Effect</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Add remediation capacity (staffing, automation)</td>
+                                <td>Strengthens corrective feedback</td>
+                                <td>MTTR drops, queue stabilizes</td>
+                            </tr>
+                            <tr>
+                                <td>Reduce deployment velocity temporarily</td>
+                                <td>Decreases perturbation rate</td>
+                                <td>Variance drops, recovery improves</td>
+                            </tr>
+                            <tr>
+                                <td>Improve detection fidelity (reduce false positives)</td>
+                                <td>Increases signal-to-noise ratio</td>
+                                <td>Triage throughput increases</td>
+                            </tr>
+                            <tr>
+                                <td>Decouple vulnerable subsystems</td>
+                                <td>Reduces cascade risk</td>
+                                <td>Cross-correlations weaken</td>
+                            </tr>
+                            <tr>
+                                <td>Implement security gates earlier in pipeline</td>
+                                <td>Prevents perturbations from entering production</td>
+                                <td>Introduction rate falls</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>Interventions that shift eigenvalues toward instability:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Intervention</th>
+                                <th>How It Shifts &lambda;</th>
+                                <th>Observable Effect</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Increase deployment velocity without capacity increase</td>
+                                <td>Perturbation rate exceeds recovery rate</td>
+                                <td>Queue grows, MTTR rises</td>
+                            </tr>
+                            <tr>
+                                <td>Reduce security staffing</td>
+                                <td>Weakens corrective feedback</td>
+                                <td>Recovery slows across all metrics</td>
+                            </tr>
+                            <tr>
+                                <td>Defer remediation to hit feature deadlines</td>
+                                <td>Accumulates vulnerability debt</td>
+                                <td>V grows, correlations increase</td>
+                            </tr>
+                            <tr>
+                                <td>Add new integrations without security review</td>
+                                <td>Increases coupling and attack surface</td>
+                                <td>Variance spikes after changes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>The art is reading the eigenvalue proxies and adjusting before you cross a threshold. A system showing critical slowing down (rising MTTR, growing correlations, increasing variance) needs intervention now. Not after the next audit.</p>
+
+                    <h3>The Regulatory Opportunity</h3>
+
+                    <p>FedRAMP 20x opened the door. The framework&rsquo;s emphasis on continuous evidence and capability demonstration creates the data infrastructure for eigenvalue-based governance. What&rsquo;s missing is the interpretive layer. The translation from raw KSIs to stability assessment.</p>
+
+                    <p>This is an opportunity for:</p>
+
+                    <ul>
+                        <li><strong>Cloud service providers</strong> to differentiate on demonstrated stability, not just compliance checkboxes</li>
+                        <li><strong>Authorizing officials</strong> to assess risk dynamically rather than annually</li>
+                        <li><strong>Third-party assessors</strong> to evaluate trajectory, not just current state</li>
+                        <li><strong>The FedRAMP PMO</strong> to evolve the framework toward explicit stability metrics</li>
+                    </ul>
+
+                    <p>The opportunity extends beyond federal compliance:</p>
+
+                    <p><strong>Financial services</strong> &mdash; from stress testing to stability assessment. Rating agencies like Moody&rsquo;s and S&amp;P already factor cyber risk into credit ratings, but crudely. Eigenvalue metrics make &ldquo;cyber risk&rdquo; quantifiable. Private equity and venture capital could conduct due diligence not on whether a company has SOC2, but whether it&rsquo;s stable or drifting toward threshold.</p>
+
+                    <p><strong>National security</strong> &mdash; CMMC is moving toward continuous assessment, but mission assurance is fundamentally about stability under adversarial conditions. The Defense Industrial Base includes thousands of suppliers whose security postures couple to national security outcomes. Supply chain resilience is about understanding which supplier failure cascades furthest. That&rsquo;s an eigenvalue question.</p>
+
+                    <p><strong>Insurance</strong> &mdash; cyber insurers struggle to price risk because they lack good models. Eigenvalue analysis offers granularity that wasn&rsquo;t possible before: pricing policies based on stability trends rather than checkbox audits, distinguishing organizations approaching thresholds from those with genuine margin.</p>
+
+                    <p>The same framework applies wherever complex systems meet risk: healthcare (patient safety as a dynamical systems problem), critical infrastructure (power grids, pipelines), manufacturing (production system resilience). The math doesn&rsquo;t care about the domain. Thresholds are thresholds.</p>
+
+                    <p>The math exists. The data increasingly exists. The gap is operational adoption. Organizations that close this gap will know they&rsquo;re approaching a threshold before they cross it &mdash; and will have the language to communicate that risk to stakeholders who understand trajectories, not just snapshots.</p>
+
+                    <h3>What to Do Tomorrow Morning</h3>
+
+                    <p>Translating this framework into operational changes does not require wholesale transformation. A security leader (CISO, SOC manager, senior analyst) can start with visibility into the dynamics already present. Pick one item from each category and iterate from there:</p>
+
+                    <ul>
+                        <li><strong>Map one feedback loop</strong> from trigger through action to outcome. Note whether it closes (output informs input) or stays open (output goes nowhere). Open loops cannot self-correct.</li>
+                        <li><strong>Identify one threshold parameter</strong> in your environment: staffing level, alert volume, deployment rate. Watch for the signatures of critical slowing down: rising recovery times, increasing correlations, growing queues.</li>
+                        <li><strong>Measure one eigenvalue proxy:</strong> track MTTR trend over 30 days, or measure how long your metrics take to stabilize after a significant CVE or deployment.</li>
+                        <li><strong>Calibrate one security gate</strong> based on observed data: what does it catch, what escapes, what gets bypassed? Adjust based on what the evidence shows, not what policy prescribes.</li>
+                        <li><strong>Model one coupling:</strong> if vendor X is compromised, what is the blast radius in your system? Prioritize monitoring on strongly coupled subsystems.</li>
+                    </ul>
+
+                    <p>The full picture emerges through iteration, not a single assessment.</p>
+
+                    <p>Our analyst is still at her desk. The queue is still growing.</p>
+
+                    <p>But now she has language for what she already knows. She&rsquo;s approaching a threshold. The rising MTTR, the correlations between her metrics, the growing queue. These are signals. The system is announcing where it&rsquo;s heading.</p>
+
+                    <p>The loops need to close. The eigenvalue needs to shift. And she&rsquo;s not outside the system looking in. She&rsquo;s the finger on the string, the threshold where the system&rsquo;s fate gets determined.</p>
+
+                    <p>Tomorrow morning, she&rsquo;ll start mapping the feedback loops.</p>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here's another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-22.html" class="read-more">engagement_divergence.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
 </body>
 </html>
