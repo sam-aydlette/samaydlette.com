@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>sam_aydlette</title>
+    <link>https://samaydlette.com</link>
+    <description>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</description>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 23 Mar 2026 00:00:00 +0000</lastBuildDate>
+    <atom:link href="https://samaydlette.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>Intent is All You Need (But It's Hard to Find)</title>
+      <link>https://samaydlette.com/pages/article-26.html</link>
+      <guid>https://samaydlette.com/pages/article-26.html</guid>
+      <pubDate>Mon, 23 Mar 2026 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>Agentic systems can easily become simulacra. Without governance anchored in genuine human intent, we get organizations that are perfectly, continuously, autonomously convinced they're secure... until reality proves otherwise.</description>
+    </item>
+    <item>
+      <title>GRC Engineering is Just... Engineering</title>
+      <link>https://samaydlette.com/pages/article-25.html</link>
+      <guid>https://samaydlette.com/pages/article-25.html</guid>
+      <pubDate>Thu, 05 Mar 2026 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>FedRAMP 20x isn't an overhaul of compliance. It is an extension of engineering best practices into compliance. In other words, compliance is now a function of Site Reliability Engineering.</description>
+    </item>
+    <item>
+      <title>Meditation on Writing</title>
+      <link>https://samaydlette.com/pages/article-24.html</link>
+      <guid>https://samaydlette.com/pages/article-24.html</guid>
+      <pubDate>Wed, 11 Feb 2026 00:00:00 +0000</pubDate>
+      <category>self-reflection</category>
+      <description>Attempting to capture what writing really means to me.</description>
+    </item>
+    <item>
+      <title>Living at the Threshold: Dynamical Systems Theory for Security Operations</title>
+      <link>https://samaydlette.com/pages/article-23.html</link>
+      <guid>https://samaydlette.com/pages/article-23.html</guid>
+      <pubDate>Sun, 08 Feb 2026 00:00:00 +0000</pubDate>
+      <category>cybersec_strategy</category>
+      <description>The mathematics of thresholds maps directly onto cybersecurity. Dynamical systems theory provides the vocabulary to describe how security operations actually works, and how to measure whether it's working.</description>
+    </item>
+    <item>
+      <title>Converging on Trust: Part Two - How The Engagement Model Diverges</title>
+      <link>https://samaydlette.com/pages/article-22.html</link>
+      <guid>https://samaydlette.com/pages/article-22.html</guid>
+      <pubDate>Tue, 13 Jan 2026 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>Systems that optimize on engagement diverge against trust. Exploring the security risks of engagement-optimization in generative AI platforms used by government.</description>
+    </item>
+    <item>
+      <title>Converging on Trust: Measuring The Effectiveness Of Security Outcomes Across Public and Private Incentives</title>
+      <link>https://samaydlette.com/pages/article-21.html</link>
+      <guid>https://samaydlette.com/pages/article-21.html</guid>
+      <pubDate>Thu, 18 Dec 2025 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>How public and private sector organizations with different incentive structures can converge on shared security goals through measurable trust.</description>
+    </item>
+    <item>
+      <title>Yes, You Can Automate That</title>
+      <link>https://samaydlette.com/pages/article-20.html</link>
+      <guid>https://samaydlette.com/pages/article-20.html</guid>
+      <pubDate>Thu, 11 Dec 2025 00:00:00 +0000</pubDate>
+      <category>compliance_automation</category>
+      <description>How a shift in perspective opens up automated validation and reporting, even for "non-technical" controls, and why this matters for modern compliance.</description>
+    </item>
+    <item>
+      <title>How to Assess Risk in 15 Minutes</title>
+      <link>https://samaydlette.com/pages/article-19.html</link>
+      <guid>https://samaydlette.com/pages/article-19.html</guid>
+      <pubDate>Thu, 06 Nov 2025 00:00:00 +0000</pubDate>
+      <category>risk_assessment</category>
+      <description>What if you could assess risk across any Cloud Service Provider in 15 minutes with nothing but a laptop, and repeat it continuously?</description>
+    </item>
+    <item>
+      <title>Why You Can't Buy Security (But You Can Build It)</title>
+      <link>https://samaydlette.com/pages/article-18.html</link>
+      <guid>https://samaydlette.com/pages/article-18.html</guid>
+      <pubDate>Wed, 22 Oct 2025 00:00:00 +0000</pubDate>
+      <category>Cybersecurity</category>
+      <description>There are many great cybersecurity tools on the market, but buying good tools won't automatically give you good security. Just as you can't buy a hammer and expect it to build a house, tools need capable operators in order for them to be effective.</description>
+    </item>
+    <item>
+      <title>while true: manage_risk()</title>
+      <link>https://samaydlette.com/pages/article-17.html</link>
+      <guid>https://samaydlette.com/pages/article-17.html</guid>
+      <pubDate>Wed, 08 Oct 2025 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>From ancient Greek navigators to predictive security: how feedback loops and self-adaptation are transforming government compliance.</description>
+    </item>
+    <item>
+      <title>On Jen Easterly and Military Values</title>
+      <link>https://samaydlette.com/pages/article-16.html</link>
+      <guid>https://samaydlette.com/pages/article-16.html</guid>
+      <pubDate>Thu, 11 Sep 2025 00:00:00 +0000</pubDate>
+      <category>military_values</category>
+      <description>A reflection on military service, integrity, and the implications of political decisions affecting those who have served.</description>
+    </item>
+    <item>
+      <title>Improving My Insight</title>
+      <link>https://samaydlette.com/pages/article-15.html</link>
+      <guid>https://samaydlette.com/pages/article-15.html</guid>
+      <pubDate>Fri, 29 Aug 2025 00:00:00 +0000</pubDate>
+      <category>intelligence_systems</category>
+      <description>It's important that we maintain access to fact-based, diverse perspectives on global and local issues that affect us. I've created an app that curates information from a wide range of reputable sources and creates custom daily reporting for me on events and trends that I care about.</description>
+    </item>
+    <item>
+      <title>Beyond the CVE Part 2: AI-Enhanced Contextual Vulnerability Management</title>
+      <link>https://samaydlette.com/pages/article-14.html</link>
+      <guid>https://samaydlette.com/pages/article-14.html</guid>
+      <pubDate>Mon, 18 Aug 2025 00:00:00 +0000</pubDate>
+      <category>ai_vulnerability_management</category>
+      <description>How artificial intelligence transforms vulnerability management from static data points into dynamic, context-aware intelligence that dramatically improves both accuracy and operational efficiency.</description>
+    </item>
+    <item>
+      <title>Beyond the CVE Part 1: Contextualizing Findings for Holistic Vulnerability Management</title>
+      <link>https://samaydlette.com/pages/article-13.html</link>
+      <guid>https://samaydlette.com/pages/article-13.html</guid>
+      <pubDate>Fri, 15 Aug 2025 00:00:00 +0000</pubDate>
+      <category>vulnerability_management</category>
+      <description>CVEs get a lot of attention, but they are at the tip of a pyramid when it comes to vulnerability management. This article contextualizes CVE findings to show teams how to build a solid foundation for effective vulnerability management.</description>
+    </item>
+    <item>
+      <title>The Rise of the "Transformation Engineer" - And Why Your Organization Must Empower Them</title>
+      <link>https://samaydlette.com/pages/article-12.html</link>
+      <guid>https://samaydlette.com/pages/article-12.html</guid>
+      <pubDate>Mon, 04 Aug 2025 00:00:00 +0000</pubDate>
+      <category>digital_transformation</category>
+      <description>A new type of engineer is emerging - the "transformation engineer." Understanding and empowering them may be crucial for competitive advantage in the tumultuous times ahead.</description>
+    </item>
+    <item>
+      <title>Compliance Reporting Is Easy - Validation Is The Hard Part</title>
+      <link>https://samaydlette.com/pages/article-11.html</link>
+      <guid>https://samaydlette.com/pages/article-11.html</guid>
+      <pubDate>Fri, 18 Jul 2025 00:00:00 +0000</pubDate>
+      <category>compliance_automation</category>
+      <description>Why most compliance automation fails at the engineering reality check, and how to build validation that actually works using unit and function tests.</description>
+    </item>
+    <item>
+      <title>Same Code, Every Government: How OPA Unlocks Global Markets</title>
+      <link>https://samaydlette.com/pages/article-10.html</link>
+      <guid>https://samaydlette.com/pages/article-10.html</guid>
+      <pubDate>Tue, 27 May 2025 00:00:00 +0000</pubDate>
+      <category>opa_policy</category>
+      <description>How Open Policy Agent (OPA) transforms compliance from a cost center into a competitive advantage for cloud service providers.</description>
+    </item>
+    <item>
+      <title>The Many Uses of an SBOM</title>
+      <link>https://samaydlette.com/pages/article-9.html</link>
+      <guid>https://samaydlette.com/pages/article-9.html</guid>
+      <pubDate>Wed, 14 May 2025 00:00:00 +0000</pubDate>
+      <category>sbom</category>
+      <description>Discover how Software Bills of Materials (SBOMs) are transforming cloud security and compliance practices.</description>
+    </item>
+    <item>
+      <title>Harden First, Patch Less: The Economics of Secure CI/CD</title>
+      <link>https://samaydlette.com/pages/article-8.html</link>
+      <guid>https://samaydlette.com/pages/article-8.html</guid>
+      <pubDate>Mon, 28 Apr 2025 00:00:00 +0000</pubDate>
+      <category>devsecops</category>
+      <description>Exploring why hardened components in your CI/CD pipeline are essential for security, from DIY approaches to vendor solutions.</description>
+    </item>
+    <item>
+      <title>When Complexity Itself Becomes the Most Critical Risk</title>
+      <link>https://samaydlette.com/pages/article-7.html</link>
+      <guid>https://samaydlette.com/pages/article-7.html</guid>
+      <pubDate>Fri, 18 Apr 2025 00:00:00 +0000</pubDate>
+      <category>cybersec_strategy</category>
+      <description>Exploring how complexity itself has emerged as a meta-risk that overshadows conventional cybersecurity threats.</description>
+    </item>
+    <item>
+      <title>See What Attackers See (Part II): Defining and Tracking An Inventory of Ephemeral Components</title>
+      <link>https://samaydlette.com/pages/article-6.html</link>
+      <guid>https://samaydlette.com/pages/article-6.html</guid>
+      <pubDate>Thu, 10 Apr 2025 00:00:00 +0000</pubDate>
+      <category>container_security</category>
+      <description>Learn how organizations can define and track ephemeral technology components in containerized environments.</description>
+    </item>
+    <item>
+      <title>See What Attackers See: Validating the Security of Public Asset Inventories Using Free, Open-Source Tools</title>
+      <link>https://samaydlette.com/pages/article-5.html</link>
+      <guid>https://samaydlette.com/pages/article-5.html</guid>
+      <pubDate>Tue, 25 Mar 2025 00:00:00 +0000</pubDate>
+      <category>cybersecurity</category>
+      <description>Learn how to ethically assess the thoroughness of public asset inventory practices using free, open-source tools like Nmap, Masscan, Amass, and Shodan.</description>
+    </item>
+    <item>
+      <title>DIY AI: Running an LLM On Any Standard Laptop For Free</title>
+      <link>https://samaydlette.com/pages/article-4.html</link>
+      <guid>https://samaydlette.com/pages/article-4.html</guid>
+      <pubDate>Thu, 13 Mar 2025 00:00:00 +0000</pubDate>
+      <category>artificial_intelligence</category>
+      <description>Learn how to unlock the power of AI on your ordinary laptop - no subscriptions, no privacy concerns, and no fancy hardware required.</description>
+    </item>
+    <item>
+      <title>Cost-Effective Vulnerability Management in AWS</title>
+      <link>https://samaydlette.com/pages/article-3.html</link>
+      <guid>https://samaydlette.com/pages/article-3.html</guid>
+      <pubDate>Tue, 25 Feb 2025 00:00:00 +0000</pubDate>
+      <category>cloud_security</category>
+      <description>How to implement a comprehensive vulnerability management workflow in AWS for under $50,000</description>
+    </item>
+    <item>
+      <title>Building a Compliance Automation Pipeline in AWS For Less Than $5000</title>
+      <link>https://samaydlette.com/pages/article-2.html</link>
+      <guid>https://samaydlette.com/pages/article-2.html</guid>
+      <pubDate>Sat, 01 Feb 2025 00:00:00 +0000</pubDate>
+      <category>compliance_as_code</category>
+      <description>How to implement compliance-as-code in AWS using GitOps and automated security control validation</description>
+    </item>
+    <item>
+      <title>Investigating ProtonVPN's Persistence Mechanisms: A Security Deep Dive</title>
+      <link>https://samaydlette.com/pages/article-1.html</link>
+      <guid>https://samaydlette.com/pages/article-1.html</guid>
+      <pubDate>Sun, 19 Jan 2025 00:00:00 +0000</pubDate>
+      <category>vpn_analysis</category>
+      <description>Going down the rabbit hole while attempting to uninstall ProtonVPN - persistence mechanisms and security implications</description>
+    </item>
+  </channel>
+</rss>
