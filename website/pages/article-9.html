@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Many Uses of an SBOM - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -66,7 +66,7 @@
                         The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
                     </div>
 
-                    <h3>What's an SBOM Anyway?</h3>
+                    <h3>What's an SBOM anyway?</h3>
                     <p>An SBOM is a list of ingredients for your software. Like a nutrition label on food, except it tells you there's too much Log4j instead of sugar. It's a machine-readable inventory of all components in your software including vendor code, open-source packages, and dependencies.</p>
                     
                     <p>Here's what a simple SBOM might look like in CycloneDX format:</p>
@@ -104,7 +104,7 @@
 
                     <p>This SBOM reveals your application uses three components: acme-library, spring-core, and log4j-core. When a vulnerability appears in log4j, you'll know exactly what to patch.</p>
 
-                    <h3>Why SBOMs Are Essential, Not Optional</h3>
+                    <h3>Why SBOMs are essential, not optional</h3>
                     <p>SBOMs are crucial for modern software environments. They're becoming a non-negotiable component of security and compliance. Organizations that adopt them gain advantages in risk management, incident response, and customer trust.</p>
 
                     <h4>Visibility into Supply Chain, Components and Infrastructure</h4>
@@ -128,7 +128,7 @@
                     <h4>Security Metrics That Matter</h4>
                     <p>SBOMs enable real-time security metrics that executives care about. These include Mean Time To Remediate (MTTR), percentage of late critical findings, or findings per engineering team. These metrics help justify security investments and prove program effectiveness beyond compliance checkboxes.</p>
 
-                    <h3>Getting Started with SBOMs: A Practical Guide</h3>
+                    <h3>Getting started with SBOMs: a practical guide</h3>
                     <p>Need SBOMs but not sure where to start? Here's how to implement them:</p>
                     
                     <h4>Step 1: Choose Your Tools</h4>
@@ -193,7 +193,7 @@ pipeline {
                         </code></pre>
                     </div>
 
-                    <h3>Common Challenges and How to Overcome Them</h3>
+                    <h3>Common challenges and how to overcome them</h3>
                     <p>Implementing SBOMs isn't always simple. Large environments can generate overwhelming volumes of SBOM data. Focus on proper data management through deduplication (avoiding identical components multiple times), structured databases instead of flat files, hierarchical SBOMs that allow for component reuse, and selective filtering to prioritize components with known vulnerabilities.</p>
                     
                     <p>Accuracy issues present another obstacle. No SBOM generator is perfect. Package URL (PURL) specifications provide a standardized way to identify components across ecosystems. Implement PURL to reduce identification errors and improve cross-referencing with vulnerability databases.</p>
@@ -202,7 +202,7 @@ pipeline {
                     
                     <p>SBOMs require governance to remain valuable. Establish clear ownership for SBOM accuracy between security and development teams, update policies that trigger SBOM regeneration when dependencies change, retention policies for historical SBOMs, and cryptographic attestation to verify SBOM integrity.</p>
 
-                    <h3>SBOMs in Action: A Security Incident</h3>
+                    <h3>SBOMs in action: a security incident</h3>
                     <p>Imagine a financial services company with an SBOM program. Their security team detects suspicious API calls from a customer data processing microservice. Without SBOMs, this could mean days of investigation and potential data exposure.</p>
                     
                     <p>With their SBOM system, they query their component inventory to identify everything in the affected microservice. Cross-referencing against recent vulnerabilities flags a third-party API client using a vulnerable JSON parser with a remote code execution flaw. They also instantly identify all other applications using the same vulnerable component.</p>
@@ -214,7 +214,7 @@ pipeline {
                     <p>Beyond security, they optimized cloud resources by identifying unused dependencies, reducing container sizes, and lowering cloud costs. The security team transformed from perceived roadblock to enabler of secure, efficient operations.</p>
 
                     <div class="conclusion">
-                        <h3>The Bottom Line</h3>
+                        <h3>The bottom line</h3>
                         <p>SBOMs bridge the gap between cloud infrastructure and security controls. They let organizations protect modern environments at the speed and scale of cloud development. Cloud security needs practical solutions that work without compromising speed and flexibility. SBOMs deliver exactly that.</p>
                     </div>
 
@@ -261,6 +261,6 @@ pipeline {
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

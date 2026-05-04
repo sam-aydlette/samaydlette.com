@@ -59,7 +59,7 @@ prepare_lambda() {
     # Install dependencies
     if [ -f "package.json" ]; then
         echo "Installing Node.js dependencies..."
-        npm install --production
+        npm ci --omit=dev
     fi
     
     # Copy policies to lambda directory

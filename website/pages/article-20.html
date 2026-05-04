@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yes, You Can Automate That - sam_aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -73,7 +73,7 @@
 
                     <p>In my view, things are both more nuanced and more interesting. Controls that seem inherently manual often have automatable components hiding in plain sight. The key is understanding what we're actually trying to measure and then building the technical infrastructure to capture that measurement when it needs to be measured. Sometimes the timing is continuous, other times it is periodic, but it happens automatically.</p>
 
-                    <h3>From Paper Trails to Data Pipelines</h3>
+                    <h3>From paper trails to data pipelines</h3>
 
                     <p>Consider AT-2, the awareness and training control from NIST 800-53. On the surface, this looks like the epitome of a "non-technical" control. It requires organizations to ensure personnel receive appropriate security awareness training and that privileged users get role-based training. Traditionally, this means someone manually compares training completion records against employee rosters, generates a report, and updates it quarterly or annually.</p>
 
@@ -83,7 +83,7 @@
 
                     <p>CSPs participating in the FedRAMP 20x Phase 2 pilot are proving that this works by pulling user data from identity provider APIs and comparing it to user data from training platform APIs continuously. I strongly encourage people to watch the public demonstrations where CSPs have shown this approach in action.</p>
 
-                    <h3>The Three Pillars of Compliance Automation</h3>
+                    <h3>The three pillars of compliance automation</h3>
 
                     <p>What makes this possible? Three technical capabilities that work together: APIs, policy engines, and GitOps workflows.</p>
 
@@ -95,7 +95,7 @@
 
                     <p>The combination is powerful. You can take controls that appear manual and non-technical, decompose them into measurable components, and automate the measurement and reporting.</p>
 
-                    <h3>Beyond Awareness and Training</h3>
+                    <h3>Beyond awareness and training</h3>
 
                     <p>AT-2 is just the beginning. Look at CM-3, configuration change control, which requires you to document changes and get approval before implementation. Traditional approaches involve change advisory boards meeting weekly to review spreadsheets. Automated approaches encode approval requirements in CI/CD pipelines, validate changes against policy engines before merge, and automatically document everything in git commits and pull request threads. The CAB still meets, but they're reviewing exceptions and edge cases, not every single change.</p>
 
@@ -103,7 +103,7 @@
 
                     <p>The pattern repeats across control families. Personnel security controls that verify background investigation currency? Pull from HR systems and government background investigation databases. Physical security controls for data centers? Pull from badge access systems and video surveillance APIs. Supply chain risk management? Pull from software composition analysis tools and integrate with procurement systems. All of these examples are both objective in terms of validating the control outcome and achievable by organizations with in-house engineering expertise (presumably, cloud service providers!)</p>
 
-                    <h3>The Future: Interactive Compliance</h3>
+                    <h3>The future: interactive compliance</h3>
 
                     <p>Forward-thinking organizations are already demonstrating that the approaches I'm describing work today. But for these approaches to transform government-wide risk management, we need something more fundamental. We need a trust infrastructure.</p>
 
@@ -121,7 +121,7 @@
 
                     <p>The technology already exists and is being built today. What's missing is the infrastructure layer that would let this data flow from CSPs to government agencies and back again.</p>
 
-                    <h3>What Still Requires Humans</h3>
+                    <h3>What still requires humans</h3>
 
                     <p>Policy decisions that involve balancing competing values require humans. When you're deciding whether to accept the risk of using a particular third-party service because it provides critical capabilities not available elsewhere, that's requires understanding mission context in a uniquely human manner.</p>
 
@@ -131,7 +131,7 @@
 
                     <p>The goal of compliance automation shouldn't be to remove human judgement but rather to position humans as the conductors and let automation handle shoveling coal into the engine. Let the machines do what machines do well and humans do what humans do well.</p>
 
-                    <h3>For Those Still Skeptical…</h3>
+                    <h3>For those still skeptical…</h3>
 
                     <p>The skepticism around compliance automation is understandable. We've been burned by "automated compliance" tools that are vaporware and marketing hype. We're rightly suspicious of anything that promises to make compliance easy because we know security is genuinely hard.</p>
 
@@ -184,6 +184,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

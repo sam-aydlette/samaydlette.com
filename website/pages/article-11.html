@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compliance Reporting Is Easy - Validation Is The Hard Part - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -72,21 +72,21 @@
 
                     <p>This is where compliance automation crashes into engineering reality, and where most initiatives die a quiet death in the gap between two worlds.</p>
 
-                    <h3>The Complexity Challenge</h3>
+                    <h3>The complexity challenge</h3>
                     <p>Compliance professionals live in a world of control reporting. Cryptographic protection, configuration management and vulnerability scanning controls exist as abstract requirements that are elegant in their simplicity.</p>
                     
                     <p>Engineers live in a world of extremely diverse and complex technology stacks, each with its own quirks and failure modes. This is where the abstract meets the concrete, and where most compliance automation efforts have historically failed.</p>
                     
                     <p>The traditional approach treats these as separate problems. Compliance teams define policies, and engineering teams implement controls. Auditors verify compliance through techniques shrouded in mystery. Everyone pretends this works until there's a breach, and then congress yells, "something must be done!" and the dysfunctional cycle repeats itself.</p>
 
-                    <h3>The Paradigm Shift - Treating Compliance Outcomes as Unit and Function Tests</h3>
+                    <h3>The paradigm shift - treating compliance outcomes as unit and function tests</h3>
                     <p>Software engineering actually solved this problem decades ago, they just haven't applied it to compliance. Via unit and function tests, every piece of code is tested to ensure that it does what it claims to do.</p>
                     
                     <p>The same principle applies to compliance controls. The only way to truly know that FIPS is enabled is to test it. The only way to truly know if STIGs are applied and vulnerabilities remediated or mitigated is to scan for them and validate the results.</p>
                     
                     <p>Specific, comprehensive unit and function testing for compliance outcomes baked into the deployment and monitoring process is the only approach that scales across the complex, heterogeneous environments that modern organizations actually run. And it's the only way to bridge the gap between compliance requirements and engineering implementation.</p>
 
-                    <h3>The Engineering Approach to Compliance</h3>
+                    <h3>The engineering approach to compliance</h3>
                     <p>Let's take a concrete example. Consider the challenge of validating that SC-13 (cryptographic protection), CM-3 (configuration management), and RA-5 (vulnerability scanning) are implemented for containers running a web server in AWS Elastic Container Service.</p>
                     
                     <p>The compliance requirement is straightforward: use FIPS-approved cryptography, apply security configurations, scan for vulnerabilities. The engineering reality is messier: verify FIPS mode at both kernel and OpenSSL levels, validate STIG implementation across the entire stack, scan container images while filtering out false positives and adjusting for actual risk.</p>
@@ -113,12 +113,12 @@ test_openssl_fips() {
                     
                     <p>For STIG and vulnerability verification, apply these same type of test as the example above but define specific failure thresholds and fail the test if those thresholds are exceeded. Tools like OpenSCAP and Grype may be used directly in the pipeline itself to verify status. Grype is nice because it even integrates with CISA KEV, VEX and Vulnrichment and EPSS for easy triage within the pipeline itself.</p>
 
-                    <h3>Putting It All Together: CI/CD Pipeline Integration</h3>
+                    <h3>Putting it all together: CI/CD pipeline integration</h3>
                     <p>The individual tests mean nothing in isolation. The power comes from integrating them into your development workflows, where they run automatically on every build and deployment.</p>
                     
                     <p>This pipeline runs the same way on every commit, whether you're using GitHub Actions, Jenkins, GitLab CI, or any other automation platform. The specific technology doesn't actually matter, only the principle does. Compliant outcomes become part of the development process.</p>
 
-                    <h3>Beyond the Theater</h3>
+                    <h3>Beyond the theater</h3>
                     <p>This approach scales across technology stacks precisely because it's based on verifiable technical properties rather than trust or documentation. Whether you're running Windows containers with IIS, Linux VMs with NGINX, or Kubernetes clusters with microservices, the same principle applies: test the actual implementation, not the intended implementation.</p>
                     
                     <p>The compliance evidence generated by these tests is structured data that proves specific controls are implemented correctly. This data can be fed into policy engines for automated decision-making, and even directly into real-time customer facing dashboards, but that's another story entirely.</p>
@@ -171,6 +171,6 @@ test_openssl_fips() {
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

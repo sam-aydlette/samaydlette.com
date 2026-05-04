@@ -104,8 +104,7 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({
                 message: 'Compliance check failed',
                 compliant: false,                              // Mark as non-compliant due to error
-                error: error.message,                         // What went wrong
-                stack: error.stack                            // Technical details for debugging
+                error: error.message                          // What went wrong
             })
         };
         

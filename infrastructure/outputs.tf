@@ -66,6 +66,18 @@ output "ssl_certificate_arn" {
   value       = data.aws_acm_certificate.website.arn
 }
 
+# Response headers policy ID. The CloudFront distribution is managed outside
+# this Terraform config, so attach this policy to the distribution's default
+# cache behavior manually:
+#   aws cloudfront get-distribution-config --id <DIST_ID> > dist.json
+#   # set DefaultCacheBehavior.ResponseHeadersPolicyId to this value, then:
+#   aws cloudfront update-distribution --id <DIST_ID> --if-match <ETAG> \
+#     --distribution-config file://dist.json
+output "cloudfront_response_headers_policy_id" {
+  description = "ID of the security-headers policy to attach to the CloudFront distribution"
+  value       = aws_cloudfront_response_headers_policy.website.id
+}
+
 # =============================================================================
 # NEW COMPLIANCE RESOURCES
 # =============================================================================

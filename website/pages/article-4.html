@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DIY AI - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -79,7 +79,7 @@
                     </ul>
                     <p>The code examples below work for Linux and Mac users. For Windows users, the commands require minor adjustments.</p>
 
-                <h3>Step 1: Setting Up the Environment</h3>
+                <h3>Step 1: setting up the environment</h3>
                     <p>First, let's create a dedicated Python virtual environment to keep our dependencies organized:</p>
                     <div class="code-block"><pre>
                         <pre><code>
@@ -96,7 +96,7 @@ source llm-env/bin/activate
                     </div>
                     <p>You'll know the environment is active when your command prompt shows <i>(llm-env)</i> at the beginning.</p>
 
-                <h3>Step 2: Installing Dependencies</h3>
+                <h3>Step 2: installing dependencies</h3>
                     <p>With our environment ready, let's install the necessary packages:</p>
                     <div class="code-block"><pre>
                         <pre><code>
@@ -112,7 +112,7 @@ pip install transformers sentencepiece protobuf
                     </div>
                     <p>Installing the CPU version of PyTorch significantly reduces download size and memory requirements, making this setup more accessible for laptops with limited resources.</p>
 
-                <h3>Step 3: Creating the TinyLlama Script</h3>
+                <h3>Step 3: creating the TinyLlama script</h3>
                     <p>Now, let's create a Python script to load and interact with TinyLlama. Create a new file called <i>run_tinyllama.py</i></p>
                     <div class="code-block"><pre>
                         <pre><code>
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         gc.collect()
                         </code></pre>
                     </div>
-                <h3>Step 4: Creating a Convenient Launcher</h3>
+                <h3>Step 4: creating a convenient launcher</h3>
                     <p>For ease of use, let's create a simple bash script that will activate our environment and run our Python script. Create a file called <i>run_llm.sh</i></p>
                     <div class="code-block"> 
                         <pre><code>
@@ -210,7 +210,7 @@ chmod +x run_llm.sh
                         </code></pre>
                     </div>
 
-                <h3>Step 5: Running TinyLlama</h3>
+                <h3>Step 5: running TinyLlama</h3>
                     <p>Now, let's launch our local LLM:</p>
                     <div class="code-block"><pre>
                         <pre><code>
@@ -220,7 +220,7 @@ chmod +x run_llm.sh
                     <p>The first time you run this, it will download the TinyLlama model, which is about 600MB. This may take a few minutes depending on your internet connection.</p>
                     <p>Once loaded, you'll see a prompt asking for input. Type your question or request, and TinyLlama will generate a response. Keep in mind that on a CPU, generation will be slower than commercial cloud-based services. Expect 20-60 seconds for a response depending on your hardware.</p>
 
-                <h3>Optimization Tips</h3>
+                <h3>Optimization tips</h3>
                     <p>If you're experiencing slow performance or memory issues, try these optimizations:</p>
                     <ol>
                         <li><strong>Reduce max_length</strong>: Change <code>max_length=256</code> to a smaller value like 128 or 64</li>
@@ -276,6 +276,6 @@ chmod +x run_llm.sh
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

@@ -26,7 +26,7 @@ cat > compliant-s3.json << EOF
       "Environment": "prod",
       "CostCenter": "website-ops",
       "DataClassification": "Public",
-      "Owner": "sam@samaydlette.com"
+      "Owner": "sam-aydlette"
     },
     "versioning_enabled": true,
     "encryption_enabled": true
@@ -78,7 +78,7 @@ cat > non-compliant-s3-encryption.json << EOF
       "Environment": "prod",
       "CostCenter": "website-ops",
       "DataClassification": "Public",
-      "Owner": "sam@samaydlette.com"
+      "Owner": "sam-aydlette"
     },
     "versioning_enabled": true,
     "encryption_enabled": false
@@ -105,7 +105,7 @@ cat > compliant-cloudfront.json << EOF
       "Environment": "prod",
       "CostCenter": "website-ops",
       "DataClassification": "Public",
-      "Owner": "sam@samaydlette.com"
+      "Owner": "sam-aydlette"
     },
     "viewer_protocol_policy": "redirect-to-https",
     "minimum_protocol_version": "TLSv1.2_2021"
@@ -133,7 +133,7 @@ cat > non-compliant-cloudfront.json << EOF
       "Environment": "prod",
       "CostCenter": "website-ops",
       "DataClassification": "Public",
-      "Owner": "sam@samaydlette.com"
+      "Owner": "sam-aydlette"
     },
     "viewer_protocol_policy": "allow-all",
     "minimum_protocol_version": "SSLv3"

@@ -41,7 +41,10 @@ env:
   AWS_REGION: us-east-2
   TERRAFORM_VERSION: 1.5.0
   OPA_VERSION: 0.57.0
-  NODE_VERSION: 18
+  # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
+  # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
+  OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986
+  NODE_VERSION: 22
 
 # =============================================================================
 # WHAT THIS WORKFLOW CAN DO
@@ -74,11 +77,11 @@ jobs:
     # Download code and install the tools needed for security checking
     # -------------------------------------------------------------------------
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     # Install infrastructure management tool
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # v2.0.3
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
@@ -86,29 +89,16 @@ jobs:
     # Install security policy checking tool
     - name: Setup OPA
       run: |
-        # Download with retry logic to handle network issues
-        for i in 1 2 3; do
-          echo "Download attempt $i..."
-          if curl -L --retry 3 --retry-delay 2 --connect-timeout 10 --max-time 60 \
-            -o opa https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static; then
-            echo "✅ Download successful"
-            break
-          else
-            echo "❌ Download attempt $i failed"
-            if [ $i -eq 3 ]; then
-              echo "All download attempts failed"
-              exit 1
-            fi
-            sleep 5
-          fi
-        done
+        curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
+          -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+        echo "${{ env.OPA_SHA256 }}  opa" | sha256sum -c -
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
         opa version
 
     # Install JavaScript runtime for Lambda functions
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
@@ -116,7 +106,7 @@ jobs:
 
     # Connect to AWS using stored credentials
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -135,7 +125,7 @@ jobs:
         aws_region      = "${{ env.AWS_REGION }}"
         environment     = "${{ github.event.inputs.environment || 'prod' }}"
         cost_center     = "${{ vars.COST_CENTER || 'website-ops' }}"
-        owner_email     = "${{ vars.OWNER_EMAIL || 'sam@samaydlette.com' }}"
+        owner           = "${{ vars.OWNER || 'sam-aydlette' }}"
         existing_ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
         existing_cloudfront_distribution_id = "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
         existing_s3_bucket_name = "samaydlette.com"
@@ -152,8 +142,8 @@ jobs:
     # -------------------------------------------------------------------------
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
-      run: npm install --production
-    
+      run: npm ci --omit=dev
+
     # Debug step to see what files exist (helpful for troubleshooting)
     - name: Debug Lambda directory
       working-directory: infrastructure
@@ -225,19 +215,12 @@ jobs:
     # Keep the validated plan and settings for the deployment job
     # -------------------------------------------------------------------------
     - name: Upload Terraform Plan Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       with:
         name: terraform-plan
         path: |
           infrastructure/tfplan
           infrastructure/tfplan.json
-        retention-days: 5
-
-    - name: Upload tfvars Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: terraform-tfvars
-        path: infrastructure/terraform.tfvars
         retention-days: 5
 
   # ===========================================================================
@@ -263,39 +246,51 @@ jobs:
     # SET UP SAME ENVIRONMENT AS SECURITY CHECK
     # -------------------------------------------------------------------------
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
+      uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # v2.0.3
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
         cache-dependency-path: infrastructure/lambda/package-lock.json
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
 
     # -------------------------------------------------------------------------
-    # GET BACK THE VALIDATED PLAN
+    # RE-RENDER tfvars FROM SECRETS (not persisted as an artifact)
     # -------------------------------------------------------------------------
-    - name: Download tfvars Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: terraform-tfvars
-        path: infrastructure/
+    - name: Create terraform.tfvars
+      working-directory: infrastructure
+      run: |
+        cat > terraform.tfvars << EOF
+        domain_name     = "${{ vars.DOMAIN_NAME || 'samaydlette.com' }}"
+        aws_region      = "${{ env.AWS_REGION }}"
+        environment     = "${{ github.event.inputs.environment || 'prod' }}"
+        cost_center     = "${{ vars.COST_CENTER || 'website-ops' }}"
+        owner           = "${{ vars.OWNER || 'sam-aydlette' }}"
+        existing_ssl_certificate_arn = "${{ secrets.SSL_CERTIFICATE_ARN }}"
+        existing_cloudfront_distribution_id = "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
+        existing_s3_bucket_name = "samaydlette.com"
+        cloudfront_price_class = "${{ vars.CLOUDFRONT_PRICE_CLASS || 'PriceClass_100' }}"
+        manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
+        compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
+        section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
+        EOF
 
     - name: Download Terraform Plan Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
       with:
         name: terraform-plan
         path: infrastructure/
@@ -305,8 +300,8 @@ jobs:
     # -------------------------------------------------------------------------
     - name: Install Lambda dependencies
       working-directory: infrastructure/lambda
-      run: npm install --production
-  
+      run: npm ci --omit=dev
+
     - name: Create Lambda deployment package
       working-directory: infrastructure
       run: |
@@ -585,7 +580,7 @@ jobs:
     
     # Keep compliance results for audit records
     - name: Upload Compliance Report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
       if: always()
       with:
         name: compliance-report
@@ -607,18 +602,18 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     # Scan infrastructure code for security issues
     - name: Run tfsec
-      uses: aquasecurity/tfsec-action@v1.0.3
+      uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
       with:
         soft_fail: true
 
     # Another security scanner with different focus
     - name: Run Checkov
       id: checkov
-      uses: bridgecrewio/checkov-action@master
+      uses: bridgecrewio/checkov-action@63fbdab56e22a18bbc16fdc5208c0d30a71f3a24 # v12.2937.0
       with:
         directory: .
         framework: terraform
@@ -655,7 +650,7 @@ jobs:
 
     # Upload results to GitHub Security tab
     - name: Upload Checkov Results
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
       if: always()
       with:
         sarif_file: checkov-results.sarif
@@ -675,7 +670,7 @@ jobs:
     # Create GitHub issue so failure doesn't get forgotten
     - name: Create Issue on Failure
       if: github.event_name == 'push'
-      uses: actions/github-script@v7
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
       with:
         script: |
           github.rest.issues.create({

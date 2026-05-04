@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pearls, PURLs and the FedRAMP 20x Inventory Problem - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
+    <!-- Apply theme immediately to prevent flash -->
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <!-- Skip Links for Accessibility -->
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <!-- Fixed Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#x25D0;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <!-- Mobile Menu Toggle -->
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="content">
+            <article class="article-card">
+                <div class="article-meta">
+                    <span class="article-date">2026-05-04</span>
+                    <span class="article-category">FedRAMP 20x</span>
+                </div>
+
+                <h2>Pearls, PURLs and the FedRAMP 20x Inventory Problem</h2>
+
+                <div class="article-content">
+                    <div class="disclaimer">
+                        The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                    </div>
+
+                    <p>Judee Sill recorded &ldquo;The Pearl&rdquo; on Heart Food in 1973. As I read the song, it&rsquo;s about a kind of authenticity that can&rsquo;t be performed. I&rsquo;ve been thinking about that song while thinking about FedRAMP 20x, because we are, at heart, trying to build a community across agencies, CSPs, 3PAOs, and oversight bodies that have no other reason to trust each other except via the artifacts we exchange. Trust that will last must be grounded in what&rsquo;s actually there. 20x is a serious attempt at putting that principle into practice, and it has a chance to fulfill it.</p>
+
+                    <p>I&rsquo;ve <a href="/pages/article-17.html">written before</a> about why I&rsquo;m excited for 20x. Continuous validation is the right paradigm shift, and the move from annual snapshots to live signal is overdue. But there&rsquo;s a structural gap that I think could fragment the program if it isn&rsquo;t closed: the bet that automated KSI validation makes inventory questions answerable without the need for a separate inventory deliverable. That bet only pays off if the KSIs themselves carry the references that make portfolio-level reasoning possible. They don&rsquo;t yet.</p>
+
+                    <p>KSIs produce real signal per system. But per-system signals don&rsquo;t compose into a portfolio view, and risk management at scale is the actual job. This gap isn&rsquo;t new. Rev 5 doesn&rsquo;t make it easy either. 20x can be the answer, but only if the inventory problem is addressed.</p>
+
+                    <p>This won&rsquo;t fix itself, at least not anytime soon. Fortunately, there is a viable path forward that we can coalesce around today.</p>
+
+                    <h3>What the Authorizing Official actually does</h3>
+
+                    <p>Under FISMA, an Authorizing Official makes a risk-based determination that the security posture of the information systems in their portfolio is acceptable for their agency&rsquo;s mission. &ldquo;Acceptable for the mission&rdquo; means an AO at a defense agency reasoning about what a compromise does to a warfighter&rsquo;s confidence in their data, and an AO at a benefits agency reasoning about citizens who can&rsquo;t afford a payment delay. It&rsquo;s a hard job. Portfolios are large and the threat clock is short.</p>
+
+                    <p>Now consider the AO&rsquo;s job in motion. CISA drops an Emergency Directive that requires the AO to identify affected resources across their authorized footprint within hours. That footprint includes three or four IaaS systems, twenty SaaS systems, and the third-party SaaS dependencies behind those. The query they need to run is: across all of this, what&rsquo;s the mission risk?</p>
+
+                    <p>I have sat in rooms where Federal ISSOs working for an AO tried to do this via multiple open spreadsheets and an outdated list of CSP technical contacts on a 9-inch laptop screen. Using the Rev 5 packages, this involves digging into the Integrated Inventory Workbooks (IIW) and the raw vulnerability scans and attempting to put together a risk assessment from those deliverables across dozens of systems. A Herculean task.</p>
+
+                    <p>Under the 20x paradigm, this problem remains. Ostensibly, the components being measured can be queried in near-real time. But this alone doesn&rsquo;t empower agencies to answer the question in the above scenario easily. CSPs can make individually reasonable inventory modeling decisions that don&rsquo;t reconcile across an agency&rsquo;s portfolio. For example, is Terraform represented by the configuration, the resources it instantiates, or both? Are containers identified by PURL, image digest, or both? Are VMs identified by IP address, cloud resource ID, hostname, or some union of these? Are &ldquo;internet reachable&rdquo; components counted as public IPs, public subnets, permissive security group rules, or what&rsquo;s actually receiving internet traffic? Each question has multiple defensible answers. Without a specification, every CSP picks differently. The AO querying across them gets lists that look comparable and aren&rsquo;t.</p>
+
+                    <p>The worst possible failure mode is when wrong or misleading answers are declared confidently.</p>
+
+                    <p>There is no construct in the current 20x model for an AO to query across all authorized services and get back a single answer. The data exists but it doesn&rsquo;t surface in a form that allows portfolio-level reasoning. So the real choice isn&rsquo;t &ldquo;KSI validation vs. inventory artifact.&rdquo; It&rsquo;s whether KSI signals carry standardized component references that compose across CSPs, or whether they stay locked inside per-vendor formats that don&rsquo;t.</p>
+
+                    <h3>The future no one wants</h3>
+
+                    <p>As a consequence, AOs may demand supplementary instance-level context as a condition of agency ATO. The &ldquo;reusable authorization&rdquo; promise &mdash; the raison d&rsquo;&ecirc;tre of FedRAMP &mdash; could fragment back into bilateral arrangements. We could end up with the worst of both worlds: continuous validation the AO doesn&rsquo;t actually use, plus per-agency artifact production that 20x was supposed to replace. The future of federal cloud compliance could be navigating a complex web of bilateral arrangements between large agencies and large CSPs, with smaller CSPs and agencies left to figure it out on their own. It&rsquo;s likely that this is already happening in some cases.</p>
+
+                    <p>The entire FedRAMP community has an incentive to prevent this. But addressing it requires a sustained degree of public/private coordination. The market has had roughly a decade to converge on cross-cloud inventory schemas and hasn&rsquo;t. It&rsquo;s unlikely to happen unless there is a concerted effort to do so.</p>
+
+                    <h3>What authentic looks like</h3>
+
+                    <p>Back to The Pearl. Authenticity isn&rsquo;t a story you tell about yourself. It is what is actually there. A community built on stories that don&rsquo;t match reality isn&rsquo;t a community.</p>
+
+                    <p>Federal cloud has the same property. What agencies need is the actual thing: KSI signals that name where they&rsquo;re signaling from, in a form that composes across CSPs. Not &ldquo;System X passed.&rdquo; &ldquo;System X passed, on these specific components, identified the same way everywhere.&rdquo;</p>
+
+                    <p>In the world of software supply chain, a <a href="https://github.com/package-url/purl-spec">PURL (Package URL)</a> is an OSS standard that gives a uniform identifier for software components across ecosystems. PURLs are how the OSS community names what is actually there, in a form anyone can verify and compare. The pun is the point. PURL is one instance of the authentic identifier pattern this program needs. But the pattern has to extend across the stack.</p>
+
+                    <h3>What a group of CSPs that wanted to solve this could ship</h3>
+
+                    <p>None of what follows requires capabilities that don&rsquo;t already exist.</p>
+
+                    <p><a href="https://slsa.dev/spec/v1.0/levels">SLSA L3</a> provenance and <a href="https://www.sigstore.dev/">Sigstore</a> signing OSS artifacts form the foundation. Many major CSPs are already doing this at scale, and the mechanics of implementing it are tractable. Every production deployment passes through CI that emits what was built, from what source, by what builder, using what inputs. The same CI emits an SBOM listing the components inside the artifact. Both are signed and pushed alongside the artifact. The cloud control plane records what came into existence with its native identifier. Each step references the prior step. The chain from commit to running pod is recorded as a side effect of normal operation.</p>
+
+                    <p>What&rsquo;s missing is the standard for how that chain gets surfaced inside the KSI signal itself. The hard part of knowing what&rsquo;s running, proving it came from a known source, in a known build, at a known time, is already solved. The federal inventory problem is specifying how that existing signal gets attached to the KSIs that CSPs are already reporting under 20x.</p>
+
+                    <p>Defining this standard is also tractable. Software components get identified by PURL. Cloud resources get identified by native cloud ID. For SaaS offerings built on cloud infrastructure, it really is that simple. For infrastructure-level hardware inventory, the path is less unified but real. <a href="https://cyclonedx.org/capabilities/hbom/">CycloneDX HBOM</a> extends the same schema already in scope for SBOM and is the most workable starting point; <a href="https://www.cisa.gov/resources-tools/resources/hardware-bill-materials-hbom-framework-supply-chain-risk-management">CISA&rsquo;s 2023 HBOM Framework</a> is the federal-aligned reference for what fields matter. Hardware identifiers ultimately rest on supplier-issued serials, so this won&rsquo;t be as clean as the software side, but it still composes.</p>
+
+                    <p>The change to the 20x model is subtle but consequential. A KSI today says a system passed a check. A KSI under this proposal says which specific components passed the check, named the same way across CSPs so they can be matched across systems and traced through dependencies. Inventory stops being a separate artifact and becomes a property of the validation signal itself. KSIs aggregate across CSPs because the components they evaluate are identified the same way everywhere.</p>
+
+                    <p>FedRAMP or a CSP consortium could publish the component-type schema that maps native cloud identifiers into normalized types. An EC2 instance, an Azure VM, a GCP Compute Engine VM, and a bare-metal Kubernetes node all project into &ldquo;compute instance&rdquo; with comparable attributes. CSPs apply the schema when they report their KSIs. No central inventory deliverable is required.</p>
+
+                    <p>Cross-portfolio queries still need to fan out across CSPs and compose the resulting agency-wide reporting. That can happen in agency tooling, in a federally-operated query service, or in third-party tools. This choice is about where the join happens, and with the inventory standard in place, it&rsquo;s flexible.</p>
+
+                    <p>With the above approach, if a CVE drops in a widely-used library, agencies are empowered to answer &ldquo;what is the overall impact on my mission?&rdquo; in minutes rather than weeks.</p>
+
+                    <h3>The pearl we&rsquo;re actually building</h3>
+
+                    <p>20x is a bet on a community of practice where validation is continuous and shared rather than periodic and siloed. The bet is good. But it only works if the validation signals carry enough information about what they&rsquo;re representing that an agency can compose them across their portfolio. That&rsquo;s a small change to what KSI signals contain, but it&rsquo;s the big difference. Otherwise the AO is structurally undercut, the program fragments, and the validation signal doesn&rsquo;t compose into the portfolio view an agency needs.</p>
+
+                    <p>The pearl is the thing you can&rsquo;t fake and can&rsquo;t borrow. The PURL is the technical version of the same idea. Without it, 20x risks becoming a simulacrum of continuous assurance. With it, FedRAMP fulfills its promise: a bridge that builds trust between organizations that would otherwise have no reason to extend it, but every reason to benefit when they do.</p>
+
+                    <div class="article-callback">
+                        <p>Like this article? Here&rsquo;s another you might enjoy...</p>
+                        <div class="article-footer">
+                            <a href="/pages/article-26.html" class="read-more">intent_is_all_you_need.md</a>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
+</body>
+</html>

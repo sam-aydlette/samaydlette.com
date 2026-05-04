@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beyond the CVE: Contextualizing Findings for Holistic Vulnerability Management - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -87,7 +87,7 @@
 
                     <p>Most organizations struggle with an overwhelming number of "critical" and "high" severity findings, making it difficult to prioritize remediation efforts effectively. By building a solid foundation that contextualize and triage CVE findings, teams can dramatically improve security outcomes.</p>
 
-                    <h3>Step 1: Knowing Where to Look - Properly Tracking Inventory Components</h3>
+                    <h3>Step 1: knowing where to look - properly tracking inventory components</h3>
                     <p>Before you can manage vulnerabilities, you need to know what assets you're protecting. Teams can track their dependencies and assets by using a combination of <strong>purl</strong> (Package URL) and <strong>Common Platform Enumeration (CPE)</strong>.</p>
 
                     <p>A <strong>purl</strong> is a standardized identifier format used to uniquely identify software packages and components across different ecosystems and package managers. Purls follow a structured format like:</p>
@@ -130,7 +130,7 @@
 
                     <p>Modern vulnerability scanners consume both identifier types. Build-time tools like Grype, Snyk and Dependabot focus heavily on purl-identified dependencies, while enterprise scanners like Qualys VMDR and Rapid7 InsightVM use CPE data for broader infrastructure coverage. The key integration point is ensuring your asset inventory feeds both identifier types into your vulnerability management platform.</p>
 
-                    <h3>Step 2: Knowing What to Fix - Vulnerability Findings</h3>
+                    <h3>Step 2: knowing what to fix - vulnerability findings</h3>
                     <p>Once you have comprehensive asset visibility, you need to understand what vulnerabilities actually mean. This requires familiarity with two key classification systems.</p>
 
                     <p><strong>Common Vulnerabilities and Exposures (CVE)</strong> represents the actual vulnerability. Each CVE entry represents a specific vulnerability discovered in real-world software or hardware, assigned a unique identifier like CVE-2021-44228 (the infamous Log4j vulnerability). When a security researcher discovers a vulnerability, it receives a CVE identifier that allows everyone in the security community to reference that exact vulnerability unambiguously.</p>
@@ -146,7 +146,7 @@
 
                     <p>Most vulnerability management platforms consume NVD feeds and cross-reference <strong>CWE</strong> data to provide context-rich vulnerability reports. This integration allows security teams to move beyond simple vulnerability counts to understand the root causes driving their risk exposure.</p>
 
-                    <h3>Step 3: Knowing When to Fix - CVSS, VEX and Vulnrichment</h3>
+                    <h3>Step 3: knowing when to fix - CVSS, VEX and Vulnrichment</h3>
                     <p>Raw vulnerability data, even when properly classified, still overwhelms most security teams. Effective prioritization requires additional context about severity, applicability, and real-world threat activity.</p>
 
                     <p><strong>Common Vulnerability Scoring System (CVSS)</strong> is a standardized framework for rating the severity of security vulnerabilities, providing a numerical score from 0.0 to 10.0 (with 10.0 being the most severe). However, <strong>CVSS</strong> scores should be considered alongside business context and threat intelligence rather than used as the sole determinant of remediation priority.</p>
@@ -160,7 +160,7 @@
 
                     <p><strong>CISA's Vulnrichment</strong> data is available through the NVD API and is integrated into enterprise security platforms. Leading vulnerability management platforms now highlight CISA's "Known Exploited Vulnerabilities" catalog, automatically flagging CVEs with evidence of active exploitation for immediate attention.</p>
 
-                    <h3>Putting It All Together</h3>
+                    <h3>Putting it all together</h3>
                     <p>Vulnerability management teams can track software, hardware and firmware components with <strong>purl</strong> and <strong>CPE</strong>, identify relevant CVEs within that scope, and then layer on contextual intelligence to make informed remediation decisions.</p>
 
                     <h4>Building Your Integrated Workflow</h4>
@@ -221,6 +221,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

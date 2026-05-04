@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AWS Vulnerability Management - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -68,7 +68,7 @@
                         Organizations today face the challenge of securing increasingly complex cloud environments while managing costs effectively. This article outlines how to build a comprehensive, automated vulnerability management pipeline for AWS-based serverless SaaS applications for under $50,000 annually. Our approach leverages cloud-native tools to deliver effective security operations across the full vulnerability lifecycle—from detection to remediation and reporting—without breaking the bank.
                     </div>
                     
-                    <h3>Key AWS Services for Vulnerability Management</h3>
+                    <h3>Key AWS services for vulnerability management</h3>
                     <p>Building an effective vulnerability management pipeline in AWS requires utilizing a combination of native security services. Here are the key components we'll leverage:</p>
                     <ul>
                         <li><strong>AWS Inspector</strong> - Automated vulnerability assessment for EC2 instances, container images, and Lambda functions</li>
@@ -83,12 +83,12 @@
                         <li><strong>AWS CloudTrail</strong> - Logging service that enables governance, compliance, and operational auditing</li>
                     </ul>
 
-                    <h3>Step 1: Detection</h3>
+                    <h3>Step 1: detection</h3>
                     <p>The first step in our pipeline is continuous detection of vulnerabilities across our serverless infrastructure. Configure AWS Inspector to perform automated assessments of your Lambda functions and container images. Enable GuardDuty to monitor for malicious activity and unauthorized behavior. Set up Security Hub as your central console for aggregating findings from these services.</p>
                     
                     <p>Implement a scheduled scanning cadence based on the criticality of different resources. For example, configure daily scans for critical production workloads and weekly scans for development environments. Use EventBridge rules to trigger additional, on-demand scans when new resources are deployed or significant changes are made to existing resources.</p>
 
-                    <h3>Step 2: Triage</h3>
+                    <h3>Step 2: triage</h3>
                     <p>Effective triage requires not just identifying vulnerabilities but understanding their actual risk to your environment. Implement a multi-faceted risk scoring approach using:</p>
                     
                     <ul>
@@ -100,24 +100,24 @@
                     
                     <p>Configure Security Hub custom insights to automatically categorize findings based on your calculated risk scores. Implement tagging across AWS resources to associate vulnerabilities with specific applications, teams, and business functions. Set up EventBridge rules to trigger SNS notifications for high-risk findings, ensuring prompt attention from the relevant teams.</p>
 
-                    <h3>Step 3: Tracking</h3>
+                    <h3>Step 3: tracking</h3>
                     <p>Create a structured system for tracking vulnerabilities through their lifecycle. Use Security Hub's integration with AWS Systems Manager to automatically create OpsItems from security findings. Implement a standardized set of status fields to track each vulnerability through states such as "identified," "in remediation," "awaiting verification," and "closed."</p>
                     
                     <p>Maintain clear ownership by mapping resources to responsible teams through AWS resource tags. Configure EventBridge rules to send reminders for vulnerabilities that remain open beyond defined SLAs. Use Security Hub's integration with Amazon S3 to maintain an immutable record of all findings and their resolution history for compliance and audit purposes.</p>
 
-                    <h3>Step 4: Remediation</h3>
+                    <h3>Step 4: remediation</h3>
                     <p>Automate remediation where possible to reduce manual effort and speed up vulnerability closure. Create Systems Manager Automation documents for standardized, repeatable fixes for common vulnerabilities. Design Lambda functions to implement patches or configuration changes for serverless resources when appropriate.</p>
                     
                     <p>For remediations requiring manual intervention, implement a workflow using Step Functions to coordinate the approval and implementation process. Configure AWS Config rules to enforce security standards and prevent deployment of non-compliant resources, shifting vulnerability management left in your development process.</p>
                     
                     <p>Maintain a knowledge base of common vulnerabilities and their solutions using AWS Systems Manager Documents, enabling teams to quickly implement proven fixes for recurring issues.</p>
 
-                    <h3>Step 5: Reporting</h3>
+                    <h3>Step 5: reporting</h3>
                     <p>Implement comprehensive reporting to track progress and demonstrate compliance. Create QuickSight dashboards connected to Security Hub findings stored in S3, providing visibility into key metrics like mean time to remediation, open vulnerabilities by severity, and remediation success rates.</p>
                     
                     <p>Configure CloudWatch to monitor the performance of your vulnerability management pipeline itself. Set up scheduled exports of security findings to S3 for long-term storage and compliance reporting. Implement CloudTrail for comprehensive auditing of all security-related actions, creating an audit trail that can be used to demonstrate compliance with regulatory requirements.</p>
 
-                    <h3>Augmenting Your Pipeline with a Bigger Budget</h3>
+                    <h3>Augmenting your pipeline with a bigger budget</h3>
                     <p>If your budget allows for additional investment beyond $50,000, consider these enhancements:</p>
                     
                     <h4>Third-Party Security Tools</h4>
@@ -210,6 +210,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

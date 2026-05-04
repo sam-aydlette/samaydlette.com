@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ProtonVPN Analysis - Samuel Aydlette</title>
-    <link rel="stylesheet" href="/assets/css/main.css?v=1770735715707">
-    <link rel="stylesheet" href="/assets/css/articles.css?v=1770735715707">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777891054481">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777891054481">
     <!-- Apply theme immediately to prevent flash -->
     <script>
         (function() {
@@ -72,7 +72,7 @@
 
                     <p>This all started when my wife said her computer was booting slower and "being weird." I booted her computer and noticed that indeed, it was booting up slowly. The computer was also flashing odd grey squares intermittently on the otherwise black screen in the bootup process. I began my investigation by checking the usual troublesome areas.</p>
 
-                    <h3>Initial Investigation</h3>
+                    <h3>Initial investigation</h3>
                     <p>First I looked at any programs that start automatically upon system boot that may be slowing things down. To do this, I checked for programs that automatically run at login. These programs are typically used for user-level services and background processes that need user interface access, such as menu bar apps, user-specific background services, or apps that need to display notifications.</p>
                     
                     <div class="code-block"><pre>
@@ -167,7 +167,7 @@
                         <code>/Users/username/.Trash/ProtonVPN.app/Contents/Library/LoginItems/ProtonVPNStarter.app/Contents/MacOS/ProtonVPNStarter</code></pre>
                     </div>
 
-                    <h3>Lessons Learned</h3>
+                    <h3>Lessons learned</h3>
                     <p>What a journey. I traversed hidden corners of the Unix-type operating system (MacOS is based on UNIX), had to temporarily disable security features, and got sneaky with files restarting processes from the Trash. The application employs multiple techniques commonly associated with malware, including running from the Trash after uninstallation, resisting termination commands, obscuring process names, and requiring system-level security features (SIP) to be disabled for complete removal.</p>
 
                     <div class="conclusion">
@@ -212,6 +212,6 @@
             </div>
         </div>
     </footer>
-    <script type="module" src="/assets/js/main.js?v=1770735715707"></script>
+    <script type="module" src="/assets/js/main.js?v=1777891054481"></script>
 </body>
 </html>

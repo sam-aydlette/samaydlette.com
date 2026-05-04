@@ -24,7 +24,6 @@
 #checkov:skip=CKV_AWS_68:CloudFront WAF adds ~$10/month cost, not justified for personal site
 #checkov:skip=CKV_AWS_174:Log4j WAF rules not applicable to static HTML/CSS/JS content
 #checkov:skip=CKV_AWS_86:CloudFront origin failover not needed for single S3 origin static site
-#checkov:skip=CKV_AWS_310:CloudFront response headers policy adds complexity for basic static site
 #checkov:skip=CKV_AWS_117:Lambda VPC configuration adds NAT Gateway costs (~$45/month)
 #checkov:skip=CKV_AWS_173:Lambda environment encryption not needed for non-sensitive config
 #checkov:skip=CKV_AWS_115:Lambda concurrent execution limits not required for low-traffic compliance checks
@@ -147,6 +146,68 @@ resource "aws_s3_bucket_public_access_block" "website" {
   }
 }
 
+# =============================================================================
+# CLOUDFRONT RESPONSE HEADERS POLICY
+# =============================================================================
+# Defines the security headers (HSTS, CSP, etc.) the CDN attaches to every
+# response. The CloudFront distribution itself is managed outside of Terraform
+# (referenced as a data source above), so this policy is created here and must
+# then be attached to the distribution's default cache behavior — see the
+# `cloudfront_response_headers_policy_id` output for the manual attach step.
+#
+# CSP note: the site has an inline theme-detection <script> in every HTML page,
+# so the policy currently allows 'unsafe-inline' for scripts. To tighten further,
+# move that script into /assets/js/ and drop 'unsafe-inline'.
+# =============================================================================
+resource "aws_cloudfront_response_headers_policy" "website" {
+  name    = "${replace(var.domain_name, ".", "-")}-security-headers"
+  comment = "Baseline security headers for ${var.domain_name}"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ])
+      override = true
+    }
+
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+}
+
 # Set up permissions so only CloudFront can access my S3 bucket
 resource "aws_s3_bucket_policy" "website" {
   bucket     = data.aws_s3_bucket.website.id
@@ -190,7 +251,7 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Public"
-    Owner              = var.owner_email
+    Owner              = var.owner
   }
 
   lifecycle {
@@ -245,7 +306,7 @@ resource "aws_iam_role" "lambda_opa" {
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
-    Owner              = var.owner_email
+    Owner              = var.owner
   }
 }
 
@@ -264,7 +325,7 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:*:*:*"
+        Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance:*"
       },
       {
         Effect = "Allow"
@@ -277,13 +338,6 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "${data.aws_s3_bucket.website.arn}/*"
         ]
       },
-      {
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt"
-        ]
-        Resource = "*"
-      }
     ]
   })
 }
@@ -302,7 +356,7 @@ resource "aws_lambda_function" "opa_compliance" {
   function_name   = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   role            = aws_iam_role.lambda_opa.arn
   handler         = "index.handler"
-  runtime         = "nodejs20.x"
+  runtime         = "nodejs22.x"
   timeout         = 60
   source_code_hash = data.local_file.lambda_zip.content_base64sha256
 
@@ -317,7 +371,7 @@ resource "aws_lambda_function" "opa_compliance" {
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
-    Owner              = var.owner_email
+    Owner              = var.owner
   }
 }
 
@@ -340,7 +394,7 @@ resource "aws_cloudwatch_event_rule" "opa_compliance" {
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
-    Owner              = var.owner_email
+    Owner              = var.owner
   }
 }
 

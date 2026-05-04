@@ -46,10 +46,10 @@ variable "cost_center" {
 }
 
 # Who is responsible for managing these resources
-variable "owner_email" {
-  description = "Email of the resource owner"
+variable "owner" {
+  description = "Owner identifier for the AWS Owner tag (handle/team, not email — tags are visible in cost reports and resource metadata)"
   type        = string
-  default     = "sam@samaydlette.com"
+  default     = "sam-aydlette"
 }
 
 # =============================================================================
@@ -63,6 +63,7 @@ variable "owner_email" {
 variable "existing_cloudfront_distribution_id" {
   description = "ID of the existing CloudFront distribution (e.g., E1234567890123)"
   type        = string
+  sensitive   = true
 }
 
 # Name of my existing S3 bucket (usually matches the domain name)
@@ -84,6 +85,7 @@ variable "existing_ssl_certificate_arn" {
   description = "ARN of the existing SSL certificate in us-east-1"
   type        = string
   default     = ""
+  sensitive   = true
 }
 
 # =============================================================================
