@@ -30,10 +30,13 @@ output "s3_bucket_arn" {
   value       = data.aws_s3_bucket.website.arn
 }
 
-# The ID of my CloudFront distribution that serves my website
+# The ID of my CloudFront distribution that serves my website.
+# Marked sensitive because var.existing_cloudfront_distribution_id is sensitive,
+# and Terraform propagates that to the data source's `id` attribute.
 output "cloudfront_distribution_id" {
   description = "ID of the existing CloudFront distribution"
   value       = data.aws_cloudfront_distribution.website.id
+  sensitive   = true
 }
 
 # The full AWS identifier for my CloudFront distribution
