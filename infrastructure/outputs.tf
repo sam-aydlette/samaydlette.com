@@ -78,7 +78,7 @@ output "ssl_certificate_arn" {
 #     --distribution-config file://dist.json
 output "cloudfront_response_headers_policy_id" {
   description = "ID of the security-headers policy to attach to the CloudFront distribution"
-  value       = aws_cloudfront_response_headers_policy.website.id
+  value       = var.create_response_headers_policy ? aws_cloudfront_response_headers_policy.website[0].id : "Not created (set create_response_headers_policy = true after granting IAM perms)"
 }
 
 # =============================================================================

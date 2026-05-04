@@ -180,3 +180,13 @@ variable "create_eventbridge_rules" {
   type        = bool
   default     = true
 }
+
+# Whether to create the CloudFront response headers policy. Requires the deployer
+# IAM principal to have cloudfront:CreateResponseHeadersPolicy (and friends).
+# Default is false so deploys don't fail when the permission isn't yet granted.
+# Flip to true once the IAM policy has been attached to the CI user.
+variable "create_response_headers_policy" {
+  description = "Whether to create the CloudFront response headers policy"
+  type        = bool
+  default     = false
+}

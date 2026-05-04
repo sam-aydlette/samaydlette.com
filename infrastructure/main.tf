@@ -160,6 +160,8 @@ resource "aws_s3_bucket_public_access_block" "website" {
 # move that script into /assets/js/ and drop 'unsafe-inline'.
 # =============================================================================
 resource "aws_cloudfront_response_headers_policy" "website" {
+  count = var.create_response_headers_policy ? 1 : 0
+
   name    = "${replace(var.domain_name, ".", "-")}-security-headers"
   comment = "Baseline security headers for ${var.domain_name}"
 
