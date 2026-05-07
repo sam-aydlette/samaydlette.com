@@ -1,0 +1,103 @@
+/* =============================================================================
+   SUPPORT.CSS - Donation page styles
+   =============================================================================
+   Page-specific styles for /pages/support.html. Lives here rather than in an
+   inline <style> block so the page CSP can drop 'unsafe-inline' from style-src.
+   ============================================================================= */
+
+.donate-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-2xl);
+    margin-bottom: var(--space-2xl);
+    box-shadow: 0 2px 8px var(--shadow-subtle);
+    transition: all 0.3s ease;
+}
+
+.donate-header {
+    text-align: center;
+    margin-bottom: var(--space-2xl);
+}
+
+.coffee-emoji {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--space-md);
+}
+
+.donate-title {
+    font-size: var(--font-size-2xl);
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+.donate-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.donation-options {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+    flex-wrap: wrap;
+}
+
+.donation-item {
+    text-align: center;
+}
+
+.donation-amount {
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.donation-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+}
+
+.custom-donation {
+    margin-top: var(--space-xl);
+    text-align: center;
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border-color);
+}
+
+.payment-info {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.payment-info p {
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.code-comment {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+}
+
+@media (max-width: 767px) {
+    .donation-options {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .donate-container {
+        padding: var(--space-lg);
+    }
+}

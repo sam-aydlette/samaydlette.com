@@ -78,7 +78,22 @@ s3_bucket_violations[violation] {
     violation := {
         "type": "encryption_disabled",
         "message": "S3 bucket server-side encryption must be enabled",
-        "severity": "HIGH", 
+        "severity": "HIGH",
+        "resource": input.resource.name
+    }
+}
+
+# Flag S3 buckets that don't have public access fully blocked. Evaluated at
+# both deploy time (terraform-plan.sh populates this from
+# aws_s3_bucket_public_access_block resources) and at runtime (the Lambda
+# populates it from GetPublicAccessBlock API calls).
+s3_bucket_violations[violation] {
+    input.resource.type == "aws_s3_bucket"
+    not input.resource.public_access_blocked
+    violation := {
+        "type": "public_access_not_fully_blocked",
+        "message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
+        "severity": "HIGH",
         "resource": input.resource.name
     }
 }
@@ -242,6 +257,9 @@ compliance_report := {
         "accessibility": count(accessibility_violations)
     },
     "violations": all_violations,                        # List of all problems
-    "timestamp": time.now_ns(),                         # When this check ran
-    "policy_version": "1.0"                             # Version of these rules
+    # The emitter (terraform-plan.sh or the runtime Lambda) supplies the
+    # observation timestamp via the KSI signal's `emitted_at`; not duplicated
+    # here. This also keeps the rule pure so it compiles to Wasm cleanly
+    # without needing the host to provide time.now_ns().
+    "policy_version": "1.0"                              # Version of these rules
 }

@@ -1,52 +1,113 @@
 # Sam's Website for Everything Going On
 
-This is the central hub for what's going on with me. This repository also shows how to build **compliance automation**. I use Open Policy Agent (OPA) to automatically check infrastructure security and accessibility standards.
+This is the central hub for what's going on with me. The repository also doubles as a working example of **compliance automation**: every deploy passes an OPA policy gate, GitOps drives every change, and the pipeline derives two compliance reports from a single canonical inventory of the system's components — a Sigstore-signed FedRAMP 20x KSI signal and a NIST OSCAL Rev 5 System Security Plan, re-expressing the same state in two control vocabularies. A daily Lambda re-validates the live AWS configuration to keep both reports honest.
 
 ## What This Repository Demonstrates About Compliance Automation
 
-- **Pre-deployment validation** - Catch violations before they reach production
-- **Real-world policy writing** - Beyond basic examples, see policies that handle edge cases
-- **Cost-aware compliance** - How to balance security with budget constraints
-- **Automated accessibility testing** - Section 508 compliance checking in CI/CD
-- **Production monitoring** - Lambda functions that continuously check compliance
+- **Pre-deployment validation** — OPA evaluates the Terraform plan and the static content before any AWS resource is touched. Violations block the deploy.
+- **Real-world policy writing** — Policies that go past trivial examples to handle attribute-only resources, content checks, and severity gating.
+- **Cost-aware compliance** — Documented trade-offs for which controls are on, off, and why.
+- **Automated accessibility testing** — Section 508 checks run in the same gate as the infrastructure checks; same shape, same reporting.
+- **Continuous runtime validation** — A Lambda re-validates the live AWS configuration on a schedule against what was deployed.
+- **A KSI signal informed by a canonical inventory** — Every deploy publishes a JSON document at `/.well-known/ksi-signal.json` containing (1) a snapshot of this system's canonical inventory (PURL for software, ARN paired with a normalized type for cloud resources, sha256 for static artifacts) and (2) policy results attached to specific inventory components by reference, signed via Sigstore keyless. The inventory is the layer; the signal is one report built on it. SBOMs, vulnerability scans, license reports, and configuration drift reports could all ride on the same layer. See [docs/ksi-signal.md](docs/ksi-signal.md) for the full reference.
+- **An OSCAL Rev 5 System Security Plan** — Every deploy also generates and publishes a NIST OSCAL System Security Plan at `/.well-known/oscal-ssp.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. 192 NIST 800-53 Rev 5 implemented-requirements with differentiated `implementation-status` (implemented / partial / not-applicable) and FedRAMP-style `control-origination` (sp-system / sp-corporate / shared / inherited) per control, plus an actual implementation statement per control rather than a mass-assigned default. Two views of the same truth: the KSI signal is the wire format; the OSCAL SSP is the human-and-tool-friendly compliance artifact.
 
 ## How the Compliance Pipeline Works
 
 ```bash
-# Every deployment goes through this compliance gate:
-terraform plan → OPA policy check → deploy only if compliant
+# Every deployment goes through this gate:
+terraform plan
+    → OPA policy check (infrastructure + accessibility)
+    → terraform apply
+    → build KSI signal (joins state + package-lock + content hashes + provenance + validations)
+    → cosign sign-blob (Sigstore keyless via GitHub OIDC)
+    → publish ksi-signal.json + ksi-signal.bundle to /.well-known/
+    → invalidate CloudFront
 
-# Policies run against the infrastructure plan:
+# All run in one make target:
 make pipeline
 ```
 
-**What's Different:** Instead of checking compliance after deployment (when it's expensive to fix), we validate everything upfront. No non-compliant infrastructure ever gets created.
+**What's Different:** Compliance is not just a gate. It is also an output. Every deploy emits a structured, signed KSI signal naming what was deployed, what was validated, and how to verify it. The signal is informed by a canonical inventory of components — names that are global by construction (PURL, ARN, sha256) — so a consumer can curl the document from any machine, validate it against the schema, verify the cosign bundle against the public Sigstore transparency log, and join validations to components by reference. The canonical inventory layer is what makes the signal compose across CSPs and across systems within a portfolio without a separate inventory deliverable; the signal is one report on top of it.
 
-## Try It
+## KSI Signal
 
-You need:
-- S3 bucket (named after your domain)
-- CloudFront distribution  
-- SSL certificate in ACM (us-east-1 region)
-- Route53 hosted zone (optional)
+Every deploy emits a **KSI signal** at `/.well-known/ksi-signal.json` — a validation report informed by a canonical inventory of this system's components.
+
+Two layers, one document:
+
+- **Canonical inventory** (`components[]`): every component of this system named in canonical form. PURL for software (`pkg:npm/<name>@<version>`), ARN paired with a normalized type (`object_store`, `cdn_distribution`, `function`) for cloud resources, content hash for static artifacts, HBOM reference for hardware. Two reports of the same thing produce bit-identical identifiers, so anything referencing the inventory composes across systems without reconciliation.
+- **Validation report** (`validations[]`): policy results from the OPA gate, each one attached to the specific inventory components it evaluated via `component_refs[]`. The report rides on the inventory layer.
+
+The inventory is the architectural primitive. The signal is one report built on it. SBOMs, vulnerability scans, license reports, configuration drift reports could all be other reports referencing the same inventory layer; what composes across systems is whatever is built on the inventory, not just this one report.
+
+The signal joins five sources into one document:
+
+- **Cloud resources** from Terraform state, with the post-apply ARN as `native_id` and a normalized `type` (`object_store`, `cdn_distribution`, `function`).
+- **Software components** from the Lambda's `package-lock.json`, identified by Package URL (`pkg:npm/<name>@<version>`).
+- **Static artifacts** from every HTML file under `website/`, identified by SHA-256 content hash.
+- **Provenance** from GitHub Actions environment variables (repository, commit SHA, workflow run ID).
+- **Validations** from the OPA gate, each one carrying a `component_refs[]` array naming the specific inventory components it evaluated.
+
+For a browser-friendly view of the live signal and SSP, see the [Live Trust Dashboard](https://samaydlette.com/viewer.html). For programmatic access:
 
 ```bash
-# 1. Clone and setup
-git clone <your-repo-url>
-cd <repo-name>
+# The signal is published live; anyone can fetch it.
+curl -s https://samaydlette.com/.well-known/ksi-signal.json | jq '{
+  signal_id, emitted_at, csp, system_id,
+  component_count: (.components | length),
+  validation_count: (.validations | length),
+  attestation: .provenance.attestation.format
+}'
 
-# 2. Install OPA (automated in scripts)
-curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
-chmod 755 ./opa && sudo mv opa /usr/local/bin
-
-# 3. Configure your deployment
-cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
-# Edit terraform.tfvars with your AWS resource IDs
-
-# 4. Deploy with compliance checking
-cd infrastructure
-make pipeline
+# It is signed via Sigstore keyless; anyone can verify it.
+curl -O https://samaydlette.com/.well-known/ksi-signal.json
+curl -O https://samaydlette.com/.well-known/ksi-signal.bundle
+cosign verify-blob \
+  --bundle ksi-signal.bundle \
+  --certificate-identity-regexp 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ksi-signal.json
 ```
+
+A separate Lambda re-validates the live AWS configuration on a schedule and publishes a runtime signal at `/.well-known/ksi-signal-runtime.json` with the same shape but `emitter: "runtime"`. Drift between the deploy-time and runtime signals is detectable from outside.
+
+For the schema, the component vocabulary, the join semantics, and the cross-CSP normalization decisions, see [docs/ksi-signal.md](docs/ksi-signal.md).
+
+## OSCAL Rev 5 SSP
+
+Alongside the KSI signal, every deploy generates a NIST OSCAL System Security Plan in the FedRAMP Rev 5 Moderate baseline shape, published at `/.well-known/oscal-ssp.json`.
+
+```bash
+curl -s https://samaydlette.com/.well-known/oscal-ssp.json | jq '{
+  uuid: ."system-security-plan".uuid,
+  oscal_version: ."system-security-plan".metadata."oscal-version",
+  controls: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
+  components: (."system-security-plan"."system-implementation".components | length)
+}'
+```
+
+The SSP is deterministically generated from two inputs: the canonical inventory in the live KSI signal, and the FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, source: FRMR.KSI). Each in-scope NIST 800-53 control is an `implemented-requirement` entry with a differentiated `implementation-status` (implemented / partial / not-applicable), a FedRAMP-style `control-origination` (sp-system / sp-corporate / shared / inherited), and an actual prose implementation statement — either explicit (for controls the system actively implements with traceable evidence) or family-level (for controls handled at the family level, with rationale that names how AWS-inherited / sole-operator-attested / N/A applies). Each requirement also links to (a) the contributing KSIs, (b) the live KSI signal as evidence, (c) the Sigstore bundle that signs it, and (d) the documentation file that records the implementation rationale. Reading the SSP at any time gives a Rev 5-shaped view of the same compliance state the KSI signal represents in 20x-shape; the two views never disagree because they're derived from the same source.
+
+The SSP is not currently signed independently. The signed KSI signal is the verifiable root; the SSP references it as evidence. A natural extension would sign the SSP as well, with the same Sigstore chain.
+
+For the full reference, see [docs/ksi-signal.md](docs/ksi-signal.md).
+
+## Compliance Documentation
+
+The repository ships a documentation set that closes 27 KSI indicators with rationales, runbooks, and review templates. Each file is referenced by the OSCAL SSP's per-control `links`, and by the KSI signal's `validations[]` indirectly via the OPA gate that produces them.
+
+| File | KSIs addressed | Purpose |
+|------|---------------|---------|
+| [`docs/ksi-signal.md`](docs/ksi-signal.md) | KSI-PIY-01, KSI-MLA-07, KSI-CNA-08, KSI-SVC-05 | Schema, join semantics, normalization decisions, verification |
+| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-04, KSI-CNA-01/03/05/06, KSI-IAM-04, KSI-MLA-01/02/08, KSI-PIY-04, KSI-SVC-01/06/08/09 | ADR-style records of architectural decisions per KSI |
+| [`docs/incident-response.md`](docs/incident-response.md) | KSI-INR-01, KSI-INR-02, KSI-INR-03 | IR runbook with detection sources, triage, after-action template |
+| [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-01, KSI-RPL-02, KSI-RPL-03, KSI-RPL-04 | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
+| [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-06 | Annual security review template + first entry |
+| [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-TPR-03, KSI-TPR-04 | SCRM with Dependabot config in `.github/dependabot.yml` |
+| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-01, KSI-CED-02, KSI-CED-03, KSI-CED-04 | Self-attested training log for the sole operator |
+| [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans |
+| [`website/.well-known/security.txt`](website/.well-known/security.txt) | KSI-PIY-03 | RFC 9116 vulnerability disclosure |
 
 ## Real-World Costs
 
@@ -68,6 +129,7 @@ make pipeline
 - **Basic OPA Policies:** Infrastructure compliance validation
 - **CI/CD Pipeline:** Automated deployment with rollback capabilities
 - **Cost Optimization:** Suppressed non-essential security features with documentation
+- **KSI Signal (informed by a canonical inventory):** Schema, deploy-time emitter, runtime emitter, and Sigstore-signed bundle published at `/.well-known/`. See [docs/ksi-signal.md](docs/ksi-signal.md).
 
 ### Example Implementation
 - **Section 508 Accessibility:** Basic HTML validation (demonstrates concept)
@@ -79,20 +141,48 @@ make pipeline
 - **Multi-Region Deployment:** Active-passive failover configuration
 - **Advanced Security Monitoring:** Integration with AWS Security Hub
 
+### Tracked POA&M items
+
+Known security gaps with remediation plans documented in [`docs/poam.md`](docs/poam.md):
+
+- **POAM-001:** Migrate the deployer from long-lived AWS access keys to GitHub OIDC role assumption. (Medium severity; the Sigstore signing chain in this repo already proves the OIDC pattern works for cosign — POAM-001 extends it to AWS.)
+- **POAM-002:** Sign the runtime KSI signal cryptographically (currently trusted implicitly via S3 + IAM). (Low for PoC, Medium in portfolio context; KMS asymmetric signing is the proposed approach.)
+
 ## Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Website Files │───▶│   S3 Bucket      │───▶│   CloudFront    │
-│   (HTML/CSS/JS) │    │   (Origin)       │    │   (CDN)         │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   OPA Policies  │───▶│   Lambda         │    │   Route53       │
-│   (Compliance)  │    │   (Monitoring)   │    │   (DNS)         │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+   ┌─────────────────────┐                AWS
+   │  GitHub Actions     │     ┌─────────────────────────────────────────────┐
+   │  ─────────────────  │     │                                             │
+   │  - OPA gate         │ ──▶ │   ┌────────────────┐    ┌──────────────┐    │
+   │  - terraform apply  │     │   │ S3: site files │ ◀─ │ CloudFront   │    │
+   │  - build KSI signal │     │   │ /.well-known/  │    │ (TLS 1.2+,   │    │
+   │  - cosign sign-blob │     │   └────────────────┘    │  HSTS, CSP)  │    │
+   │  - sync to S3       │     │           ▲             └──────────────┘    │
+   └─────────────────────┘     │           │                                 │
+            │                  │   ┌───────┴────────┐                        │
+            │                  │   │ Lambda:        │ ◀─── EventBridge       │
+            ▼                  │   │ runtime KSI    │      (rate(1 day))     │
+    /.well-known/              │   │ emitter        │                        │
+    ksi-signal.json            │   └────────────────┘                        │
+    ksi-signal.bundle          │                                             │
+    ksi-signal.schema.json     └─────────────────────────────────────────────┘
+    (deploy-time, signed)                                          │
+                                                                   ▼
+                                                       /.well-known/
+                                                       ksi-signal-runtime.json
+                                                       (continuously updated)
 ```
+
+The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI signal (deploy-time + runtime), its Sigstore bundle, the schema both signals conform to, and the OSCAL Rev 5 SSP derived from them:
+
+| Path | Producer | Cadence | Signed |
+|------|----------|---------|--------|
+| `/.well-known/ksi-signal.json` | CI emitter, `scripts/build-ksi-signal.py` | Every push to `main` | Yes (Sigstore keyless via GitHub OIDC) |
+| `/.well-known/ksi-signal.bundle` | `cosign sign-blob` in CI | Every push to `main` | (the bundle itself) |
+| `/.well-known/ksi-signal-runtime.json` | Lambda, `infrastructure/lambda/index.js` | EventBridge schedule (default daily) | No (PoC) — implicitly trusted via S3 + IAM |
+| `/.well-known/ksi-signal.schema.json` | Static, `infrastructure/schemas/` | Republished on each deploy | No (informational) |
+| `/.well-known/oscal-ssp.json` | CI generator, `scripts/build-oscal-ssp.py` | Every push to `main` | No (PoC) — references the signed KSI signal as evidence |
 
 ## File Structure
 
@@ -101,20 +191,37 @@ make pipeline
 │   ├── main.tf                    # Primary Terraform configuration
 │   ├── variables.tf               # Input variables and validation
 │   ├── outputs.tf                 # Resource outputs and URLs
-│   ├── policies.rego             # OPA compliance policies
+│   ├── policies.rego              # OPA compliance policies
+│   ├── schemas/
+│   │   ├── ksi-signal.schema.json # JSON Schema for the KSI signal
+│   │   └── ksi-catalog.json       # FedRAMP KSI catalog (FRMR.KSI source)
 │   ├── lambda/
-│   │   ├── index.js              # Compliance monitoring function
-│   │   └── package.json          # Dependencies
-│   └── terraform.tfvars.example  # Configuration template
-├── website/                       # Static website files
+│   │   ├── index.js               # Runtime KSI signal emitter
+│   │   └── package.json           # AWS SDK v3 dependencies
+│   └── terraform.tfvars.example   # Configuration template
+├── website/
+│   ├── .well-known/
+│   │   └── security.txt           # RFC 9116 vulnerability disclosure
+│   └── ...                        # Static website files
 ├── scripts/
-│   ├── deploy.sh                 # Complete deployment automation
-│   ├── terraform-plan.sh         # Pre-deployment compliance check
-│   └── test-policies.sh          # OPA policy testing
+│   ├── deploy.sh                  # Complete deployment automation
+│   ├── terraform-plan.sh          # Pre-deployment compliance check
+│   ├── build-ksi-signal.py        # Deploy-time KSI signal emitter
+│   ├── build-oscal-ssp.py         # OSCAL Rev 5 SSP generator
+│   └── test-policies.sh           # OPA policy testing
+├── docs/
+│   ├── ksi-signal.md              # KSI signal technical reference
+│   ├── architecture-decisions.md  # Architectural decisions per KSI
+│   ├── incident-response.md       # IR runbook (KSI-INR-01..03)
+│   ├── recovery-plan.md           # Recovery plan (KSI-RPL-01..04)
+│   ├── security-review.md         # Annual security review (KSI-PIY-06)
+│   ├── supply-chain.md            # Supply-chain risk (KSI-TPR-03/04)
+│   ├── training-log.md            # Self-attested training (KSI-CED-01..04)
+│   └── poam.md                    # Plan of Action & Milestones for tracked gaps
 ├── .github/workflows/
-│   └── deploy-with-opa.yml       # GitHub Actions CI/CD pipeline
-├── Makefile                      # Common operations
-└── README.md                     # This file
+│   └── deploy-with-opa.yml        # GitHub Actions CI/CD pipeline
+├── Makefile                       # Common operations
+└── README.md                      # This file
 ```
 
 ## OPA Policies
@@ -166,6 +273,34 @@ s3_bucket_violations[violation] {
         "severity": "HIGH"
     }
 }
+```
+
+## Try It
+
+If you want to spin up a copy of this infrastructure to experiment with the pipeline:
+
+You need:
+- S3 bucket (named after your domain)
+- CloudFront distribution
+- SSL certificate in ACM (us-east-1 region)
+- Route53 hosted zone (optional)
+
+```bash
+# 1. Clone and setup
+git clone <your-repo-url>
+cd <repo-name>
+
+# 2. Install OPA (automated in scripts)
+curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+chmod 755 ./opa && sudo mv opa /usr/local/bin
+
+# 3. Configure your deployment
+cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
+# Edit terraform.tfvars with your AWS resource IDs
+
+# 4. Deploy with compliance checking
+cd infrastructure
+make pipeline
 ```
 
 ## Deployment Options

@@ -1,0 +1,10 @@
+# Security policy for samaydlette.com
+# RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
+# Satisfies KSI-PIY-03 (vulnerability disclosure program).
+
+Contact: mailto:sam.aydlette@gmail.com
+Expires: 2027-05-06T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://samaydlette.com/.well-known/security.txt
+Policy: https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md
+Acknowledgments: https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md#after-action-reports-ksi-inr-03

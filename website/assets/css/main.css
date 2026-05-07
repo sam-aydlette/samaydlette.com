@@ -781,6 +781,7 @@ body.fixed-header main.content {
 }
 
 /* Article titles */
+.article-card h1,
 .article-card h2,
 .article-card h3 {
     color: var(--text-primary);
@@ -792,6 +793,7 @@ body.fixed-header main.content {
 }
 
 /* Linked article titles */
+.article-card h1 a,
 .article-card h2 a,
 .article-card h3 a {
     color: inherit;
@@ -799,6 +801,7 @@ body.fixed-header main.content {
     transition: color 0.2s ease;
 }
 
+.article-card h1 a:hover,
 .article-card h2 a:hover,
 .article-card h3 a:hover {
     color: var(--accent-primary);
@@ -1893,6 +1896,7 @@ a.submit-button:hover {
     .header h1 { font-size: var(--font-size-2xl); }
     .header p { font-size: var(--font-size-base); }
     
+    .article-card h1,
     .article-card h2,
     .article-card h3 { font-size: var(--font-size-lg); }
     

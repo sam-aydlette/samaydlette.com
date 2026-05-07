@@ -1,0 +1,40 @@
+# Dependabot configuration for supply-chain monitoring.
+# Satisfies KSI-TPR-04 ("Automatically monitor third party software information
+# resources for upstream vulnerabilities..."). See docs/supply-chain.md.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/infrastructure/lambda"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "lambda"
+    commit-message:
+      prefix: "deps(lambda)"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "deps(actions)"
+      include: "scope"
+
+  - package-ecosystem: "terraform"
+    directory: "/infrastructure"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "infrastructure"
+    commit-message:
+      prefix: "deps(terraform)"
+      include: "scope"

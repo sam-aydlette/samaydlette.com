@@ -6,16 +6,7 @@
     <title>projects - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -53,13 +44,13 @@
     <!-- Main Content -->
     <main id="main-content" class="content">
             <section class="projects-section">
-                <h2 class="section-title">projects</h2>                
+                <h1 class="section-title">projects</h1>                
                 <div class="projects-list">
                     <div class="article-card">
                         <h3 class="article-title">
                             <a href="https://github.com/sam-aydlette/samaydlette.com" target="_blank">samaydlette.com</a>
                         </h3>
-                        <p>My personal website. This project serves as both my central hub for communication to the world and as a proof of concept for using policy as code. In my case, the site uses automated compliance checks with Open Policy Agent (OPA) to ensure accessibility requirements are met during deployment.</p>
+                        <p>Personal website, central hub for communication to the world, and proof of concept for compliance automation.</p>
                         <a href="https://github.com/sam-aydlette/samaydlette.com" target="_blank" class="read-more">view_on_github</a>
                     </div>
                     <div class="article-card">
@@ -76,9 +67,16 @@
                 <div class="projects-list">
                     <div class="article-card">
                         <h3 class="article-title">
+                            <a href="/research/the-plumbing.html">The Plumbing: A Composable Reference Implementation for FedRAMP 20x and Rev 5</a>
+                        </h3>
+                        <p>The implementation that runs on this website's own infrastructure. A canonical inventory of the system's components, named in PURL, ARN, SHA-256, and HBOM form, serves as the architectural primitive. Both a FedRAMP 20x KSI signal and a NIST OSCAL Rev 5 System Security Plan are deterministically derived from it. The artifacts are signed via Sigstore keyless and published at <code>/.well-known/</code>, verifiable from anywhere. The paper covers what was built, what the PoC actually proves versus illustrates, the business problems the pattern addresses (assessment cost, SSP drift, framework transition, cyber insurance underwriting, vendor risk management), and the structural problem it points at: portfolio-level risk reasoning across heterogeneous systems is bounded by the missing shared identifier layer underneath the reports.</p>
+                        <a href="/research/the-plumbing.html" class="read-more">read_paper</a>
+                    </div>
+                    <div class="article-card">
+                        <h3 class="article-title">
                             <a href="/research/tuning-the-eigenvalue.html">Tuning the Eigenvalue: An Exploration of Threshold Dynamics Across Domains</a>
                         </h3>
-                        <p>An exploration of threshold dynamics &mdash; systems where the dominant eigenvalue &lambda;<sub>1</sub> approaches zero &mdash; across wildly different domains. Starting from dynamical systems theory applied to cybersecurity, traces the same mathematics (critical slowing down, bifurcations, attractor dynamics) through ecology, clinical medicine, financial markets, neuroscience, and governance. Develops the mathematical foundations, a detailed security operations use case with FedRAMP KSI eigenvalue estimation, and cross-domain applications.</p>
+                        <p>An exploration of threshold dynamics across different domains, where the dominant eigenvalue &lambda;<sub>1</sub> approaches zero. The paper starts from dynamical systems theory applied to cybersecurity, then traces the same mathematics (critical slowing down, bifurcations, attractor dynamics) through ecology, clinical medicine, financial markets, neuroscience, and governance. Includes the mathematical foundations, a security-operations use case built around FedRAMP KSI eigenvalue estimation, and cross-domain applications.</p>
                         <a href="/research/tuning-the-eigenvalue.html" class="read-more">read_paper</a>
                     </div>
                 </div>

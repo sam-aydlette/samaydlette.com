@@ -7,16 +7,7 @@
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/forms.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -53,7 +44,7 @@
 
     <!-- Main Content -->
     <main id="main-content" class="content">
-            <h2 class="section-title">about_me</h2>
+            <h1 class="section-title">about_me</h1>
             <section class="about-content">
                 <div class="article-card">
                     <div class="code-example">

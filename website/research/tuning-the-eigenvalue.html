@@ -12,16 +12,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
         onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true},{left: '$', right: '$', display: false}]});"></script>
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -63,7 +54,7 @@
                     <span class="article-category">Research</span>
                 </div>
 
-                <h2 class="article-title">Tuning the Eigenvalue: An Exploration of Threshold Dynamics Across Domains</h2>
+                <h1 class="article-title">Tuning the Eigenvalue: An Exploration of Threshold Dynamics Across Domains</h1>
 
                 <div class="article-content">
                     <div class="article-summary">
@@ -178,8 +169,8 @@
 <p>The <strong>dominant eigenvalue</strong> $\lambda_1$ governs long-term behavior. It is well-defined when there is a spectral gap: $\text{Re}(\lambda_1) &gt; \text{Re}(\lambda_2)$. Codimension-1 bifurcations, the generic case, have a single eigenvalue crossing zero, so the dominant eigenvalue is typically unambiguous near the transitions that matter here.</p>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col class="col-w-50" />
+<col class="col-w-50" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -226,9 +217,9 @@
 <p><strong>In plain language:</strong> A bifurcation is a tipping point where the rules of the game change qualitatively. Before the tipping point, the system has certain stable states. After, those states may vanish, split, or swap stability.</p>
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 40%" />
-<col style="width: 34%" />
+<col class="col-w-25" />
+<col class="col-w-40" />
+<col class="col-w-34" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -303,9 +294,9 @@
 <h4 id="the-three-capacities">2.7 The Three Capacities</h4>
 <table>
 <colgroup>
-<col style="width: 19%" />
-<col style="width: 33%" />
-<col style="width: 47%" />
+<col class="col-w-19" />
+<col class="col-w-33" />
+<col class="col-w-47" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -437,8 +428,8 @@
 <p>The bifurcation types from Section 2.3 manifest in security operations as follows:</p>
 <table>
 <colgroup>
-<col style="width: 37%" />
-<col style="width: 62%" />
+<col class="col-w-37" />
+<col class="col-w-62" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -470,8 +461,8 @@
 <p>Operational metrics map to eigenvalue-related quantities:</p>
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 75%" />
+<col class="col-w-25" />
+<col class="col-w-75" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -619,8 +610,8 @@ PROCEDURE:
 <p><strong>FedRAMP Data Sources and Implementation</strong></p>
 <table>
 <colgroup>
-<col style="width: 41%" />
-<col style="width: 58%" />
+<col class="col-w-41" />
+<col class="col-w-58" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -664,9 +655,9 @@ PROCEDURE:
 <p><strong>Interpretation Guide</strong></p>
 <table>
 <colgroup>
-<col style="width: 34%" />
-<col style="width: 34%" />
-<col style="width: 31%" />
+<col class="col-w-34" />
+<col class="col-w-34" />
+<col class="col-w-31" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -733,8 +724,8 @@ PROCEDURE:
 <p>For security systems, this means designing processes that: - Strengthen negative feedback (faster detection-response loops) - Weaken positive feedback (break alert fatigue spirals) - Increase damping (reduce oscillatory behavior)</p>
 <table>
 <colgroup>
-<col style="width: 48%" />
-<col style="width: 51%" />
+<col class="col-w-48" />
+<col class="col-w-51" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -803,8 +794,8 @@ PROCEDURE:
 <p>Classical cybernetics (Wiener 1948) established the mathematics of feedback control. But the paradigm assumed a separation: the governor is not the engine. The controller stands outside, observing and actuating. This separation breaks down in complex adaptive systems where humans are participants.</p>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col class="col-w-50" />
+<col class="col-w-50" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -846,9 +837,9 @@ PROCEDURE:
 <p>A system has <strong>threshold structure</strong> if it satisfies:</p>
 <table>
 <colgroup>
-<col style="width: 42%" />
-<col style="width: 23%" />
-<col style="width: 34%" />
+<col class="col-w-42" />
+<col class="col-w-23" />
+<col class="col-w-34" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -898,8 +889,8 @@ PROCEDURE:
 <h3 id="appendix-a-glossary">Appendix A: Glossary</h3>
 <table>
 <colgroup>
-<col style="width: 33%" />
-<col style="width: 66%" />
+<col class="col-w-33" />
+<col class="col-w-66" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -952,8 +943,8 @@ PROCEDURE:
 <h3 id="appendix-c-mapping-to-standard-terminology">Appendix C: Mapping to Standard Terminology</h3>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col class="col-w-50" />
+<col class="col-w-50" />
 </colgroup>
 <thead>
 <tr class="header">

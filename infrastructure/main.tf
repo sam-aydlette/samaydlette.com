@@ -155,9 +155,12 @@ resource "aws_s3_bucket_public_access_block" "website" {
 # then be attached to the distribution's default cache behavior — see the
 # `cloudfront_response_headers_policy_id` output for the manual attach step.
 #
-# CSP note: the site has an inline theme-detection <script> in every HTML page,
-# so the policy currently allows 'unsafe-inline' for scripts. To tighten further,
-# move that script into /assets/js/ and drop 'unsafe-inline'.
+# CSP note: 'unsafe-inline' is removed from both script-src and style-src.
+# The theme-detection script lives in /assets/js/theme-init.js. Inline
+# style="" attributes on the eigenvalue research paper were replaced with
+# col-w-* utility classes in articles.css, and the donation page's <style>
+# block was moved into /assets/css/support.css. The CSP is now strict-self
+# for everything except img-src (which allows data: URIs).
 # =============================================================================
 resource "aws_cloudfront_response_headers_policy" "website" {
   count = var.create_response_headers_policy ? 1 : 0
@@ -190,8 +193,8 @@ resource "aws_cloudfront_response_headers_policy" "website" {
     content_security_policy {
       content_security_policy = join("; ", [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline'",
-        "style-src 'self' 'unsafe-inline'",
+        "script-src 'self'",
+        "style-src 'self'",
         "img-src 'self' data:",
         "font-src 'self'",
         "connect-src 'self'",
@@ -330,15 +333,48 @@ resource "aws_iam_role_policy" "lambda_opa" {
         Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance:*"
       },
       {
+        # Minimum read access the runtime KSI emitter needs to build the
+        # {resource: {...}} input that policies.rego (compiled to Wasm)
+        # evaluates. The actions match the bucket-attribute checks the Rego
+        # rules look for: encryption, versioning, public-access-block, and
+        # required tags. ListBucket is intentionally absent; the Lambda
+        # enumerates nothing.
         Effect = "Allow"
         Action = [
           "s3:GetObject",
-          "s3:ListBucket"
+          "s3:GetBucketVersioning",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:GetBucketTagging"
         ]
         Resource = [
           data.aws_s3_bucket.website.arn,
           "${data.aws_s3_bucket.website.arn}/*"
         ]
+      },
+      {
+        # The runtime KSI emitter publishes its signal back to /.well-known/ on
+        # the same bucket. Scoped to that single key prefix so the Lambda
+        # cannot overwrite arbitrary site content.
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject"
+        ]
+        Resource = [
+          "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json"
+        ]
+      },
+      {
+        # Read-only config inspection of the one CloudFront distribution this
+        # site uses. CloudFront supports resource-level permissions for these
+        # specific Get* actions on a distribution ARN, so the Lambda cannot
+        # read other distributions in the account.
+        Effect = "Allow"
+        Action = [
+          "cloudfront:GetDistributionConfig",
+          "cloudfront:GetDistribution"
+        ]
+        Resource = data.aws_cloudfront_distribution.website.arn
       },
     ]
   })

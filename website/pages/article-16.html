@@ -8,16 +8,7 @@
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -60,7 +51,7 @@
                 <span class="article-category">military_values</span>
             </div>
             
-            <h2>On Jen Easterly and Military Values</h2>
+            <h1>On Jen Easterly and Military Values</h1>
             
             <div class="article-content">
                 <p>I've been thinking a lot about the implications of former Director of CISA and Army veteran Jen Easterly having her offer to teach at West Point <a href="https://www.linkedin.com/pulse/harder-right-jen-easterly-hi1be/" target="_blank" rel="noopener noreferrer">rescinded</a> for political reasons. I can't put it better than her when she called it a "casually manufactured outrage that drowned out the quiet labor of truth and the steady pulse of integrity."</p>

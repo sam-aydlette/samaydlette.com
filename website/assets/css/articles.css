@@ -269,3 +269,29 @@
         font-size: 1.125rem;
     }
 }
+
+/* =============================================================================
+   TABLE COLUMN WIDTH UTILITIES
+   =============================================================================
+   Used by <col class="col-w-N"> inside <colgroup> for tables in research papers
+   (e.g., research/tuning-the-eigenvalue.html). Replaces inline style="width:N%"
+   so the page CSP can drop 'unsafe-inline' from style-src.
+   ============================================================================= */
+.col-w-19 { width: 19%; }
+.col-w-23 { width: 23%; }
+.col-w-25 { width: 25%; }
+.col-w-31 { width: 31%; }
+.col-w-33 { width: 33%; }
+.col-w-34 { width: 34%; }
+.col-w-37 { width: 37%; }
+.col-w-40 { width: 40%; }
+.col-w-41 { width: 41%; }
+.col-w-42 { width: 42%; }
+.col-w-47 { width: 47%; }
+.col-w-48 { width: 48%; }
+.col-w-50 { width: 50%; }
+.col-w-51 { width: 51%; }
+.col-w-58 { width: 58%; }
+.col-w-62 { width: 62%; }
+.col-w-66 { width: 66%; }
+.col-w-75 { width: 75%; }

@@ -160,10 +160,19 @@ jobs:
         echo "=== File structure tree ==="
         find . -type f -name "*.js" -o -name "*.json" -o -name "*.rego" | head -10
 
-    # Package monitoring function for deployment
-    - name: Create Lambda zip file 
+    # Package monitoring function for deployment. The runtime Lambda evaluates
+    # the same Rego policies the deploy gate uses, compiled to Wasm. Compiling
+    # here so terraform's source_code_hash sees the same bytes the deploy job
+    # will apply.
+    - name: Create Lambda zip file
       working-directory: infrastructure
       run: |
+        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        opa build -t wasm -e terraform/compliance/compliance_report \
+          -o /tmp/opa-bundle.tar.gz policies.rego
+        tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
+        ls -la lambda/policy.wasm
+
         echo "Creating Lambda deployment package..."
         cd lambda
         zip -r ../opa-compliance.zip .
@@ -221,6 +230,7 @@ jobs:
         path: |
           infrastructure/tfplan
           infrastructure/tfplan.json
+          infrastructure/validations.json
         retention-days: 5
 
   # ===========================================================================
@@ -236,6 +246,10 @@ jobs:
       contents: read
       issues: write
       pull-requests: write
+      # id-token: write is required for cosign keyless signing of the KSI
+      # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
+      # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
+      id-token: write
     needs: compliance-check
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
@@ -253,6 +267,19 @@ jobs:
       with:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
+
+    # OPA is required here so the deploy job can compile policies.rego to Wasm
+    # for bundling into the Lambda zip. Same version + same SHA pin as the
+    # compliance-check job, so the deploy-time gate and the runtime emitter
+    # evaluate identical compiled bytes.
+    - name: Setup OPA
+      run: |
+        curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
+          -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+        echo "${{ env.OPA_SHA256 }}  opa" | sha256sum -c -
+        chmod 755 ./opa
+        sudo mv opa /usr/local/bin
+        opa version
 
     - name: Setup Node.js
       uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
@@ -305,9 +332,19 @@ jobs:
     - name: Create Lambda deployment package
       working-directory: infrastructure
       run: |
+        # The runtime Lambda evaluates the same Rego policies the deploy gate
+        # uses, compiled to Wasm. One source of truth, one trust chain, no
+        # hand-port drift. The Wasm build is byte-stable for a fixed OPA
+        # version + policies.rego, so terraform's source_code_hash from the
+        # compliance-check job matches the bytes deployed here.
+        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        opa build -t wasm -e terraform/compliance/compliance_report \
+          -o /tmp/opa-bundle.tar.gz policies.rego
+        tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
+        ls -la lambda/policy.wasm
+
         echo "Creating Lambda deployment package..."
         cd lambda
-        cp ../policies.rego .
         zip -r ../opa-compliance.zip .
         cd ..
         echo "Lambda package created:"
@@ -459,6 +496,99 @@ jobs:
         echo "✅ Website content synced successfully"
 
     # -------------------------------------------------------------------------
+    # BUILD AND PUBLISH THE DEPLOY-TIME KSI SIGNAL
+    # -------------------------------------------------------------------------
+    # The signal joins terraform state, the Lambda's package-lock, the website
+    # HTML hashes, the CI provenance from GITHUB_* env vars, and the OPA
+    # validations from the compliance-check job into a single signed JSON
+    # document at /.well-known/ksi-signal.json. See the research paper at
+    # /research/cato-without-the-ato.html for the full rationale.
+    # -------------------------------------------------------------------------
+    - name: Build deploy-time KSI signal
+      working-directory: infrastructure
+      env:
+        # Tells the emitter to pre-populate provenance.attestation with the
+        # sidecar bundle URL before signing. The URL is well-known.
+        KSI_SIGN: "1"
+      run: |
+        echo "Building deploy-time KSI signal..."
+        python3 ../scripts/build-ksi-signal.py
+        echo "Signal contents (truncated):"
+        jq '{signal_id, emitted_at, csp, system_id,
+             component_count: (.components | length),
+             validation_count: (.validations | length),
+             attestation: .provenance.attestation,
+             validation_results: [.validations[].result] | group_by(.) | map({(.[0]): length}) | add}' \
+          ksi-signal.json
+
+    # -------------------------------------------------------------------------
+    # SIGN THE KSI SIGNAL (Sigstore keyless via GitHub OIDC)
+    # -------------------------------------------------------------------------
+    # Produces a Sigstore bundle (cert + signature + Rekor inclusion proof) as
+    # ksi-signal.bundle. Verifiers fetch both files and run:
+    #   cosign verify-blob --bundle ksi-signal.bundle \
+    #     --certificate-identity-regexp 'https://github.com/.../workflows/.+' \
+    #     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    #     ksi-signal.json
+    # -------------------------------------------------------------------------
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    - name: Sign KSI signal
+      working-directory: infrastructure
+      run: |
+        echo "Signing ksi-signal.json with cosign keyless..."
+        cosign sign-blob --yes --bundle ksi-signal.bundle ksi-signal.json
+        echo "Bundle written:"
+        ls -la ksi-signal.bundle
+
+    - name: Publish KSI signal and bundle to /.well-known/
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        echo "Publishing to s3://$BUCKET_NAME/.well-known/"
+        aws s3 cp ksi-signal.json "s3://$BUCKET_NAME/.well-known/ksi-signal.json" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        aws s3 cp ksi-signal.bundle "s3://$BUCKET_NAME/.well-known/ksi-signal.bundle" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        aws s3 cp schemas/ksi-signal.schema.json "s3://$BUCKET_NAME/.well-known/ksi-signal.schema.json" \
+          --content-type application/schema+json \
+          --cache-control "public, max-age=3600"
+        echo "✅ KSI signal, bundle, and schema published"
+
+    # -------------------------------------------------------------------------
+    # BUILD AND PUBLISH THE OSCAL REV 5 SSP
+    # -------------------------------------------------------------------------
+    # Generates a NIST OSCAL System Security Plan (FedRAMP Rev 5 Moderate
+    # baseline shape) from the canonical inventory and the FedRAMP KSI catalog. Sits
+    # alongside the KSI signal at /.well-known/oscal-ssp.json.
+    # -------------------------------------------------------------------------
+    - name: Build OSCAL Rev 5 SSP
+      working-directory: infrastructure
+      run: |
+        echo "Building OSCAL SSP..."
+        python3 ../scripts/build-oscal-ssp.py
+        echo "SSP summary:"
+        jq '{
+          uuid: ."system-security-plan".uuid,
+          oscal_version: ."system-security-plan".metadata."oscal-version",
+          components: (."system-security-plan"."system-implementation".components | length),
+          control_count: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
+          ksi_signal_id: ."system-security-plan".metadata.props[0].value
+        }' oscal-ssp.json
+
+    - name: Publish OSCAL SSP to /.well-known/
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        aws s3 cp oscal-ssp.json "s3://$BUCKET_NAME/.well-known/oscal-ssp.json" \
+          --content-type application/oscal+json \
+          --cache-control "public, max-age=300"
+        echo "✅ OSCAL SSP published"
+
+    # -------------------------------------------------------------------------
     # REFRESH WEBSITE CACHE
     # -------------------------------------------------------------------------
     # Tell the CDN to show the new website immediately
@@ -584,7 +714,11 @@ jobs:
       if: always()
       with:
         name: compliance-report
-        path: compliance-result.json
+        path: |
+          compliance-result.json
+          infrastructure/ksi-signal.json
+          infrastructure/ksi-signal.bundle
+          infrastructure/oscal-ssp.json
         retention-days: 30
 
   # ===========================================================================

@@ -1,0 +1,249 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/.well-known/ksi-signal.schema.json",
+  "title": "KSI Signal with Component References",
+  "description": "A FedRAMP 20x-style KSI validation signal extended with normalized component identifiers, as proposed in https://samaydlette.com/pages/article-27.html. The signal names the components a system is composed of using global identifiers that compose across CSPs (PURL for software, native cloud resource IDs for infrastructure, content hashes for static artifacts), and attaches each validation result to the specific components it evaluated. The intent is portfolio-level reasoning across CSPs without a separate inventory deliverable.",
+  "type": "object",
+  "required": [
+    "signal_version",
+    "signal_id",
+    "emitted_at",
+    "emitter",
+    "csp",
+    "system_id",
+    "provenance",
+    "components",
+    "validations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "description": "URL of the schema this signal conforms to. Optional; informational only.",
+      "type": "string",
+      "format": "uri"
+    },
+    "signal_version": {
+      "description": "Semantic version of this signal's schema. Increments on breaking changes to the schema itself.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "signal_id": {
+      "description": "Unique identifier for this emission. Two signals with the same signal_id are the same observation; different signal_ids are different observations of the same system.",
+      "type": "string",
+      "format": "uuid"
+    },
+    "emitted_at": {
+      "description": "ISO 8601 timestamp at which this signal was emitted.",
+      "type": "string",
+      "format": "date-time"
+    },
+    "emitter": {
+      "description": "What produced this signal. 'deploy' = the CI/CD pipeline emitting at deploy time. 'runtime' = a continuously-running validator emitting on a schedule against the live system.",
+      "type": "string",
+      "enum": ["deploy", "runtime"]
+    },
+    "csp": {
+      "description": "The cloud service provider hosting the system this signal describes. Free-form to allow future CSPs without schema changes; recommended values are 'aws', 'azure', 'gcp', 'oracle', 'ibm', 'alibaba'.",
+      "type": "string",
+      "minLength": 1
+    },
+    "system_id": {
+      "description": "Stable identifier for the system this signal describes. URN form is recommended so identifiers compose across CSPs without collision.",
+      "type": "string",
+      "minLength": 1
+    },
+    "provenance": {
+      "description": "How and from what this system was built. The article-27 proposal is that KSI signals carry SLSA-style provenance so consumers can verify what's running came from a known source.",
+      "type": "object",
+      "required": ["builder", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "builder": {
+          "description": "The build system that produced the deployed artifacts.",
+          "type": "object",
+          "required": ["id"],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "description": "Identifier for the builder. For GitHub Actions: 'https://github.com/<owner>/<repo>/.github/workflows/<workflow>'.",
+              "type": "string"
+            },
+            "run_id": {
+              "description": "Builder-specific identifier for this build run. For GitHub Actions: the workflow run ID.",
+              "type": "string"
+            },
+            "version": {
+              "description": "Version of the builder software, if known.",
+              "type": "string"
+            }
+          }
+        },
+        "source": {
+          "description": "The source code from which the deployed artifacts were built.",
+          "type": "object",
+          "required": ["repository", "commit"],
+          "additionalProperties": false,
+          "properties": {
+            "repository": {
+              "description": "URL of the source repository.",
+              "type": "string",
+              "format": "uri"
+            },
+            "commit": {
+              "description": "Commit SHA the build was produced from.",
+              "type": "string",
+              "pattern": "^[0-9a-f]{7,64}$"
+            },
+            "ref": {
+              "description": "Git ref (branch or tag) the commit was reached from, if known.",
+              "type": "string"
+            }
+          }
+        },
+        "attestation": {
+          "description": "Reserved for cryptographic attestation of this signal (e.g., a Sigstore bundle or an in-toto attestation). Present only when the signal is signed.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "components": {
+      "description": "Every component of this system that the emitter is aware of, named with at least one global identifier where one exists. The set of types is intentionally normalized across CSPs: an AWS EC2 instance, an Azure VM, a GCP Compute Engine VM, and a bare-metal Kubernetes node all project into 'compute_instance' so they compose across portfolios.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    },
+    "validations": {
+      "description": "The validation results this signal carries. Each result names the specific components it evaluated via component_refs, so a portfolio consumer can answer 'which validations covered component X' and 'which components were covered by validation Y' without inventory reconciliation.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/validation"
+      }
+    }
+  },
+  "$defs": {
+    "component": {
+      "type": "object",
+      "required": ["component_id", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "component_id": {
+          "description": "Identifier for this component within this signal. Used as the join key for validations[].component_refs. Stable across emissions where possible.",
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "description": "Normalized component type. The type vocabulary is the cross-CSP normalization the article calls for: each CSP's native shape projects into one of these types so portfolio queries compose. Reserved values: object_store, cdn_distribution, function, compute_instance, container_image, npm_package, html_artifact, hbom_ref.",
+          "type": "string",
+          "enum": [
+            "object_store",
+            "cdn_distribution",
+            "function",
+            "compute_instance",
+            "container_image",
+            "npm_package",
+            "html_artifact",
+            "hbom_ref"
+          ]
+        },
+        "native_id": {
+          "description": "The CSP's native identifier for this component (e.g., an AWS ARN, an Azure resource ID, a GCP resource name). Required for cloud resources; absent for software components that don't have one.",
+          "type": "string"
+        },
+        "global_id": {
+          "description": "Cross-CSP identifiers. At least one is required; the choice depends on type. PURL for software ecosystems, image_digest for container images, sha256 for content-addressable static artifacts, hbom_ref for hardware components named in a CycloneDX HBOM.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "purl": {
+              "description": "Package URL per https://github.com/package-url/purl-spec. Used for software components.",
+              "type": "string",
+              "pattern": "^pkg:[a-zA-Z0-9_.-]+/.+"
+            },
+            "image_digest": {
+              "description": "OCI image digest of the form 'sha256:<hex>'. Used for container images.",
+              "type": "string",
+              "pattern": "^sha[0-9]+:[0-9a-f]+$"
+            },
+            "sha256": {
+              "description": "Hex-encoded SHA-256 of the component's content. Used for static artifacts (HTML files, configuration blobs).",
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "hbom_ref": {
+              "description": "Reference into a CycloneDX HBOM document, of the form '<bom-ref>@<bom-uri>'. Used for hardware components per https://cyclonedx.org/capabilities/hbom/.",
+              "type": "string"
+            }
+          }
+        },
+        "attributes": {
+          "description": "Component-specific attributes the emitter wants to make available to consumers. Free-form by design; consumers should treat unknown keys as opaque. Common keys: 'name', 'region', 'tls_min_version', 'encryption_algorithm', 'public_access_blocked', 'runtime'.",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "anyOf": [
+        {"required": ["native_id"]},
+        {"required": ["global_id"]}
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "required": ["validation_id", "policy", "result", "component_refs"],
+      "additionalProperties": false,
+      "properties": {
+        "validation_id": {
+          "description": "Identifier for this validation result within this signal.",
+          "type": "string",
+          "minLength": 1
+        },
+        "policy": {
+          "description": "Identifies the policy that produced this result.",
+          "type": "object",
+          "required": ["id", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "description": "Stable identifier for the policy (e.g., 'terraform.compliance' for the OPA package).",
+              "type": "string"
+            },
+            "version": {
+              "description": "Version of the policy that ran.",
+              "type": "string"
+            }
+          }
+        },
+        "result": {
+          "description": "Whether the policy passed or failed for the referenced components.",
+          "type": "string",
+          "enum": ["pass", "fail"]
+        },
+        "component_refs": {
+          "description": "component_id values from this signal's components[] that this validation evaluated. This is the field that makes the signal compose across CSPs: a portfolio consumer joins on these refs to answer cross-system queries.",
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "violations": {
+          "description": "Specific findings when result is 'fail'. Same shape as the OPA compliance_report.violations entries the existing pipeline already produces.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "message", "severity"],
+            "additionalProperties": true,
+            "properties": {
+              "type": {"type": "string"},
+              "message": {"type": "string"},
+              "severity": {
+                "type": "string",
+                "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+              },
+              "resource": {"type": "string"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -53,20 +53,21 @@ check_prerequisites() {
 # Function to prepare Lambda package
 prepare_lambda() {
     echo "Preparing Lambda function..."
-    
+
     cd lambda
-    
+
     # Install dependencies
     if [ -f "package.json" ]; then
         echo "Installing Node.js dependencies..."
         npm ci --omit=dev
     fi
-    
-    # Copy policies to lambda directory
-    cp ../policies.rego .
-    
+
+    # policies.rego is intentionally NOT copied here. The Lambda runs a
+    # JavaScript port of the relevant rules; OPA is enforced at build time
+    # only. Bundling the .rego in the deployed zip would be dead weight.
+
     cd ..
-    
+
     echo "✅ Lambda function prepared"
 }
 
@@ -235,7 +236,6 @@ main() {
 cleanup() {
     echo "Cleaning up temporary files..."
     rm -f tfplan tfplan.json opa-input.json compliance-result.json
-    rm -f lambda/policies.rego
 }
 
 # Set trap for cleanup

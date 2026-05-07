@@ -137,7 +137,7 @@ for resource in plan['planned_values']['root_module']['resources']:
         for r in resources:
             if r['type'] == 'aws_s3_bucket' and r['name'] in bucket_ref:
                 r['versioning_enabled'] = resource['values'].get('versioning_configuration', [{}])[0].get('status') == 'Enabled'
-                
+
     # Check if S3 encryption is being enabled
     if resource['type'] == 'aws_s3_bucket_server_side_encryption_configuration':
         bucket_ref = resource['values'].get('bucket', '')
@@ -152,6 +152,22 @@ for resource in plan['planned_values']['root_module']['resources']:
                         # Accept both AES256 and aws:kms as valid encryption
                         if algorithm in ['AES256', 'aws:kms']:
                             r['encryption_enabled'] = True
+
+    # Check whether S3 public access is fully blocked. Same boolean shape
+    # the runtime Lambda emits from GetPublicAccessBlock API responses, so
+    # the same Rego rule covers both deploy-time and runtime evaluation.
+    if resource['type'] == 'aws_s3_bucket_public_access_block':
+        bucket_ref = resource['values'].get('bucket', '')
+        cfg = resource['values']
+        all_blocked = (
+            cfg.get('block_public_acls', False) and
+            cfg.get('block_public_policy', False) and
+            cfg.get('ignore_public_acls', False) and
+            cfg.get('restrict_public_buckets', False)
+        )
+        for r in resources:
+            if r['type'] == 'aws_s3_bucket' and r['name'] in bucket_ref:
+                r['public_access_blocked'] = all_blocked
 
 # Save the extracted resource information
 with open('opa-input.json', 'r') as f:
@@ -169,37 +185,53 @@ PYTHON_SCRIPT
 # RUN INFRASTRUCTURE SECURITY CHECKS
 # =============================================================================
 # Check each AWS resource against my infrastructure security policies
+# Results are also accumulated into validations.ndjson so the deploy-time KSI
+# signal emitter (scripts/build-ksi-signal.sh) can attach them to components.
 # =============================================================================
 echo "Running infrastructure compliance checks..."
 VIOLATIONS_FOUND=false
+
+# Reset the validations accumulator. NDJSON (one result per line) is used so
+# that appends from inside a `find | while read` subshell still reach the file.
+: > validations.ndjson
 
 # Check each resource one by one against security policies
 for resource in $(cat opa-input.json | jq -r '.resources[] | @base64'); do
     # Decode the resource information
     resource_data=$(echo $resource | base64 --decode)
-    
+
     # Create a file with just this one resource for checking
     echo "{\"resource\": $resource_data}" > resource-input.json
-    
+
     # Run the security policy check on this resource
     opa eval -d policies.rego -i resource-input.json "data.terraform.compliance.compliance_report" > opa-result.json
-    
+
     # Check if this resource passed or failed security checks
     COMPLIANT=$(cat opa-result.json | jq -r '.result[0].expressions[0].value.compliant // true')
-    
+    RESOURCE_NAME=$(echo $resource_data | jq -r '.name')
+    RESOURCE_TYPE=$(echo $resource_data | jq -r '.type')
+
+    # Persist this result for the KSI signal emitter
+    jq -c --arg kind "infrastructure" \
+          --arg resource_type "$RESOURCE_TYPE" \
+          --arg resource_name "$RESOURCE_NAME" \
+          --argjson compliant "$COMPLIANT" \
+          '{kind: $kind,
+            resource_type: $resource_type,
+            resource_name: $resource_name,
+            compliant: $compliant,
+            violations: (.result[0].expressions[0].value.violations // []),
+            policy_version: (.result[0].expressions[0].value.policy_version // "unknown")}' \
+        opa-result.json >> validations.ndjson
+
     if [ "$COMPLIANT" = "false" ]; then
         # This resource violated security policies
         VIOLATIONS_FOUND=true
-        RESOURCE_NAME=$(echo $resource_data | jq -r '.name')
-        RESOURCE_TYPE=$(echo $resource_data | jq -r '.type')
-        
         echo "❌ INFRASTRUCTURE VIOLATION in $RESOURCE_TYPE.$RESOURCE_NAME:"
         cat opa-result.json | jq -r '.result[0].expressions[0].value.violations[]? | "  - \(.type): \(.message) (Severity: \(.severity))"'
         echo
     else
         # This resource passed security checks
-        RESOURCE_NAME=$(echo $resource_data | jq -r '.name')
-        RESOURCE_TYPE=$(echo $resource_data | jq -r '.type')
         echo "✅ $RESOURCE_TYPE.$RESOURCE_NAME is compliant"
     fi
 done
@@ -223,8 +255,15 @@ fi
 
 # Check HTML files for accessibility if website directory exists
 if [ -n "$WEBSITE_DIR" ]; then
-    # Find all HTML files in the website directory
-    find "$WEBSITE_DIR" -name "*.html" -type f | while read html_file; do
+    # Find all HTML files in the website directory.
+    #
+    # Process substitution (`done < <(find ...)`) is used here instead of the
+    # more common `find ... | while read` because the pipe form runs the loop
+    # body in a subshell, which means a `VIOLATIONS_FOUND=true` set inside the
+    # loop would not propagate back to this script's parent shell — and the
+    # accessibility gate would silently pass even on real violations. The
+    # process-substitution form keeps the loop in the parent shell.
+    while IFS= read -r html_file; do
         echo "Checking accessibility: $html_file"
         
         # Read the HTML content
@@ -241,10 +280,23 @@ EOF
         
         # Run accessibility policy check
         opa eval -d policies.rego -i accessibility-input.json "data.terraform.compliance.compliance_report" > accessibility-result.json
-        
+
         # Check if this HTML file passed accessibility checks
         ACCESSIBLE=$(cat accessibility-result.json | jq -r '.result[0].expressions[0].value.compliant // true')
-        
+
+        # Persist this result for the KSI signal emitter
+        jq -c --arg kind "accessibility" \
+              --arg file_name "$filename" \
+              --arg file_path "$html_file" \
+              --argjson compliant "$ACCESSIBLE" \
+              '{kind: $kind,
+                file_name: $file_name,
+                file_path: $file_path,
+                compliant: $compliant,
+                violations: (.result[0].expressions[0].value.violations // []),
+                policy_version: (.result[0].expressions[0].value.policy_version // "unknown")}' \
+            accessibility-result.json >> validations.ndjson
+
         if [ "$ACCESSIBLE" = "false" ]; then
             # This HTML file has accessibility violations
             VIOLATIONS_FOUND=true
@@ -255,9 +307,25 @@ EOF
             # This HTML file passed accessibility checks
             echo "✅ $filename is accessible"
         fi
-    done
+    done < <(find "$WEBSITE_DIR" -name "*.html" -type f)
 else
     echo "Skipping accessibility checks - no website directory found"
+fi
+
+# =============================================================================
+# CONSOLIDATE VALIDATIONS FOR THE KSI SIGNAL EMITTER
+# =============================================================================
+# Convert the NDJSON appended in the loops above into a single validations.json
+# document that scripts/build-ksi-signal.sh consumes after terraform apply.
+# =============================================================================
+if [ -s validations.ndjson ]; then
+    jq -s --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{generated_at: $generated_at, results: .}' \
+        validations.ndjson > validations.json
+    echo "Wrote validations.json ($(jq '.results | length' validations.json) results)"
+else
+    echo '{"generated_at":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'","results":[]}' > validations.json
+    echo "Wrote validations.json (no results)"
 fi
 
 # =============================================================================
@@ -265,7 +333,7 @@ fi
 # =============================================================================
 # Remove files we created during the security check process
 # =============================================================================
-rm -f resource-input.json opa-result.json accessibility-input.json accessibility-result.json
+rm -f resource-input.json opa-result.json accessibility-input.json accessibility-result.json validations.ndjson
 
 # =============================================================================
 # FINAL DECISION: ALLOW OR BLOCK DEPLOYMENT

@@ -1,0 +1,352 @@
+/* =============================================================================
+   VIEWER.CSS - Live Trust Dashboard styles
+   =============================================================================
+   Page-specific styles for /viewer.html. Mirrors articles.css conventions
+   (CSS variables from main.css, monospace headings, dark-mode aware).
+   ============================================================================= */
+
+.viewer-intro {
+    margin-bottom: var(--space-2xl);
+}
+
+.viewer-intro p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: var(--space-md);
+}
+
+/* ----- Trust status overview cards ---------------------------------------- */
+
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-2xl);
+}
+
+.status-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-lg);
+}
+
+.status-card h3 {
+    margin: 0 0 var(--space-sm) 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+}
+
+.status-card .status-value {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+.status-card .status-detail {
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    word-break: break-all;
+}
+
+.status-card.is-good .status-value { color: #2a7d2a; }
+.status-card.is-warn .status-value { color: #b07d00; }
+.status-card.is-bad  .status-value { color: #b22222; }
+
+/* ----- Verification callout ----------------------------------------------- */
+
+.verify-callout {
+    background: var(--bg-tertiary);
+    border-left: 4px solid var(--accent-primary, #4a9eff);
+    border-radius: 4px;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-2xl);
+}
+
+.verify-callout h3 {
+    margin: 0 0 var(--space-sm) 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-base);
+}
+
+.verify-callout p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+    line-height: 1.6;
+}
+
+.verify-callout pre {
+    background: var(--bg-code, #1a1a1a);
+    color: var(--text-code, #e0e0e0);
+    padding: var(--space-md);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 0;
+    white-space: pre;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* ----- Panels (KSI signal, OSCAL SSP) ------------------------------------- */
+
+.viewer-panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: var(--space-2xl);
+    margin-bottom: var(--space-2xl);
+    /* Defensive: ensure the panel never overflows its parent article-card. */
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.viewer-panel > * {
+    max-width: 100%;
+}
+
+.viewer-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+
+.viewer-panel-header h2 {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xl);
+    color: var(--text-primary);
+}
+
+.viewer-panel-header .raw-link {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+}
+
+.meta-grid {
+    display: grid;
+    /* minmax(0, ...) lets both columns shrink so long values wrap rather than
+       pushing the grid past its parent. */
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+    gap: 0.4rem 1.25rem;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-lg);
+    max-width: 100%;
+}
+
+.meta-grid dt {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.meta-grid dd {
+    margin: 0;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.meta-grid dd a {
+    color: inherit;
+}
+
+/* ----- Component lists ---------------------------------------------------- */
+
+.component-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+}
+
+.component-tag {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    border: 1px solid var(--border-color);
+}
+
+.component-tag .count {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-left: 0.4rem;
+}
+
+.component-section {
+    margin-bottom: var(--space-md);
+}
+
+.component-section summary {
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    padding: var(--space-sm) 0;
+    color: var(--text-primary);
+}
+
+/* ----- Tables ------------------------------------------------------------- */
+
+.viewer-table-wrap {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.viewer-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-mono);
+    /* table-layout: fixed forces columns to honor explicit widths and
+       wraps long content rather than expanding the table past the wrapper. */
+    table-layout: fixed;
+}
+
+.viewer-table td {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.viewer-table th,
+.viewer-table td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+}
+
+.viewer-table th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+}
+
+.viewer-table tr:hover td {
+    background: var(--bg-tertiary);
+}
+
+.viewer-table td.wrap {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 40ch;
+}
+
+.viewer-table td.detail {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 60ch;
+    color: var(--text-secondary);
+    font-family: var(--font-sans, inherit);
+    font-size: var(--font-size-sm);
+}
+
+/* ----- Status badges ------------------------------------------------------ */
+
+.badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: lowercase;
+    border: 1px solid currentColor;
+}
+
+.badge-pass        { color: #2a7d2a; }
+.badge-fail        { color: #b22222; }
+.badge-implemented { color: #2a7d2a; }
+.badge-partial     { color: #b07d00; }
+.badge-not-applicable { color: var(--text-muted); }
+.badge-planned     { color: #6b7280; }
+.badge-alternative { color: #4a5fb0; }
+
+.origin-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+}
+
+/* ----- Filters ------------------------------------------------------------ */
+
+.filter-bar {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-md);
+    align-items: center;
+}
+
+.filter-bar label {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-bar select,
+.filter-bar input[type="text"] {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 0.35rem 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+}
+
+.filter-bar input[type="text"] {
+    min-width: 14rem;
+}
+
+.filter-summary {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+}
+
+/* ----- Loading and error states ------------------------------------------ */
+
+.viewer-loading,
+.viewer-error,
+.viewer-note {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    font-style: italic;
+    padding: var(--space-md) 0;
+}
+
+.viewer-note {
+    padding: 0 0 var(--space-md) 0;
+    margin: calc(-1 * var(--space-sm)) 0 0 0;
+}
+
+.viewer-error {
+    color: #b22222;
+    font-style: normal;
+}

@@ -7,16 +7,7 @@
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -58,7 +49,7 @@
                     <span class="article-date">March 13, 2025</span>
                     <span class="article-category">Artificial Intelligence</span>
                 </div>
-                <h2 class="section-title">DIY AI: Running an LLM On Any Standard Laptop For Free</h2>
+                <h1 class="section-title">DIY AI: Running an LLM On Any Standard Laptop For Free</h1>
                 
                 <div class="article-content">
                     <div class="disclaimer">

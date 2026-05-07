@@ -16,6 +16,23 @@ compliance-result.json
 *.zip
 lambda/node_modules/
 lambda/policies.rego
+# Compiled OPA Wasm bundle. Built from policies.rego at deploy time; not
+# committed because it is a deterministic artifact of the source.
+infrastructure/lambda/policy.wasm
+*.wasm
+
+# Local-only validation script. Personal tooling; not part of the deployed
+# pipeline.
+scripts/validate-locally.sh
+
+# Locally-generated dashboard artifacts. The CI workflow publishes these
+# directly to S3 at /.well-known/, not via the website/ tree, so they are
+# never committed. Generated for local viewer.html testing only.
+website/.well-known/ksi-signal.json
+website/.well-known/ksi-signal-runtime.json
+website/.well-known/ksi-signal.schema.json
+website/.well-known/ksi-signal.bundle
+website/.well-known/oscal-ssp.json
 
 # OPA temporary files
 opa-input.json

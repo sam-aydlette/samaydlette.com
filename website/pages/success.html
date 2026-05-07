@@ -6,16 +6,7 @@
     <title>Message Sent - Samuel Aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        })();
-    </script>
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
 </head>
 <body class="fixed-header">
@@ -53,7 +44,7 @@
     <!-- Main Content -->
     <main id="main-content" class="content">
         <section class="article-card success-page">
-            <h2>Message Sent Successfully!</h2>
+            <h1>Message Sent Successfully!</h1>
             <p>Thank you for reaching out. I'll get back to you soon.</p>
             <a href="/index.html" class="submit-button">Return Home</a>
         </section>

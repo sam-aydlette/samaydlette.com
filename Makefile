@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content clean
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean
 
 # Default target
 help:
@@ -54,6 +54,10 @@ deploy:
 	fi
 	terraform apply tfplan
 	@$(MAKE) sync-content
+	@$(MAKE) build-ksi-signal
+	@$(MAKE) sync-ksi-signal
+	@$(MAKE) build-oscal-ssp
+	@$(MAKE) sync-oscal-ssp
 	@$(MAKE) check-compliance
 	@echo "✅ Deployment complete!"
 	@echo "Website URL: $$(terraform output -raw website_urls | jq -r '.domain // .cloudfront')"
@@ -86,6 +90,50 @@ sync-content:
 	}; \
 	aws cloudfront create-invalidation --distribution-id $$DISTRIBUTION_ID --paths "/*"
 	@echo "✅ Content sync complete"
+
+# Build the deploy-time KSI signal (ksi-signal.json) by joining Terraform state,
+# the Lambda's package-lock, the website's HTML hashes, the CI provenance, and
+# the OPA validations from terraform-plan.sh.
+build-ksi-signal:
+	@echo "Building deploy-time KSI signal..."
+	python3 ../scripts/build-ksi-signal.py
+	@echo "✅ ksi-signal.json built"
+
+# Publish the KSI signal and its schema at /.well-known/ on the live site so
+# any consumer can curl them. The aws s3 cp commands explicitly set
+# Content-Type so browsers and fetch() see them as JSON.
+sync-ksi-signal:
+	@echo "Publishing KSI signal to /.well-known/..."
+	@BUCKET_NAME=$$(terraform output -raw s3_bucket_name 2>/dev/null) || { \
+		echo "❌ Could not get S3 bucket name. Deploy infrastructure first."; \
+		exit 1; \
+	}; \
+	aws s3 cp ksi-signal.json s3://$$BUCKET_NAME/.well-known/ksi-signal.json \
+		--content-type application/json \
+		--cache-control "public, max-age=300"; \
+	aws s3 cp schemas/ksi-signal.schema.json s3://$$BUCKET_NAME/.well-known/ksi-signal.schema.json \
+		--content-type application/schema+json \
+		--cache-control "public, max-age=3600"
+	@echo "✅ KSI signal published"
+
+# Build the OSCAL Rev 5 System Security Plan from the canonical inventory and
+# the FedRAMP KSI catalog. Sits alongside the KSI signal at /.well-known/.
+build-oscal-ssp:
+	@echo "Building OSCAL Rev 5 SSP..."
+	python3 ../scripts/build-oscal-ssp.py
+	@echo "✅ oscal-ssp.json built"
+
+# Publish the OSCAL SSP at /.well-known/oscal-ssp.json.
+sync-oscal-ssp:
+	@echo "Publishing OSCAL SSP to /.well-known/..."
+	@BUCKET_NAME=$$(terraform output -raw s3_bucket_name 2>/dev/null) || { \
+		echo "❌ Could not get S3 bucket name. Deploy infrastructure first."; \
+		exit 1; \
+	}; \
+	aws s3 cp oscal-ssp.json s3://$$BUCKET_NAME/.well-known/oscal-ssp.json \
+		--content-type application/oscal+json \
+		--cache-control "public, max-age=300"
+	@echo "✅ OSCAL SSP published"
 
 # Run compliance check
 check-compliance:
@@ -146,8 +194,8 @@ destroy:
 clean:
 	@echo "Cleaning temporary files..."
 	rm -f tfplan tfplan.json opa-input.json resource-input.json opa-result.json compliance-result.json
-	rm -f lambda/policies.rego
-	rm -f opa-compliance.zip
+	rm -f validations.json validations.ndjson ksi-signal.json ksi-signal.bundle oscal-ssp.json
+	rm -f opa-compliance.zip lambda/policy.wasm
 	@echo "✅ Cleanup complete"
 
 # Development helpers

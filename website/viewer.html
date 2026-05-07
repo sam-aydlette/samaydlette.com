@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Trust Dashboard - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
+    <link rel="stylesheet" href="/assets/css/viewer.css?v=1777894583070">
+    <!-- Apply theme immediately to prevent flash -->
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card">
+            <h1 class="article-title">Live Trust Dashboard</h1>
+
+            <div class="viewer-intro">
+                <p>Renders the live compliance artifacts published at <code>/.well-known/</code> on this site: the deploy-time KSI signal (Sigstore-signed), the runtime KSI signal (re-validated daily by an AWS Lambda), and the NIST OSCAL Rev 5 System Security Plan derived from the same canonical inventory. The page is presentational; the JSON documents are the source of truth.</p>
+                <p>For the architecture and rationale, see <a href="/research/the-plumbing.html">The Plumbing</a>.</p>
+            </div>
+
+            <h2 id="trust-status">Trust Status</h2>
+            <div class="status-grid">
+                <div class="status-card" id="status-signed">
+                    <h3>Deploy-time signal</h3>
+                    <div class="status-value">checking…</div>
+                    <div class="status-detail"></div>
+                </div>
+                <div class="status-card" id="status-deploy">
+                    <h3>Last deploy</h3>
+                    <div class="status-value">—</div>
+                    <div class="status-detail"></div>
+                </div>
+                <div class="status-card" id="status-runtime">
+                    <h3>Last runtime check</h3>
+                    <div class="status-value">—</div>
+                    <div class="status-detail"></div>
+                </div>
+                <div class="status-card" id="status-drift">
+                    <h3>Drift</h3>
+                    <div class="status-value">—</div>
+                    <div class="status-detail"></div>
+                </div>
+            </div>
+
+            <div class="verify-callout">
+                <h3>Verify it yourself</h3>
+                <p>This dashboard runs in your browser and reads the same JSON anyone else's tool would. To verify the deploy-time signal cryptographically, fetch the artifact and bundle and run <code>cosign verify-blob</code>:</p>
+                <pre>curl -sO https://samaydlette.com/.well-known/ksi-signal.json
+curl -sO https://samaydlette.com/.well-known/ksi-signal.bundle
+
+cosign verify-blob \
+  --bundle ksi-signal.bundle \
+  --certificate-identity-regexp 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  ksi-signal.json</pre>
+                <p>The signature chain anchors in public infrastructure: Fulcio (the certificate authority), the GitHub Actions OIDC issuer, and the Rekor transparency log. Verification does not depend on trusting this site.</p>
+            </div>
+
+            <section class="viewer-panel" id="ksi-panel">
+                <div class="viewer-panel-header">
+                    <h2>KSI Signal (deploy-time)</h2>
+                    <span class="raw-link"><a href="/.well-known/ksi-signal.json">raw JSON</a> · <a href="/.well-known/ksi-signal.bundle">Sigstore bundle</a> · <a href="/.well-known/ksi-signal.schema.json">schema</a></span>
+                </div>
+
+                <h3>Metadata</h3>
+                <dl class="meta-grid" id="ksi-meta">
+                    <dd class="viewer-loading">Loading…</dd>
+                </dl>
+
+                <h3>Components</h3>
+                <div class="component-summary" id="ksi-component-summary"></div>
+                <div id="ksi-components"></div>
+
+                <h3>Validations</h3>
+                <p class="viewer-note">Populated in CI from the OPA gate.</p>
+                <div id="ksi-validations">
+                    <p class="viewer-loading">Loading…</p>
+                </div>
+            </section>
+
+            <section class="viewer-panel" id="oscal-panel">
+                <div class="viewer-panel-header">
+                    <h2>OSCAL Rev 5 SSP</h2>
+                    <span class="raw-link"><a href="/.well-known/oscal-ssp.json">raw JSON</a></span>
+                </div>
+
+                <h3>Metadata</h3>
+                <dl class="meta-grid" id="oscal-meta">
+                    <dd class="viewer-loading">Loading…</dd>
+                </dl>
+
+                <h3>Implementation status distribution</h3>
+                <div class="component-summary" id="oscal-summary"></div>
+
+                <h3>Implemented requirements</h3>
+                <div class="filter-bar">
+                    <label>status
+                        <select id="filter-status">
+                            <option value="">all</option>
+                        </select>
+                    </label>
+                    <label>origination
+                        <select id="filter-origination">
+                            <option value="">all</option>
+                        </select>
+                    </label>
+                    <label>search
+                        <input type="text" id="filter-search" placeholder="control id or text">
+                    </label>
+                    <span class="filter-summary" id="oscal-filter-summary"></span>
+                </div>
+                <div id="oscal-controls">
+                    <p class="viewer-loading">Loading…</p>
+                </div>
+            </section>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1777894583070"></script>
+    <script src="/assets/js/viewer.js?v=1777894583070"></script>
+</body>
+</html>
