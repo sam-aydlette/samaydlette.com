@@ -36,13 +36,7 @@ Together these provide Software Composition Analysis (Dependabot, against the Gi
 
 The PURL-based inventory in the canonical KSI signal also enables external monitoring without depending on GitHub's tools. Any consumer fetching the canonical inventory can correlate `npm_package` components against the OSV database, the GitHub Advisory Database, or any other PURL-aware vulnerability source — including a future portfolio-level monitor that watches signals from many systems and alerts when any of them ingests a known-bad component.
 
-## Honest qualifier
+Two structural notes about the third-party-risk story for this system:
 
-This is a one-person, low-blast-radius static site. The supply-chain attack surface is correspondingly small, and the controls described here are calibrated to that surface, not to a service handling federal customer data. That said, the gate this repo runs is more substantial than "small" might suggest: SCA via Dependabot, IaC scanning via Checkov + tfsec, and a Sigstore-signed canonical inventory all run on the deploy path.
-
-Two structural notes about the third-party-risk story for this kind of system:
-
-- **Transparency replaces a private TPRM function.** The canonical inventory is public, the signature chain is publicly verifiable, and the documentation set is in the repo. The third party doing the review is the public itself. There is no closed audit relationship to maintain because every artifact that would feed one is already published.
-- **The canonical inventory is the SBOM-equivalent.** Every npm package appears in `components[]` with its PURL and lockfile integrity hash; every static artifact appears with its SHA-256. A separate SBOM document (CycloneDX, SPDX) re-expressing the same information would be redundant for this system, and is not currently a requirement.
-
-A SaaS or IaaS at scale would add depth proportional to its blast radius: contractual notification requirements with key suppliers (which require leverage a small operator does not have), formal third-party assessments, and review cadence keyed to risk level. The shape of the controls — PURL-based identification, automated monitoring, signed provenance, public verifiability — generalizes; the depth and the negotiating posture do not.
+- **Transparency replaces a private TPRM function.** The canonical inventory is public, the signature chain is publicly verifiable, and the documentation set is in the repo. There is no closed audit relationship to maintain because every artifact that would feed one is already published.
+- **The canonical inventory is the SBOM-equivalent.** Every npm package appears in `components[]` with its PURL and lockfile integrity hash; every static artifact appears with its SHA-256. A separate SBOM document (CycloneDX, SPDX) re-expressing the same information would be redundant.

@@ -1,6 +1,6 @@
 # Architecture and Operational Decisions
 
-This document records the architectural and operational decisions that satisfy 14 of the in-scope KSI indicators. Each decision is named, justified briefly, and tagged with the KSI it addresses. The shape is loosely modeled on Architectural Decision Records (ADRs) but compressed for a one-person operation that does not need formal stakeholder sign-off.
+This document records the architectural and operational decisions that satisfy 14 of the in-scope KSI indicators. Each decision is named, justified briefly, and tagged with the KSI it addresses. The shape is loosely modeled on Architectural Decision Records (ADRs).
 
 ## Change management procedures (KSI-CMT-04)
 
@@ -87,7 +87,7 @@ The annual security review (see [`security-review.md`](security-review.md)) is t
 
 Secrets in scope:
 
-- **AWS access keys (deployer):** stored as GitHub Actions encrypted secrets; rotated annually as part of the security review.
+- **AWS access keys (deployer):** stored as GitHub Actions encrypted secrets; rotated every 90 days as a compensating control while the OIDC migration in [POAM-001](poam.md) remains deferred. Rotation procedure is in [`docs/policies/secure-configuration-guide.md`](policies/secure-configuration-guide.md); rotation events are logged in [`docs/security-review.md`](security-review.md).
 - **TLS certificate:** ACM-managed, auto-rotated by AWS.
 - **GitHub PATs:** none in use. All GitHub access uses the workflow's `GITHUB_TOKEN` with workflow-scoped permissions, plus the OIDC token for cosign keyless signing (which is ephemeral).
 - **Sigstore signing identity:** ephemeral, generated per-run by Fulcio, never stored anywhere.
@@ -114,7 +114,7 @@ Token threat model, sized to the system's actual blast radius. Methodology: STRI
 **Top threats considered:**
 
 1. **GitHub repository compromise → arbitrary deploy.** An attacker with write access to `main` can push code that the OPA gate would have to flag. *Mitigations:* GitHub branch protection on `main`, OPA gate evaluating Terraform plan + content + IAM policy on every PR, Sigstore signing chain that records every produced artifact in the public Rekor log so a falsified deploy is externally detectable.
-2. **Deployer credential leak → AWS account access.** The long-lived AWS access keys in GitHub Actions secrets are the largest standing-privilege surface. *Mitigations:* GitHub secret scanning with push protection, scoped IAM permissions on the deployer principal, planned migration to GitHub OIDC role assumption (POAM-001).
+2. **Deployer credential leak → AWS account access.** The long-lived AWS access keys in GitHub Actions secrets are the largest standing-privilege surface. *Mitigations:* GitHub secret scanning with push protection, scoped IAM permissions on the deployer principal, 90-day key rotation as an active compensating control (procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md), rotation events logged in [`security-review.md`](security-review.md)), and the planned migration to GitHub OIDC role assumption ([POAM-001](poam.md)) which is the durable answer.
 3. **Runtime Lambda compromise → falsified runtime signal.** An attacker with Lambda code-modification access could publish misleading runtime KSI signals. *Mitigations:* tight Lambda IAM (write only to one S3 key, read-only on three S3 config APIs and one CloudFront distribution), drift between deploy-time and runtime signals is detectable from outside, runtime signal is not currently signed (POAM-002).
 4. **Sigstore-chain compromise.** A compromise of Fulcio, Rekor, or the GitHub OIDC issuer would invalidate the signing chain. *Mitigations:* none operator-side — these are public infrastructure components with thousands of independent observers; compromise of any one is detectable by anyone running independent verification.
 5. **Bucket policy weakening.** A change to the S3 bucket policy or public-access block that re-enabled public read or write. *Mitigations:* OPA gate at deploy time blocks the change; runtime KSI emitter detects the drift within 24 hours.

@@ -4,7 +4,7 @@ This document satisfies KSI-PIY-06 — persistent review of the effectiveness of
 
 ## Scope
 
-For a one-person static-site operation, "investments" means the time spent and the recurring costs paid for security controls. The review answers: are the chosen controls producing security outcomes proportionate to their cost?
+"Investments" here means the time spent and the recurring costs paid for security controls. The review answers: are the chosen controls producing security outcomes proportionate to their cost?
 
 ## Review template
 
@@ -82,10 +82,14 @@ See README "Conscious Trade-offs for Budget Reality." Excluded controls (WAF, mu
 
 - Continue current control set
 - Verify runtime emitter has produced at least one drift signal event in a controlled test (deliberately misconfigure a non-production resource and confirm the daily Lambda flags it)
-- Consider AWS access key rotation cadence (currently ad-hoc; should be ≤ annually)
+- Close [POAM-001](poam.md) by completing the GitHub OIDC migration; until then, hold to the 90-day key-rotation cadence below
 - Consider whether OSCAL artifact should be signed independently or covered by the same Sigstore bundle as the KSI signal
 - Cost target: maintain ~$125/year compliance overhead
 
-## Honest qualifier
+## AWS access key rotation log
 
-For a sole operator the review is structurally a self-audit. It is included for completeness against KSI-PIY-06; in any larger organization the review would involve at least one independent reviewer and a budget owner separate from the implementer. Here, those are the same person, and the review's value is mostly in forcing an annual reckoning with whether the trade-offs still make sense.
+Rotation cadence: 90 days. Active compensating control while [POAM-001](poam.md) remains open. Procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md). Emergency rotations (suspected compromise) are logged here too with the trigger noted.
+
+| Rotation date | Trigger | Outcome | Notes |
+| --- | --- | --- | --- |
+| _Pending first rotation_ | _scheduled_ | _—_ | First rotation due 90 days from initial key issuance. |

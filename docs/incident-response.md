@@ -1,6 +1,6 @@
 # Incident Response Runbook
 
-This document satisfies KSI-INR-01 through KSI-INR-03. It is the incident response runbook for a one-person static-site operation. The IR lead is the author. The on-call rotation has one slot and is staffed continuously.
+This document satisfies KSI-INR-01 through KSI-INR-03. The IR lead is the author. The on-call rotation has one slot and is staffed continuously.
 
 ## Scope
 
@@ -76,7 +76,7 @@ Response procedure:
 4. **Preserve evidence.** Record the timeline, the surface, and the actions taken before the public surface is updated. Record in the after-action template.
 5. **Notify if applicable.** External notification is generally not required for a personal site; this section exists for the case where it ever is.
 
-(IR-9.2) Training: spillage scenarios are part of the operator's annual review of this runbook (see [`docs/training-log.md`](training-log.md), KSI-CED-04 section). For a sole-operator system the trainee and the IR lead are the same person; the training is the act of reading and updating this runbook annually.
+(IR-9.2) Training: spillage scenarios are part of the annual review of this runbook (see [`docs/training-log.md`](training-log.md), KSI-CED-04 section).
 
 (IR-9.3) Post-spill operations: the spillage scope is bounded by the public-static-site surface. After containment, normal site operation continues; there is no production environment to quarantine because the production environment is the public site itself.
 
@@ -96,6 +96,3 @@ Single-tier. Author → author. External escalations:
 
 There is no actual FedRAMP authorization in scope, so the FedRAMP Security Inbox (FSI) and Incident Communications Procedures (ICP) do not apply.
 
-## Honest qualifier
-
-For an organization with employees, customers, regulators, or fiduciary duties, this runbook would be much longer and would include named on-call rotations, defined escalation paths, communication templates for affected parties, and a formal post-incident review process with a separate reviewer. None of those apply to a sole operator running a static site. The mechanics of detection, triage, containment, and recovery are the same; the social and organizational scaffolding is what's absent.

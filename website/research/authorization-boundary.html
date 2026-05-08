@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorization Boundary &mdash; samaydlette.com</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+    <style>
+        .boundary-svg-wrap {
+            margin: var(--space-lg) 0;
+            padding: var(--space-md);
+            background: #ffffff;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+        .boundary-svg-wrap object,
+        .boundary-svg-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link active">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card">
+            <div class="article-meta">
+                <span class="article-category">Research</span>
+            </div>
+
+            <h1 class="article-title">Authorization Boundary &mdash; samaydlette.com</h1>
+
+            <div class="article-content">
+                <div class="article-summary">
+                    <strong>Diagrammatic illustration of the cloud service offering, leveraged services, external services, FIPS-validated cryptographic modules, and the major data flows, per the FedRAMP <em>A FedRAMP Authorization Boundary</em> guidance and standard FedRAMP ABD/DFD diagramming conventions.</strong>
+                </div>
+
+                <h3 id="diagram">The Diagram</h3>
+
+                <div class="boundary-svg-wrap">
+                    <object data="/assets/diagrams/authorization-boundary.svg" type="image/svg+xml" aria-label="samaydlette.com FedRAMP authorization boundary with data flows and FIPS modules">
+                        <img src="/assets/diagrams/authorization-boundary.svg" alt="samaydlette.com FedRAMP authorization boundary with data flows and FIPS modules"/>
+                    </object>
+                </div>
+
+                <p>The diagram is a single SVG, rendered above and also published at <a href="/assets/diagrams/authorization-boundary.svg"><code>/assets/diagrams/authorization-boundary.svg</code></a>. GitHub renders it natively when linked from any Markdown source; FedRAMP reviewers can download or print it as a single self-contained image with embedded legend and data flow table.</p>
+
+                <p>The conventions follow both the FedRAMP <em>A FedRAMP Authorization Boundary</em> living document and the standard ABD/DFD elements that FedRAMP reviewers expect: red dashed boundary outline, comprehensive legend, FIPS 140-2/3 validated cryptographic modules in list view, ports/protocols/authentication on every flow, distinguishing privileged from non-privileged access, and clear visual differentiation between FedRAMP-authorized and non-authorized external services.</p>
+
+                <h3 id="rules-of-thumb">The Four Rules of Thumb, Applied</h3>
+                <p>The FedRAMP authorization-boundary guidance gives four Rules of Thumb (ROTs) for what is in versus out of scope. Applied to this system:</p>
+
+                <p><strong>ROT #1 (in &mdash; federal information processed, stored, or transmitted).</strong> The PoC has no federal customer and no federal information today, so by strict reading of ROT #1 the boundary could be empty. The architecture is built to be ready if federal information ever enters the system, and the metadata definition in Key Concept #3 (data describing CIA &mdash; logs, audit trails, vulnerability reports) applies directly to the artifacts published at <code>/.well-known/</code>. Those artifacts are treated as in-scope so the boundary reflects the architecture rather than the current emptiness of the data tier.</p>
+
+                <p><strong>ROT #2 (in &mdash; external services that affect CIA).</strong> Six classes of external services without a FedRAMP authorization are inside the boundary because they affect the CIA of system artifacts: Sigstore Fulcio, Sigstore Rekor, GitHub OIDC, GitHub repo plus Actions runners, Duo, and the vulnerability-metadata sources (GitHub Advisory Database, CISA KEV catalog). Each is named on the diagram with its CIA-impact dimension and compensating controls documented in <code>docs/policies/</code>.</p>
+
+                <p><strong>ROT #3 (out &mdash; corporate services that do not affect CIA).</strong> The operator&rsquo;s personal email, calendar, banking, and other personal SaaS are out of scope because they do not handle CIA-impacting data for the CSO. If the operator ever uses corporate email to relay vulnerability information about the system, that email service comes back into scope per ROT #2; this is acknowledged operationally and avoided by routing all vulnerability discussion through the public GitHub issue tracker and the published VDR report.</p>
+
+                <p><strong>ROT #4 (out &mdash; dev environments without federal info).</strong> The operator&rsquo;s local development machine is out of scope. There is no federal information on it today; if the system&rsquo;s data scope ever changes, the dev machine is reassessed.</p>
+
+                <h3 id="leveraged-vs-external">Leveraged vs. External (Without ATO)</h3>
+                <p><strong>Leveraged (green band).</strong> AWS underlying infrastructure is leveraged from the AWS East/West Moderate FedRAMP authorization (Package ID AGENCYAMAZONEW). Compliance with FedRAMP / NIST SP 800-53 controls is inherited from the AWS authorization package and the AWS Customer Responsibility Matrix. The PE, MA, MP, and parts of CP and SC families are inherited in the published OSCAL SSP.</p>
+
+                <p><strong>External without ATO (amber band).</strong> The Sigstore stack, the GitHub identity and CI/CD layer, Duo, and the vulnerability-data sources have no separate FedRAMP authorization. They are inside the boundary because each affects CIA, but the CSP owns the responsibility for any control not provided by the underlying service. Compensating controls per service are documented in the relevant family policies (Sigstore in <code>docs/policies/sc-policy.md</code>; GitHub identity in <code>docs/policies/ia-policy.md</code>; Duo in <code>docs/policies/ac-policy.md</code> and the Secure Configuration Guide; vulnerability sources in <code>docs/policies/ra-policy.md</code>).</p>
+
+                <h3 id="fips">FIPS-Validated Cryptographic Modules</h3>
+                <p>The diagram lists every FIPS 140-2/3 validated module in scope, per the FedRAMP ABD convention.</p>
+
+                <p><strong>Inherited from AGENCYAMAZONEW.</strong> AWS KMS is FIPS 140-3 Level 3 (HSM-backed CMKs) and is the at-rest encryption module for S3 SSE, EBS, and Secrets Manager in this system. ACM TLS termination on CloudFront uses FIPS-validated cipher suites with TLS 1.2+ enforced. S3 server-side encryption (AES-256) is delivered via the KMS-backed module.</p>
+
+                <p><strong>External, no FedRAMP ATO.</strong> The Sigstore signing chain uses the FIPS-approved ECDSA P-256 algorithm, but the Fulcio and Rekor implementations are not FIPS-validated cryptographic modules. The compensating control is the public Rekor transparency log: integrity is anchored in independent observation rather than module validation. This is documented as an awareness item rather than a remediation gap because the threat model is "anyone can verify, including via independent Rekor mirrors" rather than "trust the cryptographic module."</p>
+
+                <p><strong>Cross-cutting.</strong> AES-256-GCM (S3, EBS) for data at rest. ECDSA P-256 for Sigstore signatures. SHA-256 for content hashing across the canonical inventory. TLS 1.2+ on every public endpoint (CloudFront, AWS APIs, GitHub, Sigstore, Duo).</p>
+
+                <h3 id="data-flows">Data Flows (A&ndash;G)</h3>
+                <p>The diagram lettered arrows match the data flow table in the SVG legend. A few flow-level notes that won't fit on the table:</p>
+
+                <p><strong>Ingress is narrow.</strong> The only externally-initiated ingress to the boundary is flow A: the operator pushing source code to the GitHub repository, authenticated by username + password plus Duo MFA. There is no agency-customer ingress because there is no agency-customer surface. There is no other inbound connection that crosses the boundary.</p>
+
+                <p><strong>Egress is also narrow.</strong> The only egress is flow G: CloudFront serving public site content and <code>/.well-known/</code> artifacts to anonymous readers over TLS 1.2+. There is no other outbound flow that exits the boundary; the daily runtime cycle (flow F) is internal.</p>
+
+                <p><strong>Privileged versus non-privileged access.</strong> The diagram and table mark each authentication context. Privileged: operator (root + admin), GitHub Actions deployer (Terraform apply, S3 sync, Lambda update). Non-privileged: Lambda runtime IAM role (read-only on three S3 config APIs and one CloudFront distribution; write to one S3 key). Anonymous: public Internet readers. The privileged-versus-non-privileged distinction is the FedRAMP DFD convention; it makes scope-creep on the runtime principal mechanically visible.</p>
+
+                <p><strong>POA&amp;M cross-references.</strong> Flow B (GitHub Actions &rarr; AWS APIs) currently uses long-lived AWS access keys; migration to GitHub OIDC role assumption is tracked as POAM-001. Until that closes, an operator-rotation event is the standing privilege boundary.</p>
+
+                <h3 id="related-diagrams">Related FedRAMP Diagrams (Status)</h3>
+                <p>The FedRAMP authorization-boundary guidance asks for four data-flow diagrams. Sized to this system:</p>
+
+                <ul>
+                    <li><strong>Federal customer user authentication logical data flow:</strong> not applicable. No federal customer accounts exist; no end-user authentication surface is implemented.</li>
+                    <li><strong>Administrative and support personnel authentication logical data flow:</strong> covered by flows A and B in the diagram above.</li>
+                    <li><strong>System application data flow within the proposed cloud authorization boundary:</strong> covered by flows C, D, and F in the diagram above.</li>
+                    <li><strong>System application data flow to all leveraged and interconnected systems:</strong> covered by flows B and E in the diagram above (AWS leveraged path; Sigstore signing chain).</li>
+                </ul>
+
+                <p>A separate <strong>network diagram</strong> in the InfusionPoints sense (subnets, network devices, DNS server locations) is minimally relevant for this system: there are no VPC subnets to depict (Lambda runs outside any VPC; S3 and CloudFront are managed services), there are no operator-controlled network devices, and DNS authority is the Route 53 hosted zone shown in the CSO band of the diagram above. If the system ever moves into a VPC or adds private network components, a separate network diagram is added then.</p>
+
+                <h3 id="agency-considerations">Agency-Specific Considerations</h3>
+                <p>The guidance closes with a note that agencies may impose additional security requirements beyond the FedRAMP baseline. None apply today. If the system were ever to onboard a federal customer with privacy-control requirements, foreign-national handling restrictions, or other agency-specific overlays, the boundary is revisited and the OSCAL SSP regenerated to reflect the additions.</p>
+
+                <div class="article-callback">
+                    <p>Source for the rules and definitions on this page:</p>
+                    <div class="article-footer">
+                        <a href="https://www.fedramp.gov/" class="read-more">fedramp.gov</a>
+                        <a href="/research/the-plumbing.html" class="read-more">the_plumbing.md</a>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1777894583070"></script>
+</body>
+</html>

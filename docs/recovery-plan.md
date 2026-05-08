@@ -3,7 +3,7 @@
 This document satisfies KSI-RPL-02 and KSI-RPL-04, given the recovery objectives declared per KSI-RPL-01:
 
 - **Recovery Time Objective (RTO):** 21 days. The world will be fine without my opinions for three weeks.
-- **Recovery Point Objective (RPO):** 24 hours. Backups are the daily git commits and S3 object versioning, both of which exceed this granularity by orders of magnitude.
+- **Recovery Point Objective (RPO):** 24 hours. Backups are the frequent git commits and S3 object versioning, both of which exceed this granularity by orders of magnitude.
 
 ## Scope
 
@@ -82,7 +82,3 @@ A formal tabletop is run annually, recorded below using this template:
 - **Wall-clock time:** Single working day, including substantial new feature development that wouldn't be in a real recovery.
 - **Issues found:** Pre-existing OPA accessibility regex bug surfaced when the subshell-scope bug in `terraform-plan.sh` was fixed.
 - **Follow-up items:** None — both fixed inline.
-
-## Honest qualifier
-
-This recovery plan is written for a one-person operation with no SLAs to anyone. The 21-day RTO is internally honest; an externally-facing service would use a number two orders of magnitude smaller and require backup infrastructure ready to take over. The mechanics of this plan generalize; the timelines do not. If something here ever does need to be recovered in minutes rather than weeks, the gap will be infrastructure that's ready to fail-over to (multi-region active-passive, or at least pre-staged Terraform in a second account), not a different procedure.

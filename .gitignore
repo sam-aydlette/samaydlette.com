@@ -33,6 +33,12 @@ website/.well-known/ksi-signal-runtime.json
 website/.well-known/ksi-signal.schema.json
 website/.well-known/ksi-signal.bundle
 website/.well-known/oscal-ssp.json
+website/.well-known/vdr-report.json
+infrastructure/vdr-report.json
+website/.well-known/iiw.csv
+infrastructure/iiw.csv
+website/.well-known/oscal-poam.json
+infrastructure/oscal-poam.json
 
 # OPA temporary files
 opa-input.json

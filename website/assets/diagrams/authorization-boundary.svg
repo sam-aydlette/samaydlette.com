@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1400 1780" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="boundary-title boundary-desc">
+    <title id="boundary-title">samaydlette.com authorization boundary with data flows and FIPS modules</title>
+    <desc id="boundary-desc">A FedRAMP authorization-boundary diagram for samaydlette.com. Shows the cloud service offering's internal components, services leveraged from AWS under FedRAMP authorization AGENCYAMAZONEW, external services without FedRAMP authorization that are inside the boundary per Rule of Thumb #2, out-of-boundary items per Rules of Thumb #3 and #4, the seven major data flows lettered A through G with ingress and egress points, FIPS 140-2/3 validated cryptographic modules in scope, and a legend.</desc>
+
+    <defs>
+        <style>
+            .ttl { font: 700 28px system-ui, sans-serif; fill: #1a1a1a; }
+            .sub { font: 400 16px system-ui, sans-serif; fill: #444; }
+            .band-h { font: 700 16px system-ui, sans-serif; fill: #1a1a1a; }
+            .box-h { font: 600 14px system-ui, sans-serif; fill: #1a1a1a; }
+            .box-d { font: 400 12px system-ui, sans-serif; fill: #333; }
+            .small { font: 400 11px system-ui, sans-serif; fill: #444; }
+            .flow-letter { font: 700 13px system-ui, sans-serif; fill: #ffffff; }
+            .boundary-label { font: 700 16px system-ui, sans-serif; fill: #c0392b; letter-spacing: 1px; }
+            .legend-h { font: 700 18px system-ui, sans-serif; fill: #1a1a1a; }
+            .legend-row { font: 400 13px system-ui, sans-serif; fill: #1a1a1a; }
+        </style>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#1a1a1a"/>
+        </marker>
+    </defs>
+
+    <rect x="0" y="0" width="1400" height="1780" fill="#ffffff"/>
+
+    <!-- ======== Title ======== -->
+    <text x="700" y="36" text-anchor="middle" class="ttl">samaydlette.com FedRAMP Authorization Boundary</text>
+    <text x="700" y="62" text-anchor="middle" class="sub">Per FedRAMP &#8220;A FedRAMP Authorization Boundary&#8221; guidance &#183; CSO targeting Rev 5 Moderate / 20x Class C</text>
+
+    <!-- Boundary label sits above the dashed line -->
+    <text x="700" y="92" text-anchor="middle" class="boundary-label">AUTHORIZATION BOUNDARY</text>
+
+    <!-- Boundary outline -->
+    <rect x="40" y="105" width="1320" height="1045" rx="14" ry="14" fill="none" stroke="#c0392b" stroke-width="3" stroke-dasharray="10,5"/>
+
+    <!-- ======== Section 1: Leveraged from AWS ======== -->
+    <rect x="70" y="135" width="1260" height="160" rx="8" ry="8" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+    <text x="90" y="160" class="band-h">Leveraged services with FedRAMP authorization (sp-inherited)</text>
+    <text x="90" y="180" class="small">Per Key Concept #6: external services with a pre-existing FedRAMP authorization, inherited under the customer responsibility matrix.</text>
+    <rect x="90" y="200" width="1220" height="80" rx="6" ry="6" fill="#ffffff" stroke="#27ae60" stroke-width="1.5"/>
+    <text x="105" y="222" class="box-h">AWS underlying infrastructure</text>
+    <text x="105" y="240" class="box-d">EC2 / VPC networking / KMS / IAM control plane / S3 storage substrate / CloudFront edge / Lambda host / EventBridge / ACM PKI / CloudTrail backplane</text>
+    <text x="105" y="258" class="box-d">Reached from CI via the AWS service APIs (HTTPS 443, TLS 1.2+, AWS SigV4). All deploys traverse this band.</text>
+    <text x="105" y="275" class="small">FedRAMP authorization package: <tspan font-weight="700">AGENCYAMAZONEW</tspan> (AWS East/West Moderate)</text>
+
+    <!-- ======== Section 2: CSO Internal ======== -->
+    <rect x="70" y="315" width="1260" height="320" rx="8" ry="8" fill="#eaf3fb" stroke="#2980b9" stroke-width="2"/>
+    <text x="90" y="340" class="band-h">Cloud Service Offering &#8212; internal components (sp-system)</text>
+    <text x="90" y="360" class="small">Per Key Concept #1 + Rule of Thumb #1: components the CSP controls, plus the &#8220;federal information&#8221; surface (here scoped to the published artifacts at /.well-known/).</text>
+
+    <rect x="90" y="375" width="395" height="70" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="105" y="396" class="box-h">CloudFront distribution</text>
+    <text x="105" y="415" class="box-d">Public CDN; TLS 1.2+; OAC to S3</text>
+    <text x="105" y="433" class="small">cdn_distribution &#183; egress edge to public Internet</text>
+
+    <rect x="495" y="375" width="395" height="70" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="510" y="396" class="box-h">Route 53 hosted zone</text>
+    <text x="510" y="415" class="box-d">Authoritative DNS for samaydlette.com</text>
+    <text x="510" y="433" class="small">aws_route53_zone</text>
+
+    <rect x="900" y="375" width="410" height="70" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="915" y="396" class="box-h">ACM TLS certificate</text>
+    <text x="915" y="415" class="box-d">Auto-renewing public TLS cert</text>
+    <text x="915" y="433" class="small">aws_acm_certificate (us-east-1)</text>
+
+    <rect x="90" y="460" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="105" y="481" class="box-h">S3 origin bucket</text>
+    <text x="105" y="500" class="box-d">Site content + /.well-known/ artifacts</text>
+    <text x="105" y="516" class="small">SSE-S3 at rest (AES-256, KMS-backed); public access blocked;</text>
+    <text x="105" y="531" class="small">read access only via CloudFront OAC</text>
+
+    <rect x="495" y="460" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="510" y="481" class="box-h">Lambda &#8212; runtime KSI emitter</text>
+    <text x="510" y="500" class="box-d">Daily revalidation; loads policy.wasm</text>
+    <text x="510" y="516" class="box-d">Writes only to /.well-known/ksi-signal-runtime.json</text>
+    <text x="510" y="533" class="small">function &#183; Node.js &#183; non-privileged role</text>
+
+    <rect x="900" y="460" width="410" height="80" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="915" y="481" class="box-h">EventBridge schedule</text>
+    <text x="915" y="500" class="box-d">rate(1 day) trigger for the Lambda</text>
+    <text x="915" y="533" class="small">aws_cloudwatch_event_rule</text>
+
+    <rect x="90" y="555" width="395" height="65" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="105" y="576" class="box-h">IAM &#8212; deployer + Lambda role</text>
+    <text x="105" y="593" class="box-d">Deployer (privileged): POAM-001 OIDC migration</text>
+    <text x="105" y="610" class="small">Lambda (non-privileged): read 3 S3 config APIs + 1 CF distribution; write 1 S3 key</text>
+
+    <rect x="495" y="555" width="395" height="65" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="510" y="576" class="box-h">CloudTrail (account-wide)</text>
+    <text x="510" y="593" class="box-d">Management-event audit; immutable</text>
+    <text x="510" y="610" class="small">AWS-default retention</text>
+
+    <rect x="900" y="555" width="410" height="65" rx="5" ry="5" fill="#ffffff" stroke="#2980b9" stroke-width="1.5"/>
+    <text x="915" y="576" class="box-h">CloudWatch Logs</text>
+    <text x="915" y="593" class="box-d">Lambda execution + invocation history</text>
+    <text x="915" y="610" class="small">7-day retention (cost trade-off)</text>
+
+    <!-- ======== Section 3: External services without ATO ======== -->
+    <rect x="70" y="655" width="1260" height="455" rx="8" ry="8" fill="#fef5e7" stroke="#d68910" stroke-width="2"/>
+    <text x="90" y="680" class="band-h">External services without FedRAMP ATO &#8212; in boundary per Rule of Thumb #2</text>
+    <text x="90" y="700" class="small">Each affects the confidentiality, integrity, or availability of system artifacts. Per Key Concept #5 + ROT #2, these must be inside the boundary even though they have no separate FedRAMP authorization.</text>
+
+    <rect x="90" y="715" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="105" y="736" class="box-h">Sigstore Fulcio</text>
+    <text x="105" y="754" class="box-d">Issues short-lived X.509 cert per CI run</text>
+    <text x="105" y="771" class="box-d">Identity bound to GitHub Actions OIDC</text>
+    <text x="105" y="788" class="small">CIA impact: signing-chain integrity</text>
+
+    <rect x="495" y="715" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="510" y="736" class="box-h">Sigstore Rekor</text>
+    <text x="510" y="754" class="box-d">Public transparency log of every signature</text>
+    <text x="510" y="771" class="box-d">Append-only; verifiable by anyone</text>
+    <text x="510" y="788" class="small">CIA impact: signing-chain integrity</text>
+
+    <rect x="900" y="715" width="410" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="915" y="736" class="box-h">GitHub OIDC token issuer</text>
+    <text x="915" y="754" class="box-d">Issues per-run identity tokens</text>
+    <text x="915" y="771" class="box-d">Consumed by Fulcio + AWS (POAM-001)</text>
+    <text x="915" y="788" class="small">CIA impact: identity / authentication</text>
+
+    <rect x="90" y="810" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="105" y="831" class="box-h">GitHub repository + Actions</text>
+    <text x="105" y="849" class="box-d">Source of record; CI/CD orchestrator</text>
+    <text x="105" y="866" class="box-d">Branch protection on main + OPA gate</text>
+    <text x="105" y="883" class="small">CIA impact: deploy-chain integrity</text>
+
+    <rect x="495" y="810" width="395" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="510" y="831" class="box-h">Duo &#8212; multi-factor authentication</text>
+    <text x="510" y="849" class="box-d">MFA on AWS root + GitHub account</text>
+    <text x="510" y="866" class="box-d">Operator second factor</text>
+    <text x="510" y="883" class="small">CIA impact: privileged-account auth</text>
+
+    <rect x="900" y="810" width="410" height="80" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="915" y="831" class="box-h">Vulnerability metadata sources</text>
+    <text x="915" y="849" class="box-d">GitHub Advisory DB (Dependabot upstream)</text>
+    <text x="915" y="866" class="box-d">CISA KEV catalog (BOD 22-01)</text>
+    <text x="915" y="883" class="small">CIA impact: VDR ingest accuracy</text>
+
+    <!-- FIPS-validated cryptographic modules callout (replaces prose) -->
+    <rect x="90" y="905" width="1220" height="195" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <text x="105" y="926" class="box-h">FIPS 140-2/3 validated cryptographic modules in scope</text>
+    <text x="105" y="945" class="small">Required by the FedRAMP Authorization Boundary Diagram convention. Lists the cryptographic modules that protect federal data and metadata in transit and at rest.</text>
+
+    <text x="105" y="970" class="box-d"><tspan font-weight="700">Inherited from AWS (AGENCYAMAZONEW):</tspan></text>
+    <text x="125" y="989" class="box-d">&#8226; AWS KMS &#8212; FIPS 140-3 Level 3 (HSM-backed CMKs); used for S3 SSE, EBS encryption, Secrets Manager</text>
+    <text x="125" y="1006" class="box-d">&#8226; ACM TLS termination on CloudFront &#8212; FIPS-validated cipher suites; TLS 1.2+ enforced</text>
+    <text x="125" y="1023" class="box-d">&#8226; S3 server-side encryption &#8212; AES-256 via KMS-backed module (data at rest)</text>
+
+    <text x="700" y="970" class="box-d"><tspan font-weight="700">External, no FedRAMP ATO (compensating controls documented):</tspan></text>
+    <text x="720" y="989" class="box-d">&#8226; Sigstore Fulcio + Rekor &#8212; ECDSA P-256 (FIPS-approved algorithm); the implementations are not</text>
+    <text x="720" y="1006" class="box-d">&#160;&#160;FIPS-validated modules. Trust anchored in the public Rekor transparency log.</text>
+    <text x="720" y="1023" class="box-d">&#8226; Lambda Node.js runtime &#8212; OpenSSL; no federal data processed in this PoC.</text>
+
+    <text x="105" y="1050" class="box-d"><tspan font-weight="700">Algorithms in use across the system:</tspan> AES-256-GCM (S3, EBS) &#183; ECDSA P-256 (Sigstore signatures) &#183; SHA-256 (artifact hashing)</text>
+    <text x="105" y="1067" class="box-d"><tspan font-weight="700">TLS profile:</tspan> TLS 1.2+ on all public endpoints (CloudFront, AWS APIs, GitHub, Sigstore, Duo)</text>
+    <text x="105" y="1084" class="box-d"><tspan font-weight="700">Data at rest:</tspan> all S3 objects encrypted via SSE-S3 with KMS-backed keys; CloudWatch Logs and CloudTrail use AWS-default at-rest encryption</text>
+
+    <!-- ======== Out of boundary band ======== -->
+    <text x="700" y="1175" text-anchor="middle" class="band-h">Out of boundary</text>
+
+    <rect x="40" y="1190" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="55" y="1212" class="box-h">Operator&#8217;s development machine</text>
+    <text x="55" y="1230" class="box-d">Local laptop where code is authored.</text>
+    <text x="55" y="1247" class="box-d">No federal information in scope.</text>
+    <text x="55" y="1270" class="small">Out per Rule of Thumb #4 (dev environment without federal info).</text>
+
+    <rect x="380" y="1190" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="395" y="1212" class="box-h">Operator&#8217;s personal email + SaaS</text>
+    <text x="395" y="1230" class="box-d">Personal accounts (email, calendar,</text>
+    <text x="395" y="1247" class="box-d">banking, etc.). No CIA-impacting data.</text>
+    <text x="395" y="1270" class="small">Out per Rule of Thumb #3 (corporate services not affecting CIA).</text>
+
+    <rect x="720" y="1190" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="735" y="1212" class="box-h">Public Internet (readers, verifiers)</text>
+    <text x="735" y="1230" class="box-d">Anyone fetching the site or running</text>
+    <text x="735" y="1247" class="box-d">cosign verify-blob against the bundle.</text>
+    <text x="735" y="1270" class="small">Consumers of public artifacts; not a system component.</text>
+
+    <rect x="1060" y="1190" width="300" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="1075" y="1212" class="box-h">Federal agency customer</text>
+    <text x="1075" y="1230" class="box-d">None today (PoC has no federal</text>
+    <text x="1075" y="1247" class="box-d">customer or federal data).</text>
+    <text x="1075" y="1270" class="small">Conceptually in scope at any future point a customer is onboarded.</text>
+
+    <!-- ======== DATA FLOW ARROWS ======== -->
+    <g stroke="#1a1a1a" stroke-width="2.2" fill="none" opacity="0.85">
+        <!-- A: Operator → GitHub repo (ingress) -->
+        <path d="M 200 1190 V 1170 H 290 V 890" marker-end="url(#arrow)"/>
+        <!-- B: GitHub Actions → AWS underlying (deploy via APIs) -->
+        <path d="M 90 850 H 60 V 250 H 88" marker-end="url(#arrow)"/>
+        <!-- C: AWS underlying → S3 origin (deploy artifacts) -->
+        <path d="M 290 280 V 460" marker-end="url(#arrow)"/>
+        <!-- D: AWS underlying → Lambda (deploy zip) -->
+        <path d="M 695 280 V 460" marker-end="url(#arrow)"/>
+        <!-- E: GitHub Actions → Sigstore Fulcio + Rekor (sign) -->
+        <path d="M 290 810 V 795" marker-end="url(#arrow)"/>
+        <path d="M 380 810 H 600 V 795" marker-end="url(#arrow)"/>
+        <!-- F: EventBridge → Lambda (trigger), Lambda → S3 (write runtime signal) -->
+        <path d="M 900 500 H 893" marker-end="url(#arrow)"/>
+        <path d="M 495 500 H 488" marker-end="url(#arrow)"/>
+        <!-- G: CloudFront → Public Internet (egress) -->
+        <path d="M 290 445 V 1140 H 880 V 1190" marker-end="url(#arrow)"/>
+    </g>
+
+    <!-- ======== ARROW LETTER LABELS ======== -->
+    <g>
+        <circle cx="245" cy="1170" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="245" y="1175" text-anchor="middle" class="flow-letter">A</text>
+        <circle cx="60" cy="540" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="60" y="545" text-anchor="middle" class="flow-letter">B</text>
+        <circle cx="290" cy="370" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="290" y="375" text-anchor="middle" class="flow-letter">C</text>
+        <circle cx="695" cy="370" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="695" y="375" text-anchor="middle" class="flow-letter">D</text>
+        <circle cx="430" cy="803" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="430" y="808" text-anchor="middle" class="flow-letter">E</text>
+        <circle cx="897" cy="500" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="897" y="505" text-anchor="middle" class="flow-letter">F</text>
+        <circle cx="290" cy="1140" r="13" fill="#1a1a1a" stroke="#ffffff" stroke-width="2"/>
+        <text x="290" y="1145" text-anchor="middle" class="flow-letter">G</text>
+    </g>
+
+    <!-- ======== LEGEND + DATA FLOW TABLE (below the boundary) ======== -->
+    <text x="40" y="1340" class="legend-h">Legend</text>
+
+    <!-- Color key -->
+    <g transform="translate(40, 1360)">
+        <rect x="0" y="0" width="20" height="20" fill="none" stroke="#c0392b" stroke-width="3" stroke-dasharray="6,3"/>
+        <text x="32" y="15" class="legend-row">Authorization boundary (red dashed border per FedRAMP convention)</text>
+
+        <rect x="0" y="32" width="20" height="20" fill="#eaf3fb" stroke="#2980b9" stroke-width="2"/>
+        <text x="32" y="47" class="legend-row">Cloud Service Offering &#8212; internal components (sp-system)</text>
+
+        <rect x="0" y="64" width="20" height="20" fill="#eafaf1" stroke="#27ae60" stroke-width="2"/>
+        <text x="32" y="79" class="legend-row">Leveraged services with FedRAMP authorization (sp-inherited; AGENCYAMAZONEW)</text>
+
+        <rect x="0" y="96" width="20" height="20" fill="#fef5e7" stroke="#d68910" stroke-width="2"/>
+        <text x="32" y="111" class="legend-row">External services without FedRAMP ATO &#8212; in boundary per Rule of Thumb #2</text>
+
+        <rect x="0" y="128" width="20" height="20" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="2"/>
+        <text x="32" y="143" class="legend-row">Out of boundary (Rule of Thumb #3 corporate services and #4 dev environments)</text>
+    </g>
+
+    <!-- Data flow table -->
+    <text x="40" y="1545" class="legend-h">Data Flows</text>
+    <g transform="translate(40, 1565)">
+        <!-- Header -->
+        <rect x="0" y="0" width="30" height="22" fill="#1a1a1a"/>
+        <text x="15" y="16" text-anchor="middle" class="flow-letter">ID</text>
+        <rect x="30" y="0" width="350" height="22" fill="#e8e8e8" stroke="#bbb"/>
+        <text x="40" y="16" class="legend-row" font-weight="700">Path (from &#8594; to)</text>
+        <rect x="380" y="0" width="220" height="22" fill="#e8e8e8" stroke="#bbb"/>
+        <text x="390" y="16" class="legend-row" font-weight="700">Protocol / port</text>
+        <rect x="600" y="0" width="280" height="22" fill="#e8e8e8" stroke="#bbb"/>
+        <text x="610" y="16" class="legend-row" font-weight="700">Authentication (priv. status)</text>
+        <rect x="880" y="0" width="170" height="22" fill="#e8e8e8" stroke="#bbb"/>
+        <text x="890" y="16" class="legend-row" font-weight="700">Encryption</text>
+        <rect x="1050" y="0" width="270" height="22" fill="#e8e8e8" stroke="#bbb"/>
+        <text x="1060" y="16" class="legend-row" font-weight="700">Type of data</text>
+
+        <!-- Row A -->
+        <circle cx="15" cy="38" r="10" fill="#1a1a1a"/>
+        <text x="15" y="42" text-anchor="middle" class="flow-letter">A</text>
+        <text x="40" y="42" class="legend-row">Operator &#8594; GitHub repo + Actions</text>
+        <text x="390" y="42" class="legend-row">HTTPS 443 (TLS 1.2+)</text>
+        <text x="610" y="42" class="legend-row">Username + password + Duo MFA (privileged)</text>
+        <text x="890" y="42" class="legend-row">In transit: TLS</text>
+        <text x="1060" y="42" class="legend-row">Source code, IaC config, content</text>
+
+        <!-- Row B -->
+        <circle cx="15" cy="62" r="10" fill="#1a1a1a"/>
+        <text x="15" y="66" text-anchor="middle" class="flow-letter">B</text>
+        <text x="40" y="66" class="legend-row">GitHub Actions &#8594; AWS underlying (APIs)</text>
+        <text x="390" y="66" class="legend-row">HTTPS 443 (TLS 1.2+, AWS SigV4)</text>
+        <text x="610" y="66" class="legend-row">AWS access keys (priv.); POAM-001 &#8594; OIDC</text>
+        <text x="890" y="66" class="legend-row">In transit: TLS</text>
+        <text x="1060" y="66" class="legend-row">Terraform plan/apply, AWS API calls</text>
+
+        <!-- Row C -->
+        <circle cx="15" cy="86" r="10" fill="#1a1a1a"/>
+        <text x="15" y="90" text-anchor="middle" class="flow-letter">C</text>
+        <text x="40" y="90" class="legend-row">AWS &#8594; S3 origin (deploy artifacts)</text>
+        <text x="390" y="90" class="legend-row">AWS-internal HTTPS / TLS</text>
+        <text x="610" y="90" class="legend-row">IAM role (privileged write to S3)</text>
+        <text x="890" y="90" class="legend-row">In transit: TLS &#183; At rest: SSE-S3 + KMS</text>
+        <text x="1060" y="90" class="legend-row">Site content + /.well-known/ artifacts</text>
+
+        <!-- Row D -->
+        <circle cx="15" cy="110" r="10" fill="#1a1a1a"/>
+        <text x="15" y="114" text-anchor="middle" class="flow-letter">D</text>
+        <text x="40" y="114" class="legend-row">AWS &#8594; Lambda (deploy zip)</text>
+        <text x="390" y="114" class="legend-row">AWS-internal HTTPS / TLS</text>
+        <text x="610" y="114" class="legend-row">IAM role (privileged update on Lambda)</text>
+        <text x="890" y="114" class="legend-row">In transit: TLS &#183; At rest: KMS</text>
+        <text x="1060" y="114" class="legend-row">Lambda function code (zip)</text>
+
+        <!-- Row E -->
+        <circle cx="15" cy="134" r="10" fill="#1a1a1a"/>
+        <text x="15" y="138" text-anchor="middle" class="flow-letter">E</text>
+        <text x="40" y="138" class="legend-row">GitHub Actions &#8594; Sigstore Fulcio + Rekor</text>
+        <text x="390" y="138" class="legend-row">HTTPS 443 (TLS 1.2+)</text>
+        <text x="610" y="138" class="legend-row">GitHub Actions OIDC token (workload identity)</text>
+        <text x="890" y="138" class="legend-row">In transit: TLS</text>
+        <text x="1060" y="138" class="legend-row">CSR, ECDSA P-256 signature, log entry</text>
+
+        <!-- Row F -->
+        <circle cx="15" cy="158" r="10" fill="#1a1a1a"/>
+        <text x="15" y="162" text-anchor="middle" class="flow-letter">F</text>
+        <text x="40" y="162" class="legend-row">EventBridge &#8594; Lambda &#8594; S3 (daily cycle)</text>
+        <text x="390" y="162" class="legend-row">AWS-internal (no public network)</text>
+        <text x="610" y="162" class="legend-row">Lambda IAM role (non-privileged, fixed-scope)</text>
+        <text x="890" y="162" class="legend-row">In transit: TLS &#183; At rest: SSE-S3 + KMS</text>
+        <text x="1060" y="162" class="legend-row">Trigger event; runtime KSI signal write</text>
+
+        <!-- Row G -->
+        <circle cx="15" cy="182" r="10" fill="#1a1a1a"/>
+        <text x="15" y="186" text-anchor="middle" class="flow-letter">G</text>
+        <text x="40" y="186" class="legend-row">CloudFront &#8594; Public Internet (egress)</text>
+        <text x="390" y="186" class="legend-row">HTTPS 443 (TLS 1.2+)</text>
+        <text x="610" y="186" class="legend-row">Anonymous (public read; no authentication)</text>
+        <text x="890" y="186" class="legend-row">In transit: TLS</text>
+        <text x="1060" y="186" class="legend-row">Public site content + /.well-known/ artifacts</text>
+    </g>
+</svg>

@@ -1,116 +1,160 @@
 # Plan of Action and Milestones (POA&M)
 
-This document records known security gaps that are tracked for remediation but not addressed in the current implementation. The format follows the conceptual structure of a NIST/FedRAMP POA&M without claiming alignment with any specific authorization process.
+**Cloud Service Provider:** Sam Aydlette
+**Cloud Service Offering:** samaydlette.com
+**Impact Level:** Moderate (FedRAMP Rev 5; equivalent to 20x Class C)
+**POA&M Date:** 2026-05-08
 
-POA&M items are different from "consciously skipped" items recorded in the README's *Conscious Trade-offs for Budget Reality* table. Skipped items are decisions made not to remediate (risk-accepted, with rationale). POA&M items are decisions that remediation is appropriate but not yet completed.
+This POA&M follows the field structure of the FedRAMP Rev 5 *Appendix O: Plan of Action and Milestones* template. Field names align with the official template; the format is condensed to Markdown for readability outside an Excel context. Per Rev 5 convention, this is the single register for all tracked weaknesses regardless of disposition; risk-accepted items are carried here with status `Risk-accepted`.
 
-Status legend: **Open** (not started) · **In progress** · **Closed** (remediation complete) · **Risk-accepted** (closed without remediation, with documented rationale)
+The authoritative machine-readable form is the OSCAL POA&M at [`/.well-known/oscal-poam.json`](/.well-known/oscal-poam.json), generated on every deploy by [`scripts/build-oscal-poam.py`](../scripts/build-oscal-poam.py). The OSCAL JSON and this Markdown document are kept in sync — both reflect the same set of items. When updating one, update the other in the same change. The Markdown is the human view; the OSCAL JSON is the machine view; both are required per FedRAMP NTC-0009 (machine-readable plus text-based equivalent).
 
----
+The FedRAMP Excel template separates findings across tabs by lifecycle and source: Open POA&M Items (vulnerability-management items), Closed POA&M Items, Configuration Findings (software / IaC configuration scanner findings — Checkov, tfsec, etc.), PL-2 Findings (3PAO-detected SSP/documentation deficiencies), and Record of Changes. This document mirrors that structure as separate sections.
 
-## POAM-001: Long-lived AWS access keys for the deployer
+The 20x VDR rules call risk-accepted entries "Accepted Vulnerabilities" (`VDR-RPT-AVI`); the same items appear in machine-readable form at `/.well-known/vdr-report.json`, with `poam_ref` cross-references back to the entries below.
 
-**Status:** Open
-**Opened:** 2026-05-06
-**Target close:** 2026-08-31
-**Severity:** Medium
-**Source:** CodeGuard `codeguard-0-iac-security` ("NEVER use service API Keys and client secrets and instead use workload identity with role-based access control to eliminate the need for long-lived credentials").
-
-### Gap
-
-The CI deployer authenticates to AWS using a long-lived IAM user's access key + secret access key, stored in GitHub Actions encrypted secrets. The `aws-actions/configure-aws-credentials` step reads them via `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. If either secret leaks, the credentials retain validity until manually rotated.
-
-### Compensating controls in place
-
-- The credentials live only in GitHub Actions encrypted secrets (not in the repo).
-- The IAM user the credentials belong to is scoped to the actions Terraform needs to perform; it is not a console-login user with broad privileges.
-- GitHub secret scanning with push protection is enabled, which would block accidental commits of the values.
-- The OPA gate in CI does not have access to the secrets directly — they are injected only into the AWS step.
-- The Sigstore signing chain already proves the OIDC pattern works in this workflow (cosign signs using the `id-token: write` permission and the GitHub OIDC provider).
-
-### Remediation plan
-
-The migration is mechanically straightforward; it is deferred only because of the Terraform/IAM trust-policy work.
-
-1. **Create a deployer IAM role in the AWS account** (`github-actions-deployer`) with:
-   - A trust policy whose `Principal` is `arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com`.
-   - A `Condition` block restricting `token.actions.githubusercontent.com:sub` to `repo:sam-aydlette/samaydlette.com:*` (or a tighter pattern bound to the workflow).
-   - Permissions equivalent to what the current IAM user has (Terraform plan/apply on the resources this repo manages, S3 read/write on the website bucket and `.well-known/`, CloudFront invalidation, Lambda update, IAM role/policy management on the Lambda role only).
-2. **Provision the GitHub OIDC provider in AWS** if not already present:
-   ```hcl
-   resource "aws_iam_openid_connect_provider" "github" {
-     url             = "https://token.actions.githubusercontent.com"
-     client_id_list  = ["sts.amazonaws.com"]
-     thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
-   }
-   ```
-3. **Update the workflow** to drop `aws-access-key-id` / `aws-secret-access-key` and add `role-to-assume` + `aws-region`:
-   ```yaml
-   - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
-     with:
-       role-to-assume: arn:aws:iam::<account>:role/github-actions-deployer
-       aws-region: ${{ env.AWS_REGION }}
-   ```
-   The job already declares `id-token: write` (added for Sigstore), so no additional permission is needed.
-4. **Verify** by running the workflow against a non-production resource, confirming AWS calls succeed under the assumed role.
-5. **Remove** `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from GitHub Actions secrets.
-6. **Delete** the underlying IAM user and its access keys in AWS.
-
-### Risk if not remediated
-
-A leaked access key (via a future supply-chain compromise of a GitHub Action, an accidental log of the secret, or a GitHub account compromise) would give an attacker persistent access until detection + manual rotation. With OIDC role assumption, the equivalent compromise produces a session token valid for ~1 hour with no persistence.
+Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ---
 
-## POAM-002: Runtime KSI signal is not cryptographically signed
+## Open POA&M Items
 
-**Status:** Open
-**Opened:** 2026-05-06
-**Target close:** When a real consumer asks to verify the runtime signal end-to-end. Until then this is a low-priority POA&M; the implicit trust model is acceptable for a PoC.
-**Severity:** Low (PoC) / Medium (in any portfolio context with external consumers)
-**Source:** Internal review during initial implementation; documented in [`docs/architecture-decisions.md`](architecture-decisions.md) and [`docs/ksi-signal.md`](ksi-signal.md).
+### POAM-001 — Long-lived AWS access keys for the deployer
 
-### Gap
+| Field | Value |
+| --- | --- |
+| POA&M ID | POAM-001 |
+| Controls | IA-2, IA-5, AC-2 |
+| Weakness Name | Long-lived AWS access keys for the deployer |
+| Weakness Description | The CI deployer authenticates to AWS using an IAM user's access key + secret access key, stored in GitHub Actions encrypted secrets. If either secret leaks, the credentials remain valid until manually rotated. |
+| Weakness Detector Source | CodeGuard rule `codeguard-0-iac-security` (avoid long-lived service credentials in favor of workload identity). |
+| Weakness Source Identifier | codeguard-0-iac-security |
+| Asset Identifier | `aws-iam-user::github-actions-deployer`; `github-secret::AWS_ACCESS_KEY_ID`; `github-secret::AWS_SECRET_ACCESS_KEY` |
+| Point of Contact | Sam Aydlette (operator) |
+| Resources Required | Operator time (~half day); no additional cost. |
+| Remediation Plan | Migrate to GitHub OIDC role assumption against AWS. Provision an `aws_iam_openid_connect_provider` for `token.actions.githubusercontent.com` and a deployer role whose trust policy restricts `sub` to `repo:sam-aydlette/samaydlette.com:*`. Switch the workflow's `aws-actions/configure-aws-credentials` step from access-key inputs to `role-to-assume`. Verify, then delete the IAM user and remove the GitHub Actions secrets. |
+| Original Detection Date | 2026-05-06 |
+| Scheduled Completion Date | 2026-08-31 |
+| Status Date | 2026-05-08 |
+| Vendor Dependency | No |
+| Last Vendor Check-in Date | — |
+| Vendor Dependent Product Name | — |
+| Original Risk Rating | Moderate |
+| Adjusted Risk Rating | — |
+| Risk Adjustment | No |
+| Status | Open |
 
-The runtime KSI signal at `/.well-known/ksi-signal-runtime.json` is published by the Lambda but is not cryptographically signed. Consumers trust it implicitly: the chain is "AWS hasn't lied about what's at the well-known URL." That is the same trust model every static-site CDN relies on, but it does not reduce to the public Sigstore transparency log the deploy-time signal does.
+**Compensating controls.** Secrets live only in GitHub Actions encrypted secrets, scoped to the deploy job. The IAM user is permission-scoped to what Terraform needs; it is not a console-login user. GitHub secret scanning with push protection is enabled. The Sigstore signing chain in the same workflow already proves GitHub OIDC works end-to-end (cosign signs via `id-token: write` and the GitHub Actions OIDC provider).
 
-### Compensating controls in place
+**90-day key rotation (active compensating control).** While the OIDC migration remains deferred, the operator rotates the AWS access key every 90 days. The procedure is documented in [`docs/policies/secure-configuration-guide.md`](policies/secure-configuration-guide.md) and the rotation log is part of the [annual security review](security-review.md). This bounds the leakage window for a compromised key but does not eliminate the standing-privilege surface; OIDC migration remains the durable answer and this POA&M item remains open.
 
-- The Lambda's IAM role can write only to one specific S3 key (`.well-known/ksi-signal-runtime.json`), so a compromised Lambda cannot overwrite arbitrary site content.
-- The runtime signal carries `provenance.builder.id` identifying the Lambda function and execution context.
-- Drift between the deploy-time signal (signed) and runtime signal is detectable from outside: the deploy-time signal's `components[]` and `validations[]` should reconcile with the runtime signal's, and any mismatch is high-confidence signal of either a real drift or a tampered runtime signal.
-
-### Remediation plan
-
-Two viable approaches:
-
-**Option A (recommended for a small system): AWS KMS asymmetric signing.**
-
-1. Provision an asymmetric KMS key in Terraform with `key_usage = "SIGN_VERIFY"` and an ECC NIST P-256 spec.
-2. Grant the Lambda role `kms:Sign` and `kms:GetPublicKey` on that key.
-3. In the Lambda, hash the runtime signal's bytes (excluding the signature field), call `KMS Sign` with `SigningAlgorithm = ECDSA_SHA_256`, and embed the resulting signature in the signal's `provenance.attestation` block.
-4. Publish the public key at `/.well-known/runtime-signing-pubkey.pem` as part of the deploy.
-5. Document verification: any consumer fetches the public key and verifies the signature using `openssl dgst -sha256 -verify`.
-
-Cost: ~$1/month for the KMS key plus per-request charges. Effort: ~half a day.
-
-**Option B (more elaborate): federate an OIDC-style identity into the Lambda.**
-
-Use AWS IAM Roles Anywhere or an external workload-identity broker to obtain a Sigstore-compatible token. Same chain of trust as the deploy-time signal, but multiple new pieces of infrastructure.
-
-### Risk if not remediated
-
-A consumer pulling the runtime signal cannot independently verify it has not been tampered with. For an entirely public site with no agency relying on this evidence, the risk is mostly reputational. In any portfolio context where multiple agencies consume signals across CSPs, runtime signal forgery becomes a credible attack and signing closes the gap.
+**Risk if not remediated.** A leaked access key gives an attacker persistent access until detection and manual rotation, with the leakage window bounded by the 90-day rotation cadence. Under OIDC, the equivalent compromise produces an STS session token valid for ~1 hour with no persistence — a ~2,160× shorter exposure window.
 
 ---
 
-## Items deliberately not on this POA&M
+### POAM-002 — Runtime KSI signal not cryptographically signed
 
-These are tracked in the README's *Conscious Trade-offs for Budget Reality* table, not here, because they are risk-accepted decisions rather than gaps awaiting remediation:
+| Field | Value |
+| --- | --- |
+| POA&M ID | POAM-002 |
+| Controls | AU-10, SI-7, SC-12, SC-13 |
+| Weakness Name | Runtime KSI signal not cryptographically signed |
+| Weakness Description | The runtime KSI signal at `/.well-known/ksi-signal-runtime.json` is published by the Lambda without a cryptographic signature. Consumers trust it implicitly via "AWS has not lied about what is at the well-known URL." That is the standard static-site CDN trust model, but it does not reduce to the public Sigstore transparency log the deploy-time signal does. |
+| Weakness Detector Source | Internal review during initial implementation. |
+| Weakness Source Identifier | internal-review-2026-05-06 |
+| Asset Identifier | `aws-lambda::compliance-monitor`; `aws-s3-key::.well-known/ksi-signal-runtime.json` |
+| Point of Contact | Sam Aydlette (operator) |
+| Resources Required | Operator time (~half day); ~$1/month KMS cost. |
+| Remediation Plan | AWS KMS asymmetric signing in the Lambda — provision an ECC NIST P-256 key with `key_usage = "SIGN_VERIFY"`, grant the Lambda role `kms:Sign` and `kms:GetPublicKey`, sign the canonical-form bytes, and embed the signature in `provenance.attestation`. Publish the public key at `/.well-known/runtime-signing-pubkey.pem`. An alternative path is federating an OIDC identity into the Lambda for Sigstore-keyless signing, but that requires more new infrastructure for the same end state. |
+| Original Detection Date | 2026-05-06 |
+| Scheduled Completion Date | When an external consumer asks to verify the runtime signal end-to-end. Low priority for the PoC. |
+| Status Date | 2026-05-08 |
+| Vendor Dependency | No |
+| Last Vendor Check-in Date | — |
+| Vendor Dependent Product Name | — |
+| Original Risk Rating | Low |
+| Adjusted Risk Rating | — |
+| Risk Adjustment | No |
+| Status | Open |
 
-- **CloudFront WAF** — accepted on cost grounds. Threat model for a static personal site does not justify ~$120/year.
-- **S3 access logging** — accepted; CloudTrail covers the audit need.
-- **Multi-region active-passive** — accepted; the declared 21-day RTO accommodates regional failure.
-- **Lambda VPC isolation** — accepted; the Lambda processes no sensitive data and has no internet egress.
+**Compensating controls.** The Lambda's IAM role can write only to the single S3 key for the runtime signal — a compromised Lambda cannot tamper with other site content. The runtime signal carries `provenance.builder.id` identifying its execution context. Drift between the (signed) deploy-time signal and the (unsigned) runtime signal is detectable from outside; mismatched components or validations are high-confidence signal of either real drift or a tampered runtime signal. All other published artifacts (OSCAL SSP, OSCAL POA&M, VDR report, IIW CSV) are now Sigstore-signed in CI; this POA&M item applies only to the runtime KSI signal.
 
-These are revisited annually in [`docs/security-review.md`](security-review.md). If the threat profile or scope changes, any of them can be promoted to a POA&M.
+**Risk if not remediated.** A consumer pulling the runtime signal cannot independently verify it has not been tampered with. For a fully public site with no consuming agency, the risk is reputational. In any portfolio context where multiple agencies consume signals across CSPs, runtime signal forgery becomes a credible attack and signing closes it.
+
+---
+
+## Configuration Findings (POAM-003 through POAM-016)
+
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are currently risk-accepted with documented rationale.
+
+The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
+
+| POA&M ID | Controls | Weakness Name | Detector Source | Source Identifier | Asset Identifier | PAIN | Original Risk | Adj. Risk | Risk Adj. | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| POAM-003 | CP-9 | S3 cross-region replication not configured | Checkov | CKV_AWS_144 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-004 | AU-2 | S3 event notifications not configured | Checkov | CKV_AWS_23 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-005 | AU-2, AU-3 | S3 access logging not enabled | Checkov | CKV_AWS_18 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-007 | SC-7, SI-4 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | aws-cloudfront-distribution | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-008 | SI-3 | Log4j-specific WAF rules not configured | Checkov | CKV_AWS_174 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
+| POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
+| POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-012 | SC-5 | Lambda concurrent execution limit not set | Checkov | CKV_AWS_115 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-014 | AU-2 | Lambda X-Ray tracing not enabled | Checkov | CKV_AWS_73 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_50 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
+
+**Standard fields for all of POAM-003 through POAM-016:**
+
+- **Point of Contact:** Sam Aydlette (operator)
+- **Resources Required:** None at present (risk-accepted). If reactivated, cost and operator time per item; see the rationale in `infrastructure/main.tf`.
+- **Original Detection Date:** 2026-05-06 (initial implementation review)
+- **Scheduled Completion Date:** Not applicable (risk-accepted; revisit annually per [`security-review.md`](security-review.md))
+- **Status Date:** 2026-05-08
+- **Vendor Dependency:** No
+- **Last Vendor Check-in Date:** —
+- **Vendor Dependent Product Name:** —
+- **Remediation Plan (per item):** Reactivate the Checkov check by removing the `#checkov:skip=` annotation in `infrastructure/main.tf`, then implement the missing control. Cost varies per item.
+- **Weakness Description (per item):** see the inline `#checkov:skip=` rationale in `infrastructure/main.tf`, mirrored verbatim into the VDR report's `risk_accepted[].explanation` field.
+
+If the threat profile or scope changes — for example, if the system starts processing PII, adds customer-facing forms, or starts handling federal customer data — any of these is reopened, reclassified, and a remediation path established.
+
+---
+
+## Closed POA&M Items
+
+None at this time.
+
+The Closed POA&M Items section uses the same field structure as Open items, plus a `False Positive` field that distinguishes findings that were not real weaknesses. Closed entries are retained for assessment-history continuity per the FedRAMP template.
+
+---
+
+## False Positives
+
+None at this time.
+
+False positives are tracked separately so an assessor can see which scanner findings were investigated and dismissed with rationale, distinct from risk-accepted items (which are real weaknesses with documented acceptance).
+
+---
+
+## PL-2 Findings (3PAO-Identified)
+
+Not applicable. No 3PAO assessment is in scope for this PoC; no SSP or documentation deficiencies have been formally documented by an independent assessor.
+
+The FedRAMP template carries a PL-2 Findings tab for 3PAO-identified deficiencies in the System Security Plan, the Authorization Boundary Diagram, or supporting documentation. Typical examples are SSP sections that disagree with the running system, an ABD that doesn't depict an in-scope external service, or boilerplate text that wasn't customized to the CSO. This section exists for parity with the template and would be populated if and when a 3PAO is engaged.
+
+---
+
+## Annual Review
+
+Risk-accepted items are revisited annually as part of [`docs/security-review.md`](security-review.md). The review checks: do the rationales still hold? has the threat profile changed? are there new compensating controls that would let an item move to Closed? If any answer flips, the item is reopened.
+
+---
+
+## Field Notes
+
+- **Risk rating values** follow the FedRAMP convention: `Low`, `Moderate`, `High`, `Critical`. PAIN (the FedRAMP 20x VDR rating, N1–N5) is a finer-grained scale; the column is included for cross-reference but Original Risk Rating uses the Rev 5 vocabulary so the POA&M reads as a Rev 5 artifact.
+- **Risk Adjustment = Yes** on POAM-007 and POAM-015 reflects that the scanner-default risk rating (Moderate) has been adjusted to Low based on documented compensating controls. The adjustment rationale is in the corresponding inline `#checkov:skip=` annotation.
+- **Asset Identifier** uses a `<type>::<name>` form so each entry is unambiguous. AWS resources resolve via Terraform; GitHub assets via owner/repo.

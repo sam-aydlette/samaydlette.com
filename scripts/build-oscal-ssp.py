@@ -35,6 +35,8 @@ OSCAL_VERSION = "1.1.2"
 SSP_VERSION = "1.0.0"
 SYSTEM_NAMESPACE = uuid.UUID("8be0e36b-1be1-4c8a-b76f-1b9d6e4b0a53")  # arbitrary stable namespace
 
+FEDRAMP_NS = "https://fedramp.gov/ns/oscal"
+
 # FedRAMP-published Rev 5 Moderate baseline profile (canonical reference).
 FEDRAMP_PROFILE = (
     "https://github.com/GSA/fedramp-automation/releases/latest/download/"
@@ -1810,15 +1812,22 @@ FAMILY_DEFAULTS = {
 }
 
 # Default for any *-1 (policy and procedures) control across all families.
+# Points at the per-family policy doc in docs/policies/, which is the
+# authoritative -1 satisfaction artifact (one file per family, plus the
+# Secure Configuration Guide). The 20x rule integration each policy
+# enumerates (SCN, VDR, MAS, SCG, etc.) is also captured in those files.
 POLICY_AND_PROCEDURES_DEFAULT = {
     "status": "implemented",
     "origination": "sp-corporate",
     "statement_template": (
         "Policies and procedures for the {family_name} ({family_code}) "
-        "family are documented across the docs/ tree, primarily in "
-        "docs/architecture-decisions.md and the topical doc set referenced "
-        "by the Compliance Documentation table in README.md. Reviews and "
-        "updates occur on the cadences defined in docs/security-review.md."
+        "family are documented in docs/policies/{family_lower}-policy.md, "
+        "which describes the family-level approach, scope, AWS-inherited "
+        "responsibilities (where applicable, citing AWS authorization "
+        "package AGENCYAMAZONEW), the FedRAMP 20x rule integration relevant "
+        "to the family (e.g., SCN/VDR/MAS/SCG/CCM/ICP/UCM as applicable), "
+        "and the review cadence. Reviews and updates occur on the cadences "
+        "defined in docs/security-review.md and the per-policy doc."
     ),
 }
 
@@ -2055,6 +2064,7 @@ def resolve_control_profile(control_id, control_title):
         statement = POLICY_AND_PROCEDURES_DEFAULT["statement_template"].format(
             family_name=family_name,
             family_code=family_code.upper(),
+            family_lower=family_code.lower(),
         )
         return (
             POLICY_AND_PROCEDURES_DEFAULT["status"],
@@ -2102,10 +2112,21 @@ def now_iso():
 
 def build_metadata(signal):
     return {
-        "title": "samaydlette.com — System Security Plan",
+        "title": "samaydlette.com — System Security Plan (Self-Attested PoC, NOT FedRAMP-Authorized)",
         "last-modified": now_iso(),
         "version": SSP_VERSION,
         "oscal-version": OSCAL_VERSION,
+        "remarks": (
+            "This System Security Plan is a self-attested proof-of-concept artifact. "
+            "The system it describes is NOT FedRAMP-authorized. No 3PAO assessment has "
+            "been conducted; no agency Authorization to Operate is in place. The SSP "
+            "is published to demonstrate an architectural pattern (canonical-inventory-"
+            "derived OSCAL artifacts) aligned with FedRAMP NTC-0009. Treat all "
+            "implementation statements as the operator's self-attestation. Companion "
+            "artifacts: ksi-signal.json, oscal-poam.json, vdr-report.json, iiw.csv at "
+            "https://samaydlette.com/.well-known/. See "
+            "https://samaydlette.com/research/the-plumbing.html for context."
+        ),
         "parties": [
             {
                 "uuid": stable_uuid("party:operator"),
@@ -2148,6 +2169,38 @@ def build_metadata(signal):
             {
                 "name": "source-commit",
                 "value": signal.get("provenance", {}).get("source", {}).get("commit", "unknown"),
+            },
+            {
+                "name": "authorization-status",
+                "ns": "https://samaydlette.com/ns/oscal",
+                "value": "self-attested-proof-of-concept",
+                "remarks": "This SSP is operator-self-attested; no 3PAO assessment, no agency ATO.",
+            },
+            {
+                "name": "fedramp-certified",
+                "ns": "https://samaydlette.com/ns/oscal",
+                "value": "false",
+            },
+            {
+                "name": "cloud-service-provider",
+                "ns": FEDRAMP_NS,
+                "value": "Sam Aydlette",
+            },
+            {
+                "name": "cloud-service-offering",
+                "ns": FEDRAMP_NS,
+                "value": "samaydlette.com",
+            },
+            {
+                "name": "impact-level",
+                "ns": FEDRAMP_NS,
+                "value": "moderate",
+            },
+            {
+                "name": "fedramp-class",
+                "ns": FEDRAMP_NS,
+                "value": "C",
+                "remarks": "FedRAMP 20x Class C target; equivalent to traditional Moderate.",
             },
         ],
     }
@@ -2677,20 +2730,131 @@ def build_back_matter(signal):
                 "uuid": stable_uuid("resource:poam"),
                 "title": "Plan of Action and Milestones (POA&M)",
                 "description": (
-                    "Tracked security gaps with remediation plans. POA&M items "
-                    "are gaps where remediation is appropriate but not yet "
-                    "complete; risk-accepted decisions are tracked separately "
-                    "in the README's Conscious Trade-offs table."
+                    "Tracked security weaknesses with remediation plans. The "
+                    "POA&M is the single Rev 5 register; risk-accepted items "
+                    "are carried with status 'Risk-accepted'. The OSCAL "
+                    "machine-readable form is the authoritative copy."
                 ),
                 "rlinks": [
-                    {
-                        "href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/poam.md",
-                        "media-type": "text/markdown",
-                    }
+                    {"href": "https://samaydlette.com/.well-known/oscal-poam.json", "media-type": "application/oscal+json"},
+                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/poam.md", "media-type": "text/markdown"},
                 ],
             },
+            {
+                "uuid": stable_uuid("resource:cmp"),
+                "title": "Continuous Monitoring Plan",
+                "description": "The system's continuous-monitoring strategy, mechanisms, and cadences. Satisfies NIST CA-7 and the FedRAMP 20x Collaborative Continuous Monitoring (CCM) rule.",
+                "rlinks": [
+                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/continuous-monitoring-plan.md", "media-type": "text/markdown"},
+                ],
+            },
+            {
+                "uuid": stable_uuid("resource:pta"),
+                "title": "Privacy Threshold Analysis (PTA)",
+                "description": "Determination that the system processes no PII; full PIA not required at this time.",
+                "rlinks": [
+                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/privacy-threshold-analysis.md", "media-type": "text/markdown"},
+                ],
+            },
+            {
+                "uuid": stable_uuid("resource:rob"),
+                "title": "Rules of Behavior",
+                "description": "Sole-operator acceptable-use commitments per NIST PL-4.",
+                "rlinks": [
+                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/rules-of-behavior.md", "media-type": "text/markdown"},
+                ],
+            },
+            {
+                "uuid": stable_uuid("resource:incident-response"),
+                "title": "Incident Response Plan",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:recovery-plan"),
+                "title": "Recovery / Contingency Plan",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/recovery-plan.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:supply-chain"),
+                "title": "Supply Chain Risk Management Plan",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/supply-chain.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:training-log"),
+                "title": "Training Log",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/training-log.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:security-review"),
+                "title": "Annual Security Review",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/security-review.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:architecture-decisions"),
+                "title": "Architectural and Operational Decisions",
+                "description": "ADR-style records, including the SA-11.2 threat model.",
+                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/architecture-decisions.md", "media-type": "text/markdown"}],
+            },
+            {
+                "uuid": stable_uuid("resource:authorization-boundary"),
+                "title": "Authorization Boundary Diagram",
+                "description": "ABD per FedRAMP guidance, with data flows, FIPS-validated cryptographic modules, and out-of-boundary items.",
+                "rlinks": [{"href": "https://samaydlette.com/research/authorization-boundary.html", "media-type": "text/html"}],
+            },
+            *_policy_doc_resources(),
         ]
     }
+
+
+def _policy_doc_resources():
+    """Emit one back-matter resource per per-family policy doc plus SCG.
+
+    Each family policy doc (docs/policies/<family>-policy.md) becomes a resource
+    so the SSP's *-1 implementation-requirement can reference it via
+    link rel='reference' href='#<uuid>'.
+    """
+    families = [
+        ("ac", "Access Control"),
+        ("at", "Awareness and Training"),
+        ("au", "Audit and Accountability"),
+        ("ca", "Assessment, Authorization, and Monitoring"),
+        ("cm", "Configuration Management"),
+        ("cp", "Contingency Planning"),
+        ("ia", "Identification and Authentication"),
+        ("ir", "Incident Response"),
+        ("ma", "Maintenance"),
+        ("mp", "Media Protection"),
+        ("pe", "Physical and Environmental Protection"),
+        ("pl", "Planning"),
+        ("ps", "Personnel Security"),
+        ("pt", "PII Processing and Transparency"),
+        ("ra", "Risk Assessment"),
+        ("sa", "System and Services Acquisition"),
+        ("sc", "System and Communications Protection"),
+        ("si", "System and Information Integrity"),
+        ("sr", "Supply Chain Risk Management"),
+    ]
+    resources = []
+    for code, name in families:
+        resources.append({
+            "uuid": stable_uuid(f"resource:policy-{code}"),
+            "title": f"{name} Policy and Procedures ({code.upper()}-1)",
+            "description": f"Per-family policy document satisfying {code.upper()}-1, with FedRAMP 20x rule integration where applicable.",
+            "rlinks": [{
+                "href": f"https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/{code}-policy.md",
+                "media-type": "text/markdown",
+            }],
+        })
+    resources.append({
+        "uuid": stable_uuid("resource:scg"),
+        "title": "Secure Configuration Guide",
+        "description": "FedRAMP 20x Secure Configuration Guide for top-level administrative accounts (AWS root, GitHub repo owner).",
+        "rlinks": [{
+            "href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
+            "media-type": "text/markdown",
+        }],
+    })
+    return resources
 
 
 # =============================================================================

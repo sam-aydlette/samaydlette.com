@@ -66,6 +66,145 @@ ATTRIBUTE_PARENTS = {
 }
 
 # =============================================================================
+# MAS (Minimum Assessment Scope) attributes per component type
+# =============================================================================
+# Per FedRAMP 20x rule MAS-CSO-FLO, every information resource must declare a
+# FIPS 199 security category and an information-flow summary. The defaults
+# below are the system-specific assignments for samaydlette.com; another system
+# would override these with its own categorization.
+#
+# Categorization rationale: this is a public static site with no PII, so
+# confidentiality is LOW everywhere. Integrity is MODERATE because defacement
+# is the highest-impact realistic threat. Availability is LOW because a
+# personal site can tolerate downtime within the declared 21-day RTO.
+# High-water mark across the system: MODERATE (driven by integrity).
+# =============================================================================
+
+MAS_DEFAULTS = {
+    "object_store": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "cdn_distribution", "channel": "aws-internal-tls", "data_class": "public-content"},
+            {"direction": "outbound", "counterparty": "cdn_distribution", "channel": "aws-internal-tls", "data_class": "public-content"},
+            {"direction": "inbound", "counterparty": "github-actions", "channel": "tls-1.2", "data_class": "public-content"},
+        ],
+    },
+    "cdn_distribution": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "public-internet", "channel": "tls-1.2", "data_class": "public-content"},
+            {"direction": "outbound", "counterparty": "public-internet", "channel": "tls-1.2", "data_class": "public-content"},
+            {"direction": "inbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "public-content"},
+        ],
+    },
+    "function": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "eventbridge", "channel": "aws-internal-tls", "data_class": "configuration"},
+            {"direction": "outbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "configuration"},
+            {"direction": "outbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "audit"},
+        ],
+    },
+    "npm_package": {
+        "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
+        "information_flow": [],
+    },
+    "html_artifact": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "outbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "public-content"},
+        ],
+    },
+}
+
+# =============================================================================
+# IIW (Integrated Inventory Workbook) attributes per component type
+# =============================================================================
+# Stamped onto component.attributes so the canonical inventory carries the
+# fields the FedRAMP IIW (SSP Appendix M) requires. The build-iiw.py projector
+# reads these to emit an IIW-compatible CSV.
+# =============================================================================
+
+IIW_DEFAULTS = {
+    "object_store": {
+        "function": "Origin storage for static site content and /.well-known/ artifacts",
+        "diagram_label": "S3 origin bucket",
+        "public": False,
+        "baseline_configuration": "AWS S3 default + bucket policy enforcing OAC + public access block",
+        "iiw_asset_type": "Object Storage (S3 bucket)",
+    },
+    "cdn_distribution": {
+        "function": "Public content delivery (TLS 1.2+, OAC to origin)",
+        "diagram_label": "CloudFront distribution",
+        "public": True,
+        "baseline_configuration": "AWS CloudFront default + custom security headers policy",
+        "iiw_asset_type": "Content Delivery Network (CloudFront distribution)",
+    },
+    "function": {
+        "function": "Daily runtime KSI emitter; revalidates live AWS configuration",
+        "diagram_label": "Lambda — runtime KSI emitter",
+        "public": False,
+        "baseline_configuration": "AWS Lambda default + IAM scope (read 3 S3 config APIs, 1 CF distribution; write 1 S3 key)",
+        "iiw_asset_type": "Compute Function (Lambda)",
+    },
+    "npm_package": {
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": False,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)",
+    },
+    "html_artifact": {
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": True,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact",
+    },
+}
+
+
+def apply_iiw_defaults(component):
+    """Stamp IIW-mapped attribute keys onto a component per its type.
+
+    These attributes carry the fields the FedRAMP Integrated Inventory
+    Workbook (Appendix M) requires. They live in component.attributes
+    because the schema treats attributes as free-form (additionalProperties),
+    and projecting into IIW shape is a downstream concern that does not
+    require a schema change.
+    """
+    defaults = IIW_DEFAULTS.get(component["type"])
+    if defaults is None:
+        return
+    component.setdefault("attributes", {})
+    for key, value in defaults.items():
+        component["attributes"].setdefault(key, value)
+
+
+def apply_mas_defaults(component):
+    """Stamp security_category and information_flow onto a component per its type.
+
+    The schema requires both fields on every component. The defaults table
+    above is the system-level categorization decision; passing through here
+    makes that decision explicit and auditable rather than implicit.
+    """
+    defaults = MAS_DEFAULTS.get(component["type"])
+    if defaults is None:
+        # Unknown type: assign conservative not-applicable / empty so the
+        # signal still validates against the schema. The schema's enum on
+        # component.type will catch genuinely unknown types upstream.
+        component["security_category"] = {
+            "confidentiality": "not-applicable",
+            "integrity": "not-applicable",
+            "availability": "not-applicable",
+        }
+        component["information_flow"] = []
+        return
+    component["security_category"] = dict(defaults["security_category"])
+    component["information_flow"] = [dict(f) for f in defaults["information_flow"]]
+
+
+# =============================================================================
 # HELPERS
 # =============================================================================
 
@@ -164,6 +303,8 @@ def build_cloud_components(tf_state, tf_outputs):
         }
         if native_id:
             component["native_id"] = native_id
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
         components_by_id[cid] = component
 
     # Second pass: fold attribute resources into their parent.
@@ -206,7 +347,7 @@ def build_npm_components(lock_path):
         if not name or not version:
             continue
         purl = f"pkg:npm/{name}@{version}"
-        components.append({
+        component = {
             "component_id": component_id_for_npm(name, version),
             "type": "npm_package",
             "global_id": {"purl": purl},
@@ -216,7 +357,10 @@ def build_npm_components(lock_path):
                 "lockfile_path": path,
                 "integrity": info.get("integrity"),
             },
-        })
+        }
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
+        components.append(component)
     return components
 
 
@@ -228,7 +372,7 @@ def build_html_components(website_root):
     for html_path in sorted(website_root.rglob("*.html")):
         rel = html_path.relative_to(website_root).as_posix()
         digest = sha256_file(html_path)
-        components.append({
+        component = {
             "component_id": component_id_for_html(rel),
             "type": "html_artifact",
             "global_id": {"sha256": digest},
@@ -236,7 +380,10 @@ def build_html_components(website_root):
                 "path": rel,
                 "size_bytes": html_path.stat().st_size,
             },
-        })
+        }
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
+        components.append(component)
     return components
 
 
@@ -431,6 +578,34 @@ def main():
         "provenance": build_provenance(),
         "components": components,
         "validations": validations,
+        "ownership": {
+            "system_owner": "Sam Aydlette",
+            "application_owner": "Sam Aydlette",
+            "operator_contact": "sam.aydlette@gmail.com",
+        },
+        "disclosure": {
+            "authorization_status": "self-attested-proof-of-concept",
+            "fedramp_certified": False,
+            "remarks": (
+                "This system is not FedRAMP-authorized. The artifacts published "
+                "at /.well-known/ are self-attested by the operator and "
+                "demonstrate an architectural pattern aligned with FedRAMP "
+                "NTC-0009 (machine-readable authorization data, text-based "
+                "equivalents, the five Balance Improvement Releases folding "
+                "into default requirements). See "
+                "https://samaydlette.com/research/the-plumbing.html for "
+                "context and limitations."
+            ),
+            "related_artifacts": {
+                "oscal_ssp": "https://samaydlette.com/.well-known/oscal-ssp.json",
+                "oscal_poam": "https://samaydlette.com/.well-known/oscal-poam.json",
+                "vdr_report": "https://samaydlette.com/.well-known/vdr-report.json",
+                "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
+                "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",
+                "boundary_diagram": "https://samaydlette.com/research/authorization-boundary.html",
+                "research_paper": "https://samaydlette.com/research/the-plumbing.html",
+            },
+        },
     }
 
     output_path.write_text(json.dumps(signal, indent=2) + "\n")

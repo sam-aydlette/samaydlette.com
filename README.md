@@ -105,8 +105,12 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 | [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-01, KSI-RPL-02, KSI-RPL-03, KSI-RPL-04 | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
 | [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-06 | Annual security review template + first entry |
 | [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-TPR-03, KSI-TPR-04 | SCRM with Dependabot config in `.github/dependabot.yml` |
-| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-01, KSI-CED-02, KSI-CED-03, KSI-CED-04 | Self-attested training log for the sole operator |
-| [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans |
+| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-01, KSI-CED-02, KSI-CED-03, KSI-CED-04 | Self-attested training log |
+| [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans (kept in sync with `/.well-known/oscal-poam.json`) |
+| [`docs/policies/`](docs/policies/) | NIST 800-53 Rev 5 *-1 controls (AC-1, AT-1, ... SR-1, PT-1) | Per-family policy and procedures docs, plus the FedRAMP 20x Secure Configuration Guide. Each file integrates the relevant 20x rules (SCN, VDR, MAS, SCG, CCM, ICP, FSI, UCM) and cites AWS authorization package AGENCYAMAZONEW for inherited families |
+| [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, annual review) |
+| [`docs/privacy-threshold-analysis.md`](docs/privacy-threshold-analysis.md) | PT-1 (negative determination) | PTA: no PII processed; full PIA not required |
+| [`docs/rules-of-behavior.md`](docs/rules-of-behavior.md) | PL-4 | Sole-operator acceptable-use commitments |
 | [`website/.well-known/security.txt`](website/.well-known/security.txt) | KSI-PIY-03 | RFC 9116 vulnerability disclosure |
 
 ## Real-World Costs
@@ -329,16 +333,16 @@ Push to `main` branch triggers automatic deployment with compliance validation.
 
 ### Conscious Trade-offs for Budget Reality
 
-| Feature | Security Benefit | Annual Cost | Our Decision |
-|---------|------------------|-------------|--------------|
-| CloudFront WAF | DDoS/attack protection | +$120 | **Skipped** - static content, low risk |
-| Lambda in VPC | Network isolation | +$540 | **Skipped** - no sensitive data processing |
-| S3 access logging | Detailed audit trail | +$180 | **Skipped** - CloudTrail provides basics |
-| Multi-AZ deployment | High availability | +$300 | **Skipped** - acceptable downtime for personal site |
+| Feature | Security Benefit | Annual Cost | Decision | POA&M |
+|---------|------------------|-------------|----------|-------|
+| CloudFront WAF | DDoS/attack protection | +$120 | **Risk-accepted** — static content, low risk | [POAM-007](docs/poam.md) |
+| Lambda in VPC | Network isolation | +$540 | **Risk-accepted** — no sensitive data processing | [POAM-010](docs/poam.md) |
+| S3 access logging | Detailed audit trail | +$180 | **Risk-accepted** — CloudTrail provides the audit basics | [POAM-005](docs/poam.md) |
+| Multi-region active-passive | Regional failover | +$300 | **Risk-accepted** — declared 21-day RTO accommodates regional failure | [POAM-016](docs/poam.md) |
 
-**For Enterprise Use:** Remove the `#checkov:skip` comments to enable these features.
+The full register of risk-accepted items, including the 13 inline Checkov suppressions in `infrastructure/main.tf`, lives in [`docs/poam.md`](docs/poam.md) as POA&M entries with status `Risk-accepted`. This table is the budget-context summary; the POA&M is the authoritative register.
 
-**Why This Matters:** Real compliance automation means making informed trade-offs, not implementing every possible control regardless of context.
+**For Enterprise Use:** Remove the `#checkov:skip` comments and reopen the corresponding POA&M entries to enable these features.
 
 ## When Things Break (And They Will)
 

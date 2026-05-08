@@ -22,14 +22,14 @@
 #checkov:skip=CKV_AWS_18:S3 access logging generates additional costs and storage for static site
 #checkov:skip=CKV_AWS_300:S3 lifecycle configuration not required for static website assets
 #checkov:skip=CKV_AWS_68:CloudFront WAF adds ~$10/month cost, not justified for personal site
-#checkov:skip=CKV_AWS_174:Log4j WAF rules not applicable to static HTML/CSS/JS content
+#checkov:skip=CKV_AWS_174:No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS); Log4j-specific WAF rules are not applicable
 #checkov:skip=CKV_AWS_86:CloudFront origin failover not needed for single S3 origin static site
 #checkov:skip=CKV_AWS_117:Lambda VPC configuration adds NAT Gateway costs (~$45/month)
 #checkov:skip=CKV_AWS_173:Lambda environment encryption not needed for non-sensitive config
 #checkov:skip=CKV_AWS_115:Lambda concurrent execution limits not required for low-traffic compliance checks
 #checkov:skip=CKV_AWS_116:Lambda DLQ not cost-effective for simple compliance functions
 #checkov:skip=CKV_AWS_73:Lambda X-Ray tracing adds costs for minimal benefit on compliance checks
-#checkov:skip=CKV_AWS_50:Lambda code signing not required for basic compliance functions
+#checkov:skip=CKV_AWS_50:Lambda zip signing via AWS Signer is supplementary to the source-level signing chain already in place; the deploy-time KSI signal is Sigstore-signed, the Wasm policy bytes are verifiable via the canonical inventory's content hash, and a tampered Lambda zip would also have to forge the Sigstore signature to be undetected. AWS Signer is defense-in-depth at marginal cost, not currently justified.
 
 # =============================================================================
 # TERRAFORM REQUIREMENTS

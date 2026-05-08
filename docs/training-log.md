@@ -4,7 +4,7 @@ This document satisfies KSI-CED-01 through KSI-CED-04. The system has one employ
 
 ## Coverage
 
-The KSI catalog distinguishes general training from role-specific training. For a one-person operation those collapse, but the distinctions are kept here for traceability against the catalog.
+The KSI catalog distinguishes general training from role-specific training. The distinctions are kept here for traceability against the catalog even where the roles collapse onto one person.
 
 ### KSI-CED-01: General security training
 
@@ -37,7 +37,7 @@ Active sources:
 - Terraform and AWS best-practices documentation
 - The Sigstore + in-toto + SLSA stack of specifications
 
-Effectiveness signal: every commit to this repo is reviewed by the author against these sources before merge to `main`. For a one-person operation the review is structurally a self-review; the OPA gate and the schema validations are the automated counterweight.
+Effectiveness signal: every commit to this repo is reviewed against these sources before merge to `main`. The OPA gate and the schema validations are the automated counterweight.
 
 ### KSI-CED-04: Incident response and disaster recovery training
 
@@ -46,7 +46,3 @@ The IR lead is the author. "Training" here means having read NIST SP 800-61, hav
 ## Review cadence
 
 Annually, or whenever a relevant standard updates substantively. Updates are appended to this file as a dated entry.
-
-## Honest qualifier
-
-"Training" for a one-person organization is structurally different from training for a workforce. The KSI is satisfied here by self-attested study and the artifacts produced; it could not be satisfied through a document like this in any organization with more than one person, where the existence of *other* people who need to be trained is the entire point of the indicator. For a sole operator, the training program and the operator's professional practice are the same thing.

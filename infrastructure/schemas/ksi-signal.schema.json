@@ -13,7 +13,8 @@
     "system_id",
     "provenance",
     "components",
-    "validations"
+    "validations",
+    "ownership"
   ],
   "additionalProperties": false,
   "properties": {
@@ -120,12 +121,58 @@
       "items": {
         "$ref": "#/$defs/validation"
       }
+    },
+    "disclosure": {
+      "description": "Operator-asserted disclosure about the authorization status of this signal and the system it describes. Present so a consumer of the signal cannot mistake a self-attested PoC for a FedRAMP-authorized system. Optional in the schema (older signals may not carry it); recommended in all new signals.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authorization_status": {
+          "description": "Plain-language status of any authorization in scope. Recommended values: 'self-attested-proof-of-concept', 'fedramp-authorized', 'fedramp-in-process', 'agency-ato', 'self-attested-production'.",
+          "type": "string"
+        },
+        "fedramp_certified": {
+          "description": "Whether the system has a FedRAMP authorization in place. Set false for self-attested artifacts.",
+          "type": "boolean"
+        },
+        "remarks": {
+          "description": "Free-form prose disclosure for human readers.",
+          "type": "string"
+        },
+        "related_artifacts": {
+          "description": "URLs to companion artifacts published alongside this signal. Lets a consumer of any one artifact find the rest without out-of-band knowledge.",
+          "type": "object",
+          "additionalProperties": {"type": "string", "format": "uri"}
+        }
+      }
+    },
+    "ownership": {
+      "description": "System-level ownership information, present so the canonical inventory can project into FedRAMP Integrated Inventory Workbook (IIW) shape without external lookups. Maps to the System Administrator/Owner and Application Administrator/Owner columns in the IIW template (Appendix M).",
+      "type": "object",
+      "required": ["system_owner", "application_owner"],
+      "additionalProperties": false,
+      "properties": {
+        "system_owner": {
+          "description": "Name of the system administrator / owner. IIW field: System Administrator/Owner.",
+          "type": "string",
+          "minLength": 1
+        },
+        "application_owner": {
+          "description": "Name of the application administrator / owner. IIW field: Application Administrator/Owner.",
+          "type": "string",
+          "minLength": 1
+        },
+        "operator_contact": {
+          "description": "Operator contact (email or other channel) for inquiries about the system inventory.",
+          "type": "string"
+        }
+      }
     }
   },
   "$defs": {
     "component": {
       "type": "object",
-      "required": ["component_id", "type"],
+      "required": ["component_id", "type", "security_category", "information_flow"],
       "additionalProperties": false,
       "properties": {
         "component_id": {
@@ -181,6 +228,45 @@
           "description": "Component-specific attributes the emitter wants to make available to consumers. Free-form by design; consumers should treat unknown keys as opaque. Common keys: 'name', 'region', 'tls_min_version', 'encryption_algorithm', 'public_access_blocked', 'runtime'.",
           "type": "object",
           "additionalProperties": true
+        },
+        "security_category": {
+          "description": "FIPS 199 security categorization for this component, per the FedRAMP 20x Minimum Assessment Scope rule MAS-CSO-FLO. Each impact dimension is independently rated; the high-water mark across all components determines the system's overall categorization. For components that do not handle data directly (e.g., software libraries), use 'not-applicable'. For components fully inherited from an authorized provider, use 'inherited'.",
+          "type": "object",
+          "required": ["confidentiality", "integrity", "availability"],
+          "additionalProperties": false,
+          "properties": {
+            "confidentiality": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]},
+            "integrity": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]},
+            "availability": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]}
+          }
+        },
+        "information_flow": {
+          "description": "How information enters, traverses, and exits this component, per the FedRAMP 20x Minimum Assessment Scope rule MAS-CSO-FLO. Each entry names a direction and a counterparty so a portfolio consumer can build a flow graph across components. Empty array is valid for components that do not handle data directly (e.g., npm packages bundled into a function).",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["direction", "counterparty"],
+            "additionalProperties": false,
+            "properties": {
+              "direction": {
+                "type": "string",
+                "enum": ["inbound", "outbound", "internal"]
+              },
+              "counterparty": {
+                "description": "What this component sends to or receives from. Either a component_id within this signal or an external reference like 'public-internet', 'aws-service-api', 'github-actions', 'eventbridge', 'fulcio', 'rekor'.",
+                "type": "string",
+                "minLength": 1
+              },
+              "channel": {
+                "description": "How the data moves. Recommended values: 'tls-1.2', 'tls-1.3', 'aws-internal-tls', 'no-network'.",
+                "type": "string"
+              },
+              "data_class": {
+                "description": "The classification of data on this channel. Recommended values: 'public-content', 'configuration', 'logs', 'audit', 'no-data'.",
+                "type": "string"
+              }
+            }
+          }
         }
       },
       "anyOf": [
