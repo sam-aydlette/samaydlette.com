@@ -876,7 +876,10 @@ jobs:
         soft_fail: true
         additional_args: --format json --out tfsec-results.json
 
-    # Another security scanner with different focus
+    # Another security scanner with different focus.
+    # Newer versions of bridgecrewio/checkov-action treat output_file_path
+    # as a directory and write the SARIF inside it (e.g. results/results_sarif.sarif).
+    # We point it at a directory and locate the SARIF afterwards.
     - name: Run Checkov
       id: checkov
       uses: bridgecrewio/checkov-action@63fbdab56e22a18bbc16fdc5208c0d30a71f3a24 # v12.2937.0
@@ -885,14 +888,19 @@ jobs:
         framework: terraform
         soft_fail: true
         output_format: sarif
-        output_file_path: checkov-results.sarif
+        output_file_path: checkov-out
 
-    # Make sure results files exist even if scans failed
-    - name: Ensure SARIF and tfsec files exist
+    # Locate the SARIF file Checkov produced and copy it to a predictable path.
+    # Fall back to a minimal empty SARIF if the action produced nothing.
+    - name: Locate or create SARIF and tfsec files
       if: always()
       run: |
-        if [ ! -f checkov-results.sarif ]; then
-          echo "Creating fallback Checkov SARIF file..."
+        SARIF_FOUND=$(find checkov-out -name "*.sarif" -type f 2>/dev/null | head -n1 || true)
+        if [ -n "$SARIF_FOUND" ]; then
+          cp "$SARIF_FOUND" checkov-results.sarif
+          echo "Located Checkov SARIF at $SARIF_FOUND, copied to checkov-results.sarif ($(wc -c < checkov-results.sarif) bytes)"
+        else
+          echo "No SARIF produced by Checkov; creating empty fallback..."
           cat > checkov-results.sarif << 'EOF'
         {
           "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
@@ -910,8 +918,6 @@ jobs:
           ]
         }
         EOF
-        else
-          echo "Checkov SARIF size: $(wc -c < checkov-results.sarif) bytes"
         fi
         if [ ! -f tfsec-results.json ]; then
           echo "Creating fallback tfsec JSON file..."
