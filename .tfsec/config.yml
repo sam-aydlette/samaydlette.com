@@ -1,0 +1,27 @@
+# tfsec configuration.
+# =============================================================================
+# Excludes are tracked in docs/poam.md where applicable. Excluded checks here
+# are evaluated as False Positive in the FedRAMP POA&M sense: tfsec's
+# heuristic flags them, but the underlying IAM policy is appropriately scoped
+# upon inspection. Rationale per exclude is recorded inline below.
+# =============================================================================
+
+exclude:
+  # AVD-AWS-0057 — IAM policy uses sensitive action on wildcarded resource.
+  # The Lambda runtime IAM policy (aws_iam_role_policy.lambda_opa) uses
+  # wildcards on:
+  #
+  #   1. Log-group ARN segments: arn:aws:logs:us-east-2:*:log-group:/aws/lambda/samaydlette-com-opa-compliance:*
+  #      The account-id wildcard is structural (one account in scope) and the
+  #      trailing :* is required because CloudWatch log streams cannot be
+  #      written without it. The ARN otherwise scopes to one specific log
+  #      group prefix.
+  #
+  #   2. S3 GetObject on bucket+/*: data.aws_s3_bucket.website.arn, "${...}/*"
+  #      This is the standard S3 IAM pattern to grant object-level reads on a
+  #      single bucket. /* is required to grant access to objects in the
+  #      bucket; the resource is fully scoped to the one bucket.
+  #
+  # Both wildcards are appropriately scoped despite triggering tfsec's
+  # broad heuristic. No POA&M entry needed: tracked as False Positive.
+  - aws-iam-no-policy-wildcards

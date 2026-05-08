@@ -31,6 +31,16 @@
     width: 100%;
 }
 
+/* Inline <code> in flowing text. Long paths like "/.well-known/ksi-signal-runtime.json"
+ * are a single unbreakable token by browser default (slashes and hyphens inside a
+ * <code> aren't line-break opportunities); allow breaks so paragraphs wrap on
+ * narrow viewports. */
+.article-content p code,
+.article-content li code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .article-content h3 {
     margin: 2.5rem 0 1rem;
     color: var(--accent-primary);

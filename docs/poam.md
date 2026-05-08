@@ -83,7 +83,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ---
 
-## Configuration Findings (POAM-003 through POAM-016)
+## Configuration Findings (POAM-003 through POAM-018)
 
 Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are currently risk-accepted with documented rationale.
 
@@ -102,11 +102,13 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-012 | SC-5 | Lambda concurrent execution limit not set | Checkov | CKV_AWS_115 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
-| POAM-014 | AU-2 | Lambda X-Ray tracing not enabled | Checkov | CKV_AWS_73 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
-| POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_50 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-014 | AU-2 | Lambda X-Ray tracing not enabled | Checkov | CKV_AWS_50 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
+| POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_272 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
+| POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
+| POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 
-**Standard fields for all of POAM-003 through POAM-016:**
+**Standard fields for all of POAM-003 through POAM-018:**
 
 - **Point of Contact:** Sam Aydlette (operator)
 - **Resources Required:** None at present (risk-accepted). If reactivated, cost and operator time per item; see the rationale in `infrastructure/main.tf`.

@@ -1,0 +1,4556 @@
+{
+  "$schema": "https://samaydlette.com/.well-known/ksi-signal.schema.json",
+  "signal_version": "1.0.0",
+  "signal_id": "f74c70b6-a568-4352-bcb2-8e3c7c91e636",
+  "emitted_at": "2026-05-08T15:45:40Z",
+  "emitter": "deploy",
+  "csp": "aws",
+  "system_id": "urn:samaydlette:website-prod",
+  "provenance": {
+    "builder": {
+      "id": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/Deploy Website with OPA Compliance",
+      "run_id": "25564782891",
+      "version": "github-actions"
+    },
+    "source": {
+      "repository": "https://github.com/sam-aydlette/samaydlette.com",
+      "commit": "4cbc096248df62fc8946c2de85e8ac2ec57c27e5",
+      "ref": "refs/heads/main"
+    },
+    "attestation": {
+      "format": "sigstore-bundle",
+      "url": "https://samaydlette.com/.well-known/ksi-signal.bundle",
+      "verification": {
+        "tool": "cosign",
+        "certificate_identity_regexp": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+",
+        "certificate_oidc_issuer": "https://token.actions.githubusercontent.com"
+      }
+    }
+  },
+  "components": [
+    {
+      "component_id": "aws::cdn_distribution::website",
+      "type": "cdn_distribution",
+      "attributes": {
+        "tf_address": "data.aws_cloudfront_distribution.website",
+        "tf_type": "aws_cloudfront_distribution",
+        "tf_name": "website",
+        "id": "EV1H3IU8N3K5S",
+        "domain_name": "d3w38nfe6yvj8g.cloudfront.net",
+        "function": "Public content delivery (TLS 1.2+, OAC to origin)",
+        "diagram_label": "CloudFront distribution",
+        "public": true,
+        "baseline_configuration": "AWS CloudFront default + custom security headers policy",
+        "iiw_asset_type": "Content Delivery Network (CloudFront distribution)"
+      },
+      "native_id": "arn:aws:cloudfront::975050324277:distribution/EV1H3IU8N3K5S",
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "inbound",
+          "counterparty": "public-internet",
+          "channel": "tls-1.2",
+          "data_class": "public-content"
+        },
+        {
+          "direction": "outbound",
+          "counterparty": "public-internet",
+          "channel": "tls-1.2",
+          "data_class": "public-content"
+        },
+        {
+          "direction": "inbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "aws::object_store::website",
+      "type": "object_store",
+      "attributes": {
+        "tf_address": "data.aws_s3_bucket.website",
+        "tf_type": "aws_s3_bucket",
+        "tf_name": "website",
+        "region": "us-east-2",
+        "id": "samaydlette.com",
+        "function": "Origin storage for static site content and /.well-known/ artifacts",
+        "diagram_label": "S3 origin bucket",
+        "public": false,
+        "baseline_configuration": "AWS S3 default + bucket policy enforcing OAC + public access block",
+        "iiw_asset_type": "Object Storage (S3 bucket)",
+        "config": {
+          "aws_s3_bucket_policy": {
+            "bucket": "samaydlette.com",
+            "id": "samaydlette.com",
+            "policy": "{\"Statement\":[{\"Action\":\"s3:GetObject\",\"Condition\":{\"StringEquals\":{\"AWS:SourceArn\":\"arn:aws:cloudfront::975050324277:distribution/EV1H3IU8N3K5S\"}},\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cloudfront.amazonaws.com\"},\"Resource\":\"arn:aws:s3:::samaydlette.com/*\",\"Sid\":\"AllowCloudFrontServicePrincipal\"}],\"Version\":\"2012-10-17\"}"
+          },
+          "aws_s3_bucket_public_access_block": {
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "bucket": "samaydlette.com",
+            "id": "samaydlette.com",
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          },
+          "aws_s3_bucket_server_side_encryption_configuration": {
+            "bucket": "samaydlette.com",
+            "expected_bucket_owner": "",
+            "id": "samaydlette.com",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "kms_master_key_id": "",
+                    "sse_algorithm": "AES256"
+                  }
+                ],
+                "bucket_key_enabled": null
+              }
+            ]
+          },
+          "aws_s3_bucket_versioning": {
+            "bucket": "samaydlette.com",
+            "expected_bucket_owner": "",
+            "id": "samaydlette.com",
+            "mfa": null,
+            "versioning_configuration": [
+              {
+                "mfa_delete": "",
+                "status": "Enabled"
+              }
+            ]
+          }
+        }
+      },
+      "native_id": "arn:aws:s3:::samaydlette.com",
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "inbound",
+          "counterparty": "cdn_distribution",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        },
+        {
+          "direction": "outbound",
+          "counterparty": "cdn_distribution",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        },
+        {
+          "direction": "inbound",
+          "counterparty": "github-actions",
+          "channel": "tls-1.2",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "aws::function::opa_compliance",
+      "type": "function",
+      "attributes": {
+        "tf_address": "aws_lambda_function.opa_compliance[0]",
+        "tf_type": "aws_lambda_function",
+        "tf_name": "opa_compliance",
+        "runtime": "nodejs22.x",
+        "function_name": "samaydlette-com-opa-compliance",
+        "id": "samaydlette-com-opa-compliance",
+        "function": "Daily runtime KSI emitter; revalidates live AWS configuration",
+        "diagram_label": "Lambda \u2014 runtime KSI emitter",
+        "public": false,
+        "baseline_configuration": "AWS Lambda default + IAM scope (read 3 S3 config APIs, 1 CF distribution; write 1 S3 key)",
+        "iiw_asset_type": "Compute Function (Lambda)"
+      },
+      "native_id": "arn:aws:lambda:us-east-2:975050324277:function:samaydlette-com-opa-compliance",
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "inbound",
+          "counterparty": "eventbridge",
+          "channel": "aws-internal-tls",
+          "data_class": "configuration"
+        },
+        {
+          "direction": "outbound",
+          "counterparty": "aws-service-api",
+          "channel": "aws-internal-tls",
+          "data_class": "configuration"
+        },
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "audit"
+        }
+      ]
+    },
+    {
+      "component_id": "npm::@aws-crypto/crc32@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/crc32@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/crc32",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/crc32",
+        "integrity": "sha512-nLbCWqQNgUiwwtFsen1AdzAtvuLRsQS8rYgMuxCrdKf9kOssamGLuPwyTY9wyYblNr9+1XM8v6zoDTPPSIeANg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/crc32c@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/crc32c@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/crc32c",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/crc32c",
+        "integrity": "sha512-+iWb8qaHLYKrNvGRbiYRHSdKRWhto5XlZUEBwDjYNf+ly5SVYG6zEoYIdxvf5R3zyeP16w4PLBn3rH1xc74Rag==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha1-browser@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha1-browser@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha1-browser",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha1-browser",
+        "integrity": "sha512-OH6lveCFfcDjX4dbAvCFSYUjJZjDr/3XJ3xHtjn3Oj5b9RjojQo8npoLeA/bNwkOkrSQ0wgrHzXk4tDRxGKJeg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha1-browser/node_modules/@smithy/is-array-buffer@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha1-browser/node_modules/@smithy/is-array-buffer@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha1-browser/node_modules/@smithy/is-array-buffer",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha1-browser/node_modules/@smithy/is-array-buffer",
+        "integrity": "sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha1-browser/node_modules/@smithy/util-buffer-from@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha1-browser/node_modules/@smithy/util-buffer-from@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha1-browser/node_modules/@smithy/util-buffer-from",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha1-browser/node_modules/@smithy/util-buffer-from",
+        "integrity": "sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha1-browser/node_modules/@smithy/util-utf8@2.3.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha1-browser/node_modules/@smithy/util-utf8@2.3.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha1-browser/node_modules/@smithy/util-utf8",
+        "version": "2.3.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha1-browser/node_modules/@smithy/util-utf8",
+        "integrity": "sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha256-browser@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha256-browser@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha256-browser",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha256-browser",
+        "integrity": "sha512-AXfN/lGotSQwu6HNcEsIASo7kWXZ5HYWvfOmSNKDsEqC4OashTp8alTmaz+F7TC2L083SFv5RdB+qU3Vs1kZqw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha256-browser/node_modules/@smithy/is-array-buffer@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha256-browser/node_modules/@smithy/is-array-buffer@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha256-browser/node_modules/@smithy/is-array-buffer",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha256-browser/node_modules/@smithy/is-array-buffer",
+        "integrity": "sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha256-browser/node_modules/@smithy/util-buffer-from@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha256-browser/node_modules/@smithy/util-buffer-from@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha256-browser/node_modules/@smithy/util-buffer-from",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha256-browser/node_modules/@smithy/util-buffer-from",
+        "integrity": "sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha256-browser/node_modules/@smithy/util-utf8@2.3.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha256-browser/node_modules/@smithy/util-utf8@2.3.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha256-browser/node_modules/@smithy/util-utf8",
+        "version": "2.3.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha256-browser/node_modules/@smithy/util-utf8",
+        "integrity": "sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/sha256-js@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/sha256-js@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/sha256-js",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/sha256-js",
+        "integrity": "sha512-FFQQyu7edu4ufvIZ+OadFpHHOt+eSTBaYaki44c+akjg7qZg9oOQeLlk77F6tSYqjDAFClrHJk9tMf0HdVyOvA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/supports-web-crypto@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/supports-web-crypto@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/supports-web-crypto",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/supports-web-crypto",
+        "integrity": "sha512-iAvUotm021kM33eCdNfwIN//F77/IADDSs58i+MDaOqFrVjZo9bAal0NK7HurRuWLLpF1iLX7gbWrjHjeo+YFg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/util@5.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/util@5.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/util",
+        "version": "5.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/util",
+        "integrity": "sha512-4RkU9EsI6ZpBve5fseQlGNUWKMa1RLPQ1dnjnQoe07ldfIzcsGb5hC5W0Dm7u423KWzawlrpbjXBrXCEv9zazQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/util/node_modules/@smithy/is-array-buffer@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/util/node_modules/@smithy/is-array-buffer@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/util/node_modules/@smithy/is-array-buffer",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/util/node_modules/@smithy/is-array-buffer",
+        "integrity": "sha512-GGP3O9QFD24uGeAXYUjwSTXARoqpZykHadOmA8G5vfJPK0/DC67qa//0qvqrJzL1xc8WQWX7/yc7fwudjPHPhA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/util/node_modules/@smithy/util-buffer-from@2.2.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/util/node_modules/@smithy/util-buffer-from@2.2.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/util/node_modules/@smithy/util-buffer-from",
+        "version": "2.2.0",
+        "lockfile_path": "node_modules/@aws-crypto/util/node_modules/@smithy/util-buffer-from",
+        "integrity": "sha512-IJdWBbTcMQ6DA0gdNhh/BwrLkDR+ADW5Kr1aZmd4k3DIF6ezMV4R2NIAmT08wQJ3yUK82thHWmC/TnK/wpMMIA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-crypto/util/node_modules/@smithy/util-utf8@2.3.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-crypto/util/node_modules/@smithy/util-utf8@2.3.0"
+      },
+      "attributes": {
+        "name": "@aws-crypto/util/node_modules/@smithy/util-utf8",
+        "version": "2.3.0",
+        "lockfile_path": "node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8",
+        "integrity": "sha512-R8Rdn8Hy72KKcebgLiv8jQcQkXoLMOGGv5uI1/k0l+snqkOzQ1R0ChUBCxWMlBsFMekWjq0wRudIweFs7sKT5A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/client-cloudfront@3.1042.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/client-cloudfront@3.1042.0"
+      },
+      "attributes": {
+        "name": "@aws-sdk/client-cloudfront",
+        "version": "3.1042.0",
+        "lockfile_path": "node_modules/@aws-sdk/client-cloudfront",
+        "integrity": "sha512-LE79zvUbdvXGExuJBbJAvvNWtnxwVXYYuyQMU3pzVv4gPUknsR3WTsaEhrdR8CkRM2wXq3ZKOPSyph3C2ZYa7g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/client-s3@3.1042.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/client-s3@3.1042.0"
+      },
+      "attributes": {
+        "name": "@aws-sdk/client-s3",
+        "version": "3.1042.0",
+        "lockfile_path": "node_modules/@aws-sdk/client-s3",
+        "integrity": "sha512-z3Ibstr7ckDT10dz/nkk4+93LitrrO49Oq563/JoFHt30ZNodPBCfSxysKcelLyi/lNVF1MZrhZZfikUAG3iNQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/core@3.974.8",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/core@3.974.8"
+      },
+      "attributes": {
+        "name": "@aws-sdk/core",
+        "version": "3.974.8",
+        "lockfile_path": "node_modules/@aws-sdk/core",
+        "integrity": "sha512-njR2qoG6ZuB0kvAS2FyICsFZJ6gmCcf2X/7JcD14sUvGDm26wiZ5BrA6LOiUxKFEF+IVe7kdroxyE00YlkiYsw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/crc64-nvme@3.972.7",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/crc64-nvme@3.972.7"
+      },
+      "attributes": {
+        "name": "@aws-sdk/crc64-nvme",
+        "version": "3.972.7",
+        "lockfile_path": "node_modules/@aws-sdk/crc64-nvme",
+        "integrity": "sha512-QUagVVBbC8gODCF6e1aV0mE2TXWB9Opz4k8EJFdNrujUVQm5R4AjJa1mpOqzwOuROBzqJU9zawzig7M96L8Ejg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-env@3.972.34",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-env@3.972.34"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-env",
+        "version": "3.972.34",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-env",
+        "integrity": "sha512-XT0jtf8Fw9JE6ppsQeoNnZRiG+jqRixMT1v1ZR17G60UvVdsQmTG8nbEyHuEPfMxDXEhfdARaM/XiEhca4lGHQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-http@3.972.36",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-http@3.972.36"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-http",
+        "version": "3.972.36",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-http",
+        "integrity": "sha512-DPoGWfy7J7RKxvbf5kOKIGQkD2ek3dbKgzKIGrnLuvZBz5myU+Im/H6pmc14QcnFbqHMqxvtWSgRDSJW3qXLQg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-ini@3.972.38",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-ini@3.972.38"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-ini",
+        "version": "3.972.38",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-ini",
+        "integrity": "sha512-oDzUBu2MGJFgoar05sPMCwSrhw44ASyccrHzj66vO69OZqi7I6hZZxXfuPLC8OCzW7C+sU+bI73XHij41yekgQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-login@3.972.38",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-login@3.972.38"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-login",
+        "version": "3.972.38",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-login",
+        "integrity": "sha512-g1NosS8qe4OF++G2UFCM5ovSkgipC7YYor5KCWatG0UoMSO5YFj9C8muePlyVmOBV/WTI16Jo3/s1NUo/o1Bww==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-node@3.972.39",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-node@3.972.39"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-node",
+        "version": "3.972.39",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-node",
+        "integrity": "sha512-HEswDQyxUtadoZ/bJsPPENHg7R0Lzym5LuMksJeHvqhCOpP+rtkDLKI4/ZChH4w3cf5kG8n6bZuI8PzajoiqMg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-process@3.972.34",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-process@3.972.34"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-process",
+        "version": "3.972.34",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-process",
+        "integrity": "sha512-T3IFs4EVmVi1dVN5RciFnklCANSzvrQd/VuHY9ThHSQmYkTogjcGkoJEr+oNUPQZnso52183088NqysMPji1/Q==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-sso@3.972.38",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-sso@3.972.38"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-sso",
+        "version": "3.972.38",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-sso",
+        "integrity": "sha512-5ZxG+t0+3Q3QPh8KEjX6syskhgNf7I0MN7oGioTf6Lm1NTjfP7sIcYGNsthXC2qR8vcD3edNZwCr2ovfSSWuRA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/credential-provider-web-identity@3.972.38",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/credential-provider-web-identity@3.972.38"
+      },
+      "attributes": {
+        "name": "@aws-sdk/credential-provider-web-identity",
+        "version": "3.972.38",
+        "lockfile_path": "node_modules/@aws-sdk/credential-provider-web-identity",
+        "integrity": "sha512-lYHFF30DGI20jZcYX8cm6Ns0V7f1dDN6g/MBDLTyD/5iw+bXs3yBr2iAiHDkx4RFU5JgsnZvCHYKiRVPRdmOgw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-bucket-endpoint@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-bucket-endpoint@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-bucket-endpoint",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-bucket-endpoint",
+        "integrity": "sha512-Vbc2frZH7wXlMNd+ZZSXUEs/l1Sv8Jj4zUnIfwrYF5lwaLdXHZ9xx4U3rjUcaye3HRhFVc+E5DbBxpRAbB16BA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-expect-continue@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-expect-continue@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-expect-continue",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-expect-continue",
+        "integrity": "sha512-2Yn0f1Qiq/DjxYR3wfI3LokXnjOhFM7Ssn4LTdFDIxRMCE6I32MAsVnhPX1cUZsuVA9tiZtwwhlSLAtFGxAZlQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-flexible-checksums@3.974.16",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-flexible-checksums@3.974.16"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-flexible-checksums",
+        "version": "3.974.16",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-flexible-checksums",
+        "integrity": "sha512-6ru8doI0/XzszqLIPXf0E/V7HhAw1Pu94010XCKYtBUfD0LxF0BuOzrUf8OQGR6j2o6wgKTHUniOmndQycHwCA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-host-header@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-host-header@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-host-header",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-host-header",
+        "integrity": "sha512-IJSsIMeVQ8MMCPbuh1AbltkFhLBLXn7aejzfX5YKT/VLDHn++Dcz8886tXckE+wQssyPUhaXrJhdakO2VilRhg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-location-constraint@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-location-constraint@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-location-constraint",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-location-constraint",
+        "integrity": "sha512-rI3NZvJcEvjoD0+0PI0iUAwlPw2IlSlhyvgBK/3WkKJQE/YiKFedd9dMN2lVacdNxPNhxL/jzQaKQdrGtQagjQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-logger@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-logger@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-logger",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-logger",
+        "integrity": "sha512-OOuGvvz1Dm20SjZo5oEBePFqxt5nf8AwkNDSyUHvD9/bfNASmstcYxFAHUowy4n6Io7mWUZ04JURZwSBvyQanQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-recursion-detection@3.972.11",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-recursion-detection@3.972.11"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-recursion-detection",
+        "version": "3.972.11",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-recursion-detection",
+        "integrity": "sha512-+zz6f79Kj9V5qFK2P+D8Ehjnw4AhphAlCAsPjUqEcInA9umtSSKMrHbSagEeOIsDNuvVrH98bjRHcyQukTrhaQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-sdk-s3@3.972.37",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-sdk-s3@3.972.37"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-sdk-s3",
+        "version": "3.972.37",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-sdk-s3",
+        "integrity": "sha512-Km7M+i8DrLArVzrid1gfxeGhYHBd3uxvE77g0s5a52zPSVosxzQBnJ0gwWb6NIp/DOk8gsBMhi7V+cpJG0ndTA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-ssec@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-ssec@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-ssec",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-ssec",
+        "integrity": "sha512-Gli9A0u8EVVb+5bFDGS/QbSVg28w/wpEidg1ggVcSj65BDTdGR6punsOcVjqdiu1i42WHWo51MCvARPIIz9juw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/middleware-user-agent@3.972.38",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/middleware-user-agent@3.972.38"
+      },
+      "attributes": {
+        "name": "@aws-sdk/middleware-user-agent",
+        "version": "3.972.38",
+        "lockfile_path": "node_modules/@aws-sdk/middleware-user-agent",
+        "integrity": "sha512-iz+B29TXcAZsJpwB+AwG/TTGA5l/VnmMZ2UxtiySOZjI6gCdmviXPwdgzcmuazMy16rXoPY4mYCGe7zdNKfx5A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/nested-clients@3.997.6",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/nested-clients@3.997.6"
+      },
+      "attributes": {
+        "name": "@aws-sdk/nested-clients",
+        "version": "3.997.6",
+        "lockfile_path": "node_modules/@aws-sdk/nested-clients",
+        "integrity": "sha512-WBDnqatJl+kGObpfmfSxqnXeYTu3Me8wx8WCtvoxX3pfWrrTv8I4WTMSSs7PZqcRcVh8WeUKMgGFjMG+52SR1w==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/region-config-resolver@3.972.13",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/region-config-resolver@3.972.13"
+      },
+      "attributes": {
+        "name": "@aws-sdk/region-config-resolver",
+        "version": "3.972.13",
+        "lockfile_path": "node_modules/@aws-sdk/region-config-resolver",
+        "integrity": "sha512-CvJ2ZIjK/jVD/lbOpowBVElJyC1YxLTIJ13yM0AEo0t2v7swOzGjSA6lJGH+DwZXQhcjUjoYwc8bVYCX5MDr1A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/signature-v4-multi-region@3.996.25",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/signature-v4-multi-region@3.996.25"
+      },
+      "attributes": {
+        "name": "@aws-sdk/signature-v4-multi-region",
+        "version": "3.996.25",
+        "lockfile_path": "node_modules/@aws-sdk/signature-v4-multi-region",
+        "integrity": "sha512-+CMIt3e1VzlklAECmG+DtP1sV8iKq25FuA0OKpnJ4KA0kxUtd7CgClY7/RU6VzJBQwbN4EJ9Ue6plvqx1qGadw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/token-providers@3.1041.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/token-providers@3.1041.0"
+      },
+      "attributes": {
+        "name": "@aws-sdk/token-providers",
+        "version": "3.1041.0",
+        "lockfile_path": "node_modules/@aws-sdk/token-providers",
+        "integrity": "sha512-Th7kPI6YPtvJUcdznooXJMy+9rQWjmEF81LxaJssngBzuysK4a/x+l8kjm1zb7nYsUPbndnBdUnwng/3PLvtGw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/types@3.973.8",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/types@3.973.8"
+      },
+      "attributes": {
+        "name": "@aws-sdk/types",
+        "version": "3.973.8",
+        "lockfile_path": "node_modules/@aws-sdk/types",
+        "integrity": "sha512-gjlAdtHMbtR9X5iIhVUvbVcy55KnznpC6bkDUWW9z915bi0ckdUr5cjf16Kp6xq0bP5HBD2xzgbL9F9Quv5vUw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/util-arn-parser@3.972.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/util-arn-parser@3.972.3"
+      },
+      "attributes": {
+        "name": "@aws-sdk/util-arn-parser",
+        "version": "3.972.3",
+        "lockfile_path": "node_modules/@aws-sdk/util-arn-parser",
+        "integrity": "sha512-HzSD8PMFrvgi2Kserxuff5VitNq2sgf3w9qxmskKDiDTThWfVteJxuCS9JXiPIPtmCrp+7N9asfIaVhBFORllA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/util-endpoints@3.996.8",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/util-endpoints@3.996.8"
+      },
+      "attributes": {
+        "name": "@aws-sdk/util-endpoints",
+        "version": "3.996.8",
+        "lockfile_path": "node_modules/@aws-sdk/util-endpoints",
+        "integrity": "sha512-oOZHcRDihk5iEe5V25NVWg45b3qEA8OpHWVdU/XQh8Zj4heVPAJqWvMphQnU7LkufmUo10EpvFPZuQMiFLJK3g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/util-locate-window@3.965.5",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/util-locate-window@3.965.5"
+      },
+      "attributes": {
+        "name": "@aws-sdk/util-locate-window",
+        "version": "3.965.5",
+        "lockfile_path": "node_modules/@aws-sdk/util-locate-window",
+        "integrity": "sha512-WhlJNNINQB+9qtLtZJcpQdgZw3SCDCpXdUJP7cToGwHbCWCnRckGlc6Bx/OhWwIYFNAn+FIydY8SZ0QmVu3xTQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/util-user-agent-browser@3.972.10",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/util-user-agent-browser@3.972.10"
+      },
+      "attributes": {
+        "name": "@aws-sdk/util-user-agent-browser",
+        "version": "3.972.10",
+        "lockfile_path": "node_modules/@aws-sdk/util-user-agent-browser",
+        "integrity": "sha512-FAzqXvfEssGdSIz8ejatan0bOdx1qefBWKF/gWmVBXIP1HkS7v/wjjaqrAGGKvyihrXTXW00/2/1nTJtxpXz7g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/util-user-agent-node@3.973.24",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/util-user-agent-node@3.973.24"
+      },
+      "attributes": {
+        "name": "@aws-sdk/util-user-agent-node",
+        "version": "3.973.24",
+        "lockfile_path": "node_modules/@aws-sdk/util-user-agent-node",
+        "integrity": "sha512-ZWwlkjcIp7cEL8ZfTpTAPNkwx25p7xol0xlKoWVVf22+nsjwmLcHYtTPjIV1cSpmB/b6DaK4cb1fSkvCXHgRdw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws-sdk/xml-builder@3.972.22",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws-sdk/xml-builder@3.972.22"
+      },
+      "attributes": {
+        "name": "@aws-sdk/xml-builder",
+        "version": "3.972.22",
+        "lockfile_path": "node_modules/@aws-sdk/xml-builder",
+        "integrity": "sha512-PMYKKtJd70IsSG0yHrdAbxBr+ZWBKLvzFZfD3/urxgf6hXVMzuU5M+3MJ5G67RpOmLBu1fAUN65SbWuKUCOlAA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@aws/lambda-invoke-store@0.2.4",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@aws/lambda-invoke-store@0.2.4"
+      },
+      "attributes": {
+        "name": "@aws/lambda-invoke-store",
+        "version": "0.2.4",
+        "lockfile_path": "node_modules/@aws/lambda-invoke-store",
+        "integrity": "sha512-iY8yvjE0y651BixKNPgmv1WrQc+GZ142sb0z4gYnChDDY2YqI4P/jsSopBWrKfAt7LOJAkOXt7rC/hms+WclQQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@nodable/entities@2.1.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@nodable/entities@2.1.0"
+      },
+      "attributes": {
+        "name": "@nodable/entities",
+        "version": "2.1.0",
+        "lockfile_path": "node_modules/@nodable/entities",
+        "integrity": "sha512-nyT7T3nbMyBI/lvr6L5TyWbFJAI9FTgVRakNoBqCD+PmID8DzFrrNdLLtHMwMszOtqZa8PAOV24ZqDnQrhQINA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@open-policy-agent/opa-wasm@1.10.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@open-policy-agent/opa-wasm@1.10.0"
+      },
+      "attributes": {
+        "name": "@open-policy-agent/opa-wasm",
+        "version": "1.10.0",
+        "lockfile_path": "node_modules/@open-policy-agent/opa-wasm",
+        "integrity": "sha512-ymR/nFS3nO9o24j9xowGGQaf+Gmb813QcxUpVZkfRlJkawKWqSIllnEH15agyWjijmOIyhA+OBErenx6N3jphw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/chunked-blob-reader@5.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/chunked-blob-reader@5.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/chunked-blob-reader",
+        "version": "5.2.2",
+        "lockfile_path": "node_modules/@smithy/chunked-blob-reader",
+        "integrity": "sha512-St+kVicSyayWQca+I1rGitaOEH6uKgE8IUWoYnnEX26SWdWQcL6LvMSD19Lg+vYHKdT9B2Zuu7rd3i6Wnyb/iw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/chunked-blob-reader-native@4.2.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/chunked-blob-reader-native@4.2.3"
+      },
+      "attributes": {
+        "name": "@smithy/chunked-blob-reader-native",
+        "version": "4.2.3",
+        "lockfile_path": "node_modules/@smithy/chunked-blob-reader-native",
+        "integrity": "sha512-jA5k5Udn7Y5717L86h4EIv06wIr3xn8GM1qHRi/Nf31annXcXHJjBKvgztnbn2TxH3xWrPBfgwHsOwZf0UmQWw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/config-resolver@4.4.17",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/config-resolver@4.4.17"
+      },
+      "attributes": {
+        "name": "@smithy/config-resolver",
+        "version": "4.4.17",
+        "lockfile_path": "node_modules/@smithy/config-resolver",
+        "integrity": "sha512-TzDZcAnhTyAHbXVxWZo7/tEcrIeFq20IBk8So3OLOetWpR8EwY/yEqBMBFaJMeyEiREDq4NfEl+qO3OAUD+vbQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/core@3.23.17",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/core@3.23.17"
+      },
+      "attributes": {
+        "name": "@smithy/core",
+        "version": "3.23.17",
+        "lockfile_path": "node_modules/@smithy/core",
+        "integrity": "sha512-x7BlLbUFL8NWCGjMF9C+1N5cVCxcPa7g6Tv9B4A2luWx3be3oU8hQ96wIwxe/s7OhIzvoJH73HAUSg5JXVlEtQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/credential-provider-imds@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/credential-provider-imds@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/credential-provider-imds",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/credential-provider-imds",
+        "integrity": "sha512-Au28zBN48ZAoXdooGUHemuVBrkE+Ie6RPmGNIAJsFqj33Vhb6xAgRifUydZ2aY+M+KaMAETAlKk5NC5h1G7wpg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/eventstream-codec@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/eventstream-codec@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/eventstream-codec",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/eventstream-codec",
+        "integrity": "sha512-erZq0nOIpzfeZdCyzZjdJb4nVSKLUmSkaQUVkRGQTXs30gyUGeKnrYEg+Xe1W5gE3aReS7IgsvANwVPxSzY6Pw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/eventstream-serde-browser@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/eventstream-serde-browser@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/eventstream-serde-browser",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/eventstream-serde-browser",
+        "integrity": "sha512-8IelTCtTctWRbb+0Dcy+C0aICh1qa0qWXqgjcXDmMuCvPJRnv26hiDZoAau2ILOniki65mCPKqOQs/BaWvO4CQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/eventstream-serde-config-resolver@4.3.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/eventstream-serde-config-resolver@4.3.14"
+      },
+      "attributes": {
+        "name": "@smithy/eventstream-serde-config-resolver",
+        "version": "4.3.14",
+        "lockfile_path": "node_modules/@smithy/eventstream-serde-config-resolver",
+        "integrity": "sha512-sqHiHpYRYo3FJlaIxD1J8PhbcmJAm7IuM16mVnwSkCToD7g00IBZzKuiLNMGmftULmEUX6/UAz8/NN5uMP8bVA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/eventstream-serde-node@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/eventstream-serde-node@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/eventstream-serde-node",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/eventstream-serde-node",
+        "integrity": "sha512-Ht/8BuGlKfFTy0H3+8eEu0vdpwGztCnaLLXtpXNdQqiR7Hj4vFScU3T436vRAjATglOIPjJXronY+1WxxNLSiw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/eventstream-serde-universal@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/eventstream-serde-universal@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/eventstream-serde-universal",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/eventstream-serde-universal",
+        "integrity": "sha512-lWyt4T2XQZUZgK3tQ3Wn0w3XBvZsK/vjTuJl6bXbnGZBHH0ZUSONTYiK9TgjTTzU54xQr3DRFwpjmhp0oLm3gg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/fetch-http-handler@5.3.17",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/fetch-http-handler@5.3.17"
+      },
+      "attributes": {
+        "name": "@smithy/fetch-http-handler",
+        "version": "5.3.17",
+        "lockfile_path": "node_modules/@smithy/fetch-http-handler",
+        "integrity": "sha512-bXOvQzaSm6MnmLaWA1elgfQcAtN4UP3vXqV97bHuoOrHQOJiLT3ds6o9eo5bqd0TJfRFpzdGnDQdW3FACiAVdw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/hash-blob-browser@4.2.15",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/hash-blob-browser@4.2.15"
+      },
+      "attributes": {
+        "name": "@smithy/hash-blob-browser",
+        "version": "4.2.15",
+        "lockfile_path": "node_modules/@smithy/hash-blob-browser",
+        "integrity": "sha512-0PJ4Al3fg2nM4qKrAIxyNcApgqHAXcBkN8FeizOz69z0rb26uZ6lMESYtxegaTlXB5Hj84JfwMPavMrwDMjucA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/hash-node@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/hash-node@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/hash-node",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/hash-node",
+        "integrity": "sha512-8ZBDY2DD4wr+GGjTpPtiglEsqr0lUP+KHqgZcWczFf6qeZ/YRjMIOoQWVQlmwu7EtxKTd8YXD8lblmYcpBIA1g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/hash-stream-node@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/hash-stream-node@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/hash-stream-node",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/hash-stream-node",
+        "integrity": "sha512-tw4GANWkZPb6+BdD4Fgucqzey2+r73Z/GRo9zklsCdwrnxxumUV83ZIaBDdudV4Ylazw3EPTiJZhpX42105ruQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/invalid-dependency@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/invalid-dependency@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/invalid-dependency",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/invalid-dependency",
+        "integrity": "sha512-c21qJiTSb25xvvOp+H2TNZzPCngrvl5vIPqPB8zQ/DmJF4QWXO19x1dWfMJZ6wZuuWUPPm0gV8C0cU3+ifcWuw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/is-array-buffer@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/is-array-buffer@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/is-array-buffer",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/is-array-buffer",
+        "integrity": "sha512-n6rQ4N8Jj4YTQO3YFrlgZuwKodf4zUFs7EJIWH86pSCWBaAtAGBFfCM7Wx6D2bBJ2xqFNxGBSrUWswT3M0VJow==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/md5-js@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/md5-js@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/md5-js",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/md5-js",
+        "integrity": "sha512-V2v0vx+h0iUSNG1Alt+GNBMSLGCrl9iVsdd+Ap67HPM9PN479x12V8LkuMoKImNZxn3MXeuyUjls+/7ZACZghA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/middleware-content-length@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/middleware-content-length@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/middleware-content-length",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/middleware-content-length",
+        "integrity": "sha512-xhHq7fX4/3lv5NHxLUk3OeEvl0xZ+Ek3qIbWaCL4f9JwgDZEclPBElljaZCAItdGPQl/kSM4LPMOpy1MYgprpw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/middleware-endpoint@4.4.32",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/middleware-endpoint@4.4.32"
+      },
+      "attributes": {
+        "name": "@smithy/middleware-endpoint",
+        "version": "4.4.32",
+        "lockfile_path": "node_modules/@smithy/middleware-endpoint",
+        "integrity": "sha512-ZZkgyjnJppiZbIm6Qbx92pbXYi1uzenIvGhBSCDlc7NwuAkiqSgS75j1czAD25ZLs2FjMjYy1q7gyRVWG6JA0Q==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/middleware-retry@4.5.7",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/middleware-retry@4.5.7"
+      },
+      "attributes": {
+        "name": "@smithy/middleware-retry",
+        "version": "4.5.7",
+        "lockfile_path": "node_modules/@smithy/middleware-retry",
+        "integrity": "sha512-bRt6ZImqVSeTk39Nm81K20ObIiAZ3WefY7G6+iz/0tZjs4dgRRjvRX2sgsH+zi6iDCRR/aQvQofLKxxz4rPBZg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/middleware-serde@4.2.20",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/middleware-serde@4.2.20"
+      },
+      "attributes": {
+        "name": "@smithy/middleware-serde",
+        "version": "4.2.20",
+        "lockfile_path": "node_modules/@smithy/middleware-serde",
+        "integrity": "sha512-Lx9JMO9vArPtiChE3wbEZ5akMIDQpWQtlu90lhACQmNOXcGXRbaDywMHDzuDZ2OkZzP+9wQfZi3YJT9F67zTQQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/middleware-stack@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/middleware-stack@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/middleware-stack",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/middleware-stack",
+        "integrity": "sha512-2dvkUKLuFdKsCRmOE4Mn63co0Djtsm+JMh0bYZQupN1pJwMeE8FmQmRLLzzEMN0dnNi7CDCYYH8F0EVwWiPBeA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/node-config-provider@4.3.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/node-config-provider@4.3.14"
+      },
+      "attributes": {
+        "name": "@smithy/node-config-provider",
+        "version": "4.3.14",
+        "lockfile_path": "node_modules/@smithy/node-config-provider",
+        "integrity": "sha512-S+gFjyo/weSVL0P1b9Ts8C/CwIfNCgUPikk3sl6QVsfE/uUuO+QsF+NsE/JkpvWqqyz1wg7HFdiaZuj5CoBMRg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/node-http-handler@4.6.1",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/node-http-handler@4.6.1"
+      },
+      "attributes": {
+        "name": "@smithy/node-http-handler",
+        "version": "4.6.1",
+        "lockfile_path": "node_modules/@smithy/node-http-handler",
+        "integrity": "sha512-iB+orM4x3xrr57X3YaXazfKnntl0LHlZB1kcXSGzMV1Tt0+YwEjGlbjk/44qEGtBzXAz6yFDzkYTKSV6Pj2HUg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/property-provider@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/property-provider@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/property-provider",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/property-provider",
+        "integrity": "sha512-WuM31CgfsnQ/10i7NYr0PyxqknD72Y5uMfUMVSniPjbEPceiTErb4eIqJQ+pdxNEAUEWrewrGjIRjVbVHsxZiQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/protocol-http@5.3.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/protocol-http@5.3.14"
+      },
+      "attributes": {
+        "name": "@smithy/protocol-http",
+        "version": "5.3.14",
+        "lockfile_path": "node_modules/@smithy/protocol-http",
+        "integrity": "sha512-dN5F8kHx8RNU0r+pCwNmFZyz6ChjMkzShy/zup6MtkRmmix4vZzJdW+di7x//b1LiynIev88FM18ie+wwPcQtQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/querystring-builder@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/querystring-builder@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/querystring-builder",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/querystring-builder",
+        "integrity": "sha512-XYA5Z0IqTeF+5XDdh4BBmSA0HvbgVZIyv4cmOoUheDNR57K1HgBp9ukUMx3Cr3XpDHHpLBnexPE3LAtDsZkj2A==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/querystring-parser@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/querystring-parser@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/querystring-parser",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/querystring-parser",
+        "integrity": "sha512-hr+YyqBD23GVvRxGGrcc/oOeNlK3PzT5Fu4dzrDXxzS1LpFiuL2PQQqKPs87M79aW7ziMs+nvB3qdw77SqE7Lw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/service-error-classification@4.3.1",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/service-error-classification@4.3.1"
+      },
+      "attributes": {
+        "name": "@smithy/service-error-classification",
+        "version": "4.3.1",
+        "lockfile_path": "node_modules/@smithy/service-error-classification",
+        "integrity": "sha512-aUQuDGh760ts/8MU+APjIZhlLPKhIIfqyzZaJikLEIMrdxFvxuLYD0WxWzaYWpmLbQlXDe9p7EWM3HsBe0K6Gw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/shared-ini-file-loader@4.4.9",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/shared-ini-file-loader@4.4.9"
+      },
+      "attributes": {
+        "name": "@smithy/shared-ini-file-loader",
+        "version": "4.4.9",
+        "lockfile_path": "node_modules/@smithy/shared-ini-file-loader",
+        "integrity": "sha512-495/V2I15SHgedSJoDPD23JuSfKAp726ZI1V0wtjB07Wh7q/0tri/0e0DLefZCHgxZonrGKt/OCTpAtP1wE1kQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/signature-v4@5.3.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/signature-v4@5.3.14"
+      },
+      "attributes": {
+        "name": "@smithy/signature-v4",
+        "version": "5.3.14",
+        "lockfile_path": "node_modules/@smithy/signature-v4",
+        "integrity": "sha512-1D9Y/nmlVjCeSivCbhZ7hgEpmHyY1h0GvpSZt3l0xcD9JjmjVC1CHOozS6+Gh+/ldMH8JuJ6cujObQqfayAVFA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/smithy-client@4.12.13",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/smithy-client@4.12.13"
+      },
+      "attributes": {
+        "name": "@smithy/smithy-client",
+        "version": "4.12.13",
+        "lockfile_path": "node_modules/@smithy/smithy-client",
+        "integrity": "sha512-y/Pcj1V9+qG98gyu1gvftHB7rDpdh+7kIBIggs55yGm3JdtBV8GT8IFF3a1qxZ79QnaJHX9GXzvBG6tAd+czJA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/types@4.14.1",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/types@4.14.1"
+      },
+      "attributes": {
+        "name": "@smithy/types",
+        "version": "4.14.1",
+        "lockfile_path": "node_modules/@smithy/types",
+        "integrity": "sha512-59b5HtSVrVR/eYNei3BUj3DCPKD/G7EtDDe7OEJE7i7FtQFugYo6MxbotS8mVJkLNVf8gYaAlEBwwtJ9HzhWSg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/url-parser@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/url-parser@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/url-parser",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/url-parser",
+        "integrity": "sha512-p06BiBigJ8bTA3MgnOfCtDUWnAMY0YfedO/GRpmc7p+wg3KW8vbXy1xwSu5ASy0wV7rRYtlfZOIKH4XqfhjSQQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-base64@4.3.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-base64@4.3.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-base64",
+        "version": "4.3.2",
+        "lockfile_path": "node_modules/@smithy/util-base64",
+        "integrity": "sha512-XRH6b0H/5A3SgblmMa5ErXQ2XKhfbQB+Fm/oyLZ2O2kCUrwgg55bU0RekmzAhuwOjA9qdN5VU2BprOvGGUkOOQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-body-length-browser@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-body-length-browser@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-body-length-browser",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-body-length-browser",
+        "integrity": "sha512-JKCrLNOup3OOgmzeaKQwi4ZCTWlYR5H4Gm1r2uTMVBXoemo1UEghk5vtMi1xSu2ymgKVGW631e2fp9/R610ZjQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-body-length-node@4.2.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-body-length-node@4.2.3"
+      },
+      "attributes": {
+        "name": "@smithy/util-body-length-node",
+        "version": "4.2.3",
+        "lockfile_path": "node_modules/@smithy/util-body-length-node",
+        "integrity": "sha512-ZkJGvqBzMHVHE7r/hcuCxlTY8pQr1kMtdsVPs7ex4mMU+EAbcXppfo5NmyxMYi2XU49eqaz56j2gsk4dHHPG/g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-buffer-from@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-buffer-from@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-buffer-from",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-buffer-from",
+        "integrity": "sha512-FDXD7cvUoFWwN6vtQfEta540Y/YBe5JneK3SoZg9bThSoOAC/eGeYEua6RkBgKjGa/sz6Y+DuBZj3+YEY21y4Q==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-config-provider@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-config-provider@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-config-provider",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-config-provider",
+        "integrity": "sha512-dWU03V3XUprJwaUIFVv4iOnS1FC9HnMHDfUrlNDSh4315v0cWyaIErP8KiqGVbf5z+JupoVpNM7ZB3jFiTejvQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-defaults-mode-browser@4.3.49",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-defaults-mode-browser@4.3.49"
+      },
+      "attributes": {
+        "name": "@smithy/util-defaults-mode-browser",
+        "version": "4.3.49",
+        "lockfile_path": "node_modules/@smithy/util-defaults-mode-browser",
+        "integrity": "sha512-a5bNrdiONYB/qE2BuKegvUMd/+ZDwdg4vsNuuSzYE8qs2EYAdK9CynL+Rzn29PbPiUqoz/cbpRbcLzD5lEevHw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-defaults-mode-node@4.2.54",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-defaults-mode-node@4.2.54"
+      },
+      "attributes": {
+        "name": "@smithy/util-defaults-mode-node",
+        "version": "4.2.54",
+        "lockfile_path": "node_modules/@smithy/util-defaults-mode-node",
+        "integrity": "sha512-g1cvrJvOnzeJgEdf7AE4luI7gp6L8weE0y9a9wQUSGtjb8QRHDbCJYuE4Sy0SD9N8RrnNPFsPltAz/OSoBR9Zw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-endpoints@3.4.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-endpoints@3.4.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-endpoints",
+        "version": "3.4.2",
+        "lockfile_path": "node_modules/@smithy/util-endpoints",
+        "integrity": "sha512-a55Tr+3OKld4TTtnT+RhKOQHyPxm3j/xL4OR83WBUhLJaKDS9dnJ7arRMOp3t31dcLhApwG9bgvrRXBHlLdIkg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-hex-encoding@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-hex-encoding@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-hex-encoding",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-hex-encoding",
+        "integrity": "sha512-Qcz3W5vuHK4sLQdyT93k/rfrUwdJ8/HZ+nMUOyGdpeGA1Wxt65zYwi3oEl9kOM+RswvYq90fzkNDahPS8K0OIg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-middleware@4.2.14",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-middleware@4.2.14"
+      },
+      "attributes": {
+        "name": "@smithy/util-middleware",
+        "version": "4.2.14",
+        "lockfile_path": "node_modules/@smithy/util-middleware",
+        "integrity": "sha512-1Su2vj9RYNDEv/V+2E+jXkkwGsgR7dc4sfHn9Z7ruzQHJIEni9zzw5CauvRXlFJfmgcqYP8fWa0dkh2Q2YaQyw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-retry@4.3.8",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-retry@4.3.8"
+      },
+      "attributes": {
+        "name": "@smithy/util-retry",
+        "version": "4.3.8",
+        "lockfile_path": "node_modules/@smithy/util-retry",
+        "integrity": "sha512-LUIxbTBi+OpvXpg91poGA6BdyoleMDLnfXjVDqyi2RvZmTveY5loE/FgYUBCR5LU2BThW2SoZRh8dTIIy38IPw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-stream@4.5.25",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-stream@4.5.25"
+      },
+      "attributes": {
+        "name": "@smithy/util-stream",
+        "version": "4.5.25",
+        "lockfile_path": "node_modules/@smithy/util-stream",
+        "integrity": "sha512-/PFpG4k8Ze8Ei+mMKj3oiPICYekthuzePZMgZbCqMiXIHHf4n2aZ4Ps0aSRShycFTGuj/J6XldmC0x0DwednIA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-uri-escape@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-uri-escape@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-uri-escape",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-uri-escape",
+        "integrity": "sha512-2kAStBlvq+lTXHyAZYfJRb/DfS3rsinLiwb+69SstC9Vb0s9vNWkRwpnj918Pfi85mzi42sOqdV72OLxWAISnw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-utf8@4.2.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-utf8@4.2.2"
+      },
+      "attributes": {
+        "name": "@smithy/util-utf8",
+        "version": "4.2.2",
+        "lockfile_path": "node_modules/@smithy/util-utf8",
+        "integrity": "sha512-75MeYpjdWRe8M5E3AW0O4Cx3UadweS+cwdXjwYGBW5h/gxxnbeZ877sLPX/ZJA9GVTlL/qG0dXP29JWFCD1Ayw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/util-waiter@4.3.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/util-waiter@4.3.0"
+      },
+      "attributes": {
+        "name": "@smithy/util-waiter",
+        "version": "4.3.0",
+        "lockfile_path": "node_modules/@smithy/util-waiter",
+        "integrity": "sha512-JyjYmLAfS+pdxF92o4yLgEoy0zhayKTw73FU1aofLWwLcJw7iSqIY2exGmMTrl/lmZugP5p/zxdFSippJDfKWA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::@smithy/uuid@1.1.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/@smithy/uuid@1.1.2"
+      },
+      "attributes": {
+        "name": "@smithy/uuid",
+        "version": "1.1.2",
+        "lockfile_path": "node_modules/@smithy/uuid",
+        "integrity": "sha512-O/IEdcCUKkubz60tFbGA7ceITTAJsty+lBjNoorP4Z6XRqaFb/OjQjZODophEcuq68nKm6/0r+6/lLQ+XVpk8g==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::bowser@2.14.1",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/bowser@2.14.1"
+      },
+      "attributes": {
+        "name": "bowser",
+        "version": "2.14.1",
+        "lockfile_path": "node_modules/bowser",
+        "integrity": "sha512-tzPjzCxygAKWFOJP011oxFHs57HzIhOEracIgAePE4pqB3LikALKnSzUyU4MGs9/iCEUuHlAJTjTc5M+u7YEGg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::fast-xml-builder@1.1.8",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/fast-xml-builder@1.1.8"
+      },
+      "attributes": {
+        "name": "fast-xml-builder",
+        "version": "1.1.8",
+        "lockfile_path": "node_modules/fast-xml-builder",
+        "integrity": "sha512-sDVBc2gg8pSKvcbE8rBmOyjSGQf0AdsbqvHeIOv3D/uYNoV4eCReQXyDF8Pdv8+m1FHazACypSz2hR7O2S1LLw==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::fast-xml-parser@5.7.2",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/fast-xml-parser@5.7.2"
+      },
+      "attributes": {
+        "name": "fast-xml-parser",
+        "version": "5.7.2",
+        "lockfile_path": "node_modules/fast-xml-parser",
+        "integrity": "sha512-P7oW7tLbYnhOLQk/Gv7cZgzgMPP/XN03K02/Jy6Y/NHzyIAIpxuZIM/YqAkfiXFPxA2CTm7NtCijK9EDu09u2w==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::path-expression-matcher@1.5.0",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/path-expression-matcher@1.5.0"
+      },
+      "attributes": {
+        "name": "path-expression-matcher",
+        "version": "1.5.0",
+        "lockfile_path": "node_modules/path-expression-matcher",
+        "integrity": "sha512-cbrerZV+6rvdQrrD+iGMcZFEiiSrbv9Tfdkvnusy6y0x0GKBXREFg/Y65GhIfm0tnLntThhzCnfKwp1WRjeCyQ==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::sprintf-js@1.1.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/sprintf-js@1.1.3"
+      },
+      "attributes": {
+        "name": "sprintf-js",
+        "version": "1.1.3",
+        "lockfile_path": "node_modules/sprintf-js",
+        "integrity": "sha512-Oo+0REFV59/rz3gfJNKQiBlwfHaSESl1pcGyABQsnnIfWOFt6JNj5gCog2U6MLZ//IGYD+nA8nI+mTShREReaA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::strnum@2.2.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/strnum@2.2.3"
+      },
+      "attributes": {
+        "name": "strnum",
+        "version": "2.2.3",
+        "lockfile_path": "node_modules/strnum",
+        "integrity": "sha512-oKx6RUCuHfT3oyVjtnrmn19H1SiCqgJSg+54XqURKp5aCMbrXrhLjRN9TjuwMjiYstZ0MzDrHqkGZ5dFTKd+zg==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::tslib@2.8.1",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/tslib@2.8.1"
+      },
+      "attributes": {
+        "name": "tslib",
+        "version": "2.8.1",
+        "lockfile_path": "node_modules/tslib",
+        "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "npm::yaml@1.10.3",
+      "type": "npm_package",
+      "global_id": {
+        "purl": "pkg:npm/yaml@1.10.3"
+      },
+      "attributes": {
+        "name": "yaml",
+        "version": "1.10.3",
+        "lockfile_path": "node_modules/yaml",
+        "integrity": "sha512-vIYeF1u3CjlhAFekPPAk2h/Kv4T3mAkMox5OymRiJQB0spDP10LHvt+K7G9Ny6NuuMAb25/6n1qyUjAcGNf/AA==",
+        "function": "Lambda runtime dependency",
+        "diagram_label": "Open-source policy and signing tooling running inside CI",
+        "public": false,
+        "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (npm)"
+      },
+      "security_category": {
+        "confidentiality": "not-applicable",
+        "integrity": "moderate",
+        "availability": "not-applicable"
+      },
+      "information_flow": []
+    },
+    {
+      "component_id": "html::404.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "69e60f30dd11d4ca1ecfbc6c88532499ea49ad9851a7f46a501c1009b90e7b26"
+      },
+      "attributes": {
+        "path": "404.html",
+        "size_bytes": 4817,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::index.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "8535b616218587a93dd94798c8f4f8c8c4724be76838ce338279374729f3970f"
+      },
+      "attributes": {
+        "path": "index.html",
+        "size_bytes": 10771,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/about.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "11842e062dc307fe72b8895fd374d6f567833bca89ba74077c838fe8a9b6602b"
+      },
+      "attributes": {
+        "path": "pages/about.html",
+        "size_bytes": 5661,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/activities.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "9c8a1897f522efed9c19ca35819cf3d5d41260b93a2e17fe210612d3dec469c5"
+      },
+      "attributes": {
+        "path": "pages/activities.html",
+        "size_bytes": 12627,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-1.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "6f8b0f4842cb3409046c525fbe98687245c2d14a533caccddd107cff0e3fe57b"
+      },
+      "attributes": {
+        "path": "pages/article-1.html",
+        "size_bytes": 14561,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-10.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "25c5cc14a03ce5c2cd0caad6d2b75f91fcb9bbaa81bbd119b43c74a427234c60"
+      },
+      "attributes": {
+        "path": "pages/article-10.html",
+        "size_bytes": 18227,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-11.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "73589f56c1b657dc3cae5650f353448daae64545bf0d4cd47aa8d345616f2b14"
+      },
+      "attributes": {
+        "path": "pages/article-11.html",
+        "size_bytes": 11896,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-12.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "cd8be51b3d48df40a3e441723e214ac30e4498d399dc71c6e5afe9725f066241"
+      },
+      "attributes": {
+        "path": "pages/article-12.html",
+        "size_bytes": 8174,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-13.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "4359fdea1a8588211956bc14bb86b23351832cb52ff8407d6b48251e1b11433c"
+      },
+      "attributes": {
+        "path": "pages/article-13.html",
+        "size_bytes": 17883,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-14.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "9e656f2bbbf1386ddef305af4ace8e750e8ca29c97370162658535b01fe564d0"
+      },
+      "attributes": {
+        "path": "pages/article-14.html",
+        "size_bytes": 17528,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-15.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "c3187ec9b4b4a87184f7fbc671a7e63a39974c60e403c2065ffba8c11433ddea"
+      },
+      "attributes": {
+        "path": "pages/article-15.html",
+        "size_bytes": 10841,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-16.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "3d4b5431d59e4d28c8666354a64b673edd83605fe895ef75d2ec1a705f246dfd"
+      },
+      "attributes": {
+        "path": "pages/article-16.html",
+        "size_bytes": 7992,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-17.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "9101447bbb44b012161aaa547690b031d4f3a4f99615d8f5e14e6a109941e95b"
+      },
+      "attributes": {
+        "path": "pages/article-17.html",
+        "size_bytes": 28166,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-18.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "f21202b612b93b805cc23a3f42bc866aadf6f8ed9524cc5792c609fde4ce1649"
+      },
+      "attributes": {
+        "path": "pages/article-18.html",
+        "size_bytes": 20655,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-19.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "ec403985fe53f3c8917ba846889fc00f511483dec6ceda9d8a33c3013bafbba1"
+      },
+      "attributes": {
+        "path": "pages/article-19.html",
+        "size_bytes": 12351,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-2.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "54ba3bf53f045d2742cc3d1903abe3a119109d25e8dc0b63e41a31f2b6473df2"
+      },
+      "attributes": {
+        "path": "pages/article-2.html",
+        "size_bytes": 20182,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-20.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "a23e21e9f756a7b5d9e50eee04dc955ee89d74f64dc3f8f7515cda4ea8cfb7e8"
+      },
+      "attributes": {
+        "path": "pages/article-20.html",
+        "size_bytes": 17454,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-21.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "5f53688dc3d40dc1809601ad27900342462080a4dc7f0e18e7d12d21903b70a8"
+      },
+      "attributes": {
+        "path": "pages/article-21.html",
+        "size_bytes": 14325,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-22.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "ef215aa000707acd402c9f375c143445c991c8b82d759ffa5f0552dd3d9def7f"
+      },
+      "attributes": {
+        "path": "pages/article-22.html",
+        "size_bytes": 21590,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-23.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "6124c6c0e116826757aaa3445b2f2f39ba7d03304d319e5acd4004174902238d"
+      },
+      "attributes": {
+        "path": "pages/article-23.html",
+        "size_bytes": 29884,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-24.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "8da0ea3963098dfb5f5f3b2826f73baa2197f6613092440d4e49426347c3b2f3"
+      },
+      "attributes": {
+        "path": "pages/article-24.html",
+        "size_bytes": 7687,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-25.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "3c11cc449cef7d8f8b5758baca785a53f060e8c7a9836a064395775ed3e7afe7"
+      },
+      "attributes": {
+        "path": "pages/article-25.html",
+        "size_bytes": 11766,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-26.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "59a89c23449130a7778fc12060bec8de2608c58b6204f4f43157729aea2f86b2"
+      },
+      "attributes": {
+        "path": "pages/article-26.html",
+        "size_bytes": 11934,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-27.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "c81b879427eb82ba854c74effb335f373b894346ea0065ddd4770cf863b5a1b4"
+      },
+      "attributes": {
+        "path": "pages/article-27.html",
+        "size_bytes": 16670,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-3.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "5c3781c37b12cdb2ef8b3413abdc5b5227a8847cfb6d58852d98ffb26ff0b957"
+      },
+      "attributes": {
+        "path": "pages/article-3.html",
+        "size_bytes": 19462,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-4.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "8ef4821a1ceedc0b5bc53d39a52183e0967e8afe03f6618d466d8c9d54b3c2ff"
+      },
+      "attributes": {
+        "path": "pages/article-4.html",
+        "size_bytes": 13543,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-5.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "f0f3974835cfb5494d4177c14500ba8d399a046b713cdb0558d1d62e42db1458"
+      },
+      "attributes": {
+        "path": "pages/article-5.html",
+        "size_bytes": 19163,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-6.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "4a48f3f06a2d3183bc9c20378099feb845e24427d520735a216f0effc65b5012"
+      },
+      "attributes": {
+        "path": "pages/article-6.html",
+        "size_bytes": 17662,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-7.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "4f0cf9effc35bb7f8b52d7ebf709ecfb9175470a93321a77e5eed7a57d4ef0f2"
+      },
+      "attributes": {
+        "path": "pages/article-7.html",
+        "size_bytes": 19306,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-8.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "de4ecceff7039a5710b70c5c8772001791e78aa9684228c4aa01ff34fbb866c4"
+      },
+      "attributes": {
+        "path": "pages/article-8.html",
+        "size_bytes": 24044,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/article-9.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "c660e42e162916493ad15b6ec5c3acf3b86b1004cc721b8c11a70ff0fd77738c"
+      },
+      "attributes": {
+        "path": "pages/article-9.html",
+        "size_bytes": 15516,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/articles.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "5b6198735aa9e8430ad30e73f7bac7dc3a6756e565da789317f747314995ee75"
+      },
+      "attributes": {
+        "path": "pages/articles.html",
+        "size_bytes": 29124,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/books.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "54e08692cc17205c98bc823f788472792c6e4d7f38635bd45361bada74a6a6e5"
+      },
+      "attributes": {
+        "path": "pages/books.html",
+        "size_bytes": 6333,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/contact.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "77a898d528e8d3d8c2aa574120ccd032097f2f941f14669890840689b027c66b"
+      },
+      "attributes": {
+        "path": "pages/contact.html",
+        "size_bytes": 5512,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/projects.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "1304aebf31c82839b57920ed38fdaa0c08dabe472cb18470e4abda607ae818d9"
+      },
+      "attributes": {
+        "path": "pages/projects.html",
+        "size_bytes": 7614,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/success.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "8c5a1738ab0684e77954f7c51e275fb5f36804ad86ac1fd0189dcbb6801661b0"
+      },
+      "attributes": {
+        "path": "pages/success.html",
+        "size_bytes": 4071,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::pages/support.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "abd56c3ff1730af24a6fe32a9293e0890902d2dd2e3e7dcc130fbea710863a2b"
+      },
+      "attributes": {
+        "path": "pages/support.html",
+        "size_bytes": 5873,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::research/authorization-boundary.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "354b08ffe92ab2d56f1226f2df97eafd27c1a4d6ba29ec8237c9a8d3b71a3d64"
+      },
+      "attributes": {
+        "path": "research/authorization-boundary.html",
+        "size_bytes": 15485,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::research/the-plumbing.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "e78dc6fc60cedcf6f22d7c931bc073b709f659e86ca68288f9944750605872ab"
+      },
+      "attributes": {
+        "path": "research/the-plumbing.html",
+        "size_bytes": 59146,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::research/tuning-the-eigenvalue.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "79dc2051dcd38726fa4f8a20bee561ca9bb3c77004f2eac5f3c2f8549d0dcc92"
+      },
+      "attributes": {
+        "path": "research/tuning-the-eigenvalue.html",
+        "size_bytes": 104450,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    },
+    {
+      "component_id": "html::viewer.html",
+      "type": "html_artifact",
+      "global_id": {
+        "sha256": "bc1cc89603e72cc366cf22f5bd4f272fb7a103cfe501619a1c75e3ad873e47a8"
+      },
+      "attributes": {
+        "path": "viewer.html",
+        "size_bytes": 9776,
+        "function": "Public site content",
+        "diagram_label": "S3 origin bucket (content)",
+        "public": true,
+        "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
+        "iiw_asset_type": "Static Content Artifact"
+      },
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low"
+      },
+      "information_flow": [
+        {
+          "direction": "outbound",
+          "counterparty": "object_store",
+          "channel": "aws-internal-tls",
+          "data_class": "public-content"
+        }
+      ]
+    }
+  ],
+  "validations": [
+    {
+      "validation_id": "v-0004",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "aws::function::opa_compliance"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0010",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::index.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0011",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::research/the-plumbing.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0012",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::research/tuning-the-eigenvalue.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0013",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::research/authorization-boundary.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0014",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::404.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0015",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::viewer.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0016",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-1.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0017",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-26.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0018",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-9.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0019",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-16.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0020",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/books.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0021",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-11.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0022",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-15.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0023",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-27.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0024",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/projects.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0025",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-6.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0026",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-23.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0027",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-3.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0028",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-20.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0029",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-18.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0030",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-5.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0031",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-12.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0032",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-22.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0033",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/success.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0034",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/articles.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0035",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-7.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0036",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-8.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0037",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-21.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0038",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-13.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0039",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-17.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0040",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-4.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0041",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-19.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0042",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-14.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0043",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/about.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0044",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-24.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0045",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/activities.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0046",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/contact.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0047",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-25.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0048",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-10.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0049",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/article-2.html"
+      ],
+      "violations": []
+    },
+    {
+      "validation_id": "v-0050",
+      "policy": {
+        "id": "terraform.compliance",
+        "version": "1.0"
+      },
+      "result": "pass",
+      "component_refs": [
+        "html::pages/support.html"
+      ],
+      "violations": []
+    }
+  ],
+  "ownership": {
+    "system_owner": "Sam Aydlette",
+    "application_owner": "Sam Aydlette",
+    "operator_contact": "sam.aydlette@gmail.com"
+  },
+  "disclosure": {
+    "authorization_status": "self-attested-proof-of-concept",
+    "fedramp_certified": false,
+    "remarks": "This system is not FedRAMP-authorized. The artifacts published at /.well-known/ are self-attested by the operator and demonstrate an architectural pattern aligned with FedRAMP NTC-0009 (machine-readable authorization data, text-based equivalents, the five Balance Improvement Releases folding into default requirements). See https://samaydlette.com/research/the-plumbing.html for context and limitations.",
+    "related_artifacts": {
+      "oscal_ssp": "https://samaydlette.com/.well-known/oscal-ssp.json",
+      "oscal_poam": "https://samaydlette.com/.well-known/oscal-poam.json",
+      "vdr_report": "https://samaydlette.com/.well-known/vdr-report.json",
+      "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
+      "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",
+      "boundary_diagram": "https://samaydlette.com/research/authorization-boundary.html",
+      "research_paper": "https://samaydlette.com/research/the-plumbing.html"
+    }
+  }
+}

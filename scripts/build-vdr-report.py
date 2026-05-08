@@ -18,9 +18,10 @@
 #   --checkov PATH            Checkov SARIF or JSON output
 #   --tfsec PATH              tfsec JSON output
 #   --kev PATH                CISA KEV catalog JSON (cisa.gov format)
-#   --tf-dir PATH             Terraform source directory; #checkov:skip= annotations
-#                             are parsed as risk-accepted entries with POAM
-#                             cross-references (VDR-RPT-AVI fields populated).
+#   --checkov-yaml PATH       Path to .checkov.yaml; the skip-check list is
+#                             read and each entry becomes a risk-accepted entry
+#                             with POAM cross-references (VDR-RPT-AVI fields
+#                             populated).
 #   --output PATH             Output VDR report path (default: vdr-report.json)
 #
 # Exit codes:
@@ -58,8 +59,10 @@ POAM_BY_CHECK_ID = {
     "CKV_AWS_173": "POAM-011",
     "CKV_AWS_115": "POAM-012",
     "CKV_AWS_116": "POAM-013",
-    "CKV_AWS_73":  "POAM-014",
-    "CKV_AWS_50":  "POAM-015",
+    "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
+    "CKV_AWS_272": "POAM-015",  # Lambda code-signing validation
+    "CKV_AWS_338": "POAM-017",  # CloudWatch log retention < 1 year
+    "CKV_AWS_158": "POAM-018",  # CloudWatch log group not customer-key encrypted
 }
 
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
@@ -77,11 +80,58 @@ SUPPRESSION_EVALUATION = {
     "CKV_AWS_173": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_115": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_116": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_73":  {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_50":  {"pain": "N2", "irv": False, "lev": False},
+    "CKV_AWS_50":  {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_272": {"pain": "N2", "irv": False, "lev": False},
+    "CKV_AWS_338": {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_158": {"pain": "N1", "irv": False, "lev": False},
 }
 
-CHECKOV_SKIP_RE = re.compile(r'#checkov:skip=([A-Z_0-9]+):(.+?)$', re.MULTILINE)
+# Rationale per suppressed check, mirrored from .checkov.yaml comments and the
+# corresponding POA&M items. Used to populate VDR-RPT-AVI explanation field.
+SUPPRESSION_RATIONALE = {
+    "CKV_AWS_144": "Single-region static site. Cross-region replication adds cost without commensurate availability benefit at the declared 21-day RTO.",
+    "CKV_AWS_23":  "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope.",
+    "CKV_AWS_18":  "CloudTrail covers the audit need account-wide. CloudFront access logs were similarly excluded for cost.",
+    "CKV_AWS_300": "Static website assets have no expiration policy; lifecycle rules are not applicable.",
+    "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
+    "CKV_AWS_174": "No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS). Log4j-class vulnerabilities cannot exist in this stack.",
+    "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
+    "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
+    "CKV_AWS_173": "Lambda env vars hold bucket name, distribution ID, system ID — all non-sensitive and visible in the public runtime signal. AWS-default encryption suffices.",
+    "CKV_AWS_115": "Daily EventBridge invocation; no concurrent invocations realistic. Cost-control limit not required.",
+    "CKV_AWS_116": "Daily idempotent run; failures are recoverable on the next day's invocation. DLQ adds cost for marginal observability benefit.",
+    "CKV_AWS_50":  "Observability concern, not a security control. Cost-driven exclusion; CloudWatch Logs covers the diagnostic need.",
+    "CKV_AWS_272": "Source-level signing chain in place: deploy-time KSI signal is Sigstore-signed; Wasm policy bytes are verifiable via the canonical inventory's content hash. AWS Signer adds defense-in-depth at marginal cost; not currently justified.",
+    "CKV_AWS_338": "7-day retention; operational debug logs only, no PII. Anything older than a week is not actionable for sole-operator IR.",
+    "CKV_AWS_158": "AWS-default encryption (server-side AES-256) is on. No PII in log content; customer-managed KMS adds cost without commensurate benefit.",
+}
+
+# Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving
+# regex parser that pulls `- CKV_AWS_NNN` entries from the skip-check list.
+def _read_checkov_skip_list(yaml_path):
+    text = Path(yaml_path).read_text()
+    try:
+        import yaml  # type: ignore
+        doc = yaml.safe_load(text) or {}
+        return list(doc.get("skip-check", []) or [])
+    except ImportError:
+        # Stdlib-only fallback. Matches lines under skip-check that look like
+        # `  - CKV_AWS_NNN` (optionally with a trailing comment).
+        in_skip = False
+        ids = []
+        for line in text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("skip-check:"):
+                in_skip = True
+                continue
+            if in_skip:
+                if stripped.startswith("- ") or stripped.startswith("-\t"):
+                    val = stripped[1:].strip().split("#", 1)[0].strip()
+                    if val:
+                        ids.append(val)
+                elif stripped and not (stripped.startswith("- ") or stripped.startswith("#")):
+                    in_skip = False
+        return ids
 
 
 # =============================================================================
@@ -218,44 +268,42 @@ def ingest_checkov(path):
     return findings
 
 
-def ingest_suppressions(tf_dir):
-    """Parse #checkov:skip=ID:reason annotations from Terraform files in tf_dir.
+def ingest_suppressions(checkov_yaml):
+    """Read .checkov.yaml's skip-check list and emit risk-accepted entries.
 
-    Each annotation becomes a risk-accepted entry with the VDR-RPT-AVI fields
-    populated (PAIN/IRV/LEV from SUPPRESSION_EVALUATION, explanation from the
-    inline reason, POAM cross-reference from POAM_BY_CHECK_ID). The list is
-    returned as the canonical risk_accepted set in the VDR report.
+    Each entry becomes a risk-accepted record with VDR-RPT-AVI fields populated
+    (PAIN/IRV/LEV from SUPPRESSION_EVALUATION, explanation from
+    SUPPRESSION_RATIONALE, POAM cross-reference from POAM_BY_CHECK_ID).
     """
     suppressions = []
-    if not tf_dir:
+    if not checkov_yaml:
         return suppressions
-    p = Path(tf_dir)
-    if not p.is_dir():
+    p = Path(checkov_yaml)
+    if not p.exists():
         return suppressions
-    for tf_file in sorted(p.glob("*.tf")):
-        try:
-            text = tf_file.read_text()
-        except OSError:
-            continue
-        for m in CHECKOV_SKIP_RE.finditer(text):
-            check_id = m.group(1).strip()
-            reason = m.group(2).strip()
-            evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1", "irv": False, "lev": False})
-            suppressions.append({
-                "tracking_id": check_id,
-                "poam_ref": POAM_BY_CHECK_ID.get(check_id),
-                "source": "checkov-suppression",
-                "tool_id": check_id,
-                "title": f"{check_id} suppressed",
-                "description": reason,
-                "resource": tf_file.name,
-                "current_disposition": "risk-accepted",
-                "pain": evaluation["pain"],
-                "internet_reachable": evaluation["irv"],
-                "likely_exploitable": evaluation["lev"],
-                "is_kev": False,
-                "explanation": reason,
-            })
+    try:
+        ids = _read_checkov_skip_list(p)
+    except Exception as exc:
+        print(f"warning: could not read {p}: {exc}", file=sys.stderr)
+        return suppressions
+    for check_id in ids:
+        evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1", "irv": False, "lev": False})
+        rationale = SUPPRESSION_RATIONALE.get(check_id, "Suppressed in .checkov.yaml; see corresponding POA&M entry for rationale.")
+        suppressions.append({
+            "tracking_id": check_id,
+            "poam_ref": POAM_BY_CHECK_ID.get(check_id),
+            "source": "checkov-suppression",
+            "tool_id": check_id,
+            "title": f"{check_id} suppressed",
+            "description": rationale,
+            "resource": ".checkov.yaml",
+            "current_disposition": "risk-accepted",
+            "pain": evaluation["pain"],
+            "internet_reachable": evaluation["irv"],
+            "likely_exploitable": evaluation["lev"],
+            "is_kev": False,
+            "explanation": rationale,
+        })
     return suppressions
 
 
@@ -487,7 +535,7 @@ def main():
     parser.add_argument("--tfsec", default=None, help="tfsec JSON output")
     parser.add_argument("--dependabot", default=None, help="Dependabot alerts JSON")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
-    parser.add_argument("--tf-dir", default=".", help="Terraform directory to scan for #checkov:skip annotations (default: CWD)")
+    parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
     args = parser.parse_args()
 
@@ -497,7 +545,7 @@ def main():
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
     kev_cves = ingest_kev(args.kev)
-    suppressions = ingest_suppressions(args.tf_dir)
+    suppressions = ingest_suppressions(args.checkov_yaml)
 
     report, blocking = build_report(findings, suppressions, kev_cves)
 

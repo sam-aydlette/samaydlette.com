@@ -12,24 +12,17 @@
 # =============================================================================
 
 # =============================================================================
-# SKIP EXPENSIVE SECURITY CHECKS FOR STATIC WEBSITES
+# SECURITY-SCAN SUPPRESSIONS
 # =============================================================================
-# These comments tell security scanners to skip checks that don't make sense
-# for a simple static website, avoiding unnecessary costs and complexity
+# Checkov suppressions live in .checkov.yaml at the repo root (top-of-file
+# `#checkov:skip=` annotations are not honored by Checkov; centralized
+# configuration is the supported path).
+#
+# tfsec exclusions live in .tfsec/config.yml at the repo root.
+#
+# Each suppression is tracked as a Risk-Accepted POA&M entry in
+# docs/poam.md (POAM-003 through POAM-018) with full rationale.
 # =============================================================================
-#checkov:skip=CKV_AWS_144:Cross-region replication not cost-effective for static website
-#checkov:skip=CKV_AWS_23:S3 event notifications not required for static content
-#checkov:skip=CKV_AWS_18:S3 access logging generates additional costs and storage for static site
-#checkov:skip=CKV_AWS_300:S3 lifecycle configuration not required for static website assets
-#checkov:skip=CKV_AWS_68:CloudFront WAF adds ~$10/month cost, not justified for personal site
-#checkov:skip=CKV_AWS_174:No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS); Log4j-specific WAF rules are not applicable
-#checkov:skip=CKV_AWS_86:CloudFront origin failover not needed for single S3 origin static site
-#checkov:skip=CKV_AWS_117:Lambda VPC configuration adds NAT Gateway costs (~$45/month)
-#checkov:skip=CKV_AWS_173:Lambda environment encryption not needed for non-sensitive config
-#checkov:skip=CKV_AWS_115:Lambda concurrent execution limits not required for low-traffic compliance checks
-#checkov:skip=CKV_AWS_116:Lambda DLQ not cost-effective for simple compliance functions
-#checkov:skip=CKV_AWS_73:Lambda X-Ray tracing adds costs for minimal benefit on compliance checks
-#checkov:skip=CKV_AWS_50:Lambda zip signing via AWS Signer is supplementary to the source-level signing chain already in place; the deploy-time KSI signal is Sigstore-signed, the Wasm policy bytes are verifiable via the canonical inventory's content hash, and a tampered Lambda zip would also have to forge the Sigstore signature to be undetected. AWS Signer is defense-in-depth at marginal cost, not currently justified.
 
 # =============================================================================
 # TERRAFORM REQUIREMENTS

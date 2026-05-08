@@ -1,0 +1,64 @@
+# Checkov configuration.
+# =============================================================================
+# Each suppression is tracked as a Risk-Accepted POA&M entry in docs/poam.md
+# (POAM-003 through POAM-018, excluding POAM-016 which is an architectural
+# decision not surfaced by Checkov). The rationale for each entry is in the
+# corresponding POA&M item; this file's role is to make the suppression
+# effective at scan-time so the published VDR report does not surface a
+# finding that is already documented as accepted.
+#
+# Top-of-file `#checkov:skip=` annotations in main.tf do not work because
+# Checkov requires inline annotations to be inside the relevant resource
+# block. Centralized configuration avoids that placement constraint, and
+# also covers checks that target resources we reference as `data` blocks
+# rather than manage as `resource` blocks.
+# =============================================================================
+
+framework:
+  - terraform
+
+skip-check:
+  # POAM-003 — S3 cross-region replication not configured (CP-9). Single-region static site.
+  - CKV_AWS_144
+
+  # POAM-004 — S3 event notifications not configured (AU-2). No event-driven workflow in scope.
+  - CKV_AWS_23
+
+  # POAM-005 — S3 access logging not enabled (AU-2, AU-3). CloudTrail covers the audit need.
+  - CKV_AWS_18
+
+  # POAM-006 — S3 lifecycle configuration not defined (SI-12). Static website assets have no expiration.
+  - CKV_AWS_300
+
+  # POAM-007 — CloudFront WAF not attached (SC-7, SI-4). Cost trade-off (~$120/year). Risk-adjusted to Low.
+  - CKV_AWS_68
+
+  # POAM-008 — Log4j-specific WAF rules not configured (SI-3). No Java runtime in scope.
+  - CKV_AWS_174
+
+  # POAM-009 — CloudFront origin failover not configured (CP-2, CP-7). Single S3 origin.
+  - CKV_AWS_86
+
+  # POAM-010 — Lambda VPC configuration absent (SC-7). Lambda has no internet egress, no sensitive data.
+  - CKV_AWS_117
+
+  # POAM-011 — Lambda environment variables not customer-key encrypted (SC-12, SC-28). Non-sensitive config only.
+  - CKV_AWS_173
+
+  # POAM-012 — Lambda concurrent execution limit not set (SC-5). Daily invocation; no concurrency.
+  - CKV_AWS_115
+
+  # POAM-013 — Lambda DLQ not configured (SI-4). Daily idempotent run; failures recoverable next day.
+  - CKV_AWS_116
+
+  # POAM-014 — Lambda X-Ray tracing not enabled (AU-2). Observability concern, not security control.
+  - CKV_AWS_50
+
+  # POAM-015 — Lambda zip not signed via AWS Signer (SI-7, SA-12). Source-level Sigstore signing in place. Risk-adjusted to Low.
+  - CKV_AWS_272
+
+  # POAM-017 — CloudWatch log retention < 1 year (AU-11). 7-day retention; operational debug logs only, no PII.
+  - CKV_AWS_338
+
+  # POAM-018 — CloudWatch log group not customer-key encrypted (SC-28). AWS-default encryption sufficient; no PII content.
+  - CKV_AWS_158

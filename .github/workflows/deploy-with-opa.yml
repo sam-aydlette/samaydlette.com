@@ -623,7 +623,7 @@ jobs:
           --opa validations.json \
           --checkov checkov-results.sarif \
           --tfsec tfsec-results.json \
-          --tf-dir . \
+          --checkov-yaml ../.checkov.yaml \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
