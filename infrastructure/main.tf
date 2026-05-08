@@ -14,9 +14,9 @@
 # =============================================================================
 # SECURITY-SCAN SUPPRESSIONS
 # =============================================================================
-# Checkov suppressions live in .checkov.yaml at the repo root (top-of-file
-# `#checkov:skip=` annotations are not honored by Checkov; centralized
-# configuration is the supported path).
+# Checkov suppressions live in .checkov.yaml at the repo root. Top-of-file
+# inline annotations are not honored by Checkov; centralized configuration
+# is the supported path.
 #
 # tfsec exclusions live in .tfsec/config.yml at the repo root.
 #
