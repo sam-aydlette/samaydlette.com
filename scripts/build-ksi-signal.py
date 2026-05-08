@@ -53,6 +53,13 @@ TYPE_BY_TF_TYPE = {
     "aws_s3_bucket": "object_store",
     "aws_cloudfront_distribution": "cdn_distribution",
     "aws_lambda_function": "function",
+    "aws_route53_zone": "dns_zone",
+    "aws_acm_certificate": "tls_certificate",
+    "aws_cloudwatch_event_rule": "event_schedule",
+    "aws_iam_role": "iam_role",
+    "aws_iam_role_policy": "iam_policy",
+    "aws_cloudtrail": "audit_log_trail",
+    "aws_cloudwatch_log_group": "log_group",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -115,6 +122,49 @@ MAS_DEFAULTS = {
             {"direction": "outbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "public-content"},
         ],
     },
+    "dns_zone": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "public-internet", "channel": "dns", "data_class": "public-dns"},
+            {"direction": "outbound", "counterparty": "public-internet", "channel": "dns", "data_class": "public-dns"},
+        ],
+    },
+    "tls_certificate": {
+        "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "low"},
+        "information_flow": [],
+    },
+    "event_schedule": {
+        "security_category": {"confidentiality": "not-applicable", "integrity": "low", "availability": "low"},
+        "information_flow": [
+            {"direction": "outbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "configuration"},
+        ],
+    },
+    "iam_role": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "internal", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "authorization-claims"},
+        ],
+    },
+    "iam_policy": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [],
+    },
+    "audit_log_trail": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "audit"},
+        ],
+    },
+    "log_group": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "logs"},
+        ],
+    },
+    "external_service": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [],
+    },
 }
 
 # =============================================================================
@@ -160,6 +210,62 @@ IIW_DEFAULTS = {
         "public": True,
         "baseline_configuration": "Static HTML served via CloudFront; SHA-256 content-addressed in canonical inventory",
         "iiw_asset_type": "Static Content Artifact",
+    },
+    "dns_zone": {
+        "function": "Authoritative DNS for the public domain",
+        "diagram_label": "Route 53 hosted zone",
+        "public": True,
+        "baseline_configuration": "AWS Route 53 default; DNSSEC not enabled",
+        "iiw_asset_type": "DNS Zone (Route 53)",
+    },
+    "tls_certificate": {
+        "function": "Public TLS certificate for the CDN",
+        "diagram_label": "ACM TLS certificate",
+        "public": False,
+        "baseline_configuration": "AWS ACM-managed; auto-renewing; FIPS-validated cipher suites via CloudFront",
+        "iiw_asset_type": "TLS Certificate (ACM)",
+    },
+    "event_schedule": {
+        "function": "Daily trigger for the runtime KSI emitter Lambda",
+        "diagram_label": "EventBridge schedule",
+        "public": False,
+        "baseline_configuration": "AWS EventBridge default; rate-based schedule",
+        "iiw_asset_type": "Event Schedule (EventBridge)",
+    },
+    "iam_role": {
+        "function": "IAM role assumed by the runtime KSI emitter Lambda",
+        "diagram_label": "IAM — Lambda role",
+        "public": False,
+        "baseline_configuration": "Trust policy bound to lambda.amazonaws.com; inline policy hashed in attributes (body in infrastructure/main.tf)",
+        "iiw_asset_type": "IAM Role",
+    },
+    "iam_policy": {
+        "function": "Inline policy attached to the Lambda role",
+        "diagram_label": "IAM — Lambda policy",
+        "public": False,
+        "baseline_configuration": "Inline policy on the Lambda role; body hashed in attributes (body in infrastructure/main.tf for full review)",
+        "iiw_asset_type": "IAM Policy",
+    },
+    "audit_log_trail": {
+        "function": "Account-wide management-event audit (CloudTrail)",
+        "diagram_label": "CloudTrail",
+        "public": False,
+        "baseline_configuration": "Account-managed; default management-event capture",
+        "iiw_asset_type": "Audit Log Trail (CloudTrail)",
+    },
+    "log_group": {
+        "function": "CloudWatch log group for Lambda execution / Route 53 query logs",
+        "diagram_label": "CloudWatch Logs",
+        "public": False,
+        "baseline_configuration": "AWS CloudWatch default; 7-day retention (POAM-017); AWS-default encryption (POAM-018)",
+        "iiw_asset_type": "Log Group (CloudWatch)",
+    },
+    "external_service": {
+        "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+        "diagram_label": "External service",
+        "public": True,
+        "baseline_configuration": "Public service; configuration governed by upstream provider; verification mechanism noted in attributes",
+        "iiw_asset_type": "External Service (no FedRAMP ATO)",
     },
 }
 
@@ -287,7 +393,9 @@ def build_cloud_components(tf_state, tf_outputs):
             if key in values and values[key] is not None:
                 attrs[key] = values[key]
 
-        # Prefer the ARN exposed via terraform output (canonical, post-apply).
+        # Prefer the ARN exposed via terraform output (canonical, post-apply);
+        # fall back to the resource's own arn attribute. Data sources (Route 53,
+        # ACM) carry the ARN directly on the data block.
         native_id = None
         if normalized == "object_store":
             native_id = (tf_outputs or {}).get("s3_bucket_arn", {}).get("value") or values.get("arn")
@@ -295,6 +403,36 @@ def build_cloud_components(tf_state, tf_outputs):
             native_id = (tf_outputs or {}).get("cloudfront_distribution_arn", {}).get("value") or values.get("arn")
         elif normalized == "function":
             native_id = (tf_outputs or {}).get("lambda_function_arn", {}).get("value") or values.get("arn")
+        elif normalized == "dns_zone":
+            native_id = values.get("arn") or values.get("zone_id") or values.get("id")
+        elif normalized == "iam_policy":
+            # Inline policies don't have their own ARN; synthesize an ID from the
+            # role-name plus policy-name pair so the component is addressable.
+            role_name = values.get("role") or values.get("role_name") or "unknown"
+            policy_name = values.get("name") or "inline"
+            native_id = f"iam-role-policy::{role_name}/{policy_name}"
+        else:
+            # Generic path for tls_certificate, event_schedule, iam_role,
+            # audit_log_trail, log_group: most carry an `arn` attribute.
+            native_id = values.get("arn") or values.get("id")
+
+        # Sensitive-content hashing: IAM policy bodies are NOT included in the
+        # canonical inventory directly; only their SHA-256 hash. The full body
+        # is reviewable in infrastructure/main.tf for anyone with repo access.
+        # Same treatment for IAM role trust policies.
+        if normalized == "iam_role":
+            trust_policy = values.get("assume_role_policy")
+            if trust_policy is not None:
+                body_str = trust_policy if isinstance(trust_policy, str) else json.dumps(trust_policy, sort_keys=True)
+                attrs["trust_policy_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
+            attrs["role_name"] = values.get("name")
+        if normalized == "iam_policy":
+            policy_body = values.get("policy")
+            if policy_body is not None:
+                body_str = policy_body if isinstance(policy_body, str) else json.dumps(policy_body, sort_keys=True)
+                attrs["policy_document_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
+            attrs["policy_name"] = values.get("name")
+            attrs["attached_to_role"] = values.get("role") or values.get("role_name")
 
         component = {
             "component_id": cid,
@@ -356,6 +494,100 @@ def build_npm_components(lock_path):
                 "version": version,
                 "lockfile_path": path,
                 "integrity": info.get("integrity"),
+            },
+        }
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
+        components.append(component)
+    return components
+
+
+def build_external_components():
+    """Emit synthetic components for external services in boundary per ROT #2.
+
+    These services aren't in Terraform state (they're upstream public services
+    or operator-account scaffolding); they're declared here so the canonical
+    inventory matches the Authorization Boundary Diagram. Identifiers are the
+    public service URLs where applicable; for Duo specifically the identifier
+    is opaque (no tenant ID exposed).
+    """
+    services = [
+        {
+            "id": "ext::sigstore-fulcio",
+            "native_id": "https://fulcio.sigstore.dev",
+            "name": "Sigstore Fulcio",
+            "purpose": "Issues short-lived X.509 signing certificates per CI run",
+            "cia_impact": "signing-chain integrity",
+            "verification": "OIDC token bound to GitHub Actions workflow identity",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::sigstore-rekor",
+            "native_id": "https://rekor.sigstore.dev",
+            "name": "Sigstore Rekor",
+            "purpose": "Append-only public transparency log of every signature",
+            "cia_impact": "signing-chain integrity",
+            "verification": "Inclusion proof checked by cosign verify-blob",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::github-oidc",
+            "native_id": "https://token.actions.githubusercontent.com",
+            "name": "GitHub Actions OIDC token issuer",
+            "purpose": "Issues per-workflow-run identity tokens consumed by Fulcio and AWS",
+            "cia_impact": "identity / authentication",
+            "verification": "JWT signature verification against the issuer's public JWKS",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::github-repo",
+            "native_id": "https://github.com/sam-aydlette/samaydlette.com",
+            "name": "GitHub repository + Actions",
+            "purpose": "Source of record; CI/CD orchestrator",
+            "cia_impact": "deploy-chain integrity",
+            "verification": "Branch protection on main, OPA gate, SCN tag validator, secret scanning with push protection",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::duo-mfa",
+            "native_id": "duo:operator-mfa",
+            "name": "Duo (operator MFA)",
+            "purpose": "Multi-factor authentication for AWS root and the GitHub account",
+            "cia_impact": "privileged-account authentication",
+            "verification": "Operator-side configuration; tenant identifier intentionally not published in this inventory.",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::github-advisory-db",
+            "native_id": "https://github.com/advisories",
+            "name": "GitHub Advisory Database",
+            "purpose": "Upstream vulnerability data for Dependabot",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "Public service; corroborated against CISA KEV",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::cisa-kev",
+            "native_id": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "name": "CISA Known Exploited Vulnerabilities catalog",
+            "purpose": "Authoritative list of CVEs known to be actively exploited",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "U.S. federal government source",
+            "fedramp_status": "external; U.S. federal government source",
+        },
+    ]
+    components = []
+    for svc in services:
+        component = {
+            "component_id": svc["id"],
+            "type": "external_service",
+            "native_id": svc["native_id"],
+            "attributes": {
+                "name": svc["name"],
+                "purpose": svc["purpose"],
+                "cia_impact": svc["cia_impact"],
+                "verification_mechanism": svc["verification"],
+                "fedramp_status": svc["fedramp_status"],
             },
         }
         apply_mas_defaults(component)
@@ -558,6 +790,7 @@ def main():
     components.extend(build_cloud_components(tf_state, tf_outputs))
     components.extend(build_npm_components(lambda_lock))
     components.extend(build_html_components(website_root))
+    components.extend(build_external_components())
 
     if validations_path.exists():
         validations_doc = json.loads(validations_path.read_text())

@@ -25,3 +25,9 @@ exclude:
   # Both wildcards are appropriately scoped despite triggering tfsec's
   # broad heuristic. No POA&M entry needed: tracked as False Positive.
   - aws-iam-no-policy-wildcards
+
+  # AVD-AWS-0066 — Lambda function does not have tracing enabled.
+  # Functionally identical to Checkov CKV_AWS_50 (already on POAM-014 as
+  # Risk-Accepted; X-Ray tracing is an observability concern, not a security
+  # control, and is excluded for cost). Suppressing here to deduplicate.
+  - aws-lambda-enable-tracing

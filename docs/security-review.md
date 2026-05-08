@@ -86,6 +86,20 @@ See README "Conscious Trade-offs for Budget Reality." Excluded controls (WAF, mu
 - Consider whether OSCAL artifact should be signed independently or covered by the same Sigstore bundle as the KSI signal
 - Cost target: maintain ~$125/year compliance overhead
 
+## Quarterly continuous-monitoring reviews
+
+Per CR26 `CCM-QTR-MTG`, the operator records a quarterly review of the runtime KSI emitter's activity and any drift events. For a sole-operator system, the "necessary parties" reduce to the operator's self-attestation; this log is the evidence.
+
+### 2026-Q2 (initial review, 2026-05-08)
+
+- Runtime KSI emitter: deployed, running daily on EventBridge schedule, no drift events recorded.
+- Deploy-time vs. runtime signal reconciliation: components match; validations pass on both sides.
+- VDR posture: 1 finding (N1, deduplicate-of-CKV_AWS_50, suppressed in next push), 0 blocking, 15 risk-accepted.
+- POA&M activity: POAM-001 through POAM-018 in place; first AWS access-key rotation due ~2026-08-08.
+- 3PAO-style external assessment (self-performed) completed 2026-05-08; findings recorded in SAR-001 through SAR-009.
+- Decisions: proceed with SAR-002 / SAR-003 inventory expansions; close SAR-007 (ledger), SAR-008 (deduplicate tfsec finding), SAR-009 (emergency-change procedure).
+- Next review due: 2026-08-08 (or sooner upon Transformative change per SCN).
+
 ## AWS access key rotation log
 
 Rotation cadence: 90 days. Active compensating control while [POAM-001](poam.md) remains open. Procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md). Emergency rotations (suspected compromise) are logged here too with the trigger noted.

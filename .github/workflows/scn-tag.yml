@@ -50,13 +50,19 @@ jobs:
             adaptive|routine-recurring|transformative)
               echo "SCN-Type: ${tag} (from ${source_label})"
               ;;
+            emergency)
+              # Emergency-change procedure per CR26 SCN-CSO-EMG. The change itself
+              # is permitted to bypass the formal SCN flow; the retroactive
+              # documentation is required per the IR runbook.
+              echo "::warning::SCN-Type: emergency (from ${source_label}). Emergency-change procedure invoked per SCN-CSO-EMG; retroactive SCN documentation required within 5 business days. See docs/incident-response.md."
+              ;;
             "")
               # Per CM policy default: missing tag = routine-recurring. This is the
               # documented default for sole-operator direct pushes; do not fail.
               echo "::notice::No SCN-Type line in ${source_label}; defaulting to routine-recurring per docs/policies/cm-policy.md."
               ;;
             *)
-              echo "::error::SCN-Type '${tag}' in ${source_label} is not a recognized value. Must be one of: adaptive | routine-recurring | transformative. See SCN-CSO-EVA in docs/policies/cm-policy.md."
+              echo "::error::SCN-Type '${tag}' in ${source_label} is not a recognized value. Must be one of: adaptive | routine-recurring | transformative | emergency. See SCN-CSO-EVA / SCN-CSO-EMG in docs/policies/cm-policy.md."
               exit 1
               ;;
           esac

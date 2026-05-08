@@ -82,6 +82,28 @@ Response procedure:
 
 (IR-9.4) Exposure to unauthorized personnel: by design the public site has no "unauthorized personnel" — any reader is authorized. Spillage exposure is therefore best understood as premature publication of content not yet ready for public release, which is addressed by the response procedure above.
 
+## Emergency-change procedure (CR26 SCN-CSO-EMG)
+
+CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — including transformative changes — during an emergency without following the formal Significant Change Notification rules in advance, provided the procedures below are followed.
+
+**When permissible.** Emergency procedures apply when delaying a change to follow the standard SCN flow would itself increase risk to the system or to federal customer data. Examples in this scope: a credential leak requiring immediate rotation, a known-exploited vulnerability requiring same-day patching, an active incident requiring infrastructure-level changes to contain.
+
+**What gets bypassed.** During an emergency the operator may:
+
+- Push directly to `main` without the usual SCN-Type categorization deliberation (an `emergency` label is still required on the commit message — see below).
+- Skip the standard advance-notification timing for Adaptive (`SCN-ADP-NTF`, 10 business days) or Transformative (`SCN-TRF-NIP`/`NFP`/`NAF`, 30+10+5 business days) changes.
+- Defer the threat-model review and per-control implementation-statement updates that a Transformative change would normally trigger.
+
+**What still applies.** During and after an emergency the operator must:
+
+1. Tag the commit message with `SCN-Type: emergency` so the SCN audit record reflects the emergency disposition. The CI workflow recognizes `emergency` as a fourth valid SCN-Type value alongside `routine-recurring`, `adaptive`, and `transformative`.
+2. Follow the rest of this IR runbook: detect, contain, eradicate, recover, after-action.
+3. Within 5 business days of incident closure, retroactively produce the SCN materials that would have been produced in advance for the equivalent non-emergency change (per `SCN-CSO-EMG`): summary of the change, summary of new risks identified, copy of the security impact analysis, plan for any verification or assessment of impacted KSIs.
+4. Append an after-action entry to the section above with the emergency-procedure invocation noted in the timeline.
+5. Reopen the threat model in `docs/architecture-decisions.md` if the emergency change altered the threat surface, and update before the next security review.
+
+**Documentation evidence.** Emergency-change procedures are documented in this section, in `docs/policies/cm-policy.md` (referenced under SCN integration), and in the `.github/workflows/scn-tag.yml` validator (which accepts `emergency` as a valid tag). Together these satisfy `SCN-CSO-EMG`'s "procedures should be documented in the FedRAMP Certification package" requirement.
+
 ## Pattern review (KSI-INR-02)
 
 KSI-INR-02 calls for persistent review of past incidents for patterns. With zero incidents to date, the review is short. The cadence is annual, conducted as part of [`security-review.md`](security-review.md). When the incident count is greater than zero, the review will look for: repeated root causes, common detection-time gaps, and any patterns that suggest systemic rather than individual fixes.

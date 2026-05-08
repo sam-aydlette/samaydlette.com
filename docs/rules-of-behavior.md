@@ -33,7 +33,7 @@ By operating this system, the operator commits to the following:
 
 **Change management.**
 - The default workflow is direct push to `main`. Pull requests are used only when collaboration or staged review is desired (rare).
-- Every change is Routine Recurring by default; no SCN-Type label is required for routine work. The operator adds `SCN-Type: adaptive` or `SCN-Type: transformative` to the commit message (or PR description when a PR is used) only when the change meets those criteria per `SCN-CSO-EVA`.
+- Every change is Routine Recurring by default; no SCN-Type label is required for routine work. The operator adds `SCN-Type: adaptive` or `SCN-Type: transformative` to the commit message (or PR description when a PR is used) only when the change meets those criteria per `SCN-CSO-EVA`. The fourth recognized value, `SCN-Type: emergency`, is reserved for emergency-change scenarios per `SCN-CSO-EMG`; see [`docs/incident-response.md`](incident-response.md) for the retroactive-documentation obligations that follow.
 - The operator does not bypass the OPA gate, the schema validators, the VDR aggregator, or the SCN tag validator with `--no-verify`-style overrides.
 
 **Information handling.**

@@ -615,6 +615,22 @@ jobs:
     # finding exceeds the Class C tolerance per VDR-TFR-PVR, this step exits
     # non-zero and the build fails — the report becomes the block.
     # -------------------------------------------------------------------------
+    # Fetch the previous published VDR report to use as the first-detected
+    # ledger; the SLA clock (VDR-TFR-PVR) only ticks if first_detected is
+    # preserved across builds. If the live URL is unreachable (first deploy,
+    # or transient failure), the script falls back to treating all findings
+    # as newly detected — safe default.
+    - name: Fetch previous VDR report (first-detected ledger)
+      working-directory: infrastructure
+      run: |
+        if curl -sfL -o previous-vdr-report.json \
+            "https://samaydlette.com/.well-known/vdr-report.json"; then
+          echo "Previous VDR report fetched ($(wc -c < previous-vdr-report.json) bytes); using as first-detected ledger."
+        else
+          echo "::warning::Could not fetch previous VDR report; first-detected ledger will be empty (all findings will be treated as newly detected)."
+          echo '{"findings":[]}' > previous-vdr-report.json
+        fi
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -624,6 +640,7 @@ jobs:
           --checkov checkov-results.sarif \
           --tfsec tfsec-results.json \
           --checkov-yaml ../.checkov.yaml \
+          --previous-vdr previous-vdr-report.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json

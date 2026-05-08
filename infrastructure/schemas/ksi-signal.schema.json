@@ -181,7 +181,7 @@
           "minLength": 1
         },
         "type": {
-          "description": "Normalized component type. The type vocabulary is the cross-CSP normalization the article calls for: each CSP's native shape projects into one of these types so portfolio queries compose. Reserved values: object_store, cdn_distribution, function, compute_instance, container_image, npm_package, html_artifact, hbom_ref.",
+          "description": "Normalized component type. The type vocabulary is the cross-CSP normalization the article calls for: each CSP's native shape projects into one of these types so portfolio queries compose.",
           "type": "string",
           "enum": [
             "object_store",
@@ -191,7 +191,15 @@
             "container_image",
             "npm_package",
             "html_artifact",
-            "hbom_ref"
+            "hbom_ref",
+            "dns_zone",
+            "tls_certificate",
+            "event_schedule",
+            "iam_role",
+            "iam_policy",
+            "audit_log_trail",
+            "log_group",
+            "external_service"
           ]
         },
         "native_id": {

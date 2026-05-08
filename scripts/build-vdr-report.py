@@ -22,6 +22,11 @@
 #                             read and each entry becomes a risk-accepted entry
 #                             with POAM cross-references (VDR-RPT-AVI fields
 #                             populated).
+#   --previous-vdr PATH       Path to the previous VDR report; used as the
+#                             first-detected ledger so SLA clocks (Class C
+#                             remediation timeframes from VDR-TFR-PVR) carry
+#                             across builds. Without this the script treats
+#                             every finding as newly-detected.
 #   --output PATH             Output VDR report path (default: vdr-report.json)
 #
 # Exit codes:
@@ -369,6 +374,30 @@ def ingest_kev(path):
     return {v.get("cveID") for v in (doc.get("vulnerabilities") or []) if v.get("cveID")}
 
 
+def ingest_previous_ledger(path):
+    """Read the previous VDR report and return {tracking_id: first_detected}.
+
+    The previous published VDR report acts as the first-detected ledger:
+    each finding's first_detected timestamp is preserved across builds by
+    looking it up here. New findings (not in the previous report) are
+    stamped with the current build time. Without a ledger, the Class C
+    SLA-clock cannot enforce remediation timeframes.
+    """
+    if not path or not Path(path).exists():
+        return {}
+    try:
+        prev = json.loads(Path(path).read_text())
+    except json.JSONDecodeError:
+        return {}
+    ledger = {}
+    for f in prev.get("findings") or []:
+        tid = f.get("tracking_id")
+        first = f.get("first_detected")
+        if tid and first:
+            ledger[tid] = first
+    return ledger
+
+
 # =============================================================================
 # EVALUATION (per VDR-EVA-*)
 # =============================================================================
@@ -417,7 +446,7 @@ def class_c_sla_days(pain, lev, irv):
 # =============================================================================
 
 
-def build_report(findings, suppressions, kev_cves):
+def build_report(findings, suppressions, kev_cves, ledger):
     now = datetime.now(timezone.utc)
     report_findings = []
     summary = {
@@ -425,6 +454,8 @@ def build_report(findings, suppressions, kev_cves):
         "blocking": 0,
         "kev": 0,
         "risk_accepted": len(suppressions),
+        "ledger_carried_forward": 0,
+        "ledger_newly_detected": 0,
     }
     blocking = []
 
@@ -435,24 +466,40 @@ def build_report(findings, suppressions, kev_cves):
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
 
         sla = class_c_sla_days(pain, lev, irv)
-        # First-detected and evaluation timestamps default to now (the build
-        # is the evaluation event in this PoC; a production system would
-        # carry first-detected forward via a ledger).
-        first_detected = f.get("first_detected") or now.isoformat()
+        # First-detected lookup: prefer the ledger (previous published VDR
+        # report), then any caller-supplied value, then current build time.
+        # The ledger is what makes Class C SLA-clock enforcement real.
+        tid = f["tracking_id"]
+        if tid in ledger:
+            first_detected_str = ledger[tid]
+            summary["ledger_carried_forward"] += 1
+        else:
+            first_detected_str = f.get("first_detected") or now.isoformat()
+            summary["ledger_newly_detected"] += 1
+        try:
+            first_detected_dt = datetime.fromisoformat(first_detected_str.replace("Z", "+00:00"))
+        except ValueError:
+            first_detected_dt = now
+        days_since_detected = (now - first_detected_dt).days
         completed_eval = now.isoformat()
-        due_at = (now + timedelta(days=sla)).isoformat() if sla is not None else None
+        due_at = (first_detected_dt + timedelta(days=sla)).isoformat() if sla is not None else None
 
-        # In this PoC, every finding observed in this build is treated as
-        # newly evaluated, so it cannot already be past its SLA. The block
-        # condition is therefore: a KEV-listed CVE without remediation, OR
-        # any N5 LEV+IRV (most-severe class — present in the build at all
-        # is grounds to block). Other PAIN/LEV/IRV combinations are flagged
-        # in the report but not blocking until a ledger tracks days-since.
+        # Blocking conditions, in priority order:
+        #   1. Any KEV-listed CVE without remediation (VDR-TFR-KEV / BOD 22-01).
+        #   2. Any N5+LEV+IRV finding (most-severe Class C tier, 2-day SLA).
+        #   3. Any finding where days_since_detected exceeds the Class C SLA
+        #      from VDR-TFR-PVR for its (PAIN, LEV, IRV) combination.
         block_this = False
+        block_reason = None
         if is_kev:
             block_this = True
-        if pain == "N5" and lev and irv:
+            block_reason = "KEV (CISA Known Exploited Vulnerability)"
+        elif pain == "N5" and lev and irv:
             block_this = True
+            block_reason = "N5+LEV+IRV (most-severe Class C tier)"
+        elif sla is not None and days_since_detected > sla:
+            block_this = True
+            block_reason = f"past Class C SLA ({days_since_detected}d > {sla}d for PAIN={pain}, LEV={lev}, IRV={irv})"
 
         report_findings.append({
             "tracking_id": f["tracking_id"],
@@ -462,7 +509,8 @@ def build_report(findings, suppressions, kev_cves):
             "description": f.get("description", ""),
             "resource": f.get("resource", ""),
             "cve": f.get("cve"),
-            "first_detected": first_detected,
+            "first_detected": first_detected_str,
+            "days_since_first_detected": days_since_detected,
             "completed_evaluation": completed_eval,
             "pain": pain,
             "internet_reachable": irv,
@@ -472,6 +520,7 @@ def build_report(findings, suppressions, kev_cves):
             "remediation_sla_days": sla,
             "remediation_due_at": due_at,
             "is_blocking": block_this,
+            "block_reason": block_reason,
         })
         summary["by_pain"][pain] += 1
         if is_kev:
@@ -536,6 +585,7 @@ def main():
     parser.add_argument("--dependabot", default=None, help="Dependabot alerts JSON")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
+    parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
     args = parser.parse_args()
 
@@ -546,8 +596,9 @@ def main():
     findings.extend(ingest_dependabot(args.dependabot))
     kev_cves = ingest_kev(args.kev)
     suppressions = ingest_suppressions(args.checkov_yaml)
+    ledger = ingest_previous_ledger(args.previous_vdr)
 
-    report, blocking = build_report(findings, suppressions, kev_cves)
+    report, blocking = build_report(findings, suppressions, kev_cves, ledger)
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
