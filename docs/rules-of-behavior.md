@@ -32,8 +32,8 @@ By operating this system, the operator commits to the following:
 - The operator's GitHub session is the only authenticated path to push to `main`. Branch protection plus the OPA gate plus the SCN-Type validator constitute the technical enforcement.
 
 **Change management.**
-- Every change reaches `main` through a pull request.
-- Every change carries an SCN-Type tag (Adaptive / Routine Recurring / Transformative) per the FedRAMP 20x SCN rule. The tag lives in the PR description for PR-mediated changes and in the commit message for direct pushes to `main`. Default is Routine Recurring; the operator upgrades the categorization explicitly when the change meets Adaptive or Transformative criteria.
+- The default workflow is direct push to `main`. Pull requests are used only when collaboration or staged review is desired (rare).
+- Every change is Routine Recurring by default; no SCN-Type label is required for routine work. The operator adds `SCN-Type: adaptive` or `SCN-Type: transformative` to the commit message (or PR description when a PR is used) only when the change meets those criteria per `SCN-CSO-EVA`.
 - The operator does not bypass the OPA gate, the schema validators, the VDR aggregator, or the SCN tag validator with `--no-verify`-style overrides.
 
 **Information handling.**
