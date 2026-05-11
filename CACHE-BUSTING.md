@@ -10,26 +10,20 @@ All CSS and JavaScript files in your HTML files now include a version query para
 
 ## Usage
 
-### When to Run Cache Busting
+### Automatic (CI)
 
-Run the cache-busting script **every time** you:
-- Update any CSS files
-- Update any JavaScript files
-- Make changes that need to be immediately visible to all visitors
+The deploy workflow (`.github/workflows/deploy-with-opa.yml`) runs `node update-cache-version.js` immediately before the S3 sync step. Every deploy ships a fresh `?v=<timestamp>` on all CSS/JS references — no manual step required.
 
-### How to Run
+### Manual (local dev)
 
-You have two options:
+Run the script yourself when you want to preview the rewritten HTML locally:
 
-**Option 1: Using npm**
 ```bash
 npm run cache-bust
+# or: node update-cache-version.js
 ```
 
-**Option 2: Using node directly**
-```bash
-node update-cache-version.js
-```
+You generally do not need to commit the rewritten `?v=` values; CI overwrites them on the next deploy.
 
 ### What Happens
 
@@ -50,18 +44,6 @@ Updating cache-busting version to: 1766154770906
 
 28 file(s) updated with version 1766154770906
 ```
-
-## Before Deployment
-
-**Important:** Always run the cache-busting script before deploying your website to ensure visitors get the latest version of all assets.
-
-### Recommended Workflow
-
-1. Make your changes to CSS/JS files
-2. Run `npm run cache-bust`
-3. Test your changes locally
-4. Commit all changes (including updated HTML files)
-5. Deploy to production
 
 ## Technical Details
 

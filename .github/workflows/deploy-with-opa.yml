@@ -463,6 +463,16 @@ jobs:
       run: terraform apply -auto-approve tfplan
 
     # -------------------------------------------------------------------------
+    # CACHE-BUST WEBSITE ASSETS
+    # -------------------------------------------------------------------------
+    # Bumps the ?v=<timestamp> query string on every CSS/JS reference in
+    # website/**.html so browsers refetch assets rather than serving stale
+    # cached copies. Runs in-place; the next step uploads the rewritten files.
+    # -------------------------------------------------------------------------
+    - name: Cache-bust website assets
+      run: node update-cache-version.js
+
+    # -------------------------------------------------------------------------
     # UPLOAD WEBSITE FILES
     # -------------------------------------------------------------------------
     # Put the actual website files on the internet
