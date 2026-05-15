@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.658.0",
-    "@aws-sdk/client-cloudfront": "^3.658.0",
+    "@aws-sdk/client-cloudfront": "^3.1048.0",
     "@open-policy-agent/opa-wasm": "^1.9.0"
   }
 }
