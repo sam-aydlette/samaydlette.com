@@ -230,6 +230,9 @@ resource "aws_lambda_function" "silk_reeling" {
       SRM_BASIC_AUTH_SECRET_ARN = aws_secretsmanager_secret.silk_basic_auth[0].arn
       SRM_ANTHROPIC_SECRET_ARN  = aws_secretsmanager_secret.silk_anthropic[0].arn
       SRM_ALLOWED_ORIGIN        = "https://${var.domain_name}"
+      # Built SPA bundled into the Lambda package at /var/task/spa (see the CI
+      # packaging step). The app serves it from "/" behind the Basic Auth gate.
+      SRM_SPA_DIR = "/var/task/spa"
     }
   }
 
