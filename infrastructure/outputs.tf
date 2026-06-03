@@ -189,3 +189,40 @@ output "compliance_features" {
     section_508_level     = var.section_508_compliance_level         # What level of accessibility compliance is enforced
   }
 }
+
+# =============================================================================
+# SILK REELING MIRROR (gated app)
+# =============================================================================
+
+# The Function URL that the CloudFront /silk-reeling/* behavior must point at.
+output "silk_reeling_function_url" {
+  description = "Function URL for the gated app Lambda (CloudFront origin)"
+  value       = var.create_silk_reeling ? aws_lambda_function_url.silk_reeling[0].function_url : "Not created (set create_silk_reeling = true)"
+}
+
+# Secret ARNs whose VALUES must be set OUT OF BAND — never store values in
+# Terraform:
+#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string 'user:pass'
+#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string '<anthropic-key>'
+output "silk_reeling_secret_arns" {
+  description = "Secret ARNs to populate out-of-band (basic-auth + Anthropic key)"
+  value = var.create_silk_reeling ? {
+    basic_auth    = aws_secretsmanager_secret.silk_basic_auth[0].arn
+    anthropic_key = aws_secretsmanager_secret.silk_anthropic[0].arn
+  } : {}
+}
+
+# Manual CloudFront wiring. The distribution is managed outside this config, so
+# add the behavior by hand (same pattern as the response-headers policy):
+#   1. Create an Origin Access Control: type=Lambda, signing=SigV4 (always).
+#   2. Add an origin = the Function URL host (the value above, sans https:// and
+#      trailing slash), with that OAC attached.
+#   3. Add a cache behavior: path pattern "/silk-reeling/*" -> that origin,
+#      cache policy = Managed-CachingDisabled, origin-request policy forwarding
+#      the Authorization header, viewer-protocol-policy = redirect-to-https.
+#   4. The Function URL is AWS_IAM auth, so only this OAC-signed distribution can
+#      invoke it; direct public calls are denied.
+output "silk_reeling_cloudfront_setup" {
+  description = "Pointer to the manual CloudFront wiring for /silk-reeling/*"
+  value       = var.create_silk_reeling ? "See header of infrastructure/silk-reeling.tf and this output block: add OAC + origin (Function URL) + /silk-reeling/* behavior (CachingDisabled, forward Authorization)." : "Not created"
+}

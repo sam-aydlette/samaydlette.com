@@ -190,3 +190,28 @@ variable "create_response_headers_policy" {
   type        = bool
   default     = false
 }
+
+# =============================================================================
+# SILK REELING MIRROR (gated app) — see infrastructure/silk-reeling.tf
+# =============================================================================
+# Off by default so the app deployment is inert until explicitly enabled and
+# the CI principal has the needed Lambda/IAM/Secrets/KMS permissions.
+# =============================================================================
+
+variable "create_silk_reeling" {
+  description = "Whether to deploy the gated Silk Reeling Mirror app (Lambda + secrets)"
+  type        = bool
+  default     = false
+}
+
+variable "silk_reeling_package_path" {
+  description = "Path to the built Python Lambda zip for the Silk Reeling app (CI builds this)"
+  type        = string
+  default     = "./silk-reeling.zip"
+}
+
+variable "silk_reeling_max_concurrency" {
+  description = "Reserved concurrent executions for the app Lambda (caps cost/blast radius)"
+  type        = number
+  default     = 5
+}
