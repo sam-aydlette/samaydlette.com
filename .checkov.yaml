@@ -62,3 +62,9 @@ skip-check:
 
   # POAM-018 — CloudWatch log group not customer-key encrypted (SC-28). AWS-default encryption sufficient; no PII content.
   - CKV_AWS_158
+
+  # POAM-019 — Secrets Manager automatic rotation not enabled (SC-12, SC-28).
+  # The two Silk Reeling app secrets are a third-party API key (Anthropic) and an
+  # operator-set basic-auth credential; neither has a programmatic rotation
+  # source. Rotated manually via put-secret-value; revisit annually. Low.
+  - CKV2_AWS_57

@@ -37,6 +37,9 @@ locals {
   }
 }
 
+# Account id for the KMS key policy (root-enables-IAM statement).
+data "aws_caller_identity" "current" {}
+
 # -----------------------------------------------------------------------------
 # Customer-managed KMS key for the app's secrets (rotation enabled).
 # -----------------------------------------------------------------------------
@@ -45,6 +48,41 @@ resource "aws_kms_key" "silk_reeling" {
   description             = "CMK for ${local.silk_name} secrets (basic-auth, Anthropic key)"
   deletion_window_in_days = 30
   enable_key_rotation     = true
+
+  # Explicit key policy (CKV2_AWS_64): re-enable IAM-governed access for the
+  # account, and allow Secrets Manager to use the key only via the Secrets
+  # Manager service in this region. The Lambda's kms:Decrypt is governed by its
+  # IAM policy under the root-enable statement.
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Id      = "${local.silk_name}-cmk"
+    Statement = [
+      {
+        Sid       = "EnableIAMUserPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowSecretsManagerUse"
+        Effect    = "Allow"
+        Principal = { Service = "secretsmanager.amazonaws.com" }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*",
+          "kms:DescribeKey",
+          "kms:CreateGrant",
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com"
+          }
+        }
+      },
+    ]
+  })
 
   tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-cmk" })
 }

@@ -107,6 +107,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
+| POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
 
@@ -120,8 +121,10 @@ personal data. The interconnection and its data flow are modeled in the OSCAL SS
 when the app is present in the canonical inventory. **Remediation:** migrate
 feedback to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes
 the external interconnection. Applies only while the app is deployed. POAM-019
-(Secrets Manager rotation, Checkov) remains proposed pending the scan — see
-[`silk-reeling-deploy.md`](silk-reeling-deploy.md).
+(Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was confirmed by the
+checkov scan and is now finalized: the two app secrets are a third-party API key
+and an operator-set basic-auth credential with no programmatic rotation source;
+rotated manually, revisited annually.
 
 **POAM-021 (added with the gated Silk Reeling app):** Access to the gated app is
 authenticated by an operator-configured username/password (HTTP Basic Auth) —

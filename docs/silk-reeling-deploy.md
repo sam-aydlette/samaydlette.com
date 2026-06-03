@@ -57,9 +57,12 @@ new resources, and review the generated VDR.
 
 ## POA&M responses
 
-> Status: **POAM-020 and POAM-021 are finalized** in `docs/poam.md`. **POAM-019**
-> (Checkov Secrets Manager rotation) remains proposed below — apply it after the
-> scan confirms the exact CKV id.
+> Status: **POAM-019, POAM-020, and POAM-021 are all finalized** in
+> `docs/poam.md`. The checkov scan confirmed POAM-019 (`CKV2_AWS_57`), now
+> suppressed in `.checkov.yaml`. The scan also surfaced **`CKV2_AWS_64`** (KMS
+> key policy not defined), which was **fixed** in `silk-reeling.tf` with an
+> explicit least-privilege key policy rather than accepted. Snippets below are
+> retained for reference.
 
 Add to `.checkov.yaml` `skip-check:` (verify the exact CKV id against your run):
 
