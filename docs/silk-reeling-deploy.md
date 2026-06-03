@@ -70,14 +70,49 @@ Add to the `docs/poam.md` configuration-findings table:
 
 ```
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-020 | SC-7 | App Lambda internet egress without VPC/NAT controls | Architectural decision | — | aws-lambda::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API — non-FedRAMP-authorized external service; derived movement metrics cross the authorization boundary | Architectural decision | — | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2, AC-3 | App access gated by operator-set HTTP Basic Auth (no SSO/SAML) | Architectural / Customer Responsibility | — | silk-reeling::auth | N2 | Moderate | Low | Yes | Risk-accepted |
 ```
 
 Rationales:
 - **POAM-019** — Neither secret has a programmatic rotation source (Anthropic key is third-party; basic-auth is operator-set). Rotate manually via `put-secret-value`; revisit annually.
-- **POAM-020** — App Lambda egresses to one known TLS endpoint (Anthropic API); placed outside a VPC to avoid NAT cost; no sensitive data at rest. Supersedes the inherited POAM-010 rationale for this resource.
+- **POAM-020** — The app Lambda **interconnects with the Anthropic API, which is not FedRAMP-authorized** (SA-9). Data crossing the boundary is the **derived deviation summary only** (joint-angle metrics, scores, hotspots, exercise id) over TLS — no video, no raw landmarks, no PII. Must be documented in the SSP as a **CA-3 interconnection + data flow**. **Remediation: route feedback through Claude on AWS Bedrock** (FedRAMP-authorized, in-boundary) — removes the external interconnection entirely. The earlier "no-VPC" point is subsumed: egress is to this one documented endpoint.
 - **POAM-021** — Access is an operator-configured username/password (**customer responsibility; operator-accepted risk**). **SAML federation to a customer IdP is the recommended stronger control**, not implemented (no IdP). Credentials in Secrets Manager (CMK), TLS-only, constant-time compare.
+
+## External interconnection: Anthropic (SSP + SA-9) — per operator note
+
+The Lambda's call to Anthropic is an **external system interconnection** and must
+be modeled in the SSP, not just risk-noted:
+
+- **SSP (CA-3):** add an `interconnection` component for the Anthropic API to
+  `system-implementation.components`, and a **`data-flow`** description under
+  `system-characteristics`. The generator (`scripts/build-oscal-ssp.py`) currently
+  emits `authorization-boundary` but **no `data-flow`/`network-architecture`** —
+  those sections need adding.
+- **Data flow across the boundary:** browser → Lambda (pose frames, transient,
+  not persisted) → **Anthropic** receives only the *derived deviation summary*
+  (joint deviations, scores, hotspots, exercise id) over TLS; response is markdown
+  feedback. **No video, no raw landmarks, no PII** leave the boundary.
+- **POA&M (SA-9):** POAM-020 — use of a non-FedRAMP-authorized external service.
+  Risk-accepted given low data sensitivity + TLS, **or remediated** via Bedrock.
+
+### Remediation: Claude on AWS Bedrock (closes POAM-020)
+
+Routing feedback through **Claude on AWS Bedrock** instead of the Anthropic API:
+- Keeps the call **inside the AWS authorization boundary** — Bedrock is
+  FedRAMP-authorized (leveraged authorization), so there is **no external
+  interconnection** and **no SA-9 finding**.
+- **Removes the Anthropic API key secret** — the Lambda authenticates to Bedrock
+  via IAM (`bedrock:InvokeModel` on the specific model ARN); one fewer secret to
+  store/rotate (also softens POAM-019).
+- App change: `feedback.py` calls Bedrock (Claude messages API on Bedrock) rather
+  than the Anthropic SDK.
+- Terraform change: drop the Anthropic secret; add `bedrock:InvokeModel` to the
+  Lambda role; keep the CMK + basic-auth secret.
+
+If compliance is the goal, Bedrock is the cleaner posture: it converts a
+risk-accepted external interconnection into an in-boundary, FedRAMP-authorized
+service call.
 
 ## Prerequisites before `apply` (NOT in this branch)
 
