@@ -108,6 +108,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
 
 **POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
 Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
@@ -119,9 +120,22 @@ personal data. The interconnection and its data flow are modeled in the OSCAL SS
 when the app is present in the canonical inventory. **Remediation:** migrate
 feedback to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes
 the external interconnection. Applies only while the app is deployed. POAM-019
-(Secrets Manager rotation, Checkov) and POAM-021 (operator-set HTTP Basic Auth,
-customer responsibility) remain proposed pending review — see
+(Secrets Manager rotation, Checkov) remains proposed pending the scan — see
 [`silk-reeling-deploy.md`](silk-reeling-deploy.md).
+
+**POAM-021 (added with the gated Silk Reeling app):** Access to the gated app is
+authenticated by an operator-configured username/password (HTTP Basic Auth) —
+single-factor, shared credential, with no MFA (IA-2(2)) and no account lockout
+(AC-7). This is a **customer-responsibility control**: the operator configures
+and owns the credential and accepts the residual risk. Risk adjusted Moderate →
+Low because the system is categorized FIPS-199 Low (no PII, no federal data) and
+the credential is held in Secrets Manager (CMK), transmitted only over TLS, and
+compared in constant time, with an AWS_IAM Function URL behind CloudFront OAC
+preventing origin bypass. **Remediation:** federate authentication to a customer
+IdP via SAML/OIDC (MFA, account lifecycle, lockout); not implemented (no IdP
+available). There is no standalone Customer Responsibility Matrix document;
+FedRAMP control origination is tracked per-control in the OSCAL SSP
+(`control-origination` props).
 
 **Standard fields for all of POAM-003 through POAM-018:**
 

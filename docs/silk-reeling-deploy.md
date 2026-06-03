@@ -55,7 +55,11 @@ new resources, and review the generated VDR.
 > than relying on the inherited skip. This is exactly the kind of thing the test
 > should surface.
 
-## Proposed POA&M responses (apply after reviewing the scan)
+## POA&M responses
+
+> Status: **POAM-020 and POAM-021 are finalized** in `docs/poam.md`. **POAM-019**
+> (Checkov Secrets Manager rotation) remains proposed below — apply it after the
+> scan confirms the exact CKV id.
 
 Add to `.checkov.yaml` `skip-check:` (verify the exact CKV id against your run):
 
