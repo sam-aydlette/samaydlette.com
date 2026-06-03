@@ -107,6 +107,21 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
+| POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
+
+**POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
+Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
+crossing the authorization boundary is the derived deviation summary (per-joint
+metrics, scores, hotspots, exercise id) over TLS — no video, raw landmarks, or
+personal data. The interconnection and its data flow are modeled in the OSCAL SSP
+(`system-implementation.components[type=interconnection]` and
+`system-characteristics.data-flow`), emitted by `scripts/build-oscal-ssp.py` only
+when the app is present in the canonical inventory. **Remediation:** migrate
+feedback to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes
+the external interconnection. Applies only while the app is deployed. POAM-019
+(Secrets Manager rotation, Checkov) and POAM-021 (operator-set HTTP Basic Auth,
+customer responsibility) remain proposed pending review — see
+[`silk-reeling-deploy.md`](silk-reeling-deploy.md).
 
 **Standard fields for all of POAM-003 through POAM-018:**
 
