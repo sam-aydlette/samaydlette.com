@@ -314,6 +314,8 @@ jobs:
         manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
         compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
         section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
+        create_silk_reeling = true
+        silk_reeling_package_path = "./silk-reeling.zip"
         EOF
 
     - name: Download Terraform Plan Artifact
@@ -454,13 +456,77 @@ jobs:
           echo "No existing Lambda permissions found - will be created"
         fi
     
+    # -------------------------------------------------------------------------
+    # BUILD THE SILK REELING APP (gated project) — clones silk-reeling-mirror,
+    # builds the SPA for the /silk-reeling/ path, and assembles a slim Lambda zip
+    # (browser does the ML, so no OpenCV/MediaPipe). Terraform picks up the zip
+    # via silk_reeling_package_path (set in tfvars above).
+    # -------------------------------------------------------------------------
+    - name: Build Silk Reeling app (frontend + slim Lambda zip)
+      working-directory: infrastructure
+      env:
+        SILK_REELING_REF: ${{ vars.SILK_REELING_REF || 'main' }}
+        SILK_REELING_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+      run: |
+        set -euo pipefail
+        rm -rf _silk_src _pkg silk-reeling.zip
+        git clone --depth 1 --branch "$SILK_REELING_REF" \
+          "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" _silk_src
+        ( cd _silk_src/frontend && npm ci && \
+          VITE_API_BASE=/silk-reeling npm run build -- --base=/silk-reeling/ )
+        mkdir -p _pkg
+        python3 -m pip install --quiet --target _pkg -r _silk_src/backend/requirements-lambda.txt
+        cp -r _silk_src/backend _pkg/backend
+        cp _silk_src/lambda_handler.py _pkg/lambda_handler.py
+        cp -r _silk_src/reference_data _pkg/reference_data
+        cp -r _silk_src/frontend/dist _pkg/spa
+        rm -rf _pkg/backend/__pycache__
+        ( cd _pkg && zip -qr ../silk-reeling.zip . )
+        echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"
+
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -out=tfplan
-    
+
     - name: Terraform Apply
       working-directory: infrastructure
       run: terraform apply -auto-approve tfplan
+
+    # -------------------------------------------------------------------------
+    # SEED SILK REELING SECRETS (out-of-band) — set the basic-auth credential and
+    # the Anthropic key into Secrets Manager from GitHub secrets, so plaintext
+    # never lands in Terraform state. Skips quietly if a secret isn't configured.
+    # -------------------------------------------------------------------------
+    - name: Seed Silk Reeling secrets
+      working-directory: infrastructure
+      env:
+        SILK_REELING_BASIC_AUTH: ${{ secrets.SILK_REELING_BASIC_AUTH }}
+        SILK_REELING_ANTHROPIC_KEY: ${{ secrets.SILK_REELING_ANTHROPIC_KEY }}
+      run: |
+        set -euo pipefail
+        ARNS=$(terraform output -json silk_reeling_secret_arns)
+        BASIC_ARN=$(echo "$ARNS" | jq -r '.basic_auth // empty')
+        ANTH_ARN=$(echo "$ARNS" | jq -r '.anthropic_key // empty')
+        if [ -n "${SILK_REELING_BASIC_AUTH:-}" ] && [ -n "$BASIC_ARN" ]; then
+          aws secretsmanager put-secret-value --secret-id "$BASIC_ARN" \
+            --secret-string "$SILK_REELING_BASIC_AUTH" >/dev/null
+          echo "seeded basic-auth credential"
+        fi
+        if [ -n "${SILK_REELING_ANTHROPIC_KEY:-}" ] && [ -n "$ANTH_ARN" ]; then
+          aws secretsmanager put-secret-value --secret-id "$ANTH_ARN" \
+            --secret-string "$SILK_REELING_ANTHROPIC_KEY" >/dev/null
+          echo "seeded anthropic key"
+        fi
+
+    # -------------------------------------------------------------------------
+    # CACHE-BUST WEBSITE ASSETS
+    # -------------------------------------------------------------------------
+    # Bumps the ?v=<timestamp> query string on every CSS/JS reference in
+    # website/**.html so browsers refetch assets rather than serving stale
+    # cached copies. Runs in-place; the next step uploads the rewritten files.
+    # -------------------------------------------------------------------------
+    - name: Cache-bust website assets
+      run: node update-cache-version.js
 
     # -------------------------------------------------------------------------
     # UPLOAD WEBSITE FILES

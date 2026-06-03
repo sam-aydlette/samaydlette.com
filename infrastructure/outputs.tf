@@ -133,9 +133,9 @@ output "route53_logging_enabled" {
 output "website_urls" {
   description = "Website URLs"
   value = {
-    cloudfront = "https://${data.aws_cloudfront_distribution.website.domain_name}"  # Direct CloudFront URL
-    domain     = "https://${var.domain_name}"                                       # Your custom domain
-    www_domain = "https://www.${var.domain_name}"                                   # www version of my domain
+    cloudfront = "https://${data.aws_cloudfront_distribution.website.domain_name}" # Direct CloudFront URL
+    domain     = "https://${var.domain_name}"                                      # Your custom domain
+    www_domain = "https://www.${var.domain_name}"                                  # www version of my domain
   }
 }
 
@@ -150,18 +150,18 @@ output "infrastructure_status" {
   description = "Status of managed vs existing resources"
   value = {
     existing_resources = {
-      s3_bucket            = "Referenced (existing)"                                # Terraform finds it but doesn't change it
-      cloudfront          = "Referenced (existing)"                                # Terraform finds it but doesn't change it
-      route53_zone        = var.manage_dns ? "Referenced (existing)" : "Not managed"  # May or may not be managed
-      ssl_certificate     = "Referenced (existing)"                                # Terraform finds it but doesn't change it
+      s3_bucket       = "Referenced (existing)"                                  # Terraform finds it but doesn't change it
+      cloudfront      = "Referenced (existing)"                                  # Terraform finds it but doesn't change it
+      route53_zone    = var.manage_dns ? "Referenced (existing)" : "Not managed" # May or may not be managed
+      ssl_certificate = "Referenced (existing)"                                  # Terraform finds it but doesn't change it
     }
     managed_resources = {
-      lambda_function     = var.create_lambda_compliance ? "Created by Terraform" : "Not created"    # Terraform creates and manages
-      iam_role           = "Created by Terraform"                                  # Terraform creates and manages
-      eventbridge_rule   = var.create_eventbridge_rules ? "Created by Terraform" : "Not created"     # May or may not be created
-      s3_bucket_policy   = "Managed by Terraform"                                  # Terraform controls the security settings
-      s3_encryption      = "Managed by Terraform"                                  # Terraform controls encryption settings
-      s3_versioning      = "Managed by Terraform"                                  # Terraform controls versioning settings
+      lambda_function  = var.create_lambda_compliance ? "Created by Terraform" : "Not created" # Terraform creates and manages
+      iam_role         = "Created by Terraform"                                                # Terraform creates and manages
+      eventbridge_rule = var.create_eventbridge_rules ? "Created by Terraform" : "Not created" # May or may not be created
+      s3_bucket_policy = "Managed by Terraform"                                                # Terraform controls the security settings
+      s3_encryption    = "Managed by Terraform"                                                # Terraform controls encryption settings
+      s3_versioning    = "Managed by Terraform"                                                # Terraform controls versioning settings
     }
   }
 }
@@ -182,10 +182,49 @@ output "aws_region" {
 output "compliance_features" {
   description = "Status of compliance features"
   value = {
-    opa_lambda_enabled    = var.create_lambda_compliance              # Whether compliance monitoring is running
-    eventbridge_enabled   = var.create_eventbridge_rules             # Whether automatic scheduling is active
-    route53_logging       = var.enable_route53_logging               # Whether DNS query logging is active (costs money)
-    compliance_schedule   = var.compliance_check_schedule             # How often compliance checks run
-    section_508_level     = var.section_508_compliance_level         # What level of accessibility compliance is enforced
+    opa_lambda_enabled  = var.create_lambda_compliance     # Whether compliance monitoring is running
+    eventbridge_enabled = var.create_eventbridge_rules     # Whether automatic scheduling is active
+    route53_logging     = var.enable_route53_logging       # Whether DNS query logging is active (costs money)
+    compliance_schedule = var.compliance_check_schedule    # How often compliance checks run
+    section_508_level   = var.section_508_compliance_level # What level of accessibility compliance is enforced
   }
+}
+
+# =============================================================================
+# SILK REELING MIRROR (gated app)
+# =============================================================================
+
+# The Function URL that the CloudFront /silk-reeling/* behavior must point at.
+output "silk_reeling_function_url" {
+  description = "Function URL for the gated app Lambda (CloudFront origin)"
+  value       = var.create_silk_reeling ? aws_lambda_function_url.silk_reeling[0].function_url : "Not created (set create_silk_reeling = true)"
+}
+
+# Secret ARNs whose VALUES must be set OUT OF BAND — never store values in
+# Terraform:
+#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string 'user:pass'
+#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string '<anthropic-key>'
+output "silk_reeling_secret_arns" {
+  description = "Secret ARNs to populate out-of-band (basic-auth + Anthropic key)"
+  value = var.create_silk_reeling ? {
+    basic_auth    = aws_secretsmanager_secret.silk_basic_auth[0].arn
+    anthropic_key = aws_secretsmanager_secret.silk_anthropic[0].arn
+  } : {}
+}
+
+# Manual CloudFront wiring (post-deploy). The distribution is managed outside
+# this config, so add the behavior by hand (same pattern as the response-headers
+# policy). The Function URL is authType NONE — the app's Basic Auth is the gate —
+# so NO OAC:
+#   1. Publish the CloudFront Function infrastructure/cloudfront/silk-reeling-
+#      strip-prefix.js (event type: viewer-request).
+#   2. Add an origin = the Function URL host (the value above, sans https:// and
+#      trailing slash); custom origin, https-only.
+#   3. Add a cache behavior: path pattern "/silk-reeling/*" -> that origin,
+#      cache policy = Managed-CachingDisabled, an origin-request policy that
+#      FORWARDS the Authorization header, viewer-protocol-policy =
+#      redirect-to-https, and associate the strip-prefix function (viewer-request).
+output "silk_reeling_cloudfront_setup" {
+  description = "Pointer to the manual CloudFront wiring for /silk-reeling/*"
+  value       = var.create_silk_reeling ? "Function URL is authType NONE (app Basic Auth gates it). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (Function URL) + /silk-reeling/* behavior (CachingDisabled, forward Authorization, attach the function)." : "Not created"
 }

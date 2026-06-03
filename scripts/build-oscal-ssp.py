@@ -2206,8 +2206,22 @@ def build_metadata(signal):
     }
 
 
+def _silk_reeling_present(signal):
+    """True when the gated Silk Reeling app Lambda is in the canonical inventory.
+
+    Lets the SSP document the Anthropic interconnection + data flow ONLY when the
+    app is actually deployed, so it never claims an interconnection that doesn't
+    exist.
+    """
+    for c in signal.get("components", []):
+        ident = f"{c.get('component_id', '')} {c.get('native_id', '')}".lower()
+        if c.get("type") == "function" and "silk-reeling" in ident:
+            return True
+    return False
+
+
 def build_system_characteristics(signal):
-    return {
+    sc = {
         "system-ids": [
             {
                 "identifier-type": "https://ietf.org/rfc/rfc4122",
@@ -2274,6 +2288,26 @@ def build_system_characteristics(signal):
             )
         },
     }
+    # The gated Silk Reeling app, when deployed, adds an external interconnection
+    # (Anthropic API) and a boundary-crossing data flow. Emitted only when the
+    # app is present in the canonical inventory. See docs/poam.md POAM-020 (SA-9).
+    if _silk_reeling_present(signal):
+        sc["data-flow"] = {
+            "description": (
+                "Browser captures pose landmarks client-side and POSTs them to "
+                "the Silk Reeling app Lambda over TLS (CloudFront origin, "
+                "AWS_IAM-signed). The Lambda computes movement deviations locally "
+                "and sends ONLY a derived summary (per-joint angle deviations, "
+                "similarity scores, hotspots, exercise identifier) to the "
+                "Anthropic API over TLS for natural-language feedback. No video, "
+                "no raw landmarks, and no personal data cross the boundary; pose "
+                "frames are processed transiently and not persisted. The Anthropic "
+                "API is an external, non-FedRAMP-authorized service (SA-9), "
+                "enumerated as an interconnection component; residual risk is "
+                "accepted in POAM-020."
+            )
+        }
+    return sc
 
 
 def build_system_implementation(signal):
@@ -2381,6 +2415,42 @@ def build_system_implementation(signal):
                 {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
             ],
             "status": {"state": "operational"},
+        })
+
+    # External interconnection: Anthropic API used by the Silk Reeling app for
+    # feedback. Present only when the app is deployed. Non-FedRAMP-authorized
+    # external service (SA-9, POAM-020); data flow in system-characteristics.
+    if _silk_reeling_present(signal):
+        components.append({
+            "uuid": stable_uuid("component:interconnection-anthropic-api"),
+            "type": "interconnection",
+            "title": "Anthropic API (LLM feedback)",
+            "description": (
+                "External system interconnection from the Silk Reeling app "
+                "Lambda to the Anthropic API (api.anthropic.com) over TLS, used "
+                "to turn derived movement-deviation summaries into natural-"
+                "language feedback. Only the derived summary crosses the boundary "
+                "(per-joint deviations, scores, hotspots, exercise id) — no video, "
+                "raw landmarks, or personal data. NOT FedRAMP-authorized; residual "
+                "risk accepted in POAM-020, with migration to Claude on AWS "
+                "Bedrock as the documented remediation."
+            ),
+            "props": [
+                {"name": "interconnection-direction", "value": "outbound"},
+                {"name": "service-provider", "value": "Anthropic"},
+                {"name": "remote-endpoint", "value": "https://api.anthropic.com"},
+                {"name": "transport-security", "value": "TLS 1.2+"},
+                {"name": "fedramp-authorized", "value": "no"},
+                {"name": "data-crossing-boundary", "value": "derived deviation summary (non-PII)"},
+                {"name": "related-poam", "value": "POAM-020"},
+            ],
+            "status": {"state": "operational"},
+            "responsible-roles": [
+                {
+                    "role-id": "system-owner",
+                    "party-uuids": [stable_uuid("party:operator")],
+                }
+            ],
         })
 
     return {

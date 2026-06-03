@@ -107,6 +107,39 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
+| POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-022 | IA-2, AC-3 | Lambda Function URL auth type NONE (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_258 | aws-lambda::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
+
+**POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
+Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
+crossing the authorization boundary is the derived deviation summary (per-joint
+metrics, scores, hotspots, exercise id) over TLS — no video, raw landmarks, or
+personal data. The interconnection and its data flow are modeled in the OSCAL SSP
+(`system-implementation.components[type=interconnection]` and
+`system-characteristics.data-flow`), emitted by `scripts/build-oscal-ssp.py` only
+when the app is present in the canonical inventory. **Remediation:** migrate
+feedback to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes
+the external interconnection. Applies only while the app is deployed. POAM-019
+(Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was confirmed by the
+checkov scan and is now finalized: the two app secrets are a third-party API key
+and an operator-set basic-auth credential with no programmatic rotation source;
+rotated manually, revisited annually.
+
+**POAM-021 (added with the gated Silk Reeling app):** Access to the gated app is
+authenticated by an operator-configured username/password (HTTP Basic Auth) —
+single-factor, shared credential, with no MFA (IA-2(2)) and no account lockout
+(AC-7). This is a **customer-responsibility control**: the operator configures
+and owns the credential and accepts the residual risk. Risk adjusted Moderate →
+Low because the system is categorized FIPS-199 Low (no PII, no federal data) and
+the credential is held in Secrets Manager (CMK), transmitted only over TLS, and
+compared in constant time, with an AWS_IAM Function URL behind CloudFront OAC
+preventing origin bypass. **Remediation:** federate authentication to a customer
+IdP via SAML/OIDC (MFA, account lifecycle, lockout); not implemented (no IdP
+available). There is no standalone Customer Responsibility Matrix document;
+FedRAMP control origination is tracked per-control in the OSCAL SSP
+(`control-origination` props).
 
 **Standard fields for all of POAM-003 through POAM-018:**
 
