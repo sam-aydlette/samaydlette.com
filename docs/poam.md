@@ -110,6 +110,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-022 | IA-2, AC-3 | Lambda Function URL auth type NONE (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_258 | aws-lambda::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 
 **POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
 Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data

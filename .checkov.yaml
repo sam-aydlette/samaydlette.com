@@ -68,3 +68,9 @@ skip-check:
   # operator-set basic-auth credential; neither has a programmatic rotation
   # source. Rotated manually via put-secret-value; revisit annually. Low.
   - CKV2_AWS_57
+
+  # POAM-022 — Lambda Function URL auth type is NONE (IA-2, AC-3). Access control
+  # is enforced at the application layer (in-app HTTP Basic Auth), which gates
+  # every request; AWS_IAM/OAC is incompatible with Basic Auth (both use the
+  # Authorization header). Risk-accepted.
+  - CKV_AWS_258

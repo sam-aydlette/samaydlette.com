@@ -6,15 +6,17 @@
 # only does the numpy comparison and the Anthropic call — a small zip, no
 # OpenCV/MediaPipe, no container.
 #
-# Access control (two layers):
-#   1. Edge — the CloudFront distribution (managed OUTSIDE this config, see the
-#      data source in main.tf) routes /silk-reeling/* to this Lambda's Function
-#      URL via Origin Access Control (SigV4-signed). The Function URL is AWS_IAM
-#      auth, so it cannot be invoked directly/publicly — only the OAC-signed
-#      distribution can. Manual wiring steps are in outputs.tf.
-#   2. App — HTTP Basic Auth inside the Lambda (operator-set username/password,
-#      constant-time compare). A customer-responsibility control, risk-accepted
-#      (POAM-021); SAML federation to a customer IdP is the recommended upgrade.
+# Access control:
+#   App-layer HTTP Basic Auth inside the Lambda (operator-set username/password,
+#   constant-time compare) gates EVERY request — the Function URL is authType
+#   NONE (public) but the app rejects anything without valid credentials, so the
+#   URL is fully gated regardless of how it is reached. (OAC/AWS_IAM can't be
+#   combined with Basic Auth: OAC signs in the `Authorization` header, colliding
+#   with the Basic credential. CKV_AWS_258 accepted in POAM-022.) The CloudFront
+#   distribution (managed OUTSIDE this config) fronts it for the /silk-reeling/*
+#   path, no-cache, forwarding `Authorization`, with a prefix-strip function —
+#   manual wiring in outputs.tf. Basic Auth is a customer-responsibility control
+#   (POAM-021); SAML federation to a customer IdP is the recommended upgrade.
 #
 # Secrets (the basic-auth credential and the Anthropic API key) live in Secrets
 # Manager, encrypted with a customer-managed KMS key, read at runtime via
@@ -242,23 +244,15 @@ resource "aws_lambda_function" "silk_reeling" {
 }
 
 # -----------------------------------------------------------------------------
-# Function URL — AWS_IAM auth so only the CloudFront OAC (SigV4) can invoke it;
-# direct public calls are denied. The app still enforces Basic Auth on top.
+# Function URL — authType NONE. Access control is enforced at the APPLICATION
+# layer (in-app HTTP Basic Auth): the app rejects any request lacking valid
+# credentials, regardless of how the URL is reached. AWS_IAM + CloudFront OAC is
+# NOT usable here because OAC signs requests in the `Authorization` header — the
+# same header Basic Auth uses — so the two collide. The public URL is therefore
+# still fully gated by the app. CKV_AWS_258 is accepted in POAM-022.
 # -----------------------------------------------------------------------------
 resource "aws_lambda_function_url" "silk_reeling" {
   count              = local.silk_create
   function_name      = aws_lambda_function.silk_reeling[0].function_name
-  authorization_type = "AWS_IAM"
-}
-
-# Allow the site's CloudFront distribution to invoke the Function URL.
-# source_arn scopes the grant to this one distribution.
-resource "aws_lambda_permission" "silk_reeling_cloudfront" {
-  count                  = local.silk_create
-  statement_id           = "AllowCloudFrontInvoke"
-  action                 = "lambda:InvokeFunctionUrl"
-  function_name          = aws_lambda_function.silk_reeling[0].function_name
-  principal              = "cloudfront.amazonaws.com"
-  source_arn             = data.aws_cloudfront_distribution.website.arn
-  function_url_auth_type = "AWS_IAM"
+  authorization_type = "NONE"
 }
