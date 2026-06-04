@@ -492,6 +492,7 @@ jobs:
     - name: Import Silk Reeling resources (if needed)
       working-directory: infrastructure
       run: |
+        set +e   # handle each guard/import explicitly; a missing resource is fine
         import_silk() {
           if terraform state show "$1" >/dev/null 2>&1; then echo "in state: $1"; return; fi
           echo "importing: $1"; terraform import "$1" "$2" || echo "import skipped: $1"
@@ -515,6 +516,7 @@ jobs:
           import_silk 'aws_lambda_function.silk_reeling[0]' 'samaydlette-com-silk-reeling'
         aws lambda get-function-url-config --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
           import_silk 'aws_lambda_function_url.silk_reeling[0]' 'samaydlette-com-silk-reeling'
+        echo "Silk Reeling import step complete"
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
