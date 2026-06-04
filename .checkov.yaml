@@ -69,8 +69,16 @@ skip-check:
   # source. Rotated manually via put-secret-value; revisit annually. Low.
   - CKV2_AWS_57
 
-  # POAM-022 — Lambda Function URL auth type is NONE (IA-2, AC-3). Access control
-  # is enforced at the application layer (in-app HTTP Basic Auth), which gates
-  # every request; AWS_IAM/OAC is incompatible with Basic Auth (both use the
-  # Authorization header). Risk-accepted.
-  - CKV_AWS_258
+  # POAM-022 — API Gateway HTTP API route specifies no authorizer (IA-2, AC-3).
+  # Access control is enforced at the application layer (in-app HTTP Basic Auth),
+  # which gates every request; a Gateway authorizer (JWT/IAM) is incompatible with
+  # Basic Auth (both use the Authorization header), and the app must receive that
+  # header unchanged. The API fronts a Lambda whose middleware rejects any request
+  # without valid credentials. Risk-accepted.
+  - CKV_AWS_309
+
+  # POAM-024 — API Gateway HTTP API access logging not enabled (AU-2, AU-3).
+  # HTTP API access logs require a CloudWatch Logs delivery resource-policy; the
+  # Lambda's own execution log group plus CloudFront access logs provide request
+  # coverage in the interim. Planned enhancement; risk-adjusted to Low.
+  - CKV_AWS_76

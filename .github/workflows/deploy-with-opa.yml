@@ -514,8 +514,27 @@ jobs:
           import_silk 'aws_secretsmanager_secret.silk_anthropic[0]' 'samaydlette-com-silk-reeling-anthropic-api-key'
         aws lambda get-function --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
           import_silk 'aws_lambda_function.silk_reeling[0]' 'samaydlette-com-silk-reeling'
+        # Retire any orphaned Function URL from the pre-API-Gateway deployment —
+        # Terraform no longer manages it (the account blocks public access anyway),
+        # so delete it to avoid a stray public-NONE endpoint lingering.
         aws lambda get-function-url-config --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
-          import_silk 'aws_lambda_function_url.silk_reeling[0]' 'samaydlette-com-silk-reeling'
+          aws lambda delete-function-url-config --function-name samaydlette-com-silk-reeling 2>/dev/null && \
+          echo "deleted orphaned function URL config"
+        # API Gateway HTTP API (replaces the Function URL).
+        SILK_API_ID=$(aws apigatewayv2 get-apis --query "Items[?Name=='samaydlette-com-silk-reeling'].ApiId | [0]" --output text 2>/dev/null || true)
+        if [ -n "$SILK_API_ID" ] && [ "$SILK_API_ID" != "None" ]; then
+          import_silk 'aws_apigatewayv2_api.silk_reeling[0]' "$SILK_API_ID"
+          SILK_INT_ID=$(aws apigatewayv2 get-integrations --api-id "$SILK_API_ID" --query 'Items[0].IntegrationId' --output text 2>/dev/null || true)
+          [ -n "$SILK_INT_ID" ] && [ "$SILK_INT_ID" != "None" ] && \
+            import_silk 'aws_apigatewayv2_integration.silk_reeling[0]' "$SILK_API_ID/$SILK_INT_ID"
+          SILK_ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$SILK_API_ID" --query "Items[?RouteKey=='\$default'].RouteId | [0]" --output text 2>/dev/null || true)
+          [ -n "$SILK_ROUTE_ID" ] && [ "$SILK_ROUTE_ID" != "None" ] && \
+            import_silk 'aws_apigatewayv2_route.silk_reeling[0]' "$SILK_API_ID/$SILK_ROUTE_ID"
+          aws apigatewayv2 get-stage --api-id "$SILK_API_ID" --stage-name '$default' >/dev/null 2>&1 && \
+            import_silk 'aws_apigatewayv2_stage.silk_reeling[0]' "$SILK_API_ID/\$default"
+        fi
+        aws lambda get-policy --function-name samaydlette-com-silk-reeling --query 'Policy' --output text 2>/dev/null | grep -q AllowApiGatewayInvoke && \
+          import_silk 'aws_lambda_permission.silk_reeling_apigw[0]' 'samaydlette-com-silk-reeling/AllowApiGatewayInvoke'
         echo "Silk Reeling import step complete"
 
     - name: Generate fresh Terraform plan

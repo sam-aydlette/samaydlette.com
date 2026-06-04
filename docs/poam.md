@@ -110,7 +110,9 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-022 | IA-2, AC-3 | Lambda Function URL auth type NONE (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_258 | aws-lambda::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-022 | IA-2, AC-3 | API Gateway HTTP API route specifies no authorizer (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_309 | aws-apigatewayv2::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-023 | AC-7, SC-5 | No brute-force / rate-limit protection on the Basic Auth endpoint (no lockout, no WAF) | Security review | security-review.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-024 | AU-2, AU-3 | API Gateway HTTP API access logging not enabled | Checkov | CKV_AWS_76 | aws-apigatewayv2::silk-reeling | N1 | Low | — | No | Risk-accepted |
 
 **POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
 Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
@@ -134,12 +136,42 @@ single-factor, shared credential, with no MFA (IA-2(2)) and no account lockout
 and owns the credential and accepts the residual risk. Risk adjusted Moderate →
 Low because the system is categorized FIPS-199 Low (no PII, no federal data) and
 the credential is held in Secrets Manager (CMK), transmitted only over TLS, and
-compared in constant time, with an AWS_IAM Function URL behind CloudFront OAC
-preventing origin bypass. **Remediation:** federate authentication to a customer
-IdP via SAML/OIDC (MFA, account lifecycle, lockout); not implemented (no IdP
-available). There is no standalone Customer Responsibility Matrix document;
-FedRAMP control origination is tracked per-control in the OSCAL SSP
-(`control-origination` props).
+compared in constant time. The credential gate runs in the Lambda itself, so it
+applies to every request regardless of how the API Gateway endpoint is reached.
+**Remediation:** federate authentication to a customer IdP via SAML/OIDC (MFA,
+account lifecycle, lockout); not implemented (no IdP available). There is no
+standalone Customer Responsibility Matrix document; FedRAMP control origination is
+tracked per-control in the OSCAL SSP (`control-origination` props).
+
+**POAM-022 (API Gateway no authorizer):** An API Gateway HTTP API fronts the app
+Lambda and its `$default` route specifies no authorizer (Checkov CKV_AWS_309).
+This is deliberate: access control is enforced in the Lambda via HTTP Basic Auth,
+and a Gateway-level JWT/IAM authorizer would consume the `Authorization` header the
+app needs to read. API Gateway replaces a Lambda Function URL (which this AWS
+account blocks for public access); the Gateway passes the viewer's `Authorization`
+header through unchanged and the app rejects any request lacking a valid
+credential. **Remediation:** if the app later federates to an IdP (see POAM-021), a
+JWT authorizer on the route supersedes this acceptance. Applies only while the app
+is deployed.
+
+**POAM-023 (no brute-force protection):** The Basic Auth endpoint has no account
+lockout (AC-7) and no rate limiting / WAF (SC-5) in front of it, so credential
+guessing is not throttled. Surfaced by the `software-security` review. Risk
+adjusted Moderate → Low: the system is FIPS-199 Low with no PII/federal data, the
+credential is a high-entropy operator-set secret compared in constant time, and a
+single shared credential is the only valid pair (no user enumeration). **Remediation:**
+attach AWS WAF with a rate-based rule to the CloudFront distribution, or add an
+API Gateway usage-plan throttle; deferred on cost (~$120/yr WAF, consistent with
+POAM-007). Applies only while the app is deployed.
+
+**POAM-024 (API Gateway access logging not enabled):** The HTTP API stage does not
+emit access logs (Checkov CKV_AWS_76). HTTP API access logging requires a CloudWatch
+Logs delivery resource-policy that this deployment does not yet provision; the
+Lambda's own execution log group (`/aws/lambda/samaydlette-com-silk-reeling`) and
+CloudFront access logs provide request-level coverage in the interim. Risk-adjusted
+Low (operational observability, not an access-control gap). **Remediation:** add the
+delivery resource-policy and a stage `access_log_settings` block. Applies only while
+the app is deployed.
 
 **Standard fields for all of POAM-003 through POAM-018:**
 

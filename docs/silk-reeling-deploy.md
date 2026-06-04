@@ -1,28 +1,36 @@
-# Silk Reeling Mirror — deployment branch (DRAFT)
+# Silk Reeling Mirror — deployment
 
-Branch `deploy/silk-reeling-mirror`. **Not applied, not pushed.** This documents
-what the branch adds, how to exercise the compliance pipeline against it, the
-findings to expect, and the POA&M responses to apply *after* you've seen the scan.
+The gated app deploys with the site (`create_silk_reeling = true`). This documents
+what it adds, how the compliance pipeline evaluates it, the findings, and the POA&M
+responses.
 
-## What this branch adds (infrastructure only)
+## What it adds (infrastructure)
 
 - `infrastructure/silk-reeling.tf` — the gated app:
   - App **Lambda** (Python zip — browser does the ML, so no OpenCV/MediaPipe).
-  - **Function URL** with `authorization_type = AWS_IAM` (no public invoke).
+  - **API Gateway HTTP API** (`$default` route/stage, AWS_PROXY integration) in
+    front of the Lambda. **No Gateway authorizer** — the app's Basic Auth gates
+    every request and must read the `Authorization` header itself (POAM-022). This
+    replaces a Lambda **Function URL**, which this AWS account blocks for public
+    access.
   - **Least-priv IAM** role/policy (logs + `GetSecretValue` on two ARNs + `kms:Decrypt` on one key).
-  - Explicit **CloudWatch log group** (retention + tags).
+  - Explicit **CloudWatch log group** (retention + tags) for the Lambda.
   - Customer-managed **KMS key** (rotation enabled) + two **Secrets Manager** secrets (basic-auth, Anthropic key).
-  - `aws_lambda_permission` letting only the site's CloudFront distribution invoke the Function URL.
+  - `aws_lambda_permission` letting **API Gateway** (`apigateway.amazonaws.com`) invoke the Lambda.
 - `variables.tf` — `create_silk_reeling` (default **false**), `silk_reeling_package_path`, `silk_reeling_max_concurrency`.
-- `outputs.tf` — Function URL, secret ARNs (for out-of-band value injection), manual CloudFront wiring pointer.
+- `outputs.tf` — API Gateway endpoint, secret ARNs (for out-of-band value injection), manual CloudFront wiring pointer.
 
 All gated by `create_silk_reeling = false` → inert until explicitly enabled.
 
 ## Security model
 
-- **Two-layer access control:** CloudFront OAC (SigV4) → AWS_IAM Function URL (direct public calls denied) **and** in-app HTTP Basic Auth (constant-time compare).
-- **Secrets in Secrets Manager** (CMK-encrypted), read via least-priv IAM. **Values injected out-of-band** (`put-secret-value` in CI from a GitHub secret) — plaintext never enters Terraform state. This config creates only the secret containers (+ a `SET_OUT_OF_BAND` placeholder with `ignore_changes`).
-- **Reserved concurrency** caps blast radius/cost.
+- **Single-layer, app-enforced access control:** the API Gateway HTTP API has no
+  authorizer and passes the viewer's `Authorization` header through unchanged; the
+  in-Lambda HTTP Basic Auth (constant-time compare) gates every request, regardless
+  of how the endpoint is reached. A Gateway JWT/IAM authorizer is incompatible with
+  Basic Auth (both use the `Authorization` header), so it is consciously omitted
+  (POAM-022). Brute-force throttling (WAF/rate-limit) is not yet in place (POAM-023).
+- **Secrets in Secrets Manager** (CMK-encrypted), read via least-priv IAM. **Values injected out-of-band** (`put-secret-value` in CI from a GitHub secret) — plaintext never enters Terraform state. This config creates only the secret containers; values are seeded post-apply.
 
 ## Exercise the compliance pipeline (the test)
 
@@ -42,10 +50,11 @@ new resources, and review the generated VDR.
 | ----- | ------ | --- |
 | CKV_AWS_115 (Lambda concurrency) | **pass** | reserved concurrency is set (doesn't lean on POAM-012) |
 | CKV_AWS_116/117/173/50/272 (Lambda DLQ/VPC/env-CMK/X-Ray/signing) | suppressed | global skip-check IDs already in `.checkov.yaml` (POAM-010..015) |
-| CKV_AWS_258 (Function URL auth ≠ None) | **pass** | Function URL is `AWS_IAM` |
 | CKV_AWS_149 (Secrets Manager CMK) | **pass** | CMK set |
 | CKV_AWS_7 (KMS rotation) | **pass** | `enable_key_rotation = true` |
-| **CKV2_AWS_57 (Secrets Manager rotation)** | **NEW finding** | no auto-rotation → see POAM-019 |
+| **CKV2_AWS_57 (Secrets Manager rotation)** | suppressed | no auto-rotation → POAM-019 |
+| **CKV_AWS_309 (API GatewayV2 route authorizer)** | suppressed | no authorizer by design → POAM-022 |
+| **CKV_AWS_76 (API Gateway access logging)** | suppressed | access logging deferred → POAM-024 |
 
 > ⚠️ **Gap worth your attention:** the global `CKV_AWS_117` suppression (POAM-010)
 > was written for the daily compliance Lambda with the rationale *"no internet
@@ -126,7 +135,7 @@ service call.
 1. **App refactor** (silk_reeling_mirror repo, see its `docs/DEPLOY.md`): lazy `pose_extractor`, stateless single-request `/analyze` returning analysis+feedback, Mangum handler (`lambda_handler.handler`), CORS lock, browser loads the model from a static URL.
 2. **CI build**: package the Lambda zip → `silk_reeling_package_path`; build the frontend → S3 under `/silk-reeling/`.
 3. **Inject secret values** out-of-band from GitHub secrets.
-4. **Manual CloudFront wiring**: OAC + origin (Function URL) + `/silk-reeling/*` behavior (CachingDisabled, forward `Authorization`).
+4. **Manual CloudFront wiring**: origin = the API Gateway endpoint host + `/silk-reeling/*` behavior (CachingDisabled, forward `Authorization`, attach the prefix-strip viewer-request function). No OAC — the app's Basic Auth is the gate.
 5. **Grant the CI IAM principal** lambda/iam/secretsmanager/kms permissions (mirrors the `create_response_headers_policy` pattern).
 
 ## Boundary

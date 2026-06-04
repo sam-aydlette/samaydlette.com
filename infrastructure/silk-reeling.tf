@@ -8,11 +8,11 @@
 #
 # Access control:
 #   App-layer HTTP Basic Auth inside the Lambda (operator-set username/password,
-#   constant-time compare) gates EVERY request — the Function URL is authType
-#   NONE (public) but the app rejects anything without valid credentials, so the
-#   URL is fully gated regardless of how it is reached. (OAC/AWS_IAM can't be
-#   combined with Basic Auth: OAC signs in the `Authorization` header, colliding
-#   with the Basic credential. CKV_AWS_258 accepted in POAM-022.) The CloudFront
+#   constant-time compare) gates EVERY request. An API Gateway HTTP API (no
+#   authorizer) fronts the Lambda and passes the viewer's Authorization header
+#   through unchanged; the app rejects anything without valid credentials.
+#   (API Gateway replaces a Lambda Function URL, which this account blocks for
+#   public access. No-authorizer is accepted in POAM-022.) The CloudFront
 #   distribution (managed OUTSIDE this config) fronts it for the /silk-reeling/*
 #   path, no-cache, forwarding `Authorization`, with a prefix-strip function —
 #   manual wiring in outputs.tf. Basic Auth is a customer-responsibility control
@@ -227,15 +227,56 @@ resource "aws_lambda_function" "silk_reeling" {
 }
 
 # -----------------------------------------------------------------------------
-# Function URL — authType NONE. Access control is enforced at the APPLICATION
-# layer (in-app HTTP Basic Auth): the app rejects any request lacking valid
-# credentials, regardless of how the URL is reached. AWS_IAM + CloudFront OAC is
-# NOT usable here because OAC signs requests in the `Authorization` header — the
-# same header Basic Auth uses — so the two collide. The public URL is therefore
-# still fully gated by the app. CKV_AWS_258 is accepted in POAM-022.
+# API Gateway HTTP API in front of the Lambda (replaces the Function URL, which
+# this account blocks for public/NONE access). Access control is enforced at the
+# APPLICATION layer (in-app HTTP Basic Auth): the API has NO authorizer, the
+# viewer's Authorization header passes through unchanged, and the app rejects
+# any request lacking valid credentials. CloudFront fronts it for /silk-reeling/*
+# (no-cache, forward Authorization, prefix-strip). No-authorizer is accepted in
+# POAM-022; brute-force hardening (rate-limit/WAF) is POAM-023.
 # -----------------------------------------------------------------------------
-resource "aws_lambda_function_url" "silk_reeling" {
-  count              = local.silk_create
-  function_name      = aws_lambda_function.silk_reeling[0].function_name
-  authorization_type = "NONE"
+resource "aws_apigatewayv2_api" "silk_reeling" {
+  count         = local.silk_create
+  name          = local.silk_name
+  protocol_type = "HTTP"
+
+  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api" })
+}
+
+resource "aws_apigatewayv2_integration" "silk_reeling" {
+  count                  = local.silk_create
+  api_id                 = aws_apigatewayv2_api.silk_reeling[0].id
+  integration_type       = "AWS_PROXY"
+  integration_uri        = aws_lambda_function.silk_reeling[0].invoke_arn
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+}
+
+resource "aws_apigatewayv2_route" "silk_reeling" {
+  count     = local.silk_create
+  api_id    = aws_apigatewayv2_api.silk_reeling[0].id
+  route_key = "$default"
+  target    = "integrations/${aws_apigatewayv2_integration.silk_reeling[0].id}"
+}
+
+resource "aws_apigatewayv2_stage" "silk_reeling" {
+  count       = local.silk_create
+  api_id      = aws_apigatewayv2_api.silk_reeling[0].id
+  name        = "$default"
+  auto_deploy = true
+
+  # Access logging deferred (POAM-024): HTTP API access logs need a CloudWatch
+  # Logs delivery resource-policy; Lambda execution logs + CloudFront logs give
+  # partial coverage until then.
+
+  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api-stage" })
+}
+
+resource "aws_lambda_permission" "silk_reeling_apigw" {
+  count         = local.silk_create
+  statement_id  = "AllowApiGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.silk_reeling[0].function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.silk_reeling[0].execution_arn}/*/*"
 }

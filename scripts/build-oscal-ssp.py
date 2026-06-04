@@ -2295,8 +2295,10 @@ def build_system_characteristics(signal):
         sc["data-flow"] = {
             "description": (
                 "Browser captures pose landmarks client-side and POSTs them to "
-                "the Silk Reeling app Lambda over TLS (CloudFront origin, "
-                "AWS_IAM-signed). The Lambda computes movement deviations locally "
+                "the Silk Reeling app Lambda over TLS (CloudFront → API Gateway "
+                "HTTP API → Lambda; the app's in-Lambda HTTP Basic Auth gates "
+                "every request, no Gateway authorizer per POAM-022). The Lambda "
+                "computes movement deviations locally "
                 "and sends ONLY a derived summary (per-joint angle deviations, "
                 "similarity scores, hotspots, exercise identifier) to the "
                 "Anthropic API over TLS for natural-language feedback. No video, "

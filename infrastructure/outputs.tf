@@ -194,10 +194,10 @@ output "compliance_features" {
 # SILK REELING MIRROR (gated app)
 # =============================================================================
 
-# The Function URL that the CloudFront /silk-reeling/* behavior must point at.
-output "silk_reeling_function_url" {
-  description = "Function URL for the gated app Lambda (CloudFront origin)"
-  value       = var.create_silk_reeling ? aws_lambda_function_url.silk_reeling[0].function_url : "Not created (set create_silk_reeling = true)"
+# The API Gateway endpoint the CloudFront /silk-reeling/* behavior must point at.
+output "silk_reeling_api_endpoint" {
+  description = "API Gateway HTTP API endpoint for the gated app (CloudFront origin)"
+  value       = var.create_silk_reeling ? aws_apigatewayv2_api.silk_reeling[0].api_endpoint : "Not created (set create_silk_reeling = true)"
 }
 
 # Secret ARNs whose VALUES must be set OUT OF BAND — never store values in
@@ -214,17 +214,16 @@ output "silk_reeling_secret_arns" {
 
 # Manual CloudFront wiring (post-deploy). The distribution is managed outside
 # this config, so add the behavior by hand (same pattern as the response-headers
-# policy). The Function URL is authType NONE — the app's Basic Auth is the gate —
-# so NO OAC:
+# policy). The app's Basic Auth is the gate; the API has no authorizer:
 #   1. Publish the CloudFront Function infrastructure/cloudfront/silk-reeling-
 #      strip-prefix.js (event type: viewer-request).
-#   2. Add an origin = the Function URL host (the value above, sans https:// and
-#      trailing slash); custom origin, https-only.
+#   2. Add an origin = the API Gateway endpoint HOST (the value above, sans
+#      https:// and trailing slash); custom origin, https-only.
 #   3. Add a cache behavior: path pattern "/silk-reeling/*" -> that origin,
 #      cache policy = Managed-CachingDisabled, an origin-request policy that
 #      FORWARDS the Authorization header, viewer-protocol-policy =
 #      redirect-to-https, and associate the strip-prefix function (viewer-request).
 output "silk_reeling_cloudfront_setup" {
   description = "Pointer to the manual CloudFront wiring for /silk-reeling/*"
-  value       = var.create_silk_reeling ? "Function URL is authType NONE (app Basic Auth gates it). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (Function URL) + /silk-reeling/* behavior (CachingDisabled, forward Authorization, attach the function)." : "Not created"
+  value       = var.create_silk_reeling ? "API Gateway HTTP API (no authorizer; app Basic Auth gates it). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (API endpoint host) + /silk-reeling/* behavior (CachingDisabled, forward Authorization, attach the function)." : "Not created"
 }
