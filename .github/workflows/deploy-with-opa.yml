@@ -767,7 +767,7 @@ jobs:
         KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
         if curl -sfL --retry 3 --retry-delay 2 -o kev-catalog.json "$KEV_URL" \
             && jq -e '.vulnerabilities | length > 0' kev-catalog.json >/dev/null 2>&1; then
-          echo "CISA KEV catalog fetched: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length') CVEs."
+          echo "CISA KEV catalog fetched: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length' kev-catalog.json) CVEs."
         else
           echo "::warning::Could not fetch a valid CISA KEV catalog; proceeding with an empty catalog (no KEV flagging this run)."
           echo '{"vulnerabilities":[]}' > kev-catalog.json
