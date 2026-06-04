@@ -757,6 +757,22 @@ jobs:
           echo '{"findings":[]}' > previous-vdr-report.json
         fi
 
+    # Fetch the live CISA KEV catalog so the VDR builder can flag any finding
+    # whose CVE is a Known Exploited Vulnerability (these block the build). If
+    # CISA is unreachable (transient), fall back to an empty catalog — ingest_kev
+    # treats a missing/empty file as "no KEVs", so the build still completes.
+    - name: Fetch CISA KEV catalog
+      working-directory: infrastructure
+      run: |
+        KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+        if curl -sfL --retry 3 --retry-delay 2 -o kev-catalog.json "$KEV_URL" \
+            && jq -e '.vulnerabilities | length > 0' kev-catalog.json >/dev/null 2>&1; then
+          echo "CISA KEV catalog fetched: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length') CVEs."
+        else
+          echo "::warning::Could not fetch a valid CISA KEV catalog; proceeding with an empty catalog (no KEV flagging this run)."
+          echo '{"vulnerabilities":[]}' > kev-catalog.json
+        fi
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -767,6 +783,7 @@ jobs:
           --tfsec tfsec-results.json \
           --checkov-yaml ../.checkov.yaml \
           --previous-vdr previous-vdr-report.json \
+          --kev kev-catalog.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
