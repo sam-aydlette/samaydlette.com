@@ -116,29 +116,10 @@ resource "aws_secretsmanager_secret" "silk_anthropic" {
   tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-anthropic" })
 }
 
-# Placeholder versions so the secrets are non-empty. Real values are injected
-# out-of-band (`aws secretsmanager put-secret-value ...` in CI from a GitHub
-# secret); ignore_changes keeps that real value from drifting and keeps
-# plaintext out of Terraform state/config.
-resource "aws_secretsmanager_secret_version" "silk_basic_auth" {
-  count         = local.silk_create
-  secret_id     = aws_secretsmanager_secret.silk_basic_auth[0].id
-  secret_string = "SET_OUT_OF_BAND"
-
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
-}
-
-resource "aws_secretsmanager_secret_version" "silk_anthropic" {
-  count         = local.silk_create
-  secret_id     = aws_secretsmanager_secret.silk_anthropic[0].id
-  secret_string = "SET_OUT_OF_BAND"
-
-  lifecycle {
-    ignore_changes = [secret_string]
-  }
-}
+# Secret VALUES are injected out-of-band by the deploy's "Seed Silk Reeling
+# secrets" step (`aws secretsmanager put-secret-value` from GitHub secrets).
+# Terraform manages only the secret containers — it never sees or sets the
+# value, so a re-deploy can't clobber the seeded credential.
 
 # -----------------------------------------------------------------------------
 # IAM role for the app Lambda — least privilege.

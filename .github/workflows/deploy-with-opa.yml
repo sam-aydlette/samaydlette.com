@@ -484,6 +484,38 @@ jobs:
         ( cd _pkg && zip -qr ../silk-reeling.zip . )
         echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"
 
+    # -------------------------------------------------------------------------
+    # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
+    # persisted across runs, so adopt any already-created silk-reeling resources
+    # into state before plan/apply (mirrors "Import Existing Resources" above).
+    # -------------------------------------------------------------------------
+    - name: Import Silk Reeling resources (if needed)
+      working-directory: infrastructure
+      run: |
+        import_silk() {
+          if terraform state show "$1" >/dev/null 2>&1; then echo "in state: $1"; return; fi
+          echo "importing: $1"; terraform import "$1" "$2" || echo "import skipped: $1"
+        }
+        KEY_ID=$(aws kms describe-key --key-id alias/samaydlette-com-silk-reeling --query 'KeyMetadata.KeyId' --output text 2>/dev/null || true)
+        if [ -n "$KEY_ID" ] && [ "$KEY_ID" != "None" ]; then
+          import_silk 'aws_kms_key.silk_reeling[0]' "$KEY_ID"
+          import_silk 'aws_kms_alias.silk_reeling[0]' 'alias/samaydlette-com-silk-reeling'
+        fi
+        aws iam get-role --role-name samaydlette-com-silk-reeling-role >/dev/null 2>&1 && \
+          import_silk 'aws_iam_role.silk_reeling[0]' 'samaydlette-com-silk-reeling-role'
+        aws iam get-role-policy --role-name samaydlette-com-silk-reeling-role --policy-name samaydlette-com-silk-reeling-policy >/dev/null 2>&1 && \
+          import_silk 'aws_iam_role_policy.silk_reeling[0]' 'samaydlette-com-silk-reeling-role:samaydlette-com-silk-reeling-policy'
+        aws logs describe-log-groups --log-group-name-prefix /aws/lambda/samaydlette-com-silk-reeling --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q silk-reeling && \
+          import_silk 'aws_cloudwatch_log_group.silk_reeling[0]' '/aws/lambda/samaydlette-com-silk-reeling'
+        aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-basic-auth >/dev/null 2>&1 && \
+          import_silk 'aws_secretsmanager_secret.silk_basic_auth[0]' 'samaydlette-com-silk-reeling-basic-auth'
+        aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-anthropic-api-key >/dev/null 2>&1 && \
+          import_silk 'aws_secretsmanager_secret.silk_anthropic[0]' 'samaydlette-com-silk-reeling-anthropic-api-key'
+        aws lambda get-function --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
+          import_silk 'aws_lambda_function.silk_reeling[0]' 'samaydlette-com-silk-reeling'
+        aws lambda get-function-url-config --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
+          import_silk 'aws_lambda_function_url.silk_reeling[0]' 'samaydlette-com-silk-reeling'
+
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -out=tfplan
