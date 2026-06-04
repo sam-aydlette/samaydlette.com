@@ -250,6 +250,9 @@ jobs:
       # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
       # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
       id-token: write
+      # security-events: read lets the GITHUB_TOKEN list this repo's Dependabot
+      # alerts (the CVE-bearing SCA findings the VDR builder matches against KEV).
+      security-events: read
     needs: [compliance-check, security-scan]
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
@@ -757,6 +760,26 @@ jobs:
           echo '{"findings":[]}' > previous-vdr-report.json
         fi
 
+    # Fetch this repo's Dependabot alerts — the SCA / CVE-bearing findings the
+    # VDR builder cross-references against the CISA KEV catalog. Without these,
+    # KEV matching has nothing to act on (IaC scanners emit no CVEs). Non-blocking:
+    # if Dependabot is disabled or the token lacks access, fall back to an empty
+    # list (ingest_dependabot treats [] as "no SCA findings").
+    - name: Fetch Dependabot alerts (SCA / CVE source)
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
+            > dependabot-alerts.json 2>/dev/null \
+            && jq -e 'type == "array"' dependabot-alerts.json >/dev/null 2>&1; then
+          echo "Dependabot alerts fetched: $(jq 'length' dependabot-alerts.json) open ($(jq '[.[] | select(.security_advisory.cve_id != null)] | length' dependabot-alerts.json) with a CVE)."
+        else
+          echo "::warning::Could not fetch Dependabot alerts (feature disabled or no access); proceeding with an empty SCA set."
+          echo '[]' > dependabot-alerts.json
+        fi
+
     # Fetch the live CISA KEV catalog so the VDR builder can flag any finding
     # whose CVE is a Known Exploited Vulnerability (these block the build). If
     # CISA is unreachable (transient), fall back to an empty catalog — ingest_kev
@@ -783,6 +806,7 @@ jobs:
           --tfsec tfsec-results.json \
           --checkov-yaml ../.checkov.yaml \
           --previous-vdr previous-vdr-report.json \
+          --dependabot dependabot-alerts.json \
           --kev kev-catalog.json \
           --output vdr-report.json
         echo "VDR summary:"
