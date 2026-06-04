@@ -475,7 +475,14 @@ jobs:
         ( cd _silk_src/frontend && npm ci && \
           VITE_API_BASE=/silk-reeling npm run build -- --base=/silk-reeling/ )
         mkdir -p _pkg
-        python3 -m pip install --quiet --target _pkg -r _silk_src/backend/requirements-lambda.txt
+        # Target the Lambda runtime (python3.13 / manylinux x86_64) explicitly so
+        # numpy/pydantic-core C-extension wheels match the runtime ABI regardless
+        # of the runner's own Python (which may differ and would otherwise ship
+        # cp312 .so files into a cp313 runtime -> Runtime.ImportModuleError).
+        python3 -m pip install --quiet --target _pkg \
+          --platform manylinux2014_x86_64 --python-version 3.13 \
+          --implementation cp --only-binary=:all: \
+          -r _silk_src/backend/requirements-lambda.txt
         cp -r _silk_src/backend _pkg/backend
         cp _silk_src/lambda_handler.py _pkg/lambda_handler.py
         cp -r _silk_src/reference_data _pkg/reference_data
