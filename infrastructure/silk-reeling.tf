@@ -203,9 +203,11 @@ resource "aws_lambda_function" "silk_reeling" {
   memory_size      = 1024
   source_code_hash = filebase64sha256(var.silk_reeling_package_path)
 
-  # Cap blast radius / cost of a network-facing endpoint. Passes CKV_AWS_115 on
-  # its own rather than leaning on the global suppression (POAM-012).
-  reserved_concurrent_executions = var.silk_reeling_max_concurrency
+  # Reserved concurrency is NOT set: the account's total concurrency limit is
+  # low, and reserving any would push unreserved below AWS's minimum of 10.
+  # CKV_AWS_115 (no reserved concurrency) is therefore covered by the global
+  # suppression (POAM-012). var.silk_reeling_max_concurrency is retained for when
+  # the account limit is raised.
 
   environment {
     variables = {
