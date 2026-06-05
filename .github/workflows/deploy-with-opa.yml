@@ -1057,6 +1057,10 @@ jobs:
     - name: Run tfsec
       uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
       with:
+        # Authenticate the action's "resolve latest tfsec release" GitHub API
+        # call — anonymous requests get rate-limited on shared runners and the
+        # step then dies with "jq: Cannot iterate over null" before scanning.
+        github_token: ${{ secrets.GITHUB_TOKEN }}
         soft_fail: true
         additional_args: --format json --out tfsec-results.json
 
