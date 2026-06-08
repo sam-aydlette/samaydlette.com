@@ -2214,7 +2214,11 @@ def _silk_reeling_present(signal):
     exist.
     """
     for c in signal.get("components", []):
-        ident = f"{c.get('component_id', '')} {c.get('native_id', '')}".lower()
+        # Normalize separators: the canonical inventory names the function
+        # component `aws::function::silk_reeling` (underscore), while the cloud
+        # resources use `silk-reeling` (hyphen). Match either by folding both to
+        # hyphens before the substring test.
+        ident = f"{c.get('component_id', '')} {c.get('native_id', '')}".lower().replace("_", "-")
         if c.get("type") == "function" and "silk-reeling" in ident:
             return True
     return False

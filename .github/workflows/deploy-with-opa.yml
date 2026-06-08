@@ -532,8 +532,13 @@ jobs:
         # Inventory both ecosystems separately: the installed Python deps live in
         # _pkg (the Lambda zip staging dir); the JS resolved tree is in
         # _silk_src/frontend (package-lock.json present after npm ci above).
-        syft dir:_pkg               -o cyclonedx-json=sbom-python.json || true
-        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     || true
+        # --select-catalogers restricts each scan to the ecosystem we actually
+        # ship, so Syft does NOT catalog build-tool native binaries (e.g.
+        # esbuild's embedded Go runtime under node_modules), which would
+        # otherwise flood the VDR and the inventory with out-of-boundary
+        # golang/stdlib findings that are in neither the Lambda nor the browser.
+        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python     || true
+        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript || true
         # Grype each SBOM. `|| true` so a scan error still leaves a file behind.
         grype sbom:sbom-python.json -o json > grype-python.json || true
         grype sbom:sbom-js.json     -o json > grype-js.json     || true
