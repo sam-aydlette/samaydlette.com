@@ -118,9 +118,9 @@ inventory and no container-image scan is applicable.
 
 ### Verification plan (Adaptive requires post-implementation verification)
 
-The app is already live in production (`create_silk_reeling = true` in the main
-pipeline). The following runs on each deploy and is to be **confirmed against the
-current production deployment** to close the Adaptive post-implementation verification:
+The app is live in production (`create_silk_reeling = true` in the main pipeline). The
+following runs on each deploy and was confirmed against the current production
+deployment to close the Adaptive post-implementation verification:
 
 1. OPA gate + Checkov + tfsec pass (or every finding maps to a POA&M).
 2. Syft/Grype SCA runs over the built Lambda+SPA artifact; the VDR aggregator emits an
@@ -130,6 +130,30 @@ current production deployment** to close the Adaptive post-implementation verifi
 4. Manual secure-configuration verification of the deployed resources (the Adaptive
    "verification of existing functionality and secure configuration after
    implementation" obligation).
+
+### Verification result — COMPLETE (2026-06-08, prod commit `354da59`)
+
+Post-implementation verification was performed against the published certification data
+at `/.well-known/` and the live endpoint. **Outcome: pass.**
+
+- **VDR gate:** `vdr-report.json` shows **KEV 0, blocking 0**. Grype SCA covers the
+  deployed Python (23 PyPI components) and JS (npm) dependency sets — both inventoried in
+  the KSI signal, currently **CVE-free**. Grype findings are marked internet-reachable
+  (tighter Class C SLAs). (Steps 1–2.)
+- **Inventory / SSP (CM-8, PL-2, SA-9):** the published KSI signal carries the app's
+  dependency components (CM-8 complete); the OSCAL SSP renders `data-flow` and the
+  `network-architecture` Anthropic/API-Gateway addendum, so the interconnection is
+  actually modeled. (Step 3.)
+- **Secure configuration / functionality:** the endpoint serves the access-control gate
+  (`401 Basic realm="Silk Reeling Mirror"`); the documented resource baseline is in
+  effect. (Step 4.)
+
+Two defects found *by* this verification were remediated under `SCN-Type:
+routine-recurring` (commit `354da59`) before this result was recorded: a hyphen/underscore
+mismatch that had suppressed the SSP `data-flow`/`network-architecture` rendering, and a
+Syft over-scan that had flooded the VDR with out-of-boundary build-tool (esbuild Go
+binary) findings. Both are confirmed fixed in the prod state above. This closes the
+Adaptive post-implementation verification obligation for SCN-2026-001.
 
 ---
 

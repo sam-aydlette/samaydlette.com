@@ -35,4 +35,4 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
 
 | SCN ID | Type | Change | Status |
 | --- | --- | --- | --- |
-| [SCN-2026-001](SCN-2026-001-silk-reeling.md) | Adaptive | "Silk Reeling Mirror" gated app | Implemented (live in prod since 2026-06-03) |
+| [SCN-2026-001](SCN-2026-001-silk-reeling.md) | Adaptive | "Silk Reeling Mirror" gated app | Implemented + post-impl. verified 2026-06-08 (live since 2026-06-03) |
