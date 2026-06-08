@@ -39,9 +39,40 @@ For this system, "top-level administrative accounts" map to two real-world accou
 
 **Decommissioning.** If the operator transfers stewardship, repository ownership is transferred per GitHub's transfer flow. Encrypted secrets are rotated before transfer; AWS access keys held in those secrets are deleted on the AWS side immediately after.
 
+## 3. Silk Reeling Mirror app (operator-configured security settings)
+
+Active in production (`create_silk_reeling = true` in the main deploy pipeline; live
+since 2026-06-03). The app adds one operator-configured security setting and a fixed
+secure-by-default resource baseline. Introduced under
+[SCN-2026-001](../scn/SCN-2026-001-silk-reeling.md).
+
+**Operator-set Basic Auth credential (the one configurable security setting).** Access
+to the app is gated by a single HTTP Basic Auth credential the operator sets, stored in
+Secrets Manager and CMK-encrypted. It is the access-control setting for the app
+(POAM-021; single-factor, shared, no MFA, no lockout — risk-accepted operational item).
+
+- **Set / rotate securely.** The secret *value* is injected out of band — never via Terraform (Terraform manages only the secret container, so plaintext never enters state). Set or rotate it with `aws secretsmanager put-secret-value` from the CI-held GitHub secret; use a long, random password. Rotate on the same 90-day cadence as the deployer key (and immediately on suspected compromise), logging the rotation in [`docs/security-review.md`](../security-review.md). Automatic rotation is not configured (POAM-019).
+- **Recommended upgrade.** SAML/OIDC federation to an identity provider is the stronger control (POAM-021); not implemented (no IdP).
+
+**Fixed secure-by-default baseline (not operator-tunable, recorded here for the SCG inventory).**
+
+- **KMS CMK** with key rotation enabled; an explicit least-privilege key policy (account root-enable + Secrets-Manager-via-service condition only).
+- **Secrets Manager** secrets (basic-auth credential, Anthropic API key) CMK-encrypted; read at runtime via least-privilege IAM (`GetSecretValue` on exactly the two ARNs, `kms:Decrypt` on the one key).
+- **Lambda** runs with that least-privilege role; non-sensitive config only in environment variables (secret ARNs, never values); CORS locked to the site origin; constant-time credential compare.
+- **API Gateway HTTP API** has no authorizer by design (app-layer Basic Auth is the gate, POAM-022); TLS-only; access logging deferred (POAM-024).
+- **Egress** is a single documented path: TLS to the Anthropic API (SA-9/CA-3, POAM-020).
+- **Logs** go to an explicit CloudWatch log group with managed retention.
+
 ## What this guide does NOT cover
 
-This system has no customer-configurable surface. There are no agency-customer accounts, no per-tenant settings, no provisioning APIs. The "customer" experience is the public read of the static site — there is nothing to configure. Therefore the standard SCG content about agency-customer security settings (`SCG-CSO-RSC` items 2 and 3 — settings operated by top-level administrative accounts on behalf of customers, and settings operated by privileged accounts) is not-applicable as scoped.
+Apart from the operator-set app credential in section 3, this system has no
+customer-configurable surface. There are no agency-customer accounts, no per-tenant
+settings, no provisioning APIs. The "customer" experience is the public read of the
+static site plus the single-credential gated app — there is otherwise nothing to
+configure. The standard SCG content about agency-customer security settings
+(`SCG-CSO-RSC` items 2 and 3 — settings operated by top-level administrative accounts on
+behalf of customers, and settings operated by privileged accounts) is not-applicable as
+scoped.
 
 ## Enhanced capabilities (`SCG-ENH-*`)
 

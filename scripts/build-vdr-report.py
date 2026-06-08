@@ -15,6 +15,10 @@
 # Inputs (all optional — script handles missing/empty inputs gracefully):
 #   --opa PATH                Output of scripts/terraform-plan.sh (OPA results)
 #   --dependabot PATH         Dependabot alerts in GitHub API JSON form
+#   --grype PATH              Grype SCA scan output (`grype -o json`); the
+#                             Software Composition Analysis source for the Silk
+#                             Reeling app's Python (Lambda) and JS (SPA)
+#                             dependency trees that Dependabot does not watch.
 #   --checkov PATH            Checkov SARIF or JSON output
 #   --tfsec PATH              tfsec JSON output
 #   --kev PATH                CISA KEV catalog JSON (cisa.gov format)
@@ -181,15 +185,20 @@ SEVERITY_TO_PAIN = {
 }
 
 # Treats this system's components as not internet-reachable by default. The
-# only internet-facing surface is CloudFront serving static content; the
-# Lambda is not internet-reachable (only invokable via EventBridge). Findings
-# tied to CloudFront / S3 / static content are upgraded to IRV true.
+# internet-facing surfaces are (1) CloudFront serving static content and (2) the
+# public Silk Reeling API Gateway HTTP API fronting its app Lambda. The internal
+# compliance Lambda is NOT internet-reachable (only invokable via EventBridge).
+# Findings tied to CloudFront / S3 / static content or the Silk Reeling public
+# app are upgraded to IRV true; Grype SCA findings additionally carry an explicit
+# internet_reachable=True (see ingest_grype) since they ride that public Lambda.
 INTERNET_REACHABLE_RESOURCE_HINTS = (
     "cloudfront",
     "aws_s3_bucket_policy",
     "aws_s3_bucket_public_access",
     "html_artifact",
     "public_access",
+    "silk-reeling",
+    "apigatewayv2",
 )
 
 
@@ -363,6 +372,61 @@ def ingest_dependabot(path):
     return findings
 
 
+def ingest_grype(path):
+    """Load Grype scan output (`grype ... -o json`).
+
+    Grype is the Software Composition Analysis source for the Silk Reeling app's
+    Python (Lambda) and JS (SPA) dependency trees, which Dependabot does not
+    watch. Like Dependabot, every match is a CVE/GHSA-bearing component finding,
+    so this mirrors ingest_dependabot's shape exactly: severity is carried as an
+    uppercased string and PAIN is assigned downstream by assign_pain via
+    SEVERITY_TO_PAIN (Critical -> N4, High -> N3, identical to Dependabot). The
+    CVE id is preserved in the `cve` field so build_report's KEV cross-reference
+    finds it, and the component identifier prefers the PURL.
+    """
+    if not path or not Path(path).exists():
+        return []
+    try:
+        doc = json.loads(Path(path).read_text())
+    except json.JSONDecodeError:
+        return []
+    findings = []
+    for m in doc.get("matches") or []:
+        vuln = m.get("vulnerability") or {}
+        art = m.get("artifact") or {}
+        vid = vuln.get("id") or "grype"
+        # Grype severities (Critical/High/Medium/Low/Negligible/Unknown) onto the
+        # vocabulary SEVERITY_TO_PAIN understands: Negligible -> LOW (N1),
+        # Unknown -> MEDIUM (assign_pain's default tier). Critical/High pass
+        # through unchanged so they land at the same N-rating Dependabot uses.
+        sev = (vuln.get("severity") or "MEDIUM").upper()
+        sev = {"NEGLIGIBLE": "LOW", "UNKNOWN": "MEDIUM"}.get(sev, sev)
+        name = art.get("name") or ""
+        version = art.get("version") or ""
+        # Component identifier: PURL when Grype resolved one (e.g.
+        # pkg:pypi/numpy@x / pkg:npm/...), else name@version.
+        component = art.get("purl") or f"{name}@{version}"
+        # KEV matching reads `cve`; only a CVE id can match the CISA catalog, so
+        # carry the id there when it is a CVE (GHSA-only matches stay None).
+        cve = vid if str(vid).upper().startswith("CVE-") else None
+        findings.append({
+            "source": "grype",
+            "tool_id": vid,
+            "tracking_id": f"grype-{vid}-{component}",
+            "title": f"{vid} in {name}",
+            "description": vuln.get("dataSource", ""),
+            "severity": sev,
+            "resource": component,
+            "cve": cve,
+            # The Silk Reeling app Lambda is internet-reachable (public API
+            # Gateway), so its dependency vulnerabilities are IRV per
+            # VDR-EVA-EIR. This explicit flag overrides the hostname-hint
+            # heuristic and pulls these findings onto the tighter Class C SLAs.
+            "internet_reachable": True,
+        })
+    return findings
+
+
 def ingest_kev(path):
     """Load CISA KEV catalog and return the set of CVE IDs."""
     if not path or not Path(path).exists():
@@ -406,10 +470,16 @@ def ingest_previous_ledger(path):
 def is_internet_reachable(finding):
     """VDR-EVA-EIR: heuristic for internet-reachable vulnerability.
 
-    Conservative: any finding whose resource hint matches the system's
-    internet-facing surface (CloudFront, public S3 paths, public HTML
-    artifacts) is IRV. Findings on the Lambda/IAM/EventBridge are NIRV.
+    A finding may carry an explicit `internet_reachable` boolean (e.g. Grype SCA
+    findings, which ride the publicly-invokable Silk Reeling app Lambda behind
+    API Gateway); that explicit determination wins. Otherwise, any finding whose
+    resource hint matches the system's internet-facing surface (CloudFront,
+    public S3 paths, public HTML artifacts, the public Silk Reeling app) is IRV.
+    Findings on the internal compliance Lambda / IAM / EventBridge are NIRV.
     """
+    explicit = finding.get("internet_reachable")
+    if isinstance(explicit, bool):
+        return explicit
     haystack = " ".join([
         str(finding.get("resource", "")),
         str(finding.get("description", "")),
@@ -583,6 +653,7 @@ def main():
     parser.add_argument("--checkov", default=None, help="Checkov SARIF or JSON output")
     parser.add_argument("--tfsec", default=None, help="tfsec JSON output")
     parser.add_argument("--dependabot", default=None, help="Dependabot alerts JSON")
+    parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
@@ -594,6 +665,7 @@ def main():
     findings.extend(ingest_checkov(args.checkov))
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
+    findings.extend(ingest_grype(args.grype))
     kev_cves = ingest_kev(args.kev)
     suppressions = ingest_suppressions(args.checkov_yaml)
     ledger = ingest_previous_ledger(args.previous_vdr)

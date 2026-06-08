@@ -130,7 +130,7 @@ If compliance is the goal, Bedrock is the cleaner posture: it converts a
 risk-accepted external interconnection into an in-boundary, FedRAMP-authorized
 service call.
 
-## Prerequisites before `apply` (NOT in this branch)
+## Prerequisites for `apply` (completed during the 2026-06-03 rollout)
 
 1. **App refactor** (silk_reeling_mirror repo, see its `docs/DEPLOY.md`): lazy `pose_extractor`, stateless single-request `/analyze` returning analysis+feedback, Mangum handler (`lambda_handler.handler`), CORS lock, browser loads the model from a static URL.
 2. **CI build**: package the Lambda zip → `silk_reeling_package_path`; build the frontend → S3 under `/silk-reeling/`.
@@ -138,6 +138,12 @@ service call.
 4. **Manual CloudFront wiring**: origin = the API Gateway endpoint host + `/silk-reeling/*` behavior (CachingDisabled, forward `Authorization`, attach the prefix-strip viewer-request function). No OAC — the app's Basic Auth is the gate.
 5. **Grant the CI IAM principal** lambda/iam/secretsmanager/kms permissions (mirrors the `create_response_headers_policy` pattern).
 
-## Boundary
+## Status
 
-Local branch only — not applied, not pushed. Review, run `make plan`, then decide.
+**Deployed and live in production** since 2026-06-03 (PR #82); latest redeploy
+2026-06-06. The prerequisites listed above were completed during that rollout, and the
+production deploy pipeline sets `create_silk_reeling = true`. The change is formally
+recorded as an Adaptive significant change in
+[SCN-2026-001](scn/SCN-2026-001-silk-reeling.md). _(This section previously read "local
+branch only — not applied, not pushed"; that described the original draft proposal and
+is superseded.)_

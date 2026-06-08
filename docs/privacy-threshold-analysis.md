@@ -13,7 +13,11 @@ Per OMB Circular A-130 and NIST SP 800-122, this Privacy Threshold Analysis reco
 The following surfaces of the system were examined for PII handling:
 
 - **Public site content** (`website/**/*.html`): static personal-portfolio content, blog posts, research papers. No PII collected from readers.
-- **Forms / interactive endpoints**: none. The site has no forms, no comment systems, no contact submission forms with input collection, no authentication endpoints, no APIs, and no user accounts of any kind.
+- **Forms / interactive endpoints**: the base site has no forms, no comment systems, no contact submission forms, and no user accounts. The one interactive endpoint is the gated **Silk Reeling Mirror** app (see its dedicated bullet below), added under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md).
+- **Silk Reeling Mirror app** (`infrastructure/silk-reeling.tf`, active in production — `create_silk_reeling = true` in the main deploy pipeline, live since 2026-06-03): a movement-feedback app gated by HTTP Basic Auth.
+  - **Authentication**: a single **operator-set shared credential** (username/password) in Secrets Manager. It is not collected from end users, is not tied to a person, and there are no end-user accounts — so it is operator-administered configuration, not third-party PII.
+  - **Pose input**: the camera feed and pose extraction run **client-side in the browser**; raw video and landmark coordinates never leave the device. Only a **derived deviation summary** (joint-angle metrics, scores, hotspots, exercise id) is sent to the Lambda and on to the Anthropic API over TLS. These derived numeric metrics are not linked to an identity and are not PII; no video, no raw landmarks, and no name/contact data cross the boundary.
+  - **Persistence**: requests are stateless; pose frames are transient and not persisted. No user profile, history, or biometric template is stored.
 - **Analytics**: none. No JavaScript analytics, no tracking pixels, no third-party tracking. CloudFront access logs are excluded for cost.
 - **Cookies**: none set by the site. The only cookies that could touch a reader's browser are AWS-default CloudFront request-routing cookies (no user identification, no persistence beyond request).
 - **Lambda runtime KSI emitter**: processes only AWS configuration metadata (S3 bucket configuration, CloudFront distribution settings). No PII inputs, no PII outputs.
@@ -44,6 +48,7 @@ Per the FedRAMP 20x Significant Change Notifications rule, any change that intro
 | System | samaydlette.com |
 | Determination | No PII processed |
 | Determination date | 2026-05-08 |
+| Re-determined | 2026-06-07 — re-determination under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md) (Silk Reeling Mirror app). Determination unchanged: **no PII processed.** Pose video is processed client-side and never leaves the device; only derived non-PII metrics cross the boundary; the app credential is an operator-set shared secret, not third-party PII. No PIA triggered. |
 | Reviewer | Sam Aydlette (operator) |
 | Next review | 2027-05-08 (annual), or upon SCN trigger |
 | Full PIA required | No |

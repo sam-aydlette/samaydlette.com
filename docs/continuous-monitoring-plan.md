@@ -8,13 +8,15 @@ This Continuous Monitoring Plan (CMP) describes the strategy and mechanisms by w
 
 The full system as defined in the [authorization boundary](../website/research/authorization-boundary.html), including all components inside the boundary (Cloud Service Offering internals, leveraged AWS services, and external services without FedRAMP ATO that are in boundary per Rule of Thumb #2).
 
+The Silk Reeling Mirror app is **active in production** (`create_silk_reeling = true` in the main deploy pipeline; live since 2026-06-03), so the scope includes its components — the app Lambda (Python 3.13 ZIP), the API Gateway HTTP API, the customer-managed KMS key and Secrets Manager secrets, and the **external Anthropic API interconnection** (non-FedRAMP-authorized, in boundary per SA-9/CA-3, POAM-020). These were introduced under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md) (Adaptive). Their dependency ecosystems (PyPI, the SPA's npm tree) are monitored by mechanism 2 via the Syft+Grype SCA source.
+
 ## Monitoring Mechanisms
 
 Four mechanisms operate concurrently:
 
 **1. Deploy-time policy gate (per pull request).** Every PR triggers the OPA compliance gate (`infrastructure/policies.rego` evaluated by `scripts/terraform-plan.sh`). The gate evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego rules. PR cannot merge if the gate fails. Frequency: per PR.
 
-**2. Build-time vulnerability evaluation (per deploy).** Every deploy runs the VDR aggregator (`scripts/build-vdr-report.py`) which ingests OPA gate output, Checkov SARIF, tfsec JSON, Dependabot alerts, and the CISA KEV catalog. Findings are classified per FedRAMP 20x VDR-EVA-* (PAIN N1-N5, IRV, LEV, KEV) and emitted as `/.well-known/vdr-report.json`. The build is the report. Build blocks if any finding exceeds Class C tolerance. Frequency: per deploy (which exceeds VDR-TFR-MHR's monthly minimum).
+**2. Build-time vulnerability evaluation (per deploy).** Every deploy runs the VDR aggregator (`scripts/build-vdr-report.py`) which ingests OPA gate output, Checkov SARIF, tfsec JSON, Dependabot alerts, Grype SCA output (Syft SBOM → Grype, over the built Silk Reeling Lambda + SPA artifact — the detection source for the app's PyPI and client-JS dependencies), and the CISA KEV catalog. Findings are classified per FedRAMP 20x VDR-EVA-* (PAIN N1-N5, IRV, LEV, KEV) and emitted as `/.well-known/vdr-report.json`. The build is the report. Build blocks if any finding exceeds Class C tolerance. Frequency: per deploy (which exceeds VDR-TFR-MHR's monthly minimum).
 
 **3. Runtime configuration revalidation (daily).** An AWS Lambda (`infrastructure/lambda/index.js`) runs daily on an EventBridge schedule. It loads the same `policy.wasm` compiled at deploy time (so deploy-time and runtime evaluate identical compiled bytes), queries the live AWS configuration of every cloud component named in the canonical inventory, and re-evaluates each policy. Results are published as `/.well-known/ksi-signal-runtime.json`. Drift between the deploy-time signal and the runtime signal is the externally-visible drift detector. Frequency: daily.
 

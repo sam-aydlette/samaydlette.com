@@ -20,6 +20,13 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  schedule:
+    # Daily redeploy so the Silk Reeling SCA (Syft + Grype) re-runs against a
+    # freshly-pulled Grype vulnerability DB. This gives continuous vulnerability
+    # detection (RA-5 / VDR-CSO-DET) for the deployed Python/JS dependency set —
+    # catching CVEs newly disclosed against unchanged, already-deployed
+    # dependencies, not just at code-change time. ~07:17 UTC daily.
+    - cron: '17 7 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -45,6 +52,12 @@ env:
   # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
   OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986
   NODE_VERSION: 22
+  # Anchore Syft (SBOM) + Grype (SCA) for the Silk Reeling dependency scan. The
+  # tool version and the install.sh fetched to install it are pinned to the same
+  # git tag so the toolchain is reproducible. Refresh both together; source:
+  # https://github.com/anchore/syft/releases and https://github.com/anchore/grype/releases
+  SYFT_VERSION: v1.45.1
+  GRYPE_VERSION: v0.114.0
 
 # =============================================================================
 # WHAT THIS WORKFLOW CAN DO
@@ -495,6 +508,47 @@ jobs:
         echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"
 
     # -------------------------------------------------------------------------
+    # SCAN SILK REELING DEPENDENCIES (Software Composition Analysis) — closes the
+    # VDR-CSO-DET gap for the Silk Reeling app. Dependabot watches only this
+    # repo's npm/Terraform/Actions manifests; the app's dep manifests live in the
+    # separate silk-reeling-mirror repo and reach production via the slim Lambda
+    # zip (_pkg) and the SPA bundle. Syft inventories both dependency trees and
+    # Grype maps them to CVEs/GHSAs. The VDR aggregator (downstream) is what
+    # evaluates and enforces the Class C remediation SLAs, so this step never
+    # fails the build on findings — it only has to emit a valid grype.json.
+    # Runs unconditionally on the deploy path, mirroring the build step above.
+    # -------------------------------------------------------------------------
+    - name: Scan Silk Reeling dependencies (Syft SBOM + Grype)
+      working-directory: infrastructure
+      run: |
+        set +e   # SCA findings must never fail the build; the VDR gate does that
+        # Install Syft + Grype from the official anchore install.sh, pinned to the
+        # same tag as the tool version (mirrors the SHA/version-pinned OPA install).
+        curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
+          | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
+        curl -sSfL "https://raw.githubusercontent.com/anchore/grype/${GRYPE_VERSION}/install.sh" \
+          | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
+        syft version && grype version
+        # Inventory both ecosystems separately: the installed Python deps live in
+        # _pkg (the Lambda zip staging dir); the JS resolved tree is in
+        # _silk_src/frontend (package-lock.json present after npm ci above).
+        syft dir:_pkg               -o cyclonedx-json=sbom-python.json || true
+        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     || true
+        # Grype each SBOM. `|| true` so a scan error still leaves a file behind.
+        grype sbom:sbom-python.json -o json > grype-python.json || true
+        grype sbom:sbom-js.json     -o json > grype-js.json     || true
+        # Normalize: any file that is missing/invalid/lacking .matches becomes an
+        # empty match set so the merge below cannot fail and ingest_grype always
+        # gets a valid top-level .matches[] array.
+        for f in grype-python.json grype-js.json; do
+          jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
+        done
+        # Merge the two scans into one grype.json (single .matches[] array) that
+        # --grype reads. The aggregator is what classifies and gates them.
+        jq -s '{matches: (map(.matches) | add)}' grype-python.json grype-js.json > grype.json
+        echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Python + JS deps"
+
+    # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
     # persisted across runs, so adopt any already-created silk-reeling resources
     # into state before plan/apply (mirrors "Import Existing Resources" above).
@@ -807,6 +861,7 @@ jobs:
           --checkov-yaml ../.checkov.yaml \
           --previous-vdr previous-vdr-report.json \
           --dependabot dependabot-alerts.json \
+          --grype grype.json \
           --kev kev-catalog.json \
           --output vdr-report.json
         echo "VDR summary:"

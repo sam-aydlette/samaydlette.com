@@ -121,9 +121,16 @@ metrics, scores, hotspots, exercise id) over TLS — no video, raw landmarks, or
 personal data. The interconnection and its data flow are modeled in the OSCAL SSP
 (`system-implementation.components[type=interconnection]` and
 `system-characteristics.data-flow`), emitted by `scripts/build-oscal-ssp.py` only
-when the app is present in the canonical inventory. **Remediation:** migrate
-feedback to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes
-the external interconnection. Applies only while the app is deployed. POAM-019
+when the app is present in the canonical inventory. **Supply-chain / data-handling
+due diligence (SA-9):** acceptance of derived metrics crossing to a
+non-FedRAMP-authorized service rests on Anthropic's commercial API terms — under
+which API inputs/outputs are not used to train models and are retained only
+transiently for trust-and-safety. This is the stated basis for the risk acceptance
+and is an **assumption to re-verify against the then-current Anthropic commercial
+terms at each annual security review**; a change in those terms reopens this POA&M.
+**Remediation:** migrate feedback to Claude on AWS Bedrock (FedRAMP-authorized,
+in-boundary), which removes the external interconnection. Applies only while the
+app is deployed. POAM-019
 (Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was confirmed by the
 checkov scan and is now finalized: the two app secrets are a third-party API key
 and an operator-set basic-auth credential with no programmatic rotation source;
@@ -159,10 +166,17 @@ lockout (AC-7) and no rate limiting / WAF (SC-5) in front of it, so credential
 guessing is not throttled. Surfaced by the `software-security` review. Risk
 adjusted Moderate → Low: the system is FIPS-199 Low with no PII/federal data, the
 credential is a high-entropy operator-set secret compared in constant time, and a
-single shared credential is the only valid pair (no user enumeration). **Remediation:**
-attach AWS WAF with a rate-based rule to the CloudFront distribution, or add an
-API Gateway usage-plan throttle; deferred on cost (~$120/yr WAF, consistent with
-POAM-007). Applies only while the app is deployed.
+single shared credential is the only valid pair (no user enumeration). **Assessor
+posture:** a 3PAO penetration test may re-rate an unauthenticated-reachable,
+unthrottled credential endpoint above Low regardless of the compensating controls
+above; the operator's accepted position is explicitly conditional — any evidence of
+credential-guessing in the Lambda execution logs (`/aws/lambda/samaydlette-com-silk-reeling`)
+or CloudFront logs triggers **immediate** implementation of the deferred WAF
+rate-rule rather than continued acceptance, and an assessor finding that re-rates
+the residual is treated as that trigger. **Remediation:** attach AWS WAF with a
+rate-based rule to the CloudFront distribution, or add an API Gateway usage-plan
+throttle; deferred on cost (~$120/yr WAF, consistent with POAM-007). Applies only
+while the app is deployed.
 
 **POAM-024 (API Gateway access logging not enabled):** The HTTP API stage does not
 emit access logs (Checkov CKV_AWS_76). HTTP API access logging requires a CloudWatch

@@ -10,6 +10,10 @@
 #   - terraform output -json            → ARNs of deployed AWS resources
 #   - terraform show -json              → full state, used for resource discovery
 #   - lambda/package-lock.json          → npm packages inside the compliance Lambda
+#   - sbom-python.json (CycloneDX)      → Silk Reeling Lambda's Python/PyPI deps
+#                                         (Syft `syft dir:_pkg`, written by deploy)
+#   - sbom-js.json     (CycloneDX)      → Silk Reeling SPA's npm deps
+#                                         (Syft `syft dir:_silk_src/frontend`)
 #   - ../website/**/*.html              → static HTML artifacts (sha256-hashed)
 #   - validations.json                  → OPA results from scripts/terraform-plan.sh
 #   - GITHUB_* env vars                 → SLSA-style build provenance (when in CI)
@@ -346,6 +350,25 @@ def component_id_for_npm(name, version):
     return f"npm::{name}@{version}"
 
 
+def component_id_for_sbom(ecosystem, name, version):
+    # Mirror component_id_for_npm's "<ecosystem>::<name>@<version>" shape, but
+    # key on the purl's ecosystem (pypi, npm, ...) so PyPI and npm components
+    # ingested from a CycloneDX SBOM stay addressable and don't collide.
+    return f"{ecosystem}::{name}@{version}"
+
+
+def purl_ecosystem(purl):
+    """Return the ecosystem segment of a PURL, e.g. 'pypi' from 'pkg:pypi/numpy@1.0'.
+
+    Returns None for anything that isn't a well-formed 'pkg:<ecosystem>/...' PURL.
+    """
+    if not isinstance(purl, str) or not purl.startswith("pkg:"):
+        return None
+    rest = purl[len("pkg:"):]
+    eco = rest.split("/", 1)[0].strip()
+    return eco or None
+
+
 def component_id_for_html(rel_path):
     return f"html::{rel_path}"
 
@@ -494,6 +517,75 @@ def build_npm_components(lock_path):
                 "version": version,
                 "lockfile_path": path,
                 "integrity": info.get("integrity"),
+            },
+        }
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
+        components.append(component)
+    return components
+
+
+def build_sbom_components(sbom_path, existing_components=None):
+    """Read a CycloneDX JSON SBOM and emit software components for the inventory.
+
+    Used to ingest the Silk Reeling app's dependency trees — the Python (PyPI)
+    Lambda deps (sbom-python.json) and the SPA's npm deps (sbom-js.json) — which
+    the deploy workflow's Syft SCA step writes as CycloneDX into the same
+    working directory this script runs from. Using the already-resolved SBOM as
+    the source of truth means we don't re-resolve dependency trees here.
+
+    Graceful like the other loaders: returns [] when the path is missing, empty,
+    or not valid JSON, so this is a no-op when the Silk Reeling app wasn't built.
+
+    Type choice: the schema's component.type enum has no PyPI type and no generic
+    software/package type — 'npm_package' is its only software-package slot. So
+    every SBOM software component (npm OR pypi) projects into 'npm_package', and
+    the true ecosystem is preserved in attributes.ecosystem and the PURL. This
+    reuses the existing 'npm_package' MAS/IIW defaults and stays schema-valid.
+
+    De-duplicates by PURL against components already in `existing_components`
+    (so the compliance Lambda's npm packages aren't double-counted on overlap)
+    and against earlier entries in this same SBOM.
+    """
+    if not sbom_path.exists():
+        return []
+    raw = sbom_path.read_text()
+    if not raw.strip():
+        return []
+    try:
+        sbom = json.loads(raw)
+    except json.JSONDecodeError:
+        print(f"warning: could not parse {sbom_path}", file=sys.stderr)
+        return []
+
+    seen_purls = set()
+    for c in (existing_components or []):
+        purl = (c.get("global_id") or {}).get("purl")
+        if purl:
+            seen_purls.add(purl)
+
+    components = []
+    for entry in (sbom.get("components") or []):
+        purl = entry.get("purl")
+        if not purl:
+            # CycloneDX entries without a PURL aren't addressable software
+            # packages (e.g. file/operating-system components); skip them.
+            continue
+        if purl in seen_purls:
+            continue
+        seen_purls.add(purl)
+        name = entry.get("name")
+        version = entry.get("version")
+        ecosystem = purl_ecosystem(purl) or "unknown"
+        component = {
+            "component_id": component_id_for_sbom(ecosystem, name, version),
+            "type": "npm_package",
+            "global_id": {"purl": purl},
+            "attributes": {
+                "name": name,
+                "version": version,
+                "ecosystem": ecosystem,
+                "sbom_source": sbom_path.name,
             },
         }
         apply_mas_defaults(component)
@@ -779,6 +871,11 @@ def main():
     repo_root = cwd.parent
     website_root = repo_root / "website"
     lambda_lock = cwd / "lambda" / "package-lock.json"
+    # CycloneDX SBOMs written by the deploy workflow's Syft SCA step (run from
+    # this same infrastructure/ directory) for the Silk Reeling app's dependency
+    # trees. Absent when that app wasn't built — build_sbom_components no-ops.
+    sbom_python = cwd / "sbom-python.json"
+    sbom_js = cwd / "sbom-js.json"
     validations_path = cwd / "validations.json"
     schema_id = "https://samaydlette.com/.well-known/ksi-signal.schema.json"
     output_path = cwd / "ksi-signal.json"
@@ -789,8 +886,27 @@ def main():
     components = []
     components.extend(build_cloud_components(tf_state, tf_outputs))
     components.extend(build_npm_components(lambda_lock))
+    # Ingest the Silk Reeling app's resolved dependency trees from the Syft
+    # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and
+    # SPA (npm) packages, not just the compliance Lambda's npm packages. Each
+    # call dedupes by PURL against components already collected.
+    components.extend(build_sbom_components(sbom_python, components))
+    components.extend(build_sbom_components(sbom_js, components))
     components.extend(build_html_components(website_root))
     components.extend(build_external_components())
+
+    # Final safety net: dedupe by PURL across the whole list so no software
+    # component is double-counted regardless of which loader produced it.
+    deduped = []
+    seen_purls = set()
+    for c in components:
+        purl = (c.get("global_id") or {}).get("purl")
+        if purl is not None:
+            if purl in seen_purls:
+                continue
+            seen_purls.add(purl)
+        deduped.append(c)
+    components = deduped
 
     if validations_path.exists():
         validations_doc = json.loads(validations_path.read_text())

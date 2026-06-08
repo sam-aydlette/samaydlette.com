@@ -2287,6 +2287,31 @@ def build_system_characteristics(signal):
                 "they are inside the boundary for provenance purposes."
             )
         },
+        # Base network architecture (always emitted). No public inbound compute
+        # ingress exists in the base system; the only compute is the internal
+        # scheduled KSI Lambda. See the Authorization Boundary Diagram (ABD)
+        # back-matter resource for the rendered topology.
+        "network-architecture": {
+            "description": (
+                "Route 53 resolves the apex and www records to a single "
+                "CloudFront distribution. CloudFront terminates TLS (minimum "
+                "TLS 1.2; the viewer-protocol policy fails secure by redirecting "
+                "or rejecting cleartext, SC-7/SC-8) and serves the static site "
+                "from the private S3 origin via origin access control. The daily "
+                "KSI-validation Lambda runs internally on an EventBridge schedule "
+                "with no public endpoint and writes the runtime signal to S3; it "
+                "is not reachable from the internet. The base system therefore "
+                "exposes no inbound public compute ingress — only the CloudFront "
+                "edge fronting static content."
+            ),
+            "links": [
+                {
+                    "href": "#" + stable_uuid("resource:authorization-boundary"),
+                    "rel": "diagram",
+                    "text": "Authorization Boundary Diagram (network topology)",
+                }
+            ],
+        },
     }
     # The gated Silk Reeling app, when deployed, adds an external interconnection
     # (Anthropic API) and a boundary-crossing data flow. Emitted only when the
@@ -2309,6 +2334,25 @@ def build_system_characteristics(signal):
                 "accepted in POAM-020."
             )
         }
+        # Silk Reeling adds a public inbound path and a new outbound egress that
+        # do not exist in the base system. Extend (do not replace) the base
+        # network-architecture description.
+        sc["network-architecture"]["description"] += (
+            " When the Silk Reeling app is deployed, CloudFront adds a "
+            "dedicated /silk-reeling/* cache behavior (caching disabled, "
+            "forwarding the Authorization header, with a CloudFront Function "
+            "that strips the path prefix) that routes to an API Gateway HTTP "
+            "API ($default route and stage, no Gateway authorizer — app-layer "
+            "HTTP Basic Auth is the gate, per POAM-022). The HTTP API uses an "
+            "AWS_PROXY integration to the Python 3.13 ZIP Lambda, which holds "
+            "its credentials in Secrets Manager encrypted with a customer-"
+            "managed CMK. This introduces new public inbound compute ingress "
+            "(SC-7) absent from the base system. The Lambda's only outbound "
+            "internet path is an egress over TLS to the external Anthropic API "
+            "for natural-language feedback; that service is non-FedRAMP-"
+            "authorized and is documented as an interconnection (SA-9/CA-3), "
+            "with residual risk accepted in POAM-020."
+        )
     return sc
 
 
