@@ -8,13 +8,21 @@
       "oscal-version": "1.2.2",
       "remarks": "Derived deterministically from the vendored NIST OSCAL Rev4 and Rev5 catalogs (data/catalogs/, see data/PROVENANCE.md). Same-id active controls are mapped equivalent; controls withdrawn in Rev5 follow the Rev5 catalog's own incorporated-into / moved-to link. Note: 'equivalent' is catalog-level id equivalence; a subset of same-id controls have substantive text changes between revisions (FedRAMP's Rev4\u2192Rev5 comparison flags these) and could be refined to intersects-with. RESIDUE \u2014 3 Rev4 control(s) with no clean single Rev5 successor (recorded, not silently dropped): cp-10.3 (withdrawn in Rev5 with no successor (NIST: addressed generally / N-A)); sa-12 (withdrawn; incorporated into 'sr' (family-level, not a single control)); sc-19 (withdrawn in Rev5 with no successor (NIST: addressed generally / N-A))."
     },
+    "provenance": {
+      "method": "automation",
+      "matching-rationale": "syntactic",
+      "status": "complete",
+      "mapping-description": "NIST SP 800-53 Rev 4 to Rev 5 control mapping, derived deterministically (automation) from the two vendored NIST OSCAL catalogs: same-id active controls map equivalent; controls withdrawn in Rev5 follow the Rev5 catalog's own incorporated-into / moved-to link. No hand-keyed crosswalk."
+    },
     "mappings": [
       {
         "uuid": "465a8049-0174-5221-bde8-8828f37a2458",
-        "source-resource-ref": {
+        "source-resource": {
+          "type": "resource",
           "href": "#resource-rev4-catalog"
         },
-        "target-resource-ref": {
+        "target-resource": {
+          "type": "resource",
           "href": "#resource-rev5-catalog"
         },
         "maps": [

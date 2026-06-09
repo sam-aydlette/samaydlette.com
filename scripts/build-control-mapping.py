@@ -119,10 +119,22 @@ def main():
                     "refined to intersects-with."
                 ),
             },
+            "provenance": {
+                "method": "automation",
+                "matching-rationale": "syntactic",
+                "status": "complete",
+                "mapping-description": (
+                    "NIST SP 800-53 Rev 4 to Rev 5 control mapping, derived "
+                    "deterministically (automation) from the two vendored NIST OSCAL "
+                    "catalogs: same-id active controls map equivalent; controls "
+                    "withdrawn in Rev5 follow the Rev5 catalog's own incorporated-into "
+                    "/ moved-to link. No hand-keyed crosswalk."
+                ),
+            },
             "mappings": [{
                 "uuid": sid("mapping", "rev4-rev5"),
-                "source-resource-ref": {"href": "#resource-rev4-catalog"},
-                "target-resource-ref": {"href": "#resource-rev5-catalog"},
+                "source-resource": {"type": "resource", "href": "#resource-rev4-catalog"},
+                "target-resource": {"type": "resource", "href": "#resource-rev5-catalog"},
                 "maps": maps,
             }],
             "back-matter": {

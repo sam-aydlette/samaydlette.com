@@ -44,6 +44,13 @@ Retrieval date: **2026-06-09**.
   a community OSCAL conversion. Decision recorded at the CMMC checkpoint.
 - **171 Rev2 ↔ 53 Rev4 crosswalk** — from NIST SP 800-171 Rev 2 Appendix D, at the CMMC checkpoint.
 
+## OSCAL JSON schemas (validation gate)
+- `schemas/oscal/oscal_{component,mapping,ssp}_schema.json` — vendored from the
+  **usnistgov/OSCAL v1.2.2** release. Used by `scripts/validate-oscal.py`. (Patterns
+  are stripped at validation time — OSCAL's ECMA `\p{}` regex is incompatible with
+  Python `re`; structure/required/enums are still enforced. Full Metaschema constraint
+  validation via NIST `oscal-cli` is the CI gold standard.)
+
 ## Target OSCAL version
 All authored artifacts target **OSCAL v1.2.x** (current release v1.2.2; the Control Mapping
 Model is released and stable as of v1.2.0).
