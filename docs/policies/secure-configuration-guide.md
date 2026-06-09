@@ -52,7 +52,7 @@ Secrets Manager and CMK-encrypted. It is the access-control setting for the app
 (POAM-021; single-factor, shared, no MFA, no lockout — risk-accepted operational item).
 
 - **Set / rotate securely.** The secret *value* is injected out of band — never via Terraform (Terraform manages only the secret container, so plaintext never enters state). Set or rotate it with `aws secretsmanager put-secret-value` from the CI-held GitHub secret; use a long, random password. Rotate on the same 90-day cadence as the deployer key (and immediately on suspected compromise), logging the rotation in [`docs/security-review.md`](../security-review.md). Automatic rotation is not configured (POAM-019).
-- **Recommended upgrade.** SAML/OIDC federation to an identity provider is the stronger control (POAM-021); not implemented (no IdP).
+- **Upgrade path (available on request).** SAML/OIDC federation to a customer IdP — or native WebAuthn/FIDO2 (phishing-resistant MFA) — is offered on request and would move authentication to a `customer-configured` control; not pre-built. The current single-factor credential is an **operator-accepted residual risk** for the sole-customer demo (POAM-021); any customer onboarded must accept this risk or adopt federation.
 
 **Fixed secure-by-default baseline (not operator-tunable, recorded here for the SCG inventory).**
 
