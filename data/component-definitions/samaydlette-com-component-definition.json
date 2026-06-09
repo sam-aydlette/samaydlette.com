@@ -1,0 +1,1784 @@
+{
+  "component-definition": {
+    "uuid": "202cb14a-0057-54f7-a92f-8335df20f59f",
+    "metadata": {
+      "title": "samaydlette.com \u2014 control implementation hub (Component Definition)",
+      "last-modified": "2026-06-09T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.2",
+      "remarks": "The implementation hub: per-control implementations expressed once against 800-53 Rev 5, migrated losslessly from CONTROL_OVERRIDES. Origination determines which component satisfies each control."
+    },
+    "components": [
+      {
+        "uuid": "29db7232-6c21-5905-bdb5-6a3dbe99cab3",
+        "type": "service",
+        "title": "AWS (leveraged authorization)",
+        "description": "AWS (leveraged authorization)",
+        "control-implementations": [
+          {
+            "uuid": "1fa95e3a-b619-5048-aaac-9068e3086355",
+            "source": "../catalogs/NIST_SP-800-53_rev5_catalog.json",
+            "description": "Control implementations satisfied by the aws-leveraged component, expressed once against the NIST 800-53 Rev 5 catalog (the hub). Projected into each framework SSP via the spoke generators.",
+            "implemented-requirements": [
+              {
+                "uuid": "87425142-45bf-5338-80de-1aabe557b076",
+                "control-id": "au-8",
+                "description": "Time stamps in audit records use AWS-managed NTP-synchronized clocks. CloudTrail and CloudWatch Logs both timestamp records automatically; the underlying time service is part of AWS's infrastructure under its FedRAMP authorization. The operator does not run any time servers.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "a3215f4d-0eb3-5ebe-90fe-c4a1a6de2f9c",
+                "control-id": "cp-6",
+                "description": "S3 storage is multi-AZ durable by default; AWS provides the alternate storage site infrastructure under its FedRAMP authorization. The operator selects S3 as the origin and enables versioning (covered under CM-2/CM-6); the alternate-site capability itself is inherited.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "22e2b711-6eec-5a90-a244-90afa7288d25",
+                "control-id": "cp-7",
+                "description": "CloudFront's global edge network provides alternate processing across hundreds of points of presence; AWS operates and maintains the edge infrastructure under its FedRAMP authorization. The operator selects CloudFront as the CDN; the alternate-processing capability is inherited.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "e04540aa-8900-5883-a28c-4a8ed8089b8f",
+                "control-id": "cp-8",
+                "description": "Telecommunications services (network connectivity, BGP routing, DDoS-mitigation backbone) are wholly AWS's responsibility under its FedRAMP authorization. The operator does not configure or maintain any telecommunications infrastructure.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "40184798-c82d-5b34-afab-ef74b9ce11cc",
+                "control-id": "sa-22",
+                "description": "Unsupported system components are managed via AWS's service-deprecation lifecycle, which operates under its FedRAMP authorization. The operator's stack uses only currently-supported AWS services (S3, CloudFront, Lambda, Route 53, ACM, EventBridge, CloudWatch, IAM); AWS publishes deprecation timelines on its service-end-of-life calendar.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "64770d58-378f-5ee7-b89a-cea1ebcec5ad",
+                "control-id": "sc-20",
+                "description": "Authoritative DNS resolution is provided by Amazon Route 53. DNSSEC, response signing, and the authoritative resolver infrastructure are managed by AWS under its FedRAMP authorization. The operator configures the hosted-zone records via Terraform (covered under CM-2); the resolution service itself is inherited.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "58a28e75-a535-50a3-8e61-2812e915851c",
+                "control-id": "sc-21",
+                "description": "Recursive and caching DNS resolution is performed by client-side resolvers and intermediate AWS infrastructure when AWS-internal services resolve names; both are managed under AWS's FedRAMP authorization. The operator runs no resolver.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "bd70abc7-b203-582c-be79-6914ee61f981",
+                "control-id": "sc-22",
+                "description": "Route 53's resolution architecture, including provisioning, redundancy, and global anycast, is wholly AWS's responsibility under its FedRAMP authorization. The operator does not manage resolver topology or provisioning.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              },
+              {
+                "uuid": "a3d91bc5-d107-53b4-96aa-c6ddc873c8b0",
+                "control-id": "si-16",
+                "description": "Memory protection: AWS Lambda's runtime provides per-invocation isolation, address-space layout randomization, and process-level memory protection inherited from the underlying execution environment. The operator runs no custom compute that requires additional memory-protection controls.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "inherited"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "uuid": "49986810-7566-5085-9742-e22a25e725e6",
+        "type": "policy",
+        "title": "Operator policies and procedures",
+        "description": "Operator policies and procedures",
+        "control-implementations": [
+          {
+            "uuid": "b8326f9b-8cbb-574d-8b8e-e93c26ae4cbd",
+            "source": "../catalogs/NIST_SP-800-53_rev5_catalog.json",
+            "description": "Control implementations satisfied by the operator-policy component, expressed once against the NIST 800-53 Rev 5 catalog (the hub). Projected into each framework SSP via the spoke generators.",
+            "implemented-requirements": [
+              {
+                "uuid": "b74062e9-a969-52eb-9d58-e0e4bb4ba18f",
+                "control-id": "ac-22",
+                "description": "All website content is intentionally public. The operator (sole author) reviews each piece of content before it merges to `main`; the gitops gate ensures no content reaches production without that review. Content is monitored informally for unauthorized modification via drift detection (the runtime KSI emitter compares deployed HTML hashes against the deploy-time signal).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "4aaf70cf-6931-5556-bc98-cb9aad128243",
+                "control-id": "ir-2",
+                "description": "Incident response training collapses into self-attestation by the sole operator (who is also the IR lead). Coverage is documented in `docs/training-log.md` (KSI-CED-04 section). The runbook in `docs/incident-response.md` serves as the training material; reviews are annual.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "5a168a45-6ebe-50ca-a421-15af84161d1a",
+                "control-id": "ir-4",
+                "description": "Incident handling is documented in docs/incident-response.md. The runbook covers detection sources, triage steps, containment patterns by incident class, recovery procedures, and an after-action-report template. The IR lead is the sole operator. The procedures are in place and the response capability exists; tabletops are scheduled annually per docs/security-review.md. No incidents have occurred to date that exercised the runbook end-to-end.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "1b05eca3-3674-5d8f-b1ea-447f650e8fd1",
+                "control-id": "ir-8",
+                "description": "The incident response plan is documented in docs/incident-response.md. Reviews are scheduled annually as part of the security review. KSI-INR-02 (pattern review) is satisfied by the same cadence; the current incident count is zero, so the pattern set is empty.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "9fef7c40-5d36-5122-8fc1-2290790a9dbf",
+                "control-id": "ir-9",
+                "description": "Information spillage response is documented in docs/incident-response.md under the 'Information Spillage Response' section. In-scope spillage scenarios for a static site include accidentally posted credentials, AWS account identifiers, or pre-publication private content. The response procedure (identify, remove from public surfaces, rotate any compromised credentials, document) is in the runbook.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "e4a8c79d-6767-5834-b7b5-594cc901ab8c",
+                "control-id": "ir-9.2",
+                "description": "Spillage-response training: incorporated into the runbook review the operator performs annually per docs/security-review.md (KSI-CED-04). For a sole-operator system there is no separate cohort to train; the IR lead and the trainee are the same person.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "e57e6b94-70af-560f-adea-013dfc064a0e",
+                "control-id": "ir-9.3",
+                "description": "Post-spill operations: the spillage scope is bounded by the static-site surface (public content, deploy credentials, AWS account IDs in published artifacts). After containment the system continues normal operation; no quarantine of a production environment is required because the production environment is the public site.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "8442f5b0-035b-547b-b65b-ac844d8af6ad",
+                "control-id": "ir-9.4",
+                "description": "Exposure to unauthorized personnel: the public site by design has no 'unauthorized personnel'; any reader is authorized. Spillage exposure is therefore handled as premature publication of content not yet ready for public release, addressed by the IR-9 response procedure.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "6ad6c6d0-c84e-5dcf-b04d-cba21ac604a2",
+                "control-id": "pl-4",
+                "description": "Rules of behavior collapse into self-attestation by the sole operator. The repository's CONTRIBUTING-style conventions (no commits to main without PR; no secrets in code; no hand-edits in production) function as the rules; they are enforced by GitHub branch protection and the OPA gate, not by signed acknowledgments.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "6b80f958-4d2d-5ec4-ad62-5ecaaf516793",
+                "control-id": "pl-4.1",
+                "description": "Social media and external-site usage restrictions for the sole operator: the operator does not post system credentials, AWS account IDs, or production URLs on any external platform in a way that would compromise the system's posture. This is self-attested; the system has no organizational social media footprint to govern.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "8abc560d-b95a-5da9-bd33-37bd1e0a4606",
+                "control-id": "ps-3.3",
+                "description": "Information requiring special protective measures is not applicable: the system processes no controlled-information categories (CUI, PII, PHI, classified). All site content is intentionally public; no special-protection screening is warranted.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "9d524bd6-6c75-5a17-af45-4150235692e8",
+                "control-id": "ra-9",
+                "description": "Criticality analysis is documented in docs/recovery-plan.md. The declared RTO of 21 days and RPO of 24 hours embodies the criticality assessment: low-criticality (the world manages without the operator's opinions for three weeks). Asset criticality is implicit in the canonical inventory; no component beyond the static site itself is critical to a mission.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "f4864c4c-c0c1-5104-b1f5-ac04a5e14779",
+                "control-id": "sa-9.1",
+                "description": "Risk assessment and approval for external system services: the operator has explicitly chosen AWS services after risk review; the choices are documented in docs/architecture-decisions.md and docs/security-review.md (annual review). Each service selection (S3, CloudFront, Lambda, Route 53, ACM, EventBridge, CloudWatch, IAM) is recorded with rationale.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "63da6ad9-196a-5a85-9807-1348ccc255ed",
+                "control-id": "si-2.3",
+                "description": "Time to remediate flaws and benchmarks for corrective actions: Dependabot's severity gating defines the SLA. Critical CVEs are addressed within one week of advisory publication; high-severity within one month; lower severities reviewed at the next dependency-update cycle. Tracked in the annual security review.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "cb539814-8a64-59a8-85fc-659aadc74ccf",
+                "control-id": "sr-2",
+                "description": "The supply-chain risk management plan is documented in `docs/supply-chain.md`. It describes in-scope third-party components (npm, GitHub Actions, Terraform providers, OPA, cosign), the risk-identification approach (PURL-based inventory in the canonical KSI signal), the monitoring approach (Dependabot + Checkov + tfsec), and the inheritance from AWS for AWS-side supply chain.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              },
+              {
+                "uuid": "2660cb60-2da6-59c9-8e8d-d60ff3014025",
+                "control-id": "sr-2.1",
+                "description": "Establishment of a dedicated SCRM team is not applicable for a sole-operator system. The supply-chain risk management function is the operator's responsibility, addressed via the documented practices in `docs/supply-chain.md`. There is no team to establish.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-corporate"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "uuid": "21c63ffe-99fe-56b9-98ae-28628fecda09",
+        "type": "service",
+        "title": "samaydlette.com \u2014 cloud service offering (system-implemented controls)",
+        "description": "samaydlette.com \u2014 cloud service offering (system-implemented controls)",
+        "control-implementations": [
+          {
+            "uuid": "078df5a4-fba2-5634-aeee-11456d91f34a",
+            "source": "../catalogs/NIST_SP-800-53_rev5_catalog.json",
+            "description": "Control implementations satisfied by the this-system component, expressed once against the NIST 800-53 Rev 5 catalog (the hub). Projected into each framework SSP via the spoke generators.",
+            "implemented-requirements": [
+              {
+                "uuid": "855b35ce-46eb-5225-aa73-4287af4d6beb",
+                "control-id": "ac-11",
+                "description": "Device lock is not applicable: the system has no operator-managed devices in scope. The operator's personal laptop is outside the system boundary.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "0997df97-0691-5b56-b1b1-5d68e7af604c",
+                "control-id": "ac-11.1",
+                "description": "Pattern-hiding displays are not applicable: see AC-11.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "3094e8ea-2d13-5152-a73d-50695ee4829a",
+                "control-id": "ac-17",
+                "description": "Remote access is not applicable to this system. There is no compute resource accepting remote-administration sessions: no SSH, no RDP, no bastion, no VPN, no remote-access gateway. The only `compute_instance`-shaped components in the canonical inventory are the Lambda function (which accepts no inbound network connections) and the S3 + CloudFront services (which are managed services with no operator-side remote access).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "adacb25f-e706-5953-82de-9b479baae94f",
+                "control-id": "ac-17.4",
+                "description": "Privileged remote-access commands are not applicable: there is no remote-access surface in the system. See AC-17.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "032b196d-ffda-56e3-8594-c98a184b8941",
+                "control-id": "ac-19.5",
+                "description": "Mobile device encryption is not applicable: the system manages no mobile devices.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "c724b2c1-410e-552e-88c9-b6f8bc024543",
+                "control-id": "ac-2",
+                "description": "Account management is in place for the only accounts the system has: non-user accounts. The Lambda IAM role and the deployer credentials are version-controlled in `infrastructure/main.tf`. Account lifecycle (create, modify, delete) occurs only through pull-request gitops; the git log is the audit trail. End-user account management features (MFA, password complexity, account inactivity) are not applicable; the system has no human end users. AC-2 enhancements covering user-facing capabilities are tracked as separate implemented-requirement entries with implementation-status: not-applicable.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "5f95b2c2-131f-5f68-b0f9-bad0d86229ab",
+                "control-id": "ac-2.12",
+                "description": "Account monitoring for atypical usage is not applicable: the system has no human end-user accounts whose usage patterns could be profiled.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "2441736e-3cf0-5609-8098-949f70d79686",
+                "control-id": "ac-2.13",
+                "description": "Disabling accounts for high-risk individuals is not applicable: the system has no human end-user accounts.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "eb718a42-2261-5b60-b17a-884ac48f17d1",
+                "control-id": "ac-2.7",
+                "description": "Privileged user accounts: the only privileged account in the system is the AWS Lambda execution role. Its scope is narrowly defined in `infrastructure/main.tf` (`aws_iam_role_policy.lambda_opa`): read-only on the bucket's configuration APIs, write-only on a single S3 key, read-only on one CloudFront distribution. The role has no human-assumable trust policy and no console access.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "c9aef770-5752-5fb6-83f2-54d234e51878",
+                "control-id": "ac-2.9",
+                "description": "Restrictions on shared and group accounts are not applicable: the system has no shared or group accounts. The only non-user account is the Lambda role (a service principal); the only human account is the operator's AWS account.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "0d257ed5-fcf4-5c48-9544-049bd88cf553",
+                "control-id": "ac-20.2",
+                "description": "Portable storage device restrictions are not applicable: the system uses no portable storage. All storage is in S3.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9b6021e0-4300-55c4-a71c-be3f4cce2c3d",
+                "control-id": "ac-21",
+                "description": "Information sharing controls are not applicable: the system shares no information with external partners. The site's content is by design fully public; there are no controlled-information exchanges.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "09dc60a7-3b38-55d0-b0f1-0e93f8a042e0",
+                "control-id": "ac-3",
+                "description": "Access enforcement is provided by AWS IAM (inherited implementation). The system contributes the policy itself, scoped to least privilege in `infrastructure/main.tf` (`aws_iam_role_policy.lambda_opa`). The bucket policy restricts S3 read access to the CloudFront service principal with a `SourceArn` condition; no other principal can read the bucket directly.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "df1dce0e-8202-5a6e-864f-2ed47fbb41ef",
+                "control-id": "ac-4",
+                "description": "Information flow enforcement: the system has exactly two logical paths. (1) viewer \u2192 CloudFront \u2192 S3, read-only, viewer-protocol redirect-to-HTTPS, TLS 1.2+. (2) Lambda \u2192 AWS API, scoped via IAM. There is no internal east-west traffic, no VPC, and no other ingress or egress paths.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "481e3ec2-3f88-58dd-b246-3754e9280f49",
+                "control-id": "ac-4.21",
+                "description": "Physical or logical separation of information flows is not applicable: the system has a single information flow (public site content), which is by design fully public. There is no second information class that requires separation.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "8cc1e8d4-8918-58b7-b589-76397cc0b7d2",
+                "control-id": "ac-6",
+                "description": "Least privilege is the explicit design principle for the Lambda IAM role: read-only on three S3 configuration APIs, read-only on one specific CloudFront distribution, write on exactly one S3 key (`.well-known/ksi-signal-runtime.json`). The role has no human-assumable trust policy. CloudFront permissions are scoped to the distribution ARN, not `*`.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "162f88a2-69df-5cac-a6c3-65a79d5ffe7b",
+                "control-id": "au-12",
+                "description": "Audit record generation is automatic (CloudTrail by default; Lambda runtime logging by default). The KSI signal's validation records are also auto-generated by the OPA gate and the runtime emitter; both produce structured records with a stable schema.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "c947d181-472f-58a6-ae55-08eadbd418dc",
+                "control-id": "au-2",
+                "description": "Event logging is provided by CloudTrail (account-wide, captures all AWS API calls including the deployer's), Lambda execution logs (CloudWatch Logs), and GitHub Actions workflow run history (immutable, GitHub-side). The system configures Lambda logging via the runtime's standard integration. CloudFront access logging is consciously excluded for cost; see README 'Conscious Trade-offs'.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "4efc8bbf-acbc-54ef-95d2-7f2b8946f15f",
+                "control-id": "au-3",
+                "description": "Audit record content includes: timestamp, event type, actor identity (IAM principal), source IP, resource affected, action attempted, outcome. CloudTrail records all of these by default. Lambda logs add execution context (request ID, function version, stream). The KSI signal adds: signal_id, emitted_at, provenance (commit SHA, workflow run ID), and per-validation policy/result/component references.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "d9a8df1d-f140-52b4-aa1d-0a8f776f19fb",
+                "control-id": "ca-2",
+                "description": "Formal control assessment by an external assessor is not in scope. No agency authorization is being pursued. The system's self-assessment runs continuously via the OPA gate at deploy time and the runtime KSI emitter; results are published in the live KSI signal at /.well-known/ksi-signal.json.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "7a9f103c-573f-5780-818e-498ffb383f2d",
+                "control-id": "ca-2.1",
+                "description": "Independent assessors are not engaged for this PoC. No agency authorization is in scope; the assessment-evidence chain is the publicly verifiable Sigstore-signed KSI signal, which any independent reader can verify directly.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "46acbd1a-9a9c-5438-baad-facc0e7cab95",
+                "control-id": "ca-2.3",
+                "description": "Results from external organizations are leveraged: the system inherits AWS's FedRAMP authorization for the underlying infrastructure (S3, CloudFront, Lambda, Route 53, ACM). AWS is the external organization whose results are leveraged.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "fad19340-2974-5b47-917c-98a3f625225c",
+                "control-id": "ca-5",
+                "description": "Plan of Action and Milestones is documented in `docs/poam.md`. Two open POA&M items are tracked: POAM-001 (migrate the deployer from long-lived AWS access keys to GitHub OIDC role assumption) and POAM-002 (sign the runtime KSI signal cryptographically). Each carries a target close date, severity, compensating controls, and remediation plan.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "174735da-00f2-59a6-bd98-e493de25c93c",
+                "control-id": "ca-6",
+                "description": "Authorization in the FedRAMP / agency-ATO sense is not in scope. The system has no Authorizing Official, no FedRAMP package, and no agency relying on its authorization. The self-attested operating posture is documented in the SSP, the live KSI signal, and the docs/ tree.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "ce56b3ad-3ab1-5076-831c-85795986eef1",
+                "control-id": "ca-7.1",
+                "description": "Independent continuous-monitoring assessment is not in scope. Continuous monitoring itself is performed by the runtime KSI emitter; the verification chain is public Sigstore signing, which is independently auditable by any reader without a designated independent assessor.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "b355b32f-ef10-5cb0-91bd-d4badbf7c3ea",
+                "control-id": "ca-8",
+                "description": "Formal penetration testing is not in scope for this PoC. The system's threat surface is small (static personal site, no user input, no compute beyond a daily Lambda) and an independent pen-test engagement is not commissioned. If the system were ever scoped for FedRAMP authorization, this would become a real planned item.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "780352ee-bc6f-591f-9f12-0b5ad6754561",
+                "control-id": "ca-8.1",
+                "description": "Independent penetration-testing agent is not engaged. No formal pen-test contract is in scope; the operator is not shelling out for an external assessor to prove the point of this PoC. Equivalent rationale applies as for CA-2.1 / CA-8.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "823c79c5-287e-5d3e-883b-dced64aaa426",
+                "control-id": "ca-8.2",
+                "description": "Red team exercises are not in scope. Adversary-simulation engagements presume a formal assessor relationship and a blast radius that warrants the cost. Neither is in scope for a static personal site PoC. Token spillage scenarios are addressed in docs/incident-response.md (Information Spillage Response) for IR-9.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "4e09716e-b5c8-5bbc-a5cf-39eeef5086ba",
+                "control-id": "cm-10",
+                "description": "Software usage restrictions are enforced through the npm lockfile (each dependency is pinned to a specific version with an integrity hash) and the canonical inventory (which publishes the full software inventory for any consumer to verify). License compliance is reviewed during dependency additions; the operator avoids GPL and copyleft-restricted components for compatibility.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "2603d604-c9ca-5ad3-9ba8-0f7ef8441510",
+                "control-id": "cm-11",
+                "description": "User-installed software is not applicable. The system has no human end users with the ability to install software. The Lambda runtime's software is fully controlled by the deploy pipeline (npm package-lock + Sigstore-signed provenance); no other compute accepts user-installed software.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "ce5ce6d8-ab6a-531f-bbfb-256f2a1169dc",
+                "control-id": "cm-2",
+                "description": "The configuration baseline is the Terraform configuration in `infrastructure/`, version-controlled in git. Every deployed configuration corresponds to a specific commit on `main`, recorded in `provenance.source.commit` of the canonical inventory at /.well-known/ksi-signal.json. Drift from the baseline is detected daily by the runtime KSI emitter (`infrastructure/lambda/index.js`), which queries the live AWS configuration of every named cloud component and publishes a fresh signal at /.well-known/ksi-signal-runtime.json.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "647bd418-a642-5a6a-979f-d926048ec1e2",
+                "control-id": "cm-3",
+                "description": "All changes reach production through pull requests to `main`, which trigger the CI workflow defined in `.github/workflows/deploy-with-opa.yml`. Out-of-band changes are detected by drift between the deploy-time and runtime KSI signals. Changes are recorded in the git log (immutable, GitHub-side) and in the canonical inventory's provenance block.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "88a4c951-eb71-5a1b-850f-b968881b33f7",
+                "control-id": "cm-3.2",
+                "description": "Automated testing of changes is performed by the OPA gate in `scripts/terraform-plan.sh`, which evaluates `infrastructure/policies.rego` against the Terraform plan and every HTML artifact before merge. Test results are recorded in `validations.json` and embedded in the KSI signal.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9fa18501-8b9e-5c54-be51-87f9f3508043",
+                "control-id": "cm-4",
+                "description": "Security impact analysis is performed by three CI gates on every pull request: OPA over the Terraform plan and content; Checkov and tfsec over the Terraform configuration. Results are surfaced in the GitHub Security tab. Changes producing any HIGH-severity finding cannot merge without explicit override.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "90448162-dff5-5377-a1f0-29a1742076c7",
+                "control-id": "cm-5",
+                "description": "Access restrictions for change are enforced by GitHub branch protection on `main` (operator-configured) and by AWS IAM on the deployer credentials (shared with AWS). The deployer credentials live only in GitHub Actions encrypted secrets; see POAM-001 in docs/poam.md for the planned migration to OIDC role assumption.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "28f183db-4b93-5497-b0ba-b59f31da5090",
+                "control-id": "cm-5.1",
+                "description": "Automated access enforcement and audit records for change access: GitHub branch protection on `main` automates the access-enforcement decision (no merge without a passing CI run); the GitHub Actions workflow run history records every change with attribution. AWS IAM enforces deployer-side access; CloudTrail records every API call.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "884f1b69-f761-5610-954f-0c7bfd287e91",
+                "control-id": "cm-5.5",
+                "description": "Privilege limitation for production: the deployer credentials are the only IAM principal with write access to production resources. They are scoped to the actions needed by the Terraform-managed resources and live only as GitHub Actions encrypted secrets. The Lambda execution role has read-only access to configuration APIs and write access to one S3 key.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "880c3fd4-94ed-5629-8be4-479216ef3b80",
+                "control-id": "cm-6",
+                "description": "Configuration settings are codified in Terraform (`infrastructure/main.tf`, `variables.tf`). The OPA policy file (`infrastructure/policies.rego`) enforces the configuration baselines: S3 encryption + versioning + public-access block; CloudFront viewer-protocol redirect-to-HTTPS and minimum TLS 1.2 (2021 cipher suite). The runtime emitter validates the live configuration against the same baselines.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "a2a40546-7c3c-57ff-be6c-7261f789e155",
+                "control-id": "cm-6.1",
+                "description": "Automated management, application, and verification of configuration settings: Terraform manages all configuration; OPA verifies the configuration against `policies.rego` at deploy time; the runtime KSI emitter re-verifies the live configuration daily. All three steps are automated.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "f063c602-b58a-57d5-9bd6-0d17fc821f78",
+                "control-id": "cm-7",
+                "description": "Least functionality: the system runs only the components required for serving static content and emitting compliance signals. The Lambda IAM role is scoped to the minimum AWS actions needed (read-only access to bucket configuration and the deploy-time signal; PutObject scoped to a single S3 key; read-only CloudFront access scoped to the one distribution). No general-purpose compute, no VPC, no NAT gateway, no shell access to anything.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "7a381767-0721-5ccc-a257-5515dc71208f",
+                "control-id": "cm-8",
+                "description": "The system component inventory is the canonical inventory at /.well-known/ksi-signal.json (`components[]` field). It enumerates every cloud resource (S3 bucket, CloudFront distribution, Lambda function \u2014 by ARN), every npm package in the Lambda runtime (by Package URL), and every static HTML artifact (by SHA-256). The inventory is regenerated on every deploy and signed via Sigstore keyless. See docs/ksi-signal.md for the full schema.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "21281967-b4c6-5d00-ab1e-d4d5eb81be7e",
+                "control-id": "ia-12",
+                "description": "Identity proofing is not applicable: the system has no human end users to proof. The operator's identity is established via GitHub and AWS account ownership, neither of which is in scope for IA-12 in this system's boundary.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "75110936-467f-56c5-b1fb-6febf6117ef1",
+                "control-id": "ia-12.2",
+                "description": "See IA-12. No end users, no identity evidence to collect.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "42e9578d-a6c4-5048-9221-6e60baba5fdb",
+                "control-id": "ia-12.3",
+                "description": "See IA-12. No end users, no identity evidence to validate.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "79bc1e84-a126-5691-8214-9093be050324",
+                "control-id": "ia-12.5",
+                "description": "See IA-12. No end users, no addresses to confirm.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "1b48b55a-b2a9-5a62-a951-69349ac32abf",
+                "control-id": "ia-2",
+                "description": "User identification and authentication is not applicable: the system has no human end users. Identification of non-user accounts (services, the Lambda role, the deployer) is covered under IA-3 below.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "2ff8b3ee-34fa-5d8d-a27c-fb10f14d062a",
+                "control-id": "ia-2.5",
+                "description": "Individual authentication with group authentication is not applicable: no group accounts exist. See AC-2.9.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9402c4cd-377e-56dd-a004-b48699248fb6",
+                "control-id": "ia-2.6",
+                "description": "Access from a separate device for authentication is not applicable: the system has no human end-user authentication. See IA-2.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "dd9fbc86-5abc-5cab-8348-191caf50a583",
+                "control-id": "ia-3",
+                "description": "Device/service identification is via AWS IAM principals (the Lambda role is identified by ARN; the deployer is identified by IAM user ARN; cosign signing is identified by GitHub OIDC subject). Verification is provided by AWS STS and GitHub's OIDC provider respectively (inherited).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "8f75eb45-9d37-5afa-9feb-806ad2ab7cd2",
+                "control-id": "ia-5.7",
+                "description": "No embedded unencrypted static authenticators: the system embeds no static authenticators. The Sigstore keyless signing chain produces ephemeral certificates per workflow run; deployer credentials live only in GitHub Actions encrypted secrets, never in source. There is no static authenticator to embed.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "59fa414c-23c1-5642-964a-14dbda129f56",
+                "control-id": "ir-6",
+                "description": "Incident reporting external interface is the security.txt mailbox per RFC 9116 at /.well-known/security.txt. It names the contact, the canonical URL, the policy URL (docs/incident-response.md), and the expiration. There is no FedRAMP-process reporting (FSI/ICP) because no FedRAMP authorization is in scope.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "85326f8c-1ccf-5957-8904-ea1889de369e",
+                "control-id": "mp-3",
+                "description": "Media marking is not applicable: the system uses no physical media. All storage is on AWS-managed services (S3, CloudWatch Logs); media-level marking would be AWS's concern if any physical media were involved at the infrastructure layer (covered as inherited under MP-1).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9a20e617-8388-5c0a-b879-cdb8a7d34336",
+                "control-id": "mp-4",
+                "description": "Media storage is not applicable: see MP-3. No physical media in operator scope.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "e91ec2d5-3616-52dd-910c-40970ae7d2c6",
+                "control-id": "mp-5",
+                "description": "Media transport is not applicable: see MP-3. No physical media to transport.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "708e2da6-4a35-51f1-a92f-c9cb6b5a8d61",
+                "control-id": "pe-17",
+                "description": "Alternate work site controls are not applicable for a sole-operator system. The operator's work locations are personal and outside the system boundary; no agency-defined alternate work site exists.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "48320ed0-9c9d-5ce2-b82e-0761476be8f5",
+                "control-id": "ra-5",
+                "description": "Vulnerability scanning is automated via three tools: Dependabot (GitHub Advisory Database, scoped to npm + GitHub Actions + Terraform per .github/dependabot.yml); Checkov (Terraform IaC scanning in the security-scan CI job); tfsec (Terraform-specific static analysis in the same job). Results are surfaced in the GitHub Security tab. The PURL-based canonical inventory enables external vulnerability correlation without depending on GitHub's tooling.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "942a6f75-b227-59e4-81a9-9989f3017f6f",
+                "control-id": "ra-5.5",
+                "description": "Privileged-access vulnerability scanning is not applicable: the system has no general-purpose hosts to scan with privileged credentials. The Lambda runtime is AWS-managed; vulnerability scanning at the dependency level is via Dependabot (RA-5).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "64416b8a-d845-5ec4-b6e5-d3d055f11b34",
+                "control-id": "sa-11",
+                "description": "Developer testing and evaluation: every pull request to `main` runs the OPA gate (configuration), Checkov (IaC scanning), tfsec (Terraform-specific scanning), and Dependabot (SCA via the GitHub Advisory Database). Static-analysis findings are surfaced in the GitHub Security tab. Tests gate merges; failing PRs cannot reach production.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "abce4ef5-c817-5074-b783-1a5e58c4ef76",
+                "control-id": "sa-11.1",
+                "description": "Static code analysis: Checkov and tfsec run as required CI checks on every pull request, scanning Terraform and associated configuration. Results are uploaded to the GitHub Security tab as SARIF reports.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "8ca17205-d28b-5b93-8c7b-793c453a9527",
+                "control-id": "sa-11.2",
+                "description": "Threat modeling and vulnerability analyses are documented in docs/architecture-decisions.md under the 'Threat Modeling' section. The model identifies the principal threat surfaces (deploy chain, runtime emitter, public artifacts), top threats considered (repo compromise, deployer credential leak, runtime Lambda compromise), and the mitigations in place. Vulnerability analysis is automated via the SAST/SCA tools described under SA-11.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "6bac8a57-e3e7-58bb-bbc9-3ee6f09e2e66",
+                "control-id": "sa-15",
+                "description": "Development process, standards, and tools: the gitops workflow (PR \u2192 OPA gate \u2192 review \u2192 merge \u2192 deploy) is the development standard. Tools (Terraform, OPA, Checkov, tfsec, Dependabot, cosign) are documented in this SSP and in the README. The operator follows a consistent process for every change.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9d10b5f2-d697-50a6-9a7f-83a494ffae5a",
+                "control-id": "sa-4.1",
+                "description": "Functional properties of controls are documented for AWS managed services in AWS's published service documentation (inherited). For operator-implemented controls, the functional properties are documented in this SSP's per-control statements and the docs/architecture-decisions.md file.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "f2dacbe3-f2b9-51a2-bb0e-596c3fb72dc0",
+                "control-id": "sa-4.10",
+                "description": "Use of approved PIV products is not applicable. The system has no human end users; PIV credentials are not in scope for any authentication flow on this site.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "41e49830-b176-590d-b6f8-e6c43337de5a",
+                "control-id": "sa-4.2",
+                "description": "Design and implementation information for AWS-managed services is published by AWS in its service documentation (inherited). For operator-implemented components, the design and implementation are visible in the open-source repository and the per-control statements in this SSP.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "a88d47e8-5b8b-509c-8d06-47e739975e67",
+                "control-id": "sa-4.9",
+                "description": "Functions, ports, protocols, and services in use are minimal and documented: the system uses HTTPS (port 443) for all viewer traffic, AWS APIs (HTTPS) for control-plane operations, and DNS (port 53) for resolution. No other ports or protocols are exposed. The Lambda has no inbound network listener; the Lambda runtime accepts only EventBridge invocations.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "9a95740e-83ff-5d65-8aed-f81889f3d2d7",
+                "control-id": "sa-9.2",
+                "description": "Identification of functions, ports, protocols, and services for external services: AWS documents each service's network characteristics; the operator's usage profile is documented via Terraform configuration and the canonical inventory. See SA-4.9.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "b482b9e2-b3ce-5081-bec1-f273e53bb8f2",
+                "control-id": "sa-9.5",
+                "description": "Processing, storage, and service location: the system runs in the AWS us-east-2 region (configured in `infrastructure/variables.tf`). CloudFront is global by design; ACM certificates for CloudFront are in us-east-1 as AWS requires. No data leaves AWS commercial regions.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "e70ede84-05e0-5992-af8a-b6745904c01a",
+                "control-id": "sc-13",
+                "description": "Cryptographic protection: AES-256 for S3 server-side encryption (configured in `aws_s3_bucket_server_side_encryption_configuration.website`); TLS 1.2+ for transport (configured in CloudFront viewer-certificate); SHA-256 for content addressing in the canonical inventory; ECDSA P-256 for Sigstore signing of the KSI signal (Fulcio-issued certificate, ephemeral key).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "cda47e9b-9d18-5c92-a0af-ecf0db1815ff",
+                "control-id": "sc-15",
+                "description": "Collaborative computing devices and applications are not applicable. The system runs no collaborative computing platforms (no video conferencing, no shared whiteboards, no co-authoring tools) and exposes no such capabilities to any user.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "c7d28d56-4597-5609-ad69-0eaeb47f34e5",
+                "control-id": "sc-28",
+                "description": "Information at rest is protected by S3 server-side encryption (AES-256 by default, configured in `infrastructure/main.tf`'s `aws_s3_bucket_server_side_encryption_configuration`). The encryption keys and key-management infrastructure are AWS-managed (inherited); the configuration choice and enforcement via OPA are the operator's contribution.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "1515afb9-baed-5306-8619-07a3231d437d",
+                "control-id": "sc-28.1",
+                "description": "Cryptographic protection for information at rest is provided by AES-256 server-side encryption on S3. AWS provides the cryptographic implementation under its FedRAMP authorization; the operator enables it via Terraform and verifies it via OPA at deploy time and the runtime KSI emitter at runtime.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "a279b9f2-8fcb-57d9-8566-f033d779cf7a",
+                "control-id": "sc-39",
+                "description": "Process isolation is not applicable in the multi-tenant-compute sense: the system has no multi-tenant compute. AWS provides process isolation at the Lambda runtime layer (inherited).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "848800e4-4675-5834-9562-b79b0f9724b8",
+                "control-id": "sc-7",
+                "description": "Boundary protection: the only ingress to the system is CloudFront, which fronts an S3 bucket with public access fully blocked. AWS Shield Standard is included by default; AWS WAF is consciously excluded on cost grounds (~$120/yr vs. zero attack surface for static content). The Lambda has no internet egress and no NAT gateway.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "6b1eb97c-f192-5b6b-9e4a-c4f837e6df01",
+                "control-id": "sc-7.12",
+                "description": "Host-based protection is not applicable: the system has no general-purpose hosts. The Lambda runtime is AWS-managed; host-level protections are inherited under PE/MA where applicable.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "ae94be3b-5d8e-59b3-ad7e-2e6d1ae5b7a8",
+                "control-id": "sc-7.18",
+                "description": "Fail-secure boundary protection: CloudFront's viewer-protocol policy is set to redirect-to-HTTPS, with TLS 1.2+ enforced. If the policy fails to apply, the deploy gate blocks and the runtime emitter detects the drift. AWS provides the underlying TLS-termination and certificate infrastructure; the operator configures the fail-closed policy.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "a7171a7c-5924-519f-b4ee-d4500dd77a45",
+                "control-id": "sc-8",
+                "description": "Transmission confidentiality: viewer \u2194 CloudFront uses TLS 1.2 minimum (2021 cipher suite enforced in the CloudFront viewer-certificate config). CloudFront \u2194 S3 and Lambda \u2194 AWS APIs are TLS-encrypted within AWS's network. The CSP in the response-headers policy includes HSTS with `preload` and `includeSubdomains` for one year.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "014a2ce2-5a49-5f88-9efa-003459558fe5",
+                "control-id": "si-2",
+                "description": "Flaw remediation: Dependabot opens version-update PRs weekly for npm dependencies and GitHub Actions, monthly for Terraform providers. Vulnerability alerts are emailed and surfaced in GitHub Security. The OPA gate runs on every PR, ensuring that no remediation merge introduces a configuration regression.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "460b0557-d405-5904-b0e4-907cdfddb58e",
+                "control-id": "si-3",
+                "description": "Malicious code protection: the system has no executable upload paths. The S3 bucket holds static content authored by the operator and delivered via CloudFront; the Lambda runs only operator-authored JavaScript and AWS-provided SDK code (verified via Sigstore signature on the deploy-time signal). There is no surface for end-user uploads, macros, or executable email attachments.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "17ef91c6-6916-57ed-a1cc-72d910b6bf71",
+                "control-id": "si-4",
+                "description": "System monitoring is performed by the runtime KSI emitter (`infrastructure/lambda/index.js`). It queries the live AWS configuration of every cloud component named in the deploy-time signal and publishes a runtime signal at /.well-known/ksi-signal-runtime.json with current pass/fail validations. Drift between the deploy-time and runtime signals is the primary tamper signal the system produces and is detectable from outside the boundary.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "a5e48779-a24b-5c49-8b4d-bb4590e3bb97",
+                "control-id": "si-4.1",
+                "description": "System-wide intrusion detection is not applicable: the system has no general-purpose compute hosting that would host an IDS agent. AWS-side intrusion detection is inherited; CloudTrail captures AWS API activity.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "da61eb94-28d0-5334-9f77-f7e1d039d84b",
+                "control-id": "si-4.16",
+                "description": "Correlation of monitoring information: CloudTrail correlates AWS API activity (inherited); the canonical KSI signal correlates compliance validations across components by component_refs. Drift between the deploy-time and runtime KSI signals is the cross-source correlation surface.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              },
+              {
+                "uuid": "cc7cc572-599c-5cbc-b7f5-a368af30ac57",
+                "control-id": "si-4.18",
+                "description": "Analysis of traffic and covert exfiltration is not applicable: the system has no compute that initiates outbound traffic to untrusted destinations. Lambda egress is to AWS APIs only; CloudFront is unidirectional (serving public content).",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "5f5ec161-9346-5ed8-8cad-586dc0b4ae5d",
+                "control-id": "si-4.23",
+                "description": "Host-based monitoring devices are not applicable: see SI-4.1.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "880e708f-f258-57d2-9761-c5d1f30c9335",
+                "control-id": "si-6",
+                "description": "Security and privacy function verification: the OPA gate evaluates security functions on every deploy, and the runtime KSI emitter re-verifies the live configuration daily. Both produce structured records in the KSI signal. Verification failures block deploy or are recorded as drift in the runtime signal.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "41c194b6-0569-55d0-b905-0875687200f6",
+                "control-id": "si-7",
+                "description": "Software, firmware, and information integrity: the deploy-time KSI signal is signed via Sigstore keyless with the GitHub Actions OIDC identity. The signing certificate is issued by Fulcio; the signature is recorded in the public Rekor transparency log; the bundle is published at /.well-known/ksi-signal.bundle. Any consumer can verify the integrity of the canonical inventory and its embedded validations using `cosign verify-blob`.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "a599a30e-df14-507a-8fbb-fad2c5f3c346",
+                "control-id": "si-8",
+                "description": "Spam protection is not applicable: the system runs no email service or message-receiving endpoint.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "fc34d6dd-3872-5fca-98f7-68bdbcb3f85e",
+                "control-id": "si-8.2",
+                "description": "See SI-8. No spam-handling surface to update.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "not-applicable"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "ee8444ca-47fb-5cf7-8582-e161606e4be9",
+                "control-id": "sr-11",
+                "description": "Component authenticity: every npm package's lockfile integrity hash is preserved in the canonical inventory; GitHub Actions are SHA-pinned (pinned to commit, not tag); the OPA binary is verified via published SHA-256 checksum in the workflow before installation.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "66c67f52-ef89-54d8-811b-c802f964d425",
+                "control-id": "sr-3",
+                "description": "Supply chain controls: dependencies are pinned (npm via package-lock.json with integrity hashes; GitHub Actions via SHA pins; Terraform providers via version constraints; OPA binary via SHA-256 verification). Risk monitoring is automated via Dependabot. The PURL-based canonical inventory enables external SCRM tooling. See docs/supply-chain.md.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
+                "uuid": "520a1eb9-d387-5897-93e2-466ad8075f7a",
+                "control-id": "sr-6",
+                "description": "Supplier assessments and reviews: AWS's supplier-assessment program is inherited under its FedRAMP authorization. For OSS suppliers (npm, Terraform providers, GitHub Actions, OPA, cosign), the operator's review is via Dependabot automated alerts plus Sigstore-signed provenance for cosign-signed artifacts. See docs/supply-chain.md.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "shared"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
