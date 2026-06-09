@@ -1,0 +1,24 @@
+{
+  "name": "Silk Reeling Mirror — Customer Responsibility SCuBA",
+  "version": "1.0.0",
+  "description": "Secure-configuration baseline for the customer responsibilities of consuming this cloud service offering. Customer-run: fetch this signed bundle, assess your own configuration LOCALLY (nothing leaves your environment), and get a per-policy pass/fail plus the frameworks each result satisfies. Each policy maps to an 800-53 Rev5 control (the hub) and projects to every framework via the published control mappings.",
+  "hub_catalog": "NIST 800-53 Rev5",
+  "policies": [
+    {
+      "id": "SRM-AUTH-01",
+      "name": "phishing_resistant_mfa",
+      "package": "scuba.phishing_resistant_mfa",
+      "control": "ia-2.1",
+      "severity": "high",
+      "title": "Phishing-resistant MFA for application access"
+    },
+    {
+      "id": "SRM-SC-01",
+      "name": "tls_enforcement",
+      "package": "scuba.tls_enforcement",
+      "control": "sc-8",
+      "severity": "high",
+      "title": "TLS in transit"
+    }
+  ]
+}
