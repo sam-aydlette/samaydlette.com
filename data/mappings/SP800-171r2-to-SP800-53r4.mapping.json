@@ -6,12 +6,12 @@
       "last-modified": "2026-06-10T00:00:00Z",
       "version": "1.0.0",
       "oscal-version": "1.2.2",
-      "remarks": "From 800-171 Rev2 Appendix D Table D-1 (a 171 requirement is a tailored subset of the relevant 800-53 control). 102 requirements mapped; 1 explicit no-800-53-mapping (['3.12.4']); RESIDUE pending verification: ['3.10.4', '3.10.5', '3.12.3', '3.14.2', '3.14.5', '3.2.2', '3.4.2']."
+      "remarks": "From 800-171 Rev2 Appendix D Table D-1 (a 171 requirement is a tailored subset of the relevant 800-53 control). 109 requirements mapped; 1 explicit no-800-53-mapping (['3.12.4']); RESIDUE pending verification: []."
     },
     "provenance": {
       "method": "hybrid",
       "matching-rationale": "functional",
-      "status": "not-complete",
+      "status": "complete",
       "mapping-description": "NIST's authoritative 171->53 tailoring mapping (Table D-1); 171 requirements are tailored subsets of the 800-53 controls."
     },
     "mappings": [
@@ -555,6 +555,38 @@
             ]
           },
           {
+            "uuid": "43cacb45-28c2-5ee6-a450-0e80883bb3fc",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-3"
+              }
+            ]
+          },
+          {
+            "uuid": "f5de65df-9c0a-599b-903c-d08df4ecee27",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-3"
+              }
+            ]
+          },
+          {
             "uuid": "0815cdc7-fac5-56d6-8503-cbee6d740472",
             "relationship": "subset-of",
             "sources": [
@@ -689,6 +721,70 @@
               {
                 "type": "control",
                 "id-ref": "3.12.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pl-2"
+              }
+            ]
+          },
+          {
+            "uuid": "8a233e90-474d-5cbd-875e-c2399c25a467",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-2"
+              }
+            ]
+          },
+          {
+            "uuid": "bdbe1596-4bf7-521d-b1b8-f2df76af740f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-5"
+              }
+            ]
+          },
+          {
+            "uuid": "9d514d54-297f-5c22-a6f3-ebd7619c5515",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-7"
+              }
+            ]
+          },
+          {
+            "uuid": "7933145c-a9e5-5a58-93e9-3efea04ce849",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.3"
               }
             ],
             "targets": [
@@ -987,6 +1083,54 @@
             ]
           },
           {
+            "uuid": "9152cfcd-7a36-52ea-821b-43546cbb5981",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-2"
+              }
+            ]
+          },
+          {
+            "uuid": "359f77a6-7449-5a2a-9e79-9a9d82a9881e",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-3"
+              }
+            ]
+          },
+          {
+            "uuid": "52de0c80-8d2e-57e5-846b-4f2b05a765ea",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-5"
+              }
+            ]
+          },
+          {
             "uuid": "ba0861cd-62a7-5649-bceb-004a819f910b",
             "relationship": "subset-of",
             "sources": [
@@ -1025,6 +1169,22 @@
               {
                 "type": "control",
                 "id-ref": "3.14.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-3"
+              }
+            ]
+          },
+          {
+            "uuid": "397afbfd-a58e-58d8-b160-6a5344e5057b",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.5"
               }
             ],
             "targets": [
@@ -1105,6 +1265,38 @@
               {
                 "type": "control",
                 "id-ref": "3.2.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "at-3"
+              }
+            ]
+          },
+          {
+            "uuid": "6ec6fe96-fa67-5fe4-bfa0-a8e3448464e1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.2.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "at-2"
+              }
+            ]
+          },
+          {
+            "uuid": "5b60eefb-e19d-51eb-8021-49cd95db23a8",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.2.2"
               }
             ],
             "targets": [
@@ -1409,6 +1601,70 @@
               {
                 "type": "control",
                 "id-ref": "3.4.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-8.1"
+              }
+            ]
+          },
+          {
+            "uuid": "3d7ab234-c082-5628-adf7-994304999a79",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-2"
+              }
+            ]
+          },
+          {
+            "uuid": "80e41eaf-fcfa-51b8-ac3e-2d8cd8229f82",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-6"
+              }
+            ]
+          },
+          {
+            "uuid": "a5a775db-ca7f-5633-8f1b-0cda683534e1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-8"
+              }
+            ]
+          },
+          {
+            "uuid": "a648ad3c-b702-585f-a6cb-5c22ec73209e",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.2"
               }
             ],
             "targets": [

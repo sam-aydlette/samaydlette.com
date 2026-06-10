@@ -46,7 +46,8 @@ def main():
                         f"requirements mapped; {len(none)} explicit no-800-53-mapping ({none}); "
                         f"RESIDUE pending verification: {residue}."),
         },
-        "provenance": {"method": "hybrid", "matching-rationale": "functional", "status": "not-complete",
+        "provenance": {"method": "hybrid", "matching-rationale": "functional",
+                       "status": ("complete" if not residue else "not-complete"),
                        "mapping-description": ("NIST's authoritative 171->53 tailoring mapping (Table D-1); "
                                                "171 requirements are tailored subsets of the 800-53 controls.")},
         "mappings": [{"uuid": sid("m", "171-53"),
