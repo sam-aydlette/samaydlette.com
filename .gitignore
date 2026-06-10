@@ -119,3 +119,6 @@ infrastructure/*-test.json
 infrastructure/test-results/
 infrastructure/ponse*
 infrastructure/lambda\ invoke*
+
+# Generated SCuBA bundle (regenerable via scripts/build-scuba-bundle.py; signed+published in the pipeline)
+scuba/dist/

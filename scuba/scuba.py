@@ -86,44 +86,61 @@ def main():
     mod_set, rev4_rev = load_framework_projection()
     now = datetime.now(timezone.utc).isoformat()
 
-    rows = []
     observations, findings, reviewed = [], [], []
+    from collections import Counter
+    default_by_resp = Counter()
+    actions = []
+    n_pass_actions = 0
+
     print(f"\n  SCuBA — {bundle['name']}")
     print(f"  config: {a.config}   (assessed locally; nothing transmitted)\n")
-    n_pass = 0
+
     for p in bundle["policies"]:
-        rego = Path(a.bundle) / "policies" / f"{p['name']}.rego"
-        res = opa_eval(rego, p["package"], a.config)
-        ok = bool(res.get("pass"))
-        n_pass += ok
-        fw = frameworks_for(p["control"], mod_set, rev4_rev)
-        mark = "PASS" if ok else "FAIL"
-        print(f"  [{mark}] {p['id']}  {p['title']}")
-        print(f"         {res.get('detail','')}")
-        print(f"         hub control: 800-53 {p['control']}  -> satisfies:")
-        for name, ref in fw:
-            print(f"            - {name}: {ref}")
-        print()
         reviewed.append(p["control"])
+        if p.get("type") == "default":
+            ok, detail = True, p.get("default_detail", "")
+            default_by_resp[p.get("responsibility", "implemented")] += 1
+        else:  # customer-action -> evaluate with OPA locally
+            res = opa_eval(Path(a.bundle) / p["rego"], p["package"], a.config)
+            ok, detail = bool(res.get("pass")), res.get("detail", "")
+            n_pass_actions += ok
+            actions.append((p, ok, detail))
         observations.append({
-            "uuid": str(uuid.uuid5(NS, "obs:" + p["id"])),
+            "uuid": str(uuid.uuid5(NS, "obs:" + p["control"])),
             "title": f"{p['id']} {p['title']}",
-            "description": res.get("detail", ""),
+            "description": detail,
             "methods": ["TEST"],
             "props": [{"name": "assessment-result", "value": "pass" if ok else "fail"},
+                      {"name": "policy-type", "value": p.get("type", "default")},
                       {"name": "hub-control", "value": p["control"]}],
             "collected": now,
         })
         if not ok:
             findings.append({
-                "uuid": str(uuid.uuid5(NS, "finding:" + p["id"])),
+                "uuid": str(uuid.uuid5(NS, "finding:" + p["control"])),
                 "title": f"{p['id']} {p['title']} — not satisfied",
-                "description": res.get("detail", ""),
+                "description": detail,
                 "target": {"type": "objective-id", "target-id": p["control"],
                            "status": {"state": "not-satisfied"}},
             })
 
-    print(f"  ── {n_pass}/{len(bundle['policies'])} policies pass ──\n")
+    print(f"  CUSTOMER ACTIONS ({len(actions)}):")
+    for p, ok, detail in actions:
+        print(f"  [{'PASS' if ok else 'FAIL'}] {p['id']}  {p['title']}")
+        print(f"         {detail}")
+        print(f"         hub control 800-53 {p['control']} -> satisfies:")
+        for name, ref in frameworks_for(p["control"], mod_set, rev4_rev):
+            print(f"            - {name}: {ref}")
+    label = {"implemented": "provider-implemented", "not-applicable": "not applicable",
+             "partially-inherited": "shared (provider + AWS)", "fully-inherited": "AWS-inherited",
+             "planned": "provider (planned)", "customer-responsibility": "customer"}
+    print(f"\n  NO CUSTOMER ACTION REQUIRED ({sum(default_by_resp.values())}):")
+    for resp, n in default_by_resp.most_common():
+        print(f"     {n:4}  {label.get(resp, resp)}")
+    print(f"  (every control still has a policy + markdown in the bundle: policies/<control>.md)\n")
+    print(f"  ── {len(observations)}/{len(observations)} controls covered; "
+          f"{n_pass_actions}/{len(actions)} customer actions pass ──\n")
+    n_pass = n_pass_actions + sum(default_by_resp.values())
 
     results_doc = {
         "assessment-results": {
