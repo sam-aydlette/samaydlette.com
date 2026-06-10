@@ -1,0 +1,2259 @@
+{
+  "mapping-collection": {
+    "uuid": "e4b10a6d-c68d-5040-9134-7672a570036f",
+    "metadata": {
+      "title": "NIST SP 800-171 Rev2 -> 800-53 Rev4 control mapping (Appendix D, Table D-1)",
+      "last-modified": "2026-06-10T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.2.2",
+      "remarks": "From 800-171 Rev2 Appendix D Table D-1 (a 171 requirement is a tailored subset of the relevant 800-53 control). 102 requirements mapped; 1 explicit no-800-53-mapping (['3.12.4']); RESIDUE pending verification: ['3.10.4', '3.10.5', '3.12.3', '3.14.2', '3.14.5', '3.2.2', '3.4.2']."
+    },
+    "provenance": {
+      "method": "hybrid",
+      "matching-rationale": "functional",
+      "status": "not-complete",
+      "mapping-description": "NIST's authoritative 171->53 tailoring mapping (Table D-1); 171 requirements are tailored subsets of the 800-53 controls."
+    },
+    "mappings": [
+      {
+        "uuid": "23d9ca80-5834-588e-9ea7-d95524024983",
+        "source-resource": {
+          "type": "resource",
+          "href": "#res-171r2"
+        },
+        "target-resource": {
+          "type": "resource",
+          "href": "#res-53r4"
+        },
+        "maps": [
+          {
+            "uuid": "e94ab2a4-6484-50d9-ba51-f73db4971a05",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-2"
+              }
+            ]
+          },
+          {
+            "uuid": "1d0c85d9-f320-54d4-960b-e344b39094ad",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.10"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-11"
+              }
+            ]
+          },
+          {
+            "uuid": "6bea23f4-1a3a-5c41-ab05-78c8735c86e7",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.10"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-11.1"
+              }
+            ]
+          },
+          {
+            "uuid": "fc93aae5-39d6-5373-9a4f-df84b6cb909f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.11"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-12"
+              }
+            ]
+          },
+          {
+            "uuid": "cd25b300-eb69-511f-b0ba-fe67c93baae7",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.12"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-17.1"
+              }
+            ]
+          },
+          {
+            "uuid": "32616d1b-5dd2-5afe-a2af-57e698959ac1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.13"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-17.2"
+              }
+            ]
+          },
+          {
+            "uuid": "80c96d9f-dff6-5234-b586-1e90f3c02ebf",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.14"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-17.3"
+              }
+            ]
+          },
+          {
+            "uuid": "b847b9bb-9bdb-5407-8310-f04bdc9ad47c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.15"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-17.4"
+              }
+            ]
+          },
+          {
+            "uuid": "0882c403-e4dd-51d3-8058-ec69ea5e6732",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.16"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-18"
+              }
+            ]
+          },
+          {
+            "uuid": "89ac2d9e-ab01-5610-bd2f-b54bd20c3ca1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.17"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-18.1"
+              }
+            ]
+          },
+          {
+            "uuid": "f5c8d007-ba9b-5a10-9610-7e23a89543ed",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.18"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-19"
+              }
+            ]
+          },
+          {
+            "uuid": "2d021921-8676-5167-b608-1a7aa370f8fb",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.19"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-19.5"
+              }
+            ]
+          },
+          {
+            "uuid": "8a2b6b85-cb94-5f72-aae9-dd91cc9a3895",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-17"
+              }
+            ]
+          },
+          {
+            "uuid": "a74f069a-cdf4-5df9-ac0b-42e16f29a24d",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-3"
+              }
+            ]
+          },
+          {
+            "uuid": "23548b61-b4ff-5ac3-ad8f-310ef1bbdca4",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.20"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-20"
+              }
+            ]
+          },
+          {
+            "uuid": "e7b2aa67-266d-5393-b034-6d3b9802dd3c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.20"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-20.1"
+              }
+            ]
+          },
+          {
+            "uuid": "ebcbae08-953a-530f-8e5a-e01274793533",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.21"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-20.2"
+              }
+            ]
+          },
+          {
+            "uuid": "f86eec94-d922-5a3d-b48f-6b904bf9bd93",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.22"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-22"
+              }
+            ]
+          },
+          {
+            "uuid": "4ca29346-a066-5771-9b18-46d8a0ffa6a4",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-4"
+              }
+            ]
+          },
+          {
+            "uuid": "e816422d-8577-5f54-896b-4c4327da8ad1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-5"
+              }
+            ]
+          },
+          {
+            "uuid": "688d0842-c9a7-5f13-93fa-e7ec810a2f03",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6"
+              }
+            ]
+          },
+          {
+            "uuid": "b08f285b-b220-5bea-b4af-68a09ae0d1ee",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6.1"
+              }
+            ]
+          },
+          {
+            "uuid": "46675c2f-4c7d-546d-80d8-f59cd7c22aae",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6.5"
+              }
+            ]
+          },
+          {
+            "uuid": "75ed5d2c-8867-5d6b-a6d8-c3e758439c0f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6.2"
+              }
+            ]
+          },
+          {
+            "uuid": "1baf9bb4-a29f-5122-acb0-bb9f0da58546",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6.10"
+              }
+            ]
+          },
+          {
+            "uuid": "638f87d1-de49-57c8-bc4d-c3dc3a5ec2ce",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-6.9"
+              }
+            ]
+          },
+          {
+            "uuid": "a88ed7c3-db5c-59fe-944b-f68d33b2337c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-7"
+              }
+            ]
+          },
+          {
+            "uuid": "fc09c84d-aa61-5d5d-987b-cfef5474f1f6",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.1.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ac-8"
+              }
+            ]
+          },
+          {
+            "uuid": "200fc8e6-7736-5fd4-a7d4-f6028ec05a67",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-2"
+              }
+            ]
+          },
+          {
+            "uuid": "6d7bf13b-1225-5d32-940b-ffe0ddc6ef95",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-4"
+              }
+            ]
+          },
+          {
+            "uuid": "1a0501fc-e3af-57d6-aff3-e2deacb6b5cf",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-5"
+              }
+            ]
+          },
+          {
+            "uuid": "ece84119-9b5d-5587-98e4-3689e9d7c556",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-6"
+              }
+            ]
+          },
+          {
+            "uuid": "42b61b05-94f0-5b4b-b358-8fb499691270",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-3"
+              }
+            ]
+          },
+          {
+            "uuid": "0815cdc7-fac5-56d6-8503-cbee6d740472",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.10.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pe-17"
+              }
+            ]
+          },
+          {
+            "uuid": "23fea1aa-1150-52b7-914c-07f85da50570",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.11.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ra-3"
+              }
+            ]
+          },
+          {
+            "uuid": "89d3c065-cf4c-5cda-82eb-865acb9cde38",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.11.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ra-5"
+              }
+            ]
+          },
+          {
+            "uuid": "05b687d0-971c-5d35-9944-48245a13020c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.11.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ra-5.5"
+              }
+            ]
+          },
+          {
+            "uuid": "9289ff19-c1a6-57d2-908a-c827870cfe81",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.11.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ra-5"
+              }
+            ]
+          },
+          {
+            "uuid": "1ba837c6-4df0-5f5e-b3e5-fd92a917cf94",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-2"
+              }
+            ]
+          },
+          {
+            "uuid": "f8093607-e571-593d-8396-638c7092b440",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-5"
+              }
+            ]
+          },
+          {
+            "uuid": "1a60f889-3aed-5c6b-b172-6555843b5294",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ca-7"
+              }
+            ]
+          },
+          {
+            "uuid": "38622f21-ec7d-5d44-83b7-7d28b11e5a05",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.12.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "pl-2"
+              }
+            ]
+          },
+          {
+            "uuid": "375ffb57-5d60-56a5-99e8-69e4a1ecad6f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-7"
+              }
+            ]
+          },
+          {
+            "uuid": "4d1aadd6-c9c0-506b-8ec4-eca3040ec422",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.10"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-12"
+              }
+            ]
+          },
+          {
+            "uuid": "dc51b56e-092b-5ef3-ab96-17fb59161fe2",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.11"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-13"
+              }
+            ]
+          },
+          {
+            "uuid": "a97f2281-a708-5f9b-9457-399fc2096a63",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.12"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-15"
+              }
+            ]
+          },
+          {
+            "uuid": "df69f116-d272-5c91-86ef-9763ce96aab8",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.13"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-18"
+              }
+            ]
+          },
+          {
+            "uuid": "d04c8015-aa71-572d-aebd-b5269f28358e",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.14"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-19"
+              }
+            ]
+          },
+          {
+            "uuid": "6c8b518a-22fa-5b82-a6bd-58c025c6ff22",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.15"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-23"
+              }
+            ]
+          },
+          {
+            "uuid": "86abc3ea-467c-5a20-90e0-8bbd952e940e",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.16"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-28"
+              }
+            ]
+          },
+          {
+            "uuid": "825169be-4452-5fc0-aa4d-9469783a3dee",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sa-8"
+              }
+            ]
+          },
+          {
+            "uuid": "49b79f37-dff1-5150-9a1d-1f355d622396",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-2"
+              }
+            ]
+          },
+          {
+            "uuid": "223fa861-3ddb-5ce9-abfb-187b0c4dc1b9",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-4"
+              }
+            ]
+          },
+          {
+            "uuid": "72c338cc-f3ab-5a1d-bc80-3d9e6b79c131",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-7"
+              }
+            ]
+          },
+          {
+            "uuid": "d25e85d9-ef16-53ca-a776-9d7ee9b8e368",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-7.5"
+              }
+            ]
+          },
+          {
+            "uuid": "95e2c467-d74b-5c11-b0f4-c67b6f38a05a",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-7.7"
+              }
+            ]
+          },
+          {
+            "uuid": "a6d4a502-7b7f-5ac8-bf84-1921e0074aae",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-8"
+              }
+            ]
+          },
+          {
+            "uuid": "106425f8-c943-5de8-a0f9-6e825da337ed",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-8.1"
+              }
+            ]
+          },
+          {
+            "uuid": "5136b867-51e0-5601-b8f5-3ad8e70aa081",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.13.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "sc-10"
+              }
+            ]
+          },
+          {
+            "uuid": "ba2ce64a-262d-5ab9-9700-64fc041bab3f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-2"
+              }
+            ]
+          },
+          {
+            "uuid": "ba0861cd-62a7-5649-bceb-004a819f910b",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-3"
+              }
+            ]
+          },
+          {
+            "uuid": "4f88ef08-4497-5e93-a135-fcac60be824b",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-5"
+              }
+            ]
+          },
+          {
+            "uuid": "9bb2aee9-dbff-5e9b-a56a-804a7dfbf36a",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-3"
+              }
+            ]
+          },
+          {
+            "uuid": "ba75426c-ed68-5dbc-9562-a733de642a41",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-4"
+              }
+            ]
+          },
+          {
+            "uuid": "8b670f19-6a07-57ee-80d8-7aca4bc1e09d",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-4.4"
+              }
+            ]
+          },
+          {
+            "uuid": "1d067000-d6d9-53cc-a2ac-ba535a0953f7",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.14.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "si-4"
+              }
+            ]
+          },
+          {
+            "uuid": "e134f1dc-1608-59cb-a628-0340bbdd9004",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.2.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "at-2"
+              }
+            ]
+          },
+          {
+            "uuid": "f0c2050b-59cd-55c9-b51d-ad82c89e28c3",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.2.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "at-3"
+              }
+            ]
+          },
+          {
+            "uuid": "d56372d2-e3f8-5991-a983-f6ae0064291f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.2.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "at-2.2"
+              }
+            ]
+          },
+          {
+            "uuid": "d807b60d-752f-5b0c-9b67-230f9268a179",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-2"
+              }
+            ]
+          },
+          {
+            "uuid": "38bc3078-df88-52f9-86cc-976d881cb5d0",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-3"
+              }
+            ]
+          },
+          {
+            "uuid": "551867af-9bc7-59a0-a77d-58f1298c00c0",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-3.1"
+              }
+            ]
+          },
+          {
+            "uuid": "f4c06386-c998-5e07-91f4-b9371920d8e2",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-11"
+              }
+            ]
+          },
+          {
+            "uuid": "67700f98-a005-58f5-9798-47b5e3b7aed4",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-12"
+              }
+            ]
+          },
+          {
+            "uuid": "8091c610-5f61-585b-b5d5-1bb7c5ddddf6",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-6"
+              }
+            ]
+          },
+          {
+            "uuid": "0368907a-d42c-59c0-88eb-04d006590dbb",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-2.3"
+              }
+            ]
+          },
+          {
+            "uuid": "ca64cca3-acec-5ba5-8b39-48fb0e3f8a24",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-5"
+              }
+            ]
+          },
+          {
+            "uuid": "f90fdf82-bb88-5032-982a-ef91836ccdda",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-6.3"
+              }
+            ]
+          },
+          {
+            "uuid": "a3465bfe-a48a-5bb8-a7d3-ea30861b5dd1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-7"
+              }
+            ]
+          },
+          {
+            "uuid": "7af68d39-a68e-5539-a00c-3114df8c7b0b",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-8"
+              }
+            ]
+          },
+          {
+            "uuid": "5d21e1aa-ffcf-5bbf-950c-2e59f912e694",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-8.1"
+              }
+            ]
+          },
+          {
+            "uuid": "53132b86-e967-5470-a506-c925eb4827cd",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-9"
+              }
+            ]
+          },
+          {
+            "uuid": "d22fe167-efab-5a27-9244-624bcfd1f339",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.3.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "au-9.4"
+              }
+            ]
+          },
+          {
+            "uuid": "89e5cd4a-6c37-5d14-901f-211e8df3a31d",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-2"
+              }
+            ]
+          },
+          {
+            "uuid": "7defb7c9-6411-531f-a3fd-bc4653e8b7fd",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-6"
+              }
+            ]
+          },
+          {
+            "uuid": "d94113c4-ea1d-5bb9-8092-99353a831df8",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-8"
+              }
+            ]
+          },
+          {
+            "uuid": "a5e0af3d-0237-5143-acd3-0e49e529c7df",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-8.1"
+              }
+            ]
+          },
+          {
+            "uuid": "e1e5ddc2-d588-5d19-81c0-af4b4c071239",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-3"
+              }
+            ]
+          },
+          {
+            "uuid": "eb89698b-b6bd-537c-bc66-3c078e2c3e5a",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-4"
+              }
+            ]
+          },
+          {
+            "uuid": "08726a0f-4f80-5aa7-b9d5-810552259b88",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-5"
+              }
+            ]
+          },
+          {
+            "uuid": "f7cba726-feee-543b-b4da-66a1521754f1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-7"
+              }
+            ]
+          },
+          {
+            "uuid": "65ed12b2-4307-5973-8a0a-7bc4f74b9c49",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-7.1"
+              }
+            ]
+          },
+          {
+            "uuid": "00467565-a74d-519e-9fd7-d0b45c696b49",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-7.2"
+              }
+            ]
+          },
+          {
+            "uuid": "be491918-36e0-5003-b825-db2bc571a86b",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-7.4"
+              }
+            ]
+          },
+          {
+            "uuid": "002049ed-b277-56ea-8e16-c2ae60ac0d92",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-7.5"
+              }
+            ]
+          },
+          {
+            "uuid": "cd330bc4-95b5-50f4-88e0-0aef9f8b9a56",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.4.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cm-11"
+              }
+            ]
+          },
+          {
+            "uuid": "5b3259f4-d602-5ed1-a405-a69f943efbb4",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2"
+              }
+            ]
+          },
+          {
+            "uuid": "41cc56d3-8280-53eb-87bd-6788aa0aae48",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.10"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-5.1"
+              }
+            ]
+          },
+          {
+            "uuid": "3c9fff4e-eec0-5279-8394-f4c13f4db28f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.11"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-6"
+              }
+            ]
+          },
+          {
+            "uuid": "fd064018-c5f8-523c-bb5c-3e12157e29cf",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-3"
+              }
+            ]
+          },
+          {
+            "uuid": "efee6eb9-0937-5e6b-9f2b-cf19cee18fac",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-5"
+              }
+            ]
+          },
+          {
+            "uuid": "bb7325a6-4017-574f-a79b-70c011a4f216",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2.1"
+              }
+            ]
+          },
+          {
+            "uuid": "5a100629-51ca-5cd1-ae6d-c8d8c3db1fc7",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2.2"
+              }
+            ]
+          },
+          {
+            "uuid": "ff78588e-a8b1-5a56-a929-de98be7caa87",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2.3"
+              }
+            ]
+          },
+          {
+            "uuid": "112bc590-983b-54cf-a963-c49fd262c3dc",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2.8"
+              }
+            ]
+          },
+          {
+            "uuid": "fa4f8382-43da-56be-9cdb-7013319a0292",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-2.9"
+              }
+            ]
+          },
+          {
+            "uuid": "0136a143-80bd-57ce-84af-a146fef5e152",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-4"
+              }
+            ]
+          },
+          {
+            "uuid": "02ac4865-ae89-500c-bddc-c6d3fb2b12cf",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-4"
+              }
+            ]
+          },
+          {
+            "uuid": "ed9c62fe-4a95-5651-9a7c-53b9e2382320",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-5.1"
+              }
+            ]
+          },
+          {
+            "uuid": "aa498ba8-43a1-52f8-8210-91519d93994d",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-5.1"
+              }
+            ]
+          },
+          {
+            "uuid": "b87c9ac0-3ccd-5bcb-b606-29fc2451703f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.5.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ia-5.1"
+              }
+            ]
+          },
+          {
+            "uuid": "75ec30d8-6ba6-5a14-b9b7-9777317a3a6f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-2"
+              }
+            ]
+          },
+          {
+            "uuid": "14d6abb4-b735-53ad-bd23-fc534cca2610",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-4"
+              }
+            ]
+          },
+          {
+            "uuid": "b3b24350-e3bd-528d-b502-a9861ea4835f",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-5"
+              }
+            ]
+          },
+          {
+            "uuid": "684dd0bc-2c78-5e41-8e5a-a7fdbefd6b79",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-6"
+              }
+            ]
+          },
+          {
+            "uuid": "f4041a00-b437-5fc5-8c30-d1636ec9d152",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-7"
+              }
+            ]
+          },
+          {
+            "uuid": "e23a177b-cade-5331-9771-1686c935ae27",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.6.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ir-3"
+              }
+            ]
+          },
+          {
+            "uuid": "46cf3acc-f84f-5080-b85d-4b7f96b7effb",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-2"
+              }
+            ]
+          },
+          {
+            "uuid": "78f5e1ab-d539-5228-a7ae-24331aa7a59e",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-3"
+              }
+            ]
+          },
+          {
+            "uuid": "6d557cad-5e9e-560b-a539-284f16eac1d6",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-3.1"
+              }
+            ]
+          },
+          {
+            "uuid": "82610a95-ed6d-5478-9d71-6f63716fd051",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-3.2"
+              }
+            ]
+          },
+          {
+            "uuid": "4dd3aa28-a272-5d15-941a-937e3e067da1",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-2"
+              }
+            ]
+          },
+          {
+            "uuid": "68618b33-3f51-580e-871f-9466cc8965e6",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-3.2"
+              }
+            ]
+          },
+          {
+            "uuid": "c99b659d-b3c4-568e-9c29-ecaa49c6dad9",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-4"
+              }
+            ]
+          },
+          {
+            "uuid": "99e2901e-12e8-5eca-a470-934155d1e5d2",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.7.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ma-5"
+              }
+            ]
+          },
+          {
+            "uuid": "6f334557-403f-5671-b91b-93ee6a529b09",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-2"
+              }
+            ]
+          },
+          {
+            "uuid": "b1e11c6e-35f6-5139-8c87-b46fd5723bdb",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-4"
+              }
+            ]
+          },
+          {
+            "uuid": "66ce32b6-68b9-5b23-80b5-65d56e30246c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.3"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-6"
+              }
+            ]
+          },
+          {
+            "uuid": "e4b14c83-8369-5ad0-ac26-6375c6730dc6",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.4"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-3"
+              }
+            ]
+          },
+          {
+            "uuid": "db69eda2-5bc2-5a4f-bfdc-cc25964d72d7",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.5"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-5"
+              }
+            ]
+          },
+          {
+            "uuid": "9960a657-8ae3-563c-a50d-5d42845e7a82",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.6"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-5.4"
+              }
+            ]
+          },
+          {
+            "uuid": "7c6ab30d-68d5-5315-bb54-4360d77c09db",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.7"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-7"
+              }
+            ]
+          },
+          {
+            "uuid": "de000942-e76e-5fe9-9b55-c260fabe63c4",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.8"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "mp-7.1"
+              }
+            ]
+          },
+          {
+            "uuid": "f33ebf33-573e-5e6e-8d09-93744efff2ac",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.8.9"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "cp-9"
+              }
+            ]
+          },
+          {
+            "uuid": "ce5eddc8-adb3-5b51-a0f1-6f9910319dd9",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.9.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ps-3"
+              }
+            ]
+          },
+          {
+            "uuid": "21ef5f6b-0ec7-586a-879c-363cf0d1a31c",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.9.1"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ps-4"
+              }
+            ]
+          },
+          {
+            "uuid": "8c3880a3-0caa-5113-a238-4ca26c552069",
+            "relationship": "subset-of",
+            "sources": [
+              {
+                "type": "control",
+                "id-ref": "3.9.2"
+              }
+            ],
+            "targets": [
+              {
+                "type": "control",
+                "id-ref": "ps-5"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "689934d0-9c4c-562f-879d-5d0276611215",
+          "title": "NIST SP 800-171 Rev2 catalog",
+          "props": [
+            {
+              "name": "id",
+              "value": "res-171r2"
+            }
+          ],
+          "rlinks": [
+            {
+              "href": "../catalogs/NIST_SP-800-171_rev2_catalog.json"
+            }
+          ]
+        },
+        {
+          "uuid": "2b315c4f-8371-5ba6-b88c-0b3de6a577ab",
+          "title": "NIST SP 800-53 Rev4 catalog",
+          "props": [
+            {
+              "name": "id",
+              "value": "res-53r4"
+            }
+          ],
+          "rlinks": [
+            {
+              "href": "../catalogs/NIST_SP-800-53_rev4_catalog.json"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
