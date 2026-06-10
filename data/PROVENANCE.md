@@ -38,11 +38,18 @@ Retrieval date: **2026-06-09**.
   `incorporated-into`/`moved-to` link → `subset-of`). 919/922 mapped; 3 residue (no clean
   single successor) recorded in the document. No hand-keyed crosswalk.
 
+## 800-171 Rev 2 (CMMC)
+- `catalogs/NIST_SP-800-171_rev2_catalog.json` — OSCAL catalog of the 110 requirements,
+  built by `scripts/build-171-catalog.py` from NIST's authoritative machine-readable
+  export. NIST does not publish 800-171 as OSCAL, so this is derived from the NIST source
+  (not a community conversion).
+- `sources/sp800-171r2-security-reqs.csv` — the source, vendored from the citable NIST URL:
+  https://csrc.nist.gov/csrc/media/Publications/sp/800-171/rev-2/final/documents/sp800-171r2-security-reqs.csv
+
 ## Pending (sourced at their respective checkpoints)
-- **800-171 Rev 2 catalog** (CMMC) — **no authoritative NIST OSCAL catalog exists**; will be
-  derived from NIST CPRT machine-readable 800-171 Rev 2 + Appendix-D 800-53 mapping, **not**
-  a community OSCAL conversion. Decision recorded at the CMMC checkpoint.
-- **171 Rev2 ↔ 53 Rev4 crosswalk** — from NIST SP 800-171 Rev 2 Appendix D, at the CMMC checkpoint.
+- **171 Rev2 → 800-53 Rev4 crosswalk** (the CMMC projection rail) — NOT yet sourced. Lives in
+  800-171 Rev2 **Appendix D** (publication, not a standalone file) or **NIST CPRT
+  `relationships`**. The CSF-v1.0→171 mapping is a *different* crosswalk (CSF, not 800-53).
 
 ## OSCAL JSON schemas (validation gate)
 - `schemas/oscal/oscal_{component,mapping,ssp}_schema.json` — vendored from the
