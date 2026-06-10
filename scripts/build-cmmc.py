@@ -75,6 +75,27 @@ def aggregate(classes):
     return "implemented"
 
 
+def srm_class(status, origination):
+    """A consuming OSC's SRM/inheritance view of a CSP-provided control.
+    The provider's N-A (e.g. no end-users) is NOT the OSC's N-A: it means the
+    CSP does not provide it, so the OSC must -> osc-responsibility."""
+    if status in ("not-applicable", "planned"):
+        return "osc-responsibility"
+    if origination in ("inherited", "sp-system"):
+        return "inherited"             # AWS-via-CSP or the CSP's system provides it
+    if origination in ("shared", "sp-corporate"):
+        return "shared"                # CSP provides a portion / the policy framework
+    return "osc-responsibility"
+
+
+def aggregate_srm(classes):
+    if classes == {"inherited"}:
+        return "inherited"             # OSC inherits fully only if EVERY part is provided
+    if classes == {"osc-responsibility"}:
+        return "osc-responsibility"
+    return "shared"                    # any mix -> shared
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ssp", required=True)
@@ -87,6 +108,7 @@ def main():
     hub = load_hub(a.ssp)
 
     stack = Counter()
+    srm_stack = Counter()
     residue = []
     per_req = {}
     for req in reqs:
@@ -100,8 +122,10 @@ def main():
             residue.append((req, f"hub does not address {r5}"))
             continue
         cls = aggregate({classify(s, o) for (s, o) in impls})
+        srm = aggregate_srm({srm_class(s, o) for (s, o) in impls})
         stack[cls] += 1
-        per_req[req] = {"class": cls, "hub_controls": r5}
+        srm_stack[srm] += 1
+        per_req[req] = {"class": cls, "srm": srm, "hub_controls": r5}
 
     total = len(reqs)
     inh_full = stack["fully-inherited"]
@@ -115,6 +139,10 @@ def main():
         "inheritable": {"fully_inherited": inh_full, "partially_inherited": inh_part,
                         "inheritance_touched": inh_full + inh_part,
                         "fraction": f"{inh_full + inh_part}/110"},
+        "srm_view": dict(srm_stack),
+        "srm_inheritable": {"inherited": srm_stack["inherited"], "shared": srm_stack["shared"],
+                            "osc_responsibility": srm_stack["osc-responsibility"],
+                            "inheritable_fraction": f"{srm_stack['inherited'] + srm_stack['shared']}/110"},
         "residue": [{"req": r, "reason": why} for r, why in residue],
         "per_requirement": per_req,
     }
@@ -129,8 +157,16 @@ def main():
     for k in ["implemented", "partially-inherited", "fully-inherited", "customer-responsibility", "planned", "not-applicable"]:
         if stack[k]:
             print(f"    {stack[k]:4}  {k}", file=sys.stderr)
-    print(f"  INHERITABLE from this CSO: {inh_full + inh_part}/110 "
-          f"({inh_full} full + {inh_part} partial)  <- the ~53/110 sensor", file=sys.stderr)
+    print(f"  [provider SSP view] inheritance-touched: {inh_full + inh_part}/110 "
+          f"({inh_full} full + {inh_part} partial)", file=sys.stderr)
+    print(f"\n  === CMMC SRM (OSC view) — what a consuming OSC inherits ===", file=sys.stderr)
+    print(f"    {srm_stack['inherited']:4}  inherited (CSP provides fully)", file=sys.stderr)
+    print(f"    {srm_stack['shared']:4}  shared", file=sys.stderr)
+    print(f"    {srm_stack['osc-responsibility']:4}  OSC responsibility", file=sys.stderr)
+    print(f"    {len(residue):4}  residue", file=sys.stderr)
+    print(f"  OSC INHERITS from this CSO: {srm_stack['inherited'] + srm_stack['shared']}/110 "
+          f"({srm_stack['inherited']} fully + {srm_stack['shared']} shared)  <- the ~53/110 SRM sensor",
+          file=sys.stderr)
     if residue:
         print(f"  residue ({len(residue)}): {[r for r,_ in residue]}", file=sys.stderr)
 
