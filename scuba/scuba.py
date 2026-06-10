@@ -61,17 +61,26 @@ def load_framework_projection():
     rev4_rev = {}
     for m in mp["mappings"][0]["maps"]:
         rev4_rev.setdefault(m["targets"][0]["id-ref"], []).append(m["sources"][0]["id-ref"])
-    return mod_set, rev4_rev
+    # reverse the 171->53r4 mapping: rev4 control -> [CMMC 171 requirements]
+    m171 = json.loads((REPO / "data/mappings/SP800-171r2-to-SP800-53r4.mapping.json").read_text())["mapping-collection"]
+    rev4_to_171 = {}
+    for m in m171["mappings"][0]["maps"]:
+        rev4_to_171.setdefault(m["targets"][0]["id-ref"], []).append(m["sources"][0]["id-ref"])
+    return mod_set, rev4_rev, rev4_to_171
 
 
-def frameworks_for(control, mod_set, rev4_rev):
+def frameworks_for(control, mod_set, rev4_rev, rev4_to_171):
     fw = [("NIST 800-53 Rev5", control)]
     if control in mod_set:
         fw.append(("FedRAMP Rev5 Moderate", control))
     r4 = rev4_rev.get(control, [])
     if r4:
         fw.append(("NIST 800-53 Rev4", ", ".join(sorted(r4))))
-    fw.append(("CMMC L2 / GovRAMP / TX-RAMP / IRAP", "mapping pending (added at each spoke checkpoint)"))
+    # CMMC L2: 171 requirements whose 53r4 controls chain to this hub control
+    cmmc = sorted({req for c in (set(r4) | {control}) for req in rev4_to_171.get(c, [])})
+    if cmmc:
+        fw.append(("CMMC L2 (800-171 Rev2)", ", ".join(cmmc)))
+    fw.append(("GovRAMP / TX-RAMP / CJIS / IRAP", "mapping pending (added at each spoke checkpoint)"))
     return fw
 
 
@@ -83,7 +92,7 @@ def main():
     a = ap.parse_args()
 
     bundle = json.loads((Path(a.bundle) / "bundle.json").read_text())
-    mod_set, rev4_rev = load_framework_projection()
+    mod_set, rev4_rev, rev4_to_171 = load_framework_projection()
     now = datetime.now(timezone.utc).isoformat()
 
     observations, findings, reviewed = [], [], []
@@ -129,7 +138,7 @@ def main():
         print(f"  [{'PASS' if ok else 'FAIL'}] {p['id']}  {p['title']}")
         print(f"         {detail}")
         print(f"         hub control 800-53 {p['control']} -> satisfies:")
-        for name, ref in frameworks_for(p["control"], mod_set, rev4_rev):
+        for name, ref in frameworks_for(p["control"], mod_set, rev4_rev, rev4_to_171):
             print(f"            - {name}: {ref}")
     label = {"implemented": "provider-implemented", "not-applicable": "not applicable",
              "partially-inherited": "shared (provider + AWS)", "fully-inherited": "AWS-inherited",
