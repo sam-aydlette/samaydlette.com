@@ -74,9 +74,9 @@
                 <div class="projects-list">
                     <div class="article-card">
                         <h3 class="article-title">
-                            <a href="/research/the-plumbing.html">The Plumbing: A Composable Reference Implementation for FedRAMP 20x and Rev 5</a>
+                            <a href="/research/the-plumbing.html">Shift Left on Reciprocity</a>
                         </h3>
-                        <p>The implementation that runs on this website's own infrastructure. A canonical inventory of the system's components, named in PURL, ARN, SHA-256, and HBOM form, serves as the architectural primitive. Both a FedRAMP 20x KSI signal and a NIST OSCAL Rev 5 System Security Plan are deterministically derived from it. The artifacts are signed via Sigstore keyless and published at <code>/.well-known/</code>, verifiable from anywhere. The paper covers what was built, what the PoC actually proves versus illustrates, the business problems the pattern addresses (assessment cost, SSP drift, framework transition, cyber insurance underwriting, vendor risk management), and the structural problem it points at: portfolio-level risk reasoning across heterogeneous systems is bounded by the missing shared identifier layer underneath the reports.</p>
+                        <p>One control implementation, authored once, projected into seven framework views. A single 800-53 Rev 5 control hub feeds FedRAMP Moderate, FedRAMP 20x Class C, 800-53 Rev 4, CMMC Level 2, GovRAMP with the CJIS overlay, and both TX-RAMP levels, each through a published OSCAL crosswalk or profile and each validating against the NIST schemas. The paper draws the line between the two things people call reciprocity: the government decision an agency has to make, and the architecture decision anyone can build today. It walks through the hub-and-spoke design, the CMMC shared-responsibility math, a customer-run SCuBA that lights up all seven frameworks from one local check, and the residue each projection reports honestly. Everything is verifiable from <code>/.well-known/</code> with curl, jq, and cosign, and it runs for about $125 a year.</p>
                         <a href="/research/the-plumbing.html" class="read-more">read_paper</a>
                     </div>
                     <div class="article-card">
