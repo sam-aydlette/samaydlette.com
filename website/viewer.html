@@ -74,6 +74,43 @@
                 </div>
             </div>
 
+            <h2 id="framework-coverage">Framework Coverage</h2>
+            <div class="viewer-intro">
+                <p>One NIST 800-53 Rev 5 control hub, projected to each framework through published crosswalks and profiles &mdash; the same evidence expressed in many shapes (see <a href="/research/the-plumbing.html">the methodology</a>). These figures are self-attested coverage derived from the OSCAL SSP below; they demonstrate <em>evidence</em> reciprocity, not a government Authorization/Certification (see the <a href="/research/authorization-boundary.html">authorization boundary</a>).</p>
+            </div>
+            <div class="status-grid">
+                <div class="status-card">
+                    <h3>FedRAMP Rev 5 Moderate</h3>
+                    <div class="status-value">100%</div>
+                    <div class="status-detail">native baseline &middot; 331 controls (149 implemented &middot; 96 inherited/shared &middot; 86 N/A)</div>
+                </div>
+                <div class="status-card">
+                    <h3>FedRAMP 20x &mdash; Class C</h3>
+                    <div class="status-value">continuous</div>
+                    <div class="status-detail">KSI signal + VDR &middot; Class C remediation SLAs (the 20x &ldquo;Certified&rdquo; Moderate-equivalent)</div>
+                </div>
+                <div class="status-card">
+                    <h3>GovRAMP Moderate + CJIS</h3>
+                    <div class="status-value">96%</div>
+                    <div class="status-detail">326 / 339 &middot; 13 residue: 7 CJIS-specific (ORI, authenticator) + 6 Rev 5 enhancements beyond Moderate</div>
+                </div>
+                <div class="status-card">
+                    <h3>TX-RAMP Level 1</h3>
+                    <div class="status-value">100%</div>
+                    <div class="status-detail">122 / 122 &middot; projected via the Rev 4&rarr;5 bridge</div>
+                </div>
+                <div class="status-card">
+                    <h3>TX-RAMP Level 2</h3>
+                    <div class="status-value">92%</div>
+                    <div class="status-detail">297 / 322 &middot; 25 Rev 4 enhancements beyond FedRAMP Moderate</div>
+                </div>
+                <div class="status-card">
+                    <h3>CMMC Level 2</h3>
+                    <div class="status-value">98%</div>
+                    <div class="status-detail">800-171 Rev 2 &middot; 108 / 110 &middot; a consuming OSC inherits 72/110 (SRM)</div>
+                </div>
+            </div>
+
             <div class="verify-callout">
                 <h3>Verify it yourself</h3>
                 <p>This dashboard runs in your browser and reads the same JSON anyone else's tool would. To verify the deploy-time signal cryptographically, fetch the artifact and bundle and run <code>cosign verify-blob</code>:</p>
