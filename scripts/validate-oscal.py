@@ -35,6 +35,9 @@ ARTIFACTS = [
     ("Rev4->Rev5 Mapping",   REPO / "data/mappings/SP800-53_rev4-to-rev5.mapping.json",                     "oscal_mapping_schema.json"),
     ("800-171r2 Catalog",    REPO / "data/catalogs/NIST_SP-800-171_rev2_catalog.json",                      "oscal_catalog_schema.json"),
     ("171r2->53r4 Mapping",  REPO / "data/mappings/SP800-171r2-to-SP800-53r4.mapping.json",                 "oscal_mapping_schema.json"),
+    ("GovRAMP Mod+CJIS Prof",REPO / "data/profiles/govramp_moderate_cjis_profile.json",                     "oscal_profile_schema.json"),
+    ("TX-RAMP L1 Profile",   REPO / "data/profiles/txramp_level1_profile.json",                             "oscal_profile_schema.json"),
+    ("TX-RAMP L2 Profile",   REPO / "data/profiles/txramp_level2_profile.json",                             "oscal_profile_schema.json"),
 ]
 
 
