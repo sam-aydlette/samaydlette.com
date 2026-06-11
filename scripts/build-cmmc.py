@@ -106,12 +106,23 @@ def main():
     m171 = load_171_53()
     r45 = load_rev4_rev5()
     hub = load_hub(a.ssp)
+    disp = json.loads((REPO / "data/dispositions/beyond-moderate.json").read_text())
+    for c, d in disp["controls"].items():          # beyond-Moderate dispositions extend the hub
+        hub[c] = (d["status"], d["origination"])
+    cmmc_disp = disp.get("cmmc_requirement_dispositions", {})
 
     stack = Counter()
     srm_stack = Counter()
     residue = []
     per_req = {}
     for req in reqs:
+        if req in cmmc_disp:                        # dispositioned at the requirement level (e.g. SSP)
+            cls = classify(cmmc_disp[req]["status"], "sp-system")
+            srm = aggregate_srm({srm_class(cmmc_disp[req]["status"], "sp-system")})
+            stack[cls] += 1
+            srm_stack[srm] += 1
+            per_req[req] = {"class": cls, "srm": srm, "hub_controls": []}
+            continue
         r4 = m171.get(req, [])
         if not r4:
             residue.append((req, "no 800-53 mapping (CMMC-specific control)"))

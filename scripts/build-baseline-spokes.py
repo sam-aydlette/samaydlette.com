@@ -71,13 +71,15 @@ def build_profile(key, title, revision, controls):
     return out
 
 
-def coverage(revision, controls, hub, r4_r5):
+def coverage(revision, controls, hub, r4_r5, spoke_na):
     stack = Counter()
     residue = []
     for c in controls:
         rev5 = c if revision == "rev5" else r4_r5.get(c, c)
         if rev5 in hub:
             stack[classify(*hub[rev5])] += 1
+        elif c in spoke_na or rev5 in spoke_na:
+            stack["not-applicable"] += 1            # CJIS-specific / no Rev5 successor, dispositioned N/A
         else:
             residue.append(c)
     return stack, residue
@@ -91,6 +93,10 @@ def main():
 
     data = json.loads(SEL.read_text())
     hub = load_hub(a.ssp)
+    disp = json.loads((REPO / "data/dispositions/beyond-moderate.json").read_text())
+    for c, d in disp["controls"].items():          # beyond-Moderate dispositions extend the hub
+        hub[c] = (d["status"], d["origination"])
+    spoke_na = set(disp["spoke_not_applicable"])
     r4_r5 = load_r4_r5()
     titles = {"govramp_moderate_cjis": "GovRAMP Moderate (Rev5) + CJIS overlay",
               "txramp_level1": "TX-RAMP Level 1 (Rev4 baseline)",
@@ -99,7 +105,7 @@ def main():
     for key, bl in data["baselines"].items():
         controls, rev = bl["controls"], bl["revision"]
         build_profile(key, titles[key], rev, controls)
-        stack, residue = coverage(rev, controls, hub, r4_r5)
+        stack, residue = coverage(rev, controls, hub, r4_r5, spoke_na)
         covered = sum(stack.values())
         print(f"\n=== {titles[key]} ===", file=sys.stderr)
         print(f"  baseline controls: {len(controls)} ({rev})  |  covered by hub: {covered}  "
