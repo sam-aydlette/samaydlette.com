@@ -516,6 +516,49 @@ def class_c_sla_days(pain, lev, irv):
 # =============================================================================
 
 
+def consolidate_by_cve(report_findings, risk_accepted):
+    """Consolidate CVE-bearing findings into one ledger entry per CVE.
+
+    The same CVE reported by several scanners (Grype + Dependabot) or affecting
+    several components is ONE finding with several assets, not several rows. Each
+    entry carries the earliest first_detected, the affected assets (PURL / ARN /
+    URL drawn from each finding's resource), the scanners that saw it, the worst
+    PAIN, KEV status, and disposition(s). Config findings (no CVE) are not
+    consolidated here: they are configuration weaknesses on a separate POA&M tab.
+    """
+    groups = {}
+    for rec in list(report_findings) + list(risk_accepted):
+        cve = rec.get("cve")
+        if not cve:
+            continue
+        g = groups.get(cve)
+        if g is None:
+            g = groups[cve] = {"cve": cve, "assets": [], "scanners": [],
+                               "pain": rec.get("pain"), "first_detected": rec.get("first_detected"),
+                               "is_kev": False, "dispositions": set(), "poam_refs": set()}
+        asset = rec.get("resource") or ""
+        if asset and asset not in g["assets"]:
+            g["assets"].append(asset)
+        src = rec.get("source")
+        if src and src not in g["scanners"]:
+            g["scanners"].append(src)
+        fd = rec.get("first_detected")
+        if fd and (not g["first_detected"] or fd < g["first_detected"]):
+            g["first_detected"] = fd
+        if rec.get("pain") and (not g["pain"] or rec["pain"] > g["pain"]):
+            g["pain"] = rec["pain"]
+        g["is_kev"] = g["is_kev"] or bool(rec.get("is_kev"))
+        g["dispositions"].add(rec.get("current_disposition", "open"))
+        if rec.get("poam_ref"):
+            g["poam_refs"].add(rec["poam_ref"])
+    out = []
+    for cve, g in sorted(groups.items()):
+        g["dispositions"] = sorted(g["dispositions"])
+        g["poam_refs"] = sorted(g["poam_refs"])
+        out.append(g)
+    return out
+
+
 def build_report(findings, suppressions, kev_cves, ledger):
     now = datetime.now(timezone.utc)
     report_findings = []
@@ -622,8 +665,12 @@ def build_report(findings, suppressions, kev_cves, ledger):
             "explanation": s.get("explanation", ""),
         })
 
+    cve_findings = consolidate_by_cve(report_findings, risk_accepted_records)
+    summary["unique_cves"] = len(cve_findings)
+    summary["unique_cves_open"] = sum(1 for c in cve_findings if "open" in c["dispositions"])
+
     report = {
-        "report_version": "1.1.0",
+        "report_version": "1.2.0",
         "report_id": str(uuid.uuid4()),
         "emitted_at": now.isoformat(),
         "system_id": "urn:samaydlette:website-prod",
@@ -632,6 +679,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
         "class": "C",
         "summary": summary,
         "findings": report_findings,
+        "cve_findings": cve_findings,
         "risk_accepted": risk_accepted_records,
         "rules_reference": {
             "evaluation": "FedRAMP 20x VDR-EVA-* (PAIN, IRV, LEV)",
