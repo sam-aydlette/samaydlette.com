@@ -145,10 +145,19 @@ Low because the system is categorized FIPS-199 Low (no PII, no federal data) and
 the credential is held in Secrets Manager (CMK), transmitted only over TLS, and
 compared in constant time. The credential gate runs in the Lambda itself, so it
 applies to every request regardless of how the API Gateway endpoint is reached.
-**Remediation:** federate authentication to a customer IdP via SAML/OIDC (MFA,
-account lifecycle, lockout); not implemented (no IdP available). There is no
-standalone Customer Responsibility Matrix document; FedRAMP control origination is
-tracked per-control in the OSCAL SSP (`control-origination` props).
+**Risk acceptance:** the operator, acting as the **sole customer and sole user** of
+the system, has approved this operational requirement and accepted the residual
+risk — no third party bears it, so the acceptance is complete and authoritative.
+It is valid **only while the operator remains the sole customer**: onboarding any
+real user is a re-assessment trigger, and **any customer onboarded must explicitly
+accept this risk (recorded in the CRM) or adopt the upgrade path below**.
+**Upgrade path (available on request — not a deficiency):** federation to a
+customer IdP via SAML/OIDC, or native WebAuthn/FIDO2 with FIPS-AAGUID attestation,
+would provide phishing-resistant MFA (IA-2(1)) and move authentication to
+`customer-configured`; offered on request, not pre-built. FedRAMP control
+origination is tracked per-control in the OSCAL SSP (`control-origination` props)
+and is surfaced in the forthcoming CRM/SCuBA as a customer-accepted shared
+responsibility.
 
 **POAM-022 (API Gateway no authorizer):** An API Gateway HTTP API fronts the app
 Lambda and its `$default` route specifies no authorizer (Checkov CKV_AWS_309).

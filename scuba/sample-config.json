@@ -1,0 +1,11 @@
+{
+  "_comment": "Example customer configuration for assessment. In real use this is the customer's own config, read locally by the CLI; it never leaves their environment.",
+  "auth": {
+    "method": "basic",
+    "phishing_resistant": false,
+    "risk_accepted": true
+  },
+  "tls": {
+    "min_version": "1.2"
+  }
+}
