@@ -144,7 +144,7 @@
     "sa-11.8": {
       "status": "implemented",
       "origination": "sp-corporate",
-      "statement": "Dynamic code analysis is performed by a monthly operator-run OWASP ZAP scan covering the full URL surface (the authenticated taiji application and all static pages), with findings triaged into the POA&M. SAST (Checkov, tfsec) and SCA (Syft/Grype) run on every deploy alongside it."
+      "statement": "Dynamic code analysis runs in CI as a scheduled monthly OWASP ZAP baseline scan (.github/workflows/zap-dast.yml) against the live site, with findings tracked via the ZAP issue and triaged into the POA&M. The scan covers the unauthenticated static surface today; authenticated coverage of the Basic-Auth-gated taiji application is a tracked follow-up. SAST (Checkov, tfsec) and SCA (Syft/Grype) run on every deploy alongside it."
     },
     "ra-5.8": {
       "status": "implemented",

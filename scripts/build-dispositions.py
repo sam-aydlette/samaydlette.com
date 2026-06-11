@@ -82,7 +82,7 @@ DISP = {
     "cp-2.2": ("implemented", "inherited",
         "Capacity is handled by serverless auto-scaling: Lambda and CloudFront scale with demand under AWS-managed capacity."),
     "sa-11.8": ("implemented", "sp-corporate",
-        "Dynamic code analysis is performed by a monthly operator-run OWASP ZAP scan covering the full URL surface (the authenticated taiji application and all static pages), with findings triaged into the POA&M. SAST (Checkov, tfsec) and SCA (Syft/Grype) run on every deploy alongside it."),
+        "Dynamic code analysis runs in CI as a scheduled monthly OWASP ZAP baseline scan (.github/workflows/zap-dast.yml) against the live site, with findings tracked via the ZAP issue and triaged into the POA&M. The scan covers the unauthenticated static surface today; authenticated coverage of the Basic-Auth-gated taiji application is a tracked follow-up. SAST (Checkov, tfsec) and SCA (Syft/Grype) run on every deploy alongside it."),
     "ra-5.8": ("implemented", "sp-corporate",
         "Historic audit records are retained in CloudWatch and the daily Grype re-scan catches newly disclosed CVEs against deployed dependencies; review for prior exploitation is part of the security-review cadence."),
 
