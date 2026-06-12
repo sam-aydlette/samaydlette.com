@@ -431,16 +431,24 @@ def build_cloud_components(tf_state, tf_outputs):
             if key in values and values[key] is not None:
                 attrs[key] = values[key]
 
-        # Prefer the ARN exposed via terraform output (canonical, post-apply);
-        # fall back to the resource's own arn attribute. Data sources (Route 53,
-        # ACM) carry the ARN directly on the data block.
+        # Per-resource ARN first: each resource's identity comes from its OWN
+        # state block (values["arn"]), never from a shared whole-stack output —
+        # two Lambdas in the same state would otherwise both receive the single
+        # `lambda_function_arn` output and collide on native_id. The output is
+        # only a fallback when the state block carries no ARN, and conditional
+        # outputs can hold sentinel strings ("Not created"), so anything that
+        # does not look like an ARN is rejected outright.
+        def _output_arn(name):
+            v = (tf_outputs or {}).get(name, {}).get("value")
+            return v if isinstance(v, str) and v.startswith("arn:") else None
+
         native_id = None
         if normalized == "object_store":
-            native_id = (tf_outputs or {}).get("s3_bucket_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("s3_bucket_arn")
         elif normalized == "cdn_distribution":
-            native_id = (tf_outputs or {}).get("cloudfront_distribution_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("cloudfront_distribution_arn")
         elif normalized == "function":
-            native_id = (tf_outputs or {}).get("lambda_function_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("lambda_function_arn")
         elif normalized == "dns_zone":
             native_id = values.get("arn") or values.get("zone_id") or values.get("id")
         elif normalized == "iam_policy":

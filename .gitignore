@@ -122,3 +122,8 @@ infrastructure/lambda\ invoke*
 
 # Generated SCuBA bundle (regenerable via scripts/build-scuba-bundle.py; signed+published in the pipeline)
 scuba/dist/
+
+# Python test cache
+__pycache__/
+*.pyc
+tests/__pycache__/
