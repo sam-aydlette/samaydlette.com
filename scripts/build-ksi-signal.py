@@ -120,6 +120,10 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
         "information_flow": [],
     },
+    "pypi_package": {
+        "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
+        "information_flow": [],
+    },
     "html_artifact": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [
@@ -202,11 +206,18 @@ IIW_DEFAULTS = {
         "iiw_asset_type": "Compute Function (Lambda)",
     },
     "npm_package": {
-        "function": "Lambda runtime dependency",
+        "function": "Runtime dependency of the compliance/KSI Lambda (npm)",
         "diagram_label": "Open-source policy and signing tooling running inside CI",
         "public": False,
         "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
         "iiw_asset_type": "Software Package (npm)",
+    },
+    "pypi_package": {
+        "function": "Python dependency of the Silk Reeling application (PyPI)",
+        "diagram_label": "Open-source Python dependency of the Silk Reeling app",
+        "public": False,
+        "baseline_configuration": "lockfile integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (PyPI)",
     },
     "html_artifact": {
         "function": "Public site content",
@@ -570,11 +581,12 @@ def build_sbom_components(sbom_path, existing_components=None):
     Graceful like the other loaders: returns [] when the path is missing, empty,
     or not valid JSON, so this is a no-op when the Silk Reeling app wasn't built.
 
-    Type choice: the schema's component.type enum has no PyPI type and no generic
-    software/package type — 'npm_package' is its only software-package slot. So
-    every SBOM software component (npm OR pypi) projects into 'npm_package', and
-    the true ecosystem is preserved in attributes.ecosystem and the PURL. This
-    reuses the existing 'npm_package' MAS/IIW defaults and stays schema-valid.
+    Type choice: each component is typed by its PURL ecosystem -- 'pkg:pypi/...'
+    becomes 'pypi_package', 'pkg:npm/...' becomes 'npm_package' -- and the IIW
+    asset-type and function attributes are derived from the ecosystem and the
+    source SBOM, so a PyPI dependency is not mislabeled as an npm package and an
+    SPA dependency is not mislabeled as a Lambda runtime dependency. The ecosystem
+    is also preserved in attributes.ecosystem and the PURL.
 
     De-duplicates by PURL against components already in `existing_components`
     (so the compliance Lambda's npm packages aren't double-counted on overlap)
@@ -610,15 +622,31 @@ def build_sbom_components(sbom_path, existing_components=None):
         name = entry.get("name")
         version = entry.get("version")
         ecosystem = purl_ecosystem(purl) or "unknown"
+        # Type by the PURL's actual ecosystem, and derive role-aware IIW facts so
+        # the FedRAMP IIW (Appendix M) reports each package's real ecosystem and
+        # role: an SPA npm dependency, a Silk Reeling PyPI dependency, and the
+        # compliance-Lambda npm dependency must not read identically. These are
+        # set before apply_iiw_defaults, which only fills missing keys.
+        if ecosystem == "pypi":
+            ptype, asset_type = "pypi_package", "Software Package (PyPI)"
+            role = "Dependency of the Silk Reeling application Lambda (PyPI)"
+        elif ecosystem == "npm":
+            ptype, asset_type = "npm_package", "Software Package (npm)"
+            role = "Dependency of the Silk Reeling single-page application (npm)"
+        else:
+            ptype, asset_type = "npm_package", f"Software Package ({ecosystem})"
+            role = f"Dependency of the Silk Reeling application ({ecosystem})"
         component = {
             "component_id": component_id_for_sbom(ecosystem, name, version),
-            "type": "npm_package",
+            "type": ptype,
             "global_id": {"purl": purl},
             "attributes": {
                 "name": name,
                 "version": version,
                 "ecosystem": ecosystem,
                 "sbom_source": sbom_path.name,
+                "iiw_asset_type": asset_type,
+                "function": role,
             },
         }
         apply_mas_defaults(component)

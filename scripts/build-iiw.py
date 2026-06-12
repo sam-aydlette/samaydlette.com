@@ -101,8 +101,8 @@ def project_component(component, signal):
     if ctype == "function":
         row["OS Name and Version"] = attrs.get("runtime", "")
 
-    # Software / npm fields
-    if ctype == "npm_package":
+    # Software fields (npm and PyPI packages)
+    if ctype in ("npm_package", "pypi_package"):
         name = attrs.get("name", "")
         version = attrs.get("version", "")
         row["Software/Database Vendor"] = "Open Source"

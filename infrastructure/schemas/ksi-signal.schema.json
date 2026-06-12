@@ -190,6 +190,7 @@
             "compute_instance",
             "container_image",
             "npm_package",
+            "pypi_package",
             "html_artifact",
             "hbom_ref",
             "dns_zone",
