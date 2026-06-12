@@ -127,3 +127,7 @@ scuba/dist/
 __pycache__/
 *.pyc
 tests/__pycache__/
+
+# Stale committed inventory snapshot — authoritative copies are generated+signed in CI and published at /.well-known/
+/ksi-signal.json
+/ksi-signal.bundle
