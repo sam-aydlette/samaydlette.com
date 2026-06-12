@@ -4,7 +4,7 @@
   "description": "Runtime KSI signal emitter. Validates the live AWS configuration of components named in the deploy-time signal by evaluating the same Rego policies (compiled to Wasm) used by the deploy-time gate.",
   "main": "index.js",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.658.0",
+    "@aws-sdk/client-s3": "^3.1068.0",
     "@aws-sdk/client-cloudfront": "^3.658.0",
     "@open-policy-agent/opa-wasm": "^1.9.0"
   }
