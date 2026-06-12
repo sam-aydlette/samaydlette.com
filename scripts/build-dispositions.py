@@ -104,11 +104,14 @@ SPOKE_NA = {
     "ia-5.o": "No Criminal Justice Information is processed; CJIS authenticator additions do not apply.",
 }
 
-# CMMC requirements whose disposition is best expressed against the requirement,
-# not an 800-53 control (3.12.4 has no Table D-1 mapping; the system satisfies it
-# directly by producing the SSP).
+# CMMC requirements with no 800-53 mapping in Table D-1, dispositioned explicitly
+# at the requirement level (class, srm, rationale). 3.12.4 (maintain a system
+# security plan) is the customer's OWN obligation: the CSP cannot provide a
+# consuming organization's SSP, so it is osc-responsibility, not inherited. The
+# CSP publishing its own SSP does not discharge the customer's duty.
 CMMC_DISP = {
-    "3.12.4": ("implemented", "The system produces a NIST OSCAL Rev 5 System Security Plan on every deploy, published at /.well-known/oscal-ssp.json; the SSP requirement is satisfied directly even though Table D-1 lists no 800-53 mapping."),
+    "3.12.4": ("customer-responsibility", "osc-responsibility",
+               "Maintaining a system security plan is the customer's own obligation. 800-171 Rev2 Table D-1 maps 3.12.4 to no 800-53 control, so the CSP does not provide it; the provider publishing its own OSCAL SSP does not discharge a consuming organization's duty to maintain theirs."),
 }
 
 
@@ -118,7 +121,7 @@ def main():
         "_note": "Dispositions for controls required by GovRAMP/TX-RAMP/CMMC above the FedRAMP Moderate baseline. Read by the spoke projections alongside the Moderate hub.",
         "controls": {c: {"status": s, "origination": o, "statement": t} for c, (s, o, t) in DISP.items()},
         "spoke_not_applicable": SPOKE_NA,
-        "cmmc_requirement_dispositions": {r: {"status": s, "statement": t} for r, (s, t) in CMMC_DISP.items()},
+        "cmmc_requirement_dispositions": {r: {"class": c, "srm": s, "statement": t} for r, (c, s, t) in CMMC_DISP.items()},
     }
     OUT.write_text(json.dumps(doc, indent=2) + "\n")
     from collections import Counter

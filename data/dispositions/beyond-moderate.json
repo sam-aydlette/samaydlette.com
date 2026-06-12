@@ -168,8 +168,9 @@
   },
   "cmmc_requirement_dispositions": {
     "3.12.4": {
-      "status": "implemented",
-      "statement": "The system produces a NIST OSCAL Rev 5 System Security Plan on every deploy, published at /.well-known/oscal-ssp.json; the SSP requirement is satisfied directly even though Table D-1 lists no 800-53 mapping."
+      "class": "customer-responsibility",
+      "srm": "osc-responsibility",
+      "statement": "Maintaining a system security plan is the customer's own obligation. 800-171 Rev2 Table D-1 maps 3.12.4 to no 800-53 control, so the CSP does not provide it; the provider publishing its own OSCAL SSP does not discharge a consuming organization's duty to maintain theirs."
     }
   }
 }
