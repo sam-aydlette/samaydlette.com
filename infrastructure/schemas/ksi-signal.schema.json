@@ -213,9 +213,9 @@
           "additionalProperties": false,
           "properties": {
             "purl": {
-              "description": "Package URL per https://github.com/package-url/purl-spec. Used for software components.",
+              "description": "Package URL per https://github.com/package-url/purl-spec. Used for software components. Coarse syntactic filter: no unencoded '@' immediately after the type (scoped npm must be %40-encoded) and a trailing @version is required. Full spec-validity is enforced by scripts/validate-ksi-signal.py.",
               "type": "string",
-              "pattern": "^pkg:[a-zA-Z0-9_.-]+/.+"
+              "pattern": "^pkg:[a-zA-Z0-9._-]+/(?!@)[^@]+@[^@]+$"
             },
             "image_digest": {
               "description": "OCI image digest of the form 'sha256:<hex>'. Used for container images.",

@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test
 
 # Default target
 help:
@@ -206,6 +206,19 @@ dev-setup: init
 		echo "📝 Created terraform.tfvars from example. Please customize it."; \
 	fi
 	@echo "✅ Development setup complete"
+
+# Inventory gate: validate an already-built ksi-signal.json (PURL validity,
+# native_id uniqueness, ecosystem-faithful typing). Blocks the deploy in CI.
+gate:
+	@echo "Running KSI inventory gate..."
+	python3 ../scripts/validate-ksi-signal.py ksi-signal.json
+	@echo "✅ Inventory gate passed"
+
+# Python unit/integration tests (inventory gate, provenance, PURLs, SSP params,
+# CMMC mapping). Runnable in PR CI without AWS state.
+python-test:
+	@echo "Running Python test suite..."
+	cd .. && python3 -m pytest tests/ -q
 
 # Test OPA policies locally
 test-policies:

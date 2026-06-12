@@ -717,6 +717,13 @@ jobs:
              validation_results: [.validations[].result] | group_by(.) | map({(.[0]): length}) | add}' \
           ksi-signal.json
 
+    # Inventory gate: block the deploy if the emitted canonical inventory is
+    # malformed (invalid/duplicate identifiers). The inventory is the join layer
+    # the whole architecture rests on, so this runs BEFORE signing/publishing.
+    - name: Gate KSI signal (PURL validity, native_id uniqueness, typing)
+      working-directory: infrastructure
+      run: python3 ../scripts/validate-ksi-signal.py ksi-signal.json
+
     # -------------------------------------------------------------------------
     # SIGN THE KSI SIGNAL (Sigstore keyless via GitHub OIDC)
     # -------------------------------------------------------------------------
