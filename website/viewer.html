@@ -119,7 +119,7 @@ curl -sO https://samaydlette.com/.well-known/ksi-signal.bundle
 
 cosign verify-blob \
   --bundle ksi-signal.bundle \
-  --certificate-identity-regexp 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+' \
+  --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   ksi-signal.json</pre>
                 <p>The signature chain anchors in public infrastructure: Fulcio (the certificate authority), the GitHub Actions OIDC issuer, and the Rekor transparency log. Verification does not depend on trusting this site.</p>

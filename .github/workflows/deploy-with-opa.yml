@@ -723,7 +723,7 @@ jobs:
     # Produces a Sigstore bundle (cert + signature + Rekor inclusion proof) as
     # ksi-signal.bundle. Verifiers fetch both files and run:
     #   cosign verify-blob --bundle ksi-signal.bundle \
-    #     --certificate-identity-regexp 'https://github.com/.../workflows/.+' \
+    #     --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
     #     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
     #     ksi-signal.json
     # -------------------------------------------------------------------------

@@ -865,13 +865,17 @@ def build_validations(validations_doc, components):
 def build_provenance():
     """Read GITHUB_* env vars when running in Actions; fall back to local."""
     repo = os.environ.get("GITHUB_REPOSITORY")
-    workflow = os.environ.get("GITHUB_WORKFLOW")
+    # GITHUB_WORKFLOW_REF is the fully-qualified workflow reference
+    # (OWNER/REPO/.github/workflows/FILE@REF) and is exactly the Fulcio
+    # certificate SAN. GITHUB_WORKFLOW (the display name, with spaces) is NOT a
+    # valid SAN, so builder.id must be built from WORKFLOW_REF.
+    workflow_ref = os.environ.get("GITHUB_WORKFLOW_REF")
     run_id = os.environ.get("GITHUB_RUN_ID")
     sha = os.environ.get("GITHUB_SHA")
     ref = os.environ.get("GITHUB_REF")
 
-    if repo and workflow and sha:
-        builder_id = f"https://github.com/{repo}/.github/workflows/{workflow}"
+    if repo and workflow_ref and sha:
+        builder_id = f"https://github.com/{workflow_ref}"
         provenance = {
             "builder": {
                 "id": builder_id,
@@ -895,7 +899,10 @@ def build_provenance():
                 "url": "https://samaydlette.com/.well-known/ksi-signal.bundle",
                 "verification": {
                     "tool": "cosign",
-                    "certificate_identity_regexp": f"https://github.com/{repo}/.github/workflows/.+",
+                    # Exact identity pin (no workflow wildcard): the bundle must be
+                    # signed by THIS workflow at THIS ref, equal to builder.id. A
+                    # `.+` here would accept a signature from any workflow in the repo.
+                    "certificate_identity": builder_id,
                     "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
                 },
             }

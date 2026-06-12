@@ -66,7 +66,7 @@
           "additionalProperties": false,
           "properties": {
             "id": {
-              "description": "Identifier for the builder. For GitHub Actions: 'https://github.com/<owner>/<repo>/.github/workflows/<workflow>'.",
+              "description": "Identifier for the builder, equal to the Fulcio certificate SAN. For GitHub Actions this is 'https://github.com/' + GITHUB_WORKFLOW_REF, i.e. 'https://github.com/<owner>/<repo>/.github/workflows/<file>@<ref>'.",
               "type": "string"
             },
             "run_id": {
