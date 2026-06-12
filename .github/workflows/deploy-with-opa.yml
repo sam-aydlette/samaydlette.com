@@ -782,6 +782,27 @@ jobs:
           ksi_signal_id: ."system-security-plan".metadata.props[0].value
         }' oscal-ssp.json
 
+    # Stamp every load-bearing figure in the paper and the dashboard from the
+    # artifacts just built (the OSCAL SSP, the component definition, the spoke
+    # profiles, and the CMMC projector). No number in the published HTML is
+    # hand-maintained: this recomputes them from source and rewrites the marked
+    # <span data-figure="..."> sites, then re-uploads the two HTML files so the
+    # served bytes (and the bytes the paper signature covers below) match the
+    # freshly-built artifacts. A drift here means a marker references a figure
+    # the build cannot produce, which fails the deploy (external review Task 13).
+    - name: Stamp single-source figures (paper + dashboard)
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        python3 ../scripts/inject-figures.py
+        aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" \
+          --content-type "text/html; charset=utf-8" \
+          --cache-control "public, max-age=300"
+        aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" \
+          --content-type "text/html; charset=utf-8" \
+          --cache-control "public, max-age=300"
+        echo "✅ Figures stamped from live artifacts; paper + dashboard re-uploaded"
+
     - name: Sign OSCAL SSP
       working-directory: infrastructure
       run: |

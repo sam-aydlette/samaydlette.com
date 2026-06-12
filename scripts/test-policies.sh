@@ -253,6 +253,11 @@ else
     echo "⚠️  pytest not available; skipping Python suite"
 fi
 
+# Figure freshness gate: paper + dashboard figures must match their sources.
+echo
+echo "=== Single-source figure gate (paper + dashboard) ==="
+( cd "$(dirname "$0")/.." && python3 scripts/inject-figures.py --check ) || { echo "❌ Figures are stale; run 'python3 scripts/inject-figures.py' and commit"; exit 1; }
+
 # Generate summary report
 echo
 echo "=== Test Summary ==="

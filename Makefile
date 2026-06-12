@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check
 
 # Default target
 help:
@@ -215,10 +215,17 @@ gate:
 	@echo "✅ Inventory gate passed"
 
 # Python unit/integration tests (inventory gate, provenance, PURLs, SSP params,
-# CMMC mapping). Runnable in PR CI without AWS state.
+# CMMC mapping, figure injection). Runnable in PR CI without AWS state.
 python-test:
 	@echo "Running Python test suite..."
 	cd .. && python3 -m pytest tests/ -q
+
+# Figure freshness gate: every <span data-figure> in the paper and dashboard
+# must match the value recomputed from the canonical artifacts. Fails if a
+# committed figure has drifted from its source. Runnable without AWS state.
+figures-check:
+	@echo "Checking single-source figures..."
+	cd .. && python3 scripts/inject-figures.py --check
 
 # Test OPA policies locally
 test-policies:
