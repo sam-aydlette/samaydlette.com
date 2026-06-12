@@ -43,6 +43,7 @@
         <article class="article-card">
             <div class="article-meta">
                 <span class="article-category">Research</span>
+                <span class="article-version">Version 1.1 &middot; 2026-06-12</span>
             </div>
 
             <h1 class="article-title">Shift Left on Reciprocity</h1>
@@ -51,6 +52,7 @@
                 <div class="article-summary">
                     <strong>Evidence reciprocity is an architecture decision. Authorization reciprocity is a government decision. Stop waiting for the second.</strong>
                 </div>
+                <p class="article-provenance">Version 1.1, dated 2026-06-12. This paper is published with a Sigstore bundle at <code>/.well-known/the-plumbing.html.bundle</code>; verify the served bytes with <code>cosign verify-blob --bundle the-plumbing.html.bundle --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' --certificate-oidc-issuer https://token.actions.githubusercontent.com the-plumbing.html</code>. The signature attests to who published these bytes and that the event is logged, not that the claims are true.</p>
 
                 <h3 id="authors-note">Author's Note</h3>
                 <p>This paper documents an implementation that runs on the infrastructure of this website. Every assertion the paper makes about the artifacts it describes is verifiable: anyone can <code>curl</code> the published documents from <code>/.well-known/</code>, run <code>cosign verify-blob</code> against the Sigstore bundle, browse the artifacts in the <a href="/viewer.html">live trust dashboard</a>, and check that what the paper claims matches what is actually being served. The implementation is open-source at <a href="https://github.com/sam-aydlette/samaydlette.com">github.com/sam-aydlette/samaydlette.com</a>.</p>

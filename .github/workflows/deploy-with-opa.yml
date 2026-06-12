@@ -989,6 +989,21 @@ jobs:
           --cache-control "public, max-age=300"
         echo "✅ OSCAL POA&M + bundle published"
 
+    # Sign the research paper itself (a paper whose thesis is verifiability should
+    # be verifiable). The signed bytes are the served bytes of
+    # /research/the-plumbing.html; the bundle is published at a stable
+    # /.well-known/ URL and verifies under the same pinned identity as every
+    # other artifact (external review Task 24).
+    - name: Sign and publish the research paper
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        cosign sign-blob --yes --bundle paper.bundle ../website/research/the-plumbing.html
+        aws s3 cp paper.bundle "s3://$BUCKET_NAME/.well-known/the-plumbing.html.bundle" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        echo "✅ Research paper Sigstore bundle published at /.well-known/the-plumbing.html.bundle"
+
     # -------------------------------------------------------------------------
     # REFRESH WEBSITE CACHE
     # -------------------------------------------------------------------------
