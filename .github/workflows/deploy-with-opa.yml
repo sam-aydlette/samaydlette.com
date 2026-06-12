@@ -872,6 +872,21 @@ jobs:
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
 
+    # Append this run's CVE-keyed summary to the rolling vuln trend ledger
+    # (RA-5(6)). Fetch the published ledger first so history persists across
+    # deploys; the dashboard renders the trend from it.
+    - name: Build VDR vuln trend ledger (RA-5(6))
+      working-directory: infrastructure
+      run: |
+        if curl -sfL -o vdr-trend.json "https://samaydlette.com/.well-known/vdr-trend.json"; then
+          echo "Previous VDR trend ledger fetched ($(jq '.points | length' vdr-trend.json) points)."
+        else
+          echo "::warning::No previous VDR trend ledger; starting a fresh one."
+          rm -f vdr-trend.json
+        fi
+        python3 ../scripts/build-vdr-trend.py --report vdr-report.json --trend vdr-trend.json
+        cosign sign-blob --yes --bundle vdr-trend.bundle vdr-trend.json
+
     - name: Sign VDR Report
       working-directory: infrastructure
       run: |
@@ -888,7 +903,13 @@ jobs:
         aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" \
           --content-type application/json \
           --cache-control "public, max-age=300"
-        echo "✅ VDR report + bundle published"
+        aws s3 cp vdr-trend.json "s3://$BUCKET_NAME/.well-known/vdr-trend.json" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        aws s3 cp vdr-trend.bundle "s3://$BUCKET_NAME/.well-known/vdr-trend.bundle" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        echo "✅ VDR report + trend + bundles published"
 
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE

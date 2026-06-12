@@ -87,8 +87,8 @@ DISP = {
         "Historic audit records are retained in CloudWatch and the daily Grype re-scan catches newly disclosed CVEs against deployed dependencies; review for prior exploitation is part of the security-review cadence."),
 
     # --- Partial / planned: honestly still open, pointing at tracked work ---
-    "ra-5.6": ("planned", "sp-system",
-        "The VDR aggregator runs every deploy and daily, but automated cross-run trend analysis depends on the first-detected ledger tracked as an open POA&M item."),
+    "ra-5.6": ("implemented", "sp-system",
+        "Automated cross-run vulnerability trend analysis is published as a live chart on the trust dashboard, fed by a CVE-keyed trend ledger (/.well-known/vdr-trend.json) that each VDR build appends to via build-vdr-trend.py."),
 }
 
 # CJIS-specific items in the GovRAMP+CJIS matrix that are not standard 800-53

@@ -152,9 +152,9 @@
       "statement": "Historic audit records are retained in CloudWatch and the daily Grype re-scan catches newly disclosed CVEs against deployed dependencies; review for prior exploitation is part of the security-review cadence."
     },
     "ra-5.6": {
-      "status": "planned",
+      "status": "implemented",
       "origination": "sp-system",
-      "statement": "The VDR aggregator runs every deploy and daily, but automated cross-run trend analysis depends on the first-detected ledger tracked as an open POA&M item."
+      "statement": "Automated cross-run vulnerability trend analysis is published as a live chart on the trust dashboard, fed by a CVE-keyed trend ledger (/.well-known/vdr-trend.json) that each VDR build appends to via build-vdr-trend.py."
     }
   },
   "spoke_not_applicable": {

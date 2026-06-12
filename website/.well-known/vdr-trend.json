@@ -1,0 +1,23 @@
+{
+  "points": [
+    {
+      "date": "2026-05-08",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 15
+    }
+  ],
+  "system_id": "urn:samaydlette:website-prod",
+  "control": "RA-5(6) \u2014 automated vulnerability trend analysis",
+  "updated_at": "2026-05-08T20:04:36.728935+00:00"
+}
