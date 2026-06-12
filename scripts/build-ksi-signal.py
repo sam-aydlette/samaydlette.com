@@ -350,6 +350,21 @@ def component_id_for_npm(name, version):
     return f"npm::{name}@{version}"
 
 
+def npm_purl(name, version):
+    """Build a canonical npm PURL per the package-url spec.
+
+    A scoped package puts the scope in the namespace with the leading "@"
+    percent-encoded, e.g. pkg:npm/%40smithy/is-array-buffer@2.2.0. This is what
+    Syft, Trivy, and other tooling emit, so two tools naming the same package
+    produce bit-identical PURLs and join cleanly. Emitting an unencoded "@"
+    (pkg:npm/@smithy/...) is non-canonical and breaks that join.
+    """
+    if name.startswith("@") and "/" in name:
+        scope, pkg = name.split("/", 1)
+        return f"pkg:npm/{scope.replace('@', '%40')}/{pkg}@{version}"
+    return f"pkg:npm/{name}@{version}"
+
+
 def component_id_for_sbom(ecosystem, name, version):
     # Mirror component_id_for_npm's "<ecosystem>::<name>@<version>" shape, but
     # key on the purl's ecosystem (pypi, npm, ...) so PyPI and npm components
@@ -499,15 +514,25 @@ def build_npm_components(lock_path):
         print(f"warning: could not parse {lock_path}", file=sys.stderr)
         return []
     components = []
+    seen = set()
     for path, info in (lock.get("packages") or {}).items():
         if path == "":
             # The root package is the Lambda itself, not a dependency.
             continue
-        name = info.get("name") or path.split("node_modules/", 1)[-1]
+        # The package name is the FINAL node_modules segment. A nested dependency
+        # lives at ".../node_modules/<scope>/<name>", so split on the LAST
+        # "node_modules/" (rsplit), not the first — otherwise the parent path
+        # leaks into the name and the PURL is malformed.
+        name = info.get("name") or path.rsplit("node_modules/", 1)[-1]
         version = info.get("version")
         if not name or not version:
             continue
-        purl = f"pkg:npm/{name}@{version}"
+        purl = npm_purl(name, version)
+        if purl in seen:
+            # The same package@version can be hoisted into several nesting paths;
+            # the canonical inventory holds one component per unique PURL.
+            continue
+        seen.add(purl)
         component = {
             "component_id": component_id_for_npm(name, version),
             "type": "npm_package",

@@ -115,11 +115,12 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 
 ## Real-World Costs
 
-**Annual Operating Costs for Compliance Pipeline:**
-- **Lambda executions:** $12/year (daily compliance checks)
-- **EventBridge rules:** $36/year
-- **CloudWatch logs:** $77/year (7-day retention)
-- **Total compliance overhead:** ~$125/year
+**Annual Operating Costs (AWS list pricing):**
+- **KMS customer-managed key (encryption at rest):** ~$12/year
+- **Secrets Manager (2 secrets):** ~$10/year
+- **Route 53 hosted zone:** ~$6/year
+- **Lambda, EventBridge, CloudWatch, CloudFront, S3:** within the AWS free tier for this workload (~$0)
+- **Total recurring:** ~$30/year (domain registration ~$13/year separate)
 
 **What's Not Covered (and why):**
 - Website infrastructure costs (managed separately)

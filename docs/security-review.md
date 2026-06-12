@@ -49,15 +49,17 @@ Changes from prior year:
 
 ### Recurring costs (USD/year)
 
-- Lambda compliance executions: ~$12
-- EventBridge rules: ~$36
-- CloudWatch logs: ~$77
+- Lambda compliance executions: ~$0 (within AWS free tier; daily + on-demand)
+- EventBridge rules: ~$0 (one daily rule; within free tier)
+- CloudWatch logs: ~$0–1 (small logs; within free tier)
+- KMS customer-managed key (encryption at rest): ~$12
+- Secrets Manager (2 secrets): ~$10
 - TLS certificate (ACM): $0 (free)
 - DNS (Route 53 hosted zone + queries): ~$6
-- S3 storage + requests: ~$12
-- CloudFront (Price Class 100): ~$10–30 depending on traffic
-- **Total compliance overhead:** ~$125
-- **Total infrastructure:** ~$160–180
+- S3 storage + requests: ~$1
+- CloudFront (Price Class 100): ~$0–30 depending on traffic
+- **Total recurring (AWS list pricing):** ~$30 plus variable CloudFront egress
+- **With domain registration:** add ~$13/year
 
 ### Time invested (hours)
 
@@ -84,7 +86,7 @@ See README "Conscious Trade-offs for Budget Reality." Excluded controls (WAF, mu
 - Verify runtime emitter has produced at least one drift signal event in a controlled test (deliberately misconfigure a non-production resource and confirm the daily Lambda flags it)
 - Close [POAM-001](poam.md) by completing the GitHub OIDC migration; until then, hold to the 90-day key-rotation cadence below
 - Consider whether OSCAL artifact should be signed independently or covered by the same Sigstore bundle as the KSI signal
-- Cost target: maintain ~$125/year compliance overhead
+- Cost target: maintain recurring overhead on the order of $30/year (KMS key, Secrets Manager, Route 53; serverless compute within the free tier)
 
 ## Quarterly continuous-monitoring reviews
 
