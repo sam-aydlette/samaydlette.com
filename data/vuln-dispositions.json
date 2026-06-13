@@ -1,0 +1,13 @@
+{
+  "_note": "Operator disposition register for VULNERABILITIES (CVEs from ZAP/Grype/Dependabot). The build FAILS on any scanner-reported vulnerability of any severity (Critical/High/Medium/Low) that is not handled. A vulnerability is handled ONLY if it is (a) remediated/gone, or (b) dispositioned here as 'false-positive' (no real risk / N/A) or 'operational-requirement' (real risk, deliberately accepted). A risk-adjusted vulnerability still has a severity, so it does NOT pass the gate — fix it. Config-scanner suppressions (Checkov) live in .checkov.yaml + the VDR maps, not here.",
+  "_pass_dispositions": ["false-positive", "operational-requirement"],
+  "_example": {
+    "CVE-2025-00000": {
+      "disposition": "false-positive",
+      "justification": "Vulnerable code path is not reachable in the deployed app; the package is a build-time-only transitive dependency.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-13"
+    }
+  },
+  "dispositions": {}
+}
