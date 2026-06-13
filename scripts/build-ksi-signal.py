@@ -64,6 +64,37 @@ TYPE_BY_TF_TYPE = {
     "aws_iam_role_policy": "iam_policy",
     "aws_cloudtrail": "audit_log_trail",
     "aws_cloudwatch_log_group": "log_group",
+    # In-boundary components previously omitted (assessment F-1/B-1): the API
+    # Gateway fronting the Silk Reeling app, the two Secrets Manager secrets it
+    # reads, and the customer-managed KMS key. The reconciliation gate's live
+    # deny-by-default enumeration (scripts/reconcile.py, invariant a) fails the
+    # build if any live in-boundary resource is still missing from the inventory.
+    "aws_apigatewayv2_api": "api_gateway",
+    "aws_secretsmanager_secret": "secrets_manager",
+    "aws_kms_key": "kms_key",
+}
+
+# Authoritative, external type vocabulary: each normalized component.type maps
+# to its CloudFormation resource-type identifier. This is what the schema now
+# validates against (an open, vendor-maintained namespace) so a newly-added
+# resource type cannot silently fall outside a hand-maintained enum — it carries
+# its CFN type on the `resource_type` field, and an unmapped one is caught by
+# the gate rather than disappearing. Software/external components (npm, pypi,
+# html, external_service) are not AWS resources and carry no CFN type.
+CFN_TYPE_BY_NORMALIZED = {
+    "object_store": "AWS::S3::Bucket",
+    "cdn_distribution": "AWS::CloudFront::Distribution",
+    "function": "AWS::Lambda::Function",
+    "dns_zone": "AWS::Route53::HostedZone",
+    "tls_certificate": "AWS::CertificateManager::Certificate",
+    "event_schedule": "AWS::Events::Rule",
+    "iam_role": "AWS::IAM::Role",
+    "iam_policy": "AWS::IAM::RolePolicy",
+    "audit_log_trail": "AWS::CloudTrail::Trail",
+    "log_group": "AWS::Logs::LogGroup",
+    "api_gateway": "AWS::ApiGatewayV2::Api",
+    "secrets_manager": "AWS::SecretsManager::Secret",
+    "kms_key": "AWS::KMS::Key",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -74,6 +105,11 @@ ATTRIBUTE_PARENTS = {
     "aws_s3_bucket_public_access_block": "object_store",
     "aws_s3_bucket_policy": "object_store",
     "aws_cloudfront_response_headers_policy": "cdn_distribution",
+    # API Gateway sub-resources fold into the api_gateway component so a consumer
+    # sees one interface with its route/integration/stage config, not four things.
+    "aws_apigatewayv2_integration": "api_gateway",
+    "aws_apigatewayv2_route": "api_gateway",
+    "aws_apigatewayv2_stage": "api_gateway",
 }
 
 # =============================================================================
@@ -172,6 +208,28 @@ MAS_DEFAULTS = {
     "external_service": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [],
+    },
+    "api_gateway": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "public-internet", "channel": "tls-1.2", "data_class": "user-input"},
+            {"direction": "outbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "user-input"},
+        ],
+    },
+    "secrets_manager": {
+        # Confidentiality is MODERATE here: this resource holds credentials.
+        # That does not raise the system high-water mark (still Moderate).
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "outbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "credential"},
+        ],
+    },
+    "kms_key": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "configuration"},
+            {"direction": "inbound", "counterparty": "secrets_manager", "channel": "aws-internal-tls", "data_class": "configuration"},
+        ],
     },
 }
 
@@ -281,6 +339,27 @@ IIW_DEFAULTS = {
         "public": True,
         "baseline_configuration": "Public service; configuration governed by upstream provider; verification mechanism noted in attributes",
         "iiw_asset_type": "External Service (no FedRAMP ATO)",
+    },
+    "api_gateway": {
+        "function": "HTTP API fronting the Silk Reeling app Lambda (TLS termination, request routing, throttling)",
+        "diagram_label": "API Gateway (HTTP)",
+        "public": True,
+        "baseline_configuration": "API Gateway v2 HTTP API; managed-interface SC-7 boundary; stage throttling + access logging (Task 3)",
+        "iiw_asset_type": "API Gateway (HTTP API)",
+    },
+    "secrets_manager": {
+        "function": "Secrets Manager secret holding an application credential",
+        "diagram_label": "Secrets Manager",
+        "public": False,
+        "baseline_configuration": "AWS Secrets Manager; KMS-encrypted at rest; rotation per disposition",
+        "iiw_asset_type": "Secret (Secrets Manager)",
+    },
+    "kms_key": {
+        "function": "Customer-managed KMS key for at-rest encryption / asymmetric signing",
+        "diagram_label": "KMS key",
+        "public": False,
+        "baseline_configuration": "Customer-managed CMK; FIPS 140-validated module; key policy in main.tf",
+        "iiw_asset_type": "KMS Key (customer-managed)",
     },
 }
 
@@ -494,6 +573,7 @@ def build_cloud_components(tf_state, tf_outputs):
         component = {
             "component_id": cid,
             "type": normalized,
+            "resource_type": CFN_TYPE_BY_NORMALIZED.get(normalized),
             "attributes": attrs,
         }
         if native_id:
@@ -948,6 +1028,11 @@ def main():
     schema_id = "https://samaydlette.com/.well-known/ksi-signal.schema.json"
     output_path = cwd / "ksi-signal.json"
 
+    # Single source of truth for system categorization (assessment F-2 /
+    # Decision 1). Every generator reads impact_level from here; the
+    # reconciliation gate fails closed if the artifacts ever disagree.
+    system_profile = json.loads((repo_root / "data" / "system-profile.json").read_text())
+
     tf_outputs = run_terraform(["output", "-json"]) or {}
     tf_state = run_terraform(["show", "-json"]) or {}
 
@@ -992,6 +1077,12 @@ def main():
         "emitter": "deploy",
         "csp": CSP,
         "system_id": SYSTEM_ID,
+        "categorization": {
+            "impact_level": system_profile["impact_level"],
+            "fedramp_class": system_profile["fedramp_class"],
+            "impact_level_canonical": system_profile["impact_level_canonical"],
+            "fips_199": system_profile["fips_199"],
+        },
         "provenance": build_provenance(),
         "components": components,
         "validations": validations,

@@ -669,6 +669,8 @@ def build_report(findings, suppressions, kev_cves, ledger):
     summary["unique_cves"] = len(cve_findings)
     summary["unique_cves_open"] = sum(1 for c in cve_findings if "open" in c["dispositions"])
 
+    # Single source of truth for categorization (assessment F-2 / Decision 1).
+    _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
     report = {
         "report_version": "1.2.0",
         "report_id": str(uuid.uuid4()),
@@ -677,6 +679,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
         "ksi_signal_ref": "/.well-known/ksi-signal.json",
         "poam_ref": "docs/poam.md",
         "class": "C",
+        "impact_level": _profile["impact_level"],
         "summary": summary,
         "findings": report_findings,
         "cve_findings": cve_findings,
@@ -706,7 +709,13 @@ def main():
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
+    parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
     args = parser.parse_args()
+
+    ksi_signal_id = None
+    _sig_path = Path(args.ksi_signal)
+    if _sig_path.exists():
+        ksi_signal_id = json.loads(_sig_path.read_text()).get("signal_id")
 
     findings = []
     findings.extend(ingest_opa(args.opa))
@@ -719,6 +728,7 @@ def main():
     ledger = ingest_previous_ledger(args.previous_vdr)
 
     report, blocking = build_report(findings, suppressions, kev_cves, ledger)
+    report["ksi_signal_id"] = ksi_signal_id
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))

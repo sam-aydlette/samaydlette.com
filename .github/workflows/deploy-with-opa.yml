@@ -992,6 +992,22 @@ jobs:
         echo "POA&M items:"
         jq '.["plan-of-action-and-milestones"]["poam-items"] | length' oscal-poam.json
 
+    # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
+    # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
+    # SSP/POA&M references resolve to inventory, every Checkov suppression is
+    # categorized consistently, one identical impact level everywhere, all
+    # artifacts bound to one signal_id, and the staged artifacts carry this run's
+    # commit. Runs after all four artifacts are built; --live enumerates the live
+    # account. Publish-ordering hardening (publish only after this passes) is
+    # Task 1.5.
+    - name: Reconciliation gate (fail closed on drift)
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        echo "Running cross-artifact reconciliation gate..."
+        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "$GITHUB_SHA"
+
     - name: Sign OSCAL POA&M
       working-directory: infrastructure
       run: |

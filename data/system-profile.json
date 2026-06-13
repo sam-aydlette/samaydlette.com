@@ -1,0 +1,14 @@
+{
+  "_note": "Single source of truth for system-wide categorization. Every generator (KSI signal, OSCAL SSP, OSCAL POA&M, VDR, dashboard) reads impact_level from here and emits the identical canonical string. The reconciliation gate (scripts/reconcile.py, invariant d) fails closed if the four artifacts ever disagree. Changing the system's impact level is a one-line edit here, not a hunt across generators.",
+  "system_id": "urn:samaydlette:website-prod",
+  "impact_level": "Moderate",
+  "fedramp_class": "Class C",
+  "impact_level_canonical": "Moderate (FedRAMP Rev 5; 20x Class C)",
+  "fips_199": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low",
+    "high_water_mark": "moderate",
+    "rationale": "Integrity is Moderate (public-facing content; defacement/tamper impact). Confidentiality and Availability are Low (no federal data, single operator, static site). High-water mark is therefore Moderate. This is the authoritative categorization; no component or artifact may assert the system is FIPS-199 Low."
+  }
+}

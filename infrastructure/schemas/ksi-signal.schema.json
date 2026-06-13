@@ -11,6 +11,7 @@
     "emitter",
     "csp",
     "system_id",
+    "categorization",
     "provenance",
     "components",
     "validations",
@@ -41,7 +42,10 @@
     "emitter": {
       "description": "What produced this signal. 'deploy' = the CI/CD pipeline emitting at deploy time. 'runtime' = a continuously-running validator emitting on a schedule against the live system.",
       "type": "string",
-      "enum": ["deploy", "runtime"]
+      "enum": [
+        "deploy",
+        "runtime"
+      ]
     },
     "csp": {
       "description": "The cloud service provider hosting the system this signal describes. Free-form to allow future CSPs without schema changes; recommended values are 'aws', 'azure', 'gcp', 'oracle', 'ibm', 'alibaba'.",
@@ -53,16 +57,48 @@
       "type": "string",
       "minLength": 1
     },
+    "categorization": {
+      "type": "object",
+      "description": "Single-source system categorization (assessment F-2 / Decision 1). Identical impact_level must appear across the SSP, POA&M, VDR, and dashboard; the reconciliation gate enforces it.",
+      "required": [
+        "impact_level",
+        "fedramp_class",
+        "impact_level_canonical"
+      ],
+      "properties": {
+        "impact_level": {
+          "enum": [
+            "Low",
+            "Moderate",
+            "High"
+          ]
+        },
+        "fedramp_class": {
+          "type": "string"
+        },
+        "impact_level_canonical": {
+          "type": "string"
+        },
+        "fips_199": {
+          "type": "object"
+        }
+      }
+    },
     "provenance": {
       "description": "How and from what this system was built. The article-27 proposal is that KSI signals carry SLSA-style provenance so consumers can verify what's running came from a known source.",
       "type": "object",
-      "required": ["builder", "source"],
+      "required": [
+        "builder",
+        "source"
+      ],
       "additionalProperties": false,
       "properties": {
         "builder": {
           "description": "The build system that produced the deployed artifacts.",
           "type": "object",
-          "required": ["id"],
+          "required": [
+            "id"
+          ],
           "additionalProperties": false,
           "properties": {
             "id": {
@@ -82,7 +118,10 @@
         "source": {
           "description": "The source code from which the deployed artifacts were built.",
           "type": "object",
-          "required": ["repository", "commit"],
+          "required": [
+            "repository",
+            "commit"
+          ],
           "additionalProperties": false,
           "properties": {
             "repository": {
@@ -142,14 +181,20 @@
         "related_artifacts": {
           "description": "URLs to companion artifacts published alongside this signal. Lets a consumer of any one artifact find the rest without out-of-band knowledge.",
           "type": "object",
-          "additionalProperties": {"type": "string", "format": "uri"}
+          "additionalProperties": {
+            "type": "string",
+            "format": "uri"
+          }
         }
       }
     },
     "ownership": {
       "description": "System-level ownership information, present so the canonical inventory can project into FedRAMP Integrated Inventory Workbook (IIW) shape without external lookups. Maps to the System Administrator/Owner and Application Administrator/Owner columns in the IIW template (Appendix M).",
       "type": "object",
-      "required": ["system_owner", "application_owner"],
+      "required": [
+        "system_owner",
+        "application_owner"
+      ],
       "additionalProperties": false,
       "properties": {
         "system_owner": {
@@ -172,7 +217,12 @@
   "$defs": {
     "component": {
       "type": "object",
-      "required": ["component_id", "type", "security_category", "information_flow"],
+      "required": [
+        "component_id",
+        "type",
+        "security_category",
+        "information_flow"
+      ],
       "additionalProperties": false,
       "properties": {
         "component_id": {
@@ -200,8 +250,16 @@
             "iam_policy",
             "audit_log_trail",
             "log_group",
-            "external_service"
+            "external_service",
+            "api_gateway",
+            "secrets_manager",
+            "kms_key"
           ]
+        },
+        "resource_type": {
+          "type": "string",
+          "pattern": "^AWS::[A-Za-z0-9]+::[A-Za-z0-9]+$",
+          "description": "CloudFormation resource-type identifier (authoritative external type vocabulary). Present on AWS cloud components; absent on software/external components. An open, vendor-maintained namespace so new resource types cannot fall outside a hand-maintained enum."
         },
         "native_id": {
           "description": "The CSP's native identifier for this component (e.g., an AWS ARN, an Azure resource ID, a GCP resource name). Required for cloud resources; absent for software components that don't have one.",
@@ -241,12 +299,43 @@
         "security_category": {
           "description": "FIPS 199 security categorization for this component, per the FedRAMP 20x Minimum Assessment Scope rule MAS-CSO-FLO. Each impact dimension is independently rated; the high-water mark across all components determines the system's overall categorization. For components that do not handle data directly (e.g., software libraries), use 'not-applicable'. For components fully inherited from an authorized provider, use 'inherited'.",
           "type": "object",
-          "required": ["confidentiality", "integrity", "availability"],
+          "required": [
+            "confidentiality",
+            "integrity",
+            "availability"
+          ],
           "additionalProperties": false,
           "properties": {
-            "confidentiality": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]},
-            "integrity": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]},
-            "availability": {"type": "string", "enum": ["low", "moderate", "high", "inherited", "not-applicable"]}
+            "confidentiality": {
+              "type": "string",
+              "enum": [
+                "low",
+                "moderate",
+                "high",
+                "inherited",
+                "not-applicable"
+              ]
+            },
+            "integrity": {
+              "type": "string",
+              "enum": [
+                "low",
+                "moderate",
+                "high",
+                "inherited",
+                "not-applicable"
+              ]
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "low",
+                "moderate",
+                "high",
+                "inherited",
+                "not-applicable"
+              ]
+            }
           }
         },
         "information_flow": {
@@ -254,12 +343,19 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["direction", "counterparty"],
+            "required": [
+              "direction",
+              "counterparty"
+            ],
             "additionalProperties": false,
             "properties": {
               "direction": {
                 "type": "string",
-                "enum": ["inbound", "outbound", "internal"]
+                "enum": [
+                  "inbound",
+                  "outbound",
+                  "internal"
+                ]
               },
               "counterparty": {
                 "description": "What this component sends to or receives from. Either a component_id within this signal or an external reference like 'public-internet', 'aws-service-api', 'github-actions', 'eventbridge', 'fulcio', 'rekor'.",
@@ -279,13 +375,26 @@
         }
       },
       "anyOf": [
-        {"required": ["native_id"]},
-        {"required": ["global_id"]}
+        {
+          "required": [
+            "native_id"
+          ]
+        },
+        {
+          "required": [
+            "global_id"
+          ]
+        }
       ]
     },
     "validation": {
       "type": "object",
-      "required": ["validation_id", "policy", "result", "component_refs"],
+      "required": [
+        "validation_id",
+        "policy",
+        "result",
+        "component_refs"
+      ],
       "additionalProperties": false,
       "properties": {
         "validation_id": {
@@ -296,7 +405,10 @@
         "policy": {
           "description": "Identifies the policy that produced this result.",
           "type": "object",
-          "required": ["id", "version"],
+          "required": [
+            "id",
+            "version"
+          ],
           "additionalProperties": false,
           "properties": {
             "id": {
@@ -312,29 +424,49 @@
         "result": {
           "description": "Whether the policy passed or failed for the referenced components.",
           "type": "string",
-          "enum": ["pass", "fail"]
+          "enum": [
+            "pass",
+            "fail"
+          ]
         },
         "component_refs": {
           "description": "component_id values from this signal's components[] that this validation evaluated. This is the field that makes the signal compose across CSPs: a portfolio consumer joins on these refs to answer cross-system queries.",
           "type": "array",
           "minItems": 1,
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         },
         "violations": {
           "description": "Specific findings when result is 'fail'. Same shape as the OPA compliance_report.violations entries the existing pipeline already produces.",
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["type", "message", "severity"],
+            "required": [
+              "type",
+              "message",
+              "severity"
+            ],
             "additionalProperties": true,
             "properties": {
-              "type": {"type": "string"},
-              "message": {"type": "string"},
+              "type": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
               "severity": {
                 "type": "string",
-                "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+                "enum": [
+                  "LOW",
+                  "MEDIUM",
+                  "HIGH",
+                  "CRITICAL"
+                ]
               },
-              "resource": {"type": "string"}
+              "resource": {
+                "type": "string"
+              }
             }
           }
         }
