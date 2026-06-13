@@ -1,2 +1,2 @@
 # POA&M
-POAM-003 cross-region replication risk-accepted
+POAM-007 WAF declined; SC-7 met via managed interfaces (risk-accepted, Moderate)

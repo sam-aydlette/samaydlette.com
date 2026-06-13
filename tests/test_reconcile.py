@@ -55,11 +55,11 @@ def clean_set():
         "poam-items": [],
     }}
     vdr = {"impact_level": "Moderate", "class": "C", "ksi_signal_id": SIGNAL_ID,
-           "risk_accepted": [{"poam_ref": "POAM-003"}]}
+           "risk_accepted": [{"poam_ref": "POAM-007"}]}
     dashboard = "<h3>FedRAMP Rev 5 Moderate</h3>"
-    checkov = "skip-check:\n  - CKV_AWS_144\n"
-    ckv_to_poam = {"CKV_AWS_144": "POAM-003"}
-    poam_md = "POAM-003 cross-region replication"
+    checkov = "skip-check:\n  - CKV_AWS_68\n"
+    ckv_to_poam = {"CKV_AWS_68": "POAM-007"}
+    poam_md = "POAM-007 WAF declined; SC-7 met via managed interfaces"
     fps = set()
     return dict(signal=signal, ssp=ssp, poam=poam, vdr=vdr, dashboard_html=dashboard,
                 checkov_text=checkov, ckv_to_poam=ckv_to_poam, poam_md_text=poam_md,
@@ -89,7 +89,7 @@ def test_b_referential_catches_unresolved_poam_asset():
 
 def test_c_uncategorized_suppression_fails():
     s = clean_set()
-    s["checkov_text"] = "skip-check:\n  - CKV_AWS_144\n  - CKV_AWS_999\n"  # 999 unmapped
+    s["checkov_text"] = "skip-check:\n  - CKV_AWS_68\n  - CKV_AWS_999\n"  # 999 unmapped
     v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]),
                                 s["ckv_to_poam"], s["poam_md_text"], s["vdr"],
                                 s["false_positive_ckvs"])
@@ -98,7 +98,7 @@ def test_c_uncategorized_suppression_fails():
 
 def test_c_risk_accepted_needs_vdr_poam_ref():
     s = clean_set()
-    s["vdr"]["risk_accepted"] = []  # POAM-003 no longer has a poam_ref in the VDR
+    s["vdr"]["risk_accepted"] = []  # POAM-007 no longer has a poam_ref in the VDR
     v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]),
                                 s["ckv_to_poam"], s["poam_md_text"], s["vdr"],
                                 s["false_positive_ckvs"])
