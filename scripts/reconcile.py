@@ -80,10 +80,19 @@ def inventory_component_ids(signal):
 # The set of services that define the boundary. Enumerated live (deny-by-default):
 # anything returned here that is NOT in the inventory fails the gate. Adding a
 # service to the boundary means adding it here AND mapping its type in the builder.
+# The system's resources are named/aliased with this prefix. The completeness
+# invariant enumerates only resources inside this boundary — a raw account sweep
+# would include AWS-platform noise (AWS-managed KMS keys, unrelated resources)
+# that are not components of THIS system. Drift within the boundary (a new
+# system-named resource that is not inventoried) still fails the gate.
+SYSTEM_PREFIX = "samaydlette"
+
+
 def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
     """Enumerate live in-boundary resource ARNs via the AWS CLI (boto3 is not a
-    build dependency). Returns a set of ARNs. Raises on CLI failure so a broken
-    enumeration fails the gate closed rather than silently reporting 'complete'."""
+    build dependency), scoped to SYSTEM_PREFIX. Returns a set of ARNs. Raises on
+    CLI failure so a broken enumeration fails the gate closed rather than
+    silently reporting 'complete'."""
     def cli(args):
         out = subprocess.run(["aws", *args, "--output", "json"],
                              capture_output=True, text=True)
@@ -91,25 +100,41 @@ def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
             raise RuntimeError(f"aws {' '.join(args)} failed: {out.stderr.strip()}")
         return json.loads(out.stdout or "null")
 
+    def in_boundary(name):
+        return SYSTEM_PREFIX in (name or "").lower()
+
     arns = set()
     # Lambda (primary region)
     for fn in (cli(["lambda", "list-functions", "--region", region_primary]) or {}).get("Functions", []):
-        arns.add(fn["FunctionArn"])
-    # API Gateway v2
+        if in_boundary(fn["FunctionName"]):
+            arns.add(fn["FunctionArn"])
+    # API Gateway v2 — match the ARN form the inventory carries (Terraform's
+    # aws_apigatewayv2_api.arn): arn:aws:apigateway:REGION::/apis/ID
     for api in (cli(["apigatewayv2", "get-apis", "--region", region_primary]) or {}).get("Items", []):
-        arns.add(api.get("ApiArn") or f"apigatewayv2::{api['ApiId']}")
+        if in_boundary(api.get("Name")):
+            arns.add(f"arn:aws:apigateway:{region_primary}::/apis/{api['ApiId']}")
     # Secrets Manager
     for s in (cli(["secretsmanager", "list-secrets", "--region", region_primary]) or {}).get("SecretList", []):
-        arns.add(s["ARN"])
-    # KMS customer-managed keys
-    for k in (cli(["kms", "list-keys", "--region", region_primary]) or {}).get("Keys", []):
-        arns.add(k["KeyArn"])
-    # S3 (global)
+        if in_boundary(s["Name"]):
+            arns.add(s["ARN"])
+    # KMS: only customer-managed keys carrying a system-named alias. AWS-managed
+    # keys and unaliased/unrelated customer keys are out of boundary.
+    sys_key_ids = set()
+    for a in (cli(["kms", "list-aliases", "--region", region_primary]) or {}).get("Aliases", []):
+        if in_boundary(a.get("AliasName")) and a.get("TargetKeyId"):
+            sys_key_ids.add(a["TargetKeyId"])
+    for kid in sys_key_ids:
+        meta = (cli(["kms", "describe-key", "--key-id", kid, "--region", region_primary]) or {}).get("KeyMetadata", {})
+        if meta.get("KeyManager") == "CUSTOMER" and meta.get("Arn"):
+            arns.add(meta["Arn"])
+    # S3 (global) — the system bucket(s)
     for b in (cli(["s3api", "list-buckets"]) or {}).get("Buckets", []):
-        arns.add(f"arn:aws:s3:::{b['Name']}")
-    # CloudWatch log groups
+        if in_boundary(b["Name"]):
+            arns.add(f"arn:aws:s3:::{b['Name']}")
+    # CloudWatch log groups (primary region)
     for lg in (cli(["logs", "describe-log-groups", "--region", region_primary]) or {}).get("logGroups", []):
-        arns.add(lg["arn"].rstrip(":*"))
+        if in_boundary(lg["logGroupName"]):
+            arns.add(lg["arn"].rstrip(":*"))
     return arns
 
 
