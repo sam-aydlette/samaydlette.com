@@ -603,6 +603,67 @@ def build_cloud_components(tf_state, tf_outputs):
     return list(components_by_id.values())
 
 
+# System name prefix: in-boundary AWS resources are named with it. Keep in sync
+# with SYSTEM_PREFIX in scripts/reconcile.py (the gate enumerates the same set).
+SYSTEM_PREFIX = "samaydlette"
+
+
+def build_live_log_groups(existing_components, region="us-east-2"):
+    """Source in-boundary CloudWatch log groups from LIVE account state and emit
+    any not already represented from Terraform.
+
+    Lambda execution log groups are auto-created by the service, so they are not
+    in Terraform state and the state walk misses them (e.g. the compliance
+    Lambda's group). Deriving them from live state is what makes the inventory
+    actually complete — and what the reconciliation gate's live deny-by-default
+    check (invariant a) requires. No-ops gracefully when the AWS CLI is
+    unavailable (local builds); CI runs with the deploy role's logs:Describe*.
+    """
+    try:
+        out = subprocess.run(
+            ["aws", "logs", "describe-log-groups", "--region", region, "--output", "json"],
+            capture_output=True, text=True,
+        )
+        if out.returncode != 0:
+            print(f"warning: live log-group enumeration skipped: {out.stderr.strip()}", file=sys.stderr)
+            return []
+        groups = (json.loads(out.stdout or "{}")).get("logGroups", [])
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"warning: live log-group enumeration skipped: {exc}", file=sys.stderr)
+        return []
+
+    have = {(c.get("native_id") or "").rstrip(":*") for c in existing_components}
+    new = []
+    for lg in groups:
+        name = lg.get("logGroupName", "")
+        if SYSTEM_PREFIX not in name.lower():
+            continue
+        native_id = (lg.get("arn") or "").rstrip(":*")
+        if not native_id or native_id in have:
+            continue
+        short = name.rsplit("/", 1)[-1]
+        if short.startswith(f"{SYSTEM_PREFIX}-com-"):
+            short = short[len(f"{SYSTEM_PREFIX}-com-"):]
+        cid = component_id_for_cloud(short.replace("-", "_"), "log_group")
+        component = {
+            "component_id": cid,
+            "type": "log_group",
+            "resource_type": CFN_TYPE_BY_NORMALIZED["log_group"],
+            "native_id": native_id,
+            "attributes": {
+                "log_group_name": name,
+                "retention_in_days": lg.get("retentionInDays"),
+                "kms_key_id": lg.get("kmsKeyId"),
+                "source": "live-describe",
+            },
+        }
+        apply_mas_defaults(component)
+        apply_iiw_defaults(component)
+        new.append(component)
+        have.add(native_id)
+    return new
+
+
 def build_npm_components(lock_path):
     """Read package-lock.json (lockfileVersion 3) and emit npm components."""
     if not lock_path.exists():
@@ -1038,6 +1099,11 @@ def main():
 
     components = []
     components.extend(build_cloud_components(tf_state, tf_outputs))
+    # Supplement the Terraform-state walk with live-only in-boundary resources
+    # (Lambda auto-creates execution log groups outside Terraform state). The
+    # reconciliation gate's live completeness check enforces nothing else is
+    # missed.
+    components.extend(build_live_log_groups(components))
     components.extend(build_npm_components(lambda_lock))
     # Ingest the Silk Reeling app's resolved dependency trees from the Syft
     # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and

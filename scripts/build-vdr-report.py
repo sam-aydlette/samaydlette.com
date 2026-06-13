@@ -72,6 +72,9 @@ POAM_BY_CHECK_ID = {
     "CKV_AWS_272": "POAM-015",  # Lambda code-signing validation
     "CKV_AWS_338": "POAM-017",  # CloudWatch log retention < 1 year
     "CKV_AWS_158": "POAM-018",  # CloudWatch log group not customer-key encrypted
+    "CKV2_AWS_57": "POAM-019",  # Secrets Manager automatic rotation not enabled
+    "CKV_AWS_309": "POAM-022",  # API Gateway route specifies no authorizer
+    "CKV_AWS_76":  "POAM-024",  # API Gateway access logging not enabled
 }
 
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
@@ -93,6 +96,9 @@ SUPPRESSION_EVALUATION = {
     "CKV_AWS_272": {"pain": "N2", "irv": False, "lev": False},
     "CKV_AWS_338": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_158": {"pain": "N1", "irv": False, "lev": False},
+    "CKV2_AWS_57": {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_309": {"pain": "N2", "irv": True,  "lev": False},
+    "CKV_AWS_76":  {"pain": "N1", "irv": False, "lev": False},
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
@@ -113,6 +119,9 @@ SUPPRESSION_RATIONALE = {
     "CKV_AWS_272": "Source-level signing chain in place: deploy-time KSI signal is Sigstore-signed; Wasm policy bytes are verifiable via the canonical inventory's content hash. AWS Signer adds defense-in-depth at marginal cost; not currently justified.",
     "CKV_AWS_338": "7-day retention; operational debug logs only, no PII. Anything older than a week is not actionable for sole-operator IR.",
     "CKV_AWS_158": "AWS-default encryption (server-side AES-256) is on. No PII in log content; customer-managed KMS adds cost without commensurate benefit.",
+    "CKV2_AWS_57": "The two Silk Reeling app secrets (a third-party Anthropic API key and an operator-set basic-auth credential) have no programmatic rotation source; rotated manually via put-secret-value. Mooted once the secrets are removed (Tasks 3-4).",
+    "CKV_AWS_309": "Access control is enforced at the application layer; the API fronts a Lambda whose middleware rejects any request without valid credentials. Remediated by the Cognito JWT authorizer (Task 3).",
+    "CKV_AWS_76":  "HTTP API access logs require a CloudWatch Logs delivery resource-policy; the Lambda execution log group plus CloudFront access logs cover requests in the interim. Remediated by enabling API Gateway access logging (Task 3).",
 }
 
 # Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving
