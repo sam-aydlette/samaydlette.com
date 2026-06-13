@@ -745,24 +745,8 @@ jobs:
         echo "Bundle written:"
         ls -la ksi-signal.bundle
 
-    - name: Publish KSI signal and bundle to /.well-known/
-      working-directory: infrastructure
-      run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        echo "Publishing to s3://$BUCKET_NAME/.well-known/"
-        aws s3 cp ksi-signal.json "s3://$BUCKET_NAME/.well-known/ksi-signal.json" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        aws s3 cp ksi-signal.bundle "s3://$BUCKET_NAME/.well-known/ksi-signal.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        aws s3 cp schemas/ksi-signal.schema.json "s3://$BUCKET_NAME/.well-known/ksi-signal.schema.json" \
-          --content-type application/schema+json \
-          --cache-control "public, max-age=3600"
-        echo "✅ KSI signal, bundle, and schema published"
-
     # -------------------------------------------------------------------------
-    # BUILD AND PUBLISH THE OSCAL REV 5 SSP
+    # BUILD THE OSCAL REV 5 SSP  (published after the reconciliation gate)
     # -------------------------------------------------------------------------
     # Generates a NIST OSCAL System Security Plan (FedRAMP Rev 5 Moderate
     # baseline shape) from the canonical inventory and the FedRAMP KSI catalog. Sits
@@ -782,26 +766,13 @@ jobs:
           ksi_signal_id: ."system-security-plan".metadata.props[0].value
         }' oscal-ssp.json
 
-    # Stamp every load-bearing figure in the paper and the dashboard from the
-    # artifacts just built (the OSCAL SSP, the component definition, the spoke
-    # profiles, and the CMMC projector). No number in the published HTML is
-    # hand-maintained: this recomputes them from source and rewrites the marked
-    # <span data-figure="..."> sites, then re-uploads the two HTML files so the
-    # served bytes (and the bytes the paper signature covers below) match the
-    # freshly-built artifacts. A drift here means a marker references a figure
-    # the build cannot produce, which fails the deploy (external review Task 13).
+    # Stamp the paper + dashboard figures from the just-built SSP (modifies the
+    # local HTML only; the re-upload happens in the publish block after the gate).
     - name: Stamp single-source figures (paper + dashboard)
       working-directory: infrastructure
       run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
         python3 ../scripts/inject-figures.py
-        aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" \
-          --content-type "text/html; charset=utf-8" \
-          --cache-control "public, max-age=300"
-        aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" \
-          --content-type "text/html; charset=utf-8" \
-          --cache-control "public, max-age=300"
-        echo "✅ Figures stamped from live artifacts; paper + dashboard re-uploaded"
+        echo "✅ Figures stamped from live artifacts (upload deferred to publish phase)"
 
     - name: Sign OSCAL SSP
       working-directory: infrastructure
@@ -809,20 +780,8 @@ jobs:
         echo "Signing oscal-ssp.json with cosign keyless..."
         cosign sign-blob --yes --bundle oscal-ssp.bundle oscal-ssp.json
 
-    - name: Publish OSCAL SSP and bundle to /.well-known/
-      working-directory: infrastructure
-      run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        aws s3 cp oscal-ssp.json "s3://$BUCKET_NAME/.well-known/oscal-ssp.json" \
-          --content-type application/oscal+json \
-          --cache-control "public, max-age=300"
-        aws s3 cp oscal-ssp.bundle "s3://$BUCKET_NAME/.well-known/oscal-ssp.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        echo "✅ OSCAL SSP + bundle published"
-
     # -------------------------------------------------------------------------
-    # BUILD AND PUBLISH THE VDR REPORT (FedRAMP 20x VDR-RPT-PER, VDR-TFR-MHR)
+    # BUILD THE VDR REPORT  (published after the reconciliation gate) (FedRAMP 20x VDR-RPT-PER, VDR-TFR-MHR)
     # -------------------------------------------------------------------------
     # Aggregates SAST/SCA findings (currently OPA gate; Checkov, tfsec, and
     # Dependabot are wired in via optional --flags as those tools are added
@@ -931,24 +890,6 @@ jobs:
         echo "Signing vdr-report.json with cosign keyless..."
         cosign sign-blob --yes --bundle vdr-report.bundle vdr-report.json
 
-    - name: Publish VDR Report and bundle to /.well-known/
-      working-directory: infrastructure
-      run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        aws s3 cp vdr-report.json "s3://$BUCKET_NAME/.well-known/vdr-report.json" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        aws s3 cp vdr-trend.json "s3://$BUCKET_NAME/.well-known/vdr-trend.json" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        aws s3 cp vdr-trend.bundle "s3://$BUCKET_NAME/.well-known/vdr-trend.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        echo "✅ VDR report + trend + bundles published"
-
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
     # -------------------------------------------------------------------------
@@ -972,20 +913,8 @@ jobs:
         echo "Signing iiw.csv with cosign keyless..."
         cosign sign-blob --yes --bundle iiw.bundle iiw.csv
 
-    - name: Publish IIW and bundle to /.well-known/
-      working-directory: infrastructure
-      run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" \
-          --content-type text/csv \
-          --cache-control "public, max-age=300"
-        aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        echo "✅ IIW + bundle published"
-
     # -------------------------------------------------------------------------
-    # BUILD AND PUBLISH THE OSCAL POA&M
+    # BUILD THE OSCAL POA&M  (published after the reconciliation gate)
     # -------------------------------------------------------------------------
     # NIST OSCAL Plan of Action and Milestones format. Imports the OSCAL SSP
     # at /.well-known/oscal-ssp.json so a consumer can navigate from a poam
@@ -1007,9 +936,9 @@ jobs:
     # SSP/POA&M references resolve to inventory, every Checkov suppression is
     # categorized consistently, one identical impact level everywhere, all
     # artifacts bound to one signal_id, and the staged artifacts carry this run's
-    # commit. Runs after all four artifacts are built; --live enumerates the live
-    # account. Publish-ordering hardening (publish only after this passes) is
-    # Task 1.5.
+    # commit. Runs after all artifacts are built and signed but BEFORE anything is
+    # published (Task 1.5): nothing reaches /.well-known/ until this passes, so a
+    # gate failure can never leave a partial/stale served set (root of P-1).
     - name: Reconciliation gate (fail closed on drift)
       working-directory: infrastructure
       env:
@@ -1024,17 +953,35 @@ jobs:
         echo "Signing oscal-poam.json with cosign keyless..."
         cosign sign-blob --yes --bundle oscal-poam.bundle oscal-poam.json
 
-    - name: Publish OSCAL POA&M and bundle to /.well-known/
+    # PUBLISH PHASE — every artifact was built and signed before the gate; this
+    # uploads them as one block so the served /.well-known/ set is always
+    # internally consistent. Nothing here runs unless the gate above passed.
+    - name: Publish all signed artifacts to /.well-known/
       working-directory: infrastructure
       run: |
         BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        aws s3 cp oscal-poam.json "s3://$BUCKET_NAME/.well-known/oscal-poam.json" \
-          --content-type application/oscal+json \
-          --cache-control "public, max-age=300"
-        aws s3 cp oscal-poam.bundle "s3://$BUCKET_NAME/.well-known/oscal-poam.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        echo "✅ OSCAL POA&M + bundle published"
+        # KSI signal + bundle + schema
+        aws s3 cp ksi-signal.json "s3://$BUCKET_NAME/.well-known/ksi-signal.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp ksi-signal.bundle "s3://$BUCKET_NAME/.well-known/ksi-signal.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp schemas/ksi-signal.schema.json "s3://$BUCKET_NAME/.well-known/ksi-signal.schema.json" --content-type application/schema+json --cache-control "public, max-age=3600"
+        # OSCAL SSP
+        aws s3 cp oscal-ssp.json "s3://$BUCKET_NAME/.well-known/oscal-ssp.json" --content-type application/oscal+json --cache-control "public, max-age=300"
+        aws s3 cp oscal-ssp.bundle "s3://$BUCKET_NAME/.well-known/oscal-ssp.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # VDR report + trend
+        aws s3 cp vdr-report.json "s3://$BUCKET_NAME/.well-known/vdr-report.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-trend.json "s3://$BUCKET_NAME/.well-known/vdr-trend.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-trend.bundle "s3://$BUCKET_NAME/.well-known/vdr-trend.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # IIW
+        aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
+        aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # OSCAL POA&M
+        aws s3 cp oscal-poam.json "s3://$BUCKET_NAME/.well-known/oscal-poam.json" --content-type application/oscal+json --cache-control "public, max-age=300"
+        aws s3 cp oscal-poam.bundle "s3://$BUCKET_NAME/.well-known/oscal-poam.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Stamped paper + dashboard HTML (figures were stamped pre-gate)
+        aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
+        echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # Sign the research paper itself (a paper whose thesis is verifiability should
     # be verifiable). The signed bytes are the served bytes of
@@ -1050,6 +997,35 @@ jobs:
           --content-type application/json \
           --cache-control "public, max-age=300"
         echo "✅ Research paper Sigstore bundle published at /.well-known/the-plumbing.html.bundle"
+
+    # Post-publish round-trip (Task 1.5 / reconciliation invariant f, live half):
+    # read each artifact back from the S3 origin and confirm the served bytes
+    # match what was just built and signed. Reads the origin (not CloudFront) so
+    # the check is not confused by CDN caching; propagation is handled by the
+    # invalidation below. Fails closed on any mismatch.
+    - name: Post-publish round-trip verify
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        fail=0
+        check() {
+          want=$(sha256sum "$1" | awk '{print $1}')
+          got=$(aws s3 cp "s3://$BUCKET_NAME/$2" - | sha256sum | awk '{print $1}')
+          if [ "$want" != "$got" ]; then
+            echo "::error::round-trip mismatch for $2 (built $want, served $got)"; fail=1
+          else
+            echo "ok: $2"
+          fi
+        }
+        check ksi-signal.json .well-known/ksi-signal.json
+        check oscal-ssp.json .well-known/oscal-ssp.json
+        check vdr-report.json .well-known/vdr-report.json
+        check oscal-poam.json .well-known/oscal-poam.json
+        check iiw.csv .well-known/iiw.csv
+        if [ "$fail" -ne 0 ]; then
+          echo "Post-publish round-trip FAILED — served artifacts do not match the build."; exit 1
+        fi
+        echo "✅ Round-trip verified: served origin matches the just-built artifacts"
 
     # -------------------------------------------------------------------------
     # REFRESH WEBSITE CACHE
