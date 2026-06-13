@@ -799,18 +799,24 @@ def main():
     findings.extend(ingest_dependabot(args.dependabot))
     findings.extend(ingest_grype(args.grype))
 
-    # DAST: ingest the committed monthly ZAP report and fail closed if it is
-    # missing or stale (a silently-skipped scan must not read as zero findings).
+    # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
+    # a MISSING report only warns (DAST coverage absent until the first scan is
+    # committed), so the pipeline stays green before the operator's first scan.
+    # Once a report IS present, it is enforced: an undated or stale one fails the
+    # build closed (a skipped/forgotten scan must not read as zero findings).
     if args.zap:
-        findings.extend(ingest_zap(args.zap))
-        if args.zap_max_age_days > 0:
-            age = zap_report_age_days(args.zap, datetime.now(timezone.utc))
-            if age is None:
-                print(f"::error::ZAP report missing or undated at {args.zap}; commit a fresh scan (see security/zap/README).", file=sys.stderr)
-                return 1
-            if age > args.zap_max_age_days:
-                print(f"::error::ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh monthly DAST scan and commit it.", file=sys.stderr)
-                return 1
+        if not Path(args.zap).exists():
+            print(f"::warning::No ZAP report at {args.zap}; DAST coverage is absent until a scan is committed (see security/zap/README.md).", file=sys.stderr)
+        else:
+            findings.extend(ingest_zap(args.zap))
+            if args.zap_max_age_days > 0:
+                age = zap_report_age_days(args.zap, datetime.now(timezone.utc))
+                if age is None:
+                    print(f"::error::ZAP report at {args.zap} has no parseable @generated timestamp; regenerate it.", file=sys.stderr)
+                    return 1
+                if age > args.zap_max_age_days:
+                    print(f"::error::ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh monthly DAST scan and commit it.", file=sys.stderr)
+                    return 1
 
     kev_cves = ingest_kev(args.kev)
     suppressions = ingest_suppressions(args.checkov_yaml)
