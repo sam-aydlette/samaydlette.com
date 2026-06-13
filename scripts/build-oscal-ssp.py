@@ -881,6 +881,14 @@ def _silk_reeling_present(signal):
 
 
 def build_system_characteristics(signal):
+    # Single source of truth for categorization (assessment F-2 / Decision 1).
+    # The SSP previously hardcoded "low" across every objective — a direct
+    # contradiction of the Moderate baseline it is built against. Read the
+    # authoritative FIPS-199 levels from data/system-profile.json so the SSP,
+    # KSI signal, POA&M, VDR, and dashboard all assert the same impact level.
+    _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
+    _f199 = _profile["fips_199"]
+    _sens = _f199["high_water_mark"]  # "moderate"
     sc = {
         "system-ids": [
             {
@@ -902,7 +910,7 @@ def build_system_characteristics(signal):
             "deployment; no end users, no federal customer data, no FedRAMP "
             "authorization in scope."
         ),
-        "security-sensitivity-level": "low",
+        "security-sensitivity-level": _sens,
         "system-information": {
             "information-types": [
                 {
@@ -919,21 +927,21 @@ def build_system_characteristics(signal):
                         }
                     ],
                     "confidentiality-impact": {
-                        "base": "fips-199-low",
+                        "base": f"fips-199-{_f199['confidentiality']}",
                     },
                     "integrity-impact": {
-                        "base": "fips-199-low",
+                        "base": f"fips-199-{_f199['integrity']}",
                     },
                     "availability-impact": {
-                        "base": "fips-199-low",
+                        "base": f"fips-199-{_f199['availability']}",
                     },
                 }
             ]
         },
         "security-impact-level": {
-            "security-objective-confidentiality": "low",
-            "security-objective-integrity": "low",
-            "security-objective-availability": "low",
+            "security-objective-confidentiality": _f199["confidentiality"],
+            "security-objective-integrity": _f199["integrity"],
+            "security-objective-availability": _f199["availability"],
         },
         "status": {"state": "operational"},
         "authorization-boundary": {

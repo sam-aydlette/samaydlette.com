@@ -327,6 +327,9 @@ def _build_props_for_item(item, defaults):
 
 def build_metadata(now_iso, system_uuid, ksi_signal):
     """OSCAL metadata with party + role for the operator."""
+    # Single source of truth for categorization (assessment F-2 / Decision 1).
+    _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
+    _impact = _profile["impact_level"].lower()
     ownership = (ksi_signal or {}).get("ownership") or {}
     operator_name = ownership.get("system_owner") or "Sam Aydlette"
     operator_email = ownership.get("operator_contact")
@@ -363,7 +366,7 @@ def build_metadata(now_iso, system_uuid, ksi_signal):
         "props": [
             {"name": "cloud-service-provider", "ns": FEDRAMP_NS, "value": operator_name},
             {"name": "cloud-service-offering", "ns": FEDRAMP_NS, "value": SYSTEM_NAME_ORG},
-            {"name": "impact-level", "ns": FEDRAMP_NS, "value": "moderate"},
+            {"name": "impact-level", "ns": FEDRAMP_NS, "value": _impact},
             {"name": "authorization-status", "ns": "https://samaydlette.com/ns/oscal", "value": "self-attested-proof-of-concept"},
             {"name": "fedramp-certified", "ns": "https://samaydlette.com/ns/oscal", "value": "false"},
         ],

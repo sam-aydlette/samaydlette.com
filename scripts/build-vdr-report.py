@@ -669,6 +669,8 @@ def build_report(findings, suppressions, kev_cves, ledger):
     summary["unique_cves"] = len(cve_findings)
     summary["unique_cves_open"] = sum(1 for c in cve_findings if "open" in c["dispositions"])
 
+    # Single source of truth for categorization (assessment F-2 / Decision 1).
+    _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
     report = {
         "report_version": "1.2.0",
         "report_id": str(uuid.uuid4()),
@@ -677,6 +679,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
         "ksi_signal_ref": "/.well-known/ksi-signal.json",
         "poam_ref": "docs/poam.md",
         "class": "C",
+        "impact_level": _profile["impact_level"],
         "summary": summary,
         "findings": report_findings,
         "cve_findings": cve_findings,
