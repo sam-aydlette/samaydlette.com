@@ -709,7 +709,13 @@ def main():
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
+    parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
     args = parser.parse_args()
+
+    ksi_signal_id = None
+    _sig_path = Path(args.ksi_signal)
+    if _sig_path.exists():
+        ksi_signal_id = json.loads(_sig_path.read_text()).get("signal_id")
 
     findings = []
     findings.extend(ingest_opa(args.opa))
@@ -722,6 +728,7 @@ def main():
     ledger = ingest_previous_ledger(args.previous_vdr)
 
     report, blocking = build_report(findings, suppressions, kev_cves, ledger)
+    report["ksi_signal_id"] = ksi_signal_id
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
