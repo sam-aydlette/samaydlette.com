@@ -895,10 +895,20 @@ jobs:
           --previous-vdr previous-vdr-report.json \
           --dependabot dependabot-alerts.json \
           --grype grype.json \
+          --zap ../security/zap/zap-report.json \
           --kev kev-catalog.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
+
+    # Vulnerability gate (Task T): fail the build on any scanner-reported
+    # vulnerability (Grype SCA, ZAP DAST, Dependabot) that is not remediated or
+    # dispositioned false-positive / operational-requirement in
+    # data/vuln-dispositions.json. Risk-adjustment does not pass.
+    - name: Vulnerability gate (fix or categorize every vuln)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json
 
     # Append this run's CVE-keyed summary to the rolling vuln trend ledger
     # (RA-5(6)). Fetch the published ledger first so history persists across
