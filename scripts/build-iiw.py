@@ -7,7 +7,8 @@
 # a CSV with the IIW column headers so the same canonical layer that produces
 # the KSI signal and the OSCAL Rev 5 SSP also produces the IIW.
 #
-# This is the third report this codebase derives from one source. The point
+# This is the fourth report this codebase derives from one source (KSI signal,
+# OSCAL SSP, OSCAL POA&M, and this IIW). The point
 # of the projector is architectural rather than functional: a portfolio
 # consumer that already has the KSI signal does not need a separate IIW
 # deliverable, but FedRAMP processes still expect one. Projecting it from
@@ -101,8 +102,8 @@ def project_component(component, signal):
     if ctype == "function":
         row["OS Name and Version"] = attrs.get("runtime", "")
 
-    # Software / npm fields
-    if ctype == "npm_package":
+    # Software fields (npm and PyPI packages)
+    if ctype in ("npm_package", "pypi_package"):
         name = attrs.get("name", "")
         version = attrs.get("version", "")
         row["Software/Database Vendor"] = "Open Source"

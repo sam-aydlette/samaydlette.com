@@ -96,6 +96,19 @@ def aggregate_srm(classes):
     return "shared"                    # any mix -> shared
 
 
+def guard_no_vacuous_inheritance(req, cls, srm, hub_controls):
+    """A requirement with NO backing hub control must never be reported as fully
+    inherited or implemented. Doing so tells a consuming organization the CSP
+    fully provides an obligation it does not -- e.g. 3.12.4 (maintain your own
+    SSP), which 800-171 Table D-1 maps to no 800-53 control. Empty hub_controls
+    may only be customer-responsibility / not-applicable / residue. Raise loudly
+    so a crosswalk gap can never silently chain into a false inheritance claim."""
+    if not hub_controls and (cls in ("fully-inherited", "implemented") or srm == "inherited"):
+        raise ValueError(
+            f"vacuous inheritance for {req}: class={cls!r} srm={srm!r} with no hub controls; "
+            "an unmapped requirement cannot be fully inherited/implemented")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ssp", required=True)
@@ -117,8 +130,10 @@ def main():
     per_req = {}
     for req in reqs:
         if req in cmmc_disp:                        # dispositioned at the requirement level (e.g. SSP)
-            cls = classify(cmmc_disp[req]["status"], "sp-system")
-            srm = aggregate_srm({srm_class(cmmc_disp[req]["status"], "sp-system")})
+            d = cmmc_disp[req]
+            cls = d.get("class", "customer-responsibility")
+            srm = d.get("srm", "osc-responsibility")
+            guard_no_vacuous_inheritance(req, cls, srm, hub_controls=[])
             stack[cls] += 1
             srm_stack[srm] += 1
             per_req[req] = {"class": cls, "srm": srm, "hub_controls": []}
@@ -134,6 +149,7 @@ def main():
             continue
         cls = aggregate({classify(s, o) for (s, o) in impls})
         srm = aggregate_srm({srm_class(s, o) for (s, o) in impls})
+        guard_no_vacuous_inheritance(req, cls, srm, hub_controls=r5)
         stack[cls] += 1
         srm_stack[srm] += 1
         per_req[req] = {"class": cls, "srm": srm, "hub_controls": r5}

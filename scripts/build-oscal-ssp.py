@@ -555,6 +555,16 @@ def _norm_ctrl(_pid):
     return f"{_f}-{_n}" + (f".{_e}" if _e else "")
 
 
+def _normalize_ws(value):
+    r"""Collapse internal whitespace runs (including newlines) to single spaces
+    and strip the ends, so every emitted parameter/string value satisfies OSCAL's
+    string pattern ^\S(.*\S)?$. Long ODP descriptions in the FedRAMP profile (e.g.
+    ps-03_odp.01/.02) carry embedded paragraph breaks that would otherwise make
+    the generated SSP invalid against the NIST OSCAL schema."""
+    import re as _re
+    return _re.sub(r"\s+", " ", value).strip()
+
+
 def _load_fedramp_parameters():
     """FedRAMP-defined parameter values (264) from the vendored Moderate profile,
     grouped by control. Emitted as OSCAL set-parameters per implemented-requirement
@@ -569,7 +579,7 @@ def _load_fedramp_parameters():
         if not _cid:
             continue
         _entry = {"param-id": _sp["param-id"]}
-        _vals = [_c["description"] for _c in _sp.get("constraints", []) if _c.get("description")]
+        _vals = [_normalize_ws(_c["description"]) for _c in _sp.get("constraints", []) if _c.get("description")]
         if _vals:
             _entry["values"] = _vals
         _out.setdefault(_cid, []).append(_entry)

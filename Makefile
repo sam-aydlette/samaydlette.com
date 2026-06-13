@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check
 
 # Default target
 help:
@@ -206,6 +206,26 @@ dev-setup: init
 		echo "📝 Created terraform.tfvars from example. Please customize it."; \
 	fi
 	@echo "✅ Development setup complete"
+
+# Inventory gate: validate an already-built ksi-signal.json (PURL validity,
+# native_id uniqueness, ecosystem-faithful typing). Blocks the deploy in CI.
+gate:
+	@echo "Running KSI inventory gate..."
+	python3 ../scripts/validate-ksi-signal.py ksi-signal.json
+	@echo "✅ Inventory gate passed"
+
+# Python unit/integration tests (inventory gate, provenance, PURLs, SSP params,
+# CMMC mapping, figure injection). Runnable in PR CI without AWS state.
+python-test:
+	@echo "Running Python test suite..."
+	cd .. && python3 -m pytest tests/ -q
+
+# Figure freshness gate: every <span data-figure> in the paper and dashboard
+# must match the value recomputed from the canonical artifacts. Fails if a
+# committed figure has drifted from its source. Runnable without AWS state.
+figures-check:
+	@echo "Checking single-source figures..."
+	cd .. && python3 scripts/inject-figures.py --check
 
 # Test OPA policies locally
 test-policies:

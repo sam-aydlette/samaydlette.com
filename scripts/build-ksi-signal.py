@@ -120,6 +120,10 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
         "information_flow": [],
     },
+    "pypi_package": {
+        "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
+        "information_flow": [],
+    },
     "html_artifact": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [
@@ -202,11 +206,18 @@ IIW_DEFAULTS = {
         "iiw_asset_type": "Compute Function (Lambda)",
     },
     "npm_package": {
-        "function": "Lambda runtime dependency",
+        "function": "Runtime dependency of the compliance/KSI Lambda (npm)",
         "diagram_label": "Open-source policy and signing tooling running inside CI",
         "public": False,
         "baseline_configuration": "package-lock.json integrity hash; Dependabot-monitored",
         "iiw_asset_type": "Software Package (npm)",
+    },
+    "pypi_package": {
+        "function": "Python dependency of the Silk Reeling application (PyPI)",
+        "diagram_label": "Open-source Python dependency of the Silk Reeling app",
+        "public": False,
+        "baseline_configuration": "lockfile integrity hash; Dependabot-monitored",
+        "iiw_asset_type": "Software Package (PyPI)",
     },
     "html_artifact": {
         "function": "Public site content",
@@ -431,16 +442,24 @@ def build_cloud_components(tf_state, tf_outputs):
             if key in values and values[key] is not None:
                 attrs[key] = values[key]
 
-        # Prefer the ARN exposed via terraform output (canonical, post-apply);
-        # fall back to the resource's own arn attribute. Data sources (Route 53,
-        # ACM) carry the ARN directly on the data block.
+        # Per-resource ARN first: each resource's identity comes from its OWN
+        # state block (values["arn"]), never from a shared whole-stack output —
+        # two Lambdas in the same state would otherwise both receive the single
+        # `lambda_function_arn` output and collide on native_id. The output is
+        # only a fallback when the state block carries no ARN, and conditional
+        # outputs can hold sentinel strings ("Not created"), so anything that
+        # does not look like an ARN is rejected outright.
+        def _output_arn(name):
+            v = (tf_outputs or {}).get(name, {}).get("value")
+            return v if isinstance(v, str) and v.startswith("arn:") else None
+
         native_id = None
         if normalized == "object_store":
-            native_id = (tf_outputs or {}).get("s3_bucket_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("s3_bucket_arn")
         elif normalized == "cdn_distribution":
-            native_id = (tf_outputs or {}).get("cloudfront_distribution_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("cloudfront_distribution_arn")
         elif normalized == "function":
-            native_id = (tf_outputs or {}).get("lambda_function_arn", {}).get("value") or values.get("arn")
+            native_id = values.get("arn") or _output_arn("lambda_function_arn")
         elif normalized == "dns_zone":
             native_id = values.get("arn") or values.get("zone_id") or values.get("id")
         elif normalized == "iam_policy":
@@ -562,11 +581,12 @@ def build_sbom_components(sbom_path, existing_components=None):
     Graceful like the other loaders: returns [] when the path is missing, empty,
     or not valid JSON, so this is a no-op when the Silk Reeling app wasn't built.
 
-    Type choice: the schema's component.type enum has no PyPI type and no generic
-    software/package type — 'npm_package' is its only software-package slot. So
-    every SBOM software component (npm OR pypi) projects into 'npm_package', and
-    the true ecosystem is preserved in attributes.ecosystem and the PURL. This
-    reuses the existing 'npm_package' MAS/IIW defaults and stays schema-valid.
+    Type choice: each component is typed by its PURL ecosystem -- 'pkg:pypi/...'
+    becomes 'pypi_package', 'pkg:npm/...' becomes 'npm_package' -- and the IIW
+    asset-type and function attributes are derived from the ecosystem and the
+    source SBOM, so a PyPI dependency is not mislabeled as an npm package and an
+    SPA dependency is not mislabeled as a Lambda runtime dependency. The ecosystem
+    is also preserved in attributes.ecosystem and the PURL.
 
     De-duplicates by PURL against components already in `existing_components`
     (so the compliance Lambda's npm packages aren't double-counted on overlap)
@@ -602,15 +622,31 @@ def build_sbom_components(sbom_path, existing_components=None):
         name = entry.get("name")
         version = entry.get("version")
         ecosystem = purl_ecosystem(purl) or "unknown"
+        # Type by the PURL's actual ecosystem, and derive role-aware IIW facts so
+        # the FedRAMP IIW (Appendix M) reports each package's real ecosystem and
+        # role: an SPA npm dependency, a Silk Reeling PyPI dependency, and the
+        # compliance-Lambda npm dependency must not read identically. These are
+        # set before apply_iiw_defaults, which only fills missing keys.
+        if ecosystem == "pypi":
+            ptype, asset_type = "pypi_package", "Software Package (PyPI)"
+            role = "Dependency of the Silk Reeling application Lambda (PyPI)"
+        elif ecosystem == "npm":
+            ptype, asset_type = "npm_package", "Software Package (npm)"
+            role = "Dependency of the Silk Reeling single-page application (npm)"
+        else:
+            ptype, asset_type = "npm_package", f"Software Package ({ecosystem})"
+            role = f"Dependency of the Silk Reeling application ({ecosystem})"
         component = {
             "component_id": component_id_for_sbom(ecosystem, name, version),
-            "type": "npm_package",
+            "type": ptype,
             "global_id": {"purl": purl},
             "attributes": {
                 "name": name,
                 "version": version,
                 "ecosystem": ecosystem,
                 "sbom_source": sbom_path.name,
+                "iiw_asset_type": asset_type,
+                "function": role,
             },
         }
         apply_mas_defaults(component)
@@ -829,13 +865,17 @@ def build_validations(validations_doc, components):
 def build_provenance():
     """Read GITHUB_* env vars when running in Actions; fall back to local."""
     repo = os.environ.get("GITHUB_REPOSITORY")
-    workflow = os.environ.get("GITHUB_WORKFLOW")
+    # GITHUB_WORKFLOW_REF is the fully-qualified workflow reference
+    # (OWNER/REPO/.github/workflows/FILE@REF) and is exactly the Fulcio
+    # certificate SAN. GITHUB_WORKFLOW (the display name, with spaces) is NOT a
+    # valid SAN, so builder.id must be built from WORKFLOW_REF.
+    workflow_ref = os.environ.get("GITHUB_WORKFLOW_REF")
     run_id = os.environ.get("GITHUB_RUN_ID")
     sha = os.environ.get("GITHUB_SHA")
     ref = os.environ.get("GITHUB_REF")
 
-    if repo and workflow and sha:
-        builder_id = f"https://github.com/{repo}/.github/workflows/{workflow}"
+    if repo and workflow_ref and sha:
+        builder_id = f"https://github.com/{workflow_ref}"
         provenance = {
             "builder": {
                 "id": builder_id,
@@ -859,7 +899,10 @@ def build_provenance():
                 "url": "https://samaydlette.com/.well-known/ksi-signal.bundle",
                 "verification": {
                     "tool": "cosign",
-                    "certificate_identity_regexp": f"https://github.com/{repo}/.github/workflows/.+",
+                    # Exact identity pin (no workflow wildcard): the bundle must be
+                    # signed by THIS workflow at THIS ref, equal to builder.id. A
+                    # `.+` here would accept a signature from any workflow in the repo.
+                    "certificate_identity": builder_id,
                     "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
                 },
             }

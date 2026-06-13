@@ -6,10 +6,10 @@
 # JSON schemas (data/schemas/oscal/, from the usnistgov/OSCAL v1.2.2 release).
 #
 # OSCAL's JSON schemas use ECMA-262 regex (\p{...} Unicode property escapes) that
-# Python's `re` cannot compile, so `pattern` keywords are stripped before
-# validating. Everything else is enforced — structure, required fields, types,
-# and ENUMS (which is what catches real authoring mistakes: wrong field names,
-# invalid relationship / origination / status values, missing required blocks).
+# Python's `re` cannot compile. Only those incompatible patterns are dropped;
+# patterns that DO compile (notably the string type's ^\S(.*\S)?$) are kept and
+# enforced, so an embedded newline in a parameter value is caught, not silently
+# passed. Structure, required fields, types, and ENUMS are enforced throughout.
 #
 # Full Metaschema *constraint* validation (beyond JSON Schema) is the CI gold
 # standard via NIST's `oscal-cli` (Java); wire it in CI. This gate is the fast
@@ -20,6 +20,7 @@
 # =============================================================================
 
 import argparse
+import re
 import json
 import sys
 from pathlib import Path
@@ -42,8 +43,23 @@ ARTIFACTS = [
 
 
 def strip_patterns(o):
+    # Strip ONLY the regex patterns Python's re cannot compile (OSCAL uses
+    # ECMA-262 \p{...} Unicode property escapes). Patterns that DO compile —
+    # notably the string type's ^\S(.*\S)?$ — are kept, so genuine violations
+    # (e.g. an embedded newline in a parameter value) are actually caught rather
+    # than silently passed.
     if isinstance(o, dict):
-        return {k: strip_patterns(v) for k, v in o.items() if k != "pattern"}
+        out = {}
+        for k, v in o.items():
+            if k == "pattern" and isinstance(v, str):
+                try:
+                    re.compile(v)
+                    out[k] = v
+                except re.error:
+                    continue  # drop the incompatible pattern only
+            else:
+                out[k] = strip_patterns(v)
+        return out
     if isinstance(o, list):
         return [strip_patterns(x) for x in o]
     return o

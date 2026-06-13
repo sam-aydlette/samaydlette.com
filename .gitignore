@@ -39,6 +39,9 @@ website/.well-known/iiw.csv
 infrastructure/iiw.csv
 website/.well-known/oscal-poam.json
 infrastructure/oscal-poam.json
+infrastructure/oscal-ssp.json
+infrastructure/ksi-signal.json
+infrastructure/cmmc-out.json
 
 # OPA temporary files
 opa-input.json
@@ -122,3 +125,12 @@ infrastructure/lambda\ invoke*
 
 # Generated SCuBA bundle (regenerable via scripts/build-scuba-bundle.py; signed+published in the pipeline)
 scuba/dist/
+
+# Python test cache
+__pycache__/
+*.pyc
+tests/__pycache__/
+
+# Stale committed inventory snapshot — authoritative copies are generated+signed in CI and published at /.well-known/
+/ksi-signal.json
+/ksi-signal.bundle

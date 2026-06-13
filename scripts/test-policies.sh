@@ -242,6 +242,22 @@ else
     echo "❌ Complex scenario with multiple violations test failed"
 fi
 
+# Python inventory gate + fix regression suite (inventory gate, provenance,
+# PURLs, SSP params, CMMC mapping). Runs in PR CI without AWS state.
+echo
+echo "=== Python test suite (inventory gate + identifier/SSP/CMMC fixes) ==="
+if python3 -c "import pytest" 2>/dev/null; then
+    ( cd "$(dirname "$0")/.." && python3 -m pytest tests/ -q ) || { echo "❌ Python test suite failed"; exit 1; }
+    echo "✅ Python test suite passed"
+else
+    echo "⚠️  pytest not available; skipping Python suite"
+fi
+
+# Figure freshness gate: paper + dashboard figures must match their sources.
+echo
+echo "=== Single-source figure gate (paper + dashboard) ==="
+( cd "$(dirname "$0")/.." && python3 scripts/inject-figures.py --check ) || { echo "❌ Figures are stale; run 'python3 scripts/inject-figures.py' and commit"; exit 1; }
+
 # Generate summary report
 echo
 echo "=== Test Summary ==="

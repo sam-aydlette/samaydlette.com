@@ -717,13 +717,20 @@ jobs:
              validation_results: [.validations[].result] | group_by(.) | map({(.[0]): length}) | add}' \
           ksi-signal.json
 
+    # Inventory gate: block the deploy if the emitted canonical inventory is
+    # malformed (invalid/duplicate identifiers). The inventory is the join layer
+    # the whole architecture rests on, so this runs BEFORE signing/publishing.
+    - name: Gate KSI signal (PURL validity, native_id uniqueness, typing)
+      working-directory: infrastructure
+      run: python3 ../scripts/validate-ksi-signal.py ksi-signal.json
+
     # -------------------------------------------------------------------------
     # SIGN THE KSI SIGNAL (Sigstore keyless via GitHub OIDC)
     # -------------------------------------------------------------------------
     # Produces a Sigstore bundle (cert + signature + Rekor inclusion proof) as
     # ksi-signal.bundle. Verifiers fetch both files and run:
     #   cosign verify-blob --bundle ksi-signal.bundle \
-    #     --certificate-identity-regexp 'https://github.com/.../workflows/.+' \
+    #     --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
     #     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
     #     ksi-signal.json
     # -------------------------------------------------------------------------
@@ -774,6 +781,27 @@ jobs:
           control_count: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
           ksi_signal_id: ."system-security-plan".metadata.props[0].value
         }' oscal-ssp.json
+
+    # Stamp every load-bearing figure in the paper and the dashboard from the
+    # artifacts just built (the OSCAL SSP, the component definition, the spoke
+    # profiles, and the CMMC projector). No number in the published HTML is
+    # hand-maintained: this recomputes them from source and rewrites the marked
+    # <span data-figure="..."> sites, then re-uploads the two HTML files so the
+    # served bytes (and the bytes the paper signature covers below) match the
+    # freshly-built artifacts. A drift here means a marker references a figure
+    # the build cannot produce, which fails the deploy (external review Task 13).
+    - name: Stamp single-source figures (paper + dashboard)
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        python3 ../scripts/inject-figures.py
+        aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" \
+          --content-type "text/html; charset=utf-8" \
+          --cache-control "public, max-age=300"
+        aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" \
+          --content-type "text/html; charset=utf-8" \
+          --cache-control "public, max-age=300"
+        echo "✅ Figures stamped from live artifacts; paper + dashboard re-uploaded"
 
     - name: Sign OSCAL SSP
       working-directory: infrastructure
@@ -981,6 +1009,21 @@ jobs:
           --content-type application/json \
           --cache-control "public, max-age=300"
         echo "✅ OSCAL POA&M + bundle published"
+
+    # Sign the research paper itself (a paper whose thesis is verifiability should
+    # be verifiable). The signed bytes are the served bytes of
+    # /research/the-plumbing.html; the bundle is published at a stable
+    # /.well-known/ URL and verifies under the same pinned identity as every
+    # other artifact (external review Task 24).
+    - name: Sign and publish the research paper
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        cosign sign-blob --yes --bundle paper.bundle ../website/research/the-plumbing.html
+        aws s3 cp paper.bundle "s3://$BUCKET_NAME/.well-known/the-plumbing.html.bundle" \
+          --content-type application/json \
+          --cache-control "public, max-age=300"
+        echo "✅ Research paper Sigstore bundle published at /.well-known/the-plumbing.html.bundle"
 
     # -------------------------------------------------------------------------
     # REFRESH WEBSITE CACHE
