@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile
 
 # Default target
 help:
@@ -219,6 +219,15 @@ gate:
 python-test:
 	@echo "Running Python test suite..."
 	cd .. && python3 -m pytest tests/ -q
+
+# Reconciliation gate (assessment keystone): fails closed if any cross-artifact
+# invariant breaks (completeness, referential, suppressions, impact level,
+# inventory binding, publish freshness). Run from infrastructure/ after the
+# signal/SSP/POA&M/VDR are built. RECONCILE_FLAGS="--live" enumerates live AWS
+# for the completeness invariant in CI.
+reconcile:
+	@echo "Running reconciliation gate..."
+	cd .. && python3 scripts/reconcile.py --artifacts-dir infrastructure $(RECONCILE_FLAGS)
 
 # Figure freshness gate: every <span data-figure> in the paper and dashboard
 # must match the value recomputed from the canonical artifacts. Fails if a
