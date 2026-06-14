@@ -37,6 +37,10 @@ REPO = Path(__file__).resolve().parent.parent
 # The only two dispositions that let a vulnerability pass the build.
 PASS_DISPOSITIONS = {"false-positive", "operational-requirement"}
 
+# Sources that produce vulnerabilities (gated here). Config scanners
+# (opa/checkov/tfsec) are governed separately via .checkov.yaml + the VDR maps.
+VULN_SOURCES = {"grype", "zap", "dependabot"}
+
 
 def load_register(path):
     doc = json.loads(Path(path).read_text())
@@ -44,16 +48,24 @@ def load_register(path):
 
 
 def vulns_from_vdr(vdr):
-    """Extract vulnerability findings (those carrying a real severity) from a VDR
-    report's aggregated CVE list. Robust to minor field-name variation."""
-    out = []
+    """Extract every vulnerability from a VDR report — from the raw findings
+    (so ZAP DAST alerts, which carry no CVE, are included) and the consolidated
+    CVE list. Keyed by CVE when present, else the scanner tracking id. Config
+    findings are excluded (governed separately)."""
+    out = {}
+    for f in vdr.get("findings", []) or []:
+        if f.get("source") not in VULN_SOURCES:
+            continue
+        vid = f.get("cve") or f.get("tracking_id") or f.get("tool_id")
+        if vid:
+            out[vid] = {"id": vid, "severity": (f.get("severity") or "").upper(),
+                        "source": f.get("source", "vdr")}
     for c in vdr.get("cve_findings", []) or []:
         vid = c.get("cve") or c.get("id") or c.get("tracking_id")
-        if not vid:
-            continue
-        sev = (c.get("severity") or c.get("max_severity") or "").upper()
-        out.append({"id": vid, "severity": sev, "source": c.get("source", "vdr")})
-    return out
+        if vid and vid not in out:
+            out[vid] = {"id": vid, "severity": (c.get("severity") or c.get("max_severity") or "").upper(),
+                        "source": c.get("source", "vdr")}
+    return list(out.values())
 
 
 def disposition_of(vuln_id, register):

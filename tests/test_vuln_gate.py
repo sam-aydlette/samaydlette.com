@@ -64,16 +64,26 @@ def test_mixed_reports_only_unhandled():
     assert out == [V_LOW]
 
 
-def test_vulns_from_vdr_extracts_cves():
-    vdr = {"cve_findings": [
-        {"cve": "CVE-2026-9", "severity": "HIGH", "source": "grype"},
-        {"id": "CVE-2026-10", "max_severity": "medium"},
-        {"title": "no id — skipped"},
-    ]}
+def test_vulns_from_vdr_includes_zap_and_cves():
+    vdr = {
+        "findings": [
+            {"source": "grype", "cve": "CVE-2026-9", "severity": "HIGH"},
+            {"source": "zap", "tracking_id": "zap-10038-1", "severity": "MEDIUM"},  # no CVE
+            {"source": "opa", "tracking_id": "opa-x", "severity": "HIGH"},  # config — excluded
+        ],
+        "cve_findings": [{"cve": "CVE-2026-10", "max_severity": "medium"}],
+    }
     vulns = vg.vulns_from_vdr(vdr)
     ids = {v["id"] for v in vulns}
-    assert ids == {"CVE-2026-9", "CVE-2026-10"}
-    assert any(v["severity"] == "MEDIUM" for v in vulns)
+    assert ids == {"CVE-2026-9", "zap-10038-1", "CVE-2026-10"}  # ZAP included, config excluded
+
+
+def test_zap_finding_must_be_categorized():
+    vdr = {"findings": [{"source": "zap", "tracking_id": "zap-40012-1", "severity": "MEDIUM"}]}
+    vulns = vg.vulns_from_vdr(vdr)
+    assert vg.find_unhandled(vulns, {}) == vulns  # uncategorized ZAP alert fails
+    handled = vg.find_unhandled(vulns, {"zap-40012-1": {"disposition": "false-positive"}})
+    assert handled == []
 
 
 if __name__ == "__main__":

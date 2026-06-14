@@ -436,6 +436,70 @@ def ingest_grype(path):
     return findings
 
 
+ZAP_RISK_TO_SEVERITY = {"3": "HIGH", "2": "MEDIUM", "1": "LOW", "0": "INFORMATIONAL"}
+
+
+def ingest_zap(path):
+    """Load an OWASP ZAP JSON report (zaproxy/action-baseline `report_json`, or
+    `zap.py ... -J report.json`). DAST source: each alert above informational is
+    a web-app vulnerability found against the LIVE site (static pages + API), so
+    every one is internet-reachable by definition. ZAP alerts are alert-type
+    findings; most carry no CVE, so the alert reference is the tracking id the
+    vulnerability gate dispositions against. Returns [] for a missing/garbled
+    report — presence/freshness is enforced separately (zap_report_age_days) so a
+    skipped scan fails the build rather than silently reading as zero findings."""
+    if not path or not Path(path).exists():
+        return []
+    try:
+        doc = json.loads(Path(path).read_text())
+    except json.JSONDecodeError:
+        return []
+    findings = []
+    for site in doc.get("site") or []:
+        target = site.get("@name", "")
+        for a in site.get("alerts") or []:
+            sev = ZAP_RISK_TO_SEVERITY.get(str(a.get("riskcode", "0")), "MEDIUM")
+            if sev == "INFORMATIONAL":
+                continue
+            ref = a.get("alertRef") or a.get("pluginid") or "zap"
+            cveid = str(a.get("cveid") or "")
+            findings.append({
+                "source": "zap",
+                "tool_id": ref,
+                "tracking_id": "zap-%s" % ref,
+                "title": a.get("alert") or a.get("name") or ref,
+                "description": (a.get("desc") or "").strip()[:500],
+                "severity": sev,
+                "resource": target,
+                "cve": cveid if cveid.upper().startswith("CVE-") else None,
+                "internet_reachable": True,
+            })
+    return findings
+
+
+def zap_report_age_days(path, now):
+    """Age (in days) of a ZAP report from its `@generated` header; None if the
+    report is missing or carries no parseable timestamp. Used to fail the build
+    closed on a stale/absent monthly scan."""
+    p = Path(path)
+    if not p.exists():
+        return None
+    try:
+        doc = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return None
+    stamp = doc.get("@generated")
+    if not stamp:
+        return None
+    for fmt in ("%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            gen = datetime.strptime(stamp.strip(), fmt)
+            return (now.replace(tzinfo=None) - gen).days
+        except ValueError:
+            continue
+    return None
+
+
 def ingest_kev(path):
     """Load CISA KEV catalog and return the set of CVE IDs."""
     if not path or not Path(path).exists():
@@ -714,6 +778,8 @@ def main():
     parser.add_argument("--tfsec", default=None, help="tfsec JSON output")
     parser.add_argument("--dependabot", default=None, help="Dependabot alerts JSON")
     parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
+    parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
+    parser.add_argument("--zap-max-age-days", type=int, default=35, help="Fail the build if the ZAP report is older than this or missing (0 disables the freshness gate)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
@@ -732,6 +798,26 @@ def main():
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
     findings.extend(ingest_grype(args.grype))
+
+    # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
+    # a MISSING report only warns (DAST coverage absent until the first scan is
+    # committed), so the pipeline stays green before the operator's first scan.
+    # Once a report IS present, it is enforced: an undated or stale one fails the
+    # build closed (a skipped/forgotten scan must not read as zero findings).
+    if args.zap:
+        if not Path(args.zap).exists():
+            print(f"::warning::No ZAP report at {args.zap}; DAST coverage is absent until a scan is committed (see security/zap/README.md).", file=sys.stderr)
+        else:
+            findings.extend(ingest_zap(args.zap))
+            if args.zap_max_age_days > 0:
+                age = zap_report_age_days(args.zap, datetime.now(timezone.utc))
+                if age is None:
+                    print(f"::error::ZAP report at {args.zap} has no parseable @generated timestamp; regenerate it.", file=sys.stderr)
+                    return 1
+                if age > args.zap_max_age_days:
+                    print(f"::error::ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh monthly DAST scan and commit it.", file=sys.stderr)
+                    return 1
+
     kev_cves = ingest_kev(args.kev)
     suppressions = ingest_suppressions(args.checkov_yaml)
     ledger = ingest_previous_ledger(args.previous_vdr)
