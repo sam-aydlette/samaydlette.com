@@ -69,6 +69,7 @@ permissions:
   issues: write
   pull-requests: write
   security-events: write
+  id-token: write   # assume the deploy role via GitHub OIDC (POAM-001)
 
 jobs:
   # ===========================================================================
@@ -121,8 +122,9 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # GitHub OIDC role assumption — no long-lived access key (POAM-001).
+        # Role ARN is a repo variable so the account ID stays out of the YAML.
+        role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
     # -------------------------------------------------------------------------
@@ -307,8 +309,9 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # GitHub OIDC role assumption — no long-lived access key (POAM-001).
+        # Role ARN is a repo variable so the account ID stays out of the YAML.
+        role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
 
     # -------------------------------------------------------------------------
