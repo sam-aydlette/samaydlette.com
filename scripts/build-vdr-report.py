@@ -57,18 +57,14 @@ from pathlib import Path
 # POAM entry will surface in the risk_accepted output without a poam_ref;
 # the policy is to back every suppression with a POAM entry.
 POAM_BY_CHECK_ID = {
-    "CKV_AWS_144": "POAM-003",
-    "CKV_AWS_23":  "POAM-004",
     "CKV_AWS_18":  "POAM-005",
     "CKV_AWS_300": "POAM-006",
     "CKV_AWS_68":  "POAM-007",
-    "CKV_AWS_174": "POAM-008",
     "CKV_AWS_86":  "POAM-009",
     "CKV_AWS_117": "POAM-010",
     "CKV_AWS_173": "POAM-011",
     "CKV_AWS_115": "POAM-012",
     "CKV_AWS_116": "POAM-013",
-    "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
     "CKV_AWS_272": "POAM-015",  # Lambda code-signing validation
     "CKV_AWS_338": "POAM-017",  # CloudWatch log retention < 1 year
     "CKV_AWS_158": "POAM-018",  # CloudWatch log group not customer-key encrypted
@@ -81,18 +77,14 @@ POAM_BY_CHECK_ID = {
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
 # auditor would see in the POA&M.
 SUPPRESSION_EVALUATION = {
-    "CKV_AWS_144": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_23":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_18":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_300": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_68":  {"pain": "N2", "irv": True,  "lev": False},
-    "CKV_AWS_174": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_117": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_173": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_115": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_116": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_50":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_272": {"pain": "N2", "irv": False, "lev": False},
     "CKV_AWS_338": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_158": {"pain": "N1", "irv": False, "lev": False},
@@ -104,18 +96,14 @@ SUPPRESSION_EVALUATION = {
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
 # corresponding POA&M items. Used to populate VDR-RPT-AVI explanation field.
 SUPPRESSION_RATIONALE = {
-    "CKV_AWS_144": "Single-region static site. Cross-region replication adds cost without commensurate availability benefit at the declared 21-day RTO.",
-    "CKV_AWS_23":  "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope.",
     "CKV_AWS_18":  "CloudTrail covers the audit need account-wide. CloudFront access logs were similarly excluded for cost.",
     "CKV_AWS_300": "Static website assets have no expiration policy; lifecycle rules are not applicable.",
     "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
-    "CKV_AWS_174": "No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS). Log4j-class vulnerabilities cannot exist in this stack.",
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
     "CKV_AWS_173": "Lambda env vars hold bucket name, distribution ID, system ID — all non-sensitive and visible in the public runtime signal. AWS-default encryption suffices.",
     "CKV_AWS_115": "Daily EventBridge invocation; no concurrent invocations realistic. Cost-control limit not required.",
     "CKV_AWS_116": "Daily idempotent run; failures are recoverable on the next day's invocation. DLQ adds cost for marginal observability benefit.",
-    "CKV_AWS_50":  "Observability concern, not a security control. Cost-driven exclusion; CloudWatch Logs covers the diagnostic need.",
     "CKV_AWS_272": "Source-level signing chain in place: deploy-time KSI signal is Sigstore-signed; Wasm policy bytes are verifiable via the canonical inventory's content hash. AWS Signer adds defense-in-depth at marginal cost; not currently justified.",
     "CKV_AWS_338": "7-day retention; operational debug logs only, no PII. Anything older than a week is not actionable for sole-operator IR.",
     "CKV_AWS_158": "AWS-default encryption (server-side AES-256) is on. No PII in log content; customer-managed KMS adds cost without commensurate benefit.",
@@ -291,12 +279,36 @@ def ingest_checkov(path):
     return findings
 
 
+def false_positive_checks():
+    """CKV ids dismissed as false positives, read from the docs/poam.md False
+    Positives register (the single source the reconciliation gate also reads).
+    A suppressed check listed there is the scanner being wrong, not an accepted
+    risk, so it carries no poam_ref and is reported separately."""
+    poam = Path(__file__).resolve().parent.parent / "docs" / "poam.md"
+    if not poam.exists():
+        return set()
+    text = poam.read_text()
+    fp, in_fp = set(), False
+    for line in text.splitlines():
+        low = line.lower()
+        if line.lstrip().startswith("#") and "false positive" in low:
+            in_fp = True
+            continue
+        if in_fp and line.lstrip().startswith("#") and "false positive" not in low:
+            in_fp = False
+        if in_fp:
+            fp.update(re.findall(r"CKV[_A-Z0-9]+", line))
+    return fp
+
+
 def ingest_suppressions(checkov_yaml):
     """Read .checkov.yaml's skip-check list and emit risk-accepted entries.
 
     Each entry becomes a risk-accepted record with VDR-RPT-AVI fields populated
     (PAIN/IRV/LEV from SUPPRESSION_EVALUATION, explanation from
-    SUPPRESSION_RATIONALE, POAM cross-reference from POAM_BY_CHECK_ID).
+    SUPPRESSION_RATIONALE, POAM cross-reference from POAM_BY_CHECK_ID). Checks
+    dismissed as false positives are excluded here and reported by
+    ingest_false_positives instead.
     """
     suppressions = []
     if not checkov_yaml:
@@ -309,7 +321,10 @@ def ingest_suppressions(checkov_yaml):
     except Exception as exc:
         print(f"warning: could not read {p}: {exc}", file=sys.stderr)
         return suppressions
+    fp = false_positive_checks()
     for check_id in ids:
+        if check_id in fp:
+            continue  # false positive — handled by ingest_false_positives
         evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1", "irv": False, "lev": False})
         rationale = SUPPRESSION_RATIONALE.get(check_id, "Suppressed in .checkov.yaml; see corresponding POA&M entry for rationale.")
         suppressions.append({
@@ -328,6 +343,32 @@ def ingest_suppressions(checkov_yaml):
             "explanation": rationale,
         })
     return suppressions
+
+
+def ingest_false_positives(checkov_yaml):
+    """Emit the false-positive records: suppressed checks listed in the
+    docs/poam.md False Positives register. Disposition is 'false-positive', no
+    poam_ref — a dismissed scanner finding, not an accepted weakness."""
+    fp = false_positive_checks()
+    if not checkov_yaml or not fp:
+        return []
+    p = Path(checkov_yaml)
+    if not p.exists():
+        return []
+    try:
+        ids = _read_checkov_skip_list(p)
+    except Exception:
+        return []
+    return [{
+        "tracking_id": c,
+        "poam_ref": None,
+        "source": "checkov-suppression",
+        "tool_id": c,
+        "title": f"{c} dismissed (false positive)",
+        "resource": ".checkov.yaml",
+        "current_disposition": "false-positive",
+        "explanation": "Investigated and dismissed; see docs/poam.md False Positives register.",
+    } for c in ids if c in fp]
 
 
 def ingest_tfsec(path):
@@ -820,10 +861,12 @@ def main():
 
     kev_cves = ingest_kev(args.kev)
     suppressions = ingest_suppressions(args.checkov_yaml)
+    false_positives = ingest_false_positives(args.checkov_yaml)
     ledger = ingest_previous_ledger(args.previous_vdr)
 
     report, blocking = build_report(findings, suppressions, kev_cves, ledger)
     report["ksi_signal_id"] = ksi_signal_id
+    report["false_positives"] = false_positives
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
