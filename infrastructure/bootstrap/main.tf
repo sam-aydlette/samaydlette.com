@@ -104,6 +104,7 @@ resource "aws_iam_role_policy_attachment" "legacy" {
 # during deploy). Mirrors the reconcile-gate-readonly inline policy that was on
 # the legacy user. Read-only; metadata only (no secretsmanager:GetSecretValue).
 data "aws_iam_policy_document" "reconcile_reads" {
+  # checkov:skip=CKV_AWS_356:Read-only account-enumeration actions (List*/Describe*/apigateway:GET) cannot be resource-scoped; the Action list is explicit and read-only, no write or admin. Documented false positive.
   statement {
     effect = "Allow"
     actions = [
@@ -125,6 +126,7 @@ data "aws_iam_policy_document" "reconcile_reads" {
 }
 
 resource "aws_iam_role_policy" "reconcile_reads" {
+  # checkov:skip=CKV_AWS_356:Read-only account-enumeration actions cannot be resource-scoped; explicit read-only Action list, no write or admin. Documented false positive.
   name   = "reconcile-gate-readonly"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.reconcile_reads.json
