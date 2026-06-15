@@ -30,6 +30,12 @@ variable "github_repo" {
   default     = "sam-aydlette/samaydlette.com"
 }
 
+variable "deploy_environment" {
+  type        = string
+  description = "GitHub Environment the Deploy Infrastructure job runs in (its OIDC sub is environment-scoped)."
+  default     = "prod"
+}
+
 # The legacy IAM user's managed policies — reattached to the role so the deploy
 # keeps the exact same scope at cutover (no regression). Consolidating these
 # into one least-privilege policy is a tracked follow-up.
@@ -79,8 +85,13 @@ data "aws_iam_policy_document" "trust" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
+        # main-branch pushes / schedule (compliance-check job; no environment),
         "repo:${var.github_repo}:ref:refs/heads/main",
+        # pull requests (compliance-check job on PRs),
         "repo:${var.github_repo}:pull_request",
+        # the Deploy Infrastructure job runs in a GitHub Environment, so its
+        # OIDC sub is environment-scoped rather than ref-scoped.
+        "repo:${var.github_repo}:environment:${var.deploy_environment}",
       ]
     }
   }

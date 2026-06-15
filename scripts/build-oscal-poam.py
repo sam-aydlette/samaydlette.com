@@ -85,8 +85,8 @@ POAM_ITEMS = [
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": None,
         "risk_adjustment": False,
-        "status": "open",
-        "category": "open",
+        "status": "closed",  # POAM-001 closed 2026-06-15: migrated to GitHub OIDC; legacy user/key/secrets deleted
+        "category": "closed",
     },
     {
         "id": "POAM-002",

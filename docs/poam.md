@@ -19,38 +19,6 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Open POA&M Items
 
-### POAM-001 — Long-lived AWS access keys for the deployer
-
-| Field | Value |
-| --- | --- |
-| POA&M ID | POAM-001 |
-| Controls | IA-2, IA-5, AC-2 |
-| Weakness Name | Long-lived AWS access keys for the deployer |
-| Weakness Description | The CI deployer authenticates to AWS using an IAM user's access key + secret access key, stored in GitHub Actions encrypted secrets. If either secret leaks, the credentials remain valid until manually rotated. |
-| Weakness Detector Source | CodeGuard rule `codeguard-0-iac-security` (avoid long-lived service credentials in favor of workload identity). |
-| Weakness Source Identifier | codeguard-0-iac-security |
-| Asset Identifier | `aws-iam-user::github-actions-deployer`; `github-secret::AWS_ACCESS_KEY_ID`; `github-secret::AWS_SECRET_ACCESS_KEY` |
-| Point of Contact | Sam Aydlette (operator) |
-| Resources Required | Operator time (~half day); no additional cost. |
-| Remediation Plan | Migrate to GitHub OIDC role assumption against AWS. Provision an `aws_iam_openid_connect_provider` for `token.actions.githubusercontent.com` and a deployer role whose trust policy restricts `sub` to `repo:sam-aydlette/samaydlette.com:*`. Switch the workflow's `aws-actions/configure-aws-credentials` step from access-key inputs to `role-to-assume`. Verify, then delete the IAM user and remove the GitHub Actions secrets. |
-| Original Detection Date | 2026-05-06 |
-| Scheduled Completion Date | 2026-08-31 |
-| Status Date | 2026-05-08 |
-| Vendor Dependency | No |
-| Last Vendor Check-in Date | — |
-| Vendor Dependent Product Name | — |
-| Original Risk Rating | Moderate |
-| Adjusted Risk Rating | — |
-| Risk Adjustment | No |
-| Status | Open |
-
-**Compensating controls.** Secrets live only in GitHub Actions encrypted secrets, scoped to the deploy job. The IAM user is permission-scoped to what Terraform needs; it is not a console-login user. GitHub secret scanning with push protection is enabled. The Sigstore signing chain in the same workflow already proves GitHub OIDC works end-to-end (cosign signs via `id-token: write` and the GitHub Actions OIDC provider).
-
-**90-day key rotation (active compensating control).** While the OIDC migration remains deferred, the operator rotates the AWS access key every 90 days. The procedure is documented in [`docs/policies/secure-configuration-guide.md`](policies/secure-configuration-guide.md) and the rotation log is part of the [annual security review](security-review.md). This bounds the leakage window for a compromised key but does not eliminate the standing-privilege surface; OIDC migration remains the durable answer and this POA&M item remains open.
-
-**Risk if not remediated.** A leaked access key gives an attacker persistent access until detection and manual rotation, with the leakage window bounded by the 90-day rotation cadence. Under OIDC, the equivalent compromise produces an STS session token valid for ~1 hour with no persistence — a ~2,160× shorter exposure window.
-
----
 
 ### POAM-002 — Runtime KSI signal not cryptographically signed
 
@@ -210,7 +178,41 @@ If the threat profile or scope changes — for example, if the system starts pro
 
 ## Closed POA&M Items
 
-None at this time.
+### POAM-001 — Long-lived AWS access keys for the deployer
+
+| Field | Value |
+| --- | --- |
+| POA&M ID | POAM-001 |
+| Controls | IA-2, IA-5, AC-2 |
+| Weakness Name | Long-lived AWS access keys for the deployer |
+| Weakness Description | The CI deployer authenticates to AWS using an IAM user's access key + secret access key, stored in GitHub Actions encrypted secrets. If either secret leaks, the credentials remain valid until manually rotated. |
+| Weakness Detector Source | CodeGuard rule `codeguard-0-iac-security` (avoid long-lived service credentials in favor of workload identity). |
+| Weakness Source Identifier | codeguard-0-iac-security |
+| Asset Identifier | `aws-iam-user::github-actions-deployer`; `github-secret::AWS_ACCESS_KEY_ID`; `github-secret::AWS_SECRET_ACCESS_KEY` |
+| Point of Contact | Sam Aydlette (operator) |
+| Resources Required | Operator time (~half day); no additional cost. |
+| Remediation Plan | Migrate to GitHub OIDC role assumption against AWS. Provision an `aws_iam_openid_connect_provider` for `token.actions.githubusercontent.com` and a deployer role whose trust policy restricts `sub` to this repo's `main` pushes, pull requests, and the `prod` Environment (not `:*`). Switch the workflow's `aws-actions/configure-aws-credentials` step from access-key inputs to `role-to-assume`. Verify, then delete the IAM user and remove the GitHub Actions secrets. |
+| Original Detection Date | 2026-05-06 |
+| Scheduled Completion Date | 2026-08-31 |
+| Status Date | 2026-05-08 |
+| Vendor Dependency | No |
+| Last Vendor Check-in Date | — |
+| Vendor Dependent Product Name | — |
+| Original Risk Rating | Moderate |
+| Adjusted Risk Rating | — |
+| Risk Adjustment | No |
+| Status | Closed |
+
+**Compensating controls.** Secrets live only in GitHub Actions encrypted secrets, scoped to the deploy job. The IAM user is permission-scoped to what Terraform needs; it is not a console-login user. GitHub secret scanning with push protection is enabled. The Sigstore signing chain in the same workflow already proves GitHub OIDC works end-to-end (cosign signs via `id-token: write` and the GitHub Actions OIDC provider).
+
+**90-day key rotation (active compensating control).** While the OIDC migration remains deferred, the operator rotates the AWS access key every 90 days. The procedure is documented in [`docs/policies/secure-configuration-guide.md`](policies/secure-configuration-guide.md) and the rotation log is part of the [annual security review](security-review.md). This bounds the leakage window for a compromised key but does not eliminate the standing-privilege surface; OIDC migration remains the durable answer and this POA&M item remains open.
+
+**Risk if not remediated.** A leaked access key gives an attacker persistent access until detection and manual rotation, with the leakage window bounded by the 90-day rotation cadence. Under OIDC, the equivalent compromise produces an STS session token valid for ~1 hour with no persistence — a ~2,160× shorter exposure window.
+
+
+**Closed 2026-06-15.** Migrated to GitHub OIDC role assumption (`github-actions-deploy-oidc`); the workflow now uses `role-to-assume`. After a fully green OIDC deploy (compliance-check + Deploy Infrastructure jobs both assuming the role), the legacy `github-actions-deploy` IAM user and its access key were deleted and the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repo secrets removed. No long-lived AWS credential remains on the deploy path.
+
+---
 
 The Closed POA&M Items section uses the same field structure as Open items, plus a `False Positive` field that distinguishes findings that were not real weaknesses. Closed entries are retained for assessment-history continuity per the FedRAMP template.
 
