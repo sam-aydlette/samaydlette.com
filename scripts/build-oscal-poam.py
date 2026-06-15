@@ -137,7 +137,7 @@ POAM_ITEMS = [
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_144",
         "asset_identifiers": ["aws-s3-bucket::website-prod"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status": "false-positive", "category": "false-positive",
     },
     {
         "id": "POAM-004", "controls": ["au-2"],
@@ -146,7 +146,7 @@ POAM_ITEMS = [
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_23",
         "asset_identifiers": ["aws-s3-bucket::website-prod"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status": "false-positive", "category": "false-positive",
     },
     {
         "id": "POAM-005", "controls": ["au-2", "au-3"],
@@ -182,7 +182,7 @@ POAM_ITEMS = [
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_174",
         "asset_identifiers": ["aws-cloudfront-distribution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status": "false-positive", "category": "false-positive",
     },
     {
         "id": "POAM-009", "controls": ["cp-2", "cp-7"],
@@ -236,7 +236,7 @@ POAM_ITEMS = [
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_50",
         "asset_identifiers": ["aws-lambda::compliance-monitor"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status": "false-positive", "category": "false-positive",
     },
     {
         "id": "POAM-015", "controls": ["si-7", "sa-12"],
@@ -245,16 +245,6 @@ POAM_ITEMS = [
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_272",
         "asset_identifiers": ["aws-lambda::compliance-monitor"],
         "original_risk_rating": "moderate", "adjusted_risk_rating": "low", "risk_adjustment": True,
-        "status": "risk-accepted", "category": "configuration",
-    },
-    {
-        "id": "POAM-016", "controls": ["cp-2", "cp-7"],
-        "title": "Multi-region active-passive failover absent",
-        "description": "Cost trade-off (~$300/year). Declared 21-day RTO accommodates single-region AWS failure. Documented in docs/recovery-plan.md.",
-        "weakness_detector_source": "Architectural decision",
-        "weakness_source_identifier": "recovery-plan.md",
-        "asset_identifiers": ["aws-account::all-resources"],
-        "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "status": "risk-accepted", "category": "configuration",
     },
     {

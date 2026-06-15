@@ -683,7 +683,7 @@
               {
                 "uuid": "c947d181-472f-58a6-ae55-08eadbd418dc",
                 "control-id": "au-2",
-                "description": "Event logging is provided by CloudTrail (account-wide, captures all AWS API calls including the deployer's), Lambda execution logs (CloudWatch Logs), and GitHub Actions workflow run history (immutable, GitHub-side). The system configures Lambda logging via the runtime's standard integration. CloudFront access logging is consciously excluded for cost; see README 'Conscious Trade-offs'.",
+                "description": "Event logging is provided by CloudTrail (account-wide, captures all AWS API calls including the deployer's), Lambda execution logs (CloudWatch Logs), and GitHub Actions workflow run history (immutable, GitHub-side). The system configures Lambda logging via the runtime's standard integration. CloudFront access logging is consciously excluded for cost; see README 'Conscious Trade-offs'. S3 event notifications (CKV_AWS_23 / POAM-004) and Lambda X-Ray tracing (CKV_AWS_50 / POAM-014) are not audit mechanisms \u2014 the former is event-driven integration, the latter performance tracing \u2014 so their absence does not affect AU-2 coverage, which is satisfied by CloudTrail and CloudWatch Logs. Both are false positives.",
                 "props": [
                   {
                     "name": "implementation-status",
@@ -1583,7 +1583,7 @@
               {
                 "uuid": "460b0557-d405-5904-b0e4-907cdfddb58e",
                 "control-id": "si-3",
-                "description": "Malicious code protection: the system has no executable upload paths. The S3 bucket holds static content authored by the operator and delivered via CloudFront; the Lambda runs only operator-authored JavaScript and AWS-provided SDK code (verified via Sigstore signature on the deploy-time signal). There is no surface for end-user uploads, macros, or executable email attachments.",
+                "description": "Malicious code protection: the system has no executable upload paths. The S3 bucket holds static content authored by the operator and delivered via CloudFront; the Lambda runs only operator-authored JavaScript and AWS-provided SDK code (verified via Sigstore signature on the deploy-time signal). There is no surface for end-user uploads, macros, or executable email attachments. Known-vulnerability detection in the dependency trees is provided by Grype + Dependabot scanning on every deploy (feeding the VDR); the stack contains no Java or Log4j runtime, so Log4j-class WAF rules (CKV_AWS_174 / POAM-008) are not applicable \u2014 a false positive, not an open weakness.",
                 "props": [
                   {
                     "name": "implementation-status",
