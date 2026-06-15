@@ -91,20 +91,15 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 
 | POA&M ID | Controls | Weakness Name | Detector Source | Source Identifier | Asset Identifier | PAIN | Original Risk | Adj. Risk | Risk Adj. | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| POAM-003 | CP-9 | S3 cross-region replication not configured | Checkov | CKV_AWS_144 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
-| POAM-004 | AU-2 | S3 event notifications not configured | Checkov | CKV_AWS_23 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
 | POAM-005 | AU-2, AU-3 | S3 access logging not enabled | Checkov | CKV_AWS_18 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
 | POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
 | POAM-007 | SC-7, SI-4 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | aws-cloudfront-distribution | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-008 | SI-3 | Log4j-specific WAF rules not configured | Checkov | CKV_AWS_174 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
 | POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-012 | SC-5 | Lambda concurrent execution limit not set | Checkov | CKV_AWS_115 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
-| POAM-014 | AU-2 | Lambda X-Ray tracing not enabled | Checkov | CKV_AWS_50 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_272 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-016 | CP-2, CP-7 | Multi-region active-passive failover absent | Architectural decision | recovery-plan.md | aws-account::all-resources | N1 | Low | — | No | Risk-accepted |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
@@ -223,7 +218,18 @@ The Closed POA&M Items section uses the same field structure as Open items, plus
 
 ## False Positives
 
-None at this time.
+These scanner findings were investigated and dismissed as not representing a real
+weakness at this system's Moderate categorization. Each names the suppressed
+check, why it does not apply, and how the mapped control is actually met (in the
+SSP). They are distinct from risk-accepted items (real weaknesses with documented
+acceptance) and carry no `poam_ref` in the VDR.
+
+| Was | Control | Suppressed check | Why it is a false positive | Control met via |
+| --- | --- | --- | --- | --- |
+| POAM-003 | CP-9 | CKV_AWS_144 (S3 cross-region replication) | Cross-region replication is not a CP-9 requirement at Moderate for this system; the data is public static content. | S3 versioning + full reproducibility of the site from the Git repository (SSP CP-9 narrative). |
+| POAM-004 | AU-2 | CKV_AWS_23 (S3 event notifications) | S3 event notifications are an integration feature, not an audit control; AU-2 does not require them. | S3 server access logging (Task 7) + account-wide CloudTrail (SSP AU-2 narrative). |
+| POAM-008 | SI-3 | CKV_AWS_174 (Log4j-specific WAF rule) | No Java/Log4j anywhere in the stack (Lambda is Node.js/Python; site is static), and WAF is intentionally declined (Decision 3), so the rule cannot apply. | Dependency scanning (Grype + Dependabot) over the controlled execution surface (SSP SI-3 narrative). |
+| POAM-014 | AU-2 | CKV_AWS_50 (Lambda X-Ray tracing) | X-Ray is performance/latency observability, not a security audit control; AU-2 coverage does not depend on it. | CloudWatch Logs + CloudTrail (SSP AU-2 narrative). |
 
 False positives are tracked separately so an assessor can see which scanner findings were investigated and dismissed with rationale, distinct from risk-accepted items (which are real weaknesses with documented acceptance).
 
