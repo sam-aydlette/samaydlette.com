@@ -34,7 +34,9 @@ Five artifacts are published continuously at `/.well-known/`:
 
 All artifacts carry FedRAMP-namespaced provenance (deploy chain identity, system-id, ownership block). The deploy-time signal is signed via Sigstore keyless with verification anchored in the public Rekor transparency log; an external consumer can verify integrity via `cosign verify-blob` without trusting this site.
 
-This satisfies the FedRAMP 20x Collaborative Continuous Monitoring (CCM) rule by making every monitoring artifact publicly retrievable and signature-verifiable. There is no closed monitoring loop; an agency consumer fetches the same artifacts as anyone else.
+This implements the **publication half** of FedRAMP 20x Collaborative Continuous Monitoring (CCM): every monitoring artifact is publicly retrievable and signature-verifiable, so any reviewer can fetch and verify the current posture without trusting this site.
+
+**Honest scope — the collaborative half is N/A here, not done.** CCM is a two-party relationship: a CSP publishes, and a *consuming agency / authorizing official* reviews on an agreed cadence, raises significant-change and finding concerns, and makes risk decisions that feed back into the CSP's posture. This system has **no agency sponsor and no consuming agency** (it is a public proof of concept with no federal data). So the relationship-dependent obligations — the agency-side review cadence, the collaborative finding-disposition loop, the authorizing-official sign-off — are **not applicable**, because there is no counterparty to exercise them. What is built is the mechanism a CSP would use to *support* CCM; what is absent is the relationship that gives it meaning. Claiming CCM is "satisfied" would overstate it: the closed monitoring loop does not exist, and cannot, until a consuming party is onboarded.
 
 ## Vulnerability Detection and Response (VDR) cadence (Class C)
 
@@ -57,6 +59,20 @@ Significant changes to the system are governed by the FedRAMP 20x SCN rule (full
 
 Sole-operator system. The operator is the System Owner, the Continuous Monitoring lead, and the Incident Response lead. The runtime KSI emitter is an automated agent in the monitoring chain.
 
+### Separation of duties (AC-5) — structurally constrained, with compensating controls
+
+A single human cannot satisfy AC-5 separation of duties in the conventional sense: there is no second person to provide an independent check, no maker/checker split, no segregation between the person who changes the system and the person who reviews the change. This is an inherent, **honestly acknowledged** limitation of a sole-operator system, not something tooling can fix. It does not generalize to the scaled version this repo is a proof of concept for, where these duties would be split across distinct roles.
+
+The compensating controls that stand in for a second human are **automated and non-human reviewers** in the change path, each independent of the operator's intent:
+
+- **The fail-closed reconciliation gate** is an independent reviewer the operator cannot satisfy by assertion: it re-derives the artifacts from live cloud state and blocks publication if anything drifts — the operator cannot merge a claim the live account contradicts.
+- **The OPA pre-deploy gate + Checkov** evaluate policy against the Terraform plan before any apply; a noncompliant change is rejected regardless of operator intent.
+- **GitOps audit trail.** Every change is a reviewable commit/PR; git history is the immutable record of who changed what and when (the SCN audit record). There is no out-of-band path to production.
+- **Sigstore signing + the public Rekor log** make every published artifact tamper-evident to anyone, so the operator cannot quietly substitute a different artifact after the fact.
+- **GitHub OIDC deploy role (no standing key)** means the deploy identity is a short-lived, workflow-scoped token, not a credential the operator holds and could use out-of-band.
+
+Together these provide *machine* independence in place of *human* independence: the operator can author changes but cannot unilaterally push an unreviewed, noncompliant, or tampered state to production without the automation refusing. This bounds the sole-operator risk; it does not eliminate the structural single-person constraint, which is recorded here as a residual.
+
 ## Effectiveness review
 
 Quarterly review of the runtime KSI signal against the deploy-time signal: are they reconciling? Are any drift events recorded? Are any findings persisting past their Class C SLAs?
@@ -65,7 +81,7 @@ Annual structural review per [`docs/security-review.md`](security-review.md).
 
 ## Reference: 20x rules and NIST controls satisfied
 
-- FedRAMP 20x Collaborative Continuous Monitoring (CCM-CSO-* rules) — covered by mechanisms 1-4
+- FedRAMP 20x Collaborative Continuous Monitoring (CCM-CSO-* rules) — **publication half** covered by mechanisms 1-4; the collaborative relationship (consuming-agency review loop, AO sign-off) is **N/A** absent a sponsor (see scope note above)
 - FedRAMP 20x Vulnerability Detection and Response (VDR-* rules) — covered by mechanism 2
 - FedRAMP 20x Significant Change Notifications (SCN-* rules) — covered by SCN PR tag
 - KSI-MLA family (Monitoring, Logging, Auditing) — covered across all mechanisms

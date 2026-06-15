@@ -140,10 +140,12 @@ rotated manually, revisited annually.
 authenticated by an operator-configured username/password (HTTP Basic Auth) —
 single-factor, shared credential, with no MFA (IA-2(2)) and no account lockout
 (AC-7). This is a **customer-responsibility control**: the operator configures
-and owns the credential and accepts the residual risk. Risk adjusted Moderate →
-Low because the system is categorized FIPS-199 Low (no PII, no federal data) and
-the credential is held in Secrets Manager (CMK), transmitted only over TLS, and
-compared in constant time. The credential gate runs in the Lambda itself, so it
+and owns the credential and accepts the residual risk. At the system's Moderate
+categorization this is a real IA-2(2)/AC-7 weakness, accepted only on an interim
+basis while remediation is implemented (see **Remediation** below: Cognito MFA +
+API Gateway authorizer, Task 3). The interim acceptance rests on the compensating
+controls, not on the categorization: the credential is held in Secrets Manager
+(CMK), transmitted only over TLS, and compared in constant time. The credential gate runs in the Lambda itself, so it
 applies to every request regardless of how the API Gateway endpoint is reached.
 **Risk acceptance:** the operator, acting as the **sole customer and sole user** of
 the system, has approved this operational requirement and accepted the residual
@@ -172,10 +174,13 @@ is deployed.
 
 **POAM-023 (no brute-force protection):** The Basic Auth endpoint has no account
 lockout (AC-7) and no rate limiting / WAF (SC-5) in front of it, so credential
-guessing is not throttled. Surfaced by the `software-security` review. Risk
-adjusted Moderate → Low: the system is FIPS-199 Low with no PII/federal data, the
-credential is a high-entropy operator-set secret compared in constant time, and a
-single shared credential is the only valid pair (no user enumeration). **Assessor
+guessing is not throttled. Surfaced by the `software-security` review. At the
+system's Moderate categorization this is a real AC-7/SC-5 weakness, accepted only
+on an interim basis pending remediation (see **Remediation** below: API Gateway
+usage-plan throttling + Cognito lockout, Task 3). The interim acceptance rests on
+the compensating controls, not the categorization: the credential is a
+high-entropy operator-set secret compared in constant time, and a single shared
+credential is the only valid pair (no user enumeration). **Assessor
 posture:** a 3PAO penetration test may re-rate an unauthenticated-reachable,
 unthrottled credential endpoint above Low regardless of the compensating controls
 above; the operator's accepted position is explicitly conditional — any evidence of
