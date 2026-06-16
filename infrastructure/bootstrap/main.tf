@@ -52,6 +52,12 @@ variable "legacy_deploy_policy_names" {
   ]
 }
 
+variable "domain_name" {
+  type        = string
+  default     = "samaydlette.com"
+  description = "Site domain; used to build the log-group ARNs and CMK alias names the deploy role manages."
+}
+
 data "aws_caller_identity" "current" {}
 
 # GitHub's OIDC identity provider. AWS validates the token against its own trust
@@ -141,6 +147,80 @@ resource "aws_iam_role_policy" "reconcile_reads" {
   name   = "reconcile-gate-readonly"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.reconcile_reads.json
+}
+
+# Task 6 (POAM-011/018): permissions the deploy role needs to manage the at-rest
+# CMK-encrypted log groups and to encrypt the Lambda env blocks. Added here (not
+# in the main state) because this is the deploy identity itself; applied live and
+# recorded here so live and IaC stay in sync. Mirrors the inline policies on the
+# role: compliance-logs-management and compliance-kms-encrypt.
+locals {
+  domain_dashed = replace(var.domain_name, ".", "-")
+}
+
+# Manage the compliance Lambda + route53 query log groups (tags, retention, KMS
+# association). Scoped to exactly those two log-group ARNs — least privilege.
+data "aws_iam_policy_document" "compliance_logs" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:DeleteLogGroup",
+      "logs:PutRetentionPolicy",
+      "logs:DeleteRetentionPolicy",
+      "logs:AssociateKmsKey",
+      "logs:DisassociateKmsKey",
+      "logs:ListTagsForResource",
+      "logs:TagResource",
+      "logs:UntagResource",
+      "logs:TagLogGroup",
+      "logs:UntagLogGroup",
+    ]
+    resources = [
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-opa-compliance*",
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "compliance_logs" {
+  name   = "compliance-logs-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.compliance_logs.json
+}
+
+# Encrypt the Lambda environment blocks with the app CMKs. KMS alias-based
+# scoping requires Resource "*" plus a kms:ResourceAliases condition that limits
+# the grant to exactly the two app keys (at-rest + silk-reeling) — this is the
+# AWS-recommended pattern for alias-scoped access and avoids embedding rotation-
+# unstable key IDs in IaC.
+data "aws_iam_policy_document" "compliance_kms" {
+  # checkov:skip=CKV_AWS_356:KMS alias-based scoping requires Resource "*"; the kms:ResourceAliases condition restricts the grant to two specific app-key aliases. No write to key policy, no admin. Documented exception.
+  statement {
+    effect = "Allow"
+    actions = [
+      "kms:Encrypt",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey",
+      "kms:CreateGrant",
+    ]
+    resources = ["*"]
+    condition {
+      test     = "ForAnyValue:StringEquals"
+      variable = "kms:ResourceAliases"
+      values = [
+        "alias/${local.domain_dashed}-at-rest",
+        "alias/${local.domain_dashed}-silk-reeling",
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "compliance_kms" {
+  # checkov:skip=CKV_AWS_356:KMS alias-scoped grant; Resource "*" is constrained by the kms:ResourceAliases condition to two specific app keys. Documented exception.
+  name   = "compliance-kms-encrypt"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.compliance_kms.json
 }
 
 output "github_actions_role_arn" {
