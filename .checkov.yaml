@@ -42,8 +42,9 @@ skip-check:
   # POAM-010 — Lambda VPC configuration absent (SC-7). Lambda has no internet egress, no sensitive data.
   - CKV_AWS_117
 
-  # POAM-011 — Lambda environment variables not customer-key encrypted (SC-12, SC-28). Non-sensitive config only.
-  - CKV_AWS_173
+  # POAM-011 CLOSED (Task 6) — every Lambda environment block is now encrypted
+  # with a customer-managed CMK (compliance Lambda → at_rest CMK; silk-reeling
+  # Lambda → silk_reeling CMK). CKV_AWS_173 passes, so the skip is removed.
 
   # POAM-012 — Lambda concurrent execution limit not set (SC-5). Daily invocation; no concurrency.
   - CKV_AWS_115
@@ -60,8 +61,9 @@ skip-check:
   # POAM-017 — CloudWatch log retention < 1 year (AU-11). 7-day retention; operational debug logs only, no PII.
   - CKV_AWS_338
 
-  # POAM-018 — CloudWatch log group not customer-key encrypted (SC-28). AWS-default encryption sufficient; no PII content.
-  - CKV_AWS_158
+  # POAM-018 CLOSED (Task 6) — every CloudWatch log group is now encrypted with a
+  # customer-managed CMK (compliance Lambda + route53 query logs → at_rest CMK;
+  # silk-reeling → silk_reeling CMK). CKV_AWS_158 passes, so the skip is removed.
 
   # POAM-019 — Secrets Manager automatic rotation not enabled (SC-12, SC-28).
   # The two Silk Reeling app secrets are a third-party API key (Anthropic) and an

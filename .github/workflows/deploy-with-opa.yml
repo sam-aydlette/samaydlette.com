@@ -419,6 +419,22 @@ jobs:
           echo "No existing IAM role policy found - will be created"
         fi
         
+        # Import the compliance Lambda's log group if it exists (auto-created by
+        # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
+        # Must precede the Lambda import since the function depends_on it.
+        if aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/samaydlette-com-opa-compliance" --query 'logGroups[?logGroupName==`/aws/lambda/samaydlette-com-opa-compliance`]' --output text | grep -q .; then
+          echo "Compliance Lambda log group exists in AWS"
+          if ! terraform state show 'aws_cloudwatch_log_group.opa_compliance[0]' >/dev/null 2>&1; then
+            echo "Importing compliance Lambda log group..."
+            terraform import 'aws_cloudwatch_log_group.opa_compliance[0]' "/aws/lambda/samaydlette-com-opa-compliance"
+            echo "✅ Compliance Lambda log group imported"
+          else
+            echo "Compliance Lambda log group already in Terraform state"
+          fi
+        else
+          echo "No existing compliance Lambda log group found - will be created"
+        fi
+
         # Import Lambda function if it exists
         if aws lambda get-function --function-name "samaydlette-com-opa-compliance" >/dev/null 2>&1; then
           echo "Lambda function exists in AWS"
