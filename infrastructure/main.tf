@@ -85,9 +85,9 @@ data "aws_route53_zone" "website" {
 
 # Find my existing SSL certificate for HTTPS
 data "aws_acm_certificate" "website" {
-  provider = aws.us_east_1
-  domain   = var.domain_name
-  statuses = ["ISSUED"]
+  provider    = aws.us_east_1
+  domain      = var.domain_name
+  statuses    = ["ISSUED"]
   most_recent = true
 }
 
@@ -100,13 +100,13 @@ data "aws_acm_certificate" "website" {
 # Turn on file versioning so you can recover deleted or changed files
 resource "aws_s3_bucket_versioning" "website" {
   bucket = data.aws_s3_bucket.website.id
-  
+
   versioning_configuration {
     status = "Enabled"
   }
 
   lifecycle {
-    prevent_destroy = true  # Don't accidentally delete this setting
+    prevent_destroy = true # Don't accidentally delete this setting
   }
 }
 
@@ -116,12 +116,12 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "website" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"  # Use AWS's free encryption
+      sse_algorithm = "AES256" # Use AWS's free encryption
     }
   }
 
   lifecycle {
-    prevent_destroy = true  # Don't accidentally remove encryption
+    prevent_destroy = true # Don't accidentally remove encryption
   }
 }
 
@@ -135,7 +135,7 @@ resource "aws_s3_bucket_public_access_block" "website" {
   restrict_public_buckets = true
 
   lifecycle {
-    prevent_destroy = true  # Keep security settings safe
+    prevent_destroy = true # Keep security settings safe
   }
 }
 
@@ -243,6 +243,7 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
   count             = var.manage_dns && var.enable_route53_logging ? 1 : 0
   name              = "/aws/route53/${var.domain_name}"
   retention_in_days = 7
+  kms_key_id        = aws_kms_key.at_rest.arn # customer-CMK at rest (POAM-018)
 
   tags = {
     Name               = "${var.domain_name}-route53-logs"
@@ -260,9 +261,9 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
 # Actually start logging DNS queries
 resource "aws_route53_query_log" "website" {
   count                    = var.manage_dns && var.enable_route53_logging ? 1 : 0
-  depends_on              = [aws_cloudwatch_log_group.route53_query_log]
+  depends_on               = [aws_cloudwatch_log_group.route53_query_log]
   cloudwatch_log_group_arn = aws_cloudwatch_log_group.route53_query_log[0].arn
-  zone_id                 = data.aws_route53_zone.website[0].zone_id
+  zone_id                  = data.aws_route53_zone.website[0].zone_id
 }
 
 # =============================================================================
@@ -326,6 +327,13 @@ resource "aws_iam_role_policy" "lambda_opa" {
         Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance:*"
       },
       {
+        # Decrypt the Lambda's customer-CMK-encrypted environment variables
+        # (POAM-011). kms:Decrypt only — the function never encrypts.
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = [aws_kms_key.at_rest.arn]
+      },
+      {
         # Minimum read access the runtime KSI emitter needs to build the
         # {resource: {...}} input that policies.rego (compiled to Wasm)
         # evaluates. The actions match the bucket-attribute checks the Rego
@@ -380,16 +388,95 @@ resource "aws_iam_role_policy" "lambda_opa" {
 # =============================================================================
 
 # Create the actual monitoring function
+# =============================================================================
+# AT-REST ENCRYPTION CMK (POAM-011 / POAM-018)
+# =============================================================================
+# Customer-managed key for the compliance Lambda's environment variables and
+# its CloudWatch log group. The public website bucket stays on SSE-S3 (AES-256):
+# verified it holds only public content — pose extraction is client-side and the
+# app persists nothing, so there is no sensitive data at rest there; the only
+# sensitive at-rest data (the two app secrets) is already on the silk-reeling
+# CMK. ~$1/month; bucket-key not needed (no S3 KMS here).
+resource "aws_kms_key" "at_rest" {
+  description             = "Customer-managed key for at-rest encryption of the compliance Lambda env vars and logs"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableIAMUserPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
+        Action    = ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"]
+        Resource  = "*"
+        Condition = {
+          ArnLike = {
+            # Scope the logs-service grant to exactly the two CMK-encrypted log
+            # groups that use this key (compliance Lambda + route53 query logs).
+            "kms:EncryptionContext:aws:logs:arn" = [
+              "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance",
+              "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}",
+            ]
+          }
+        }
+      },
+    ]
+  })
+
+  tags = {
+    Name               = "${var.domain_name}-at-rest"
+    Environment        = var.environment
+    DataClassification = "Internal"
+    Owner              = var.owner
+  }
+}
+
+resource "aws_kms_alias" "at_rest" {
+  name          = "alias/${replace(var.domain_name, ".", "-")}-at-rest"
+  target_key_id = aws_kms_key.at_rest.key_id
+}
+
+# Explicit, customer-CMK-encrypted log group for the compliance Lambda (POAM-018)
+# with an explicit Moderate retention. Lambda would otherwise auto-create this
+# group unencrypted; it already exists, so the deploy imports it before apply.
+resource "aws_cloudwatch_log_group" "opa_compliance" {
+  count             = var.create_lambda_compliance ? 1 : 0
+  name              = "/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance"
+  retention_in_days = 365
+  kms_key_id        = aws_kms_key.at_rest.arn
+
+  tags = {
+    Name               = "${var.domain_name}-opa-compliance-logs"
+    Environment        = var.environment
+    DataClassification = "Internal"
+    Owner              = var.owner
+  }
+}
+
 resource "aws_lambda_function" "opa_compliance" {
   count = var.create_lambda_compliance ? 1 : 0
-  
-  filename        = "./opa-compliance.zip"
-  function_name   = "${replace(var.domain_name, ".", "-")}-opa-compliance"
-  role            = aws_iam_role.lambda_opa.arn
-  handler         = "index.handler"
-  runtime         = "nodejs22.x"
-  timeout         = 60
+
+  filename         = "./opa-compliance.zip"
+  function_name    = "${replace(var.domain_name, ".", "-")}-opa-compliance"
+  role             = aws_iam_role.lambda_opa.arn
+  handler          = "index.handler"
+  runtime          = "nodejs22.x"
+  timeout          = 60
   source_code_hash = data.local_file.lambda_zip.content_base64sha256
+
+  # Customer-CMK encryption of the environment variables (POAM-011).
+  kms_key_arn = aws_kms_key.at_rest.arn
+
+  depends_on = [aws_cloudwatch_log_group.opa_compliance]
 
   environment {
     variables = {
@@ -415,7 +502,7 @@ resource "aws_lambda_function" "opa_compliance" {
 # Create a schedule that triggers compliance checks
 resource "aws_cloudwatch_event_rule" "opa_compliance" {
   count = var.create_eventbridge_rules ? 1 : 0
-  
+
   name                = "${replace(var.domain_name, ".", "-")}-opa-compliance"
   description         = "Trigger OPA compliance checks"
   schedule_expression = var.compliance_check_schedule
@@ -432,7 +519,7 @@ resource "aws_cloudwatch_event_rule" "opa_compliance" {
 # Connect the schedule to the monitoring function
 resource "aws_cloudwatch_event_target" "lambda" {
   count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
-  
+
   rule      = aws_cloudwatch_event_rule.opa_compliance[0].name
   target_id = "TriggerLambdaTarget"
   arn       = aws_lambda_function.opa_compliance[0].arn
@@ -441,7 +528,7 @@ resource "aws_cloudwatch_event_target" "lambda" {
 # Give the schedule permission to run the monitoring function
 resource "aws_lambda_permission" "allow_eventbridge" {
   count = var.create_eventbridge_rules && var.create_lambda_compliance ? 1 : 0
-  
+
   statement_id  = "AllowExecutionFromEventBridge"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.opa_compliance[0].function_name

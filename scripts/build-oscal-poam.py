@@ -205,11 +205,12 @@ POAM_ITEMS = [
     {
         "id": "POAM-011", "controls": ["sc-12", "sc-28"],
         "title": "Lambda environment variables not customer-key encrypted",
-        "description": "Lambda env vars hold bucket name, distribution ID, system ID — all non-sensitive and visible in the public runtime signal. AWS-default encryption suffices.",
+        "description": "Closed under Task 6 (2026-06-16): every Lambda environment block is now encrypted with a customer-managed CMK (compliance Lambda -> at_rest CMK; silk-reeling Lambda -> silk_reeling CMK). The global CKV_AWS_173 Checkov suppression was removed; the check passes on its own.",
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_173",
         "asset_identifiers": ["aws-lambda::compliance-monitor"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status_date": "2026-06-16",
+        "status": "closed", "category": "closed",
     },
     {
         "id": "POAM-012", "controls": ["sc-5"],
@@ -259,11 +260,12 @@ POAM_ITEMS = [
     {
         "id": "POAM-018", "controls": ["sc-28"],
         "title": "CloudWatch log group not customer-key encrypted (uses AWS-default encryption)",
-        "description": "AWS-default encryption (server-side AES-256) is enabled on the log group. No PII in log content; only operational debug data and AWS API request metadata. Customer-managed KMS encryption adds cost and operational complexity without commensurate benefit at this scope.",
+        "description": "Closed under Task 6 (2026-06-16): every CloudWatch log group is now encrypted with a customer-managed CMK (compliance Lambda + route53 query-log groups -> at_rest CMK; silk-reeling log group -> silk_reeling CMK). The global CKV_AWS_158 Checkov suppression was removed; the check passes on its own.",
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_158",
         "asset_identifiers": ["aws-cloudwatch-log-group::route53-query-log", "aws-cloudwatch-log-group::lambda-execution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status_date": "2026-06-16",
+        "status": "closed", "category": "closed",
     },
 ]
 

@@ -98,14 +98,14 @@ variable "existing_ssl_certificate_arn" {
 variable "cloudfront_price_class" {
   description = "CloudFront price class"
   type        = string
-  default     = "PriceClass_100"  # Cheapest option, covers US and Europe
-  
+  default     = "PriceClass_100" # Cheapest option, covers US and Europe
+
   # Make sure only valid options are used
   validation {
     condition = contains([
-      "PriceClass_All",    # Most expensive, worldwide coverage
-      "PriceClass_200",    # Medium cost, US, Europe, Asia, Middle East
-      "PriceClass_100"     # Cheapest, US and Europe only
+      "PriceClass_All", # Most expensive, worldwide coverage
+      "PriceClass_200", # Medium cost, US, Europe, Asia, Middle East
+      "PriceClass_100"  # Cheapest, US and Europe only
     ], var.cloudfront_price_class)
     error_message = "CloudFront price class must be PriceClass_All, PriceClass_200, or PriceClass_100."
   }
@@ -141,21 +141,21 @@ variable "enable_route53_logging" {
 variable "compliance_check_schedule" {
   description = "Schedule expression for compliance checks (CloudWatch Events)"
   type        = string
-  default     = "rate(1 day)"  # Check once per day
+  default     = "rate(1 day)" # Check once per day
 }
 
 # What level of accessibility compliance to enforce on my website
 variable "section_508_compliance_level" {
   description = "Section 508 compliance level to check (A, AA, AAA)"
   type        = string
-  default     = "AA"  # Most common standard for government websites
-  
+  default     = "AA" # Most common standard for government websites
+
   # Make sure only valid compliance levels are used
   validation {
     condition = contains([
-      "A",     # Basic accessibility compliance
-      "AA",    # Standard compliance (recommended)
-      "AAA"    # Highest compliance level
+      "A",  # Basic accessibility compliance
+      "AA", # Standard compliance (recommended)
+      "AAA" # Highest compliance level
     ], var.section_508_compliance_level)
     error_message = "Section 508 compliance level must be A, AA, or AAA."
   }

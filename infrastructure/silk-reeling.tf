@@ -209,6 +209,13 @@ resource "aws_lambda_function" "silk_reeling" {
   # suppression (POAM-012). var.silk_reeling_max_concurrency is retained for when
   # the account limit is raised.
 
+  # Encrypt the environment block at rest with the app's customer-managed CMK
+  # (POAM-011). The contents are non-sensitive (secret ARNs + config, never
+  # secret values), but customer-CMK encryption is applied for consistency with
+  # the rest of the system; the function's role already holds kms:Decrypt on
+  # this key for its Secrets Manager reads, so no IAM change is needed.
+  kms_key_arn = aws_kms_key.silk_reeling[0].arn
+
   environment {
     variables = {
       # Non-sensitive config only — secret ARNs, never values (POAM-011).
