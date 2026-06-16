@@ -419,6 +419,31 @@ jobs:
           echo "No existing IAM role policy found - will be created"
         fi
         
+        # Import the at-rest CMK + its alias if they exist (Task 6, POAM-011/018).
+        # State is ephemeral per run, so the unconditional aws_kms_key.at_rest would
+        # otherwise be created fresh every run — orphaning keys and colliding on the
+        # alias. Resolve the key by its stable alias and adopt both into state.
+        if aws kms describe-key --key-id alias/samaydlette-com-at-rest >/dev/null 2>&1; then
+          AT_REST_KEY_ID=$(aws kms describe-key --key-id alias/samaydlette-com-at-rest --query 'KeyMetadata.KeyId' --output text)
+          echo "At-rest CMK exists in AWS ($AT_REST_KEY_ID)"
+          if ! terraform state show aws_kms_key.at_rest >/dev/null 2>&1; then
+            echo "Importing at-rest CMK..."
+            terraform import aws_kms_key.at_rest "$AT_REST_KEY_ID"
+            echo "✅ At-rest CMK imported"
+          else
+            echo "At-rest CMK already in Terraform state"
+          fi
+          if ! terraform state show aws_kms_alias.at_rest >/dev/null 2>&1; then
+            echo "Importing at-rest CMK alias..."
+            terraform import aws_kms_alias.at_rest "alias/samaydlette-com-at-rest"
+            echo "✅ At-rest CMK alias imported"
+          else
+            echo "At-rest CMK alias already in Terraform state"
+          fi
+        else
+          echo "No existing at-rest CMK found - will be created"
+        fi
+
         # Import the compliance Lambda's log group if it exists (auto-created by
         # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
         # Must precede the Lambda import since the function depends_on it.

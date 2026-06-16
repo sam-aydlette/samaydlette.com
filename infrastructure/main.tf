@@ -476,7 +476,10 @@ resource "aws_lambda_function" "opa_compliance" {
   # Customer-CMK encryption of the environment variables (POAM-011).
   kms_key_arn = aws_kms_key.at_rest.arn
 
-  depends_on = [aws_cloudwatch_log_group.opa_compliance]
+  # The deploy role's kms:Encrypt grant is scoped by alias, so the alias must
+  # exist before this function's env is encrypted (otherwise a from-scratch
+  # apply could race the Lambda update ahead of alias creation).
+  depends_on = [aws_cloudwatch_log_group.opa_compliance, aws_kms_alias.at_rest]
 
   environment {
     variables = {

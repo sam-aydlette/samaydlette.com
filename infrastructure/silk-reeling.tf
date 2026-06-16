@@ -228,7 +228,9 @@ resource "aws_lambda_function" "silk_reeling" {
     }
   }
 
-  depends_on = [aws_cloudwatch_log_group.silk_reeling]
+  # Alias must exist before the env is encrypted — the deploy role's kms:Encrypt
+  # grant is scoped by alias (see bootstrap compliance-kms-encrypt).
+  depends_on = [aws_cloudwatch_log_group.silk_reeling, aws_kms_alias.silk_reeling]
 
   tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling" })
 }
