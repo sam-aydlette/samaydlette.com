@@ -368,12 +368,15 @@ exports.handler = async (event, context) => {
     // against the underlying key ARN regardless of resolving via the alias. If
     // signing fails (e.g. the key is unavailable), the signal is published
     // unsigned rather than failing the compliance-monitor run.
+    // Publish the public key BEFORE signing, so a signed signal is never
+    // published without the key needed to verify it: if either step fails, the
+    // signal stays unsigned (the catch leaves runtimeSignal unmodified).
     const signingKeyAlias = 'alias/' + bucketName.replace(/\./g, '-') + '-runtime-signing';
     try {
         const kms = new KMSClient({ region });
-        runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyAlias);
         await publishPublicKey(kms, s3, bucketName, signingKeyAlias);
-        console.log(`Runtime signal signed with ${signingKeyAlias}; public key published`);
+        runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyAlias);
+        console.log(`Public key published; runtime signal signed with ${signingKeyAlias}`);
     } catch (err) {
         console.error(`Signing failed (${signingKeyAlias}); publishing unsigned`, err);
     }
