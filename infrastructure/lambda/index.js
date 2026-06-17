@@ -361,17 +361,21 @@ exports.handler = async (event, context) => {
 
     let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion);
 
-    // Sign the signal (POAM-002) and publish the verifying public key. If no
-    // signing key is configured, the signal is published unsigned (the pre-Task-5
-    // behavior) rather than failing the run.
-    const signingKeyArn = process.env.RUNTIME_SIGNING_KEY_ARN;
-    if (signingKeyArn) {
+    // Sign the signal (POAM-002) and publish the verifying public key. The signing
+    // key is resolved by its stable alias, derived from the bucket/domain
+    // (alias/<domain-with-dashes>-runtime-signing). Deriving it from S3_BUCKET
+    // avoids depending on a separately-injected env var; kms:Sign is authorized
+    // against the underlying key ARN regardless of resolving via the alias. If
+    // signing fails (e.g. the key is unavailable), the signal is published
+    // unsigned rather than failing the compliance-monitor run.
+    const signingKeyAlias = 'alias/' + bucketName.replace(/\./g, '-') + '-runtime-signing';
+    try {
         const kms = new KMSClient({ region });
-        runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyArn);
-        await publishPublicKey(kms, s3, bucketName, signingKeyArn);
-        console.log('Runtime signal signed; public key published');
-    } else {
-        console.warn('RUNTIME_SIGNING_KEY_ARN not set — publishing unsigned signal');
+        runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyAlias);
+        await publishPublicKey(kms, s3, bucketName, signingKeyAlias);
+        console.log(`Runtime signal signed with ${signingKeyAlias}; public key published`);
+    } catch (err) {
+        console.error(`Signing failed (${signingKeyAlias}); publishing unsigned`, err);
     }
 
     await s3.send(new PutObjectCommand({
