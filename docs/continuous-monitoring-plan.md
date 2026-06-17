@@ -27,7 +27,8 @@ Four mechanisms operate concurrently:
 Five artifacts are published continuously at `/.well-known/`:
 
 - `ksi-signal.json` — the FedRAMP 20x KSI signal (Sigstore-signed); per-deploy emission
-- `ksi-signal-runtime.json` — the daily runtime revalidation
+- `ksi-signal-runtime.json` — the daily runtime revalidation, signed with an asymmetric KMS key (ECC NIST P-256); the signature is carried in `provenance.attestation` and verifiable against `runtime-signing-pubkey.pem` (POAM-002)
+- `runtime-signing-pubkey.pem` — the public key for verifying the runtime signal's signature
 - `oscal-ssp.json` — the NIST OSCAL System Security Plan; per-deploy emission
 - `oscal-poam.json` — the NIST OSCAL Plan of Action and Milestones; per-deploy emission
 - `vdr-report.json` — the FedRAMP 20x VDR report; per-deploy emission

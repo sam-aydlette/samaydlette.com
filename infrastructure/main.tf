@@ -334,6 +334,13 @@ resource "aws_iam_role_policy" "lambda_opa" {
         Resource = [aws_kms_key.at_rest.arn]
       },
       {
+        # Sign the runtime KSI signal and read the public key for publication
+        # (POAM-002). Scoped to the asymmetric signing key only.
+        Effect   = "Allow"
+        Action   = ["kms:Sign", "kms:GetPublicKey"]
+        Resource = [aws_kms_key.runtime_signing.arn]
+      },
+      {
         # Minimum read access the runtime KSI emitter needs to build the
         # {resource: {...}} input that policies.rego (compiled to Wasm)
         # evaluates. The actions match the bucket-attribute checks the Rego
@@ -445,6 +452,45 @@ resource "aws_kms_alias" "at_rest" {
   target_key_id = aws_kms_key.at_rest.key_id
 }
 
+# Asymmetric signing key for the runtime KSI signal (POAM-002). The Lambda signs
+# the canonical signal bytes so a consumer can verify the runtime signal against
+# the published public key instead of trusting the well-known URL. ECC NIST P-256
+# / SIGN_VERIFY; asymmetric keys do not support automatic rotation (rotation is a
+# manual new-key + re-publish-pubkey operation, recorded as a residual in
+# docs/poam.md). Key policy is root-enabled / IAM-governed; the Lambda role holds
+# kms:Sign + kms:GetPublicKey (above).
+resource "aws_kms_key" "runtime_signing" {
+  description              = "Asymmetric key for signing the runtime KSI signal (POAM-002)"
+  customer_master_key_spec = "ECC_NIST_P256"
+  key_usage                = "SIGN_VERIFY"
+  deletion_window_in_days  = 7
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableIAMUserPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+    ]
+  })
+
+  tags = {
+    Name               = "${var.domain_name}-runtime-signing"
+    Environment        = var.environment
+    DataClassification = "Internal"
+    Owner              = var.owner
+  }
+}
+
+resource "aws_kms_alias" "runtime_signing" {
+  name          = "alias/${replace(var.domain_name, ".", "-")}-runtime-signing"
+  target_key_id = aws_kms_key.runtime_signing.key_id
+}
+
 # Explicit, customer-CMK-encrypted log group for the compliance Lambda (POAM-018)
 # with an explicit Moderate retention. Lambda would otherwise auto-create this
 # group unencrypted; it already exists, so the deploy imports it before apply.
@@ -483,7 +529,8 @@ resource "aws_lambda_function" "opa_compliance" {
 
   environment {
     variables = {
-      S3_BUCKET = data.aws_s3_bucket.website.id
+      S3_BUCKET               = data.aws_s3_bucket.website.id
+      RUNTIME_SIGNING_KEY_ARN = aws_kms_key.runtime_signing.arn
     }
   }
 
