@@ -444,6 +444,30 @@ jobs:
           echo "No existing at-rest CMK found - will be created"
         fi
 
+        # Import the runtime-signal signing CMK + alias if they exist (Task 5,
+        # POAM-002). Ephemeral state: resolve the key by its stable alias and
+        # adopt both so the asymmetric signing key is not recreated each run.
+        if aws kms describe-key --key-id alias/samaydlette-com-runtime-signing >/dev/null 2>&1; then
+          SIGNING_KEY_ID=$(aws kms describe-key --key-id alias/samaydlette-com-runtime-signing --query 'KeyMetadata.KeyId' --output text)
+          echo "Runtime-signing CMK exists in AWS ($SIGNING_KEY_ID)"
+          if ! terraform state show aws_kms_key.runtime_signing >/dev/null 2>&1; then
+            echo "Importing runtime-signing CMK..."
+            terraform import aws_kms_key.runtime_signing "$SIGNING_KEY_ID"
+            echo "✅ Runtime-signing CMK imported"
+          else
+            echo "Runtime-signing CMK already in Terraform state"
+          fi
+          if ! terraform state show aws_kms_alias.runtime_signing >/dev/null 2>&1; then
+            echo "Importing runtime-signing CMK alias..."
+            terraform import aws_kms_alias.runtime_signing "alias/samaydlette-com-runtime-signing"
+            echo "✅ Runtime-signing CMK alias imported"
+          else
+            echo "Runtime-signing CMK alias already in Terraform state"
+          fi
+        else
+          echo "No existing runtime-signing CMK found - will be created"
+        fi
+
         # Import the compliance Lambda's log group if it exists (auto-created by
         # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
         # Must precede the Lambda import since the function depends_on it.

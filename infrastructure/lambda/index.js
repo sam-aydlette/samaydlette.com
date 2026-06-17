@@ -37,6 +37,12 @@ const {
     CloudFrontClient,
     GetDistributionConfigCommand,
 } = require('@aws-sdk/client-cloudfront');
+const {
+    KMSClient,
+    SignCommand,
+    GetPublicKeyCommand,
+} = require('@aws-sdk/client-kms');
+const { canonicalize } = require('./canonical');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
@@ -261,6 +267,64 @@ async function buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion) {
 }
 
 // =============================================================================
+// SIGNING (POAM-002)
+// =============================================================================
+// The runtime signal is signed with an AWS KMS asymmetric key (ECC NIST P-256,
+// SIGN_VERIFY) so a consumer can verify it cryptographically rather than trust
+// the well-known URL implicitly. The signature covers the canonical form of the
+// signal with `provenance.attestation` absent; the signature object is then
+// placed in `provenance.attestation`. A verifier reproduces the canonical bytes
+// by deleting `provenance.attestation`, canonicalizing, and checking the
+// signature against the published public key. The canonicalization recipe lives
+// in ./canonical.js so verifiers and tests can reuse it without the AWS SDK.
+
+// Wrap SPKI DER public-key bytes as PEM.
+function derToPem(der) {
+    const b64 = Buffer.from(der).toString('base64');
+    const lines = b64.match(/.{1,64}/g).join('\n');
+    return `-----BEGIN PUBLIC KEY-----\n${lines}\n-----END PUBLIC KEY-----\n`;
+}
+
+// Sign the signal in place: returns a copy with provenance.attestation set.
+async function signSignal(signal, kms, keyArn) {
+    const canonical = Buffer.from(canonicalize(signal), 'utf8');
+    const digest = crypto.createHash('sha256').update(canonical).digest();
+    const { Signature } = await kms.send(new SignCommand({
+        KeyId: keyArn,
+        Message: digest,
+        MessageType: 'DIGEST',
+        SigningAlgorithm: 'ECDSA_SHA_256',
+    }));
+    return {
+        ...signal,
+        provenance: {
+            ...signal.provenance,
+            attestation: {
+                type: 'kms-ecdsa-p256',
+                algorithm: 'ECDSA_SHA_256',
+                key_id: keyArn,
+                canonicalization: 'sorted-keys JSON, no whitespace; provenance.attestation omitted before signing',
+                signature: Buffer.from(Signature).toString('base64'),
+                public_key_url: 'https://samaydlette.com/.well-known/runtime-signing-pubkey.pem',
+                signed_at: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            },
+        },
+    };
+}
+
+// Publish the signing public key so consumers can verify without trusting us.
+async function publishPublicKey(kms, s3, bucketName, keyArn) {
+    const { PublicKey } = await kms.send(new GetPublicKeyCommand({ KeyId: keyArn }));
+    await s3.send(new PutObjectCommand({
+        Bucket: bucketName,
+        Key: '.well-known/runtime-signing-pubkey.pem',
+        Body: derToPem(PublicKey),
+        ContentType: 'application/x-pem-file',
+        CacheControl: 'public, max-age=300',
+    }));
+}
+
+// =============================================================================
 // HANDLER
 // =============================================================================
 
@@ -295,7 +359,20 @@ exports.handler = async (event, context) => {
         };
     }
 
-    const runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion);
+    let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion);
+
+    // Sign the signal (POAM-002) and publish the verifying public key. If no
+    // signing key is configured, the signal is published unsigned (the pre-Task-5
+    // behavior) rather than failing the run.
+    const signingKeyArn = process.env.RUNTIME_SIGNING_KEY_ARN;
+    if (signingKeyArn) {
+        const kms = new KMSClient({ region });
+        runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyArn);
+        await publishPublicKey(kms, s3, bucketName, signingKeyArn);
+        console.log('Runtime signal signed; public key published');
+    } else {
+        console.warn('RUNTIME_SIGNING_KEY_ARN not set — publishing unsigned signal');
+    }
 
     await s3.send(new PutObjectCommand({
         Bucket: bucketName,

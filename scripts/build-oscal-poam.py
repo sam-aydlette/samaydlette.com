@@ -92,16 +92,14 @@ POAM_ITEMS = [
         "id": "POAM-002",
         "title": "Runtime KSI signal not cryptographically signed",
         "description": (
-            "The runtime KSI signal at /.well-known/ksi-signal-runtime.json is "
-            "published by the Lambda without a cryptographic signature. Consumers "
-            "trust it implicitly via 'AWS has not lied about what is at the "
-            "well-known URL.' That is the standard static-site CDN trust model, "
-            "but it does not reduce to the public Sigstore transparency log the "
-            "deploy-time signal does. (As of this revision, the deploy-time KSI "
-            "signal, OSCAL SSP, OSCAL POA&M, VDR report, and IIW CSV are all "
-            "Sigstore-signed in CI; this POA&M item is now narrowed to the "
-            "runtime signal specifically, which still requires a separate "
-            "signing mechanism since the Lambda cannot use GitHub OIDC.)"
+            "Closed under Task 5 (2026-06-17): the runtime emitter now signs the "
+            "runtime signal with an asymmetric KMS key (ECC NIST P-256, SIGN_VERIFY). "
+            "It canonicalizes the signal with provenance.attestation absent "
+            "(sorted-keys JSON, no whitespace), signs the SHA-256 digest with "
+            "ECDSA_SHA_256, places the signature in provenance.attestation, and "
+            "publishes the verifying public key at "
+            "/.well-known/runtime-signing-pubkey.pem. A consumer verifies the "
+            "runtime signal cryptographically without trusting the well-known URL."
         ),
         "controls": ["au-10", "si-7", "sc-12", "sc-13"],
         "weakness_detector_source": "Internal review",
@@ -120,14 +118,14 @@ POAM_ITEMS = [
             "/.well-known/runtime-signing-pubkey.pem."
         ),
         "original_detection_date": "2026-05-06",
-        "scheduled_completion_date": "When an external consumer asks to verify the runtime signal end-to-end.",
-        "status_date": "2026-05-08",
+        "scheduled_completion_date": "2026-06-17",
+        "status_date": "2026-06-17",
         "vendor_dependency": False,
         "original_risk_rating": "low",
         "adjusted_risk_rating": None,
         "risk_adjustment": False,
-        "status": "open",
-        "category": "open",
+        "status": "closed",
+        "category": "closed",
     },
     # Configuration Findings (Checkov suppressions; all currently risk-accepted)
     {

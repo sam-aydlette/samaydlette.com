@@ -20,34 +20,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-### POAM-002 — Runtime KSI signal not cryptographically signed
-
-| Field | Value |
-| --- | --- |
-| POA&M ID | POAM-002 |
-| Controls | AU-10, SI-7, SC-12, SC-13 |
-| Weakness Name | Runtime KSI signal not cryptographically signed |
-| Weakness Description | The runtime KSI signal at `/.well-known/ksi-signal-runtime.json` is published by the Lambda without a cryptographic signature. Consumers trust it implicitly via "AWS has not lied about what is at the well-known URL." That is the standard static-site CDN trust model, but it does not reduce to the public Sigstore transparency log the deploy-time signal does. |
-| Weakness Detector Source | Internal review during initial implementation. |
-| Weakness Source Identifier | internal-review-2026-05-06 |
-| Asset Identifier | `aws-lambda::compliance-monitor`; `aws-s3-key::.well-known/ksi-signal-runtime.json` |
-| Point of Contact | Sam Aydlette (operator) |
-| Resources Required | Operator time (~half day); ~$1/month KMS cost. |
-| Remediation Plan | AWS KMS asymmetric signing in the Lambda — provision an ECC NIST P-256 key with `key_usage = "SIGN_VERIFY"`, grant the Lambda role `kms:Sign` and `kms:GetPublicKey`, sign the canonical-form bytes, and embed the signature in `provenance.attestation`. Publish the public key at `/.well-known/runtime-signing-pubkey.pem`. An alternative path is federating an OIDC identity into the Lambda for Sigstore-keyless signing, but that requires more new infrastructure for the same end state. |
-| Original Detection Date | 2026-05-06 |
-| Scheduled Completion Date | When an external consumer asks to verify the runtime signal end-to-end. Low priority for the PoC. |
-| Status Date | 2026-05-08 |
-| Vendor Dependency | No |
-| Last Vendor Check-in Date | — |
-| Vendor Dependent Product Name | — |
-| Original Risk Rating | Low |
-| Adjusted Risk Rating | — |
-| Risk Adjustment | No |
-| Status | Open |
-
-**Compensating controls.** The Lambda's IAM role can write only to the single S3 key for the runtime signal — a compromised Lambda cannot tamper with other site content. The runtime signal carries `provenance.builder.id` identifying its execution context. Drift between the (signed) deploy-time signal and the (unsigned) runtime signal is detectable from outside; mismatched components or validations are high-confidence signal of either real drift or a tampered runtime signal. All other published artifacts (OSCAL SSP, OSCAL POA&M, VDR report, IIW CSV) are now Sigstore-signed in CI; this POA&M item applies only to the runtime KSI signal.
-
-**Risk if not remediated.** A consumer pulling the runtime signal cannot independently verify it has not been tampered with. For a fully public site with no consuming agency, the risk is reputational. In any portfolio context where multiple agencies consume signals across CSPs, runtime signal forgery becomes a credible attack and signing closes it.
+*No items are currently open.* POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -218,6 +191,36 @@ If the threat profile or scope changes — for example, if the system starts pro
 
 
 **Closed 2026-06-15.** Migrated to GitHub OIDC role assumption (`github-actions-deploy-oidc`); the workflow now uses `role-to-assume`. After a fully green OIDC deploy (compliance-check + Deploy Infrastructure jobs both assuming the role), the legacy `github-actions-deploy` IAM user and its access key were deleted and the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` repo secrets removed. No long-lived AWS credential remains on the deploy path.
+
+---
+
+### POAM-002 — Runtime KSI signal not cryptographically signed
+
+| Field | Value |
+| --- | --- |
+| POA&M ID | POAM-002 |
+| Controls | AU-10, SI-7, SC-12, SC-13 |
+| Weakness Name | Runtime KSI signal not cryptographically signed |
+| Weakness Description | The runtime KSI signal at `/.well-known/ksi-signal-runtime.json` was published by the Lambda without a cryptographic signature; consumers trusted it implicitly via the well-known URL rather than a verifiable cryptographic root. |
+| Weakness Detector Source | Internal review during initial implementation. |
+| Weakness Source Identifier | internal-review-2026-05-06 |
+| Asset Identifier | `aws-lambda::compliance-monitor`; `aws-s3-key::.well-known/ksi-signal-runtime.json` |
+| Point of Contact | Sam Aydlette (operator) |
+| Resources Required | Operator time (~half day); ~$1/month KMS cost. |
+| Remediation Plan | AWS KMS asymmetric signing in the Lambda — ECC NIST P-256 `SIGN_VERIFY` key, Lambda role granted `kms:Sign` + `kms:GetPublicKey`, sign the canonical signal bytes, embed the signature in `provenance.attestation`, publish the public key at `/.well-known/runtime-signing-pubkey.pem`. |
+| Original Detection Date | 2026-05-06 |
+| Scheduled Completion Date | 2026-06-17 |
+| Status Date | 2026-06-17 |
+| Vendor Dependency | No |
+| Last Vendor Check-in Date | — |
+| Vendor Dependent Product Name | — |
+| Original Risk Rating | Low |
+| Adjusted Risk Rating | — |
+| Risk Adjustment | No |
+| Status | Closed |
+| False Positive | No |
+
+**Closed 2026-06-17 (Task 5).** The runtime emitter (`infrastructure/lambda/index.js`) now signs the runtime signal with an asymmetric KMS key (`aws_kms_key.runtime_signing`, ECC NIST P-256, `SIGN_VERIFY`). It canonicalizes the signal with `provenance.attestation` absent (sorted-keys JSON, no whitespace), signs the SHA-256 digest (`ECDSA_SHA_256`), and places the signature in `provenance.attestation`; the verifying public key is published at `/.well-known/runtime-signing-pubkey.pem`. A consumer verifies by stripping `provenance.attestation`, recomputing the canonical bytes, and checking the signature against the published key — no trust in the well-known URL required. **Residual (operational):** asymmetric KMS keys do not auto-rotate; key rotation is a manual new-key + re-publish-pubkey step, tracked in the [secure-configuration guide](policies/secure-configuration-guide.md).
 
 ---
 
