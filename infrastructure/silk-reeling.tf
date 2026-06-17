@@ -83,6 +83,21 @@ resource "aws_kms_key" "silk_reeling" {
           }
         }
       },
+      {
+        # Allow CloudWatch Logs to encrypt this app's log group at rest with this
+        # CMK (POAM-018). Scoped via EncryptionContext to exactly the silk-reeling
+        # log group, so the grant cannot be used for any other log group.
+        Sid       = "AllowCloudWatchLogs"
+        Effect    = "Allow"
+        Principal = { Service = "logs.${var.aws_region}.amazonaws.com" }
+        Action    = ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey"]
+        Resource  = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.silk_name}"
+          }
+        }
+      },
     ]
   })
 
@@ -183,6 +198,7 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
   count             = local.silk_create
   name              = "/aws/lambda/${local.silk_name}"
   retention_in_days = 7
+  kms_key_id        = aws_kms_key.silk_reeling[0].arn # customer-CMK at rest (POAM-018)
 
   tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-logs" })
 }
