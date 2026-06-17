@@ -529,8 +529,11 @@ resource "aws_lambda_function" "opa_compliance" {
 
   environment {
     variables = {
-      S3_BUCKET               = data.aws_s3_bucket.website.id
-      RUNTIME_SIGNING_KEY_ARN = aws_kms_key.runtime_signing.arn
+      # The runtime emitter derives the signing-key alias from S3_BUCKET
+      # (alias/<domain-with-dashes>-runtime-signing); no separate key env var is
+      # injected. The kms:Sign / kms:GetPublicKey grant on the role is scoped to
+      # aws_kms_key.runtime_signing and authorizes use via that alias.
+      S3_BUCKET = data.aws_s3_bucket.website.id
     }
   }
 
