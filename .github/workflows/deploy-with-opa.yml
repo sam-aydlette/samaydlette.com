@@ -474,12 +474,18 @@ jobs:
         # recreated each run. All are no-ops on the first deploy (created then).
         if aws kms describe-key --region us-east-1 --key-id alias/samaydlette-com-dnssec-ksk >/dev/null 2>&1; then
           DNSSEC_KEY_ID=$(aws kms describe-key --region us-east-1 --key-id alias/samaydlette-com-dnssec-ksk --query 'KeyMetadata.KeyId' --output text)
-          ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name samaydlette.com --query 'HostedZones[0].Id' --output text | sed 's#/hostedzone/##')
+          # Resolve the zone via list-hosted-zones (the deploy role has this; it
+          # does not have ListHostedZonesByName).
+          ZONE_ID=$(aws route53 list-hosted-zones --query "HostedZones[?Name=='samaydlette.com.'].Id | [0]" --output text | sed 's#/hostedzone/##')
           echo "DNSSEC KSK exists ($DNSSEC_KEY_ID), zone $ZONE_ID"
           terraform state show 'aws_kms_key.dnssec_ksk[0]' >/dev/null 2>&1 || terraform import 'aws_kms_key.dnssec_ksk[0]' "$DNSSEC_KEY_ID"
           terraform state show 'aws_kms_alias.dnssec_ksk[0]' >/dev/null 2>&1 || terraform import 'aws_kms_alias.dnssec_ksk[0]' "alias/samaydlette-com-dnssec-ksk"
-          terraform state show 'aws_route53_key_signing_key.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_key_signing_key.this[0]' "${ZONE_ID},samaydlette_com_ksk"
-          terraform state show 'aws_route53_hosted_zone_dnssec.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_hosted_zone_dnssec.this[0]' "$ZONE_ID"
+          # The KSK and zone-signing association may not exist yet (created on the
+          # run that first enables signing), so tolerate a failed import.
+          if [ -n "$ZONE_ID" ] && [ "$ZONE_ID" != "None" ]; then
+            terraform state show 'aws_route53_key_signing_key.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_key_signing_key.this[0]' "${ZONE_ID},samaydlette_com_ksk" || echo "KSK not created yet - will be created"
+            terraform state show 'aws_route53_hosted_zone_dnssec.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_hosted_zone_dnssec.this[0]' "$ZONE_ID" || echo "zone signing not enabled yet - will be enabled"
+          fi
           echo "✅ DNSSEC resources imported (where present)"
         else
           echo "No existing DNSSEC KSK found - will be created"
