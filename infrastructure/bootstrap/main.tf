@@ -250,6 +250,20 @@ data "aws_iam_policy_document" "dnssec_management" {
     actions   = ["route53:GetChange"]
     resources = ["arn:aws:route53:::change/*"]
   }
+  statement {
+    # CreateKeySigningKey requires the *caller* (not just the key policy) to hold
+    # these KMS actions on the KSK. Scoped to us-east-1 KMS keys, where Route 53
+    # DNSSEC keys must live and the only SIGN_VERIFY key is the DNSSEC KSK.
+    sid    = "UseKskForDNSSEC"
+    effect = "Allow"
+    actions = [
+      "kms:DescribeKey",
+      "kms:GetPublicKey",
+      "kms:Sign",
+      "kms:CreateGrant",
+    ]
+    resources = ["arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:key/*"]
+  }
 }
 
 resource "aws_iam_role_policy" "dnssec_management" {
