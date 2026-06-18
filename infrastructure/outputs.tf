@@ -63,6 +63,24 @@ output "route53_name_servers" {
   value       = var.manage_dns ? data.aws_route53_zone.website[0].name_servers : []
 }
 
+# DNSSEC DS record to publish at the registrar (D-3). Until this is published in
+# the parent (.com) zone, the zone is signed but resolvers do not validate it.
+output "dnssec_ds_record" {
+  description = "DS record to publish at the registrar to complete the DNSSEC chain of trust"
+  value       = var.manage_dns ? aws_route53_key_signing_key.this[0].ds_record : "DNS not managed"
+}
+
+output "dnssec_ksk_details" {
+  description = "Key-signing-key fields for the registrar's 'add DNSSEC key' form (flag, algorithm, public key)"
+  value = var.manage_dns ? {
+    flag                       = aws_route53_key_signing_key.this[0].flag
+    signing_algorithm_mnemonic = aws_route53_key_signing_key.this[0].signing_algorithm_mnemonic
+    digest_algorithm_mnemonic  = aws_route53_key_signing_key.this[0].digest_algorithm_mnemonic
+    public_key                 = aws_route53_key_signing_key.this[0].public_key
+    ds_record                  = aws_route53_key_signing_key.this[0].ds_record
+  } : null
+}
+
 # The SSL certificate that secures my website
 output "ssl_certificate_arn" {
   description = "ARN of the existing SSL certificate"

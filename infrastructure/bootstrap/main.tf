@@ -224,6 +224,40 @@ resource "aws_iam_role_policy" "compliance_kms" {
   policy = data.aws_iam_policy_document.compliance_kms.json
 }
 
+# Route 53 DNSSEC management for the deploy role (Task 5 PR B / D-3): create the
+# key-signing key and enable/disable zone signing. KMS create/manage for the KSK
+# is already covered by the role's account-wide kms:CreateKey/PutKeyPolicy grant.
+data "aws_iam_policy_document" "dnssec_management" {
+  # checkov:skip=CKV_AWS_356:route53:GetChange has no scopable resource; the zone-scoped DNSSEC actions are restricted to hostedzone/* (this account has a single zone). Documented exception.
+  statement {
+    sid    = "ManageZoneDNSSEC"
+    effect = "Allow"
+    actions = [
+      "route53:CreateKeySigningKey",
+      "route53:DeleteKeySigningKey",
+      "route53:ActivateKeySigningKey",
+      "route53:DeactivateKeySigningKey",
+      "route53:GetDNSSEC",
+      "route53:EnableHostedZoneDNSSEC",
+      "route53:DisableHostedZoneDNSSEC",
+    ]
+    resources = ["arn:aws:route53:::hostedzone/*"]
+  }
+  statement {
+    sid       = "ReadChangeStatus"
+    effect    = "Allow"
+    actions   = ["route53:GetChange"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "dnssec_management" {
+  # checkov:skip=CKV_AWS_356:route53:GetChange cannot be resource-scoped; zone DNSSEC actions scoped to hostedzone/*. Documented exception.
+  name   = "dnssec-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.dnssec_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."

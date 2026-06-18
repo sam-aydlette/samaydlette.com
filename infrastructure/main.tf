@@ -492,6 +492,84 @@ resource "aws_kms_alias" "runtime_signing" {
   target_key_id = aws_kms_key.runtime_signing.key_id
 }
 
+# =============================================================================
+# DNSSEC (D-3)
+# =============================================================================
+# Signs the hosted zone so resolvers can authenticate DNS answers for the domain.
+# Route 53 DNSSEC requires the key-signing key (KSK) to be a customer-managed
+# asymmetric ECC_NIST_P256 key IN us-east-1, with a key policy that lets the
+# Route 53 DNSSEC service use it. Enabling zone signing is safe without the parent
+# DS record (validators treat the zone as unsigned until the DS is published); the
+# DS record is emitted as an output and published at the registrar as a separate,
+# operator-gated step. All gated on manage_dns.
+resource "aws_kms_key" "dnssec_ksk" {
+  count                    = var.manage_dns ? 1 : 0
+  provider                 = aws.us_east_1
+  description              = "DNSSEC key-signing key for ${var.domain_name} (D-3)"
+  customer_master_key_spec = "ECC_NIST_P256"
+  key_usage                = "SIGN_VERIFY"
+  deletion_window_in_days  = 7
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnableIAMUserPermissions"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
+        Action    = "kms:*"
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowRoute53DNSSECService"
+        Effect    = "Allow"
+        Principal = { Service = "dnssec-route53.amazonaws.com" }
+        Action    = ["kms:DescribeKey", "kms:GetPublicKey", "kms:Sign"]
+        Resource  = "*"
+      },
+      {
+        Sid       = "AllowRoute53DNSSECCreateGrant"
+        Effect    = "Allow"
+        Principal = { Service = "dnssec-route53.amazonaws.com" }
+        Action    = "kms:CreateGrant"
+        Resource  = "*"
+        Condition = { Bool = { "kms:GrantIsForAWSResource" = "true" } }
+      },
+    ]
+  })
+
+  tags = {
+    Name               = "${var.domain_name}-dnssec-ksk"
+    Environment        = var.environment
+    DataClassification = "Internal"
+    Owner              = var.owner
+  }
+}
+
+resource "aws_kms_alias" "dnssec_ksk" {
+  count         = var.manage_dns ? 1 : 0
+  provider      = aws.us_east_1
+  name          = "alias/${replace(var.domain_name, ".", "-")}-dnssec-ksk"
+  target_key_id = aws_kms_key.dnssec_ksk[0].key_id
+}
+
+resource "aws_route53_key_signing_key" "this" {
+  count                      = var.manage_dns ? 1 : 0
+  hosted_zone_id             = data.aws_route53_zone.website[0].zone_id
+  key_management_service_arn = aws_kms_key.dnssec_ksk[0].arn
+  name                       = "${replace(var.domain_name, ".", "_")}_ksk"
+  status                     = "ACTIVE"
+}
+
+# Turns on zone signing (ServeSignature = SIGNING). Safe without a parent DS
+# record. To DISABLE later, remove the DS at the registrar first, wait the TTL,
+# then disable signing — otherwise resolvers that cached the DS will fail.
+resource "aws_route53_hosted_zone_dnssec" "this" {
+  count          = var.manage_dns ? 1 : 0
+  hosted_zone_id = data.aws_route53_zone.website[0].zone_id
+  depends_on     = [aws_route53_key_signing_key.this]
+}
+
 # Explicit, customer-CMK-encrypted log group for the compliance Lambda (POAM-018)
 # with an explicit Moderate retention. Lambda would otherwise auto-create this
 # group unencrypted; it already exists, so the deploy imports it before apply.
