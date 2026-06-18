@@ -491,6 +491,21 @@ jobs:
           echo "No existing DNSSEC KSK found - will be created"
         fi
 
+        # Import the access-log bucket if it exists (Task 7, POAM-005). Ephemeral
+        # state: the bucket would otherwise be recreated each run (and fail as a
+        # name collision), so adopt it when present.
+        if aws s3api head-bucket --bucket samaydlette-com-logs >/dev/null 2>&1; then
+          if ! terraform state show aws_s3_bucket.logs >/dev/null 2>&1; then
+            echo "Importing access-log bucket..."
+            terraform import aws_s3_bucket.logs samaydlette-com-logs
+            echo "✅ access-log bucket imported"
+          else
+            echo "Access-log bucket already in Terraform state"
+          fi
+        else
+          echo "No existing access-log bucket found - will be created"
+        fi
+
         # Import the compliance Lambda's log group if it exists (auto-created by
         # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
         # Must precede the Lambda import since the function depends_on it.

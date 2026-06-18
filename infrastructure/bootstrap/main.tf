@@ -289,6 +289,34 @@ resource "aws_iam_role_policy" "dnssec_management" {
   policy = data.aws_iam_policy_document.dnssec_management.json
 }
 
+# Task 7 (POAM-005): permissions to create and configure the access-log bucket
+# and to turn on server access logging for the website bucket. Scoped to those
+# two buckets.
+data "aws_iam_policy_document" "log_bucket_management" {
+  statement {
+    sid    = "ManageLogBucket"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket", "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
+      "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning", "s3:PutLifecycleConfiguration",
+      "s3:PutBucketPolicy", "s3:PutBucketTagging", "s3:PutBucketLogging",
+      "s3:GetBucketPublicAccessBlock", "s3:GetBucketOwnershipControls", "s3:GetEncryptionConfiguration",
+      "s3:GetBucketVersioning", "s3:GetLifecycleConfiguration", "s3:GetBucketPolicy",
+      "s3:GetBucketTagging", "s3:GetBucketLogging", "s3:GetBucketAcl", "s3:ListBucket",
+    ]
+    resources = [
+      "arn:aws:s3:::${local.domain_dashed}-logs",
+      "arn:aws:s3:::${var.domain_name}", # PutBucketLogging targets the website bucket
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "log_bucket_management" {
+  name   = "log-bucket-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.log_bucket_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."

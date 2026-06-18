@@ -149,11 +149,12 @@ POAM_ITEMS = [
     {
         "id": "POAM-005", "controls": ["au-2", "au-3"],
         "title": "S3 access logging not enabled",
-        "description": "CloudTrail covers the audit need account-wide. CloudFront access logs were similarly excluded for cost.",
+        "description": "Closed under Task 7 (2026-06-18): the website bucket now writes S3 server access logs to a dedicated locked-down log bucket (samaydlette-com-logs), authorized by a bucket policy scoped to the S3 log-delivery service from this account/source bucket. The global CKV_AWS_18 suppression was removed; the check passes on its own. CloudFront access logging is enabled out-of-band to the same bucket (C-3).",
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_18",
         "asset_identifiers": ["aws-s3-bucket::website-prod"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status_date": "2026-06-18",
+        "status": "closed", "category": "closed",
     },
     {
         "id": "POAM-006", "controls": ["si-12"],
