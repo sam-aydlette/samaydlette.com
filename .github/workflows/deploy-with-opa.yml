@@ -668,6 +668,8 @@ jobs:
           import_silk 'aws_iam_role_policy.silk_reeling[0]' 'samaydlette-com-silk-reeling-role:samaydlette-com-silk-reeling-policy'
         aws logs describe-log-groups --log-group-name-prefix /aws/lambda/samaydlette-com-silk-reeling --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q silk-reeling && \
           import_silk 'aws_cloudwatch_log_group.silk_reeling[0]' '/aws/lambda/samaydlette-com-silk-reeling'
+        aws logs describe-log-groups --log-group-name-prefix /aws/apigateway/samaydlette-com-silk-reeling --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q silk-reeling && \
+          import_silk 'aws_cloudwatch_log_group.silk_apigw[0]' '/aws/apigateway/samaydlette-com-silk-reeling'
         aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-basic-auth >/dev/null 2>&1 && \
           import_silk 'aws_secretsmanager_secret.silk_basic_auth[0]' 'samaydlette-com-silk-reeling-basic-auth'
         aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-anthropic-api-key >/dev/null 2>&1 && \

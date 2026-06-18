@@ -161,6 +161,7 @@ locals {
 # Manage the compliance Lambda + route53 query log groups (tags, retention, KMS
 # association). Scoped to exactly those two log-group ARNs — least privilege.
 data "aws_iam_policy_document" "compliance_logs" {
+  # checkov:skip=CKV_AWS_356:logs:PutResourcePolicy/DescribeResourcePolicies are account-level actions that do not support resource-level scoping; the log-group management statement is ARN-scoped. Documented exception.
   statement {
     effect = "Allow"
     actions = [
@@ -180,11 +181,22 @@ data "aws_iam_policy_document" "compliance_logs" {
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-opa-compliance*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-silk-reeling*",
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/${local.domain_dashed}-silk-reeling*",
     ]
+  }
+  statement {
+    # API Gateway access logging needs an account log-resource-policy granting the
+    # logs delivery service. These actions are account-level and do not support
+    # resource scoping.
+    sid       = "ManageApiGwLogResourcePolicy"
+    effect    = "Allow"
+    actions   = ["logs:PutResourcePolicy", "logs:DeleteResourcePolicy", "logs:DescribeResourcePolicies"]
+    resources = ["*"]
   }
 }
 
 resource "aws_iam_role_policy" "compliance_logs" {
+  # checkov:skip=CKV_AWS_356:logs:PutResourcePolicy is account-level and cannot be resource-scoped; log-group actions are ARN-scoped. Documented exception.
   name   = "compliance-logs-management"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.compliance_logs.json

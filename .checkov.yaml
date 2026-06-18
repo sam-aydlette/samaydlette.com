@@ -58,8 +58,8 @@ skip-check:
   # POAM-015 — Lambda zip not signed via AWS Signer (SI-7, SA-12). Source-level Sigstore signing in place. Risk-adjusted to Low.
   - CKV_AWS_272
 
-  # POAM-017 — CloudWatch log retention < 1 year (AU-11). 7-day retention; operational debug logs only, no PII.
-  - CKV_AWS_338
+  # POAM-017 CLOSED (Task 7) — every log group now has 365-day retention (AU-11);
+  # CKV_AWS_338 passes on its own, so the skip is removed.
 
   # POAM-018 CLOSED (Task 6) — every CloudWatch log group is now encrypted with a
   # customer-managed CMK (compliance Lambda + route53 query logs → at_rest CMK;
@@ -79,8 +79,6 @@ skip-check:
   # without valid credentials. Risk-accepted.
   - CKV_AWS_309
 
-  # POAM-024 — API Gateway HTTP API access logging not enabled (AU-2, AU-3).
-  # HTTP API access logs require a CloudWatch Logs delivery resource-policy; the
-  # Lambda's own execution log group plus CloudFront access logs provide request
-  # coverage in the interim. Planned enhancement; risk-adjusted to Low.
-  - CKV_AWS_76
+  # POAM-024 CLOSED (Task 7) — the HTTP API stage now emits access logs to a
+  # CMK-encrypted CloudWatch log group (with the required delivery resource
+  # policy); CKV_AWS_76 passes on its own, so the skip is removed.

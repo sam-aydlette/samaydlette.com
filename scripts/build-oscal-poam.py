@@ -249,11 +249,12 @@ POAM_ITEMS = [
     {
         "id": "POAM-017", "controls": ["au-11"],
         "title": "CloudWatch log retention shorter than 1 year (7-day retention)",
-        "description": "7-day CloudWatch log retention is intentional. Logs are operational debug content, contain no PII, and have no security-correlation requirement that depends on >7-day retention for a sole-operator system. Anything older than a week is not actionable for IR. Cost-driven; deliberate scope decision documented in AU-1 policy.",
+        "description": "Closed under Task 7 (2026-06-18): every CloudWatch log group now has 365-day retention (AU-11). The route53 query-log and silk-reeling Lambda groups were raised from 7 days; the compliance group was already 365 (Task 6). The global CKV_AWS_338 Checkov suppression was removed; the check passes on its own.",
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_338",
         "asset_identifiers": ["aws-cloudwatch-log-group::route53-query-log", "aws-cloudwatch-log-group::lambda-execution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status_date": "2026-06-18",
+        "status": "closed", "category": "closed",
     },
     {
         "id": "POAM-018", "controls": ["sc-28"],
