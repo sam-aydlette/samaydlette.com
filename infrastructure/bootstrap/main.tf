@@ -185,12 +185,17 @@ data "aws_iam_policy_document" "compliance_logs" {
     ]
   }
   statement {
-    # API Gateway access logging needs an account log-resource-policy granting the
-    # logs delivery service. These actions are account-level and do not support
-    # resource scoping.
-    sid       = "ManageApiGwLogResourcePolicy"
-    effect    = "Allow"
-    actions   = ["logs:PutResourcePolicy", "logs:DeleteResourcePolicy", "logs:DescribeResourcePolicies"]
+    # HTTP API (and CloudFront) access logging deliver through the CloudWatch Logs
+    # vended-logs path, so the deploy role needs the log-resource-policy + the
+    # log-delivery actions. All are account-level and do not support resource
+    # scoping.
+    sid    = "ManageVendedLogDelivery"
+    effect = "Allow"
+    actions = [
+      "logs:PutResourcePolicy", "logs:DeleteResourcePolicy", "logs:DescribeResourcePolicies",
+      "logs:CreateLogDelivery", "logs:GetLogDelivery", "logs:UpdateLogDelivery",
+      "logs:DeleteLogDelivery", "logs:ListLogDeliveries",
+    ]
     resources = ["*"]
   }
 }
