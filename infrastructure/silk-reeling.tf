@@ -117,14 +117,8 @@ resource "aws_kms_alias" "silk_reeling" {
 # -----------------------------------------------------------------------------
 # Secrets (containers only; values set out-of-band — see header).
 # -----------------------------------------------------------------------------
-resource "aws_secretsmanager_secret" "silk_basic_auth" {
-  count       = local.silk_create
-  name        = "${local.silk_name}-basic-auth"
-  description = "Operator-set HTTP Basic Auth credential (user:pass) gating the app"
-  kms_key_id  = aws_kms_key.silk_reeling[0].arn
-
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-basic-auth" })
-}
+# (The HTTP Basic Auth secret was removed in Task 3 — access control is now
+# Cognito, enforced by the API Gateway JWT authorizer + app-layer validation.)
 
 resource "aws_secretsmanager_secret" "silk_anthropic" {
   count       = local.silk_create
@@ -177,13 +171,11 @@ resource "aws_iam_role_policy" "silk_reeling" {
         Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${local.silk_name}:*"
       },
       {
-        # Read ONLY the two app secrets.
-        Effect = "Allow"
-        Action = ["secretsmanager:GetSecretValue"]
-        Resource = [
-          aws_secretsmanager_secret.silk_basic_auth[0].arn,
-          aws_secretsmanager_secret.silk_anthropic[0].arn,
-        ]
+        # Read ONLY the Anthropic API-key secret (the basic-auth secret was
+        # removed in Task 3; auth is now Cognito).
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [aws_secretsmanager_secret.silk_anthropic[0].arn]
       },
       {
         # Decrypt those secrets with the app CMK only.
@@ -239,11 +231,15 @@ resource "aws_lambda_function" "silk_reeling" {
   environment {
     variables = {
       # Non-sensitive config only — secret ARNs, never values (POAM-011).
-      SRM_BASIC_AUTH_SECRET_ARN = aws_secretsmanager_secret.silk_basic_auth[0].arn
-      SRM_ANTHROPIC_SECRET_ARN  = aws_secretsmanager_secret.silk_anthropic[0].arn
-      SRM_ALLOWED_ORIGIN        = "https://${var.domain_name}"
+      SRM_ANTHROPIC_SECRET_ARN = aws_secretsmanager_secret.silk_anthropic[0].arn
+      SRM_ALLOWED_ORIGIN       = "https://${var.domain_name}"
+      # Cognito for app-layer JWT validation (Task 3). The API Gateway JWT
+      # authorizer is the boundary control; the app validates too so it stays
+      # standalone-deployable.
+      SRM_COGNITO_ISSUER    = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.silk_reeling[0].id}"
+      SRM_COGNITO_CLIENT_ID = aws_cognito_user_pool_client.silk_reeling[0].id
       # Built SPA bundled into the Lambda package at /var/task/spa (see the CI
-      # packaging step). The app serves it from "/" behind the Basic Auth gate.
+      # packaging step). The app serves it from "/"; /api/* is gated.
       SRM_SPA_DIR = "/var/task/spa"
     }
   }
@@ -281,11 +277,38 @@ resource "aws_apigatewayv2_integration" "silk_reeling" {
   payload_format_version = "2.0"
 }
 
+# Catch-all route → serves the SPA (and the OAuth callback at /). No authorizer,
+# so the login page can load.
 resource "aws_apigatewayv2_route" "silk_reeling" {
   count     = local.silk_create
   api_id    = aws_apigatewayv2_api.silk_reeling[0].id
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.silk_reeling[0].id}"
+}
+
+# Cognito JWT authorizer (POAM-022). For Cognito access tokens the authorizer
+# matches the configured audience against the token's client_id.
+resource "aws_apigatewayv2_authorizer" "silk_reeling" {
+  count            = local.silk_create
+  api_id           = aws_apigatewayv2_api.silk_reeling[0].id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+  name             = "${local.silk_name}-cognito"
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.silk_reeling[0].id]
+    issuer   = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.silk_reeling[0].id}"
+  }
+}
+
+# The API routes (/api/*) require a valid Cognito JWT at the gateway (POAM-022).
+resource "aws_apigatewayv2_route" "silk_reeling_api" {
+  count              = local.silk_create
+  api_id             = aws_apigatewayv2_api.silk_reeling[0].id
+  route_key          = "ANY /api/{proxy+}"
+  target             = "integrations/${aws_apigatewayv2_integration.silk_reeling[0].id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.silk_reeling[0].id
 }
 
 # Access-log group for the HTTP API stage (POAM-024). CMK-encrypted + 1-year

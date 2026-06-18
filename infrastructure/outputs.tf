@@ -245,9 +245,8 @@ output "silk_reeling_api_endpoint" {
 #   aws secretsmanager put-secret-value --secret-id <arn> --secret-string 'user:pass'
 #   aws secretsmanager put-secret-value --secret-id <arn> --secret-string '<anthropic-key>'
 output "silk_reeling_secret_arns" {
-  description = "Secret ARNs to populate out-of-band (basic-auth + Anthropic key)"
+  description = "Secret ARNs to populate out-of-band (Anthropic key)"
   value = var.create_silk_reeling ? {
-    basic_auth    = aws_secretsmanager_secret.silk_basic_auth[0].arn
     anthropic_key = aws_secretsmanager_secret.silk_anthropic[0].arn
   } : {}
 }

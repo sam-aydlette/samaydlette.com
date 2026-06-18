@@ -609,8 +609,16 @@ jobs:
         rm -rf _silk_src _pkg silk-reeling.zip
         git clone --depth 1 --branch "$SILK_REELING_REF" \
           "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" _silk_src
+        # Resolve the Cognito config (provisioned in Task 3 PR-1) so the SPA's
+        # Hosted-UI login flow is wired at build time.
+        SILK_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)
+        SILK_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$SILK_POOL_ID" --query "UserPoolClients[?ClientName=='samaydlette-com-silk-reeling-spa'].ClientId | [0]" --output text 2>/dev/null || true)
         ( cd _silk_src/frontend && npm ci && \
-          VITE_API_BASE=/silk-reeling npm run build -- --base=/silk-reeling/ )
+          VITE_API_BASE=/silk-reeling \
+          VITE_COGNITO_DOMAIN="samaydlette-com-silk-reeling.auth.us-east-2.amazoncognito.com" \
+          VITE_COGNITO_CLIENT_ID="$SILK_CLIENT_ID" \
+          VITE_COGNITO_REDIRECT_URI="https://samaydlette.com/silk-reeling/" \
+          npm run build -- --base=/silk-reeling/ )
         mkdir -p _pkg
         # Target the Lambda runtime (python3.13 / manylinux x86_64) explicitly so
         # numpy/pydantic-core C-extension wheels match the runtime ABI regardless
@@ -700,8 +708,6 @@ jobs:
           import_silk 'aws_cloudwatch_log_group.silk_reeling[0]' '/aws/lambda/samaydlette-com-silk-reeling'
         aws logs describe-log-groups --log-group-name-prefix /aws/apigateway/samaydlette-com-silk-reeling --query 'logGroups[0].logGroupName' --output text 2>/dev/null | grep -q silk-reeling && \
           import_silk 'aws_cloudwatch_log_group.silk_apigw[0]' '/aws/apigateway/samaydlette-com-silk-reeling'
-        aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-basic-auth >/dev/null 2>&1 && \
-          import_silk 'aws_secretsmanager_secret.silk_basic_auth[0]' 'samaydlette-com-silk-reeling-basic-auth'
         aws secretsmanager describe-secret --secret-id samaydlette-com-silk-reeling-anthropic-api-key >/dev/null 2>&1 && \
           import_silk 'aws_secretsmanager_secret.silk_anthropic[0]' 'samaydlette-com-silk-reeling-anthropic-api-key'
         aws lambda get-function --function-name samaydlette-com-silk-reeling >/dev/null 2>&1 && \
@@ -724,6 +730,13 @@ jobs:
             import_silk 'aws_apigatewayv2_route.silk_reeling[0]' "$SILK_API_ID/$SILK_ROUTE_ID"
           aws apigatewayv2 get-stage --api-id "$SILK_API_ID" --stage-name '$default' >/dev/null 2>&1 && \
             import_silk 'aws_apigatewayv2_stage.silk_reeling[0]' "$SILK_API_ID/\$default"
+          # Cognito JWT authorizer + the /api route (Task 3).
+          SILK_AUTH_ID=$(aws apigatewayv2 get-authorizers --api-id "$SILK_API_ID" --query "Items[?Name=='samaydlette-com-silk-reeling-cognito'].AuthorizerId | [0]" --output text 2>/dev/null || true)
+          [ -n "$SILK_AUTH_ID" ] && [ "$SILK_AUTH_ID" != "None" ] && \
+            import_silk 'aws_apigatewayv2_authorizer.silk_reeling[0]' "$SILK_API_ID/$SILK_AUTH_ID"
+          SILK_API_ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$SILK_API_ID" --query "Items[?RouteKey=='ANY /api/{proxy+}'].RouteId | [0]" --output text 2>/dev/null || true)
+          [ -n "$SILK_API_ROUTE_ID" ] && [ "$SILK_API_ROUTE_ID" != "None" ] && \
+            import_silk 'aws_apigatewayv2_route.silk_reeling_api[0]' "$SILK_API_ID/$SILK_API_ROUTE_ID"
         fi
         aws lambda get-policy --function-name samaydlette-com-silk-reeling --query 'Policy' --output text 2>/dev/null | grep -q AllowApiGatewayInvoke && \
           import_silk 'aws_lambda_permission.silk_reeling_apigw[0]' 'samaydlette-com-silk-reeling/AllowApiGatewayInvoke'
@@ -748,25 +761,18 @@ jobs:
       run: terraform apply -auto-approve tfplan
 
     # -------------------------------------------------------------------------
-    # SEED SILK REELING SECRETS (out-of-band) — set the basic-auth credential and
-    # the Anthropic key into Secrets Manager from GitHub secrets, so plaintext
-    # never lands in Terraform state. Skips quietly if a secret isn't configured.
+    # SEED SILK REELING SECRETS (out-of-band) — set the Anthropic key into Secrets
+    # Manager from a GitHub secret, so plaintext never lands in Terraform state.
+    # (The basic-auth credential was removed in Task 3 — auth is now Cognito.)
     # -------------------------------------------------------------------------
     - name: Seed Silk Reeling secrets
       working-directory: infrastructure
       env:
-        SILK_REELING_BASIC_AUTH: ${{ secrets.SILK_REELING_BASIC_AUTH }}
         SILK_REELING_ANTHROPIC_KEY: ${{ secrets.SILK_REELING_ANTHROPIC_KEY }}
       run: |
         set -euo pipefail
         ARNS=$(terraform output -json silk_reeling_secret_arns)
-        BASIC_ARN=$(echo "$ARNS" | jq -r '.basic_auth // empty')
         ANTH_ARN=$(echo "$ARNS" | jq -r '.anthropic_key // empty')
-        if [ -n "${SILK_REELING_BASIC_AUTH:-}" ] && [ -n "$BASIC_ARN" ]; then
-          aws secretsmanager put-secret-value --secret-id "$BASIC_ARN" \
-            --secret-string "$SILK_REELING_BASIC_AUTH" >/dev/null
-          echo "seeded basic-auth credential"
-        fi
         if [ -n "${SILK_REELING_ANTHROPIC_KEY:-}" ] && [ -n "$ANTH_ARN" ]; then
           aws secretsmanager put-secret-value --secret-id "$ANTH_ARN" \
             --secret-string "$SILK_REELING_ANTHROPIC_KEY" >/dev/null
