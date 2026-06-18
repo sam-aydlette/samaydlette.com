@@ -228,7 +228,6 @@ resource "aws_iam_role_policy" "compliance_kms" {
 # key-signing key and enable/disable zone signing. KMS create/manage for the KSK
 # is already covered by the role's account-wide kms:CreateKey/PutKeyPolicy grant.
 data "aws_iam_policy_document" "dnssec_management" {
-  # checkov:skip=CKV_AWS_356:route53:GetChange has no scopable resource; the zone-scoped DNSSEC actions are restricted to hostedzone/* (this account has a single zone). Documented exception.
   statement {
     sid    = "ManageZoneDNSSEC"
     effect = "Allow"
@@ -244,15 +243,16 @@ data "aws_iam_policy_document" "dnssec_management" {
     resources = ["arn:aws:route53:::hostedzone/*"]
   }
   statement {
+    # Provider polls change status after enabling/disabling signing.
+    # GetChange supports the change resource type, so scope it rather than "*".
     sid       = "ReadChangeStatus"
     effect    = "Allow"
     actions   = ["route53:GetChange"]
-    resources = ["*"]
+    resources = ["arn:aws:route53:::change/*"]
   }
 }
 
 resource "aws_iam_role_policy" "dnssec_management" {
-  # checkov:skip=CKV_AWS_356:route53:GetChange cannot be resource-scoped; zone DNSSEC actions scoped to hostedzone/*. Documented exception.
   name   = "dnssec-management"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.dnssec_management.json
