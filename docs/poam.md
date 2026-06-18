@@ -26,7 +26,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Configuration Findings (POAM-003 through POAM-018)
 
-Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except POAM-011 and POAM-018, which were closed under Task 6** (see closure note below the table).
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except POAM-011 and POAM-018 (closed under Task 6) and POAM-017 and POAM-024 (closed under Task 7)** (see closure notes below the table).
 
 The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
@@ -41,14 +41,14 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-012 | SC-5 | Lambda concurrent execution limit not set | Checkov | CKV_AWS_115 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_272 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Risk-accepted |
+| POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 7) |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 6) |
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-022 | IA-2, AC-3 | API Gateway HTTP API route specifies no authorizer (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_309 | aws-apigatewayv2::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-023 | AC-7, SC-5 | No brute-force / rate-limit protection on the Basic Auth endpoint (no lockout, no WAF) | Security review | security-review.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Risk-accepted |
-| POAM-024 | AU-2, AU-3 | API Gateway HTTP API access logging not enabled | Checkov | CKV_AWS_76 | aws-apigatewayv2::silk-reeling | N1 | Low | — | No | Risk-accepted |
+| POAM-024 | AU-2, AU-3 | API Gateway HTTP API access logging not enabled | Checkov | CKV_AWS_76 | aws-apigatewayv2::silk-reeling | N1 | Low | — | No | Closed (Task 7) |
 
 **POAM-011 and POAM-018 closed (Task 6, 2026-06-16) — encryption-consistency remediation.** Both were risk-accepted on the rationale that the contents were non-sensitive and AWS-default encryption sufficed. Rather than carry them as standing acceptances, the system was brought to a single at-rest standard: *every* Lambda environment block and *every* CloudWatch log group is now encrypted with a customer-managed CMK. Specifically — the compliance Lambda's environment and log group use a new `aws_kms_key.at_rest` CMK; the route53 query-log group (when enabled) uses the same CMK; and the silk-reeling Lambda's environment uses the existing `aws_kms_key.silk_reeling` CMK (its role already held `kms:Decrypt` on that key). With no Lambda env or log group left unencrypted, the global Checkov suppressions for `CKV_AWS_173` and `CKV_AWS_158` were **removed** from `.checkov.yaml` — the checks now pass on their own, so the remediation is enforced by the gate rather than asserted. The website S3 bucket remains on SSE-S3 (AES-256, AWS-managed keys) by deliberate decision: it holds only public static content and persists no user data, so a customer CMK there would add cost and key-management burden without protecting anything sensitive (the app's pose extraction is client-side; nothing is stored at rest).
 
@@ -130,14 +130,16 @@ rate-based rule to the CloudFront distribution, or add an API Gateway usage-plan
 throttle; deferred on cost (~$120/yr WAF, consistent with POAM-007). Applies only
 while the app is deployed.
 
-**POAM-024 (API Gateway access logging not enabled):** The HTTP API stage does not
-emit access logs (Checkov CKV_AWS_76). HTTP API access logging requires a CloudWatch
-Logs delivery resource-policy that this deployment does not yet provision; the
-Lambda's own execution log group (`/aws/lambda/samaydlette-com-silk-reeling`) and
-CloudFront access logs provide request-level coverage in the interim. Risk-adjusted
-Low (operational observability, not an access-control gap). **Remediation:** add the
-delivery resource-policy and a stage `access_log_settings` block. Applies only while
-the app is deployed.
+**POAM-017 and POAM-024 closed (Task 7) — audit logging + retention.** *POAM-017:*
+every CloudWatch log group now has 365-day retention (AU-11) — the route53 query-log
+and silk-reeling Lambda groups were raised from 7 days; the compliance group was
+already 365 (Task 6). *POAM-024:* the silk-reeling HTTP API stage now emits one JSON
+access-log line per request to a new CMK-encrypted, 365-day log group
+(`/aws/apigateway/samaydlette-com-silk-reeling`), authorized by a scoped CloudWatch
+Logs delivery resource policy. With these in place the global `CKV_AWS_338` and
+`CKV_AWS_76` suppressions were **removed** from `.checkov.yaml`, so both checks now
+pass on their own. (Website S3 server access logging, POAM-005, and CloudFront access
+logging close separately under Task 7.)
 
 **Standard fields for all of POAM-003 through POAM-018:**
 

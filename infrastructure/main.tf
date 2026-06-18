@@ -242,7 +242,7 @@ resource "aws_s3_bucket_policy" "website" {
 resource "aws_cloudwatch_log_group" "route53_query_log" {
   count             = var.manage_dns && var.enable_route53_logging ? 1 : 0
   name              = "/aws/route53/${var.domain_name}"
-  retention_in_days = 7
+  retention_in_days = 365                     # 1-year retention (AU-11, POAM-017)
   kms_key_id        = aws_kms_key.at_rest.arn # customer-CMK at rest (POAM-018)
 
   tags = {
