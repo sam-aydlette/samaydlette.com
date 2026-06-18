@@ -26,13 +26,13 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Configuration Findings (POAM-003 through POAM-018)
 
-Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except POAM-011 and POAM-018 (closed under Task 6) and POAM-017 and POAM-024 (closed under Task 7)** (see closure notes below the table).
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except POAM-011 and POAM-018 (closed under Task 6) and POAM-005, POAM-017, and POAM-024 (closed under Task 7)** (see closure notes below the table).
 
 The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
 | POA&M ID | Controls | Weakness Name | Detector Source | Source Identifier | Asset Identifier | PAIN | Original Risk | Adj. Risk | Risk Adj. | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| POAM-005 | AU-2, AU-3 | S3 access logging not enabled | Checkov | CKV_AWS_18 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-005 | AU-2, AU-3 | S3 access logging not enabled | Checkov | CKV_AWS_18 | aws-s3-bucket::website-prod | N1 | Low | — | No | Closed (Task 7) |
 | POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
 | POAM-007 | SC-7, SI-4 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | aws-cloudfront-distribution | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
@@ -138,8 +138,17 @@ access-log line per request to a new CMK-encrypted, 365-day log group
 (`/aws/apigateway/samaydlette-com-silk-reeling`), authorized by a scoped CloudWatch
 Logs delivery resource policy. With these in place the global `CKV_AWS_338` and
 `CKV_AWS_76` suppressions were **removed** from `.checkov.yaml`, so both checks now
-pass on their own. (Website S3 server access logging, POAM-005, and CloudFront access
-logging close separately under Task 7.)
+pass on their own.
+
+**POAM-005 closed (Task 7) — S3 server access logging.** The website bucket now
+writes S3 server access logs to a dedicated, locked-down log bucket
+(`samaydlette-com-logs`: public access blocked, ownership-enforced/ACLs disabled,
+encrypted, ~13-month lifecycle), authorized by a bucket policy that grants the S3
+log-delivery service write access to the `s3-access/` prefix from this account and
+source bucket only. The global `CKV_AWS_18` suppression is **removed**; the log
+target carries a narrow inline skip (it cannot log to itself). CloudFront access
+logging (C-3, the visitor-request audit) is enabled out-of-band to the same bucket
+under the `cloudfront/` prefix.
 
 **Standard fields for all of POAM-003 through POAM-018:**
 

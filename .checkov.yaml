@@ -24,8 +24,10 @@ skip-check:
   # POAM-004 — S3 event notifications not configured (AU-2). No event-driven workflow in scope.
   - CKV_AWS_23
 
-  # POAM-005 — S3 access logging not enabled (AU-2, AU-3). CloudTrail covers the audit need.
-  - CKV_AWS_18
+  # POAM-005 CLOSED (Task 7) — the website bucket now has S3 server access logging
+  # to a dedicated log bucket; CKV_AWS_18 passes there. The log bucket itself
+  # carries a narrow inline skip (a log target can't log to itself), so the global
+  # skip is removed.
 
   # POAM-006 — S3 lifecycle configuration not defined (SI-12). Static website assets have no expiration.
   - CKV_AWS_300

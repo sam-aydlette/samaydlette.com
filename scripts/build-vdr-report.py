@@ -57,7 +57,6 @@ from pathlib import Path
 # POAM entry will surface in the risk_accepted output without a poam_ref;
 # the policy is to back every suppression with a POAM entry.
 POAM_BY_CHECK_ID = {
-    "CKV_AWS_18":  "POAM-005",
     "CKV_AWS_300": "POAM-006",
     "CKV_AWS_68":  "POAM-007",
     "CKV_AWS_86":  "POAM-009",
@@ -78,7 +77,6 @@ POAM_BY_CHECK_ID = {
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
 # auditor would see in the POA&M.
 SUPPRESSION_EVALUATION = {
-    "CKV_AWS_18":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_300": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_68":  {"pain": "N2", "irv": True,  "lev": False},
     "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
@@ -93,7 +91,6 @@ SUPPRESSION_EVALUATION = {
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
 # corresponding POA&M items. Used to populate VDR-RPT-AVI explanation field.
 SUPPRESSION_RATIONALE = {
-    "CKV_AWS_18":  "CloudTrail covers the audit need account-wide. CloudFront access logs were similarly excluded for cost.",
     "CKV_AWS_300": "Static website assets have no expiration policy; lifecycle rules are not applicable.",
     "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
