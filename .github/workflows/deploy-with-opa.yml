@@ -727,6 +727,16 @@ jobs:
         fi
         aws lambda get-policy --function-name samaydlette-com-silk-reeling --query 'Policy' --output text 2>/dev/null | grep -q AllowApiGatewayInvoke && \
           import_silk 'aws_lambda_permission.silk_reeling_apigw[0]' 'samaydlette-com-silk-reeling/AllowApiGatewayInvoke'
+        # Cognito (Task 3) — ephemeral state; adopt the pool/client/domain if present.
+        SILK_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)
+        if [ -n "$SILK_POOL_ID" ] && [ "$SILK_POOL_ID" != "None" ]; then
+          import_silk 'aws_cognito_user_pool.silk_reeling[0]' "$SILK_POOL_ID"
+          SILK_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$SILK_POOL_ID" --query "UserPoolClients[?ClientName=='samaydlette-com-silk-reeling-spa'].ClientId | [0]" --output text 2>/dev/null || true)
+          [ -n "$SILK_CLIENT_ID" ] && [ "$SILK_CLIENT_ID" != "None" ] && \
+            import_silk 'aws_cognito_user_pool_client.silk_reeling[0]' "${SILK_POOL_ID}/${SILK_CLIENT_ID}"
+        fi
+        aws cognito-idp describe-user-pool-domain --domain samaydlette-com-silk-reeling --query 'DomainDescription.UserPoolId' --output text 2>/dev/null | grep -q . && \
+          import_silk 'aws_cognito_user_pool_domain.silk_reeling[0]' 'samaydlette-com-silk-reeling'
         echo "Silk Reeling import step complete"
 
     - name: Generate fresh Terraform plan

@@ -81,6 +81,28 @@ output "dnssec_ksk_details" {
   } : null
 }
 
+# Cognito identity provider for the Silk Reeling app (Task 3). Feeds the SPA
+# build (VITE_COGNITO_*) and the Lambda's app-layer JWT validation.
+output "cognito_user_pool_id" {
+  description = "Silk Reeling Cognito user pool id"
+  value       = var.create_silk_reeling ? aws_cognito_user_pool.silk_reeling[0].id : "Not created"
+}
+
+output "cognito_client_id" {
+  description = "Silk Reeling Cognito app client id (public SPA client)"
+  value       = var.create_silk_reeling ? aws_cognito_user_pool_client.silk_reeling[0].id : "Not created"
+}
+
+output "cognito_hosted_ui_domain" {
+  description = "Cognito Hosted UI domain prefix (login page)"
+  value       = var.create_silk_reeling ? "${aws_cognito_user_pool_domain.silk_reeling[0].domain}.auth.${var.aws_region}.amazoncognito.com" : "Not created"
+}
+
+output "cognito_issuer" {
+  description = "Cognito JWT issuer URL (for the API Gateway authorizer + app-layer validation)"
+  value       = var.create_silk_reeling ? "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.silk_reeling[0].id}" : "Not created"
+}
+
 # The SSL certificate that secures my website
 output "ssl_certificate_arn" {
   description = "ARN of the existing SSL certificate"

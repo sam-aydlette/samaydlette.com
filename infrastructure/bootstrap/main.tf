@@ -339,6 +339,44 @@ resource "aws_iam_role_policy" "compliance_dlq" {
   policy = data.aws_iam_policy_document.compliance_dlq.json
 }
 
+# Task 3 (POAM-021/022/023): manage the Silk Reeling Cognito user pool, client,
+# and Hosted UI domain.
+data "aws_iam_policy_document" "cognito_management" {
+  # checkov:skip=CKV_AWS_356:cognito-idp:CreateUserPool/CreateUserPoolDomain/DescribeUserPoolDomain are account-level (a new pool/global domain has no pre-existing ARN); the pool/client management actions are scoped to userpool/*. Documented exception.
+  statement {
+    sid    = "ManageUserPool"
+    effect = "Allow"
+    actions = [
+      "cognito-idp:DescribeUserPool", "cognito-idp:UpdateUserPool", "cognito-idp:DeleteUserPool",
+      "cognito-idp:SetUserPoolMfaConfig", "cognito-idp:GetUserPoolMfaConfig",
+      "cognito-idp:CreateUserPoolClient", "cognito-idp:DescribeUserPoolClient",
+      "cognito-idp:UpdateUserPoolClient", "cognito-idp:DeleteUserPoolClient",
+      "cognito-idp:ListUserPoolClients",
+      "cognito-idp:CreateUserPoolDomain", "cognito-idp:DeleteUserPoolDomain",
+      "cognito-idp:TagResource", "cognito-idp:UntagResource", "cognito-idp:ListTagsForResource",
+    ]
+    resources = ["arn:aws:cognito-idp:${var.aws_region}:${data.aws_caller_identity.current.account_id}:userpool/*"]
+  }
+  statement {
+    # Account-level (no pre-existing resource ARN) or global-domain actions.
+    sid    = "CreateAndDescribeGlobal"
+    effect = "Allow"
+    actions = [
+      "cognito-idp:CreateUserPool",
+      "cognito-idp:DescribeUserPoolDomain",
+      "cognito-idp:ListUserPools",
+    ]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "cognito_management" {
+  # checkov:skip=CKV_AWS_356:CreateUserPool + DescribeUserPoolDomain are account/global-level and cannot be resource-scoped; pool/client actions are scoped to userpool/*. Documented exception.
+  name   = "cognito-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.cognito_management.json
+}
+
 resource "aws_iam_role_policy" "log_bucket_management" {
   name   = "log-bucket-management"
   role   = aws_iam_role.deploy.id

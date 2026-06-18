@@ -325,6 +325,13 @@ resource "aws_apigatewayv2_stage" "silk_reeling" {
   name        = "$default"
   auto_deploy = true
 
+  # Rate limiting / brute-force protection (POAM-023, AC-7/SC-5). Sized for a
+  # single-operator app; bounds request floods at the managed edge (no WAF).
+  default_route_settings {
+    throttling_rate_limit  = 20
+    throttling_burst_limit = 10
+  }
+
   # Access logging (POAM-024): one JSON line per request to the CMK-encrypted
   # access-log group. depends_on the resource policy so the delivery service is
   # authorized before the stage starts emitting.
