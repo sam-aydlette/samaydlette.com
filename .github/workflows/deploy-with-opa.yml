@@ -468,6 +468,23 @@ jobs:
           echo "No existing runtime-signing CMK found - will be created"
         fi
 
+        # Import DNSSEC resources if they exist (Task 5 PR B, D-3). Ephemeral
+        # state: the KSK (us-east-1 KMS key), its alias, the Route 53 key-signing
+        # key, and the hosted-zone-dnssec association are adopted so they are not
+        # recreated each run. All are no-ops on the first deploy (created then).
+        if aws kms describe-key --region us-east-1 --key-id alias/samaydlette-com-dnssec-ksk >/dev/null 2>&1; then
+          DNSSEC_KEY_ID=$(aws kms describe-key --region us-east-1 --key-id alias/samaydlette-com-dnssec-ksk --query 'KeyMetadata.KeyId' --output text)
+          ZONE_ID=$(aws route53 list-hosted-zones-by-name --dns-name samaydlette.com --query 'HostedZones[0].Id' --output text | sed 's#/hostedzone/##')
+          echo "DNSSEC KSK exists ($DNSSEC_KEY_ID), zone $ZONE_ID"
+          terraform state show 'aws_kms_key.dnssec_ksk[0]' >/dev/null 2>&1 || terraform import 'aws_kms_key.dnssec_ksk[0]' "$DNSSEC_KEY_ID"
+          terraform state show 'aws_kms_alias.dnssec_ksk[0]' >/dev/null 2>&1 || terraform import 'aws_kms_alias.dnssec_ksk[0]' "alias/samaydlette-com-dnssec-ksk"
+          terraform state show 'aws_route53_key_signing_key.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_key_signing_key.this[0]' "${ZONE_ID},samaydlette_com_ksk"
+          terraform state show 'aws_route53_hosted_zone_dnssec.this[0]' >/dev/null 2>&1 || terraform import 'aws_route53_hosted_zone_dnssec.this[0]' "$ZONE_ID"
+          echo "✅ DNSSEC resources imported (where present)"
+        else
+          echo "No existing DNSSEC KSK found - will be created"
+        fi
+
         # Import the compliance Lambda's log group if it exists (auto-created by
         # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
         # Must precede the Lambda import since the function depends_on it.

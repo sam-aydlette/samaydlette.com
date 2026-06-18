@@ -224,6 +224,40 @@ resource "aws_iam_role_policy" "compliance_kms" {
   policy = data.aws_iam_policy_document.compliance_kms.json
 }
 
+# Route 53 DNSSEC management for the deploy role (Task 5 PR B / D-3): create the
+# key-signing key and enable/disable zone signing. KMS create/manage for the KSK
+# is already covered by the role's account-wide kms:CreateKey/PutKeyPolicy grant.
+data "aws_iam_policy_document" "dnssec_management" {
+  statement {
+    sid    = "ManageZoneDNSSEC"
+    effect = "Allow"
+    actions = [
+      "route53:CreateKeySigningKey",
+      "route53:DeleteKeySigningKey",
+      "route53:ActivateKeySigningKey",
+      "route53:DeactivateKeySigningKey",
+      "route53:GetDNSSEC",
+      "route53:EnableHostedZoneDNSSEC",
+      "route53:DisableHostedZoneDNSSEC",
+    ]
+    resources = ["arn:aws:route53:::hostedzone/*"]
+  }
+  statement {
+    # Provider polls change status after enabling/disabling signing.
+    # GetChange supports the change resource type, so scope it rather than "*".
+    sid       = "ReadChangeStatus"
+    effect    = "Allow"
+    actions   = ["route53:GetChange"]
+    resources = ["arn:aws:route53:::change/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "dnssec_management" {
+  name   = "dnssec-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.dnssec_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."
