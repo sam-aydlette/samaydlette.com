@@ -294,20 +294,25 @@ resource "aws_iam_role_policy" "dnssec_management" {
 # two buckets.
 data "aws_iam_policy_document" "log_bucket_management" {
   statement {
+    # Create + configure the log bucket. The aws_s3_bucket Read refreshes ~18
+    # bucket sub-configs (CORS, website, replication, object-lock, ...), so the
+    # read side uses s3:Get* scoped to this one bucket rather than enumerating
+    # every Get action (and risking a missed one). Writes are explicit.
     sid    = "ManageLogBucket"
     effect = "Allow"
     actions = [
-      "s3:CreateBucket", "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
+      "s3:CreateBucket", "s3:Get*", "s3:ListBucket",
+      "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
       "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning", "s3:PutLifecycleConfiguration",
-      "s3:PutBucketPolicy", "s3:PutBucketTagging", "s3:PutBucketLogging",
-      "s3:GetBucketPublicAccessBlock", "s3:GetBucketOwnershipControls", "s3:GetEncryptionConfiguration",
-      "s3:GetBucketVersioning", "s3:GetLifecycleConfiguration", "s3:GetBucketPolicy",
-      "s3:GetBucketTagging", "s3:GetBucketLogging", "s3:GetBucketAcl", "s3:ListBucket",
+      "s3:PutBucketPolicy", "s3:PutBucketTagging",
     ]
-    resources = [
-      "arn:aws:s3:::${local.domain_dashed}-logs",
-      "arn:aws:s3:::${var.domain_name}", # PutBucketLogging targets the website bucket
-    ]
+    resources = ["arn:aws:s3:::${local.domain_dashed}-logs"]
+  }
+  statement {
+    sid       = "WebsiteBucketLogging"
+    effect    = "Allow"
+    actions   = ["s3:PutBucketLogging", "s3:GetBucketLogging"]
+    resources = ["arn:aws:s3:::${var.domain_name}"]
   }
 }
 
