@@ -361,15 +361,16 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
       },
       {
-        # The runtime KSI emitter publishes its signal back to /.well-known/ on
-        # the same bucket. Scoped to that single key prefix so the Lambda
-        # cannot overwrite arbitrary site content.
+        # The runtime KSI emitter publishes its signal and signing public key back
+        # to /.well-known/ on the same bucket. Scoped to exactly those two keys so
+        # the Lambda cannot overwrite arbitrary site content.
         Effect = "Allow"
         Action = [
           "s3:PutObject"
         ]
         Resource = [
-          "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json"
+          "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json",
+          "${data.aws_s3_bucket.website.arn}/.well-known/runtime-signing-pubkey.pem"
         ]
       },
       {
