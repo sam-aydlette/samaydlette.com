@@ -26,21 +26,19 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Configuration Findings (POAM-003 through POAM-018)
 
-Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except POAM-011 and POAM-018 (closed under Task 6) and POAM-005, POAM-017, and POAM-024 (closed under Task 7)** (see closure notes below the table).
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); and POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register)** (closure notes below the table).
 
 The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
 | POA&M ID | Controls | Weakness Name | Detector Source | Source Identifier | Asset Identifier | PAIN | Original Risk | Adj. Risk | Risk Adj. | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | POAM-005 | AU-2, AU-3 | S3 access logging not enabled | Checkov | CKV_AWS_18 | aws-s3-bucket::website-prod | N1 | Low | — | No | Closed (Task 7) |
-| POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Risk-accepted |
+| POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Closed (Task 8b) |
 | POAM-007 | SC-7, SI-4 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | aws-cloudfront-distribution | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86 | aws-cloudfront-distribution | N1 | Low | — | No | Risk-accepted |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
-| POAM-012 | SC-5 | Lambda concurrent execution limit not set | Checkov | CKV_AWS_115 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
-| POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Risk-accepted |
-| POAM-015 | SI-7, SA-12 | Lambda zip not signed via AWS Signer | Checkov | CKV_AWS_272 | aws-lambda::compliance-monitor | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 7) |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 6) |
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
@@ -150,6 +148,24 @@ target carries a narrow inline skip (it cannot log to itself). CloudFront access
 logging (C-3, the visitor-request audit) is enabled out-of-band to the same bucket
 under the `cloudfront/` prefix.
 
+**POAM-006 and POAM-013 closed (Task 8b) — infra hygiene under Moderate.**
+*POAM-006:* the versioned website bucket now has a lifecycle configuration (abort
+incomplete multipart uploads after 7 days; expire non-current versions after 90
+days; current/live versions are never expired). *POAM-013:* the compliance Lambda
+now has an SQS dead-letter queue (`...-opa-compliance-dlq`, SSE-SQS, 14-day
+retention) via `dead_letter_config`, so a failed daily async run is captured for
+inspection (SI-4). The `CKV_AWS_300` and `CKV_AWS_116` suppressions are removed.
+
+**POAM-012 and POAM-015 reclassified as false positives (Task 8b).** On review
+under Moderate, neither is a real gap (see the False Positives register): *POAM-012*
+(reserved concurrency / SC-5) does not apply to a daily internal EventBridge
+function with no DoS exposure — SC-5 is met at the boundary, and the account is
+hard-capped at 10 concurrency, making reservation infeasible anyway; *POAM-015*
+(AWS Signer / SI-7, SA-12) flags the absence of one specific tool, but software
+integrity is met via the Sigstore source-signing chain plus the OIDC/GitOps chain
+of custody. Per the "POA&M only for real gaps" policy, both move to the register
+rather than being carried as risk acceptances.
+
 **Standard fields for all of POAM-003 through POAM-018:**
 
 - **Point of Contact:** Sam Aydlette (operator)
@@ -253,6 +269,8 @@ acceptance) and carry no `poam_ref` in the VDR.
 | POAM-004 | AU-2 | CKV_AWS_23 (S3 event notifications) | S3 event notifications are an integration feature, not an audit control; AU-2 does not require them. | S3 server access logging (Task 7) + account-wide CloudTrail (SSP AU-2 narrative). |
 | POAM-008 | SI-3 | CKV_AWS_174 (Log4j-specific WAF rule) | No Java/Log4j anywhere in the stack (Lambda is Node.js/Python; site is static), and WAF is intentionally declined (Decision 3), so the rule cannot apply. | Dependency scanning (Grype + Dependabot) over the controlled execution surface (SSP SI-3 narrative). |
 | POAM-014 | AU-2 | CKV_AWS_50 (Lambda X-Ray tracing) | X-Ray is performance/latency observability, not a security audit control; AU-2 coverage does not depend on it. | CloudWatch Logs + CloudTrail (SSP AU-2 narrative). |
+| POAM-012 | SC-5 | CKV_AWS_115 (Lambda reserved concurrency) | Reserved concurrency manages concurrency contention/DoS; the compliance monitor is a daily EventBridge-triggered internal function with no DoS exposure or contention. SC-5 does not depend on it here (and the account is hard-capped at 10 concurrency, so reservation is infeasible regardless). | SC-5 at the system boundary: CloudFront + API Gateway throttling + AWS Shield Standard (SSP SC-5 narrative). |
+| POAM-015 | SI-7, SA-12 | CKV_AWS_272 (Lambda AWS Signer) | The check flags the absence of one specific signing tool (AWS Signer); no control mandates that tool. Software/supply-chain integrity is established by another mechanism. | Sigstore source-signing chain (deploy-time KSI signal Sigstore-signed, anchored in the public Rekor log; Wasm policy bytes verify against the canonical inventory hash) + the GitHub OIDC / GitOps chain of custody with no out-of-band code path (SSP SI-7/SA-12 narrative). |
 
 False positives are tracked separately so an assessor can see which scanner findings were investigated and dismissed with rationale, distinct from risk-accepted items (which are real weaknesses with documented acceptance).
 

@@ -309,11 +309,34 @@ data "aws_iam_policy_document" "log_bucket_management" {
     resources = ["arn:aws:s3:::${local.domain_dashed}-logs"]
   }
   statement {
-    sid       = "WebsiteBucketLogging"
-    effect    = "Allow"
-    actions   = ["s3:PutBucketLogging", "s3:GetBucketLogging"]
+    sid    = "WebsiteBucketConfig"
+    effect = "Allow"
+    actions = [
+      "s3:PutBucketLogging", "s3:GetBucketLogging",
+      "s3:PutLifecycleConfiguration", "s3:GetLifecycleConfiguration",
+    ]
     resources = ["arn:aws:s3:::${var.domain_name}"]
   }
+}
+
+# Task 8b (POAM-013): manage the compliance Lambda's dead-letter queue.
+data "aws_iam_policy_document" "compliance_dlq" {
+  statement {
+    sid    = "ManageComplianceDlq"
+    effect = "Allow"
+    actions = [
+      "sqs:CreateQueue", "sqs:DeleteQueue", "sqs:GetQueueAttributes",
+      "sqs:SetQueueAttributes", "sqs:GetQueueUrl", "sqs:TagQueue",
+      "sqs:UntagQueue", "sqs:ListQueueTags",
+    ]
+    resources = ["arn:aws:sqs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${local.domain_dashed}-opa-compliance-dlq"]
+  }
+}
+
+resource "aws_iam_role_policy" "compliance_dlq" {
+  name   = "compliance-dlq-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.compliance_dlq.json
 }
 
 resource "aws_iam_role_policy" "log_bucket_management" {

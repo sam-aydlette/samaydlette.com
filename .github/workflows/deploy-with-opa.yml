@@ -444,6 +444,21 @@ jobs:
           echo "No existing at-rest CMK found - will be created"
         fi
 
+        # Import the compliance Lambda's dead-letter queue if it exists (Task 8b,
+        # POAM-013). Ephemeral state: adopt it so it isn't recreated each run.
+        DLQ_URL=$(aws sqs get-queue-url --queue-name samaydlette-com-opa-compliance-dlq --query 'QueueUrl' --output text 2>/dev/null || true)
+        if [ -n "$DLQ_URL" ] && [ "$DLQ_URL" != "None" ]; then
+          if ! terraform state show 'aws_sqs_queue.compliance_dlq[0]' >/dev/null 2>&1; then
+            echo "Importing compliance DLQ..."
+            terraform import 'aws_sqs_queue.compliance_dlq[0]' "$DLQ_URL"
+            echo "✅ compliance DLQ imported"
+          else
+            echo "Compliance DLQ already in Terraform state"
+          fi
+        else
+          echo "No existing compliance DLQ found - will be created"
+        fi
+
         # Import the runtime-signal signing CMK + alias if they exist (Task 5,
         # POAM-002). Ephemeral state: resolve the key by its stable alias and
         # adopt both so the asymmetric signing key is not recreated each run.
