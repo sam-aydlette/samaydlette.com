@@ -29,8 +29,8 @@ skip-check:
   # carries a narrow inline skip (a log target can't log to itself), so the global
   # skip is removed.
 
-  # POAM-006 — S3 lifecycle configuration not defined (SI-12). Static website assets have no expiration.
-  - CKV_AWS_300
+  # POAM-006 CLOSED (Task 8b) — the website bucket now has a lifecycle config
+  # (abort incomplete MPU + expire non-current versions); CKV_AWS_300 passes.
 
   # POAM-007 — CloudFront WAF not attached (SC-7, SI-4). Cost trade-off (~$120/year). Risk-adjusted to Low.
   - CKV_AWS_68
@@ -48,16 +48,25 @@ skip-check:
   # with a customer-managed CMK (compliance Lambda → at_rest CMK; silk-reeling
   # Lambda → silk_reeling CMK). CKV_AWS_173 passes, so the skip is removed.
 
-  # POAM-012 — Lambda concurrent execution limit not set (SC-5). Daily invocation; no concurrency.
+  # FALSE POSITIVE (was POAM-012, Task 8b) — reserved concurrency maps to SC-5
+  # (DoS), but the compliance monitor is a daily EventBridge-triggered internal
+  # function with no DoS exposure (SC-5 met at the boundary via CloudFront/API
+  # Gateway throttling + Shield); the check is N/A here (and moot — the account is
+  # hard-capped at 10 concurrency). See the False Positives register in poam.md.
   - CKV_AWS_115
 
-  # POAM-013 — Lambda DLQ not configured (SI-4). Daily idempotent run; failures recoverable next day.
-  - CKV_AWS_116
+  # POAM-013 CLOSED (Task 8b) — the compliance Lambda now has an SQS dead-letter
+  # queue (dead_letter_config); CKV_AWS_116 passes.
 
   # POAM-014 — Lambda X-Ray tracing not enabled (AU-2). Observability concern, not security control.
   - CKV_AWS_50
 
-  # POAM-015 — Lambda zip not signed via AWS Signer (SI-7, SA-12). Source-level Sigstore signing in place. Risk-adjusted to Low.
+  # FALSE POSITIVE (was POAM-015, Task 8b) — CKV_AWS_272 flags the absence of AWS
+  # Signer specifically; no control mandates that one tool. SI-7/SA-12 software
+  # integrity is met via the Sigstore source-signing chain (deploy-time KSI signal
+  # Sigstore-signed + anchored in Rekor; Wasm policy bytes verify against the
+  # canonical inventory hash) + the OIDC/GitOps chain of custody (no out-of-band
+  # code path). See the False Positives register in poam.md.
   - CKV_AWS_272
 
   # POAM-017 CLOSED (Task 7) — every log group now has 365-day retention (AU-11);

@@ -139,6 +139,21 @@ resource "aws_s3_bucket_public_access_block" "website" {
   }
 }
 
+# Lifecycle hygiene for the versioned website bucket (POAM-006, SI-12): clean up
+# incomplete multipart uploads and old non-current versions so storage can't grow
+# unbounded. Current object versions (the live site) are never expired.
+resource "aws_s3_bucket_lifecycle_configuration" "website" {
+  bucket = data.aws_s3_bucket.website.id
+
+  rule {
+    id     = "hygiene"
+    status = "Enabled"
+    filter {}
+    abort_incomplete_multipart_upload { days_after_initiation = 7 }
+    noncurrent_version_expiration { noncurrent_days = 90 }
+  }
+}
+
 # =============================================================================
 # CLOUDFRONT RESPONSE HEADERS POLICY
 # =============================================================================
@@ -339,6 +354,12 @@ resource "aws_iam_role_policy" "lambda_opa" {
         Effect   = "Allow"
         Action   = ["kms:Sign", "kms:GetPublicKey"]
         Resource = [aws_kms_key.runtime_signing.arn]
+      },
+      {
+        # Send failed async invocations to the dead-letter queue (POAM-013).
+        Effect   = "Allow"
+        Action   = ["sqs:SendMessage"]
+        Resource = [aws_sqs_queue.compliance_dlq[0].arn]
       },
       {
         # Minimum read access the runtime KSI emitter needs to build the
@@ -587,6 +608,23 @@ resource "aws_cloudwatch_log_group" "opa_compliance" {
   }
 }
 
+# Dead-letter queue for the compliance Lambda's failed async invocations
+# (POAM-013, SI-4). SSE-SQS managed encryption; 14-day retention so a failed
+# daily run is retained for inspection.
+resource "aws_sqs_queue" "compliance_dlq" {
+  count                     = var.create_lambda_compliance ? 1 : 0
+  name                      = "${replace(var.domain_name, ".", "-")}-opa-compliance-dlq"
+  message_retention_seconds = 1209600 # 14 days
+  sqs_managed_sse_enabled   = true
+
+  tags = {
+    Name               = "${var.domain_name}-opa-compliance-dlq"
+    Environment        = var.environment
+    DataClassification = "Internal"
+    Owner              = var.owner
+  }
+}
+
 resource "aws_lambda_function" "opa_compliance" {
   count = var.create_lambda_compliance ? 1 : 0
 
@@ -600,6 +638,12 @@ resource "aws_lambda_function" "opa_compliance" {
 
   # Customer-CMK encryption of the environment variables (POAM-011).
   kms_key_arn = aws_kms_key.at_rest.arn
+
+  # Dead-letter queue for failed async (EventBridge) invocations (POAM-013, SI-4):
+  # a failed daily run is captured for inspection instead of being silently lost.
+  dead_letter_config {
+    target_arn = aws_sqs_queue.compliance_dlq[0].arn
+  }
 
   # The deploy role's kms:Encrypt grant is scoped by alias, so the alias must
   # exist before this function's env is encrypted (otherwise a from-scratch
