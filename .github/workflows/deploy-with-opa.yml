@@ -239,7 +239,7 @@ jobs:
     # Keep the validated plan and settings for the deployment job
     # -------------------------------------------------------------------------
     - name: Upload Terraform Plan Artifact
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: terraform-plan
         path: |
@@ -1288,7 +1288,7 @@ jobs:
     
     # Keep compliance results for audit records
     - name: Upload Compliance Report
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
         name: compliance-report
@@ -1390,7 +1390,7 @@ jobs:
     # VDR aggregator. The deploy job runs on push to main; the artifact is the
     # transport between the two jobs.
     - name: Upload SAST artifacts for VDR aggregation
-      uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       if: always()
       with:
         name: sast-results
