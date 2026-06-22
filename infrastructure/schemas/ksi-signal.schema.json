@@ -253,7 +253,8 @@
             "external_service",
             "api_gateway",
             "secrets_manager",
-            "kms_key"
+            "kms_key",
+            "identity_provider"
           ]
         },
         "resource_type": {

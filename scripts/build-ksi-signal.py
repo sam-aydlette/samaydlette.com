@@ -72,6 +72,10 @@ TYPE_BY_TF_TYPE = {
     "aws_apigatewayv2_api": "api_gateway",
     "aws_secretsmanager_secret": "secrets_manager",
     "aws_kms_key": "kms_key",
+    # Task 3: the Cognito user pool is the identity provider gating the Silk
+    # Reeling app (replaced the shared Basic-Auth secret). Its app client and
+    # Hosted-UI domain fold into it as attributes (ATTRIBUTE_PARENTS below).
+    "aws_cognito_user_pool": "identity_provider",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -95,6 +99,7 @@ CFN_TYPE_BY_NORMALIZED = {
     "api_gateway": "AWS::ApiGatewayV2::Api",
     "secrets_manager": "AWS::SecretsManager::Secret",
     "kms_key": "AWS::KMS::Key",
+    "identity_provider": "AWS::Cognito::UserPool",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -110,6 +115,12 @@ ATTRIBUTE_PARENTS = {
     "aws_apigatewayv2_integration": "api_gateway",
     "aws_apigatewayv2_route": "api_gateway",
     "aws_apigatewayv2_stage": "api_gateway",
+    # The Cognito JWT authorizer is a property of the API's access control, not a
+    # standalone component — fold it into the api_gateway it protects (Task 3).
+    "aws_apigatewayv2_authorizer": "api_gateway",
+    # The app client and Hosted-UI domain are facets of the identity provider.
+    "aws_cognito_user_pool_client": "identity_provider",
+    "aws_cognito_user_pool_domain": "identity_provider",
 }
 
 # =============================================================================
@@ -229,6 +240,16 @@ MAS_DEFAULTS = {
         "information_flow": [
             {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "configuration"},
             {"direction": "inbound", "counterparty": "secrets_manager", "channel": "aws-internal-tls", "data_class": "configuration"},
+        ],
+    },
+    "identity_provider": {
+        # Confidentiality is MODERATE: the pool holds user credentials and TOTP
+        # MFA secrets. Integrity is MODERATE (it is the access-control authority).
+        # This does not raise the system high-water mark (still Moderate).
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "public-internet", "channel": "tls-1.2", "data_class": "credential"},
+            {"direction": "outbound", "counterparty": "api_gateway", "channel": "tls-1.2", "data_class": "credential"},
         ],
     },
 }
@@ -360,6 +381,13 @@ IIW_DEFAULTS = {
         "public": False,
         "baseline_configuration": "Customer-managed CMK; FIPS 140-validated module; key policy in main.tf",
         "iiw_asset_type": "KMS Key (customer-managed)",
+    },
+    "identity_provider": {
+        "function": "Cognito user pool gating the Silk Reeling app (admin-create users, required TOTP MFA, OAuth2 PKCE Hosted UI; issues the JWTs the API Gateway authorizer validates)",
+        "diagram_label": "Cognito user pool",
+        "public": True,
+        "baseline_configuration": "AWS Cognito user pool; MFA ON (software-token/TOTP), admin-create-only, 14-char password policy; public PKCE app client (no secret); Hosted-UI domain (Task 3)",
+        "iiw_asset_type": "Identity Provider (Cognito user pool)",
     },
 }
 
