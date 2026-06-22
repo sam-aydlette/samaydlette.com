@@ -7,13 +7,13 @@
 // comes in under /silk-reeling/... and leaves this function as /...
 //
 //   /silk-reeling            -> /
-//   /silk-reeling/           -> /
-//   /silk-reeling/analyze    -> /analyze
-//   /silk-reeling/assets/x   -> /assets/x
+//   /silk-reeling/            -> /
+//   /silk-reeling/api/analyze -> /api/analyze
+//   /silk-reeling/assets/x    -> /assets/x
 //
-// The Authorization header (HTTP Basic Auth) is preserved — forward it via the
-// AllViewerExceptHostHeader origin-request policy on the behavior (the API
-// Gateway has no authorizer, so there is no SigV4 Authorization to collide with).
+// The Authorization header (the Cognito JWT Bearer token) is preserved — forward
+// it via the AllViewerExceptHostHeader origin-request policy on the behavior so
+// the API Gateway's Cognito JWT authorizer on /api/* can validate it (Task 3).
 function handler(event) {
   var req = event.request;
   var uri = req.uri;

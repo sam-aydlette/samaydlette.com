@@ -253,16 +253,19 @@ output "silk_reeling_secret_arns" {
 
 # Manual CloudFront wiring (post-deploy). The distribution is managed outside
 # this config, so add the behavior by hand (same pattern as the response-headers
-# policy). The app's Basic Auth is the gate; the API has no authorizer:
+# policy). Access control is Cognito: the SPA (no authorizer) loads, then the
+# /silk-reeling/api/* routes carry a Cognito JWT authorizer at the gateway, so
+# the Authorization (Bearer) header MUST be forwarded end-to-end:
 #   1. Publish the CloudFront Function infrastructure/cloudfront/silk-reeling-
 #      strip-prefix.js (event type: viewer-request).
 #   2. Add an origin = the API Gateway endpoint HOST (the value above, sans
 #      https:// and trailing slash); custom origin, https-only.
 #   3. Add a cache behavior: path pattern "/silk-reeling/*" -> that origin,
 #      cache policy = Managed-CachingDisabled, an origin-request policy that
-#      FORWARDS the Authorization header, viewer-protocol-policy =
-#      redirect-to-https, and associate the strip-prefix function (viewer-request).
+#      FORWARDS the Authorization header (the JWT authorizer reads it),
+#      viewer-protocol-policy = redirect-to-https, and associate the
+#      strip-prefix function (viewer-request).
 output "silk_reeling_cloudfront_setup" {
   description = "Pointer to the manual CloudFront wiring for /silk-reeling/*"
-  value       = var.create_silk_reeling ? "API Gateway HTTP API (no authorizer; app Basic Auth gates it). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (API endpoint host) + /silk-reeling/* behavior (CachingDisabled, forward Authorization, attach the function)." : "Not created"
+  value       = var.create_silk_reeling ? "API Gateway HTTP API (SPA on $default no-auth; /api/* behind a Cognito JWT authorizer). Wire CloudFront: publish cloudfront/silk-reeling-strip-prefix.js (viewer-request), add origin (API endpoint host) + /silk-reeling/* behavior (CachingDisabled, forward Authorization for the JWT authorizer, attach the function)." : "Not created"
 }

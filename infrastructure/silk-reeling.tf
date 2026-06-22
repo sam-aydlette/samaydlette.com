@@ -6,23 +6,25 @@
 # only does the numpy comparison and the Anthropic call — a small zip, no
 # OpenCV/MediaPipe, no container.
 #
-# Access control:
-#   App-layer HTTP Basic Auth inside the Lambda (operator-set username/password,
-#   constant-time compare) gates EVERY request. An API Gateway HTTP API (no
-#   authorizer) fronts the Lambda and passes the viewer's Authorization header
-#   through unchanged; the app rejects anything without valid credentials.
-#   (API Gateway replaces a Lambda Function URL, which this account blocks for
-#   public access. No-authorizer is accepted in POAM-022.) The CloudFront
-#   distribution (managed OUTSIDE this config) fronts it for the /silk-reeling/*
-#   path, no-cache, forwarding `Authorization`, with a prefix-strip function —
-#   manual wiring in outputs.tf. Basic Auth is a customer-responsibility control
-#   (POAM-021); SAML federation to a customer IdP is the recommended upgrade.
+# Access control (Task 3 — Cognito):
+#   Amazon Cognito is the identity provider (see cognito.tf): admin-create users,
+#   required TOTP MFA, OAuth2 PKCE Hosted-UI login. The API Gateway HTTP API
+#   gates the data plane: the ANY /api/{proxy+} route carries a Cognito JWT
+#   authorizer (POAM-022 closed) and the stage enforces rate-limit throttling
+#   (POAM-023 closed); the $default route serves the SPA unauthenticated so the
+#   login page can load. The app ALSO validates the JWT in-Lambda so it stays
+#   standalone-deployable. (API Gateway replaces a Lambda Function URL, which this
+#   account blocks for public access.) The CloudFront distribution (managed
+#   OUTSIDE this config) fronts it for the /silk-reeling/* path, no-cache,
+#   forwarding `Authorization` (the JWT Bearer header), with a prefix-strip
+#   function — manual wiring in outputs.tf. (POAM-021 closed — MFA via Cognito;
+#   SAML/OIDC federation to a customer IdP remains the upgrade path on request.)
 #
-# Secrets (the basic-auth credential and the Anthropic API key) live in Secrets
-# Manager, encrypted with a customer-managed KMS key, read at runtime via
-# least-privilege IAM. Secret VALUES are injected OUT OF BAND (CI
-# `put-secret-value` from a GitHub secret); this config creates only the secret
-# containers, so plaintext never enters Terraform state.
+# The Anthropic API key lives in Secrets Manager, encrypted with a customer-
+# managed KMS key, read at runtime via least-privilege IAM. The secret VALUE is
+# injected OUT OF BAND (CI `put-secret-value` from a GitHub secret); this config
+# creates only the secret container, so plaintext never enters Terraform state.
+# (The shared HTTP Basic Auth secret was removed in Task 3.)
 #
 # Everything here is gated by var.create_silk_reeling (default false), inert
 # until explicitly enabled — matching the repo's feature-flag pattern.
@@ -47,7 +49,7 @@ data "aws_caller_identity" "current" {}
 # -----------------------------------------------------------------------------
 resource "aws_kms_key" "silk_reeling" {
   count                   = local.silk_create
-  description             = "CMK for ${local.silk_name} secrets (basic-auth, Anthropic key)"
+  description             = "CMK for ${local.silk_name} secrets (Anthropic key)"
   deletion_window_in_days = 30
   enable_key_rotation     = true
 
@@ -254,11 +256,12 @@ resource "aws_lambda_function" "silk_reeling" {
 # -----------------------------------------------------------------------------
 # API Gateway HTTP API in front of the Lambda (replaces the Function URL, which
 # this account blocks for public/NONE access). Access control is enforced at the
-# APPLICATION layer (in-app HTTP Basic Auth): the API has NO authorizer, the
-# viewer's Authorization header passes through unchanged, and the app rejects
-# any request lacking valid credentials. CloudFront fronts it for /silk-reeling/*
-# (no-cache, forward Authorization, prefix-strip). No-authorizer is accepted in
-# POAM-022; brute-force hardening (rate-limit/WAF) is POAM-023.
+# GATEWAY: the ANY /api/{proxy+} route carries a Cognito JWT authorizer (POAM-022
+# closed) and the stage enforces rate-limit throttling (POAM-023 closed); the
+# $default route serves the SPA unauthenticated so the login page can load. The
+# viewer's Authorization (JWT Bearer) header passes through unchanged, and the app
+# ALSO validates the JWT in-Lambda so it stays standalone-deployable. CloudFront
+# fronts it for /silk-reeling/* (no-cache, forward Authorization, prefix-strip).
 # -----------------------------------------------------------------------------
 resource "aws_apigatewayv2_api" "silk_reeling" {
   count         = local.silk_create
