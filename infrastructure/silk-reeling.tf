@@ -48,8 +48,14 @@ data "aws_caller_identity" "current" {}
 # Customer-managed KMS key for the app's secrets (rotation enabled).
 # -----------------------------------------------------------------------------
 resource "aws_kms_key" "silk_reeling" {
-  count                   = local.silk_create
-  description             = "CMK for ${local.silk_name} secrets (Anthropic key)"
+  count = local.silk_create
+  # Description is left at its original value: a KMS key description is immutable
+  # metadata that can only be changed via kms:UpdateKeyDescription, which the
+  # deploy role intentionally does not hold (least privilege — not worth a new
+  # grant for a cosmetic relabel). Post-Task-3 the key now protects only the
+  # Anthropic key; the "basic-auth" label is historical and carries no compliance
+  # claim. The CMK still encrypts all app secrets at rest (SC-28).
+  description             = "CMK for ${local.silk_name} secrets (basic-auth, Anthropic key)"
   deletion_window_in_days = 30
   enable_key_rotation     = true
 
