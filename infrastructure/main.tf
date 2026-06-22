@@ -331,7 +331,7 @@ resource "aws_iam_role_policy" "lambda_opa" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         Effect = "Allow"
         Action = [
@@ -406,7 +406,19 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
         Resource = data.aws_cloudfront_distribution.website.arn
       },
-    ]
+      ],
+      # SC-12 manual-rotation verification: the runtime emitter reads the app
+      # secret's LastChangedDate to confirm it is within the annual rotation
+      # cadence. DescribeSecret returns metadata only — no GetSecretValue, no
+      # kms:Decrypt — so the monitor can never read the credential itself.
+      # Scoped to exactly the Anthropic secret, and only when the app exists.
+      var.create_silk_reeling ? [
+        {
+          Effect   = "Allow"
+          Action   = ["secretsmanager:DescribeSecret"]
+          Resource = [aws_secretsmanager_secret.silk_anthropic[0].arn]
+        }
+    ] : [])
   })
 }
 

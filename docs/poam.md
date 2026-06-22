@@ -26,7 +26,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Configuration Findings (POAM-003 through POAM-018)
 
-Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register); and POAM-021/POAM-022/POAM-023 (closed under Task 3 — Cognito)** (closure notes below the table).
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register); POAM-021/POAM-022/POAM-023 (closed under Task 3 — Cognito); and POAM-019 (reclassified as a false positive under Task 3 — SC-12 met via verified manual rotation)** (closure notes below the table).
 
 The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
@@ -41,7 +41,6 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 7) |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 6) |
-| POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Closed (Task 3) |
 | POAM-022 | IA-2, AC-3 | API Gateway HTTP API route specifies no authorizer (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_309 | aws-apigatewayv2::silk-reeling | N2 | Moderate | Low | Yes | Closed (Task 3) |
@@ -66,11 +65,17 @@ and is an **assumption to re-verify against the then-current Anthropic commercia
 terms at each annual security review**; a change in those terms reopens this POA&M.
 **Remediation:** migrate feedback to Claude on AWS Bedrock (FedRAMP-authorized,
 in-boundary), which removes the external interconnection. Applies only while the
-app is deployed. POAM-019
-(Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was confirmed by the
-checkov scan and is now finalized: the two app secrets are a third-party API key
-and an operator-set basic-auth credential with no programmatic rotation source;
-rotated manually, revisited annually.
+app is deployed. **POAM-019**
+(Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was **reclassified as a
+false positive under Task 3** — see the False Positives register. With the
+basic-auth secret removed (Task 3), the only remaining app secret is the
+third-party Anthropic API key, which has no programmatic rotation source (AWS
+cannot mint a new upstream key), so automatic rotation is infeasible by
+construction rather than a deferred fix. SC-12 rotation is met by documented
+annual manual rotation, and — this is what makes it a false positive and not an
+accepted risk — rotation currency is now **verified automatically**: the runtime
+KSI emitter reads the secret's `LastChangedDate` daily and fails an SC-12
+validation if rotation lapses past the cadence.
 
 **POAM-021 (added with the gated Silk Reeling app):** Access to the gated app is
 authenticated by an operator-configured username/password (HTTP Basic Auth) —
@@ -174,8 +179,10 @@ carry a **Cognito JWT authorizer at the gateway** (**POAM-022**, `CKV_AWS_309`
 suppression removed); the `$default` route stays unauthenticated only so the SPA /
 Hosted-UI login page can load. The stage enforces **rate-limit throttling**
 (**POAM-023**). The app also validates the JWT at the app layer (so it stays
-standalone-deployable) and the basic-auth secret is removed (narrowing POAM-019 to
-the Anthropic key, whose rotation is handled by procedure — see its note).
+standalone-deployable) and the basic-auth secret is removed — which also resolves
+POAM-019: the sole remaining secret (the Anthropic key) has no programmatic
+rotation source, so `CKV2_AWS_57` is reclassified as a false positive with SC-12
+met via verified manual rotation (see its entry in the False Positives register).
 
 **Standard fields for all of POAM-003 through POAM-018:**
 
@@ -282,6 +289,7 @@ acceptance) and carry no `poam_ref` in the VDR.
 | POAM-014 | AU-2 | CKV_AWS_50 (Lambda X-Ray tracing) | X-Ray is performance/latency observability, not a security audit control; AU-2 coverage does not depend on it. | CloudWatch Logs + CloudTrail (SSP AU-2 narrative). |
 | POAM-012 | SC-5 | CKV_AWS_115 (Lambda reserved concurrency) | Reserved concurrency manages concurrency contention/DoS; the compliance monitor is a daily EventBridge-triggered internal function with no DoS exposure or contention. SC-5 does not depend on it here (and the account is hard-capped at 10 concurrency, so reservation is infeasible regardless). | SC-5 at the system boundary: CloudFront + API Gateway throttling + AWS Shield Standard (SSP SC-5 narrative). |
 | POAM-015 | SI-7, SA-12 | CKV_AWS_272 (Lambda AWS Signer) | The check flags the absence of one specific signing tool (AWS Signer); no control mandates that tool. Software/supply-chain integrity is established by another mechanism. | Sigstore source-signing chain (deploy-time KSI signal Sigstore-signed, anchored in the public Rekor log; Wasm policy bytes verify against the canonical inventory hash) + the GitHub OIDC / GitOps chain of custody with no out-of-band code path (SSP SI-7/SA-12 narrative). |
+| POAM-019 | SC-12, SC-28 | CKV2_AWS_57 (Secrets Manager automatic rotation) | The check flags the absence of *automatic* rotation; no control mandates that specific mechanism. The one remaining secret is a third-party Anthropic API key with no programmatic rotation source — AWS cannot mint a new upstream key — so a Secrets Manager rotation Lambda is infeasible by construction (the basic-auth secret it shared the finding with was removed under Task 3). SC-12 rotation is met by an equivalent procedure, and rotation currency is verified automatically, so this is not an accepted risk. | Documented annual manual rotation (operator regenerates the key at the provider and writes it via `put-secret-value`), **verified automatically** by the runtime KSI emitter: it reads the secret's `LastChangedDate` each day and fails an SC-12 validation if rotation lapses past the cadence (395-day grace), so a missed rotation surfaces as a runtime KSI failure rather than relying on a calendar reminder (SSP SC-12 narrative). |
 
 False positives are tracked separately so an assessor can see which scanner findings were investigated and dismissed with rationale, distinct from risk-accepted items (which are real weaknesses with documented acceptance).
 

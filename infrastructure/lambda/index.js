@@ -42,10 +42,25 @@ const {
     SignCommand,
     GetPublicKeyCommand,
 } = require('@aws-sdk/client-kms');
+const {
+    SecretsManagerClient,
+    DescribeSecretCommand,
+} = require('@aws-sdk/client-secrets-manager');
 const { canonicalize } = require('./canonical');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
+
+// SC-12 manual rotation cadence. The Silk Reeling app's Anthropic API key is a
+// third-party credential with no programmatic rotation source (AWS cannot call
+// Anthropic to mint a new key), so Secrets Manager auto-rotation (CKV2_AWS_57)
+// is not applicable. The compensating control is a documented annual manual
+// rotation, and THIS check is its automated verification: the runtime monitor
+// reads the secret's LastChangedDate and fails the validation if the secret has
+// not been rotated within the cadence, so a lapsed rotation surfaces as a
+// runtime KSI failure instead of relying on a calendar reminder. 365-day cadence
+// + 30-day operational grace before the validation goes red.
+const SECRET_ROTATION_MAX_AGE_DAYS = 395;
 
 // Lazy-loaded policy. Loaded once per Lambda container, reused across
 // invocations within the container's lifetime.
@@ -197,7 +212,45 @@ async function readDeploySignal(s3, bucketName) {
     return JSON.parse(body);
 }
 
-async function buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion) {
+// Verify a secret has been rotated within the SC-12 manual-rotation cadence by
+// reading its LastChangedDate (metadata only — DescribeSecret returns no secret
+// value, so this needs secretsmanager:DescribeSecret but NOT kms:Decrypt).
+// Returns a {result, violations} shape mirroring evaluateResource so the caller
+// can push it as a validation. Fail-closed: an API error is a 'fail', because an
+// unverifiable rotation date is itself a finding.
+async function evaluateSecretRotation(sm, secretArn) {
+    try {
+        const meta = await sm.send(new DescribeSecretCommand({ SecretId: secretArn }));
+        // LastChangedDate moves whenever the secret value or metadata changes;
+        // fall back to CreatedDate for a never-yet-rotated secret.
+        const changed = meta.LastChangedDate || meta.CreatedDate;
+        if (!changed) {
+            return { result: 'fail', violations: ['secret has no LastChangedDate/CreatedDate to evaluate rotation against'] };
+        }
+        const ageDays = (Date.now() - new Date(changed).getTime()) / 86400000;
+        // Fail closed on an unparseable date: a NaN age must not slip past the
+        // threshold comparison (NaN > N is false) and read as a silent pass.
+        if (Number.isNaN(ageDays)) {
+            return { result: 'fail', violations: ['secret rotation date is unparseable; cannot confirm rotation cadence'] };
+        }
+        if (ageDays > SECRET_ROTATION_MAX_AGE_DAYS) {
+            return {
+                result: 'fail',
+                violations: [
+                    `secret last rotated ${Math.floor(ageDays)} days ago, exceeding the ${SECRET_ROTATION_MAX_AGE_DAYS}-day SC-12 manual-rotation cadence`,
+                ],
+            };
+        }
+        return { result: 'pass', violations: [] };
+    } catch (err) {
+        // The runtime signal is published at /.well-known/; emit only the SDK
+        // error name (e.g. AccessDeniedException), never a message that could
+        // carry internal detail.
+        return { result: 'fail', violations: [`could not read secret rotation metadata: ${err.name || 'UnknownError'}`] };
+    }
+}
+
+async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion) {
     const components = deploySignal.components ?? [];
     const validations = [];
     let validationIdx = 0;
@@ -237,6 +290,22 @@ async function buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion) {
                 violations: result.violations,
             });
         }
+    }
+
+    // Secrets Manager: verify the app credential is within its manual-rotation
+    // cadence (SC-12). The secret is discovered from the canonical inventory
+    // (not a hard-coded ARN), so this generalizes to any secrets_manager
+    // component the inventory carries.
+    for (const secret of components.filter((c) => c.type === 'secrets_manager')) {
+        if (!secret.native_id) continue;
+        const result = await evaluateSecretRotation(sm, secret.native_id);
+        validations.push({
+            validation_id: `r-${String(validationIdx++).padStart(4, '0')}`,
+            policy: { id: 'secret.rotation.sc-12', version: `cadence-${SECRET_ROTATION_MAX_AGE_DAYS}d` },
+            result: result.result,
+            component_refs: [secret.component_id],
+            violations: result.violations,
+        });
     }
 
     const provenance = {
@@ -340,6 +409,7 @@ exports.handler = async (event, context) => {
     const s3 = new S3Client({ region });
     // CloudFront API is global, billed in us-east-1.
     const cf = new CloudFrontClient({ region: 'us-east-1' });
+    const sm = new SecretsManagerClient({ region });
 
     const { policy, version: policyVersion } = await getPolicy();
     console.log(`Loaded compiled Rego policy (sha256:${policyVersion}...)`);
@@ -359,7 +429,7 @@ exports.handler = async (event, context) => {
         };
     }
 
-    let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, policy, policyVersion);
+    let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion);
 
     // Sign the signal (POAM-002) and publish the verifying public key. The signing
     // key is resolved by its stable alias, derived from the bucket/domain
