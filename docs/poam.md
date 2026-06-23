@@ -26,7 +26,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ## Configuration Findings (POAM-003 through POAM-018)
 
-Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register); POAM-021/POAM-022/POAM-023 (closed under Task 3 — Cognito); and POAM-019 (reclassified as a false positive under Task 3 — SC-12 met via verified manual rotation)** (closure notes below the table).
+Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register); POAM-021/POAM-022/POAM-023 (closed under Task 3 — Cognito); POAM-019 (reclassified as a false positive under Task 3 — SC-12 met via verified manual rotation); and POAM-025 (open operational requirement — root/operator hardware MFA, surfaced by the 2026-06-22 Prowler scan)** (closure notes below the table).
 
 The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
@@ -42,6 +42,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 7) |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 6) |
 | POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Risk-accepted |
+| POAM-025 | IA-2(1), IA-2(2), IA-2(8), CM-6 | Root + operator MFA is virtual TOTP, not hardware/phishing-resistant | Prowler | root-account-hardware-mfa-enabled; iam_user_hardware_mfa_enabled | aws-account::root; aws-iam-user::saydlette-dev | N2 | Moderate | Low | Yes | Open (operational requirement) |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Closed (Task 3) |
 | POAM-022 | IA-2, AC-3 | API Gateway HTTP API route specifies no authorizer (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_309 | aws-apigatewayv2::silk-reeling | N2 | Moderate | Low | Yes | Closed (Task 3) |
 | POAM-023 | AC-7, SC-5 | No brute-force / rate-limit protection on the Basic Auth endpoint (no lockout, no WAF) | Security review | security-review.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Closed (Task 3) |
@@ -184,6 +185,25 @@ POAM-019: the sole remaining secret (the Anthropic key) has no programmatic
 rotation source, so `CKV2_AWS_57` is reclassified as a false positive with SC-12
 met via verified manual rotation (see its entry in the False Positives register).
 
+**POAM-025 (added from the 2026-06-22 Prowler scan, `fedramp_20x_ksi_low` baseline).**
+The root account and the operator IAM user (`saydlette-dev`) authenticate with a
+**virtual TOTP** MFA, not a hardware/phishing-resistant authenticator. 800-53
+IA-2(1)/(2) (MFA present) is **met**; the gap is against the *phishing-resistant*
+objective (IA-2(8), CR26 KSI-IAM-APM) and the hardware-MFA target that the
+operator has adopted into the system's **CM-6** configuration baseline (CIS/STIG
+hardening). This is therefore **not** a false positive (the control is in-scope via
+CM-6 + the adopted baseline) and **not** a risk-adjustment (the gap is real) — it
+is an **operational requirement** the operator accepts on interim grounds: a
+hardware token is not yet on hand. **Compensating control:** virtual MFA is enabled
+on both principals now. **Remediation:** enroll a hardware MFA token (or FIDO2
+passkey — phishing-resistant and free) on root and on `saydlette-dev`; milestone
+deferred pending token acquisition. The finding is kept live (not suppressed) so it
+reports until remediated. The same scan's other findings were remediated live
+(deleted the unused `*:*` `CLI_admin` role and the dormant `steampipe-user`; applied
+the AWS FSBP account password policy; relocated the operator's policies to an
+`operators` group) or routed to Task 12 (S3 deny-non-TLS; org-of-one + SCPs for the
+region/governance findings); three were dismissed as false positives (below).
+
 **Standard fields for all of POAM-003 through POAM-018:**
 
 - **Point of Contact:** Sam Aydlette (operator)
@@ -290,6 +310,9 @@ acceptance) and carry no `poam_ref` in the VDR.
 | POAM-012 | SC-5 | CKV_AWS_115 (Lambda reserved concurrency) | Reserved concurrency manages concurrency contention/DoS; the compliance monitor is a daily EventBridge-triggered internal function with no DoS exposure or contention. SC-5 does not depend on it here (and the account is hard-capped at 10 concurrency, so reservation is infeasible regardless). | SC-5 at the system boundary: CloudFront + API Gateway throttling + AWS Shield Standard (SSP SC-5 narrative). |
 | POAM-015 | SI-7, SA-12 | CKV_AWS_272 (Lambda AWS Signer) | The check flags the absence of one specific signing tool (AWS Signer); no control mandates that tool. Software/supply-chain integrity is established by another mechanism. | Sigstore source-signing chain (deploy-time KSI signal Sigstore-signed, anchored in the public Rekor log; Wasm policy bytes verify against the canonical inventory hash) + the GitHub OIDC / GitOps chain of custody with no out-of-band code path (SSP SI-7/SA-12 narrative). |
 | POAM-019 | SC-12, SC-28 | CKV2_AWS_57 (Secrets Manager automatic rotation) | The check flags the absence of *automatic* rotation; no control mandates that specific mechanism. The one remaining secret is a third-party Anthropic API key with no programmatic rotation source — AWS cannot mint a new upstream key — so a Secrets Manager rotation Lambda is infeasible by construction (the basic-auth secret it shared the finding with was removed under Task 3). SC-12 rotation is met by an equivalent procedure, and rotation currency is verified automatically, so this is not an accepted risk. | Documented annual manual rotation (operator regenerates the key at the provider and writes it via `put-secret-value`), **verified automatically** by the runtime KSI emitter: it reads the secret's `LastChangedDate` each day and fails an SC-12 validation if rotation lapses past the cadence (395-day grace), so a missed rotation surfaces as a runtime KSI failure rather than relying on a calendar reminder (SSP SC-12 narrative). |
+| — (Prowler 2026-06-22) | n/a | `iam_role_access_not_stale_to_bedrock` (AWSServiceRoleForSupport) | The role is an **AWS-managed service-linked role**; its permission set is defined and controlled by AWS, is not operator-modifiable, and the Support SLR is benign. (The other hit, `CLI_admin`, was deleted, so it no longer reports.) | N/A — the operator cannot alter a service-linked role's permissions; AWS owns its lifecycle. |
+| — (Prowler 2026-06-22) | SC-28 | `s3_bucket_default_encryption` *(deprecated check)* (samaydlette-com-logs) | A check Prowler itself marks deprecated; the log bucket uses **SSE-S3 (AES256)** by design (`infrastructure/logging.tf`), and the non-deprecated server-side-encryption check does not fire. | SSE-S3/AES256 at rest on the log bucket — a deliberate choice (a customer-managed key is not warranted for public-content-derived access logs; SSP SC-28 narrative). |
+| — (Prowler 2026-06-22) | AU-2 | `s3_bucket_server_access_logging_enabled` (samaydlette-com-logs) | A log-target bucket cannot log to itself without creating a recursion loop; logging the log sink onto itself is a standard exception. | The website bucket's S3 server access logs land in this bucket, which is the terminal sink; it carries an inline scanner skip for self-logging, consistent with POAM-005's closure (SSP AU-2 narrative). |
 
 False positives are tracked separately so an assessor can see which scanner findings were investigated and dismissed with rationale, distinct from risk-accepted items (which are real weaknesses with documented acceptance).
 
