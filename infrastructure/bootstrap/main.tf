@@ -391,3 +391,117 @@ output "github_actions_role_arn" {
 output "oidc_provider_arn" {
   value = aws_iam_openid_connect_provider.github.arn
 }
+
+# =============================================================================
+# ACCOUNT IAM HYGIENE  (Prowler 2026-06-22 triage; AWS FSBP / FedRAMP best practice)
+# =============================================================================
+# Applied LIVE during the Prowler triage; codified here for repeatability. These
+# are account-level governance, so they live in bootstrap (operator-applied), not
+# the CI deploy. They already exist live — IMPORT before the next apply (else
+# EntityAlreadyExists), see README / PR body for the exact `terraform import` ids.
+
+# AWS Foundational Security Best Practices password policy (AC-2(1), IA-5(1);
+# clears the Prowler iam_password_policy_* findings).
+resource "aws_iam_account_password_policy" "fsbp" {
+  minimum_password_length        = 14
+  require_uppercase_characters   = true
+  require_lowercase_characters   = true
+  require_numbers                = true
+  require_symbols                = true
+  allow_users_to_change_password = true
+  max_password_age               = 90
+  password_reuse_prevention      = 24
+}
+
+# Operators group. IAM best practice attaches policies to a group, not directly to
+# a user (AC-2(1)/AC-6; clears Prowler iam_policy_attached_only_to_group_or_roles).
+# NOTE: these reuse the operator's existing privilege as-is (relocated from the
+# user, not broadened). Scoping the *FullAccess set down to least privilege is a
+# tracked follow-up (Task 12-adjacent), same posture as legacy_deploy_policy_names.
+resource "aws_iam_group" "operators" {
+  name = "operators"
+}
+
+locals {
+  operators_managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
+    "arn:aws:iam::aws:policy/CloudFrontFullAccess",
+    "arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess",
+    "arn:aws:iam::aws:policy/IAMFullAccess",
+    "arn:aws:iam::aws:policy/AmazonEventBridgeFullAccess",
+    "arn:aws:iam::aws:policy/AWSLambda_FullAccess",
+    "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/SteampipeS3ReadOnly",
+  ]
+}
+
+resource "aws_iam_group_policy_attachment" "operators" {
+  # checkov:skip=CKV2_AWS_56:Risk-accepted. The operator performs IAM administration
+  # (creating roles/policies/the deploy role itself), so the admin group needs IAM
+  # management. This is the operator's existing privilege relocated from the user, not
+  # broadened; consolidating to least privilege is a tracked follow-up (Task 12-adjacent).
+  for_each   = toset(local.operators_managed_policy_arns)
+  group      = aws_iam_group.operators.name
+  policy_arn = each.value
+}
+
+# The two former user-inline policies, relocated to the group (same documents).
+resource "aws_iam_group_policy" "operators_assessment_readonly" {
+  # checkov:skip=CKV_AWS_355:Read-only assessment policy — account-level List/Describe/Get
+  # operations cannot be resource-scoped and require Resource:* by AWS design.
+  # checkov:skip=CKV_AWS_287:Metadata-only reads (no GetSecretValue, no credential retrieval);
+  # the policy cannot expose credential material. Risk-accepted.
+  name  = "assessment-readonly-2026-06"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AssessmentReadOnly"
+      Effect = "Allow"
+      Action = [
+        "apigateway:GET",
+        "secretsmanager:ListSecrets", "secretsmanager:DescribeSecret", "secretsmanager:GetResourcePolicy",
+        "cognito-idp:List*", "cognito-idp:Describe*", "cognito-idp:Get*",
+        "kms:List*", "kms:Describe*", "kms:GetPublicKey", "kms:GetKeyPolicy", "kms:GetKeyRotationStatus",
+        "sqs:ListQueues", "sqs:GetQueueAttributes", "sqs:GetQueueUrl", "sqs:ListQueueTags",
+        "signer:ListSigningProfiles", "signer:GetSigningProfile", "signer:ListSigningJobs", "signer:DescribeSigningJob",
+        "bedrock:ListFoundationModels", "bedrock:GetFoundationModel", "bedrock:GetFoundationModelAvailability",
+        "bedrock:ListFoundationModelAgreementOffers", "bedrock:GetUseCaseForModelAccess",
+        "resource-explorer-2:ListIndexes", "resource-explorer-2:Search", "resource-explorer-2:ListViews", "resource-explorer-2:GetView"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_group_policy" "operators_s3_bucket" {
+  # checkov:skip=CKV_AWS_355:The ListAllMyBuckets/GetBucketLocation statement requires
+  # Resource:* by AWS design; the s3:* grant is scoped to the single site bucket. Risk-accepted.
+  name  = "s3-bucket-policy"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:*"]
+        Resource = ["arn:aws:s3:::${var.domain_name}", "arn:aws:s3:::${var.domain_name}/*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListAllMyBuckets", "s3:GetBucketLocation"]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+variable "operator_user_name" {
+  type        = string
+  default     = "saydlette-dev"
+  description = "The human operator's IAM user, made a member of the operators group."
+}
+
+resource "aws_iam_user_group_membership" "operator" {
+  user   = var.operator_user_name
+  groups = [aws_iam_group.operators.name]
+}
