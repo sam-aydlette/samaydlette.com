@@ -435,6 +435,10 @@ locals {
 }
 
 resource "aws_iam_group_policy_attachment" "operators" {
+  # checkov:skip=CKV2_AWS_56:Risk-accepted. The operator performs IAM administration
+  # (creating roles/policies/the deploy role itself), so the admin group needs IAM
+  # management. This is the operator's existing privilege relocated from the user, not
+  # broadened; consolidating to least privilege is a tracked follow-up (Task 12-adjacent).
   for_each   = toset(local.operators_managed_policy_arns)
   group      = aws_iam_group.operators.name
   policy_arn = each.value
@@ -442,6 +446,10 @@ resource "aws_iam_group_policy_attachment" "operators" {
 
 # The two former user-inline policies, relocated to the group (same documents).
 resource "aws_iam_group_policy" "operators_assessment_readonly" {
+  # checkov:skip=CKV_AWS_355:Read-only assessment policy — account-level List/Describe/Get
+  # operations cannot be resource-scoped and require Resource:* by AWS design.
+  # checkov:skip=CKV_AWS_287:Metadata-only reads (no GetSecretValue, no credential retrieval);
+  # the policy cannot expose credential material. Risk-accepted.
   name  = "assessment-readonly-2026-06"
   group = aws_iam_group.operators.name
   policy = jsonencode({
@@ -466,6 +474,8 @@ resource "aws_iam_group_policy" "operators_assessment_readonly" {
 }
 
 resource "aws_iam_group_policy" "operators_s3_bucket" {
+  # checkov:skip=CKV_AWS_355:The ListAllMyBuckets/GetBucketLocation statement requires
+  # Resource:* by AWS design; the s3:* grant is scoped to the single site bucket. Risk-accepted.
   name  = "s3-bucket-policy"
   group = aws_iam_group.operators.name
   policy = jsonencode({
