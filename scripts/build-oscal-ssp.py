@@ -369,7 +369,7 @@ FAMILY_DEFAULTS = {
         "origination": "inherited",
         "statement": (
             "Inherited from AWS. AWS handles all hardware and platform "
-            "maintenance under their FedRAMP authorization. The system "
+            "maintenance under their FedRAMP certification. The system "
             "has no on-premises hardware and no operator-side "
             "maintenance actions; the Lambda runtime is AWS-managed."
         ),
@@ -383,7 +383,7 @@ FAMILY_DEFAULTS = {
             "AWS-managed storage services (S3 with server-side "
             "encryption; CloudWatch Logs). Storage media handling, "
             "sanitization, and disposal are AWS-managed under their "
-            "FedRAMP authorization."
+            "FedRAMP certification."
         ),
     },
     # Physical and Environmental — inherited
@@ -392,7 +392,7 @@ FAMILY_DEFAULTS = {
         "origination": "inherited",
         "statement": (
             "Inherited from AWS. AWS data centers operate under their "
-            "FedRAMP-authorized physical and environmental security "
+            "FedRAMP-certified physical and environmental security "
             "program. The system has no operator-managed physical "
             "facilities."
         ),
@@ -464,7 +464,7 @@ FAMILY_DEFAULTS = {
             "Lambda, Route 53, ACM) and OSS dependencies (npm, "
             "Terraform providers, GitHub Actions). Acquisition controls "
             "for the AWS services are inherited under AWS's FedRAMP "
-            "authorization; OSS dependencies are subject to the supply-"
+            "certification; OSS dependencies are subject to the supply-"
             "chain controls in docs/supply-chain.md. Enhancements that "
             "presume vendor-management agreements with custom contracts "
             "are tracked as separate not-applicable entries; a sole-"
@@ -507,7 +507,7 @@ POLICY_AND_PROCEDURES_DEFAULT = {
 }
 
 # Controls that are conventionally inherited from the underlying CSP (AWS,
-# in this implementation) under their own FedRAMP authorization. These are
+# in this implementation) under their own FedRAMP certification. These are
 # emitted as implemented-requirement entries with status=implemented and
 # origination=inherited regardless of whether an in-scope KSI references
 # them — a real Rev 5 SSP must address the full Moderate baseline, and the 20x
@@ -642,7 +642,7 @@ INHERITED_FROM_AWS = {
     "sr-12": "Component Disposal",
 
     # Maintenance — Moderate adds maintenance-tools enhancements; AWS handles
-    # all maintenance tooling and personnel under its FedRAMP authorization.
+    # all maintenance tooling and personnel under its FedRAMP certification.
     "ma-3": "Maintenance Tools",
     "ma-3.1": "Inspect Tools",
     "ma-3.2": "Inspect Media",
@@ -908,7 +908,7 @@ def build_system_characteristics(signal):
             "validation report on every deploy; runtime Lambda re-validates "
             "the live AWS configuration on a schedule. Sole-operator "
             "deployment; no end users, no federal customer data, no FedRAMP "
-            "authorization in scope."
+            "certification in scope."
         ),
         "security-sensitivity-level": _sens,
         "system-information": {
@@ -1287,7 +1287,7 @@ def build_control_implementation(signal, catalog):
             origination = "inherited"
             statement = (
                 f"{inherited_title} ({control_id.upper()}) is inherited "
-                f"from AWS under the AWS FedRAMP authorization. The "
+                f"from AWS under the AWS FedRAMP certification. The "
                 f"system has no operator-side responsibility for this "
                 f"control; AWS's published customer-responsibility "
                 f"matrix carries the full implementation. This entry is "
@@ -1347,12 +1347,12 @@ def build_control_implementation(signal, catalog):
         if origination == "inherited":
             props.append({
                 "name": "leveraged-authorization",
-                "value": "AWS FedRAMP Authorization (commercial regions)",
+                "value": "AWS FedRAMP Certification, Class C (commercial regions)",
             })
             links.append({
                 "href": "https://aws.amazon.com/compliance/fedramp/",
                 "rel": "reference",
-                "text": "AWS FedRAMP authorization",
+                "text": "AWS FedRAMP certification",
             })
 
         ir = {
@@ -1394,13 +1394,13 @@ def build_control_implementation(signal, catalog):
             "implementation status and origination resolved per-control via "
             "explicit overrides or family-level fall-throughs, or "
             "(b) part of the FedRAMP Rev 5 Moderate baseline that AWS carries "
-            "wholly under its FedRAMP authorization (PE, MP, parts of MA), "
+            "wholly under its FedRAMP certification (PE, MP, parts of MA), "
             "and is therefore emitted here as inherited so the SSP addresses "
             "the baseline in full. Evidence references point at the live "
             "KSI signal at /.well-known/ksi-signal.json (deploy-time, signed "
             "via Sigstore), the runtime signal at "
             "/.well-known/ksi-signal-runtime.json, the AWS FedRAMP "
-            "authorization page, and the documentation set in docs/."
+            "certification page, and the documentation set in docs/."
         ),
         "implemented-requirements": implemented_reqs,
     }

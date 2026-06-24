@@ -44,7 +44,7 @@ def classify(status, origination):
 
 
 WHO = {
-    "fully-inherited": "AWS (leveraged FedRAMP authorization)",
+    "fully-inherited": "AWS (leveraged FedRAMP certification)",
     "partially-inherited": "the provider and AWS (shared; no separate customer action)",
     "implemented": "the provider (cloud service offering and operator policies)",
     "not-applicable": "not applicable to this offering",
