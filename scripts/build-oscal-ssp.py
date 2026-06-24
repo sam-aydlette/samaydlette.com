@@ -768,13 +768,13 @@ def now_iso():
 
 def build_metadata(signal):
     return {
-        "title": "samaydlette.com — System Security Plan (Self-Attested PoC, NOT FedRAMP-Authorized)",
+        "title": "samaydlette.com — System Security Plan (Self-Attested PoC, NOT FedRAMP-Certified)",
         "last-modified": now_iso(),
         "version": SSP_VERSION,
         "oscal-version": OSCAL_VERSION,
         "remarks": (
             "This System Security Plan is a self-attested proof-of-concept artifact. "
-            "The system it describes is NOT FedRAMP-authorized. No 3PAO assessment has "
+            "The system it describes is NOT FedRAMP-certified. No 3PAO assessment has "
             "been conducted; no agency Authorization to Operate is in place. The SSP "
             "is published to demonstrate an architectural pattern (canonical-inventory-"
             "derived OSCAL artifacts) aligned with FedRAMP NTC-0009. Treat all "

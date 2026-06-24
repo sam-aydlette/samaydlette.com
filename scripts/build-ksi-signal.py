@@ -1189,7 +1189,7 @@ def main():
             "authorization_status": "self-attested-proof-of-concept",
             "fedramp_certified": False,
             "remarks": (
-                "This system is not FedRAMP-authorized. The artifacts published "
+                "This system is not FedRAMP-certified. The artifacts published "
                 "at /.well-known/ are self-attested by the operator and "
                 "demonstrate an architectural pattern aligned with FedRAMP "
                 "NTC-0009 (machine-readable authorization data, text-based "
