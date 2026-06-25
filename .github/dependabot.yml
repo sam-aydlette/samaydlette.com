@@ -1,5 +1,5 @@
 # Dependabot configuration for supply-chain monitoring.
-# Satisfies KSI-TPR-04 ("Automatically monitor third party software information
+# Satisfies KSI-SCR-MON ("Automatically monitor third party software information
 # resources for upstream vulnerabilities..."). See docs/supply-chain.md.
 version: 2
 updates:

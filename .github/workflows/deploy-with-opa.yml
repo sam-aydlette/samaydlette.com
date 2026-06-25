@@ -1070,6 +1070,50 @@ jobs:
         echo "POA&M items:"
         jq '.["plan-of-action-and-milestones"]["poam-items"] | length' oscal-poam.json
 
+    - name: Build Ongoing Certification Report (CCM)
+      working-directory: infrastructure
+      run: |
+        echo "Building Ongoing Certification Report (CCM-OCR-AVL: quarterly human-readable summary)..."
+        python3 ../scripts/build-ocr.py \
+          --vdr vdr-report.json \
+          --poam oscal-poam.json \
+          --ksi-signal ksi-signal.json \
+          --scn-register ../docs/scn/scn-register.csv \
+          --output ongoing-certification-report.json \
+          --md-output ongoing-certification-report.md
+        jq '{next_ongoing_certification_report_date, next_quarterly_review_date}' ongoing-certification-report.json
+
+    - name: Build CDS certification-data artifacts (overview, availability, policy index)
+      working-directory: infrastructure
+      run: |
+        echo "Building CDS certification-overview package, availability feed, policy index..."
+        # availability history: fetch the previously-published feed (best-effort)
+        curl -sfL -o previous-availability.json "https://samaydlette.com/.well-known/availability.json" \
+          || echo '{"history":[]}' > previous-availability.json
+        python3 ../scripts/build-cds-overview.py \
+          --offering ../data/cds/offering.json --profile ../data/system-profile.json --ksi-signal ksi-signal.json
+        python3 ../scripts/build-availability.py \
+          --previous previous-availability.json --ksi-signal ksi-signal.json
+        python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
+
+    - name: Build Security Decision Record (SDR — 20x SSP replacement)
+      working-directory: infrastructure
+      run: |
+        echo "Building Security Decision Record (SDR-CSO-FRR). The Rev5 OSCAL SSP stays as the Rev5-paradigm artifact; both derive from the same hub."
+        curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
+          || echo '{}' > previous-sdr.json
+        python3 ../scripts/build-sdr.py \
+          --ssp oscal-ssp.json --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
+          --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
+
+    - name: Build Certification Package Overview (CPO)
+      working-directory: infrastructure
+      run: |
+        echo "Building Certification Package Overview (CPO-CSO-OVR); with the SDR, the SSP replacement..."
+        python3 ../scripts/build-cpo.py \
+          --offering ../data/cds/offering.json --profile ../data/system-profile.json \
+          --overview certification-overview-package.json --ksi-signal ksi-signal.json
+
     # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
     # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
     # SSP/POA&M references resolve to inventory, every Checkov suppression is
@@ -1092,6 +1136,22 @@ jobs:
         echo "Signing oscal-poam.json with cosign keyless..."
         cosign sign-blob --yes --bundle oscal-poam.bundle oscal-poam.json
 
+    - name: Sign Ongoing Certification Report
+      working-directory: infrastructure
+      run: |
+        echo "Signing ongoing-certification-report.json with cosign keyless..."
+        cosign sign-blob --yes --bundle ongoing-certification-report.bundle ongoing-certification-report.json
+
+    - name: Sign CDS certification-data artifacts
+      working-directory: infrastructure
+      run: |
+        echo "Signing CDS artifacts with cosign keyless..."
+        cosign sign-blob --yes --bundle certification-overview-package.bundle certification-overview-package.json
+        cosign sign-blob --yes --bundle availability.bundle availability.json
+        cosign sign-blob --yes --bundle policy-index.bundle policy-index.json
+        cosign sign-blob --yes --bundle security-decision-record.bundle security-decision-record.json
+        cosign sign-blob --yes --bundle certification-package-overview.bundle certification-package-overview.json
+
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always
     # internally consistent. Nothing here runs unless the gate above passed.
@@ -1109,6 +1169,8 @@ jobs:
         # VDR report + trend
         aws s3 cp vdr-report.json "s3://$BUCKET_NAME/.well-known/vdr-report.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Human-readable VDR rendering (VER-TFR-MHR); derived from the signed JSON above.
+        aws s3 cp vdr-report.md "s3://$BUCKET_NAME/.well-known/vdr-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         aws s3 cp vdr-trend.json "s3://$BUCKET_NAME/.well-known/vdr-trend.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp vdr-trend.bundle "s3://$BUCKET_NAME/.well-known/vdr-trend.bundle" --content-type application/json --cache-control "public, max-age=300"
         # IIW
@@ -1117,6 +1179,16 @@ jobs:
         # OSCAL POA&M
         aws s3 cp oscal-poam.json "s3://$BUCKET_NAME/.well-known/oscal-poam.json" --content-type application/oscal+json --cache-control "public, max-age=300"
         aws s3 cp oscal-poam.bundle "s3://$BUCKET_NAME/.well-known/oscal-poam.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Ongoing Certification Report (CCM-OCR-AVL) + human-readable rendering
+        aws s3 cp ongoing-certification-report.json "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
+        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
         # Stamped paper + dashboard HTML (figures were stamped pre-gate)
         aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
         aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
@@ -1160,6 +1232,12 @@ jobs:
         check oscal-ssp.json .well-known/oscal-ssp.json
         check vdr-report.json .well-known/vdr-report.json
         check oscal-poam.json .well-known/oscal-poam.json
+        check ongoing-certification-report.json .well-known/ongoing-certification-report.json
+        check certification-overview-package.json .well-known/certification-overview-package.json
+        check availability.json .well-known/availability.json
+        check policy-index.json .well-known/policy-index.json
+        check security-decision-record.json .well-known/security-decision-record.json
+        check certification-package-overview.json .well-known/certification-package-overview.json
         check iiw.csv .well-known/iiw.csv
         if [ "$fail" -ne 0 ]; then
           echo "Post-publish round-trip FAILED — served artifacts do not match the build."; exit 1

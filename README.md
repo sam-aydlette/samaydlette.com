@@ -99,19 +99,19 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 
 | File | KSIs addressed | Purpose |
 |------|---------------|---------|
-| [`docs/ksi-signal.md`](docs/ksi-signal.md) | KSI-PIY-01, KSI-MLA-07, KSI-CNA-08, KSI-SVC-05 | Schema, join semantics, normalization decisions, verification |
-| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-04, KSI-CNA-01/03/05/06, KSI-IAM-04, KSI-MLA-01/02/08, KSI-PIY-04, KSI-SVC-01/06/08/09 | ADR-style records of architectural decisions per KSI |
-| [`docs/incident-response.md`](docs/incident-response.md) | KSI-INR-01, KSI-INR-02, KSI-INR-03 | IR runbook with detection sources, triage, after-action template |
-| [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-01, KSI-RPL-02, KSI-RPL-03, KSI-RPL-04 | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
-| [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-06 | Annual security review template + first entry |
-| [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-TPR-03, KSI-TPR-04 | SCRM with Dependabot config in `.github/dependabot.yml` |
-| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-01, KSI-CED-02, KSI-CED-03, KSI-CED-04 | Self-attested training log |
+| [`docs/ksi-signal.md`](docs/ksi-signal.md) | KSI-PIY-GIV, KSI-MLA-LET, KSI-CNA-EIS, KSI-SVC-VRI | Schema, join semantics, normalization decisions, verification |
+| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-RVP, KSI-CNA-RNT/03/05/06, KSI-IAM-JIT, KSI-MLA-OSM/02/08, KSI-PIY-RSD, KSI-SVC-EIS/06/08/09 | ADR-style records of architectural decisions per KSI |
+| [`docs/incident-response.md`](docs/incident-response.md) | KSI-INR-RIR, KSI-INR-RPI, KSI-INR-AAR | IR runbook with detection sources, triage, after-action template |
+| [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-RRO, KSI-RPL-ARP, KSI-RPL-ABO, KSI-RPL-TRC | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
+| [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-RIS | Annual security review template + first entry |
+| [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-SCR-MIT, KSI-SCR-MON | SCRM with Dependabot config in `.github/dependabot.yml` |
+| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-RAT, KSI-CED-RAT, KSI-CED-RAT, KSI-CED-RAT | Self-attested training log |
 | [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans (kept in sync with `/.well-known/oscal-poam.json`) |
 | [`docs/policies/`](docs/policies/) | NIST 800-53 Rev 5 *-1 controls (AC-1, AT-1, ... SR-1, PT-1) | Per-family policy and procedures docs, plus the FedRAMP 20x Secure Configuration Guide. Each file integrates the relevant 20x rules (SCN, VDR, MAS, SCG, CCM, ICP, FSI, UCM) and cites AWS authorization package AGENCYAMAZONEW for inherited families |
 | [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, annual review) |
 | [`docs/privacy-threshold-analysis.md`](docs/privacy-threshold-analysis.md) | PT-1 (negative determination) | PTA: no PII processed; full PIA not required |
 | [`docs/rules-of-behavior.md`](docs/rules-of-behavior.md) | PL-4 | Sole-operator acceptable-use commitments |
-| [`website/.well-known/security.txt`](website/.well-known/security.txt) | KSI-PIY-03 | RFC 9116 vulnerability disclosure |
+| [`website/.well-known/security.txt`](website/.well-known/security.txt) | KSI-PIY-RVD | RFC 9116 vulnerability disclosure |
 
 ## Real-World Costs
 
@@ -217,11 +217,11 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ├── docs/
 │   ├── ksi-signal.md              # KSI signal technical reference
 │   ├── architecture-decisions.md  # Architectural decisions per KSI
-│   ├── incident-response.md       # IR runbook (KSI-INR-01..03)
-│   ├── recovery-plan.md           # Recovery plan (KSI-RPL-01..04)
-│   ├── security-review.md         # Annual security review (KSI-PIY-06)
-│   ├── supply-chain.md            # Supply-chain risk (KSI-TPR-03/04)
-│   ├── training-log.md            # Self-attested training (KSI-CED-01..04)
+│   ├── incident-response.md       # IR runbook (KSI-INR-RIR..03)
+│   ├── recovery-plan.md           # Recovery plan (KSI-RPL-RRO..04)
+│   ├── security-review.md         # Annual security review (KSI-PIY-RIS)
+│   ├── supply-chain.md            # Supply-chain risk (KSI-SCR-MIT/MON)
+│   ├── training-log.md            # Self-attested training (KSI-CED-RAT..04)
 │   └── poam.md                    # Plan of Action & Milestones for tracked gaps
 ├── .github/workflows/
 │   └── deploy-with-opa.yml        # GitHub Actions CI/CD pipeline

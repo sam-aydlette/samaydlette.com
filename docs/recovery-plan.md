@@ -1,6 +1,6 @@
 # Recovery Plan
 
-This document satisfies KSI-RPL-02 and KSI-RPL-04, given the recovery objectives declared per KSI-RPL-01:
+This document satisfies KSI-RPL-ARP and KSI-RPL-TRC, given the recovery objectives declared per KSI-RPL-RRO:
 
 - **Recovery Time Objective (RTO):** 21 days. The world will be fine without my opinions for three weeks.
 - **Recovery Point Objective (RPO):** 24 hours. Backups are the frequent git commits and S3 object versioning, both of which exceed this granularity by orders of magnitude.
@@ -50,7 +50,7 @@ curl -s https://samaydlette.com/.well-known/ksi-signal.json | jq '.signal_id, .e
 
 The full procedure is bounded by AWS resource creation latency (CloudFront takes about 20 minutes to deploy globally) and DNS propagation (up to 48 hours, typically much less). Realistic recovery is hours, not days. The 21-day RTO is generous on purpose — it's the time the operator is willing to wait, not the time the system needs.
 
-## Backup alignment (KSI-RPL-03)
+## Backup alignment (KSI-RPL-ABO)
 
 - **Source code:** Distributed across every git clone in existence. RPO is "the time since the last fetch on any clone," which in practice is minutes.
 - **Site content:** Source-controlled and additionally backed up in the S3 bucket itself, which has versioning enabled. Any object can be rolled back to a prior version within S3's standard retention.
@@ -59,9 +59,9 @@ The full procedure is bounded by AWS resource creation latency (CloudFront takes
 
 The 24-hour RPO is comfortably met. Any change committed to `main` reaches the bucket within the time of one CI run (~5 minutes). The data loss window in the worst case is "whatever is in flight in an open editor at the moment of catastrophe," which is upper-bounded by the operator's typing speed, not by any backup cadence.
 
-## Recovery testing (KSI-RPL-04)
+## Recovery testing (KSI-RPL-TRC)
 
-KSI-RPL-04 calls for persistent testing of recovery capability. The site's infrastructure was rebuilt from `terraform.tfvars.example` during the construction of this implementation; effective wall-clock time from "git clone" to "curl returns content" was under one hour, well inside RTO. That counts as a real recovery exercise with a much-larger-than-tabletop scope.
+KSI-RPL-TRC calls for persistent testing of recovery capability. The site's infrastructure was rebuilt from `terraform.tfvars.example` during the construction of this implementation; effective wall-clock time from "git clone" to "curl returns content" was under one hour, well inside RTO. That counts as a real recovery exercise with a much-larger-than-tabletop scope.
 
 A formal tabletop is run annually, recorded below using this template:
 

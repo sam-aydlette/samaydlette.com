@@ -188,7 +188,7 @@
               {
                 "uuid": "4aaf70cf-6931-5556-bc98-cb9aad128243",
                 "control-id": "ir-2",
-                "description": "Incident response training collapses into self-attestation by the sole operator (who is also the IR lead). Coverage is documented in `docs/training-log.md` (KSI-CED-04 section). The runbook in `docs/incident-response.md` serves as the training material; reviews are annual.",
+                "description": "Incident response training collapses into self-attestation by the sole operator (who is also the IR lead). Coverage is documented in `docs/training-log.md` (KSI-CED-RAT section). The runbook in `docs/incident-response.md` serves as the training material; reviews are annual.",
                 "props": [
                   {
                     "name": "implementation-status",
@@ -218,7 +218,7 @@
               {
                 "uuid": "1b05eca3-3674-5d8f-b1ea-447f650e8fd1",
                 "control-id": "ir-8",
-                "description": "The incident response plan is documented in docs/incident-response.md. Reviews are scheduled annually as part of the security review. KSI-INR-02 (pattern review) is satisfied by the same cadence; the current incident count is zero, so the pattern set is empty.",
+                "description": "The incident response plan is documented in docs/incident-response.md. Reviews are scheduled annually as part of the security review. KSI-INR-RPI (pattern review) is satisfied by the same cadence; the current incident count is zero, so the pattern set is empty.",
                 "props": [
                   {
                     "name": "implementation-status",
@@ -248,7 +248,7 @@
               {
                 "uuid": "e4a8c79d-6767-5834-b7b5-594cc901ab8c",
                 "control-id": "ir-9.2",
-                "description": "Spillage-response training: incorporated into the runbook review the operator performs annually per docs/security-review.md (KSI-CED-04). For a sole-operator system there is no separate cohort to train; the IR lead and the trainee are the same person.",
+                "description": "Spillage-response training: incorporated into the runbook review the operator performs annually per docs/security-review.md (KSI-CED-RAT). For a sole-operator system there is no separate cohort to train; the IR lead and the trainee are the same person.",
                 "props": [
                   {
                     "name": "implementation-status",

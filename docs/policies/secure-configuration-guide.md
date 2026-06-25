@@ -82,6 +82,12 @@ scoped.
 - **API capability (`SCG-ENH-API`):** AWS APIs and GitHub APIs are the upstream APIs that govern these accounts; both are fully API-driven.
 - **Versioning (`SCG-ENH-VRH`):** maintained in git with full history.
 
+## Secure defaults (`SCG-CSO-SDF`)
+
+All settings ship in their recommended secure state when a resource is first provisioned, because there is no manual provisioning step: every account, key, bucket, and policy is created from version-controlled Terraform with the hardened configuration baked in (S3 public-access block, SSE encryption, TLS 1.2+, mandatory MFA on the Cognito pool, least-privilege IAM, the FSBP account password policy). There is no "default-then-harden" window — the first applied state is the secure state, which is what `SCG-CSO-SDF` (a SHOULD) asks for.
+
 ## Public availability
 
-Published at this path within the repository and rendered as part of the public site. Linked from [`docs/policies/README.md`](README.md) and from the OSCAL SSP for the AC and SC families.
+Published at this path within the repository and rendered as part of the public site (`SCG-CSO-PUB`). Linked from [`docs/policies/README.md`](README.md) and from the OSCAL SSP for the AC and SC families.
+
+> **Effective dates.** The Secure Configuration Guide rules (`SCG-*`) and the Addressing-FedRAMP-Communication rules (`AFC-*`) carry the earliest CR26 deadlines: their grace period ended **2026-07-01**. The SCG obligations above are met; AFC is N/A for this unsponsored system (see [`docs/cr26-applicability.md`](../cr26-applicability.md)).

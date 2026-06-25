@@ -9,9 +9,9 @@ This POA&M follows the field structure of the FedRAMP Rev 5 *Appendix O: Plan of
 
 The authoritative machine-readable form is the OSCAL POA&M at [`/.well-known/oscal-poam.json`](/.well-known/oscal-poam.json), generated on every deploy by [`scripts/build-oscal-poam.py`](../scripts/build-oscal-poam.py). The OSCAL JSON and this Markdown document are kept in sync — both reflect the same set of items. When updating one, update the other in the same change. The Markdown is the human view; the OSCAL JSON is the machine view; both are required per FedRAMP NTC-0009 (machine-readable plus text-based equivalent).
 
-The FedRAMP Excel template separates findings across tabs by lifecycle and source: Open POA&M Items (vulnerability-management items), Closed POA&M Items, Configuration Findings (software / IaC configuration scanner findings — Checkov, tfsec, etc.), PL-2 Findings (3PAO-detected SSP/documentation deficiencies), and Record of Changes. This document mirrors that structure as separate sections.
+The FedRAMP Excel template separates findings across tabs by lifecycle and source: Open POA&M Items (vulnerability-management items), Closed POA&M Items, Configuration Findings (software / IaC configuration scanner findings — Checkov, tfsec, etc.), PL-2 Findings (assessor-detected SSP/documentation deficiencies), and Record of Changes. This document mirrors that structure as separate sections.
 
-The 20x VDR rules call risk-accepted entries "Accepted Vulnerabilities" (`VDR-RPT-AVI`); the same items appear in machine-readable form at `/.well-known/vdr-report.json`, with `poam_ref` cross-references back to the entries below.
+The 20x VDR rules call risk-accepted entries "Accepted Vulnerabilities" (`VER-RPT-AVI`); the same items appear in machine-readable form at `/.well-known/vdr-report.json`, with `poam_ref` cross-references back to the entries below.
 
 Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
@@ -28,7 +28,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 Configuration Findings are findings about how software and infrastructure are configured, surfaced by IaC and configuration scanners (Checkov, tfsec) rather than by vulnerability scanners. They are tracked as POA&M items but live on a separate tab in the FedRAMP Excel template because the lifecycle is different from vulnerability findings. Each entry below is either a Checkov-reported configuration weakness or an explicit architectural decision; all are risk-accepted with documented rationale **except: POAM-011/POAM-018 (closed under Task 6); POAM-005/POAM-017/POAM-024 (closed under Task 7); POAM-006/POAM-013 (closed under Task 8b); POAM-012/POAM-015 (reclassified as false positives under Task 8b — see the False Positives register); POAM-021/POAM-022/POAM-023 (closed under Task 3 — Cognito); POAM-019 (reclassified as a false positive under Task 3 — SC-12 met via verified manual rotation); and POAM-025 (open operational requirement — root/operator hardware MFA, surfaced by the 2026-06-22 Prowler scan)** (closure notes below the table).
 
-The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VDR-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
+The source of truth for the rationale is the inline `#checkov:skip=ID:reason` annotation in `infrastructure/main.tf` (or, for POAM-016, the architectural decision record in [`docs/recovery-plan.md`](recovery-plan.md)). All entries have been evaluated per VDR-EVA-* (PAIN N1-N5, internet-reachability, likely-exploitability) and carry the corresponding `VER-RPT-AVI` fields in the published `/.well-known/vdr-report.json`. None is in CISA KEV.
 
 | POA&M ID | Controls | Weakness Name | Detector Source | Source Identifier | Asset Identifier | PAIN | Original Risk | Adj. Risk | Risk Adj. | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -123,7 +123,7 @@ usage-plan throttling + Cognito lockout, Task 3). The interim acceptance rests o
 the compensating controls, not the categorization: the credential is a
 high-entropy operator-set secret compared in constant time, and a single shared
 credential is the only valid pair (no user enumeration). **Assessor
-posture:** a 3PAO penetration test may re-rate an unauthenticated-reachable,
+posture:** a FedRAMP Recognized assessor penetration test may re-rate an unauthenticated-reachable,
 unthrottled credential endpoint above Low regardless of the compensating controls
 above; the operator's accepted position is explicitly conditional — any evidence of
 credential-guessing in the Lambda execution logs (`/aws/lambda/samaydlette-com-silk-reeling`)
@@ -318,11 +318,11 @@ False positives are tracked separately so an assessor can see which scanner find
 
 ---
 
-## PL-2 Findings (3PAO-Identified)
+## PL-2 Findings (Assessor-Identified)
 
-Not applicable. No 3PAO assessment is in scope for this PoC; no SSP or documentation deficiencies have been formally documented by an independent assessor.
+Not applicable. No FedRAMP Recognized independent assessment is in scope for this PoC; no SSP or documentation deficiencies have been formally documented by an independent assessor.
 
-The FedRAMP template carries a PL-2 Findings tab for 3PAO-identified deficiencies in the System Security Plan, the Authorization Boundary Diagram, or supporting documentation. Typical examples are SSP sections that disagree with the running system, an ABD that doesn't depict an in-scope external service, or boilerplate text that wasn't customized to the CSO. This section exists for parity with the template and would be populated if and when a 3PAO is engaged.
+The FedRAMP template carries a PL-2 Findings tab for FedRAMP Recognized assessor-identified deficiencies in the System Security Plan, the Authorization Boundary Diagram, or supporting documentation. Typical examples are SSP sections that disagree with the running system, an ABD that doesn't depict an in-scope external service, or boilerplate text that wasn't customized to the CSO. This section exists for parity with the template and would be populated if and when a FedRAMP Recognized assessor is engaged.
 
 ---
 

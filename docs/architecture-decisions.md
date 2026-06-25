@@ -2,7 +2,7 @@
 
 This document records the architectural and operational decisions that satisfy 14 of the in-scope KSI indicators. Each decision is named, justified briefly, and tagged with the KSI it addresses. The shape is loosely modeled on Architectural Decision Records (ADRs).
 
-## Change management procedures (KSI-CMT-04)
+## Change management procedures (KSI-CMT-RVP)
 
 Change management is GitOps, full stop. Every change to infrastructure or content reaches production through a pull request to `main`, which triggers the OPA gate, the Terraform plan, the apply, the canonical inventory build, the Sigstore signing, and the publish — all visible in the GitHub Actions log.
 
@@ -10,7 +10,7 @@ There is no separate change-management ticketing system because there is no sepa
 
 **Effectiveness review:** monthly, by checking that no commits have reached `main` outside the workflow. The git log makes this trivial; the runtime KSI signal makes drift detectable.
 
-## Ingress and egress restriction (KSI-CNA-01)
+## Ingress and egress restriction (KSI-CNA-RNT)
 
 The system has exactly one ingress: CloudFront, fronting an S3 bucket whose public access is fully blocked. CloudFront's origin access is restricted to the bucket via a service-principal policy with a `SourceArn` condition; no other principal can read the bucket directly. There is no public ingress to any compute resource.
 
@@ -18,27 +18,27 @@ Egress: the Lambda calls AWS APIs for S3 and CloudFront within the account. The 
 
 There are no other ingress or egress paths to control because there are no other moving parts.
 
-## Traffic flow controls (KSI-CNA-03)
+## Traffic flow controls (KSI-CNA-ULN)
 
 The system has two logical paths: viewer→CloudFront→S3 (read-only, all viewers) and Lambda→AWS API (scoped via IAM). There is no internal east-west traffic to control. The IAM policy on the Lambda role is the entire traffic-flow control mechanism for the only non-public path that exists.
 
-## DDoS and unwanted-activity protection (KSI-CNA-05)
+## DDoS and unwanted-activity protection (KSI-CNA-RVP)
 
 CloudFront includes AWS Shield Standard at no cost; this is the baseline protection. AWS WAF was evaluated and consciously excluded as a cost trade-off (~$120/year) documented in the README. The threat model for a static personal site does not justify it: there are no forms, no authentication endpoints, no APIs, and no expensive backend resources to protect from request floods. Shield Standard handles the L3/L4 cases that exist.
 
 **Effectiveness review:** annually (see [`security-review.md`](security-review.md)). If traffic patterns change or the threat profile shifts (e.g., the site starts serving forms or APIs), the WAF decision is revisited.
 
-## High availability (KSI-CNA-06)
+## High availability (KSI-CNA-OFA)
 
 The system uses single-region AWS managed services (S3, CloudFront, Lambda, ACM, Route 53). CloudFront is global by design. S3 has 11-nines durability within a region. The declared RTO of 21 days (see [`recovery-plan.md`](recovery-plan.md)) accommodates regional failure scenarios; multi-region active-passive was excluded as a cost trade-off (~$300/year). For a personal site, "highly available" is the AWS default; "highly available with regional failover" is overkill.
 
-## Just-in-time authorization (KSI-IAM-04)
+## Just-in-time authorization (KSI-IAM-JIT)
 
 The Lambda IAM role is fixed-scope, not just-in-time. Rationale: the Lambda has exactly one job (read deploy signal, query S3+CloudFront config, publish runtime signal), exactly one schedule (daily, plus manual invocation for testing), and exactly one trust principal (the EventBridge rule). The benefit JIT is meant to deliver — reduction of standing privilege — is achieved here by reducing scope to the absolute minimum: read-only on three S3 config APIs, read-only on one specific CloudFront distribution, write to one specific S3 key. The role has no human-assumable trust policy.
 
 JIT machinery (e.g., AWS Identity Center session-bound access) would add operational complexity without reducing the effective standing-privilege surface, which is already as small as the Lambda's job admits.
 
-## SIEM-equivalent logging (KSI-MLA-01)
+## SIEM-equivalent logging (KSI-MLA-OSM)
 
 CloudWatch Logs is the SIEM equivalent for this system. Sources collected:
 
@@ -50,7 +50,7 @@ For a two-resource, one-Lambda system, this is meaningfully a SIEM. Tamper resis
 
 If the system grew to require true SIEM features (correlation rules, alerting, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
 
-## Audit log review cadence (KSI-MLA-02)
+## Audit log review cadence (KSI-MLA-RVL)
 
 Quarterly. Specifically:
 
@@ -60,11 +60,11 @@ Quarterly. Specifically:
 
 A no-finding review does not require a commit. Anomalies are recorded in [`security-review.md`](security-review.md) with a date and disposition.
 
-## Log access scoping (KSI-MLA-08)
+## Log access scoping (KSI-MLA-ALA)
 
 Log access is scoped via AWS IAM. The deployer credentials have CloudWatch Logs read access account-wide; the Lambda role has none. No other principal exists in the system.
 
-## CISA Secure-by-Design alignment (KSI-PIY-04)
+## CISA Secure-by-Design alignment (KSI-PIY-RSD)
 
 This system aligns with CISA Secure-by-Design principles by design and by accident, both:
 
@@ -77,13 +77,13 @@ This system aligns with CISA Secure-by-Design principles by design and by accide
 
 The CISA Secure-by-Design pledge has 7 goals; this system addresses or trivially satisfies all of them by virtue of the technology stack and the deployment discipline.
 
-## Continuous improvement (KSI-SVC-01)
+## Continuous improvement (KSI-SVC-EIS)
 
 Continuous improvement is mechanized through the runtime KSI signal. Drift between the deploy-time signal and the runtime signal is the primary improvement signal. Each detected drift event triggers a fix in the policy or the implementation, recorded in the git log.
 
 The annual security review (see [`security-review.md`](security-review.md)) is the human-layer continuous improvement loop.
 
-## Secret management (KSI-SVC-06)
+## Secret management (KSI-SVC-ASM)
 
 Secrets in scope:
 
@@ -94,7 +94,7 @@ Secrets in scope:
 
 The keyless signing chain is the single biggest reduction in secret-management surface area for this system: there is literally no signing key to manage, rotate, or lose.
 
-## Prevent residual risk (KSI-SVC-08, mod-only)
+## Prevent residual risk (KSI-SVC-PRR, mod-only)
 
 Post-deploy verification covers residual-risk inspection. The runtime KSI emitter validates the live state every day and would surface any residual misconfiguration that survived a deploy. CloudFront cache invalidation is part of every deploy to remove residual cached content. S3 versioning preserves prior states for rollback if a deploy introduces unwanted residue.
 
@@ -127,7 +127,7 @@ Token threat model, sized to the system's actual blast radius. Methodology: STRI
 
 **Vulnerability analysis** is automated through the SAST/SCA tools described under SA-11 (Checkov, tfsec, Dependabot). Annual review of the threat model occurs in [`security-review.md`](security-review.md).
 
-## Communication integrity (KSI-SVC-09, mod-only)
+## Communication integrity (KSI-SVC-VCM, mod-only)
 
 Cross-component communications:
 
@@ -136,4 +136,4 @@ Cross-component communications:
 - Lambda ↔ AWS service APIs: TLS within the AWS network
 - CI ↔ AWS APIs: TLS, with credentials scoped via IAM
 
-Authenticity at the application layer: the canonical inventory is signed (KSI-SVC-05). Communication integrity at the transport layer is AWS-default TLS. End-to-end signed-message integrity at the application layer beyond the signed signal is not implemented because no application-layer protocol exists between components beyond the standard AWS APIs.
+Authenticity at the application layer: the canonical inventory is signed (KSI-SVC-VRI). Communication integrity at the transport layer is AWS-default TLS. End-to-end signed-message integrity at the application layer beyond the signed signal is not implemented because no application-layer protocol exists between components beyond the standard AWS APIs.

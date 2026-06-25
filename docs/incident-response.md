@@ -1,6 +1,6 @@
 # Incident Response Runbook
 
-This document satisfies KSI-INR-01 through KSI-INR-03. The IR lead is the author. The on-call rotation has one slot and is staffed continuously.
+This document satisfies KSI-INR-RIR through KSI-INR-AAR. The IR lead is the author. The on-call rotation has one slot and is staffed continuously.
 
 ## Scope
 
@@ -40,7 +40,7 @@ Active detection sources:
 4. **Recover.** Verify the runtime signal returns to clean. Verify `cosign verify-blob` still passes against the new signal and bundle. Confirm the site is reachable end-to-end.
 5. **Lessons learned.** Append an after-action entry to the section below.
 
-## After-action reports (KSI-INR-03)
+## After-action reports (KSI-INR-AAR)
 
 No incidents have occurred to date that warranted a formal after-action report. (This is itself useful evidence of *something*, though the author resists drawing strong conclusions from a sample size of zero.)
 
@@ -76,7 +76,7 @@ Response procedure:
 4. **Preserve evidence.** Record the timeline, the surface, and the actions taken before the public surface is updated. Record in the after-action template.
 5. **Notify if applicable.** External notification is generally not required for a personal site; this section exists for the case where it ever is.
 
-(IR-9.2) Training: spillage scenarios are part of the annual review of this runbook (see [`docs/training-log.md`](training-log.md), KSI-CED-04 section).
+(IR-9.2) Training: spillage scenarios are part of the annual review of this runbook (see [`docs/training-log.md`](training-log.md), KSI-CED-RAT section).
 
 (IR-9.3) Post-spill operations: the spillage scope is bounded by the public-static-site surface. After containment, normal site operation continues; there is no production environment to quarantine because the production environment is the public site itself.
 
@@ -91,7 +91,7 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 **What gets bypassed.** During an emergency the operator may:
 
 - Push directly to `main` without the usual SCN-Type categorization deliberation (an `emergency` label is still required on the commit message — see below).
-- Skip the standard advance-notification timing for Adaptive (`SCN-ADP-NTF`, 10 business days) or Transformative (`SCN-TRF-NIP`/`NFP`/`NAF`, 30+10+5 business days) changes.
+- Skip the standard advance-notification timing for Adaptive (`SCN-ADP-NTF`, 10 business days) or Transformative (`SCN-TRF-NIP`/`NFP`/`NAF`/`NAV`, 30 / 10 / 5 / 5 business days, plus the 30-business-day documentation update in `SCN-TRF-UPD`) changes.
 - Defer the threat-model review and per-control implementation-statement updates that a Transformative change would normally trigger.
 
 **What still applies.** During and after an emergency the operator must:
@@ -104,9 +104,9 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 
 **Documentation evidence.** Emergency-change procedures are documented in this section, in `docs/policies/cm-policy.md` (referenced under SCN integration), and in the `.github/workflows/scn-tag.yml` validator (which accepts `emergency` as a valid tag). Together these satisfy `SCN-CSO-EMG`'s "procedures should be documented in the FedRAMP Certification package" requirement.
 
-## Pattern review (KSI-INR-02)
+## Pattern review (KSI-INR-RPI)
 
-KSI-INR-02 calls for persistent review of past incidents for patterns. With zero incidents to date, the review is short. The cadence is annual, conducted as part of [`security-review.md`](security-review.md). When the incident count is greater than zero, the review will look for: repeated root causes, common detection-time gaps, and any patterns that suggest systemic rather than individual fixes.
+KSI-INR-RPI calls for persistent review of past incidents for patterns. With zero incidents to date, the review is short. The cadence is annual, conducted as part of [`security-review.md`](security-review.md). When the incident count is greater than zero, the review will look for: repeated root causes, common detection-time gaps, and any patterns that suggest systemic rather than individual fixes.
 
 ## Escalation
 

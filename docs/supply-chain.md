@@ -1,6 +1,6 @@
 # Supply Chain Risk Management
 
-This document satisfies KSI-TPR-03 and KSI-TPR-04.
+This document satisfies KSI-SCR-MIT and KSI-SCR-MON.
 
 ## In-scope third-party components
 
@@ -14,7 +14,7 @@ The system depends on a small, named set of third-party components:
 
 Every component above is listed in the canonical inventory at `/.well-known/ksi-signal.json`, named by Package URL where applicable.
 
-## Risk identification (KSI-TPR-03)
+## Risk identification (KSI-SCR-MIT)
 
 The canonical inventory makes any third-party component immediately addressable for review. A query of `pkg:npm/<name>@<version>` against any vulnerability database returns relevant CVEs without manual reconciliation. The same is true for the (currently empty) container image and HBOM slots if those become populated in the future.
 
@@ -22,7 +22,7 @@ GitHub Actions are reviewed when first added. SHA-pinning prevents transparent u
 
 The risk surface is intentionally small. A static site does not execute uploaded code, store user data, or process untrusted input beyond what static HTTP serving requires; the supply-chain blast radius is correspondingly small.
 
-## Risk monitoring (KSI-TPR-04)
+## Risk monitoring (KSI-SCR-MON)
 
 Multiple gates run automatically:
 

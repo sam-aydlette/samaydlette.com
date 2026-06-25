@@ -1,0 +1,41 @@
+{
+  "_note": "Operator-declared editorial values for the CDS certification-overview package (CDS-CSO-PUB / CDS-CSO-SVC / CDS-CSO-FID). scripts/build-cds-overview.py reads this plus the system profile and the canonical inventory to emit /.well-known/certification-overview-package.json. Honest placeholders are used where a value requires sponsorship the PoC does not have (FedRAMP ID, UEI).",
+  "fedramp_id": "<not assigned — unsponsored self-attested PoC; CDS-CSO-FID placeholder>",
+  "service_model": "SaaS",
+  "deployment_model": "Public Cloud",
+  "business_category": "Personal demonstration / compliance-automation reference architecture",
+  "uei": "<not assigned — no SAM.gov registration>",
+  "sales_contact": { "name": "Sam Aydlette", "url": "https://samaydlette.com/pages/contact.html" },
+  "security_contact": { "name": "Sam Aydlette", "email": "sam.aydlette@gmail.com", "source": "/.well-known/security.txt" },
+  "product_website": "https://samaydlette.com",
+  "logo_url": "https://samaydlette.com/favicon.ico",
+  "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
+  "secure_configuration_guidance_url": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
+  "documentation_overview_url": "https://samaydlette.com/research/the-plumbing.html",
+  "current_independent_assessment_service": "None — self-attested; no FedRAMP-Recognized independent assessment service engaged (IVV is N/A for this unsponsored proof of concept).",
+  "accountable_official": {
+    "name": "Sam Aydlette",
+    "title": "System Owner / Authorizing Operator",
+    "contact": "sam.aydlette@gmail.com"
+  },
+  "cryptographic_modules": [
+    { "module": "AWS KMS", "validation": "FIPS 140-3 (CMVP, HSM-backed)", "role": "key store for all four customer-managed CMKs (at-rest, runtime-signing, DNSSEC KSK, app secret)", "inherited": true },
+    { "module": "ACM TLS termination on CloudFront", "validation": "FIPS-validated cipher suites; TLS 1.2+", "role": "TLS in transit", "inherited": true },
+    { "module": "S3 SSE-S3", "validation": "AES-256 (AWS-managed keys)", "role": "at-rest on the public website + log buckets", "inherited": true },
+    { "module": "Sigstore Fulcio + Rekor", "validation": "ECDSA P-256 (FIPS-approved algorithm); the implementations are NOT CMVP-validated modules", "role": "deploy-time keyless signing", "inherited": false, "compensating_control": "trust anchored in the public Rekor transparency log" }
+  ],
+  "services": [
+    {
+      "name": "samaydlette.com static website",
+      "description": "Public static content (S3 origin behind CloudFront), plus the signed compliance artifacts published under /.well-known/.",
+      "security_category": "FIPS-199 Moderate (FedRAMP 20x Class C)",
+      "in_mas_scope": true
+    },
+    {
+      "name": "Silk Reeling Mirror application",
+      "description": "Cognito-gated HTTP API (API Gateway -> Lambda) serving a browser SPA that coaches Tai Chi; calls the external Anthropic API for feedback text (interconnection tracked as POAM-020).",
+      "security_category": "FIPS-199 Moderate (FedRAMP 20x Class C)",
+      "in_mas_scope": true
+    }
+  ]
+}

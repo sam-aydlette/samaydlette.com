@@ -1,0 +1,30 @@
+# CR26 Rule-Family Applicability
+
+The FedRAMP Consolidated Rules for 2026 (launched **2026-06-24**, in effect for widespread adoption **2026-07-04**; active 20x certifications must conform by **2027-01-01**) fold a set of rule families into the default requirements. This document is the authoritative statement of which families this system mechanizes and which are **Not Applicable**, with the corpus's own reasoning for each N/A. It exists so that nothing is silently omitted: a family that is not met is recorded here with a reason, not dropped.
+
+This system is a **self-attested proof of concept** — one operator, no agency sponsor, no federal customer data, no FedRAMP Marketplace listing, no FedRAMP Recognized independent assessment service engaged. Several CR26 families are structurally unavailable to such a system; the corpus text frequently supplies the exact reason.
+
+## Mechanized (produced as signed artifacts or enforced in the pipeline)
+
+| Family | What is produced / enforced | Key rules |
+|---|---|---|
+| **MAS** — Minimum Assessment Scope | Every inventory component carries a FIPS 199 category and information-flow tag; third-party AWS resources documented at the inheritance level | `MAS-CSO-IIR/FLO/TPR` (`MDI`/`SUP` N/A — no federal customer data, no supplemental materials) |
+| **SCN** — Significant Change Notifications | Commit-time `SCN-Type` gate (routine/adaptive/transformative/emergency), per-change SCN records + register, full transformative timeframe set | `SCN-CSO-*`, `SCN-RTR-NNR`, `SCN-ADP-NTF`, `SCN-TRF-NIP/NFP/NAF/NAV/UPD/TPR` |
+| **VDR / VER** — Vulnerability Detection, Evaluation & Reporting | Per-deploy VDR report (PAIN/IRV/LEV, Class C SLA, KEV gate) + human-readable rendering; 14-day drift cadence | `VDR-TFR-PVR/KEV/PDD`, `VER-EVA-*`, `VER-RPT-VDT/AVI`, `VER-TFR-MHR/IRI/NRI` |
+| **CCM** — Collaborative Continuous Monitoring | Quarterly Ongoing Certification Report (8 summaries + incident attestation) + next-report/review dates | `CCM-OCR-AVL/NRD`, `CCM-QTR-NRD` |
+| **CDS** — Certification Data Sharing | Certification-overview package (15 fields), service list, availability feed, policy index — all signed + human-readable | `CDS-CSO-PUB/SVC/FID/CBF/AVR/IRP` |
+| **CMU** — Cryptographic Module Use | Each module documented with CMVP-validation status (the authorization-boundary FIPS section); validated modules used for sensitive crypto | `CMU-CSO-CMD/UVM` (`CAT` N/A — no agency tenants) |
+| **SDR** — Security Decision Record | Per-KSI records (explanation, verification, validation, artifacts) + metric history; the 20x SSP replacement | `SDR-CSO-FRR/MTD`, `SDR-CSX-KSI/KMT` |
+| **CPO** — Certification Package Overview | Rollup of CDS/MAS/CMU/IVV + named accountable official; with the SDR, the SSP replacement | `CPO-CSO-OVR/MTD`, `CPO-CSX-CPM` |
+| **SCG** — Secure Configuration Guide | Public, versioned guide for top-level administrative accounts; secure-by-default provisioning | `SCG-CSO-RSC/PUB/SDF`, `SCG-ENH-*` |
+
+The Rev5 certification track is maintained in parallel: the OSCAL Rev 5 SSP and POA&M are still generated from the same control hub, so the automation is demonstrated under both the Rev5 and the 20x paradigms. CR26 gives the two certification types the **same rule families**; the only material difference is the evidence shape. The Rev5 Security Decision Record summarizes each applicable Rev5 control (`SDR-CSF-CTF`, "for each applicable Rev5 Control") — which the OSCAL SSP's per-control implemented-requirements already carry — while the 20x record summarizes each Key Security Indicator (`SDR-CSX-KSI`), which `scripts/build-sdr.py` produces. The remaining Rev5-only IDs (`IVV-CSF-*`, `CDS-CSF-TCM`, `VDR-TFR-MVF`) are control-vs-KSI assessment variants; IVV is N/A here regardless, and the Class C VDR remediation timeframes are identical across both tracks.
+
+## Not Applicable (structurally unavailable to an unsponsored, unlisted, self-attested system)
+
+- **IVV — Independent Verification and Validation.** `IVV-CSO-FIA` (Class C MUST) requires a persistent independent assessment by a **FedRAMP Recognized independent assessment service** (the artifact formerly called a 3PAO) or by FedRAMP. This system is self-attested and has engaged no such assessor, so the *independent* half cannot be met. The provider-side verification and validation an assessor would consume **are** produced (in the Security Decision Record); the independent half is unmet by design and recorded N/A.
+- **MKT — Marketplace Listing.** `MKT-IIP-AGU` requires demonstrating the offering is for agency use within 44 USC § 3506 scope, and the rule text is explicit that *"services used by private companies to meet other compliance requirements (such as CMMC) that do not also meet one of the above use cases are outside the scope of FedRAMP."* There is no agency use case and no intent to list, so MKT is N/A by statutory scope.
+- **AFC — Addressing FedRAMP Communication.** `AFC-CSO-INB` and the rest require maintaining a FedRAMP Security Inbox and handling FedRAMP correspondence. With no listing and no sponsor, FedRAMP has no reason to correspond, so there is no channel to maintain. AFC's grace period already ended **2026-07-01**; it is recorded N/A absent a sponsor.
+- **IEC — Incident Evaluation and Communication.** A FedRAMP Reportable Incident under `IEC-CSO-EFR` is triggered by an effect on the confidentiality or integrity of **federal customer data**. This system holds none, so no incident is FedRAMP-reportable and the `IEC-CSO-IIR` reporting clocks never start. The evaluation step still runs — the VDR aggregator assigns a PAIN rating to every finding — so the machinery is in place the moment federal data ever enters scope.
+
+These four are N/A because of *what this system is*, not because of an engineering gap. If the system were ever sponsored, listed, assessed, or handling federal data, each would activate, and the mechanisms above (the SDR's V&V evidence, the CDS overview package, the PAIN evaluation) are the inputs those activated obligations would consume.

@@ -54,83 +54,87 @@ FEDRAMP_PROFILE = (
 # this system claims, and therefore (by transitivity through the KSI catalog's
 # controls[] arrays) the set of NIST 800-53 controls in this SSP.
 #
-# AFR-* are excluded because they are FedRAMP-authorization-process-only.
-# IAM-01, IAM-02, IAM-06, IAM-07 are excluded because the system has no end users.
-# PIY-08 is excluded because the system has no executive structure separate from
-# the operator.
-# SVC-10 is excluded because the system has no federal customer data.
+# CR26 final (2026-06-24) renumbered the KSIs to mnemonic IDs, retired the AFR
+# (Authorization-by-FedRAMP) family, and renamed TPR -> SCR (Supply Chain Risk).
+# All 46 KSIs are in scope for this Class C offering (the 5 Class-C-required
+# indicators included); where an indicator applies only vacuously (e.g.
+# KSI-SVC-RUD federal-customer-data removal, with no federal customer data held),
+# the per-control implementation statement records the N/A.
 IN_SCOPE_KSIS = {
     # Cybersecurity Education
-    "KSI-CED-01", "KSI-CED-02", "KSI-CED-03", "KSI-CED-04",
-    # Configuration Management
-    "KSI-CMT-01", "KSI-CMT-02", "KSI-CMT-03", "KSI-CMT-04",
+    "KSI-CED-RAT",
+    # Change Management
+    "KSI-CMT-LMC", "KSI-CMT-RMV", "KSI-CMT-RVP", "KSI-CMT-VTD",
     # Cloud Native Architecture
-    "KSI-CNA-01", "KSI-CNA-02", "KSI-CNA-03", "KSI-CNA-04",
-    "KSI-CNA-05", "KSI-CNA-06", "KSI-CNA-07", "KSI-CNA-08",
-    # Identity & Access Management (only the non-end-user-facing ones)
-    "KSI-IAM-03", "KSI-IAM-04", "KSI-IAM-05",
+    "KSI-CNA-DFP", "KSI-CNA-EIS", "KSI-CNA-IBP", "KSI-CNA-MAT",
+    "KSI-CNA-OFA", "KSI-CNA-RNT", "KSI-CNA-RVP", "KSI-CNA-ULN",
+    # Identity and Access Management
+    "KSI-IAM-AAM", "KSI-IAM-APM", "KSI-IAM-ELP", "KSI-IAM-JIT",
+    "KSI-IAM-SNU", "KSI-IAM-SUS",
     # Incident Response
-    "KSI-INR-01", "KSI-INR-02", "KSI-INR-03",
+    "KSI-INR-AAR", "KSI-INR-RIR", "KSI-INR-RPI",
     # Monitoring, Logging, and Auditing
-    "KSI-MLA-01", "KSI-MLA-02", "KSI-MLA-05", "KSI-MLA-07", "KSI-MLA-08",
+    "KSI-MLA-ALA", "KSI-MLA-EVC", "KSI-MLA-LET", "KSI-MLA-OSM", "KSI-MLA-RVL",
     # Policy and Inventory
-    "KSI-PIY-01", "KSI-PIY-03", "KSI-PIY-04", "KSI-PIY-06",
+    "KSI-PIY-GIV", "KSI-PIY-RES", "KSI-PIY-RIS", "KSI-PIY-RSD", "KSI-PIY-RVD",
     # Recovery Planning
-    "KSI-RPL-01", "KSI-RPL-02", "KSI-RPL-03", "KSI-RPL-04",
-    # Secure Service
-    "KSI-SVC-01", "KSI-SVC-02", "KSI-SVC-04", "KSI-SVC-05",
-    "KSI-SVC-06", "KSI-SVC-08", "KSI-SVC-09",
-    # Third-Party Risk
-    "KSI-TPR-03", "KSI-TPR-04",
+    "KSI-RPL-ABO", "KSI-RPL-ARP", "KSI-RPL-RRO", "KSI-RPL-TRC",
+    # Supply Chain Risk (formerly Third-Party Risk / TPR)
+    "KSI-SCR-MIT", "KSI-SCR-MON",
+    # Service Configuration
+    "KSI-SVC-ACM", "KSI-SVC-ASM", "KSI-SVC-EIS", "KSI-SVC-PRR",
+    "KSI-SVC-RUD", "KSI-SVC-SIN", "KSI-SVC-VCM", "KSI-SVC-VRI",
 }
 
 # Maps each in-scope KSI to the documentation file that records its
 # implementation. Used to populate `link` references in the SSP statements.
 KSI_DOC_REFS = {
-    "KSI-CED-01": "docs/training-log.md",
-    "KSI-CED-02": "docs/training-log.md",
-    "KSI-CED-03": "docs/training-log.md",
-    "KSI-CED-04": "docs/training-log.md",
-    "KSI-CMT-01": "README.md",
-    "KSI-CMT-02": "README.md",
-    "KSI-CMT-03": "README.md",
-    "KSI-CMT-04": "docs/architecture-decisions.md",
-    "KSI-CNA-01": "docs/architecture-decisions.md",
-    "KSI-CNA-02": "docs/architecture-decisions.md",
-    "KSI-CNA-03": "docs/architecture-decisions.md",
-    "KSI-CNA-04": "README.md",
-    "KSI-CNA-05": "docs/architecture-decisions.md",
-    "KSI-CNA-06": "docs/architecture-decisions.md",
-    "KSI-CNA-07": "README.md",
-    "KSI-CNA-08": "docs/ksi-signal.md",
-    "KSI-IAM-03": "docs/architecture-decisions.md",
-    "KSI-IAM-04": "docs/architecture-decisions.md",
-    "KSI-IAM-05": "infrastructure/main.tf",
-    "KSI-INR-01": "docs/incident-response.md",
-    "KSI-INR-02": "docs/incident-response.md",
-    "KSI-INR-03": "docs/incident-response.md",
-    "KSI-MLA-01": "docs/architecture-decisions.md",
-    "KSI-MLA-02": "docs/architecture-decisions.md",
-    "KSI-MLA-05": "infrastructure/policies.rego",
-    "KSI-MLA-07": "docs/ksi-signal.md",
-    "KSI-MLA-08": "docs/architecture-decisions.md",
-    "KSI-PIY-01": "docs/ksi-signal.md",
-    "KSI-PIY-03": "website/.well-known/security.txt",
-    "KSI-PIY-04": "docs/architecture-decisions.md",
-    "KSI-PIY-06": "docs/security-review.md",
-    "KSI-RPL-01": "docs/recovery-plan.md",
-    "KSI-RPL-02": "docs/recovery-plan.md",
-    "KSI-RPL-03": "docs/recovery-plan.md",
-    "KSI-RPL-04": "docs/recovery-plan.md",
-    "KSI-SVC-01": "docs/architecture-decisions.md",
-    "KSI-SVC-02": "infrastructure/main.tf",
-    "KSI-SVC-04": "infrastructure/main.tf",
-    "KSI-SVC-05": "docs/ksi-signal.md",
-    "KSI-SVC-06": "docs/architecture-decisions.md",
-    "KSI-SVC-08": "docs/architecture-decisions.md",
-    "KSI-SVC-09": "docs/architecture-decisions.md",
-    "KSI-TPR-03": "docs/supply-chain.md",
-    "KSI-TPR-04": "docs/supply-chain.md",
+    "KSI-CED-RAT": "docs/training-log.md",
+    "KSI-CMT-LMC": "docs/architecture-decisions.md",
+    "KSI-CMT-RMV": "docs/architecture-decisions.md",
+    "KSI-CMT-RVP": "docs/architecture-decisions.md",
+    "KSI-CMT-VTD": "docs/architecture-decisions.md",
+    "KSI-CNA-DFP": "docs/architecture-decisions.md",
+    "KSI-CNA-EIS": "docs/architecture-decisions.md",
+    "KSI-CNA-IBP": "docs/architecture-decisions.md",
+    "KSI-CNA-MAT": "docs/architecture-decisions.md",
+    "KSI-CNA-OFA": "docs/recovery-plan.md",
+    "KSI-CNA-RNT": "docs/architecture-decisions.md",
+    "KSI-CNA-RVP": "docs/architecture-decisions.md",
+    "KSI-CNA-ULN": "docs/architecture-decisions.md",
+    "KSI-IAM-AAM": "docs/architecture-decisions.md",
+    "KSI-IAM-APM": "docs/architecture-decisions.md",
+    "KSI-IAM-ELP": "docs/architecture-decisions.md",
+    "KSI-IAM-JIT": "docs/architecture-decisions.md",
+    "KSI-IAM-SNU": "infrastructure/main.tf",
+    "KSI-IAM-SUS": "docs/incident-response.md",
+    "KSI-INR-AAR": "docs/incident-response.md",
+    "KSI-INR-RIR": "docs/incident-response.md",
+    "KSI-INR-RPI": "docs/incident-response.md",
+    "KSI-MLA-ALA": "docs/architecture-decisions.md",
+    "KSI-MLA-EVC": "docs/architecture-decisions.md",
+    "KSI-MLA-LET": "docs/architecture-decisions.md",
+    "KSI-MLA-OSM": "infrastructure/policies.rego",
+    "KSI-MLA-RVL": "docs/ksi-signal.md",
+    "KSI-PIY-GIV": "docs/ksi-signal.md",
+    "KSI-PIY-RES": "docs/security-review.md",
+    "KSI-PIY-RIS": "docs/security-review.md",
+    "KSI-PIY-RSD": "docs/architecture-decisions.md",
+    "KSI-PIY-RVD": "website/.well-known/security.txt",
+    "KSI-RPL-ABO": "docs/recovery-plan.md",
+    "KSI-RPL-ARP": "docs/recovery-plan.md",
+    "KSI-RPL-RRO": "docs/recovery-plan.md",
+    "KSI-RPL-TRC": "docs/recovery-plan.md",
+    "KSI-SCR-MIT": "docs/supply-chain.md",
+    "KSI-SCR-MON": "docs/supply-chain.md",
+    "KSI-SVC-ACM": "docs/architecture-decisions.md",
+    "KSI-SVC-ASM": "infrastructure/main.tf",
+    "KSI-SVC-EIS": "docs/architecture-decisions.md",
+    "KSI-SVC-PRR": "docs/architecture-decisions.md",
+    "KSI-SVC-RUD": "docs/supply-chain.md",
+    "KSI-SVC-SIN": "infrastructure/main.tf",
+    "KSI-SVC-VCM": "docs/architecture-decisions.md",
+    "KSI-SVC-VRI": "docs/ksi-signal.md",
 }
 
 # =============================================================================
@@ -218,7 +222,7 @@ FAMILY_DEFAULTS = {
             "Audit storage capacity, time-stamp generation, and audit-"
             "record protection are AWS-managed features of those services. "
             "Audit review cadence is documented in docs/architecture-"
-            "decisions.md (KSI-MLA-02 section)."
+            "decisions.md (KSI-MLA-RVL section)."
         ),
     },
     # Assessment, Authorization, and Monitoring — assessment is the OPA gate;
@@ -233,7 +237,7 @@ FAMILY_DEFAULTS = {
             "runtime KSI emitter at runtime; both produce structured "
             "validation records embedded in the KSI signal. System-level "
             "continuous monitoring is implemented via the runtime emitter "
-            "(KSI-CNA-08). Authorization sub-controls in the FedRAMP sense "
+            "(KSI-CNA-EIS). Authorization sub-controls in the FedRAMP sense "
             "(CA-2, CA-6) are tracked as separate not-applicable entries; "
             "no agency authorization is in scope."
         ),
@@ -774,7 +778,7 @@ def build_metadata(signal):
         "oscal-version": OSCAL_VERSION,
         "remarks": (
             "This System Security Plan is a self-attested proof-of-concept artifact. "
-            "The system it describes is NOT FedRAMP-certified. No 3PAO assessment has "
+            "The system it describes is NOT FedRAMP-certified. No FedRAMP Recognized independent assessment has "
             "been conducted; no agency Authorization to Operate is in place. The SSP "
             "is published to demonstrate an architectural pattern (canonical-inventory-"
             "derived OSCAL artifacts) aligned with FedRAMP NTC-0009. Treat all "
@@ -830,7 +834,7 @@ def build_metadata(signal):
                 "name": "authorization-status",
                 "ns": "https://samaydlette.com/ns/oscal",
                 "value": "self-attested-proof-of-concept",
-                "remarks": "This SSP is operator-self-attested; no 3PAO assessment, no agency ATO.",
+                "remarks": "This SSP is operator-self-attested; no FedRAMP Recognized independent assessment, no agency ATO.",
             },
             {
                 "name": "fedramp-certified",
@@ -1423,15 +1427,15 @@ def _failing_ksis_from_signal(signal):
             # Map runtime-policy ids to KSI ids by convention. Best-effort.
             policy_id = (v.get("policy") or {}).get("id", "")
             if policy_id == "runtime.s3_security":
-                failing.update({"KSI-CMT-02", "KSI-CNA-04", "KSI-SVC-04"})
+                failing.update({"KSI-SVC-ACM", "KSI-SVC-SIN", "KSI-CMT-LMC"})
             elif policy_id == "runtime.cloudfront_security":
-                failing.update({"KSI-SVC-02", "KSI-CNA-04"})
+                failing.update({"KSI-SVC-VCM", "KSI-CNA-ULN"})
             elif policy_id == "terraform.compliance":
                 # Deploy-time policy: granular KSI mapping not encoded.
-                # Mark a synthetic id so the downgrade fires for affected
+                # Mark representative ids so the downgrade fires for affected
                 # controls; we treat infrastructure findings as touching
-                # CMT/CNA/SVC families broadly.
-                failing.update({"KSI-CMT-03", "KSI-MLA-05"})
+                # config/monitoring families broadly.
+                failing.update({"KSI-MLA-EVC", "KSI-SVC-ACM"})
     return failing
 
 
