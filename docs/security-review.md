@@ -1,6 +1,6 @@
 # Annual Security Review
 
-This document satisfies KSI-PIY-06 — persistent review of the effectiveness of investments in achieving security objectives.
+This document satisfies KSI-PIY-RIS — persistent review of the effectiveness of investments in achieving security objectives.
 
 ## Scope
 
@@ -98,7 +98,7 @@ Per CR26 `CCM-QTR-MTG`, the operator records a quarterly review of the runtime K
 - Deploy-time vs. runtime signal reconciliation: components match; validations pass on both sides.
 - VDR posture: 1 finding (N1, deduplicate-of-CKV_AWS_50, suppressed in next push), 0 blocking, 15 risk-accepted.
 - POA&M activity: POAM-001 through POAM-018 in place; first AWS access-key rotation due ~2026-08-08.
-- 3PAO-style external assessment (self-performed) completed 2026-05-08; findings recorded in SAR-001 through SAR-009.
+- independent-assessment-style external assessment (self-performed) completed 2026-05-08; findings recorded in SAR-001 through SAR-009.
 - Decisions: proceed with SAR-002 / SAR-003 inventory expansions; close SAR-007 (ledger), SAR-008 (deduplicate tfsec finding), SAR-009 (emergency-change procedure).
 - Next review due: 2026-08-08 (or sooner upon Transformative change per SCN).
 

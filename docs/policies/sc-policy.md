@@ -12,6 +12,6 @@ All cryptographic primitives in use rely on AWS-managed FIPS 140-validated modul
 
 Several SC controls are inherited from AWS East/West Moderate FedRAMP authorization (Package ID: AGENCYAMAZONEW), notably the SC-12 family (cryptographic key establishment) and SC-45 (system time synchronization). SC-13 (cryptographic protection) operates against the AWS FIPS-validated modules in the AWS authorization.
 
-**20x rule integration.** Using Cryptographic Modules (`UCM-*`) — covered by AWS KMS/ACM and Sigstore. Communication integrity (KSI-SVC-09).
+**20x rule integration.** Using Cryptographic Modules (`UCM-*`) — covered by AWS KMS/ACM and Sigstore. Communication integrity (KSI-SVC-VCM).
 
 **Review cadence.** Annually with the [security review](../security-review.md); after any Transformative change to the TLS or signing posture.

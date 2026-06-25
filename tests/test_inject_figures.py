@@ -29,10 +29,10 @@ def test_figures_reproduce_published_numbers():
     # hub split: hand-written + family-default = total
     assert int(f["hub_handwritten"]) + int(f["hub_generated"]) == int(f["hub_total"])
     assert f["hub_handwritten"] == "115"
-    assert f["hub_total"] == "331"
+    assert f["hub_total"] == "333"
     # FedRAMP Moderate stack sums to the total
     assert int(f["moderate_implemented"]) + int(f["moderate_inherited"]) + int(f["moderate_na"]) == int(f["hub_total"])
-    assert f["moderate_coverage"] == "331/331"
+    assert f["moderate_coverage"] == "333/333"
     # spokes
     assert f["govramp_coverage"] == "339/339"
     assert f["txramp1_coverage"] == "122/122"

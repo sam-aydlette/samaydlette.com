@@ -8,6 +8,6 @@ Supply chain risk management is documented in [`supply-chain.md`](../supply-chai
 
 Significant changes to any supply-chain input trigger SCN evaluation per the criteria in CM. A new AWS service activation is at minimum an Adaptive change. A library upgrade with breaking changes is Adaptive; a like-for-like patch is Routine Recurring per `SCN-RTR-NNR`. Replacement of a critical third-party service is Transformative.
 
-**20x rule integration.** Significant Change Notifications applied to supply-chain changes (`SCN-* family`). KSI-TPR (Third-Party Risk). KSI-SCM (Supply Chain Management).
+**20x rule integration.** Significant Change Notifications applied to supply-chain changes (`SCN-* family`). KSI-SCR (Supply Chain Risk).
 
 **Review cadence.** Continuous via Dependabot; annual structural review.

@@ -4,8 +4,8 @@
 # =============================================================================
 # Aggregates vulnerability findings across the system's SAST/SCA tools, applies
 # the FedRAMP 20x VDR evaluation framework (PAIN N1-N5, IRV, LEV, KEV), and
-# emits a single VDR report. The build itself is the report (per VDR-RPT-PER
-# and VDR-TFR-MHR — at least monthly cadence is satisfied by per-deploy
+# emits a single VDR report. The build itself is the report (per VER-RPT-PER
+# and VER-TFR-MHR — at least monthly cadence is satisfied by per-deploy
 # emission).
 #
 # The script blocks the build (exit 1) if any finding exceeds the Class C
@@ -24,7 +24,7 @@
 #   --kev PATH                CISA KEV catalog JSON (cisa.gov format)
 #   --checkov-yaml PATH       Path to .checkov.yaml; the skip-check list is
 #                             read and each entry becomes a risk-accepted entry
-#                             with POAM cross-references (VDR-RPT-AVI fields
+#                             with POAM cross-references (VER-RPT-AVI fields
 #                             populated).
 #   --previous-vdr PATH       Path to the previous VDR report; used as the
 #                             first-detected ledger so SLA clocks (Class C
@@ -79,7 +79,7 @@ SUPPRESSION_EVALUATION = {
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
-# corresponding POA&M items. Used to populate VDR-RPT-AVI explanation field.
+# corresponding POA&M items. Used to populate VER-RPT-AVI explanation field.
 SUPPRESSION_RATIONALE = {
     "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
@@ -142,7 +142,7 @@ CLASS_C_SLA_DAYS = {
 }
 
 # Severity → PAIN mapping. The CR26 VDR rules require contextual evaluation
-# per VDR-EVA-EFA, but for a deterministic PoC we use a fixed mapping that
+# per VER-EVA-EFA, but for a deterministic PoC we use a fixed mapping that
 # tilts conservative (severity is upgraded one notch when LEV+IRV both hold).
 SEVERITY_TO_PAIN = {
     "CRITICAL": "N4",
@@ -278,7 +278,7 @@ def false_positive_checks():
 def ingest_suppressions(checkov_yaml):
     """Read .checkov.yaml's skip-check list and emit risk-accepted entries.
 
-    Each entry becomes a risk-accepted record with VDR-RPT-AVI fields populated
+    Each entry becomes a risk-accepted record with VER-RPT-AVI fields populated
     (PAIN/IRV/LEV from SUPPRESSION_EVALUATION, explanation from
     SUPPRESSION_RATIONALE, POAM cross-reference from POAM_BY_CHECK_ID). Checks
     dismissed as false positives are excluded here and reported by
@@ -444,7 +444,7 @@ def ingest_grype(path):
             "cve": cve,
             # The Silk Reeling app Lambda is internet-reachable (public API
             # Gateway), so its dependency vulnerabilities are IRV per
-            # VDR-EVA-EIR. This explicit flag overrides the hostname-hint
+            # VER-EVA-EIR. This explicit flag overrides the hostname-hint
             # heuristic and pulls these findings onto the tighter Class C SLAs.
             "internet_reachable": True,
         })
@@ -556,7 +556,7 @@ def ingest_previous_ledger(path):
 
 
 def is_internet_reachable(finding):
-    """VDR-EVA-EIR: heuristic for internet-reachable vulnerability.
+    """VER-EVA-EIR: heuristic for internet-reachable vulnerability.
 
     A finding may carry an explicit `internet_reachable` boolean (e.g. Grype SCA
     findings, which ride the publicly-invokable Silk Reeling app Lambda behind
@@ -577,10 +577,10 @@ def is_internet_reachable(finding):
 
 
 def is_likely_exploitable(finding):
-    """VDR-EVA-ELX: heuristic for likely-exploitable vulnerability.
+    """VER-EVA-ELX: heuristic for likely-exploitable vulnerability.
 
     Conservative for the PoC: anything HIGH or CRITICAL is treated as LEV.
-    A real provider would apply VDR-EVA-EFA factors (criticality, reachability,
+    A real provider would apply VER-EVA-EFA factors (criticality, reachability,
     exploitability, detectability, prevalence, privilege, proximate
     vulnerabilities, known threats) and could downgrade individual findings.
     """
@@ -589,7 +589,7 @@ def is_likely_exploitable(finding):
 
 
 def assign_pain(finding):
-    """VDR-EVA-EPA: assign N1-N5."""
+    """VER-EVA-EPA: assign N1-N5."""
     sev = (finding.get("severity") or "MEDIUM").upper()
     return SEVERITY_TO_PAIN.get(sev, "N2")
 
@@ -686,7 +686,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
         due_at = (first_detected_dt + timedelta(days=sla)).isoformat() if sla is not None else None
 
         # Blocking conditions, in priority order:
-        #   1. Any KEV-listed CVE without remediation (VDR-TFR-KEV / BOD 22-01).
+        #   1. Any KEV-listed CVE without remediation (VDR-TFR-KEV / BOD 26-04).
         #   2. Any N5+LEV+IRV finding (most-severe Class C tier, 2-day SLA).
         #   3. Any finding where days_since_detected exceeds the Class C SLA
         #      from VDR-TFR-PVR for its (PAIN, LEV, IRV) combination.
@@ -702,6 +702,17 @@ def build_report(findings, suppressions, kev_cves, ledger):
             block_this = True
             block_reason = f"past Class C SLA ({days_since_detected}d > {sla}d for PAIN={pain}, LEV={lev}, IRV={irv})"
 
+        # VER-RPT-VDT per-vulnerability record fields. We do not progressively
+        # reduce PAIN across builds (config findings are remediated outright,
+        # not down-rated), so historical == current PAIN and completed_reductions
+        # is empty; the next reduction is full remediation by the Class C due date.
+        is_overdue = sla is not None and days_since_detected > sla
+        next_reduction = ({"estimated_time": due_at, "target_pain": "remediated"}
+                          if sla is not None else None)
+        overdue_explanation = (block_reason if block_this
+                               else f"within Class C SLA: {days_since_detected}d of {sla}d allowed"
+                               if sla is not None
+                               else "informational severity; no remediation SLA applies")
         report_findings.append({
             "tracking_id": f["tracking_id"],
             "source": f["source"],
@@ -714,12 +725,21 @@ def build_report(findings, suppressions, kev_cves, ledger):
             "days_since_first_detected": days_since_detected,
             "completed_evaluation": completed_eval,
             "pain": pain,
+            "current_pain": pain,
+            "historical_pain": pain,
             "internet_reachable": irv,
             "likely_exploitable": lev,
             "is_kev": is_kev,
+            "completed_reductions": [],
+            "next_reduction": next_reduction,
             "current_disposition": "open",
+            "final_disposition": "open",
             "remediation_sla_days": sla,
             "remediation_due_at": due_at,
+            "is_overdue": is_overdue,
+            "will_be_overdue": False,
+            "overdue_explanation": overdue_explanation,
+            "supplementary_info": "",
             "is_blocking": block_this,
             "block_reason": block_reason,
         })
@@ -733,7 +753,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
     summary["total_findings"] = len(report_findings)
 
     # Risk-accepted entries are not subject to the SLA — they carry their
-    # rationale (the VDR-RPT-AVI explanation field) and a POAM cross-reference.
+    # rationale (the VER-RPT-AVI explanation field) and a POAM cross-reference.
     risk_accepted_records = []
     for s in suppressions:
         risk_accepted_records.append({
@@ -773,9 +793,13 @@ def build_report(findings, suppressions, kev_cves, ledger):
         "cve_findings": cve_findings,
         "risk_accepted": risk_accepted_records,
         "rules_reference": {
-            "evaluation": "FedRAMP 20x VDR-EVA-* (PAIN, IRV, LEV)",
-            "timeframes": "FedRAMP 20x VDR-TFR-PVR Class C",
-            "reporting": "FedRAMP 20x VDR-RPT-VDT, VDR-RPT-AVI",
+            "evaluation": "FedRAMP 20x VER-EVA-* (PAIN, IRV, LEV)",
+            "timeframes": ("FedRAMP 20x VDR-TFR-PVR Class C remediation; "
+                           "VDR-TFR-PDD 14-day drift detection; VER-TFR-EVU 5-day evaluation; "
+                           "VDR-TFR-MVX 3-day machine V&V"),
+            "reporting": ("FedRAMP 20x VER-RPT-VDT (per-vulnerability), VER-RPT-AVI (accepted); "
+                          "human-readable rendering published per VER-TFR-MHR"),
+            "kev": "VDR-TFR-KEV / CISA BOD 26-04",
         },
     }
     return report, blocking
@@ -786,6 +810,56 @@ def build_report(findings, suppressions, kev_cves, ledger):
 # =============================================================================
 
 
+def render_markdown(report):
+    """Human-readable rendering of the VDR report. CR26 VER-TFR-MHR requires a
+    consistent, human-readable report published at least monthly; this is that
+    rendering, derived from the signed vdr-report.json (which stays the source
+    of truth). Consumers verify the JSON's Sigstore bundle, then read this."""
+    s = report.get("summary", {})
+    bp = s.get("by_pain", {})
+    out = ["# Vulnerability Detection and Response Report", ""]
+    out.append(f"- **Class:** {report.get('class')} (impact level {report.get('impact_level')})")
+    out.append(f"- **Emitted:** {report.get('emitted_at')}")
+    out.append(f"- **Bound to inventory signal:** `{report.get('ksi_signal_id')}`")
+    out.append("- **Source of truth:** the signed `vdr-report.json`; this is its "
+               "human-readable rendering per VER-TFR-MHR.")
+    out += ["", "## Summary", ""]
+    out.append(f"- Total findings: **{s.get('total_findings', 0)}** | "
+               f"Blocking: **{s.get('blocking', 0)}** | KEV: **{s.get('kev', 0)}** | "
+               f"Risk-accepted: **{s.get('risk_accepted', 0)}**")
+    out.append("- By PAIN: " + ", ".join(f"{k}={bp.get(k, 0)}" for k in ("N1", "N2", "N3", "N4", "N5")))
+    out.append(f"- Unique CVEs: {s.get('unique_cves', 0)} ({s.get('unique_cves_open', 0)} open)")
+    fnd = report.get("findings", [])
+    out += ["", f"## Open findings ({len(fnd)})", ""]
+    if fnd:
+        out.append("| Tracking ID | Source | PAIN | IRV | LEV | First detected | Due | Overdue | Disposition |")
+        out.append("|---|---|---|---|---|---|---|---|---|")
+        for f in fnd:
+            out.append("| {tid} | {src} | {pain} | {irv} | {lev} | {fd} | {due} | {od} | {disp} |".format(
+                tid=f.get("tracking_id", ""), src=f.get("source", ""), pain=f.get("pain", ""),
+                irv="Y" if f.get("internet_reachable") else "N",
+                lev="Y" if f.get("likely_exploitable") else "N",
+                fd=(f.get("first_detected") or "")[:10], due=(f.get("remediation_due_at") or "—")[:10],
+                od="YES" if f.get("is_overdue") else "no", disp=f.get("final_disposition", "")))
+    else:
+        out.append("_No open findings._")
+    ra = report.get("risk_accepted", [])
+    out += ["", f"## Risk-accepted ({len(ra)})", ""]
+    if ra:
+        out.append("| Tracking ID | PAIN | POA&M | Explanation |")
+        out.append("|---|---|---|---|")
+        for r in ra:
+            out.append("| {tid} | {pain} | {poam} | {ex} |".format(
+                tid=r.get("tracking_id", ""), pain=r.get("pain", ""), poam=r.get("poam_ref") or "—",
+                ex=(r.get("explanation", "") or "").replace("|", "\\|")[:160]))
+    else:
+        out.append("_None._")
+    out += ["", "---",
+            "_Rules: VER-EVA-* (evaluation); VDR-TFR-PVR (Class C remediation timeframes); "
+            "VER-RPT-VDT / VER-RPT-AVI (reporting); VDR-TFR-KEV / CISA BOD 26-04 (KEV)._", ""]
+    return "\n".join(out)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--opa", default="validations.json", help="OPA gate output (default: validations.json in CWD)")
@@ -794,11 +868,12 @@ def main():
     parser.add_argument("--dependabot", default=None, help="Dependabot alerts JSON")
     parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
-    parser.add_argument("--zap-max-age-days", type=int, default=35, help="Fail the build if the ZAP report is older than this or missing (0 disables the freshness gate)")
+    parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
+    parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
     args = parser.parse_args()
 
@@ -845,6 +920,12 @@ def main():
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
     print(f"vdr-report.json: {report['summary']['total_findings']} findings, {report['summary']['blocking']} blocking, {report['summary']['risk_accepted']} risk-accepted")
+
+    # VER-TFR-MHR: also emit a human-readable rendering (the JSON alone does not
+    # satisfy the "human readable" obligation).
+    if args.md_output:
+        Path(args.md_output).write_text(render_markdown(report) + "\n")
+        print(f"vdr-report.md: human-readable rendering written")
 
     if blocking:
         print(f"::error::VDR build-block: {len(blocking)} finding(s) exceed Class C tolerance: {', '.join(blocking)}", file=sys.stderr)

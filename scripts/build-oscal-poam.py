@@ -369,7 +369,7 @@ def build_metadata(now_iso, system_uuid, ksi_signal):
         ],
         "remarks": (
             "This Plan of Action and Milestones is a self-attested proof-of-concept artifact. "
-            "The system it describes is NOT FedRAMP-certified. No 3PAO assessment has been "
+            "The system it describes is NOT FedRAMP-certified. No FedRAMP Recognized independent assessment has been "
             "conducted; no agency Authorization to Operate is in place. The POA&M is published "
             "to demonstrate an architectural pattern (canonical-inventory-derived OSCAL artifacts) "
             "aligned with FedRAMP NTC-0009. Treat all entries as the operator's self-attestation. "

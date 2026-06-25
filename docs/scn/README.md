@@ -1,7 +1,7 @@
 # Significant Change Notification (SCN) records
 
 This directory holds the system's FedRAMP 20x Significant Change Notification records,
-per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-notifications.md`).
+per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-notification.md`).
 
 ## Contents
 

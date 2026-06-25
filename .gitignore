@@ -42,6 +42,25 @@ infrastructure/oscal-poam.json
 infrastructure/oscal-ssp.json
 infrastructure/ksi-signal.json
 infrastructure/cmmc-out.json
+# CR26 certification-data artifacts (built in CI from the canonical inventory, signed
+# and published to /.well-known/; never committed — same policy as the OSCAL artifacts above)
+infrastructure/ongoing-certification-report.json
+infrastructure/ongoing-certification-report.md
+infrastructure/certification-overview-package.json
+infrastructure/certification-overview-package.md
+infrastructure/certification-package-overview.json
+infrastructure/certification-package-overview.md
+infrastructure/security-decision-record.json
+infrastructure/security-decision-record.md
+infrastructure/availability.json
+infrastructure/availability.md
+infrastructure/policy-index.json
+infrastructure/policy-index.md
+infrastructure/vdr-report.md
+infrastructure/previous-availability.json
+infrastructure/previous-sdr.json
+# Local Prowler scan output (operator-run; not part of the repo)
+output/
 
 # OPA temporary files
 opa-input.json
