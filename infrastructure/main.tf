@@ -163,12 +163,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "website" {
 # then be attached to the distribution's default cache behavior — see the
 # `cloudfront_response_headers_policy_id` output for the manual attach step.
 #
-# CSP note: 'unsafe-inline' is removed from both script-src and style-src.
-# The theme-detection script lives in /assets/js/theme-init.js. Inline
-# style="" attributes on the eigenvalue research paper were replaced with
-# col-w-* utility classes in articles.css, and the donation page's <style>
-# block was moved into /assets/css/support.css. The CSP is now strict-self
-# for everything except img-src (which allows data: URIs).
+# CSP note: script-src is strict 'self' — no third-party script origins and no
+# inline scripts. KaTeX (math rendering on the eigenvalue research paper) is now
+# self-hosted under /assets/vendor/katex/ instead of cdn.jsdelivr.net, and its
+# init call lives in /assets/vendor/katex/katex-init.js rather than an inline
+# onload handler, so no CDN or inline-script allowance is needed (SA-9 / KSI-3IR:
+# removes a third-party supply-chain vector). style-src retains 'unsafe-inline'
+# because KaTeX injects inline style="" attributes at render time for math layout;
+# this is materially lower-risk than inline scripts and is the documented residual.
+# media-src allows the operator's own podcast audio (ochelli.com) and frame-src
+# allows embedded YouTube videos — the only remaining external origins, neither of
+# which can execute script in this origin.
 # =============================================================================
 resource "aws_cloudfront_response_headers_policy" "website" {
   count = var.create_response_headers_policy ? 1 : 0
@@ -202,13 +207,16 @@ resource "aws_cloudfront_response_headers_policy" "website" {
       content_security_policy = join("; ", [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "font-src 'self'",
+        "media-src 'self' https://ochelli.com",
+        "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
         "connect-src 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
+        "object-src 'none'",
       ])
       override = true
     }

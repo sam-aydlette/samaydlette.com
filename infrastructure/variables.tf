@@ -183,8 +183,14 @@ variable "create_eventbridge_rules" {
 
 # Whether to create the CloudFront response headers policy. Requires the deployer
 # IAM principal to have cloudfront:CreateResponseHeadersPolicy (and friends).
-# Default is false so deploys don't fail when the permission isn't yet granted.
-# Flip to true once the IAM policy has been attached to the CI user.
+# Kept false until the CSP can be safely ENABLED and ATTACHED. The policy string below
+# is correct, but the current site still has inline scripts/handlers that a strict
+# `script-src 'self'` would break — viewer.html (dashboard), pages/articles.html (filter
+# UI: an inline <script> + ~21 inline onclick/onkeyup handlers), and pages/support.html.
+# Those must be externalized into /assets/js first. Once that is done: flip this to true,
+# grant the CI deployer cloudfront:Create/Get/UpdateResponseHeadersPolicy +
+# GetDistributionConfig + UpdateDistribution, apply, then attach the policy to the
+# distribution's default cache behavior (the distribution is an out-of-band data source).
 variable "create_response_headers_policy" {
   description = "Whether to create the CloudFront response headers policy"
   type        = bool
