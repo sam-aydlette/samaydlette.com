@@ -246,6 +246,12 @@ resource "aws_lambda_function" "silk_reeling" {
       # standalone-deployable.
       SRM_COGNITO_ISSUER    = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.silk_reeling[0].id}"
       SRM_COGNITO_CLIENT_ID = aws_cognito_user_pool_client.silk_reeling[0].id
+      # Served to the SPA at runtime via the public /auth-config endpoint so the
+      # frontend resolves the LIVE client_id at startup instead of baking it in
+      # at build time (a recreated client can no longer strand the deployed SPA).
+      # All three are public values (they appear in the Hosted-UI authorize URL).
+      SRM_COGNITO_DOMAIN       = "${aws_cognito_user_pool_domain.silk_reeling[0].domain}.auth.${var.aws_region}.amazoncognito.com"
+      SRM_COGNITO_REDIRECT_URI = "https://${var.domain_name}/silk-reeling/"
       # Built SPA bundled into the Lambda package at /var/task/spa (see the CI
       # packaging step). The app serves it from "/"; /api/* is gated.
       SRM_SPA_DIR = "/var/task/spa"
