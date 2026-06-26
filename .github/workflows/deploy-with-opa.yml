@@ -40,6 +40,24 @@ on:
         - prod
 
 # =============================================================================
+# CONCURRENCY — serialize deploys so overlapping runs never race terraform apply
+# =============================================================================
+# This repo keeps NO remote Terraform state; each run rebuilds state by importing
+# live resources before apply. Two deploys running at once therefore apply
+# against the same AWS account from independent states and thrash ephemeral-state
+# resources — most visibly the Cognito app client, whose server-generated id is
+# baked into the SPA at build time: concurrent applies recreate the client, its
+# id changes, and the deployed SPA is left pointing at a dead client_id (the
+# Hosted-UI "an error was encountered with the requested page" failure).
+# Serialize the deploy path to one run at a time, keyed by ref. Never cancel a
+# run mid-apply — a partial terraform apply is worse than a queue — so the
+# in-flight run finishes and the newest queued run goes next.
+# =============================================================================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+# =============================================================================
 # GLOBAL SETTINGS
 # =============================================================================
 # Tool versions and AWS region used everywhere
