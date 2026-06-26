@@ -400,3 +400,25 @@ resource "aws_lambda_permission" "silk_reeling_apigw" {
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.silk_reeling[0].execution_arn}/*/*"
 }
+
+# Publish the (public) Cognito config for the SPA as a static JSON on S3/CloudFront.
+# The SPA fetches this at /.well-known/silk-reeling-auth.json instead of relying on
+# the CMK-encrypted Lambda env (which this import-rebuilt-state pipeline doesn't
+# reliably populate) or a build-time CLI lookup (which can race). The values come
+# straight from the live Cognito resources, so they are always correct; all three
+# are public — they appear in the Hosted-UI authorize URL on every login. Served
+# from the website bucket (everything except /silk-reeling/* routes to S3), so it
+# is reachable without involving the app Lambda at all.
+resource "aws_s3_object" "silk_reeling_auth_config" {
+  count         = local.silk_create
+  bucket        = data.aws_s3_bucket.website.id
+  key           = ".well-known/silk-reeling-auth.json"
+  content_type  = "application/json"
+  cache_control = "no-cache"
+  content = jsonencode({
+    cognitoEnabled = true
+    domain         = "${aws_cognito_user_pool_domain.silk_reeling[0].domain}.auth.${var.aws_region}.amazoncognito.com"
+    clientId       = aws_cognito_user_pool_client.silk_reeling[0].id
+    redirectUri    = "https://${var.domain_name}/silk-reeling/"
+  })
+}
