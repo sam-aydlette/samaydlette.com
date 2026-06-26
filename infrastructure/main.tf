@@ -242,7 +242,22 @@ resource "aws_s3_bucket_policy" "website" {
             "AWS:SourceArn" = data.aws_cloudfront_distribution.website.arn
           }
         }
-      }
+      },
+      # Deny any request not made over TLS (SC-8 / SC-13; Prowler
+      # s3_bucket_secure_transport_policy). Preventive guardrail, not detective.
+      {
+        Sid       = "DenyNonTLS"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          data.aws_s3_bucket.website.arn,
+          "${data.aws_s3_bucket.website.arn}/*",
+        ]
+        Condition = {
+          Bool = { "aws:SecureTransport" = "false" }
+        }
+      },
     ]
   })
 }

@@ -90,6 +90,21 @@ resource "aws_s3_bucket_policy" "logs" {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }
       },
+      # Deny any request not made over TLS (SC-8 / SC-13; Prowler
+      # s3_bucket_secure_transport_policy). Preventive guardrail, not detective.
+      {
+        Sid       = "DenyNonTLS"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.logs.arn,
+          "${aws_s3_bucket.logs.arn}/*",
+        ]
+        Condition = {
+          Bool = { "aws:SecureTransport" = "false" }
+        }
+      },
     ]
   })
 }
