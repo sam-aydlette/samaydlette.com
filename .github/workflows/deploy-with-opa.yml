@@ -99,6 +99,9 @@ jobs:
   compliance-check:
     name: OPA Compliance Check
     runs-on: ubuntu-latest
+    # Cap the job so a stuck step (notably the intermittent OIDC/STS credential
+    # hang) fails in minutes instead of GitHub's 6-hour default.
+    timeout-minutes: 25
     outputs:
       compliant: ${{ steps.compliance.outputs.compliant }}
 
@@ -139,11 +142,17 @@ jobs:
     # Connect to AWS using stored credentials
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      # The OIDC AssumeRoleWithWebIdentity call to regional STS intermittently
+      # times out from GitHub runners. retry-max-attempts rides through a brief
+      # blip; timeout-minutes caps a real outage at a quick, re-runnable failure
+      # instead of hanging on GitHub's 6-hour default.
+      timeout-minutes: 6
       with:
         # GitHub OIDC role assumption — no long-lived access key (POAM-001).
         # Role ARN is a repo variable so the account ID stays out of the YAML.
         role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
+        retry-max-attempts: 5
 
     # -------------------------------------------------------------------------
     # CREATE CONFIGURATION FILE
@@ -275,6 +284,9 @@ jobs:
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    # Cap the job so a stuck step (notably the intermittent OIDC/STS credential
+    # hang) fails in minutes instead of GitHub's 6-hour default.
+    timeout-minutes: 30
     permissions:
       contents: read
       issues: write
@@ -326,11 +338,15 @@ jobs:
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      # See the compliance-check job: cap the intermittent OIDC/STS hang and
+      # retry the assume-role call to ride through a brief blip.
+      timeout-minutes: 6
       with:
         # GitHub OIDC role assumption — no long-lived access key (POAM-001).
         # Role ARN is a repo variable so the account ID stays out of the YAML.
         role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
+        retry-max-attempts: 5
 
     # -------------------------------------------------------------------------
     # RE-RENDER tfvars FROM SECRETS (not persisted as an artifact)
