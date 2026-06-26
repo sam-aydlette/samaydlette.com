@@ -22,6 +22,9 @@
 #                        and carry it
 #   (f) publish freshness — staged artifacts carry the current commit and a
 #                        fresh emitted_at (the live round-trip half is Task 1.5)
+#   (g) POA&M parity   — the OSCAL POA&M's item set exactly equals the formal
+#                        POA&M items in docs/poam.md, so the human and
+#                        machine-readable registers can never silently drift
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -314,6 +317,42 @@ def check_f_freshness(signal, ssp, poam, vdr, expected_commit):
 
 
 # ----------------------------------------------------------------------------
+# (g) POA&M register parity — docs/poam.md <-> oscal-poam.json
+# ----------------------------------------------------------------------------
+def _formal_poam_ids_in_md(poam_md_text):
+    """POA&M IDs that docs/poam.md tracks as FORMAL items: those appearing as a
+    section header (### POAM-NNN) or as the first cell of a table row
+    (| POAM-NNN | ...). IDs that occur only in prose cross-references (e.g.
+    "see POAM-016") are deliberately NOT formal items and are excluded."""
+    ids = set()
+    for line in poam_md_text.splitlines():
+        m = re.match(r"\s*#{1,6}\s*(POAM-\d{3})\b", line) or re.match(r"\s*\|\s*(POAM-\d{3})\b", line)
+        if m:
+            ids.add(m.group(1))
+    return ids
+
+
+def check_g_poam_parity(poam, poam_md_text):
+    """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
+    in docs/poam.md. Both registers are hand-maintained; without this check they
+    drift (a missing OSCAL item hides an open finding from a machine-readable
+    consumer — the exact failure mode this gate exists to prevent)."""
+    violations = []
+    md_ids = _formal_poam_ids_in_md(poam_md_text)
+    oscal_ids = {
+        p["value"]
+        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
+        for p in (item.get("props", []) or [])
+        if p.get("name") == "poam-id" and p.get("value")
+    }
+    for missing in sorted(md_ids - oscal_ids):
+        violations.append(f"(g) {missing} is a formal item in docs/poam.md but is absent from the OSCAL POA&M")
+    for extra in sorted(oscal_ids - md_ids):
+        violations.append(f"(g) {extra} is in the OSCAL POA&M but is not a formal item in docs/poam.md")
+    return violations
+
+
+# ----------------------------------------------------------------------------
 # runner
 # ----------------------------------------------------------------------------
 def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
@@ -327,6 +366,7 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
                                        ckv_to_poam, poam_md_text, vdr,
                                        false_positive_ckvs)
     violations += check_f_freshness(signal, ssp, poam, vdr, expected_commit)
+    violations += check_g_poam_parity(poam, poam_md_text)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     return violations

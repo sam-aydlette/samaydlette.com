@@ -132,6 +132,41 @@ def test_f_freshness_catches_stale_commit():
     assert any("commit" in x for x in v)
 
 
+def test_g_poam_parity_catches_md_item_missing_from_oscal():
+    s = clean_set()
+    # docs/poam.md tracks a formal item (table row) the OSCAL POA&M omits — the
+    # exact drift that hid POAM-019..025 from the published artifact.
+    s["poam_md_text"] = "| POAM-042 | SC-7 | Weakness | Checkov | CKV_X | asset | N1 | Low | - | No | Risk-accepted |"
+    v = rc.check_g_poam_parity(s["poam"], s["poam_md_text"])
+    assert any("POAM-042" in x and "absent from the OSCAL POA&M" in x for x in v)
+
+
+def test_g_poam_parity_catches_oscal_item_not_in_md():
+    s = clean_set()
+    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
+        {"props": [{"name": "poam-id", "value": "POAM-099"}]}
+    ]
+    v = rc.check_g_poam_parity(s["poam"], s["poam_md_text"])
+    assert any("POAM-099" in x and "not a formal item" in x for x in v)
+
+
+def test_g_poam_parity_ignores_prose_cross_references():
+    s = clean_set()
+    # A prose "see POAM-016" reference is NOT a formal item; it must not be required.
+    s["poam_md_text"] = "Single S3 origin; multi-origin would need multi-region storage (see POAM-016)."
+    assert rc.check_g_poam_parity(s["poam"], s["poam_md_text"]) == []
+
+
+def test_g_poam_parity_passes_when_sets_match():
+    s = clean_set()
+    s["poam_md_text"] = "### POAM-001 — A weakness\n| POAM-007 | SC-7 | ... |"
+    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
+        {"props": [{"name": "poam-id", "value": "POAM-001"}]},
+        {"props": [{"name": "poam-id", "value": "POAM-007"}]},
+    ]
+    assert rc.check_g_poam_parity(s["poam"], s["poam_md_text"]) == []
+
+
 def test_committed_broken_fixture_fails_via_main(monkeypatch, capsys):
     """The Done-check: the gate exits non-zero on the committed broken fixture."""
     import sys
