@@ -5,8 +5,16 @@
     <link>https://samaydlette.com</link>
     <description>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</description>
     <language>en-us</language>
-    <lastBuildDate>Mon, 04 May 2026 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 26 Jun 2026 00:00:00 +0000</lastBuildDate>
     <atom:link href="https://samaydlette.com/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>FedRAMP Audit-Ready in a Few Days - One Person, One Tai Chi App</title>
+      <link>https://samaydlette.com/pages/article-28.html</link>
+      <guid>https://samaydlette.com/pages/article-28.html</guid>
+      <pubDate>Fri, 26 Jun 2026 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>I spent a few days and a few dollars making my Tai Chi web app audit-ready for a FedRAMP Class C assessment. It isn't FedRAMP Certified and never will be, but every document an assessor would ask for is live right now, and anyone can check it in about five minutes.</description>
+    </item>
     <item>
       <title>Pearls, PURLs and the FedRAMP 20x Inventory Problem</title>
       <link>https://samaydlette.com/pages/article-27.html</link>
