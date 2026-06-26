@@ -81,4 +81,15 @@ resource "aws_cognito_user_pool_client" "silk_reeling" {
     id_token      = "minutes"
     refresh_token = "days"
   }
+
+  # The AWS provider does not read generate_secret back on import. This pipeline
+  # keeps no remote state and re-imports the client every run, so the imported
+  # state shows generate_secret as unset while the config says false — and because
+  # generate_secret FORCES REPLACEMENT, terraform destroys and recreates the client
+  # on every deploy, changing its id each time (which broke the SPA's baked-in
+  # client_id). The client is a public PKCE client with no secret and this never
+  # changes, so ignore it post-import to keep the client id stable across deploys.
+  lifecycle {
+    ignore_changes = [generate_secret]
+  }
 }
