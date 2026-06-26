@@ -141,7 +141,7 @@ jobs:
 
     # Connect to AWS using stored credentials
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
       # The OIDC AssumeRoleWithWebIdentity call to regional STS intermittently
       # times out from GitHub runners. retry-max-attempts rides through a brief
       # blip; timeout-minutes caps a real outage at a quick, re-runnable failure
@@ -337,7 +337,7 @@ jobs:
         cache-dependency-path: infrastructure/lambda/package-lock.json
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+      uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
       # See the compliance-check job: cap the intermittent OIDC/STS hang and
       # retry the assume-role call to ride through a brief blip.
       timeout-minutes: 6
