@@ -401,24 +401,22 @@ resource "aws_lambda_permission" "silk_reeling_apigw" {
   source_arn    = "${aws_apigatewayv2_api.silk_reeling[0].execution_arn}/*/*"
 }
 
-# Publish the (public) Cognito config for the SPA as a static JSON on S3/CloudFront.
-# The SPA fetches this at /.well-known/silk-reeling-auth.json instead of relying on
-# the CMK-encrypted Lambda env (which this import-rebuilt-state pipeline doesn't
-# reliably populate) or a build-time CLI lookup (which can race). The values come
-# straight from the live Cognito resources, so they are always correct; all three
-# are public — they appear in the Hosted-UI authorize URL on every login. Served
-# from the website bucket (everything except /silk-reeling/* routes to S3), so it
-# is reachable without involving the app Lambda at all.
-resource "aws_s3_object" "silk_reeling_auth_config" {
-  count         = local.silk_create
-  bucket        = data.aws_s3_bucket.website.id
-  key           = ".well-known/silk-reeling-auth.json"
-  content_type  = "application/json"
-  cache_control = "no-cache"
-  content = jsonencode({
+# Expose the (public) Cognito config for the SPA as a Terraform output. The CI
+# publish step writes it to .well-known/silk-reeling-auth.json via `aws s3 cp`
+# (the same path the other published artifacts use), so the SPA can fetch it from
+# S3/CloudFront without relying on the CMK-encrypted Lambda env (which this
+# import-rebuilt-state pipeline doesn't reliably populate) or a build-time CLI
+# lookup (which can race). The values come straight from the live Cognito
+# resources, so they are always correct; all three are public — they appear in
+# the Hosted-UI authorize URL on every login. (An aws_s3_object resource can't be
+# used here: the deploy role can PutObject but not GetObjectTagging, which the
+# provider calls on read, so it would fail every apply.)
+output "silk_reeling_auth_config_json" {
+  description = "Public Cognito config JSON for the Silk Reeling SPA; published to .well-known/ by the CI."
+  value = var.create_silk_reeling ? jsonencode({
     cognitoEnabled = true
-    domain         = "${aws_cognito_user_pool_domain.silk_reeling[0].domain}.auth.${var.aws_region}.amazoncognito.com"
-    clientId       = aws_cognito_user_pool_client.silk_reeling[0].id
+    domain         = "${one(aws_cognito_user_pool_domain.silk_reeling[*].domain)}.auth.${var.aws_region}.amazoncognito.com"
+    clientId       = one(aws_cognito_user_pool_client.silk_reeling[*].id)
     redirectUri    = "https://${var.domain_name}/silk-reeling/"
-  })
+  }) : ""
 }
