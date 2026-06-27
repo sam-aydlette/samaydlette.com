@@ -834,7 +834,9 @@ jobs:
         cd infrastructure
         
         BUCKET_NAME=$(terraform output -raw s3_bucket_name 2>/dev/null || echo "")
-        
+        # Public Cognito config for the SPA, published below after the sync.
+        AUTH_CFG=$(terraform output -raw silk_reeling_auth_config_json 2>/dev/null || echo "")
+
         if [ -z "$BUCKET_NAME" ]; then
           echo "❌ Could not get S3 bucket name from Terraform outputs"
           echo "Available outputs:"
@@ -863,6 +865,17 @@ jobs:
           --delete
         
         echo "✅ Website content synced successfully"
+
+        # Publish the public Cognito config for the SPA AFTER the sync's --delete
+        # (so it isn't removed). The SPA fetches /.well-known/silk-reeling-auth.json
+        # to resolve the live client_id at runtime. Written via cp (the deploy role
+        # has PutObject; an aws_s3_object resource fails on GetObjectTagging).
+        if [ -n "$AUTH_CFG" ]; then
+          printf '%s' "$AUTH_CFG" > /tmp/silk-reeling-auth.json
+          aws s3 cp /tmp/silk-reeling-auth.json "s3://$BUCKET_NAME/.well-known/silk-reeling-auth.json" \
+            --content-type application/json --cache-control no-cache
+          echo "✅ Published /.well-known/silk-reeling-auth.json"
+        fi
 
     # -------------------------------------------------------------------------
     # BUILD AND PUBLISH THE DEPLOY-TIME KSI SIGNAL
