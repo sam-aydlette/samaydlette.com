@@ -65,10 +65,10 @@ concurrency:
 env:
   AWS_REGION: us-east-2
   # Gate for publishing the research paper "Shift Left on Reciprocity"
-  # (/research/the-plumbing.html + its Sigstore bundle). Held "false" while the
-  # paper is being revised so the deploy neither syncs nor signs/serves it; the
-  # draft stays in the repo for editing. Flip to "true" to republish.
-  PUBLISH_PLUMBING_PAPER: "false"
+  # (/research/the-plumbing.html + its Sigstore bundle). When "true" the deploy
+  # syncs, signs, and serves the paper. Set "false" to hold it back during a
+  # revision (the draft stays in the repo either way).
+  PUBLISH_PLUMBING_PAPER: "true"
   TERRAFORM_VERSION: 1.5.0
   OPA_VERSION: 0.57.0
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
@@ -867,14 +867,8 @@ jobs:
           --exclude "Makefile" \
           --exclude ".gitignore" \
           --exclude ".github/*" \
-          --exclude "research/the-plumbing.html" \
           --delete
-        # The research paper is held back while it is being revised: the --exclude
-        # keeps the sync from publishing the draft (it also shields the object from
-        # --delete, so the previously-served copy is removed out-of-band when the
-        # paper is pulled). Re-include it (and flip PUBLISH_PLUMBING_PAPER to
-        # "true") when the paper is ready.
-        
+
         echo "✅ Website content synced successfully"
 
         # Publish the public Cognito config for the SPA AFTER the sync's --delete
