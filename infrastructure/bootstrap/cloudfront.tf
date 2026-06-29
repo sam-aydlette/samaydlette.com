@@ -58,13 +58,13 @@ resource "aws_cloudfront_origin_access_control" "website" {
   signing_protocol                  = "sigv4"
 }
 
-# Baseline security headers, delivered at the edge to the static site. These five
-# are safe site-wide: they add headers, they do not block any resource, so no page
-# can break. A Content-Security-Policy is intentionally NOT set here yet — it needs
-# a frame-src allowance for the activities.html podcast embeds and a report-only
-# rollout first (see the project notes), so it is staged separately. Attached to
-# the default (static-site) behavior only; the /silk-reeling/* application path is
-# left off this policy.
+# Security headers delivered at the edge to the static site: HSTS, X-Frame-Options,
+# X-Content-Type-Options, Referrer-Policy, X-XSS-Protection, and an enforcing
+# Content-Security-Policy. The CSP was rolled out report-only first and verified
+# clean (headless, no violations across the dynamic pages) before enforcing; its
+# frame-src allows the YouTube and libsyn (activities.html podcast) embeds.
+# Attached to the default (static-site) behavior only; the /silk-reeling/*
+# application path is left off this policy.
 resource "aws_cloudfront_response_headers_policy" "website" {
   name    = "${replace(var.domain_name, ".", "-")}-security-headers"
   comment = "Baseline security headers for ${var.domain_name}"
@@ -86,6 +86,23 @@ resource "aws_cloudfront_response_headers_policy" "website" {
     referrer_policy {
       referrer_policy = "strict-origin-when-cross-origin"
       override        = true
+    }
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "media-src 'self' https://ochelli.com",
+        "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://html5-player.libsyn.com",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+      ])
+      override = true
     }
     xss_protection {
       mode_block = true
