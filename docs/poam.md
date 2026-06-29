@@ -36,7 +36,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-006 | SI-12 | S3 lifecycle configuration not defined | Checkov | CKV_AWS_300 | aws-s3-bucket::website-prod | N1 | Low | — | No | Closed (Task 8b) |
 | POAM-007 | SC-7, SI-4 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | aws-cloudfront-distribution | N2 | Moderate | Low | Yes | Open (risk-accepted) |
 | POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86, CKV_AWS_310 | aws-cloudfront-distribution | N1 | Low | — | No | Open (risk-accepted) |
-| POAM-031 | SC-7, SC-8 | CloudFront response-headers policy not attached | Checkov | CKV2_AWS_32 | aws-cloudfront-distribution | N1 | Low | — | No | Open (risk-accepted) |
+| POAM-031 | SC-7, SC-8 | CloudFront response-headers policy not attached | Checkov | CKV2_AWS_32 | aws-cloudfront-distribution | N1 | Low | — | No | Closed (security headers attached 2026-06-29) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |

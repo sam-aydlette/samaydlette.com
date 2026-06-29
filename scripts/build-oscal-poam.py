@@ -456,11 +456,12 @@ POAM_ITEMS = [
     {
         "id": "POAM-031", "controls": ["sc-7", "sc-8"],
         "title": "CloudFront response-headers policy not attached",
-        "description": "No CloudFront response-headers policy is attached to the now-managed distribution (infrastructure/bootstrap/cloudfront.tf), so security response headers (HSTS, X-Content-Type-Options, etc.) are not added at the edge. TLS is already enforced (viewer redirect-to-https, minimum TLSv1.2_2021). Attaching a managed security-headers policy is a low-cost hardening tracked for a deliberate change; accepted as a low residual meanwhile.",
+        "description": "Closed (2026-06-29): a CloudFront response-headers policy is now attached to the distribution's default cache behavior (infrastructure/bootstrap/cloudfront.tf), delivering HSTS (includeSubDomains; preload), X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, and X-XSS-Protection at the edge. The CKV2_AWS_32 suppression was removed; the check passes on its own. (A Content-Security-Policy is staged separately, pending a frame-src allowance for the activities.html podcast embeds and a report-only rollout.)",
         "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV2_AWS_32",
         "asset_identifiers": ["aws-cloudfront-distribution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
-        "status": "risk-accepted", "category": "configuration",
+        "status_date": "2026-06-29",
+        "status": "closed", "category": "closed",
     },
 ]
 
