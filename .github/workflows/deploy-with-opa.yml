@@ -1301,17 +1301,26 @@ jobs:
           python3 ../scripts/build-provenance.py \
             --ksi-signal ksi-signal.json --generator "../$gen" \
             --output "$art.predicate.json"
-          cosign attest-blob --yes \
+          # --new-bundle-format emits a Sigstore bundle with the DSSE envelope
+          # INLINE (S3), so the in-toto Statement is decodable by any DSSE/in-toto
+          # tool, not only by cosign.
+          cosign attest-blob --yes --new-bundle-format \
             --predicate "$art.predicate.json" --type slsaprovenance1 \
             --bundle "$art.intoto.jsonl" "$art"
-          cosign verify-blob-attestation \
+          # 1) cosign verifies the signature + identity (trust).
+          cosign verify-blob-attestation --new-bundle-format \
             --bundle "$art.intoto.jsonl" --type slsaprovenance1 \
             --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             "$art"
+          # 2) a dependency-free, non-cosign consumer reads the predicate and
+          #    checks the bindings (subject==artifact, inventory sha256, generator,
+          #    commit) - the reciprocity claim, exercised in CI, fail-closed.
+          python3 ../scripts/verify-attestation.py \
+            --bundle "$art.intoto.jsonl" --artifact "$art" --ksi-signal ksi-signal.json
           aws s3 cp "$art.intoto.jsonl" "s3://$BUCKET_NAME/.well-known/$art.intoto.jsonl" \
             --content-type application/json --cache-control "public, max-age=300"
-          echo "  attested + published: $art.intoto.jsonl"
+          echo "  attested (inline-DSSE) + consumed + published: $art.intoto.jsonl"
         }
         # Core canonical evidence set. Extending to the remaining CDS/SDR/CPO
         # artifacts is one attest() line each (tracked follow-on).
@@ -1369,6 +1378,10 @@ jobs:
         check security-decision-record.json .well-known/security-decision-record.json
         check certification-package-overview.json .well-known/certification-package-overview.json
         check iiw.csv .well-known/iiw.csv
+        # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
+        for a in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json iiw.csv; do
+          check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
+        done
         if [ "$fail" -ne 0 ]; then
           echo "Post-publish round-trip FAILED — served artifacts do not match the build."; exit 1
         fi
