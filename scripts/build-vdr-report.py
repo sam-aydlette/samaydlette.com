@@ -60,6 +60,8 @@ POAM_BY_CHECK_ID = {
     "CKV_AWS_68":  "POAM-007",
     "CKV_AWS_86":  "POAM-009",
     "CKV_AWS_117": "POAM-010",
+    "CKV_AWS_310": "POAM-009",  # CloudFront origin failover (current checkov id; supersedes CKV_AWS_86 on the now-managed distribution)
+    "CKV2_AWS_32": "POAM-031",  # CloudFront response-headers policy not attached (residual hardening)
     "CKV2_AWS_56": "POAM-026",  # operator IAM admin group (inline skip, bootstrap/main.tf)
     # CKV_AWS_173 (POAM-011) closed under Task 6 — suppression removed from
     # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
@@ -81,6 +83,8 @@ FALSE_POSITIVE_BY_CHECK_ID = {
     "CKV_AWS_23":  "POAM-004",  # S3 event notifications (website bucket)
     "CKV2_AWS_62": "POAM-004",  # S3 event notifications (log bucket, inline)
     "CKV_AWS_174": "POAM-008",  # Log4j-specific WAF rule
+    "CKV2_AWS_47": "POAM-008",  # CloudFront Log4j WAF AMR (current checkov id; supersedes CKV_AWS_174 on the now-managed distribution)
+    "CKV_AWS_374": "POAM-030",  # CloudFront geo restriction not enabled (N/A for a public, globally-reachable site)
     "CKV_AWS_115": "POAM-012",  # Lambda reserved concurrency
     "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
     "CKV_AWS_272": "POAM-015",  # Lambda AWS Signer
@@ -127,7 +131,9 @@ def classify_finding(tool_id):
 SUPPRESSION_EVALUATION = {
     "CKV_AWS_68":  {"pain": "N2", "irv": True,  "lev": False},
     "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_310": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_117": {"pain": "N1", "irv": False, "lev": False},
+    "CKV2_AWS_32": {"pain": "N1", "irv": False, "lev": False},
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
@@ -135,7 +141,9 @@ SUPPRESSION_EVALUATION = {
 SUPPRESSION_RATIONALE = {
     "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
+    "CKV_AWS_310": "The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair; an origin group would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
+    "CKV2_AWS_32": "No CloudFront response-headers policy attached today. TLS is already enforced (redirect-to-https, TLSv1.2_2021); attaching a managed security-headers policy (HSTS, X-Content-Type-Options) is a low-cost hardening tracked for a deliberate change.",
 }
 
 # Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving

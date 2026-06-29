@@ -179,7 +179,7 @@ POAM_ITEMS = [
         "id": "POAM-008", "controls": ["si-3"],
         "title": "Log4j-specific WAF rules not configured",
         "description": "No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS). Log4j-class vulnerabilities cannot exist in this stack.",
-        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_174",
+        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_174; CKV2_AWS_47",
         "asset_identifiers": ["aws-cloudfront-distribution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "status": "false-positive", "category": "false-positive",
@@ -188,7 +188,7 @@ POAM_ITEMS = [
         "id": "POAM-009", "controls": ["cp-2", "cp-7"],
         "title": "CloudFront origin failover not configured",
         "description": "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage (see POAM-016).",
-        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_86",
+        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_86; CKV_AWS_310",
         "asset_identifiers": ["aws-cloudfront-distribution"],
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "status": "risk-accepted", "category": "configuration",
@@ -433,6 +433,34 @@ POAM_ITEMS = [
         "original_detection_date": "2026-06-22", "status_date": "2026-06-26",
         "original_risk_rating": "low",
         "category": "false-positive",  # → status open, disposition false-positive
+    },
+    {
+        "id": "POAM-030", "controls": ["sc-7"],
+        "title": "CloudFront geo restriction not enabled",
+        "description": (
+            "Checkov CKV_AWS_374 flags the now-managed CloudFront distribution "
+            "(infrastructure/bootstrap/cloudfront.tf) for not enabling a geo "
+            "restriction. This is a false positive: the distribution serves a public "
+            "personal website intended to be reachable from every geography, and no "
+            "control requires geo-blocking — enabling one would deny legitimate access "
+            "for no security benefit. SC-7 boundary protection is met via the managed "
+            "CloudFront and API Gateway interfaces, AWS Shield Standard, and throttling."
+        ),
+        "weakness_detector_source": "Checkov",
+        "weakness_source_identifier": "CKV_AWS_374",
+        "asset_identifiers": ["aws-cloudfront-distribution"],
+        "original_detection_date": "2026-06-29", "status_date": "2026-06-29",
+        "original_risk_rating": "low",
+        "category": "false-positive",  # → status open, disposition false-positive
+    },
+    {
+        "id": "POAM-031", "controls": ["sc-7", "sc-8"],
+        "title": "CloudFront response-headers policy not attached",
+        "description": "No CloudFront response-headers policy is attached to the now-managed distribution (infrastructure/bootstrap/cloudfront.tf), so security response headers (HSTS, X-Content-Type-Options, etc.) are not added at the edge. TLS is already enforced (viewer redirect-to-https, minimum TLSv1.2_2021). Attaching a managed security-headers policy is a low-cost hardening tracked for a deliberate change; accepted as a low residual meanwhile.",
+        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV2_AWS_32",
+        "asset_identifiers": ["aws-cloudfront-distribution"],
+        "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
+        "status": "risk-accepted", "category": "configuration",
     },
 ]
 
