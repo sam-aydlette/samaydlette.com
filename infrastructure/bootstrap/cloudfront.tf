@@ -59,6 +59,13 @@ resource "aws_cloudfront_origin_access_control" "website" {
 }
 
 resource "aws_cloudfront_distribution" "website" {
+  # Scanner findings that describe this distribution's deliberate posture. Each is
+  # classified here at scan-time (not silently dropped); the WAF/failover items
+  # are already tracked in the POA&M register, the other two are noted for it.
+  # checkov:skip=CKV_AWS_310:Risk-accepted (POAM-009). The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair, so an origin group does not apply.
+  # checkov:skip=CKV2_AWS_47:Risk-accepted (POAM-007/008). A WAF is intentionally declined for this system (SC-7/SC-5 met via the CloudFront + API Gateway managed interfaces, Shield Standard, and throttling); there is also no Java/Log4j runtime in scope, so the Log4j AMR rule is moot.
+  # checkov:skip=CKV_AWS_374:Not applicable. This is a public personal website intended to be reachable from every geography; no control requires geo-blocking. Documented as a false positive for this system.
+  # checkov:skip=CKV2_AWS_32:Residual, risk-accepted. No CloudFront response-headers policy is attached today; attaching one (security headers) is a cheap follow-up hardening tracked for a deliberate change, not a fix folded into this faithful-import PR.
   enabled             = true
   is_ipv6_enabled     = true
   comment             = ""
