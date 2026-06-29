@@ -215,6 +215,7 @@ resource "aws_iam_role_policy" "compliance_logs" {
 data "aws_iam_policy_document" "compliance_kms" {
   # checkov:skip=CKV_AWS_356:KMS alias-based scoping requires Resource "*"; the kms:ResourceAliases condition restricts the grant to two specific app-key aliases. No write to key policy, no admin. Documented exception.
   statement {
+    sid    = "EncryptAndGrantAppCmkForLambdaEnv"
     effect = "Allow"
     actions = [
       "kms:Encrypt",
