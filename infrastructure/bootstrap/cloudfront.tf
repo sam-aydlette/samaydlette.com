@@ -1,0 +1,182 @@
+# =============================================================================
+# CloudFront edge — managed here in the bootstrap (foundational) stack
+# =============================================================================
+# The distribution that serves the whole site (and proxies the Silk Reeling app)
+# is foundational, rarely-changing infrastructure. It is managed here, in the
+# manually-applied bootstrap stack with local state, for the same reasons the
+# IAM trust layer is: it should change deliberately, not be re-applied on every
+# website deploy. The per-deploy pipeline in ../ keeps READING it through
+# `data "aws_cloudfront_distribution" "website"`, so a routine website deploy
+# never plans or mutates the distribution.
+#
+# This configuration was reconciled byte-for-byte against the live distribution
+# (terraform plan == "No changes") before being committed, including the
+# custom_error_response entries that route 403/404 to the styled /404.html page.
+#
+# To bring it under management on a fresh bootstrap state:
+#   terraform import aws_cloudfront_origin_access_control.website <OAC_ID>
+#   terraform import aws_cloudfront_distribution.website          <DISTRIBUTION_ID>
+# then `terraform plan` should report no changes.
+# =============================================================================
+
+# ACM certificate for the aliases (must be in us-east-1 for CloudFront).
+data "aws_acm_certificate" "website" {
+  provider    = aws.us_east_1
+  domain      = var.domain_name
+  statuses    = ["ISSUED"]
+  most_recent = true
+}
+
+# AWS-managed cache / origin-request policies used by the /silk-reeling/* behavior.
+# These are well-known global managed policies (same IDs in every account); read
+# by name so no magic IDs are hard-coded.
+data "aws_cloudfront_cache_policy" "caching_disabled" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
+  name = "Managed-AllViewerExceptHostHeader"
+}
+
+# The viewer-request function that strips the /silk-reeling prefix before the
+# request reaches the API Gateway origin. Referenced (not managed) here so its
+# code is not duplicated; it is published out-of-band from
+# ../cloudfront/silk-reeling-strip-prefix.js.
+data "aws_cloudfront_function" "strip_prefix" {
+  name  = "silk-reeling-strip-prefix"
+  stage = "LIVE"
+}
+
+# Origin Access Control: lets CloudFront (and only CloudFront) read the private
+# S3 origin via SigV4. Managed here; the S3 bucket policy in ../ already trusts
+# the distribution ARN.
+resource "aws_cloudfront_origin_access_control" "website" {
+  name                              = "${var.domain_name}-oac"
+  description                       = "OAC for ${var.domain_name}"
+  origin_access_control_origin_type = "s3"
+  signing_behavior                  = "always"
+  signing_protocol                  = "sigv4"
+}
+
+resource "aws_cloudfront_distribution" "website" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = ""
+  default_root_object = "index.html"
+  http_version        = "http2"
+  price_class         = "PriceClass_100"
+  aliases             = ["www.${var.domain_name}", var.domain_name]
+
+  # Private S3 origin (static site), reached through the OAC above.
+  origin {
+    origin_id                = "S3-${var.domain_name}"
+    domain_name              = "${var.domain_name}.s3.${var.aws_region}.amazonaws.com"
+    origin_access_control_id = aws_cloudfront_origin_access_control.website.id
+    connection_attempts      = 3
+    connection_timeout       = 10
+  }
+
+  # Silk Reeling API Gateway origin (the app behind /silk-reeling/*).
+  origin {
+    origin_id           = "apigw-silk-reeling"
+    domain_name         = var.silk_reeling_api_origin_domain
+    connection_attempts = 3
+    connection_timeout  = 10
+    custom_origin_config {
+      http_port                = 80
+      https_port               = 443
+      origin_protocol_policy   = "https-only"
+      origin_ssl_protocols     = ["TLSv1.2"]
+      origin_read_timeout      = 30
+      origin_keepalive_timeout = 5
+    }
+  }
+
+  # Static site: cache normally, redirect to HTTPS.
+  default_cache_behavior {
+    target_origin_id       = "S3-${var.domain_name}"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods         = ["HEAD", "GET"]
+    compress               = true
+    min_ttl                = 0
+    default_ttl            = 3600
+    max_ttl                = 86400
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  # App path: no caching, forward everything except Host (so the JWT authorizer
+  # sees the Authorization header), strip the prefix at the edge.
+  ordered_cache_behavior {
+    path_pattern             = "/silk-reeling/*"
+    target_origin_id         = "apigw-silk-reeling"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods           = ["HEAD", "GET"]
+    compress                 = true
+    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = data.aws_cloudfront_function.strip_prefix.arn
+    }
+  }
+
+  # Serve the styled 404 page. S3-via-OAC returns 403 for a missing object, so
+  # both 403 and 404 map to /404.html with a real 404 status. Short error cache
+  # so a fixed/added page propagates quickly.
+  custom_error_response {
+    error_code            = 403
+    response_code         = 404
+    response_page_path    = "/404.html"
+    error_caching_min_ttl = 10
+  }
+  custom_error_response {
+    error_code            = 404
+    response_code         = 404
+    response_page_path    = "/404.html"
+    error_caching_min_ttl = 10
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    acm_certificate_arn      = data.aws_acm_certificate.website.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+
+  tags = {
+    Name               = "${var.domain_name}-cdn"
+    Environment        = var.deploy_environment
+    Owner              = var.owner_email
+    CostCenter         = "website-ops"
+    DataClassification = "Public"
+    ComplianceScope    = "Section508"
+  }
+
+  # The distribution serves the entire site and the app. It must never be
+  # replaced or destroyed by a plan; changes are made in place and reviewed.
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+variable "silk_reeling_api_origin_domain" {
+  type        = string
+  description = "Hostname of the Silk Reeling API Gateway origin behind the /silk-reeling/* behavior, e.g. <api-id>.execute-api.<region>.amazonaws.com. Supplied at apply time; not a secret, but kept out of committed code so the stack stays portable."
+}
+
+variable "owner_email" {
+  type        = string
+  description = "Value for the distribution's Owner tag. Supplied at apply time so a personal address is not committed to the public repo."
+}
