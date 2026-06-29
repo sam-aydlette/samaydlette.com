@@ -1280,6 +1280,48 @@ jobs:
         aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
+    # -------------------------------------------------------------------------
+    # ATTEST ARTIFACT PROVENANCE (SLSA v1 / in-toto, DSSE — Task 14 / S2)
+    # -------------------------------------------------------------------------
+    # Each core compliance artifact gets a DSSE-signed SLSA provenance
+    # attestation binding it to the canonical inventory (ksi-signal.json sha256 +
+    # signal_id), the generator that produced it, this commit, and this run. This
+    # is the cryptographic form of reconciliation invariant (e) + the publish-
+    # freshness commit check: instead of string-matching the signal_id/commit, the
+    # binding is a signed attestation any in-toto-aware verifier can consume. Each
+    # attestation is verified here against the pinned identity, fail-closed.
+    # Additive only — the artifacts and their existing .bundle signatures are
+    # unchanged; this publishes new <artifact>.intoto.jsonl alongside them.
+    - name: Attest artifact provenance (SLSA/in-toto)
+      working-directory: infrastructure
+      run: |
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        attest() {
+          art="$1"; gen="$2"
+          python3 ../scripts/build-provenance.py \
+            --ksi-signal ksi-signal.json --generator "../$gen" \
+            --output "$art.predicate.json"
+          cosign attest-blob --yes \
+            --predicate "$art.predicate.json" --type slsaprovenance1 \
+            --bundle "$art.intoto.jsonl" "$art"
+          cosign verify-blob-attestation \
+            --bundle "$art.intoto.jsonl" --type slsaprovenance1 \
+            --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "$art"
+          aws s3 cp "$art.intoto.jsonl" "s3://$BUCKET_NAME/.well-known/$art.intoto.jsonl" \
+            --content-type application/json --cache-control "public, max-age=300"
+          echo "  attested + published: $art.intoto.jsonl"
+        }
+        # Core canonical evidence set. Extending to the remaining CDS/SDR/CPO
+        # artifacts is one attest() line each (tracked follow-on).
+        attest ksi-signal.json scripts/build-ksi-signal.py
+        attest oscal-ssp.json  scripts/build-oscal-ssp.py
+        attest oscal-poam.json scripts/build-oscal-poam.py
+        attest vdr-report.json scripts/build-vdr-report.py
+        attest iiw.csv         scripts/build-iiw.py
+        echo "✅ SLSA/in-toto provenance attestations published for the core compliance artifacts"
+
     # Sign the research paper itself (a paper whose thesis is verifiability should
     # be verifiable). The signed bytes are the served bytes of
     # /research/the-plumbing.html; the bundle is published at a stable
