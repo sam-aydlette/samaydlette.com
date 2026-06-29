@@ -937,6 +937,31 @@ jobs:
         ls -la ksi-signal.bundle
 
     # -------------------------------------------------------------------------
+    # SIGN + VERIFY THE OPA POLICY BUNDLE (supply-chain hardening — Task 13 / S1)
+    # -------------------------------------------------------------------------
+    # The deploy gate evaluates policies.rego and the runtime emitter re-validates
+    # with the Wasm compiled from the same source (/tmp/opa-bundle.tar.gz, built in
+    # the "Create Lambda zip file" step and shipped in the Lambda package). Sign
+    # that compiled bundle keyless and verify the signature here against the pinned
+    # workflow identity, so the policy that gates the deploy and re-runs at runtime
+    # is tamper-evident and independently verifiable rather than trusted implicitly.
+    # Fails closed if the signature or identity does not check. Additive only — no
+    # change to any existing artifact or its signature.
+    - name: Sign and verify the OPA policy bundle
+      working-directory: infrastructure
+      run: |
+        cp /tmp/opa-bundle.tar.gz opa-policy-bundle.tar.gz
+        echo "Signing the compiled OPA policy bundle with cosign keyless..."
+        cosign sign-blob --yes --bundle opa-policy-bundle.tar.gz.bundle opa-policy-bundle.tar.gz
+        echo "Verifying the signature against the pinned workflow identity (fail closed)..."
+        cosign verify-blob \
+          --bundle opa-policy-bundle.tar.gz.bundle \
+          --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+          opa-policy-bundle.tar.gz
+        echo "✅ OPA policy bundle signed and verified against the pinned identity"
+
+    # -------------------------------------------------------------------------
     # BUILD THE OSCAL REV 5 SSP  (published after the reconciliation gate)
     # -------------------------------------------------------------------------
     # Generates a NIST OSCAL System Security Plan (FedRAMP Rev 5 Moderate
@@ -1215,6 +1240,9 @@ jobs:
         aws s3 cp ksi-signal.json "s3://$BUCKET_NAME/.well-known/ksi-signal.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ksi-signal.bundle "s3://$BUCKET_NAME/.well-known/ksi-signal.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp schemas/ksi-signal.schema.json "s3://$BUCKET_NAME/.well-known/ksi-signal.schema.json" --content-type application/schema+json --cache-control "public, max-age=3600"
+        # Signed OPA policy bundle (S1): the compiled Wasm the gate + runtime use, plus its keyless signature.
+        aws s3 cp opa-policy-bundle.tar.gz "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz" --content-type application/gzip --cache-control "public, max-age=300"
+        aws s3 cp opa-policy-bundle.tar.gz.bundle "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz.bundle" --content-type application/json --cache-control "public, max-age=300"
         # OSCAL SSP
         aws s3 cp oscal-ssp.json "s3://$BUCKET_NAME/.well-known/oscal-ssp.json" --content-type application/oscal+json --cache-control "public, max-age=300"
         aws s3 cp oscal-ssp.bundle "s3://$BUCKET_NAME/.well-known/oscal-ssp.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1288,6 +1316,7 @@ jobs:
           fi
         }
         check ksi-signal.json .well-known/ksi-signal.json
+        check opa-policy-bundle.tar.gz .well-known/opa-policy-bundle.tar.gz
         check oscal-ssp.json .well-known/oscal-ssp.json
         check vdr-report.json .well-known/vdr-report.json
         check oscal-poam.json .well-known/oscal-poam.json
