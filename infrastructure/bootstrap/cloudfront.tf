@@ -58,14 +58,51 @@ resource "aws_cloudfront_origin_access_control" "website" {
   signing_protocol                  = "sigv4"
 }
 
+# Baseline security headers, delivered at the edge to the static site. These five
+# are safe site-wide: they add headers, they do not block any resource, so no page
+# can break. A Content-Security-Policy is intentionally NOT set here yet — it needs
+# a frame-src allowance for the activities.html podcast embeds and a report-only
+# rollout first (see the project notes), so it is staged separately. Attached to
+# the default (static-site) behavior only; the /silk-reeling/* application path is
+# left off this policy.
+resource "aws_cloudfront_response_headers_policy" "website" {
+  name    = "${replace(var.domain_name, ".", "-")}-security-headers"
+  comment = "Baseline security headers for ${var.domain_name}"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+    content_type_options {
+      override = true
+    }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "website" {
-  # Scanner findings that describe this distribution's deliberate posture. Each is
-  # classified here at scan-time (not silently dropped); the WAF/failover items
-  # are already tracked in the POA&M register, the other two are noted for it.
+  # Scanner findings that describe this distribution's deliberate posture, each
+  # classified here at scan-time (not silently dropped) and tracked in the POA&M
+  # register. (CKV2_AWS_32, response-headers policy, is now resolved — a policy is
+  # attached to the default behavior below — so its skip is removed; POAM-031 closed.)
   # checkov:skip=CKV_AWS_310:Risk-accepted (POAM-009). The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair, so an origin group does not apply.
   # checkov:skip=CKV2_AWS_47:Risk-accepted (POAM-007/008). A WAF is intentionally declined for this system (SC-7/SC-5 met via the CloudFront + API Gateway managed interfaces, Shield Standard, and throttling); there is also no Java/Log4j runtime in scope, so the Log4j AMR rule is moot.
   # checkov:skip=CKV_AWS_374:Not applicable. This is a public personal website intended to be reachable from every geography; no control requires geo-blocking. Documented as a false positive for this system.
-  # checkov:skip=CKV2_AWS_32:Residual, risk-accepted. No CloudFront response-headers policy is attached today; attaching one (security headers) is a cheap follow-up hardening tracked for a deliberate change, not a fix folded into this faithful-import PR.
   enabled             = true
   is_ipv6_enabled     = true
   comment             = ""
@@ -99,10 +136,12 @@ resource "aws_cloudfront_distribution" "website" {
     }
   }
 
-  # Static site: cache normally, redirect to HTTPS.
+  # Static site: cache normally, redirect to HTTPS, and add the security headers
+  # (HSTS, CSP, frame/content-type/referrer/XSS) at the edge.
   default_cache_behavior {
-    target_origin_id       = "S3-${var.domain_name}"
-    viewer_protocol_policy = "redirect-to-https"
+    target_origin_id           = "S3-${var.domain_name}"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.website.id
+    viewer_protocol_policy     = "redirect-to-https"
     allowed_methods        = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
     cached_methods         = ["HEAD", "GET"]
     compress               = true

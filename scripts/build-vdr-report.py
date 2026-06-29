@@ -61,7 +61,9 @@ POAM_BY_CHECK_ID = {
     "CKV_AWS_86":  "POAM-009",
     "CKV_AWS_117": "POAM-010",
     "CKV_AWS_310": "POAM-009",  # CloudFront origin failover (current checkov id; supersedes CKV_AWS_86 on the now-managed distribution)
-    "CKV2_AWS_32": "POAM-031",  # CloudFront response-headers policy not attached (residual hardening)
+    # CKV2_AWS_32 (POAM-031) closed: a response-headers policy is now attached to
+    # the distribution's default behavior (bootstrap/cloudfront.tf), so the check
+    # passes on its own and the suppression mapping is removed.
     "CKV2_AWS_56": "POAM-026",  # operator IAM admin group (inline skip, bootstrap/main.tf)
     # CKV_AWS_173 (POAM-011) closed under Task 6 — suppression removed from
     # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
@@ -133,7 +135,6 @@ SUPPRESSION_EVALUATION = {
     "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_310": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_117": {"pain": "N1", "irv": False, "lev": False},
-    "CKV2_AWS_32": {"pain": "N1", "irv": False, "lev": False},
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
@@ -143,7 +144,6 @@ SUPPRESSION_RATIONALE = {
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
     "CKV_AWS_310": "The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair; an origin group would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
-    "CKV2_AWS_32": "No CloudFront response-headers policy attached today. TLS is already enforced (redirect-to-https, TLSv1.2_2021); attaching a managed security-headers policy (HSTS, X-Content-Type-Options) is a low-cost hardening tracked for a deliberate change.",
 }
 
 # Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving
