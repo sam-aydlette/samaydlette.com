@@ -19,6 +19,14 @@ provider "aws" {
   region = var.aws_region
 }
 
+# CloudFront and its ACM certificate live in us-east-1 (ACM certs for CloudFront
+# must be issued there). CloudFront itself is global, but the cert data source
+# must read from us-east-1. See cloudfront.tf.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-2"
