@@ -1340,7 +1340,10 @@ def build_control_implementation(signal, catalog):
         # contributing KSIs so a reader can trace back to the catalog.
         ksi_footer = (
             f"\n\nContributing KSIs (via the FedRAMP KSI catalog at "
-            f"infrastructure/schemas/ksi-catalog.json): {', '.join(ksis)}."
+            f"infrastructure/schemas/ksi-catalog.json): {', '.join(ksis)}. "
+            f"Each KSI's live deploy-time status and the validations/components "
+            f"that evidence it are published per-KSI in the signal's ksis[] "
+            f"block at /.well-known/ksi-signal.json (keyed by the same KSI id)."
         )
         statement_text = statement + ksi_footer
 

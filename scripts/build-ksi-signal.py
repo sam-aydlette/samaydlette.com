@@ -62,6 +62,14 @@ TYPE_BY_TF_TYPE = {
     "aws_cloudwatch_event_rule": "event_schedule",
     "aws_iam_role": "iam_role",
     "aws_iam_role_policy": "iam_policy",
+    "aws_iam_policy": "iam_policy",  # managed policy (e.g., bootstrap assessment-readonly)
+    # CI/CD identity plane (infrastructure/bootstrap): the GitHub OIDC provider,
+    # the deploy/assessment roles (aws_iam_role above), and the operators group.
+    # These are the highest-privilege identities governing the production system,
+    # so they are inventoried, not excused — ingested from the bootstrap module's
+    # separate Terraform state by build_bootstrap_components().
+    "aws_iam_group": "iam_group",
+    "aws_iam_openid_connect_provider": "oidc_provider",
     "aws_cloudtrail": "audit_log_trail",
     "aws_cloudwatch_log_group": "log_group",
     # In-boundary components previously omitted (assessment F-1/B-1): the API
@@ -94,6 +102,8 @@ CFN_TYPE_BY_NORMALIZED = {
     "event_schedule": "AWS::Events::Rule",
     "iam_role": "AWS::IAM::Role",
     "iam_policy": "AWS::IAM::RolePolicy",
+    "iam_group": "AWS::IAM::Group",
+    "oidc_provider": "AWS::IAM::OIDCProvider",
     "audit_log_trail": "AWS::CloudTrail::Trail",
     "log_group": "AWS::Logs::LogGroup",
     "api_gateway": "AWS::ApiGatewayV2::Api",
@@ -389,6 +399,20 @@ IIW_DEFAULTS = {
         "baseline_configuration": "AWS Cognito user pool; MFA ON (software-token/TOTP), admin-create-only, 14-char password policy; public PKCE app client (no secret); Hosted-UI domain (Task 3)",
         "iiw_asset_type": "Identity Provider (Cognito user pool)",
     },
+    "iam_group": {
+        "function": "IAM group for the human operator(s); holds IAM administration privileges (POAM-026)",
+        "diagram_label": "IAM — operators group",
+        "public": False,
+        "baseline_configuration": "Bootstrap module; group-attached managed policies; members authenticate with MFA (POAM-025). Broad IAM admin tracked as POAM-026.",
+        "iiw_asset_type": "IAM Group",
+    },
+    "oidc_provider": {
+        "function": "GitHub Actions OIDC identity provider trusted by the CI/CD deploy role (workload identity; replaced long-lived keys per POAM-001)",
+        "diagram_label": "IAM — GitHub OIDC provider",
+        "public": False,
+        "baseline_configuration": "Bootstrap module; trusts token.actions.githubusercontent.com; deploy role trust policy restricts sub to the repo. Read-only assessment IAM tracked as POAM-027.",
+        "iiw_asset_type": "OIDC Identity Provider (IAM)",
+    },
 }
 
 
@@ -570,11 +594,15 @@ def build_cloud_components(tf_state, tf_outputs):
         elif normalized == "dns_zone":
             native_id = values.get("arn") or values.get("zone_id") or values.get("id")
         elif normalized == "iam_policy":
-            # Inline policies don't have their own ARN; synthesize an ID from the
+            # Managed policies (aws_iam_policy) carry their own ARN. Inline
+            # policies (aws_iam_role_policy) do not — synthesize an ID from the
             # role-name plus policy-name pair so the component is addressable.
-            role_name = values.get("role") or values.get("role_name") or "unknown"
-            policy_name = values.get("name") or "inline"
-            native_id = f"iam-role-policy::{role_name}/{policy_name}"
+            if values.get("arn"):
+                native_id = values["arn"]
+            else:
+                role_name = values.get("role") or values.get("role_name") or "unknown"
+                policy_name = values.get("name") or "inline"
+                native_id = f"iam-role-policy::{role_name}/{policy_name}"
         else:
             # Generic path for tls_certificate, event_schedule, iam_role,
             # audit_log_trail, log_group: most carry an `arn` attribute.
@@ -629,6 +657,33 @@ def build_cloud_components(tf_state, tf_outputs):
             break
 
     return list(components_by_id.values())
+
+
+def build_bootstrap_components(bootstrap_dir="bootstrap"):
+    """Inventory the CI/CD identity plane defined in infrastructure/bootstrap.
+
+    The bootstrap module (GitHub OIDC provider, deploy + assessment roles, the
+    operators IAM group, and their policies) lives in a SEPARATE Terraform state
+    from the application module. These are the highest-privilege identities
+    governing the production system, so they belong in the canonical inventory.
+
+    Best-effort: reads the bootstrap state via `terraform -chdir=<dir> show
+    -json` and reuses the same normalization as the application module. No-ops
+    (returns []) when the bootstrap state is not available locally — the same
+    bootstrap-before-state-backend chicken-and-egg the SBOM loaders tolerate —
+    so a developer run without bootstrap access still produces a valid signal,
+    while CI (which has the state) inventories them."""
+    state = run_terraform([f"-chdir={bootstrap_dir}", "show", "-json"])
+    if not state:
+        print(f"info: no bootstrap state at {bootstrap_dir}/; CI/CD identity-plane "
+              f"components not added this run", file=sys.stderr)
+        return []
+    comps = build_cloud_components(state, {})
+    for c in comps:
+        c.setdefault("attributes", {})["tf_module"] = "bootstrap"
+    print(f"info: inventoried {len(comps)} bootstrap (CI/CD identity plane) components",
+          file=sys.stderr)
+    return comps
 
 
 # System name prefix: in-boundary AWS resources are named with it. Keep in sync
@@ -1010,13 +1065,21 @@ def build_validations(validations_doc, components):
             skipped += 1
             continue
 
+        # result is derived from violations, not from the OPA `compliant` flag
+        # alone: a "pass" with a non-empty violations[] is internally
+        # contradictory (the schema documents violations as findings "when
+        # result is 'fail'"). If the policy reported any violation for the
+        # referenced components, the validation fails regardless of how
+        # `compliant` was computed upstream. This makes the signal fail-safe
+        # against an OPA/terraform-plan.sh mismatch rather than masking it.
+        result = "pass" if (compliant and not violations) else "fail"
         validations.append({
             "validation_id": f"v-{idx:04d}",
             "policy": {
                 "id": "terraform.compliance",
                 "version": policy_version,
             },
-            "result": "pass" if compliant else "fail",
+            "result": result,
             "component_refs": refs,
             "violations": violations,
         })
@@ -1024,6 +1087,83 @@ def build_validations(validations_doc, components):
     if skipped:
         print(f"info: skipped {skipped} OPA results that did not map to schema component types", file=sys.stderr)
     return validations
+
+
+# KSI family (the middle token of KSI-XXX-YYY) → the inventory component types
+# whose policy validations evidence that family's indicators. A consistent,
+# catalog-derived rule for all in-scope KSIs (assessment Task 4): a KSI's status
+# is the aggregate of the terraform.compliance validations covering the
+# components in its family's domain. `None` means the whole inventory (policy &
+# inventory KSIs); the empty set means no component evidence (documentation-only
+# families such as cybersecurity education).
+KSI_FAMILY_EVIDENCE_TYPES = {
+    "CED": set(),  # education/training — evidenced by docs, not components
+    "CMT": {"function", "object_store", "cdn_distribution"},
+    "CNA": {"object_store", "cdn_distribution", "function", "api_gateway",
+            "dns_zone", "tls_certificate", "secrets_manager", "identity_provider", "kms_key"},
+    "IAM": {"iam_role", "iam_policy", "iam_group", "oidc_provider", "identity_provider", "secrets_manager"},
+    "INR": {"log_group", "function"},
+    "MLA": {"log_group", "function", "cdn_distribution"},
+    "PIY": None,  # policy & inventory — whole inventory is the evidence
+    "RPL": {"object_store"},
+    "SCR": {"npm_package", "pypi_package", "external_service"},
+    "SVC": {"object_store", "cdn_distribution", "function", "kms_key",
+            "tls_certificate", "api_gateway", "secrets_manager", "event_schedule"},
+}
+
+
+def build_ksi_statuses(catalog, components, validations):
+    """Emit a per-KSI status block for every in-scope (Moderate) indicator in
+    the catalog, so a consumer can trace each KSI the SSP names to a live
+    pass/fail backed by the validations and components that evidence it.
+
+    Status is derived consistently from the catalog's KSI→family domain: a KSI
+    is `fail` if any terraform.compliance validation over a component in its
+    family's domain failed, else `pass`. `method` records how it was evidenced
+    (policy-validation / inventory-attestation / documentation)."""
+    by_type = {}
+    for c in components:
+        by_type.setdefault(c.get("type"), []).append(c.get("component_id"))
+    all_ids = [c.get("component_id") for c in components]
+
+    ksis = []
+    for family_code, family in sorted((catalog.get("KSI") or {}).items()):
+        evidence_types = KSI_FAMILY_EVIDENCE_TYPES.get(family_code, None)
+        for ind in family.get("indicators", []) or []:
+            if not (ind.get("impact") or {}).get("moderate"):
+                continue  # out of scope for a Moderate system
+            if evidence_types is None:
+                comp_refs = list(all_ids)
+            else:
+                comp_refs = [cid for t in evidence_types for cid in by_type.get(t, [])]
+            comp_set = set(comp_refs)
+            rel_validations = [v for v in validations
+                               if comp_set & set(v.get("component_refs") or [])]
+            failed = [v["validation_id"] for v in rel_validations if v.get("result") == "fail"]
+            if rel_validations:
+                method = "policy-validation"
+                status = "fail" if failed else "pass"
+            elif comp_refs:
+                method = "inventory-attestation"  # in inventory, no policy check fires for the domain
+                status = "pass"
+            else:
+                method = "documentation"  # doc/training-based family (no component evidence)
+                status = "pass"
+            ksis.append({
+                "id": ind["id"],
+                "name": ind.get("name"),
+                "family": family_code,
+                "status": status,
+                "impact": "moderate",
+                "method": method,
+                "controls": [c.get("control_id") for c in ind.get("controls", []) or []],
+                "evidence": {
+                    "validation_ids": [v["validation_id"] for v in rel_validations],
+                    "failed_validation_ids": failed,
+                    "component_refs": comp_refs,
+                },
+            })
+    return ksis
 
 
 # =============================================================================
@@ -1127,6 +1267,12 @@ def main():
 
     components = []
     components.extend(build_cloud_components(tf_state, tf_outputs))
+    # CI/CD identity plane (bootstrap module, separate Terraform state): the
+    # GitHub OIDC provider, deploy/assessment roles, and operators group. These
+    # govern the production system and are inventoried, not excused (their
+    # weaknesses are tracked as POAM-026/027). Best-effort: no-ops if the
+    # bootstrap state isn't reachable from this run (CI has it).
+    components.extend(build_bootstrap_components())
     # Supplement the Terraform-state walk with live-only in-boundary resources
     # (Lambda auto-creates execution log groups outside Terraform state). The
     # reconciliation gate's live completeness check enforces nothing else is
@@ -1163,6 +1309,18 @@ def main():
 
     validations = build_validations(validations_doc, components)
 
+    # Per-KSI status block: maps every in-scope FedRAMP 20x KSI to a live
+    # pass/fail with the validations + components that evidence it, so the SSP's
+    # named KSIs are machine-traceable to results in this signal (assessment
+    # Task 4 — the SSP↔signal linkage gap).
+    catalog_path = repo_root / "infrastructure" / "schemas" / "ksi-catalog.json"
+    ksis = []
+    if catalog_path.exists():
+        catalog = json.loads(catalog_path.read_text())
+        ksis = build_ksi_statuses(catalog, components, validations)
+    else:
+        print(f"warning: {catalog_path} not found; emitting empty ksis[]", file=sys.stderr)
+
     signal = {
         "$schema": schema_id,
         "signal_version": SIGNAL_VERSION,
@@ -1180,6 +1338,7 @@ def main():
         "provenance": build_provenance(),
         "components": components,
         "validations": validations,
+        "ksis": ksis,
         "ownership": {
             "system_owner": "Sam Aydlette",
             "application_owner": "Sam Aydlette",
@@ -1213,7 +1372,7 @@ def main():
     output_path.write_text(json.dumps(signal, indent=2) + "\n")
     print(
         f"Wrote {output_path} "
-        f"({len(components)} components, {len(validations)} validations)"
+        f"({len(components)} components, {len(validations)} validations, {len(ksis)} KSIs)"
     )
 
 

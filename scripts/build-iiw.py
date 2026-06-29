@@ -93,11 +93,19 @@ def project_component(component, signal):
     row["Function"] = attrs.get("function", "")
     row["End-of-Life"] = attrs.get("end_of_life", "")
 
-    # Cloud-specific fields where the canonical inventory has the answer
+    # "Authenticated Scan" column policy (FedRAMP IIW / SSP Appendix M):
+    # authenticated scanning is a credentialed *host/OS* scan. It is reported
+    # "No" only where a host-like asset could in principle be auth-scanned but is
+    # not (serverless cloud resources — there is no OS to log into), and left
+    # blank for asset classes the column does not apply to (software packages,
+    # which are covered by SCA — Grype/Dependabot — not host scans; and static
+    # content artifacts, covered by hash integrity). The blanks are therefore
+    # intentional and correct per the template, not missing data; every row is
+    # still "In Latest Scan = Yes" because this build emitted it.
     native_id = component.get("native_id", "")
     if ctype in ("object_store", "cdn_distribution", "function"):
         row["DNS Name or URL"] = attrs.get("domain_name", native_id) or ""
-        row["Authenticated Scan"] = "No"  # serverless cloud has no auth-scan equivalent
+        row["Authenticated Scan"] = "No"  # serverless cloud has no auth-scan (no OS to credential into)
 
     if ctype == "function":
         row["OS Name and Version"] = attrs.get("runtime", "")

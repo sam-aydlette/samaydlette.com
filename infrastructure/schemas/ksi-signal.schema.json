@@ -161,6 +161,13 @@
         "$ref": "#/$defs/validation"
       }
     },
+    "ksis": {
+      "description": "Per-KSI status for every in-scope FedRAMP 20x Key Security Indicator. Each entry maps a KSI to a live pass/fail and the validations + components that evidence it, so a consumer can trace a control's named KSI (in the OSCAL SSP) to a result in this signal without out-of-band knowledge.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ksi"
+      }
+    },
     "disclosure": {
       "description": "Operator-asserted disclosure about the authorization status of this signal and the system it describes. Present so a consumer of the signal cannot mistake a self-attested PoC for a FedRAMP-authorized system. Optional in the schema (older signals may not carry it); recommended in all new signals.",
       "type": "object",
@@ -248,6 +255,8 @@
             "event_schedule",
             "iam_role",
             "iam_policy",
+            "iam_group",
+            "oidc_provider",
             "audit_log_trail",
             "log_group",
             "external_service",
@@ -466,6 +475,83 @@
                 ]
               },
               "resource": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ksi": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "evidence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The KSI identifier from the FedRAMP 20x KSI catalog (e.g., 'KSI-IAM-ELP'). Matches the KSIs the OSCAL SSP names per control, making them traceable to this status.",
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "description": "Human-readable KSI name from the catalog.",
+          "type": "string"
+        },
+        "family": {
+          "description": "KSI family code (the middle token of the id), e.g., 'IAM', 'MLA', 'SVC'.",
+          "type": "string"
+        },
+        "status": {
+          "description": "Whether this KSI is satisfied in the current deploy.",
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "impact": {
+          "description": "The FedRAMP impact level at which this KSI is in scope.",
+          "type": "string"
+        },
+        "method": {
+          "description": "How the status was evidenced: 'policy-validation' (terraform.compliance validations cover the domain), 'inventory-attestation' (in inventory, no policy check fires for the domain), or 'documentation' (doc/training-based family).",
+          "type": "string",
+          "enum": [
+            "policy-validation",
+            "inventory-attestation",
+            "documentation"
+          ]
+        },
+        "controls": {
+          "description": "NIST SP 800-53 control IDs this KSI maps to, from the catalog.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "description": "The validations and components that evidence this KSI's status, so a consumer can join a KSI to the live results behind it.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "validation_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "failed_validation_ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "component_refs": {
+              "type": "array",
+              "items": {
                 "type": "string"
               }
             }

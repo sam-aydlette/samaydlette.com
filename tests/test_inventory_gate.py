@@ -53,3 +53,27 @@ def test_d_correct_signal_passes():
     errs, n = gate.validate(s)
     assert errs == [], errs
     assert n == 5
+
+
+def test_e_pass_with_violations_fails():
+    # The v-0015 defect: a validation marked result 'pass' while carrying
+    # violations must be rejected by the gate.
+    s = _sig([])
+    s["validations"] = [{
+        "validation_id": "v-0015", "result": "pass",
+        "violations": [{"type": "encryption_disabled", "message": "x", "severity": "HIGH"}],
+    }]
+    errs, _ = gate.validate(s)
+    assert any("v-0015" in e and "pass" in e for e in errs)
+
+
+def test_e_fail_with_violations_passes_gate():
+    # A correctly-labeled fail with violations, and a clean pass, both fine.
+    s = _sig([])
+    s["validations"] = [
+        {"validation_id": "v-1", "result": "fail",
+         "violations": [{"type": "x", "message": "y", "severity": "HIGH"}]},
+        {"validation_id": "v-2", "result": "pass", "violations": []},
+    ]
+    errs, _ = gate.validate(s)
+    assert errs == [], errs
