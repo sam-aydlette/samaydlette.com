@@ -112,17 +112,6 @@
         </div>
     </footer>
 
-    <script>
-        // Your Stripe Payment Link
-        const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/5kQfZh0fM0ivcjGb9r3VC00';
-        
-        function handleDonation(suggestedAmount) {
-            // Redirect to Stripe with a suggested amount
-            // The user can still change it on the Stripe page
-            window.location.href = `${STRIPE_PAYMENT_LINK}?prefilled_amount=${suggestedAmount}00`;
-        }
-    </script>
-    
     <script type="module" src="/assets/js/main.js?v=1777894583070"></script>
 </body>
 </html>

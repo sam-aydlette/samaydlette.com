@@ -21,8 +21,10 @@
 /* =============================================================================
    IMPORT FONTS
    ============================================================================= */
-/* Load modern fonts from Google Fonts for better typography */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+/* Self-hosted Inter + JetBrains Mono (was Google Fonts). Removes a third-party
+   runtime origin so the strict CSP keeps style-src/font-src 'self' — SA-9 /
+   KSI-3IR. Same-origin @import is allowed under style-src 'self'. */
+@import url('fonts.css');
 
 /* =============================================================================
    COLOR THEMES AND TYPOGRAPHY - LIGHT MODE ONLY
