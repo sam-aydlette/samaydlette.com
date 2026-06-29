@@ -71,6 +71,15 @@ def validate(signal):
             if nid in seen_native:
                 errors.append(f"duplicate native_id: {nid}")
             seen_native[nid] = True
+    # result/violations consistency: a "pass" validation must carry no
+    # violations. The schema documents violations as findings "when result is
+    # 'fail'", so a pass-with-violations is internally contradictory and would
+    # mislead an assessor (this is the v-0015 defect that motivated the gate).
+    for v in signal.get("validations") or []:
+        if v.get("result") == "pass" and (v.get("violations") or []):
+            errors.append(
+                f"validation {v.get('validation_id')!r} has result 'pass' but "
+                f"{len(v['violations'])} violation(s); a pass must have none")
     return errors, len(components)
 
 
