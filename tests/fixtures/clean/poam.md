@@ -1,2 +1,5 @@
 # POA&M
-POAM-007 WAF declined; SC-7 met via managed interfaces (risk-accepted, Moderate)
+
+| POA&M ID | Control | Weakness | Status |
+| --- | --- | --- | --- |
+| POAM-007 | SC-7 | CloudFront WAF not attached; SC-7 met via managed interfaces | Open (risk-accepted) |

@@ -60,14 +60,66 @@ POAM_BY_CHECK_ID = {
     "CKV_AWS_68":  "POAM-007",
     "CKV_AWS_86":  "POAM-009",
     "CKV_AWS_117": "POAM-010",
+    "CKV2_AWS_56": "POAM-026",  # operator IAM admin group (inline skip, bootstrap/main.tf)
     # CKV_AWS_173 (POAM-011) closed under Task 6 — suppression removed from
     # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
     # CKV_AWS_338 (POAM-017) + CKV_AWS_158 (POAM-018) closed — suppressions removed
     # from .checkov.yaml (Task 7 retention; Task 6 CMK encryption).
     # CKV2_AWS_57 (was POAM-019) reclassified as a false positive under Task 3 —
-    # read from the docs/poam.md False Positives register, not risk-accepted here.
+    # in FALSE_POSITIVE_BY_CHECK_ID below.
     # CKV_AWS_76 (POAM-024) closed under Task 7 — HTTP API access logging enabled.
 }
+
+# False-positive checks → their POA&M item. Under the disposition model every
+# suppressed finding — false-positive included — is a formal, OPEN POA&M item
+# carrying a poam_ref, so no scanner finding is ever orphaned. This covers the
+# centrally-suppressed (.checkov.yaml) FP checks AND the inline #checkov:skip=
+# checks in infrastructure/bootstrap/main.tf and infrastructure/logging.tf that
+# were previously unmapped (the audit's orphaned-open findings).
+FALSE_POSITIVE_BY_CHECK_ID = {
+    "CKV_AWS_144": "POAM-003",  # S3 cross-region replication
+    "CKV_AWS_23":  "POAM-004",  # S3 event notifications (website bucket)
+    "CKV2_AWS_62": "POAM-004",  # S3 event notifications (log bucket, inline)
+    "CKV_AWS_174": "POAM-008",  # Log4j-specific WAF rule
+    "CKV_AWS_115": "POAM-012",  # Lambda reserved concurrency
+    "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
+    "CKV_AWS_272": "POAM-015",  # Lambda AWS Signer
+    "CKV2_AWS_57": "POAM-019",  # Secrets Manager automatic rotation
+    "CKV_AWS_355": "POAM-027",  # bootstrap read-only assessment IAM (inline)
+    "CKV_AWS_287": "POAM-027",  # bootstrap metadata-only Secrets reads (inline)
+    "CKV_AWS_356": "POAM-027",  # bootstrap account-level enumeration IAM (inline)
+    "CKV_AWS_18":  "POAM-028",  # log-target bucket self-logging (inline)
+    "CKV_AWS_145": "POAM-029",  # log-target bucket SSE-S3 vs CMK (inline)
+}
+
+# tfsec (Aqua AVD-*) rule IDs → their Checkov equivalent, so a tfsec finding for
+# the same condition routes to the same POA&M as the Checkov check. Without this
+# tfsec findings have no suppression path and surface as orphaned-open (the
+# AVD-AWS-0089 / AVD-AWS-0132 log-bucket findings in the audit).
+TFSEC_TO_CHECKOV = {
+    "AVD-AWS-0089": "CKV_AWS_18",   # S3 server access logging enabled
+    "AVD-AWS-0132": "CKV_AWS_145",  # S3 encryption uses a customer-managed key
+}
+
+
+def normalize_check_id(tool_id):
+    """Map a tfsec AVD id to its Checkov equivalent; pass other ids through."""
+    return TFSEC_TO_CHECKOV.get(tool_id, tool_id)
+
+
+def classify_finding(tool_id):
+    """Return (disposition, poam_ref) for a config-scanner finding.
+
+    disposition is "risk-accepted" or "false-positive" for a documented
+    suppression, else (None, None) for a genuinely-open finding that must be
+    remediated or given a new POA&M item (the reconciliation gate fails closed
+    on any VDR finding left without a poam_ref)."""
+    cid = normalize_check_id(tool_id or "")
+    if cid in POAM_BY_CHECK_ID:
+        return ("risk-accepted", POAM_BY_CHECK_ID[cid])
+    if cid in FALSE_POSITIVE_BY_CHECK_ID:
+        return ("false-positive", FALSE_POSITIVE_BY_CHECK_ID[cid])
+    return (None, None)
 
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
@@ -321,8 +373,11 @@ def ingest_suppressions(checkov_yaml):
 
 def ingest_false_positives(checkov_yaml):
     """Emit the false-positive records: suppressed checks listed in the
-    docs/poam.md False Positives register. Disposition is 'false-positive', no
-    poam_ref — a dismissed scanner finding, not an accepted weakness."""
+    docs/poam.md False Positives register AND centrally suppressed in
+    .checkov.yaml. Disposition is 'false-positive'; each carries its poam_ref so
+    the finding stays tracked as an open POA&M item (never dropped). Inline
+    #checkov:skip= FP checks are not synthesized here — they arrive as real
+    scanner findings and are classified in build_report()."""
     fp = false_positive_checks()
     if not checkov_yaml or not fp:
         return []
@@ -335,13 +390,13 @@ def ingest_false_positives(checkov_yaml):
         return []
     return [{
         "tracking_id": c,
-        "poam_ref": None,
+        "poam_ref": FALSE_POSITIVE_BY_CHECK_ID.get(c),
         "source": "checkov-suppression",
         "tool_id": c,
-        "title": f"{c} dismissed (false positive)",
+        "title": f"{c} false positive",
         "resource": ".checkov.yaml",
         "current_disposition": "false-positive",
-        "explanation": "Investigated and dismissed; see docs/poam.md False Positives register.",
+        "explanation": "Investigated; tracked as an open false-positive POA&M item. See docs/poam.md False Positives register.",
     } for c in ids if c in fp]
 
 
@@ -666,6 +721,15 @@ def build_report(findings, suppressions, kev_cves, ledger):
         irv = is_internet_reachable(f)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
 
+        # Disposition: a config finding whose check is a documented suppression
+        # (centralized .checkov.yaml, inline #checkov:skip=, or a tfsec/AVD
+        # equivalent) is reclassified as risk-accepted / false-positive and
+        # carries its POA&M cross-reference — it is NOT a blocking open finding,
+        # but it stays in findings[] so the raw finding remains individually
+        # mappable to its POA&M item. Only an unmapped finding stays "open".
+        disposition, finding_poam_ref = classify_finding(f.get("tool_id"))
+        is_suppressed = disposition is not None
+
         sla = class_c_sla_days(pain, lev, irv)
         # First-detected lookup: prefer the ledger (previous published VDR
         # report), then any caller-supplied value, then current build time.
@@ -692,7 +756,9 @@ def build_report(findings, suppressions, kev_cves, ledger):
         #      from VDR-TFR-PVR for its (PAIN, LEV, IRV) combination.
         block_this = False
         block_reason = None
-        if is_kev:
+        if is_suppressed:
+            block_this = False  # documented suppression — carries a poam_ref, never blocks
+        elif is_kev:
             block_this = True
             block_reason = "KEV (CISA Known Exploited Vulnerability)"
         elif pain == "N5" and lev and irv:
@@ -731,26 +797,36 @@ def build_report(findings, suppressions, kev_cves, ledger):
             "likely_exploitable": lev,
             "is_kev": is_kev,
             "completed_reductions": [],
-            "next_reduction": next_reduction,
-            "current_disposition": "open",
-            "final_disposition": "open",
-            "remediation_sla_days": sla,
-            "remediation_due_at": due_at,
-            "is_overdue": is_overdue,
+            "next_reduction": next_reduction if not is_suppressed else None,
+            "current_disposition": disposition or "open",
+            "final_disposition": disposition or "open",
+            "poam_ref": finding_poam_ref,
+            "remediation_sla_days": None if is_suppressed else sla,
+            "remediation_due_at": None if is_suppressed else due_at,
+            "is_overdue": False if is_suppressed else is_overdue,
             "will_be_overdue": False,
-            "overdue_explanation": overdue_explanation,
+            "overdue_explanation": (f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
+                                    if is_suppressed else overdue_explanation),
             "supplementary_info": "",
             "is_blocking": block_this,
             "block_reason": block_reason,
         })
-        summary["by_pain"][pain] += 1
-        if is_kev:
-            summary["kev"] += 1
+        # Histogram and blocking counts reflect genuinely-open findings only;
+        # suppressed findings are summarized via the risk-accepted/FP counts.
+        if not is_suppressed:
+            summary["by_pain"][pain] += 1
+            if is_kev:
+                summary["kev"] += 1
         if block_this:
             summary["blocking"] += 1
             blocking.append(f["tracking_id"])
 
-    summary["total_findings"] = len(report_findings)
+    summary["total_findings"] = sum(1 for r in report_findings if r["final_disposition"] == "open")
+    summary["dispositioned_findings"] = sum(1 for r in report_findings if r["final_disposition"] != "open")
+    # risk_accepted count = synthesized .checkov.yaml suppressions + scanner
+    # findings classified risk-accepted (e.g. inline CKV2_AWS_56 → POAM-026).
+    summary["risk_accepted"] = len(suppressions) + sum(
+        1 for r in report_findings if r["final_disposition"] == "risk-accepted")
 
     # Risk-accepted entries are not subject to the SLA — they carry their
     # rationale (the VER-RPT-AVI explanation field) and a POAM cross-reference.

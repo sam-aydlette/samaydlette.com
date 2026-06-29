@@ -332,6 +332,37 @@ def _formal_poam_ids_in_md(poam_md_text):
     return ids
 
 
+def _all_vdr_findings(vdr):
+    """Every finding the VDR carries, across all disposition buckets."""
+    return (list(vdr.get("findings", []) or [])
+            + list(vdr.get("risk_accepted", []) or [])
+            + list(vdr.get("false_positives", []) or []))
+
+
+def check_h_finding_coverage(vdr, poam):
+    """(h) Every VDR finding — open, risk-accepted, or false-positive — must
+    carry a poam_ref that resolves to a poam-item in the OSCAL POA&M. This is the
+    invariant whose absence let 18 inline-suppressed / tfsec findings publish as
+    open with a null poam_ref: a suppressed finding with no POA&M home, and an
+    open finding with no remediation item, both fail closed here."""
+    violations = []
+    poam_ids = {
+        p["value"]
+        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
+        for p in (item.get("props", []) or [])
+        if p.get("name") == "poam-id" and p.get("value")
+    }
+    for f in _all_vdr_findings(vdr):
+        ref = f.get("poam_ref")
+        tid = f.get("tracking_id", "?")
+        disp = f.get("current_disposition") or f.get("final_disposition") or "open"
+        if not ref:
+            violations.append(f"(h) VDR finding {tid!r} (disposition {disp}) has no poam_ref")
+        elif ref not in poam_ids:
+            violations.append(f"(h) VDR finding {tid!r} references {ref} which is not a POA&M item")
+    return violations
+
+
 def check_g_poam_parity(poam, poam_md_text):
     """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
     in docs/poam.md. Both registers are hand-maintained; without this check they
@@ -367,6 +398,7 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
                                        false_positive_ckvs)
     violations += check_f_freshness(signal, ssp, poam, vdr, expected_commit)
     violations += check_g_poam_parity(poam, poam_md_text)
+    violations += check_h_finding_coverage(vdr, poam)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     return violations
@@ -448,7 +480,7 @@ def main():
         for v in violations:
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
-    checks = "a-f" if live_arns is not None else "b-f (a deferred: no --live)"
+    checks = "a-h" if live_arns is not None else "b-h (a deferred: no --live)"
     print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
     return 0
 

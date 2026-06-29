@@ -347,6 +347,93 @@ POAM_ITEMS = [
         "original_risk_rating": "moderate", "adjusted_risk_rating": "low", "risk_adjustment": True,
         "status": "open", "category": "operational-requirement",
     },
+    {
+        "id": "POAM-026", "controls": ["ac-5", "ac-6", "ac-6.7"],
+        "title": "Operator IAM group holds broad IAM administration privileges",
+        "description": (
+            "The operators IAM group (the sole human-principal group) carries IAM "
+            "administration privileges (it manages users, groups, and policies). "
+            "Surfaced by Checkov CKV2_AWS_56 against infrastructure/bootstrap/main.tf. "
+            "At this system's Moderate categorization a single principal holding IAM "
+            "admin is a real least-privilege/separation-of-duties weakness (AC-5/AC-6), "
+            "accepted on the operating model rather than the categorization: the system "
+            "is a single-operator PoC with no second human to separate duties against, "
+            "so IAM administration cannot be delegated to a distinct role. Compensating "
+            "controls: the operator authenticates with MFA (see POAM-025), all IAM "
+            "changes flow through version-controlled Terraform reviewed in GitHub, and "
+            "CloudTrail records every IAM action."
+        ),
+        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV2_AWS_56",
+        "asset_identifiers": ["aws-iam-group::operators"],
+        "original_detection_date": "2026-06-08", "status_date": "2026-06-26",
+        "original_risk_rating": "moderate", "adjusted_risk_rating": "low", "risk_adjustment": True,
+        "category": "configuration",  # → status open, disposition risk-accepted
+    },
+    {
+        "id": "POAM-027", "controls": ["ac-6", "ac-6.1"],
+        "title": "Bootstrap deploy/assessment roles use account-level read-only IAM actions",
+        "description": (
+            "The bootstrap deploy and assessment roles grant account-level read-only "
+            "IAM/enumeration actions (List*/Describe*/Get*) that AWS does not allow to "
+            "be resource-scoped. Surfaced by Checkov CKV_AWS_355 (read-only assessment "
+            "policy), CKV_AWS_287 (metadata-only Secrets reads, no GetSecretValue), and "
+            "CKV_AWS_356 (account-level enumeration that cannot carry a resource ARN). "
+            "This is a false positive: the flagged actions are read-only and AWS "
+            "requires Resource \"*\" for them (they have no per-resource ARN form); the "
+            "policies grant no write, no admin, and no credential retrieval. Least "
+            "privilege (AC-6) is met by the explicit, enumerated read-only Action lists "
+            "and the ARN-scoped management statements alongside them."
+        ),
+        "weakness_detector_source": "Checkov", "weakness_source_identifier": "CKV_AWS_355; CKV_AWS_287; CKV_AWS_356",
+        "asset_identifiers": ["aws-iam-role::github-actions-deploy-oidc", "aws-iam-policy::assessment-readonly"],
+        "original_detection_date": "2026-06-08", "status_date": "2026-06-26",
+        "original_risk_rating": "low",
+        "category": "false-positive",  # → status open, disposition false-positive
+    },
+    {
+        "id": "POAM-028", "controls": ["au-2", "au-3"],
+        "title": "Log-target bucket does not enable S3 server access logging on itself",
+        "description": (
+            "Scanners flag the access-log destination bucket (samaydlette-logs) for not "
+            "having S3 server access logging enabled — Checkov CKV_AWS_18 (inline skip "
+            "in infrastructure/logging.tf), tfsec AVD-AWS-0089, and Prowler "
+            "s3_bucket_server_access_logging_enabled all report the same condition. This "
+            "is a false positive: this bucket is the terminal log sink for the website "
+            "bucket's access logs; enabling server access logging on it would recurse "
+            "into itself. AU-2/AU-3 logging is met — the website bucket logs land here, "
+            "and this is the standard log-target self-logging exception (consistent with "
+            "POAM-005's closure for the website bucket)."
+        ),
+        "weakness_detector_source": "Checkov; tfsec; Prowler",
+        "weakness_source_identifier": "CKV_AWS_18; AVD-AWS-0089; s3_bucket_server_access_logging_enabled",
+        "asset_identifiers": ["aws-s3-bucket::samaydlette-logs"],
+        "original_detection_date": "2026-06-22", "status_date": "2026-06-26",
+        "original_risk_rating": "low",
+        "category": "false-positive",  # → status open, disposition false-positive
+    },
+    {
+        "id": "POAM-029", "controls": ["sc-28"],
+        "title": "Log-target bucket uses SSE-S3 (AES256) rather than a customer-managed KMS key",
+        "description": (
+            "Scanners flag the access-log destination bucket (samaydlette-logs) for "
+            "encrypting with SSE-S3 (AES256) rather than a customer-managed CMK — "
+            "Checkov CKV_AWS_145 (inline skip in infrastructure/logging.tf), tfsec "
+            "AVD-AWS-0132, and Prowler s3_bucket_default_encryption (a check Prowler "
+            "itself marks deprecated) report it. This is a false positive / deliberate "
+            "design choice: the bucket holds only low-sensitivity access logs about "
+            "public-facing resources, SSE-S3 is the reliably-supported encryption for "
+            "S3 log-delivery targets, and a customer CMK would require granting the AWS "
+            "log-delivery services key access for no confidentiality benefit. SC-28 "
+            "at-rest encryption is met via SSE-S3/AES256 (same deliberate posture as the "
+            "public website bucket)."
+        ),
+        "weakness_detector_source": "Checkov; tfsec; Prowler",
+        "weakness_source_identifier": "CKV_AWS_145; AVD-AWS-0132; s3_bucket_default_encryption",
+        "asset_identifiers": ["aws-s3-bucket::samaydlette-logs"],
+        "original_detection_date": "2026-06-22", "status_date": "2026-06-26",
+        "original_risk_rating": "low",
+        "category": "false-positive",  # → status open, disposition false-positive
+    },
 ]
 
 
@@ -366,6 +453,33 @@ def _bool_str(value):
     return "yes" if value is True else "no" if value is False else ""
 
 
+# A POA&M item's `category` fully determines its lifecycle status and its
+# disposition. Per the disposition model (assessment Task 1 follow-up): every
+# tracked weakness — risk-accepted AND false-positive — stays OPEN so it is
+# never silently dropped and every scanner finding has a live, referenceable
+# home (each carries a poam_ref in the VDR). Only remediated items are closed.
+#   status      ∈ {open, closed}                       — lifecycle
+#   disposition ∈ {risk-accepted, false-positive,
+#                  operational-requirement, remediated} — how it is handled
+_CATEGORY_TO_STATE = {
+    "closed":                  ("closed", "remediated"),
+    "false-positive":          ("open",   "false-positive"),
+    "configuration":           ("open",   "risk-accepted"),
+    "interconnection":         ("open",   "risk-accepted"),
+    "operational-requirement": ("open",   "operational-requirement"),
+}
+
+
+def _status_disposition(item):
+    """Derive (status, disposition) from the item's category, falling back to
+    any explicit status the item carries."""
+    cat = item.get("category")
+    if cat in _CATEGORY_TO_STATE:
+        return _CATEGORY_TO_STATE[cat]
+    # Unknown category: preserve whatever status the row declares; no disposition.
+    return (item.get("status") or "open", item.get("disposition"))
+
+
 def _prop(name, value, ns=FEDRAMP_NS):
     """Build an OSCAL prop dict, omitting empty values per OSCAL conventions."""
     if value is None or value == "":
@@ -375,6 +489,7 @@ def _prop(name, value, ns=FEDRAMP_NS):
 
 def _build_props_for_item(item, defaults):
     """Produce the full FedRAMP-namespaced props list for a poam-item."""
+    status, disposition = _status_disposition(item)
     pairs = [
         ("poam-id", item.get("id")),
         ("controls", ", ".join(item.get("controls", []))),
@@ -391,7 +506,8 @@ def _build_props_for_item(item, defaults):
         ("original-risk-rating", item.get("original_risk_rating")),
         ("adjusted-risk-rating", item.get("adjusted_risk_rating")),
         ("risk-adjustment", _bool_str(item.get("risk_adjustment", False))),
-        ("status", item.get("status")),
+        ("status", status),
+        ("disposition", disposition),
         ("category", item.get("category")),
     ]
     return [p for p in (_prop(name, value) for name, value in pairs) if p is not None]
@@ -444,6 +560,25 @@ def build_metadata(now_iso, system_uuid, ksi_signal):
              "remarks": "signal_id of the canonical inventory this POA&M was built from (reconciliation invariant e)"},
             {"name": "authorization-status", "ns": "https://samaydlette.com/ns/oscal", "value": "self-attested-proof-of-concept"},
             {"name": "fedramp-certified", "ns": "https://samaydlette.com/ns/oscal", "value": "false"},
+            {"name": "bootstrap-scope-note", "ns": "https://samaydlette.com/ns/oscal",
+             "value": "CI/CD identity plane is in the authorization boundary and inventoried",
+             "remarks": ("The infrastructure/bootstrap module (GitHub OIDC provider, the "
+                         "github-actions-deploy-oidc and assessment roles, the operators IAM "
+                         "group, and their policies) is the CI/CD identity plane. Although it "
+                         "lives in a separate Terraform state, these are the highest-privilege "
+                         "identities governing the production system, so they are in the "
+                         "authorization boundary and are inventoried in ksi-signal.json / iiw.csv "
+                         "(ingested from the bootstrap state by build-ksi-signal.py). Their "
+                         "security-relevant weaknesses are tracked as POAM-026 (operators IAM "
+                         "group) and POAM-027 (deploy/assessment read-only IAM).")},
+            {"name": "poam-id-gap-note", "ns": "https://samaydlette.com/ns/oscal",
+             "value": "POAM-016 is intentionally not a formal item",
+             "remarks": ("The POA&M numbering skips POAM-016 by design: it denotes the "
+                         "single-region / no-cross-region architectural decision recorded in "
+                         "docs/recovery-plan.md, referenced in prose by POAM-003/POAM-009. It is "
+                         "not a Checkov/tfsec-surfaced weakness and is deliberately excluded from "
+                         "the formal item set (see scripts/reconcile.py). The gap is intentional, "
+                         "not a dropped item.")},
         ],
         "remarks": (
             "This Plan of Action and Milestones is a self-attested proof-of-concept artifact. "

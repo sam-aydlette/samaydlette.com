@@ -12,6 +12,16 @@
         }
       ]
     },
-    "poam-items": []
+    "poam-items": [
+      {
+        "uuid": "00000000-0000-4000-8000-000000000007",
+        "title": "CloudFront WAF not attached",
+        "props": [
+          {"name": "poam-id", "value": "POAM-007"},
+          {"name": "status", "value": "open"},
+          {"name": "disposition", "value": "risk-accepted"}
+        ]
+      }
+    ]
   }
 }

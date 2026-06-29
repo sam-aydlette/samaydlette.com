@@ -52,14 +52,14 @@ def clean_set():
             {"name": "impact-level", "value": "moderate"},
             {"name": "ksi-signal-id", "value": SIGNAL_ID},
         ]},
-        "poam-items": [],
+        "poam-items": [{"props": [{"name": "poam-id", "value": "POAM-007"}]}],
     }}
     vdr = {"impact_level": "Moderate", "class": "C", "ksi_signal_id": SIGNAL_ID,
-           "risk_accepted": [{"poam_ref": "POAM-007"}]}
+           "risk_accepted": [{"tracking_id": "CKV_AWS_68", "poam_ref": "POAM-007"}]}
     dashboard = "<h3>FedRAMP Rev 5 Moderate</h3>"
     checkov = "skip-check:\n  - CKV_AWS_68\n"
     ckv_to_poam = {"CKV_AWS_68": "POAM-007"}
-    poam_md = "POAM-007 WAF declined; SC-7 met via managed interfaces"
+    poam_md = "| POAM-007 | SC-7 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | asset | N2 | Moderate | Low | Yes | Open (risk-accepted) |"
     fps = set()
     return dict(signal=signal, ssp=ssp, poam=poam, vdr=vdr, dashboard_html=dashboard,
                 checkov_text=checkov, ckv_to_poam=ckv_to_poam, poam_md_text=poam_md,
@@ -153,8 +153,30 @@ def test_g_poam_parity_catches_oscal_item_not_in_md():
 def test_g_poam_parity_ignores_prose_cross_references():
     s = clean_set()
     # A prose "see POAM-016" reference is NOT a formal item; it must not be required.
+    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = []
     s["poam_md_text"] = "Single S3 origin; multi-origin would need multi-region storage (see POAM-016)."
     assert rc.check_g_poam_parity(s["poam"], s["poam_md_text"]) == []
+
+
+def test_h_finding_without_poam_ref_fails():
+    # An open finding with no poam_ref is exactly the audit's failure mode.
+    s = clean_set()
+    s["vdr"]["findings"] = [{"tracking_id": "checkov-CKV_AWS_356-r1", "current_disposition": "open"}]
+    v = rc.check_h_finding_coverage(s["vdr"], s["poam"])
+    assert any("checkov-CKV_AWS_356-r1" in x and "no poam_ref" in x for x in v)
+
+
+def test_h_finding_with_unknown_poam_ref_fails():
+    s = clean_set()
+    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_X", "poam_ref": "POAM-404"}]
+    v = rc.check_h_finding_coverage(s["vdr"], s["poam"])
+    assert any("POAM-404" in x and "not a POA&M item" in x for x in v)
+
+
+def test_h_passes_when_every_finding_resolves():
+    s = clean_set()
+    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_AWS_68", "poam_ref": "POAM-007"}]
+    assert rc.check_h_finding_coverage(s["vdr"], s["poam"]) == []
 
 
 def test_g_poam_parity_passes_when_sets_match():
