@@ -505,3 +505,59 @@ resource "aws_iam_user_group_membership" "operator" {
   user   = var.operator_user_name
   groups = [aws_iam_group.operators.name]
 }
+
+# =============================================================================
+# READ-ONLY COLLABORATORS
+# =============================================================================
+# A group for trusted third parties who get full read visibility but no write,
+# no execute, and cannot read secret VALUES or decrypt CMK-encrypted data.
+# Permissions are on the group, not the user (AC-2(1)/AC-6; clears Prowler
+# iam_policy_attached_only_to_group_or_roles), same pattern as operators.
+# =============================================================================
+resource "aws_iam_group" "read_only" {
+  name = "read-only"
+}
+
+# AWS-managed ReadOnlyAccess: every Get/List/Describe across services; no write,
+# no invoke/execute. This is the "see all the info, change nothing" baseline.
+resource "aws_iam_group_policy_attachment" "read_only" {
+  group      = aws_iam_group.read_only.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+# Carve-outs from ReadOnlyAccess (a Deny always overrides the managed Allow):
+# read-only members may see that the secret and KMS keys exist, but cannot read
+# the Anthropic API key's value or decrypt any CMK-encrypted data (Lambda env,
+# encrypted log content, signed-blob plaintext, etc.).
+resource "aws_iam_group_policy" "read_only_deny_sensitive" {
+  # checkov:skip=CKV_AWS_355:A Deny on Resource:* is the intended blast radius —
+  # it must cover every secret/key in the account, not a scoped subset.
+  name  = "deny-secret-values-and-decrypt"
+  group = aws_iam_group.read_only.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "DenySecretValuesAndDecrypt"
+      Effect   = "Deny"
+      Action   = ["secretsmanager:GetSecretValue", "kms:Decrypt"]
+      Resource = "*"
+    }]
+  })
+}
+
+# George — read-only collaborator. The user identity is declared here so it is
+# tracked and reproducible; his console password is intentionally NOT managed by
+# Terraform (an aws_iam_user_login_profile would store the password in state).
+# Set it out-of-band after apply, and George enrolls his own MFA on first login.
+resource "aws_iam_user" "george_readonly" {
+  name = "george-readonly"
+  tags = {
+    Purpose   = "read-only-collaborator"
+    ManagedBy = "terraform-bootstrap"
+  }
+}
+
+resource "aws_iam_user_group_membership" "george_readonly" {
+  user   = aws_iam_user.george_readonly.name
+  groups = [aws_iam_group.read_only.name]
+}
