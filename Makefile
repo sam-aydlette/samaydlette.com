@@ -166,7 +166,7 @@ validate:
 	terraform validate
 	@echo "Validating OPA policies..."
 	opa fmt --list policies.rego
-	opa test policies.rego
+	opa test policies.rego policies_test.rego
 	@echo "✅ Validation complete"
 
 # Show outputs

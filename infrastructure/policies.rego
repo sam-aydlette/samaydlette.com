@@ -23,10 +23,10 @@ package terraform.compliance
 # =============================================================================
 
 required_tags := {
-    "Environment",      # dev, staging, prod - helps track what this is for
-    "CostCenter",       # who pays for this resource
-    "DataClassification", # public, internal, confidential - what kind of data
-    "Owner"            # who is responsible for this resource
+	"Environment", # dev, staging, prod - helps track what this is for
+	"CostCenter", # who pays for this resource
+	"DataClassification", # public, internal, confidential - what kind of data
+	"Owner", # who is responsible for this resource
 }
 
 # =============================================================================
@@ -37,8 +37,83 @@ required_tags := {
 
 # This rule finds tags that should be there but aren't
 missing_required_tags[tag] {
-    tag := required_tags[_]           # Look at each required tag
-    not input.resource.tags[tag]      # Check if this tag is missing
+	tag := required_tags[_] # Look at each required tag
+	not input.resource.tags[tag] # Check if this tag is missing
+}
+
+# =============================================================================
+# RESOURCE CLASSIFICATION COMPLETENESS (PR-D)
+# =============================================================================
+# Every taggable resource must carry the six governed classification axes (see
+# docs/policies/resource-tagging-standard.md). The two constant axes arrive via
+# provider default_tags (so they land in tags_all, not tags); the four varying
+# axes are per-resource. A taggable resource missing any axis fails the build, so
+# a new resource cannot ship unclassified. Value-correctness against the
+# inventory is enforced separately by the reconciliation gate (Part 2); this is
+# the build-time completeness check.
+required_classification_tags := {
+	"DataSensitivity",
+	"MissionCriticality",
+	"InternetReachable",
+	"AgencyScope",
+	"OwnerRole",
+	"Archetype",
+}
+
+# Resource types this system tags. Sub-resource configs (versioning, policies,
+# routes, permissions) do not accept AWS tags and are intentionally excluded.
+taggable_types := {
+	"aws_kms_key",
+	"aws_lambda_function",
+	"aws_iam_role",
+	"aws_s3_bucket",
+	"aws_cloudwatch_log_group",
+	"aws_sqs_queue",
+	"aws_secretsmanager_secret",
+	"aws_cognito_user_pool",
+	"aws_apigatewayv2_api",
+	"aws_apigatewayv2_stage",
+	"aws_cloudwatch_event_rule",
+}
+
+# A classification key counts as present if it is in either the resource's own
+# tags or the provider default_tags (which Terraform merges into tags_all).
+classification_present(key) {
+	input.resource.tags_all[key]
+}
+
+classification_present(key) {
+	input.resource.tags[key]
+}
+
+# Data sources share a managed resource's type (e.g. data.aws_s3_bucket.website)
+# but carry no tags; the gate applies only to managed resources. A missing mode
+# is treated as managed (fail-safe: the gate still applies).
+is_managed {
+	input.resource.mode != "data"
+}
+
+is_managed {
+	not input.resource.mode
+}
+
+missing_classification[key] {
+	is_managed
+	taggable_types[input.resource.type]
+	key := required_classification_tags[_]
+	not classification_present(key)
+}
+
+classification_violations[violation] {
+	is_managed
+	taggable_types[input.resource.type]
+	count(missing_classification) > 0
+	violation := {
+		"type": "missing_classification_tag",
+		"message": sprintf("%s.%s is missing classification tags: %v", [input.resource.type, input.resource.name, missing_classification]),
+		"severity": "HIGH",
+		"resource": input.resource.name,
+	}
 }
 
 # =============================================================================
@@ -49,38 +124,38 @@ missing_required_tags[tag] {
 
 # Flag S3 buckets that are missing required tags
 s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"    # Only check S3 buckets
-    count(missing_required_tags) > 0          # Some required tags are missing
-    violation := {
-        "type": "missing_required_tags",
-        "message": sprintf("S3 bucket missing required tags: %v", [missing_required_tags]),
-        "severity": "HIGH",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
+	count(missing_required_tags) > 0 # Some required tags are missing
+	violation := {
+		"type": "missing_required_tags",
+		"message": sprintf("S3 bucket missing required tags: %v", [missing_required_tags]),
+		"severity": "HIGH",
+		"resource": input.resource.name,
+	}
 }
 
 # Flag S3 buckets that don't have versioning turned on
 s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"    # Only check S3 buckets
-    not input.resource.versioning_enabled     # Versioning is not enabled
-    violation := {
-        "type": "versioning_disabled", 
-        "message": "S3 bucket versioning must be enabled for compliance",
-        "severity": "MEDIUM",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
+	not input.resource.versioning_enabled # Versioning is not enabled
+	violation := {
+		"type": "versioning_disabled",
+		"message": "S3 bucket versioning must be enabled for compliance",
+		"severity": "MEDIUM",
+		"resource": input.resource.name,
+	}
 }
 
 # Flag S3 buckets that don't have encryption turned on
 s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"    # Only check S3 buckets
-    not input.resource.encryption_enabled     # Encryption is not enabled
-    violation := {
-        "type": "encryption_disabled",
-        "message": "S3 bucket server-side encryption must be enabled",
-        "severity": "HIGH",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
+	not input.resource.encryption_enabled # Encryption is not enabled
+	violation := {
+		"type": "encryption_disabled",
+		"message": "S3 bucket server-side encryption must be enabled",
+		"severity": "HIGH",
+		"resource": input.resource.name,
+	}
 }
 
 # Flag S3 buckets that don't have public access fully blocked. Evaluated at
@@ -88,14 +163,14 @@ s3_bucket_violations[violation] {
 # aws_s3_bucket_public_access_block resources) and at runtime (the Lambda
 # populates it from GetPublicAccessBlock API calls).
 s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"
-    not input.resource.public_access_blocked
-    violation := {
-        "type": "public_access_not_fully_blocked",
-        "message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
-        "severity": "HIGH",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_s3_bucket"
+	not input.resource.public_access_blocked
+	violation := {
+		"type": "public_access_not_fully_blocked",
+		"message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
+		"severity": "HIGH",
+		"resource": input.resource.name,
+	}
 }
 
 # =============================================================================
@@ -106,26 +181,26 @@ s3_bucket_violations[violation] {
 
 # Flag CloudFront that allows insecure HTTP connections
 cloudfront_violations[violation] {
-    input.resource.type == "aws_cloudfront_distribution"    # Only check CloudFront
-    input.resource.viewer_protocol_policy != "redirect-to-https"    # Not forcing HTTPS
-    violation := {
-        "type": "insecure_protocol",
-        "message": "CloudFront must redirect HTTP to HTTPS",
-        "severity": "HIGH",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_cloudfront_distribution" # Only check CloudFront
+	input.resource.viewer_protocol_policy != "redirect-to-https" # Not forcing HTTPS
+	violation := {
+		"type": "insecure_protocol",
+		"message": "CloudFront must redirect HTTP to HTTPS",
+		"severity": "HIGH",
+		"resource": input.resource.name,
+	}
 }
 
 # Flag CloudFront using old/weak encryption
 cloudfront_violations[violation] {
-    input.resource.type == "aws_cloudfront_distribution"    # Only check CloudFront
-    input.resource.minimum_protocol_version != "TLSv1.2_2021"    # Using old encryption
-    violation := {
-        "type": "weak_tls",
-        "message": "CloudFront must use TLS 1.2 or higher",
-        "severity": "MEDIUM",
-        "resource": input.resource.name
-    }
+	input.resource.type == "aws_cloudfront_distribution" # Only check CloudFront
+	input.resource.minimum_protocol_version != "TLSv1.2_2021" # Using old encryption
+	violation := {
+		"type": "weak_tls",
+		"message": "CloudFront must use TLS 1.2 or higher",
+		"severity": "MEDIUM",
+		"resource": input.resource.name,
+	}
 }
 
 # =============================================================================
@@ -136,73 +211,73 @@ cloudfront_violations[violation] {
 
 # Flag HTML files that don't have a language declaration
 accessibility_violations[violation] {
-    input.html_content != ""                              # Only check when HTML content exists
-    input.file_name != ""                                 # And we have a filename
-    not contains(input.html_content, "html lang=")        # Missing lang attribute
-    violation := {
-        "type": "missing_language_declaration",
-        "message": sprintf("HTML file %s missing language declaration (html lang attribute)", [input.file_name]),
-        "severity": "HIGH",
-        "resource": input.file_name
-    }
+	input.html_content != "" # Only check when HTML content exists
+	input.file_name != "" # And we have a filename
+	not contains(input.html_content, "html lang=") # Missing lang attribute
+	violation := {
+		"type": "missing_language_declaration",
+		"message": sprintf("HTML file %s missing language declaration (html lang attribute)", [input.file_name]),
+		"severity": "HIGH",
+		"resource": input.file_name,
+	}
 }
 
 # Flag HTML files that have images without alt text
 accessibility_violations[violation] {
-    input.html_content != ""                              # Only check when HTML content exists
-    input.file_name != ""                                 # And we have a filename
-    contains(input.html_content, "<img")                  # Contains images
-    img_without_alt := regex.find_all_string_submatch_n(
-        `<img[^>]*(?:(?!alt=)[^>])*>`, 
-        input.html_content, -1
-    )
-    count(img_without_alt) > 0                            # Found images without alt text
-    violation := {
-        "type": "missing_alt_text",
-        "message": sprintf("HTML file %s contains images without alt text", [input.file_name]),
-        "severity": "HIGH",
-        "resource": input.file_name
-    }
+	input.html_content != "" # Only check when HTML content exists
+	input.file_name != "" # And we have a filename
+	contains(input.html_content, "<img") # Contains images
+	img_without_alt := regex.find_all_string_submatch_n(
+		`<img[^>]*(?:(?!alt=)[^>])*>`,
+		input.html_content, -1,
+	)
+	count(img_without_alt) > 0 # Found images without alt text
+	violation := {
+		"type": "missing_alt_text",
+		"message": sprintf("HTML file %s contains images without alt text", [input.file_name]),
+		"severity": "HIGH",
+		"resource": input.file_name,
+	}
 }
 
 # Flag HTML files that don't have proper heading structure
 accessibility_violations[violation] {
-    input.html_content != ""                              # Only check when HTML content exists
-    input.file_name != ""                                 # And we have a filename
-    not contains(input.html_content, "<h1")               # No H1 heading found
-    violation := {
-        "type": "missing_main_heading",
-        "message": sprintf("HTML file %s missing main heading (h1 element)", [input.file_name]),
-        "severity": "MEDIUM",
-        "resource": input.file_name
-    }
+	input.html_content != "" # Only check when HTML content exists
+	input.file_name != "" # And we have a filename
+	not contains(input.html_content, "<h1") # No H1 heading found
+	violation := {
+		"type": "missing_main_heading",
+		"message": sprintf("HTML file %s missing main heading (h1 element)", [input.file_name]),
+		"severity": "MEDIUM",
+		"resource": input.file_name,
+	}
 }
 
 # Flag HTML files that have empty alt attributes (alt="" with no text)
 accessibility_violations[violation] {
-    input.html_content != ""                              # Only check when HTML content exists
-    input.file_name != ""                                 # And we have a filename
-    contains(input.html_content, `alt=""`)                # Contains empty alt attributes
-    not contains(input.html_content, "decorative")        # Unless marked as decorative
-    violation := {
-        "type": "empty_alt_text",
-        "message": sprintf("HTML file %s contains images with empty alt text", [input.file_name]),
-        "severity": "MEDIUM",
-        "resource": input.file_name
-    }
+	input.html_content != "" # Only check when HTML content exists
+	input.file_name != "" # And we have a filename
+	contains(input.html_content, `alt=""`) # Contains empty alt attributes
+	not contains(input.html_content, "decorative") # Unless marked as decorative
+	violation := {
+		"type": "empty_alt_text",
+		"message": sprintf("HTML file %s contains images with empty alt text", [input.file_name]),
+		"severity": "MEDIUM",
+		"resource": input.file_name,
+	}
 }
 
 # Flag HTML files missing proper document structure
 accessibility_violations[violation] {
-    input.html_content != ""                              # Only check when HTML content exists
-    input.file_name != ""                                 # And we have a filename
-    not contains(input.html_content, "<!DOCTYPE html>")   # Missing DOCTYPE declaration
-    violation := {
-        "type": "missing_doctype",
-        "message": sprintf("HTML file %s missing DOCTYPE declaration", [input.file_name]),
-        "severity": "LOW",
-        "resource": input.file_name
-    }
+	input.html_content != "" # Only check when HTML content exists
+	input.file_name != "" # And we have a filename
+	not contains(input.html_content, "<!DOCTYPE html>") # Missing DOCTYPE declaration
+	violation := {
+		"type": "missing_doctype",
+		"message": sprintf("HTML file %s missing DOCTYPE declaration", [input.file_name]),
+		"severity": "LOW",
+		"resource": input.file_name,
+	}
 }
 
 # =============================================================================
@@ -216,17 +291,21 @@ default compliant = true
 
 # Block deployment if any S3 bucket has violations
 compliant = false {
-    count(s3_bucket_violations) > 0
+	count(s3_bucket_violations) > 0
 }
 
 # Block deployment if any CloudFront has violations
 compliant = false {
-    count(cloudfront_violations) > 0
+	count(cloudfront_violations) > 0
 }
 
 # Block deployment if any accessibility violations are found
 compliant = false {
-    count(accessibility_violations) > 0
+	count(classification_violations) > 0
+}
+
+compliant = false {
+	count(accessibility_violations) > 0
 }
 
 # =============================================================================
@@ -236,7 +315,7 @@ compliant = false {
 # =============================================================================
 
 # Combine all violations from infrastructure and accessibility checks
-all_violations := s3_bucket_violations | cloudfront_violations | accessibility_violations
+all_violations := ((s3_bucket_violations | cloudfront_violations) | accessibility_violations) | classification_violations
 
 # =============================================================================
 # GENERATE FINAL COMPLIANCE REPORT
@@ -245,21 +324,22 @@ all_violations := s3_bucket_violations | cloudfront_violations | accessibility_v
 # =============================================================================
 
 compliance_report := {
-    "compliant": compliant,                              # Overall pass/fail
-    "total_violations": count(all_violations),           # How many problems found
-    "violations_by_severity": {                          # Break down by severity
-        "HIGH": count([v | v := all_violations[_]; v.severity == "HIGH"]),
-        "MEDIUM": count([v | v := all_violations[_]; v.severity == "MEDIUM"]),
-        "LOW": count([v | v := all_violations[_]; v.severity == "LOW"])
-    },
-    "violations_by_type": {                              # Break down by category
-        "infrastructure": count(s3_bucket_violations | cloudfront_violations),
-        "accessibility": count(accessibility_violations)
-    },
-    "violations": all_violations,                        # List of all problems
-    # The emitter (terraform-plan.sh or the runtime Lambda) supplies the
-    # observation timestamp via the KSI signal's `emitted_at`; not duplicated
-    # here. This also keeps the rule pure so it compiles to Wasm cleanly
-    # without needing the host to provide time.now_ns().
-    "policy_version": "1.0"                              # Version of these rules
+	"compliant": compliant, # Overall pass/fail
+	"total_violations": count(all_violations), # How many problems found
+	"violations_by_severity": {
+		"HIGH": count([v | v := all_violations[_]; v.severity == "HIGH"]), # Break down by severity
+		"MEDIUM": count([v | v := all_violations[_]; v.severity == "MEDIUM"]),
+		"LOW": count([v | v := all_violations[_]; v.severity == "LOW"]),
+	},
+	"violations_by_type": {
+		"infrastructure": count(s3_bucket_violations | cloudfront_violations), # Break down by category
+		"accessibility": count(accessibility_violations),
+		"classification": count(classification_violations),
+	},
+	"violations": all_violations, # List of all problems
+	# The emitter (terraform-plan.sh or the runtime Lambda) supplies the
+	# observation timestamp via the KSI signal's `emitted_at`; not duplicated
+	# here. This also keeps the rule pure so it compiles to Wasm cleanly
+	# without needing the host to provide time.now_ns().
+	"policy_version": "1.0", # Version of these rules
 }

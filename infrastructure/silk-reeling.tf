@@ -113,7 +113,7 @@ resource "aws_kms_key" "silk_reeling" {
     ]
   })
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-cmk" })
+  tags = merge(local.cls.identity_secrets_public, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-cmk" })
 }
 
 resource "aws_kms_alias" "silk_reeling" {
@@ -134,7 +134,7 @@ resource "aws_secretsmanager_secret" "silk_anthropic" {
   description = "Anthropic API key used by the app Lambda for feedback generation"
   kms_key_id  = aws_kms_key.silk_reeling[0].arn
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-anthropic" })
+  tags = merge(local.cls.identity_secrets_internal, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-anthropic" })
 }
 
 # Secret VALUES are injected out-of-band by the deploy's "Seed Silk Reeling
@@ -158,7 +158,7 @@ resource "aws_iam_role" "silk_reeling" {
     }]
   })
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-role" })
+  tags = merge(local.cls.identity_secrets_internal, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-role" })
 }
 
 resource "aws_iam_role_policy" "silk_reeling" {
@@ -204,7 +204,7 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
   retention_in_days = 365                             # 1-year retention (AU-11, POAM-017)
   kms_key_id        = aws_kms_key.silk_reeling[0].arn # customer-CMK at rest (POAM-018)
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-logs" })
+  tags = merge(local.cls.security_tooling, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-logs" })
 }
 
 # -----------------------------------------------------------------------------
@@ -262,7 +262,7 @@ resource "aws_lambda_function" "silk_reeling" {
   # grant is scoped by alias (see bootstrap compliance-kms-encrypt).
   depends_on = [aws_cloudwatch_log_group.silk_reeling, aws_kms_alias.silk_reeling]
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling" })
+  tags = merge(local.cls.app_tier, local.silk_tags, { Name = "${var.domain_name}-silk-reeling" })
 }
 
 # -----------------------------------------------------------------------------
@@ -280,7 +280,7 @@ resource "aws_apigatewayv2_api" "silk_reeling" {
   name          = local.silk_name
   protocol_type = "HTTP"
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api" })
+  tags = merge(local.cls.public_edge, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api" })
 }
 
 resource "aws_apigatewayv2_integration" "silk_reeling" {
@@ -334,7 +334,7 @@ resource "aws_cloudwatch_log_group" "silk_apigw" {
   retention_in_days = 365
   kms_key_id        = aws_kms_key.silk_reeling[0].arn
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-apigw-logs" })
+  tags = merge(local.cls.security_tooling, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-apigw-logs" })
 }
 
 # HTTP API access logging delivers to CloudWatch Logs via the logs delivery
@@ -389,7 +389,7 @@ resource "aws_apigatewayv2_stage" "silk_reeling" {
 
   depends_on = [aws_cloudwatch_log_resource_policy.silk_apigw]
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api-stage" })
+  tags = merge(local.cls.public_edge, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-api-stage" })
 }
 
 resource "aws_lambda_permission" "silk_reeling_apigw" {

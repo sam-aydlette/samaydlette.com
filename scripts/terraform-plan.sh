@@ -108,8 +108,16 @@ if 'planned_values' in plan and 'root_module' in plan['planned_values']:
             resource_config = {
                 'type': resource.get('type', ''),
                 'name': resource.get('name', ''),
+                # mode distinguishes managed resources from data sources; the
+                # classification gate only applies to managed resources (data
+                # sources like data.aws_s3_bucket.website carry no tags).
+                'mode': resource.get('mode', 'managed'),
                 'values': resource.get('values', {}),
-                'tags': resource.get('values', {}).get('tags', {})
+                'tags': resource.get('values', {}).get('tags', {}),
+                # tags_all includes provider default_tags merged in; the
+                # classification completeness rule reads it so the constant axes
+                # applied via default_tags are visible to the gate.
+                'tags_all': resource.get('values', {}).get('tags_all', {})
             }
             
             # Add special security-relevant fields for S3 buckets
