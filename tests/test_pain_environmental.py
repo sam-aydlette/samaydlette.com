@@ -132,3 +132,32 @@ def test_build_classification_index_keys_by_purl_and_tf_name():
     assert "silk_reeling" in idx
     assert "pkg:pypi/widget@1.0" in idx
     assert idx["pkg:pypi/widget@1.0"]["mission_criticality"] == "moderate"
+
+
+def test_build_classification_index_handles_dict_global_id():
+    """Regression: the real inventory carries global_id as a dict
+    ({"purl": ...} for software, {"sha256": ...} for static artifacts), not a
+    scalar. Indexing must read its scalar values, never add the dict to a set
+    (which raised TypeError: unhashable type: 'dict' and crashed the VDR build)."""
+    cls = {"data_sensitivity": "public", "mission_criticality": "moderate",
+           "internet_reachable": False, "agency_scope": "single"}
+    signal = {"components": [
+        {"component_id": "pypi::widget@1.0",
+         "native_id": "arn:aws:lambda:us-east-2:1:function:s",
+         "global_id": {"purl": "pkg:pypi/widget@1.0"},
+         "attributes": {"name": "widget", "classification": cls}},
+        {"component_id": "html::index.html",
+         "global_id": {"sha256": "abc123"},
+         "attributes": {"classification": cls}},
+    ]}
+    import json, tempfile, os
+    fd, path = tempfile.mkstemp(suffix=".json")
+    os.write(fd, json.dumps(signal).encode()); os.close(fd)
+    try:
+        idx = vdr.build_classification_index(path)  # must not raise
+    finally:
+        os.unlink(path)
+    # The purl and sha256 inside global_id become resolvable keys.
+    assert "pkg:pypi/widget@1.0" in idx
+    assert "abc123" in idx
+    assert "arn:aws:lambda:us-east-2:1:function:s" in idx

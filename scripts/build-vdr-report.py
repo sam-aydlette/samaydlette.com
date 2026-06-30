@@ -820,11 +820,17 @@ def build_classification_index(ksi_signal_path):
         if cid:
             keys.add(cid)
             keys.add(cid.split("::")[-1])
+        # native_id is a scalar (ARN/id); global_id is a dict of cross-CSP
+        # identifiers ({"purl": ...} / {"sha256": ...}). Index the scalar values,
+        # never the dict itself (which is unhashable and would crash the set add).
         for k in ("native_id", "global_id"):
-            if comp.get(k):
-                keys.add(comp[k])
+            v = comp.get(k)
+            if isinstance(v, str):
+                keys.add(v)
+            elif isinstance(v, dict):
+                keys.update(x for x in v.values() if isinstance(x, str))
         for k in ("tf_name", "name", "purl"):
-            if attrs.get(k):
+            if isinstance(attrs.get(k), str):
                 keys.add(attrs[k])
         if attrs.get("tf_name") and comp.get("resource_type"):
             keys.add(f"{comp['resource_type']}.{attrs['tf_name']}")
