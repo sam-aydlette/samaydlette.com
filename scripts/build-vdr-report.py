@@ -95,7 +95,8 @@ FALSE_POSITIVE_BY_CHECK_ID = {
     "CKV_AWS_287": "POAM-027",  # bootstrap metadata-only Secrets reads (inline)
     "CKV_AWS_356": "POAM-027",  # bootstrap account-level enumeration IAM (inline)
     "CKV_AWS_18":  "POAM-028",  # log-target bucket self-logging (inline)
-    "CKV_AWS_145": "POAM-029",  # log-target bucket SSE-S3 vs CMK (inline)
+    "CKV_AWS_145": "POAM-029",  # SSE-S3 vs CMK: log bucket + tfstate bucket (inline)
+    "CKV_AWS_119": "POAM-029",  # DynamoDB lock table default SSE vs CMK (inline)
 }
 
 # tfsec (Aqua AVD-*) rule IDs → their Checkov equivalent, so a tfsec finding for
