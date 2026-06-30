@@ -69,6 +69,11 @@ env:
   # syncs, signs, and serves the paper. Set "false" to hold it back during a
   # revision (the draft stays in the repo either way).
   PUBLISH_PLUMBING_PAPER: "true"
+  # The per-deploy stack now persists state in S3 (Task 16), so resources no
+  # longer need re-importing every run. The import steps are skipped by default
+  # and kept only as a disaster-recovery path: set REBUILD_STATE=true to
+  # re-adopt every live resource into a fresh/empty state.
+  REBUILD_STATE: "false"
   TERRAFORM_VERSION: 1.5.0
   OPA_VERSION: 0.57.0
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
@@ -426,6 +431,7 @@ jobs:
     # BUILD THE INFRASTRUCTURE  
     # -------------------------------------------------------------------------
     - name: Import Existing Resources (if needed)
+      if: ${{ env.REBUILD_STATE == 'true' }}
       working-directory: infrastructure
       run: |
         echo "Checking for existing AWS resources to import..."
@@ -727,6 +733,7 @@ jobs:
     # into state before plan/apply (mirrors "Import Existing Resources" above).
     # -------------------------------------------------------------------------
     - name: Import Silk Reeling resources (if needed)
+      if: ${{ env.REBUILD_STATE == 'true' }}
       working-directory: infrastructure
       run: |
         set +e   # handle each guard/import explicitly; a missing resource is fine
