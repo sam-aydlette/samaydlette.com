@@ -91,6 +91,14 @@ def inventory_component_ids(signal):
 SYSTEM_PREFIX = "samaydlette"
 
 
+def is_state_backend_bucket(name):
+    """The Terraform remote-state bucket (<prefix>-tfstate) is management-plane
+    infrastructure (bootstrap-provisioned, holds this stack's own state), not a
+    per-deploy system resource, so it is excluded from the live completeness
+    sweep. Matches the state-backend naming convention, nothing else."""
+    return (name or "").endswith("-tfstate")
+
+
 def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
     """Enumerate live in-boundary resource ARNs via the AWS CLI (boto3 is not a
     build dependency), scoped to SYSTEM_PREFIX. Returns a set of ARNs. Raises on
@@ -130,9 +138,15 @@ def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
         meta = (cli(["kms", "describe-key", "--key-id", kid, "--region", region_primary]) or {}).get("KeyMetadata", {})
         if meta.get("KeyManager") == "CUSTOMER" and meta.get("Arn"):
             arns.add(meta["Arn"])
-    # S3 (global) — the system bucket(s)
+    # S3 (global) — the system bucket(s). The Terraform remote-state bucket
+    # (<prefix>-tfstate) is excluded: it is management-plane infrastructure that
+    # stores this stack's OWN state, like the bootstrap identity plane, and is
+    # provisioned and verified by the bootstrap stack rather than the per-deploy
+    # inventory. Excluding it keeps the state backend from reading as an
+    # un-inventoried system resource; any other system-named bucket (actual
+    # system storage) is still swept, so deny-by-default holds.
     for b in (cli(["s3api", "list-buckets"]) or {}).get("Buckets", []):
-        if in_boundary(b["Name"]):
+        if in_boundary(b["Name"]) and not is_state_backend_bucket(b["Name"]):
             arns.add(f"arn:aws:s3:::{b['Name']}")
     # CloudWatch log groups (primary region)
     for lg in (cli(["logs", "describe-log-groups", "--region", region_primary]) or {}).get("logGroups", []):

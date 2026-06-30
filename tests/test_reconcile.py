@@ -213,5 +213,14 @@ def test_committed_clean_fixture_passes_via_main(monkeypatch):
     assert rc.main() == 0
 
 
+def test_state_backend_bucket_excluded_from_live_sweep():
+    # The Terraform state bucket is management-plane (bootstrap-managed) and must
+    # be excluded from the (a) live completeness sweep; real system buckets are not.
+    assert rc.is_state_backend_bucket("samaydlette-com-tfstate") is True
+    assert rc.is_state_backend_bucket("samaydlette-com-logs") is False
+    assert rc.is_state_backend_bucket("samaydlette.com") is False
+    assert rc.is_state_backend_bucket("") is False
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
