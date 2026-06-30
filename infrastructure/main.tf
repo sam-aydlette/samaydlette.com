@@ -49,15 +49,62 @@ terraform {
 # Tell Terraform how to connect to AWS in different regions
 # =============================================================================
 
+# =============================================================================
+# Resource-level classification tags (docs/policies/resource-tagging-standard.md)
+# =============================================================================
+# Every taggable resource carries the six governed classification axes. The two
+# system-wide constant axes (AgencyScope, OwnerRole) are applied to every
+# resource via provider default_tags; the four varying axes are applied
+# per-resource from local.cls below, matching the inventory's derived
+# classification so the reconciliation gate (PR-D Part 2) can assert live tags ==
+# inventory. The build-time OPA completeness rule (policies.rego) fails the build
+# if any taggable resource is missing a classification key, so a new resource
+# cannot ship unclassified. AgencyScope is hardwired single (single operator, no
+# agency data); OwnerRole is a role label, never a personal identifier.
+locals {
+  classification_constant = {
+    AgencyScope = "single"
+    OwnerRole   = "platform-operator"
+  }
+
+  # Per-resource varying axes (data_sensitivity / mission_criticality /
+  # internet_reachable / archetype). Keyed by a profile that mirrors a component's
+  # derived classification in the canonical inventory.
+  cls = {
+    # KMS keys: low-confidentiality (public) control-plane key material.
+    identity_secrets_public = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "identity-secrets" }
+    # IAM roles, Secrets Manager: moderate-confidentiality (internal) credentials.
+    identity_secrets_internal = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "identity-secrets" }
+    # Log groups, the log bucket, the internal compliance Lambda.
+    security_tooling = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "security-tooling" }
+    # The compliance DLQ (not an inventory component; classified for completeness).
+    security_tooling_internal = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "security-tooling" }
+    # The public Silk Reeling app Lambda.
+    app_tier = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "app-tier" }
+    # The public API Gateway (and its stage).
+    public_edge = { DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
+    # The daily EventBridge schedule.
+    internal_tooling_low = { DataSensitivity = "public", MissionCriticality = "low", InternetReachable = "false", Archetype = "internal-tooling" }
+    # The Cognito user pool: identity provider, reachable, holds credentials.
+    identity_provider = { DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "identity-secrets" }
+  }
+}
+
 # Main AWS connection for most resources
 provider "aws" {
   region = var.aws_region
+  default_tags {
+    tags = local.classification_constant
+  }
 }
 
 # Special connection for SSL certificates (they must be in us-east-1 for CloudFront)
 provider "aws" {
   alias  = "us_east_1"
   region = "us-east-1"
+  default_tags {
+    tags = local.classification_constant
+  }
 }
 
 # =============================================================================
@@ -283,13 +330,13 @@ resource "aws_cloudwatch_log_group" "route53_query_log" {
   retention_in_days = 365                     # 1-year retention (AU-11, POAM-017)
   kms_key_id        = aws_kms_key.at_rest.arn # customer-CMK at rest (POAM-018)
 
-  tags = {
+  tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-route53-logs"
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Public"
     Owner              = var.owner
-  }
+  })
 
   lifecycle {
     create_before_destroy = true
@@ -338,13 +385,13 @@ resource "aws_iam_role" "lambda_opa" {
     ]
   })
 
-  tags = {
+  tags = merge(local.cls.identity_secrets_internal, {
     Name               = "${var.domain_name}-lambda-opa-role"
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 # Define the specific permissions the monitoring function needs
@@ -496,12 +543,12 @@ resource "aws_kms_key" "at_rest" {
     ]
   })
 
-  tags = {
+  tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-at-rest"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 resource "aws_kms_alias" "at_rest" {
@@ -535,12 +582,12 @@ resource "aws_kms_key" "runtime_signing" {
     ]
   })
 
-  tags = {
+  tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-runtime-signing"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 resource "aws_kms_alias" "runtime_signing" {
@@ -594,12 +641,12 @@ resource "aws_kms_key" "dnssec_ksk" {
     ]
   })
 
-  tags = {
+  tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-dnssec-ksk"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 resource "aws_kms_alias" "dnssec_ksk" {
@@ -635,12 +682,12 @@ resource "aws_cloudwatch_log_group" "opa_compliance" {
   retention_in_days = 365
   kms_key_id        = aws_kms_key.at_rest.arn
 
-  tags = {
+  tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-opa-compliance-logs"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 # Dead-letter queue for the compliance Lambda's failed async invocations
@@ -652,12 +699,12 @@ resource "aws_sqs_queue" "compliance_dlq" {
   message_retention_seconds = 1209600 # 14 days
   sqs_managed_sse_enabled   = true
 
-  tags = {
+  tags = merge(local.cls.security_tooling_internal, {
     Name               = "${var.domain_name}-opa-compliance-dlq"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 resource "aws_lambda_function" "opa_compliance" {
@@ -695,13 +742,13 @@ resource "aws_lambda_function" "opa_compliance" {
     }
   }
 
-  tags = {
+  tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-opa-compliance"
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 # =============================================================================
@@ -718,13 +765,13 @@ resource "aws_cloudwatch_event_rule" "opa_compliance" {
   description         = "Trigger OPA compliance checks"
   schedule_expression = var.compliance_check_schedule
 
-  tags = {
+  tags = merge(local.cls.internal_tooling_low, {
     Name               = "${var.domain_name}-opa-compliance"
     Environment        = var.environment
     CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 # Connect the schedule to the monitoring function

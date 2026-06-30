@@ -12,12 +12,12 @@ resource "aws_s3_bucket" "logs" {
   # checkov:skip=CKV_AWS_145:SSE-S3 (AES256) is deliberate, consistent with the public website bucket — these are low-sensitivity access logs about public-facing resources, and SSE-S3 is the reliably-supported encryption for S3 server-access-log delivery targets. A customer CMK would require granting the AWS log-delivery services key access for no sensitivity benefit.
   # checkov:skip=CKV2_AWS_62:No event-driven workflow consumes these logs (same rationale as POAM-004 for the website bucket); retention is handled by the lifecycle rule.
   bucket = "${replace(var.domain_name, ".", "-")}-logs"
-  tags = {
+  tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-logs"
     Environment        = var.environment
     DataClassification = "Internal"
     Owner              = var.owner
-  }
+  })
 }
 
 resource "aws_s3_bucket_public_access_block" "logs" {

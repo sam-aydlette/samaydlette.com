@@ -42,7 +42,7 @@ resource "aws_cognito_user_pool" "silk_reeling" {
     }
   }
 
-  tags = merge(local.silk_tags, { Name = "${var.domain_name}-silk-reeling-users" })
+  tags = merge(local.cls.identity_provider, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-users" })
 }
 
 # Hosted UI login page (Cognito-prefix domain; free). Must be globally unique.
