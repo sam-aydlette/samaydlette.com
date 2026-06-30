@@ -690,6 +690,58 @@ def ingest_kev(path):
     return {v.get("cveID") for v in (doc.get("vulnerabilities") or []) if v.get("cveID")}
 
 
+def ingest_epss(path):
+    """Load EPSS exploit-probabilities -> {cve: probability}. Accepts the FIRST
+    EPSS CSV (epss_scores-current.csv, optionally gzipped) or a JSON
+    {"data":[{"cve","epss"}]} form. A missing or garbled feed yields an empty map,
+    so every finding then falls back to the severity proxy (no silent downgrade)."""
+    if not path or not Path(path).exists():
+        return {}
+    raw = Path(path).read_bytes()
+    if raw[:2] == b"\x1f\x8b":  # gzip magic
+        import gzip
+        try:
+            raw = gzip.decompress(raw)
+        except OSError:
+            return {}
+    text = raw.decode("utf-8", "replace")
+    scores = {}
+    if text.lstrip().startswith("{"):
+        try:
+            doc = json.loads(text)
+        except json.JSONDecodeError:
+            return {}
+        for row in doc.get("data") or []:
+            cve = row.get("cve")
+            try:
+                if cve:
+                    scores[cve] = float(row.get("epss"))
+            except (TypeError, ValueError):
+                continue
+        return scores
+    import csv
+    import io
+    ci, ei = 0, 1
+    header_seen = False
+    for row in csv.reader(io.StringIO(text)):
+        if not row or row[0].startswith("#"):
+            continue
+        if not header_seen:
+            header_seen = True
+            try:
+                ci, ei = row.index("cve"), row.index("epss")
+            except ValueError:
+                ci, ei = 0, 1
+            continue
+        if len(row) <= max(ci, ei):
+            continue
+        try:
+            scores[row[ci]] = float(row[ei])
+        except ValueError:
+            continue
+    return scores
+
+
 def ingest_previous_ledger(path):
     """Read the previous VDR report and return {tracking_id: first_detected}.
 
@@ -740,14 +792,27 @@ def is_internet_reachable(finding):
     return any(hint in haystack for hint in INTERNET_REACHABLE_RESOURCE_HINTS)
 
 
-def is_likely_exploitable(finding):
-    """VER-EVA-ELX: heuristic for likely-exploitable vulnerability.
+def is_likely_exploitable(finding, epss_scores=None, epss_threshold=0.70, is_kev=False):
+    """VER-EVA-ELX: Likely-Exploitable by the memo's union. A finding is LEV if its
+    EPSS probability meets the governed threshold OR exploitation is observed
+    active (CISA KEV membership, or an explicit exploitation=active marker). The
+    two fire independently — whichever is true, with no blend between them.
 
-    Conservative for the PoC: anything HIGH or CRITICAL is treated as LEV.
-    A real provider would apply VER-EVA-EFA factors (criticality, reachability,
-    exploitability, detectability, prevalence, privilege, proximate
-    vulnerabilities, known threats) and could downgrade individual findings.
+    Fail-safe: when EPSS is unavailable for the finding's CVE (no feed loaded, or
+    the CVE is absent from it), missing data must not lower the determination, so
+    the finding falls back to the conservative severity proxy (HIGH/CRITICAL ->
+    LEV) rather than silently dropping to NLEV. When EPSS *is* available, its real
+    signal is trusted even if that means a sub-threshold HIGH finding is NLEV —
+    that is the classifier getting more accurate, not data going missing.
     """
+    if is_kev:
+        return True
+    if str(finding.get("exploitation", "")).lower() == "active":
+        return True
+    cve = finding.get("cve")
+    epss_scores = epss_scores or {}
+    if cve and cve in epss_scores:
+        return epss_scores[cve] >= epss_threshold
     sev = (finding.get("severity") or "").upper()
     return sev in ("HIGH", "CRITICAL", "ERROR")
 
@@ -984,16 +1049,19 @@ def consolidate_by_cve(report_findings, risk_accepted):
     return out
 
 
-def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None):
+def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
+                 epss_scores=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
-    # governed PAIN config. Both default for callers that don't supply them (e.g.
-    # unit tests); the config is loaded fail-closed so scoring is never silently
-    # uncalibrated. Without an index, CVE findings resolve to the conservative
-    # fail-safe classification (memo s7).
+    # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
+    # All default for callers that don't supply them (e.g. unit tests); the config
+    # is loaded fail-closed so scoring is never silently uncalibrated. Without an
+    # index, CVE findings resolve to the conservative fail-safe classification
+    # (memo s7); without EPSS, LEV falls back to the severity proxy.
     if config is None:
         config, _ = load_pain_config()
     if index is None:
         index = {}
+    epss_scores = epss_scores or {}
     now = datetime.now(timezone.utc)
     report_findings = []
     summary = {
@@ -1008,9 +1076,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
 
     for f in findings:
         pain = assign_pain(f, index, config)
-        lev = is_likely_exploitable(f)
-        irv = is_internet_reachable(f)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
+        lev = is_likely_exploitable(f, epss_scores=epss_scores,
+                                    epss_threshold=config["epss_threshold"], is_kev=is_kev)
+        irv = is_internet_reachable(f)
 
         # Disposition: a config finding whose check is a documented suppression
         # (centralized .checkov.yaml, inline #checkov:skip=, or a tfsec/AVD
@@ -1237,6 +1306,7 @@ def main():
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
+    parser.add_argument("--epss", default=None, help="EPSS scores (FIRST epss_scores-current.csv, optionally gzipped, or JSON). Enables the EPSS likely-exploitable union (EPSS >= threshold OR active); without it, LEV falls back to the severity proxy.")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
@@ -1283,6 +1353,7 @@ def main():
                     return 1
 
     kev_cves = ingest_kev(args.kev)
+    epss_scores = ingest_epss(args.epss)
     suppressions = ingest_suppressions(args.checkov_yaml)
     false_positives = ingest_false_positives(args.checkov_yaml)
     ledger = ingest_previous_ledger(args.previous_vdr)
@@ -1292,16 +1363,22 @@ def main():
     classification_index = build_classification_index(args.ksi_signal)
 
     report, blocking = build_report(findings, suppressions, kev_cves, ledger,
-                                    index=classification_index, config=pain_config)
+                                    index=classification_index, config=pain_config,
+                                    epss_scores=epss_scores)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Provenance for the PAIN derivation: which classifier produced these N-levels
     # and which governed config calibrated it. CVE findings with a CVSS vector are
     # scored by the CVSS-Environmental method; vectorless IaC/config/DAST findings
-    # keep the documented severity-proxy fallback.
+    # keep the documented severity-proxy fallback. LEV is the EPSS union (>=
+    # threshold OR active-exploitation), with a severity-proxy fallback where EPSS
+    # is unavailable.
     report["methodology"] = {
         "pain_classifier": "cvss-environmental",
         "pain_classifier_fallback": "severity-proxy (findings without a CVSS vector)",
+        "lev_method": "EPSS union (>= threshold) OR active-exploitation (CISA KEV); severity-proxy fallback where EPSS is unavailable",
+        "epss_threshold": pain_config["epss_threshold"],
+        "epss_scores_loaded": len(epss_scores),
         "pain_config_version": pain_config["version"],
         "pain_config_sha256": pain_config_sha256,
         "reference": pain_config.get("method_reference", ""),
