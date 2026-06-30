@@ -1065,6 +1065,24 @@ jobs:
           echo '{"vulnerabilities":[]}' > kev-catalog.json
         fi
 
+    # Fetch the daily FIRST EPSS scores so the VDR builder can resolve the
+    # Likely-Exploitable axis as the real EPSS union (EPSS >= threshold OR active)
+    # rather than the severity proxy. Non-blocking: if the feed is unreachable,
+    # fall back to an empty file — ingest_epss then returns no scores and LEV
+    # degrades safely to the conservative severity proxy, so the build still
+    # completes and nothing is silently downgraded.
+    - name: Fetch FIRST EPSS scores
+      working-directory: infrastructure
+      run: |
+        EPSS_URL="https://epss.cyentia.com/epss_scores-current.csv.gz"
+        if curl -sfL --retry 3 --retry-delay 2 -o epss-scores.csv.gz "$EPSS_URL" \
+            && [ -s epss-scores.csv.gz ]; then
+          echo "EPSS scores fetched ($(stat -c%s epss-scores.csv.gz) bytes gzipped)."
+        else
+          echo "::warning::Could not fetch EPSS scores; LEV falls back to the severity proxy this run."
+          printf 'cve,epss,percentile\n' > epss-scores.csv.gz
+        fi
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -1079,6 +1097,7 @@ jobs:
           --grype grype.json \
           --zap ../security/zap/zap-report.json \
           --kev kev-catalog.json \
+          --epss epss-scores.csv.gz \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
