@@ -40,6 +40,7 @@
 # =============================================================================
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -47,6 +48,69 @@ import sys
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+
+# =============================================================================
+# GOVERNED PAIN CLASSIFIER CONFIG (see infrastructure/schemas/vdr-pain-config.json)
+# =============================================================================
+# The deterministic CVSS-Environmental PAIN method has exactly two classes of
+# tunable knob — the word thresholds and the EPSS likely-exploitable threshold —
+# plus the impact/requirement weight tables and the tag-to-requirement maps.
+# The memo (s14) requires these to live in GOVERNED CONFIGURATION, not as in-band
+# ad-hoc constants, so they are loaded from a versioned, schema-backed JSON file
+# and never silently defaulted. The FedRAMP VDR-TFR-PVR remediation-day matrix is
+# deliberately NOT a knob here: it stays verbatim in CLASS_C_SLA_DAYS below.
+#
+# Wired but inert in this change: the config is loaded, validated fail-closed,
+# and recorded in the report's methodology block, but assign_pain still uses the
+# severity-proxy stub. The CVSS-Environmental derivation that consumes these
+# knobs lands in a follow-on change.
+DEFAULT_PAIN_CONFIG = (Path(__file__).resolve().parent.parent
+                       / "infrastructure" / "schemas" / "vdr-pain-config.json")
+
+
+def _validate_pain_config(cfg, where):
+    """Fail-closed structural validation of the governed PAIN config. A malformed
+    or incomplete config is an error, never a silent fallback to built-in
+    defaults — that is what keeps the governed knobs from being bypassed."""
+    required = ["version", "pain_word_thresholds", "epss_threshold", "isc_cap",
+                "cvss_impact_weights", "requirement_weights",
+                "data_sensitivity_to_requirement", "mission_criticality_to_requirement",
+                "multi_agency_default"]
+    missing = [k for k in required if k not in cfg]
+    if missing:
+        raise SystemExit(f"::error::PAIN config {where} missing required keys: {missing}")
+    t = cfg["pain_word_thresholds"]
+    th = [t.get("minimal_to_narrow"), t.get("narrow_to_disruptive"),
+          t.get("disruptive_to_debilitating")]
+    if any(not isinstance(x, (int, float)) for x in th):
+        raise SystemExit(f"::error::PAIN config {where}: word thresholds must be numbers")
+    if not (0 <= th[0] < th[1] < th[2] <= 1):
+        raise SystemExit(f"::error::PAIN config {where}: word thresholds must be strictly "
+                         f"ascending in [0,1], got {th}")
+    if not (0 <= cfg["epss_threshold"] <= 1):
+        raise SystemExit(f"::error::PAIN config {where}: epss_threshold must be in [0,1]")
+    if not (0 < cfg["isc_cap"] <= 1):
+        raise SystemExit(f"::error::PAIN config {where}: isc_cap must be in (0,1]")
+    if cfg["multi_agency_default"] not in (0, 1):
+        raise SystemExit(f"::error::PAIN config {where}: multi_agency_default must be 0 or 1")
+
+
+def load_pain_config(path=None):
+    """Load + validate the governed PAIN classifier config. Returns
+    (config_dict, sha256_hex). Fails closed on a missing/malformed file so the
+    governed calibration is always present and auditable (memo s14)."""
+    cfg_path = Path(path) if path else DEFAULT_PAIN_CONFIG
+    if not cfg_path.exists():
+        raise SystemExit(f"::error::PAIN config not found at {cfg_path}; the governed "
+                         f"classifier config is required (fail-closed).")
+    raw = cfg_path.read_bytes()
+    try:
+        cfg = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"::error::PAIN config at {cfg_path} is not valid JSON: {exc}")
+    _validate_pain_config(cfg, cfg_path)
+    return cfg, hashlib.sha256(raw).hexdigest()
 
 
 # =============================================================================
@@ -960,7 +1024,14 @@ def main():
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
     parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
+    parser.add_argument("--pain-config", default=None, help="Governed PAIN classifier config (default: infrastructure/schemas/vdr-pain-config.json). Loaded and validated fail-closed; recorded in the report methodology block.")
     args = parser.parse_args()
+
+    # Load the governed classifier calibration. Fails closed if absent/malformed
+    # so the knobs are always present and auditable (memo s14). Wired but inert
+    # in this change: recorded in the methodology block; assign_pain still uses
+    # the severity-proxy stub until the CVSS-Environmental derivation lands.
+    pain_config, pain_config_sha256 = load_pain_config(args.pain_config)
 
     ksi_signal_id = None
     _sig_path = Path(args.ksi_signal)
@@ -1001,6 +1072,15 @@ def main():
     report, blocking = build_report(findings, suppressions, kev_cves, ledger)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
+    # Provenance for the PAIN derivation: which classifier produced these N-levels
+    # and which governed config calibrated it. pain_classifier is "severity-proxy"
+    # until the CVSS-Environmental derivation replaces the stub.
+    report["methodology"] = {
+        "pain_classifier": "severity-proxy",
+        "pain_config_version": pain_config["version"],
+        "pain_config_sha256": pain_config_sha256,
+        "reference": pain_config.get("method_reference", ""),
+    }
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))

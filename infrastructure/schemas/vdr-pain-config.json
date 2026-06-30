@@ -1,0 +1,36 @@
+{
+  "$schema": "./vdr-pain-config.schema.json",
+  "version": "1.0",
+  "description": "Governed calibration for the deterministic CVSS-Environmental VDR PAIN classifier. These are the ONLY tunable knobs in the method: the word thresholds, the EPSS likely-exploitable threshold, the impact/requirement weights, and the tag-to-requirement maps. The FedRAMP VDR-TFR-PVR remediation-day matrix is deliberately NOT here — it is fixed by FedRAMP and lives verbatim in code (scripts/build-vdr-report.py). Only the classifier is ours to tune; the deadlines are not.",
+  "method_reference": "A Deterministic, CVSS-Environmental Method for FedRAMP Rev5 VDR/VER Vulnerability Prioritization (informational memo, June 2026); CVSS v3.1 Environmental metric group (Modified Impact Sub-Score, CR/IR/AR).",
+  "fedramp_corpus_pin": "2a75592",
+  "pain_word_thresholds": {
+    "minimal_to_narrow": 0.25,
+    "narrow_to_disruptive": 0.55,
+    "disruptive_to_debilitating": 0.80
+  },
+  "epss_threshold": 0.70,
+  "isc_cap": 0.915,
+  "cvss_impact_weights": {
+    "none": 0.0,
+    "low": 0.22,
+    "high": 0.56
+  },
+  "requirement_weights": {
+    "low": 0.5,
+    "medium": 1.0,
+    "high": 1.5
+  },
+  "data_sensitivity_to_requirement": {
+    "public": "low",
+    "internal": "medium",
+    "pii": "high",
+    "cui": "high"
+  },
+  "mission_criticality_to_requirement": {
+    "low": "low",
+    "moderate": "medium",
+    "high": "high"
+  },
+  "multi_agency_default": 0
+}

@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/.well-known/vdr-pain-config.schema.json",
+  "title": "VDR PAIN classifier configuration",
+  "description": "Governed calibration for the deterministic CVSS-Environmental PAIN classifier. Constrains the only tunable knobs of the method; the FedRAMP remediation-day matrix is out of scope here (fixed by FedRAMP, in code).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "pain_word_thresholds",
+    "epss_threshold",
+    "isc_cap",
+    "cvss_impact_weights",
+    "requirement_weights",
+    "data_sensitivity_to_requirement",
+    "mission_criticality_to_requirement",
+    "multi_agency_default"
+  ],
+  "properties": {
+    "$schema": {"type": "string"},
+    "version": {"type": "string"},
+    "description": {"type": "string"},
+    "method_reference": {"type": "string"},
+    "fedramp_corpus_pin": {"type": "string"},
+    "pain_word_thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimal_to_narrow", "narrow_to_disruptive", "disruptive_to_debilitating"],
+      "description": "The three cut points on the normalized impact scalar S in [0,1]; must be strictly ascending (validated in code).",
+      "properties": {
+        "minimal_to_narrow": {"type": "number", "minimum": 0, "maximum": 1},
+        "narrow_to_disruptive": {"type": "number", "minimum": 0, "maximum": 1},
+        "disruptive_to_debilitating": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "epss_threshold": {"type": "number", "minimum": 0, "maximum": 1},
+    "isc_cap": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+    "cvss_impact_weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["none", "low", "high"],
+      "properties": {
+        "none": {"type": "number", "minimum": 0},
+        "low": {"type": "number", "minimum": 0},
+        "high": {"type": "number", "minimum": 0}
+      }
+    },
+    "requirement_weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["low", "medium", "high"],
+      "properties": {
+        "low": {"type": "number", "exclusiveMinimum": 0},
+        "medium": {"type": "number", "exclusiveMinimum": 0},
+        "high": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "data_sensitivity_to_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public", "internal", "pii", "cui"],
+      "description": "Maps the data_sensitivity tag to a requirement level (drives CR).",
+      "properties": {
+        "public": {"enum": ["low", "medium", "high"]},
+        "internal": {"enum": ["low", "medium", "high"]},
+        "pii": {"enum": ["low", "medium", "high"]},
+        "cui": {"enum": ["low", "medium", "high"]}
+      }
+    },
+    "mission_criticality_to_requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["low", "moderate", "high"],
+      "description": "Maps the mission_criticality tag to a requirement level (drives IR and AR).",
+      "properties": {
+        "low": {"enum": ["low", "medium", "high"]},
+        "moderate": {"enum": ["low", "medium", "high"]},
+        "high": {"enum": ["low", "medium", "high"]}
+      }
+    },
+    "multi_agency_default": {
+      "description": "The scope term m default. Hardwired 0 for this system (single operator, no agency data).",
+      "enum": [0, 1]
+    }
+  }
+}
