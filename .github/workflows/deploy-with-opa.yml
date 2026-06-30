@@ -234,7 +234,7 @@ jobs:
     # -------------------------------------------------------------------------
     - name: Terraform Init
       working-directory: infrastructure
-      run: terraform init
+      run: terraform init -input=false
 
     - name: Terraform Validate
       working-directory: infrastructure
@@ -420,7 +420,7 @@ jobs:
 
     - name: Terraform Init
       working-directory: infrastructure
-      run: terraform init
+      run: terraform init -input=false
     
     # -------------------------------------------------------------------------
     # BUILD THE INFRASTRUCTURE  
