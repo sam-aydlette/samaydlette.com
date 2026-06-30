@@ -457,6 +457,125 @@ def apply_mas_defaults(component):
 
 
 # =============================================================================
+# RESOURCE-LEVEL CLASSIFICATION TAGS (see docs/policies/resource-tagging-standard.md)
+# =============================================================================
+# The governed asset-tagging standard. Every component carries six tags from
+# which the VDR PAIN classifier derives the CVSS Environmental requirements
+# (CR/IR/AR), the internet-reachability axis (IRV), and the multi-agency scope
+# flag (m). The tag is the single source of truth; the risk inputs are derived,
+# not separately tagged.
+#
+# data_sensitivity is kept consistent with the MAS FIPS-199 confidentiality
+# category above (low -> public, moderate -> internal) so the two cannot drift.
+# This system holds no PII/CUI, so no resource uses those values. agency_scope
+# is hardwired "single" (single operator, no agency data — m is always 0).
+# owner is a governed ROLE label, never a personal identifier (public repo).
+OPERATOR_ROLE = "platform-operator"
+
+# data_sensitivity and mission_criticality are DERIVED from the component's
+# FIPS-199 categorization (security_category, set by apply_mas_defaults) so they
+# can never drift from it. data_sensitivity tracks confidentiality;
+# mission_criticality is the high-water mark of integrity and availability.
+_CONF_TO_SENSITIVITY = {"not-applicable": "public", "low": "public",
+                        "moderate": "internal", "high": "cui"}
+_CAT_ORDINAL = {"not-applicable": 0, "low": 0, "moderate": 1, "high": 2}
+_ORDINAL_TO_CRITICALITY = {0: "low", 1: "moderate", 2: "high"}
+
+# Per-component-TYPE baseline for the two axes that are NOT derivable from the
+# FIPS-199 categorization: internet reachability and the role-lens archetype.
+# internet_reachable here is the type default; the per-resource overrides below
+# correct the cases that differ (notably the two Lambdas, which share the
+# "function" type but differ on reachability).
+CLASSIFICATION_DEFAULTS = {
+    #                       internet_reachable  archetype
+    "object_store":        (False,              "internal-tooling"),
+    "cdn_distribution":    (True,               "public-edge"),
+    "function":            (False,              "app-tier"),
+    "npm_package":         (False,              "app-tier"),
+    "pypi_package":        (False,              "app-tier"),
+    "html_artifact":       (True,               "public-edge"),
+    "dns_zone":            (True,               "platform-foundation"),
+    "tls_certificate":     (False,              "platform-foundation"),
+    "event_schedule":      (False,              "internal-tooling"),
+    "iam_role":            (False,              "identity-secrets"),
+    "iam_policy":          (False,              "identity-secrets"),
+    "audit_log_trail":     (False,              "security-tooling"),
+    "log_group":           (False,              "security-tooling"),
+    "external_service":    (False,              "internal-tooling"),
+    "api_gateway":         (True,               "public-edge"),
+    "secrets_manager":     (False,              "identity-secrets"),
+    "kms_key":             (False,              "identity-secrets"),
+    "identity_provider":   (True,               "identity-secrets"),
+}
+
+# Per-RESOURCE overrides keyed by (component type, Terraform resource name).
+# Keying on type as well as name matters: many resources share a tf_name (the
+# Silk Reeling Lambda, API, Cognito pool, authorizer are all "silk_reeling"), so
+# a name-only key would bleed one resource's override onto its siblings. These
+# adjust only the non-derived axes (reachability, archetype) for asset-level
+# exceptions a type default cannot express; they mirror exactly what real
+# per-resource AWS tags will carry (PR-D). data_sensitivity / mission_criticality
+# are never overridden here — they derive from the categorization, by design.
+CLASSIFICATION_OVERRIDES = {
+    # The public Silk Reeling app Lambda is reachable through its API Gateway;
+    # the internal compliance Lambda (opa_compliance) is EventBridge-only and
+    # stays not-reachable. Both are stated explicitly so neither relies on the
+    # "function" type default by accident.
+    ("function", "silk_reeling"):  {"internet_reachable": True},
+    ("function", "opa_compliance"): {"internet_reachable": False, "archetype": "security-tooling"},
+    # The log bucket is security-tooling by role, unlike the site bucket which
+    # serves public content under the object_store default.
+    ("object_store", "logs"): {"archetype": "security-tooling"},
+}
+
+# Conservative fail-safe for an untagged/unknown-type resource: assume the worst
+# so it scores loudly and surfaces for classification (never lowers risk).
+CLASSIFICATION_FAILSAFE = {
+    "data_sensitivity": "cui",
+    "mission_criticality": "high",
+    "internet_reachable": True,
+    "archetype": "unclassified",
+}
+
+
+def apply_classification_defaults(component):
+    """Stamp the governed classification tags onto component.attributes.
+
+    data_sensitivity and mission_criticality are derived from the component's
+    FIPS-199 security_category (set by apply_mas_defaults) so they cannot drift.
+    internet_reachable and archetype come from the per-type baseline, then any
+    per-resource override keyed by attributes.tf_name. An unknown type resolves
+    to the conservative fail-safe. agency_scope and owner are system-wide
+    constants today. Lives under attributes (free-form by schema) — no schema
+    change needed.
+    """
+    component.setdefault("attributes", {})
+    base = CLASSIFICATION_DEFAULTS.get(component["type"])
+    if base is None:
+        classification = dict(CLASSIFICATION_FAILSAFE)
+    else:
+        cat = component.get("security_category") or {}
+        conf = cat.get("confidentiality", "not-applicable")
+        integ = _CAT_ORDINAL.get(cat.get("integrity", "not-applicable"), 0)
+        avail = _CAT_ORDINAL.get(cat.get("availability", "not-applicable"), 0)
+        internet_reachable, archetype = base
+        classification = {
+            "data_sensitivity": _CONF_TO_SENSITIVITY.get(conf, "cui"),
+            "mission_criticality": _ORDINAL_TO_CRITICALITY[max(integ, avail)],
+            "internet_reachable": internet_reachable,
+            "archetype": archetype,
+        }
+        override = CLASSIFICATION_OVERRIDES.get(
+            (component["type"], component["attributes"].get("tf_name")))
+        if override:
+            classification.update(override)
+    # Hardwired for this system: single operator, no agency data (m == 0).
+    classification["agency_scope"] = "single"
+    classification["owner"] = OPERATOR_ROLE
+    component["attributes"]["classification"] = classification
+
+
+# =============================================================================
 # HELPERS
 # =============================================================================
 
@@ -636,6 +755,7 @@ def build_cloud_components(tf_state, tf_outputs):
             component["native_id"] = native_id
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         components_by_id[cid] = component
 
     # Second pass: fold attribute resources into their parent.
@@ -742,6 +862,7 @@ def build_live_log_groups(existing_components, region="us-east-2"):
         }
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         new.append(component)
         have.add(native_id)
     return new
@@ -789,6 +910,7 @@ def build_npm_components(lock_path):
         }
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         components.append(component)
     return components
 
@@ -875,6 +997,7 @@ def build_sbom_components(sbom_path, existing_components=None):
         }
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         components.append(component)
     return components
 
@@ -969,6 +1092,7 @@ def build_external_components():
         }
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         components.append(component)
     return components
 
@@ -992,6 +1116,7 @@ def build_html_components(website_root):
         }
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
+        apply_classification_defaults(component)
         components.append(component)
     return components
 
