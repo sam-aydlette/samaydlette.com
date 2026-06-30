@@ -4,14 +4,16 @@
 # =============================================================================
 # Today the per-deploy stack keeps NO remote state and rebuilds it by
 # `terraform import`-ing every live resource on every run (~8.5 min/deploy).
-# This provisions a persistent S3 state bucket + DynamoDB lock + a dedicated CMK,
-# and grants the deploy role least-privilege access to them. NOTHING consumes
-# this yet — the infrastructure/ stack switches to `backend "s3"` in Phase C.
+# This provisions a persistent S3 state bucket + a DynamoDB lock table, and
+# grants the deploy role least-privilege access. NOTHING consumes this yet —
+# the infrastructure/ stack switches to `backend "s3"` in Phase C.
 #
 # It lives in bootstrap (local state, applied by the operator) because a stack
-# cannot manage the backend it stores its own state in. Correctness after the
-# cutover is unchanged: the reconciliation gate (reconcile.py --live) still
-# verifies live AWS == inventory regardless of how state is built.
+# cannot manage the backend it stores its own state in. These two resources are
+# the irreducible new infrastructure for remote state; no new CMK is added (the
+# bucket uses SSE-S3, see below). Correctness after the cutover is unchanged:
+# reconcile.py --live still verifies live AWS == inventory regardless of how
+# state is built.
 
 locals {
   tfstate_bucket = "${local.domain_dashed}-tfstate"
@@ -19,23 +21,20 @@ locals {
   tflock_table   = "${local.domain_dashed}-tflock"
 }
 
-# Dedicated CMK: terraform state can contain secret material (generated
-# passwords, etc.), so the state bucket is encrypted with a customer-managed key
-# rather than SSE-S3 — consistent with the repo's "default to SSE-KMS for
-# sensitive data" posture. (~$1/month; flagged in the PR.)
-resource "aws_kms_key" "tfstate" {
-  description             = "Encrypts the per-deploy Terraform state bucket"
-  deletion_window_in_days = 30
-  enable_key_rotation     = true
-}
-
-resource "aws_kms_alias" "tfstate" {
-  name          = "alias/${local.domain_dashed}-tfstate"
-  target_key_id = aws_kms_key.tfstate.key_id
-}
-
 resource "aws_s3_bucket" "tfstate" {
   bucket = local.tfstate_bucket
+
+  # At-rest encryption is SSE-S3 (AES256), not a customer CMK: the bucket is
+  # private, TLS-only, and reachable only by the deploy role and operator, so a
+  # CMK is defense-in-depth rather than required, and is declined to avoid an
+  # extra key to manage. SC-28 at-rest encryption is met by AES256. Tracked as
+  # POAM-029 (same posture as the log bucket). Access logging and event
+  # notifications are likewise dispositioned (POAM-028 / POAM-004): a private
+  # internal state bucket needs no S3 access-log target (deploy-role access is in
+  # account CloudTrail) and no event-notification consumer exists.
+  # checkov:skip=CKV_AWS_145:SSE-S3/AES256 at rest by design; CMK declined given strict access controls (POAM-029).
+  # checkov:skip=CKV_AWS_18:Internal state bucket; deploy-role access is captured by account CloudTrail, no separate S3 access-log target (POAM-028).
+  # checkov:skip=CKV2_AWS_62:S3 event notifications are an integration feature, not an audit control; none is configured (POAM-004).
 
   # The state bucket must never be destroyed by a plan — losing it means losing
   # the ability to manage the stack in place.
@@ -55,10 +54,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.tfstate.arn
+      sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true
   }
 }
 
@@ -68,6 +65,22 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# Lifecycle: abort incomplete multipart uploads and expire non-current state
+# versions (live versions are never expired — they are the rollback history).
+resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
+  bucket = aws_s3_bucket.tfstate.id
+  rule {
+    id     = "tfstate-housekeeping"
+    status = "Enabled"
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+  }
 }
 
 # Deny any non-TLS access, consistent with the other buckets in this account.
@@ -91,10 +104,13 @@ resource "aws_s3_bucket_policy" "tfstate" {
   })
 }
 
-# State lock table. TF 1.5 has no native S3 lockfile (that is >= 1.10), so a
-# DynamoDB lock is used; on-demand billing keeps it to pennies. Holds only lock
-# metadata (no secrets), so DynamoDB's default at-rest encryption is sufficient.
+# State lock table. TF 1.5 has no native S3 lockfile (that is >= 1.10, deferred
+# to Phase D), so a DynamoDB lock is used; on-demand billing keeps it to pennies.
 resource "aws_dynamodb_table" "tflock" {
+  # The table holds only lock metadata (no secrets), so DynamoDB's default
+  # at-rest encryption (AWS-managed) is sufficient; a customer CMK is declined
+  # for the same reason as the state bucket (POAM-029).
+  # checkov:skip=CKV_AWS_119:Lock metadata only, no secrets; default at-rest encryption is sufficient, CMK declined (POAM-029).
   name         = local.tflock_table
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
@@ -103,11 +119,14 @@ resource "aws_dynamodb_table" "tflock" {
     name = "LockID"
     type = "S"
   }
+
+  point_in_time_recovery {
+    enabled = true
+  }
 }
 
-# Least-privilege access for the deploy role: read/write its own state object,
-# take/release the lock, and use the state CMK. Scoped to the single state key
-# and lock table.
+# Least-privilege access for the deploy role: read/write its own state object and
+# take/release the lock. Scoped to the single state key and lock table.
 resource "aws_iam_role_policy" "tfstate_backend" {
   name = "tfstate-backend-access"
   role = aws_iam_role.deploy.id
@@ -132,12 +151,6 @@ resource "aws_iam_role_policy" "tfstate_backend" {
         Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"]
         Resource = aws_dynamodb_table.tflock.arn
       },
-      {
-        Sid      = "StateCmk"
-        Effect   = "Allow"
-        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = aws_kms_key.tfstate.arn
-      },
     ]
   })
 }
@@ -156,9 +169,4 @@ output "tfstate_key" {
 output "tflock_table" {
   description = "DynamoDB table used for state locking"
   value       = aws_dynamodb_table.tflock.name
-}
-
-output "tfstate_kms_alias" {
-  description = "Alias of the CMK encrypting the state bucket"
-  value       = aws_kms_alias.tfstate.name
 }

@@ -413,23 +413,32 @@ POAM_ITEMS = [
     },
     {
         "id": "POAM-029", "controls": ["sc-28"],
-        "title": "Log-target bucket uses SSE-S3 (AES256) rather than a customer-managed KMS key",
+        "title": "Selected internal storage uses AWS-managed at-rest encryption (AES256) rather than a customer CMK",
         "description": (
-            "Scanners flag the access-log destination bucket (samaydlette-logs) for "
-            "encrypting with SSE-S3 (AES256) rather than a customer-managed CMK — "
-            "Checkov CKV_AWS_145 (inline skip in infrastructure/logging.tf), tfsec "
-            "AVD-AWS-0132, and Prowler s3_bucket_default_encryption (a check Prowler "
-            "itself marks deprecated) report it. This is a false positive / deliberate "
-            "design choice: the bucket holds only low-sensitivity access logs about "
-            "public-facing resources, SSE-S3 is the reliably-supported encryption for "
-            "S3 log-delivery targets, and a customer CMK would require granting the AWS "
-            "log-delivery services key access for no confidentiality benefit. SC-28 "
-            "at-rest encryption is met via SSE-S3/AES256 (same deliberate posture as the "
-            "public website bucket)."
+            "Scanners flag three internal resources for encrypting at rest with "
+            "AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket "
+            "samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler "
+            "s3_bucket_default_encryption — a check Prowler marks deprecated), the "
+            "Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), and the "
+            "Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), all "
+            "inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every "
+            "case; a customer CMK is declined deliberately, for a different reason per "
+            "resource: the log bucket holds only low-sensitivity public-resource access "
+            "logs (a CMK would need to grant the AWS log-delivery services key access for "
+            "no confidentiality benefit); the lock table holds only lock metadata, no "
+            "secrets; and the state bucket, though it can contain secret material, is "
+            "private (public-access-blocked), TLS-only, versioned, and reachable only by "
+            "the deploy role and operator, so a CMK is defense-in-depth rather than "
+            "required and is declined to avoid adding another key to manage. Accepted as a "
+            "low residual (SSP SC-28 narrative)."
         ),
         "weakness_detector_source": "Checkov; tfsec; Prowler",
-        "weakness_source_identifier": "CKV_AWS_145; AVD-AWS-0132; s3_bucket_default_encryption",
-        "asset_identifiers": ["aws-s3-bucket::samaydlette-logs"],
+        "weakness_source_identifier": "CKV_AWS_145; CKV_AWS_119; AVD-AWS-0132; s3_bucket_default_encryption",
+        "asset_identifiers": [
+            "aws-s3-bucket::samaydlette-logs",
+            "aws-s3-bucket::samaydlette-com-tfstate",
+            "aws-dynamodb-table::samaydlette-com-tflock",
+        ],
         "original_detection_date": "2026-06-22", "status_date": "2026-06-26",
         "original_risk_rating": "low",
         "category": "false-positive",  # → status open, disposition false-positive
