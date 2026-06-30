@@ -266,9 +266,11 @@ CLASS_C_SLA_DAYS = {
     # N1: VDR-TFR-RMN — mitigate during routine operations, no specific SLA.
 }
 
-# Severity → PAIN mapping. The CR26 VDR rules require contextual evaluation
-# per VER-EVA-EFA, but for a deterministic PoC we use a fixed mapping that
-# tilts conservative (severity is upgraded one notch when LEV+IRV both hold).
+# Severity → PAIN FALLBACK. Used only for findings with no CVSS impact vector
+# (IaC/config/DAST findings, which are not CVE-scored): there is no C/I/A vector
+# to re-weight, so the qualitative severity is the best available proxy. CVE
+# findings that carry a CVSS vector are scored by the deterministic
+# CVSS-Environmental method instead (see assign_pain / pain_from_environmental).
 SEVERITY_TO_PAIN = {
     "CRITICAL": "N4",
     "HIGH":     "N3",
@@ -520,8 +522,32 @@ def ingest_dependabot(path):
             "severity": sev,
             "resource": f"{package.get('ecosystem','npm')}:{package.get('name','')}",
             "cve": adv.get("cve_id"),
+            # CVSS impact vector for the CVSS-Environmental PAIN derivation; absent
+            # -> assign_pain falls back to the severity proxy.
+            "cvss_vector": _extract_cvss_vector(adv.get("cvss")),
         })
     return findings
+
+
+def _extract_cvss_vector(cvss):
+    """Pull a CVSS v3.x vector string from a scanner's cvss field, which is
+    commonly a list of {version, vector, metrics} (Grype) or a single
+    {vector_string} object (Dependabot). Prefers a 3.x vector, then any vector."""
+    if not cvss:
+        return None
+    if isinstance(cvss, dict):
+        return cvss.get("vector_string") or cvss.get("vector")
+    if isinstance(cvss, list):
+        vectors = [(str(c.get("version", "")), c.get("vector") or c.get("vector_string"))
+                   for c in cvss if isinstance(c, dict)]
+        vectors = [(ver, vec) for ver, vec in vectors if vec]
+        if not vectors:
+            return None
+        for ver, vec in vectors:
+            if ver.startswith("3"):
+                return vec
+        return vectors[0][1]
+    return None
 
 
 def ingest_grype(path):
@@ -561,6 +587,15 @@ def ingest_grype(path):
         # KEV matching reads `cve`; only a CVE id can match the CISA catalog, so
         # carry the id there when it is a CVE (GHSA-only matches stay None).
         cve = vid if str(vid).upper().startswith("CVE-") else None
+        # CVSS impact vector for the CVSS-Environmental PAIN derivation. Grype
+        # carries a cvss[] list on the vulnerability and on relatedVulnerabilities;
+        # prefer a v3.x vector. Absent -> assign_pain falls back to the severity proxy.
+        cvss_vector = _extract_cvss_vector(vuln.get("cvss"))
+        if not cvss_vector:
+            for rel in m.get("relatedVulnerabilities") or []:
+                cvss_vector = _extract_cvss_vector(rel.get("cvss"))
+                if cvss_vector:
+                    break
         findings.append({
             "source": "grype",
             "tool_id": vid,
@@ -570,6 +605,7 @@ def ingest_grype(path):
             "severity": sev,
             "resource": component,
             "cve": cve,
+            "cvss_vector": cvss_vector,
             # The Silk Reeling app Lambda is internet-reachable (public API
             # Gateway), so its dependency vulnerabilities are IRV per
             # VER-EVA-EIR. This explicit flag overrides the hostname-hint
@@ -716,10 +752,177 @@ def is_likely_exploitable(finding):
     return sev in ("HIGH", "CRITICAL", "ERROR")
 
 
-def assign_pain(finding):
-    """VER-EVA-EPA: assign N1-N5."""
-    sev = (finding.get("severity") or "MEDIUM").upper()
-    return SEVERITY_TO_PAIN.get(sev, "N2")
+# =============================================================================
+# CVSS-ENVIRONMENTAL PAIN DERIVATION (memo Eqs. 1-4)
+# =============================================================================
+# PAIN is a CVE's CVSS impact vector (C/I/A) re-weighted by the affected asset's
+# CVSS Environmental requirements (CR/IR/AR), bucketed by governed word
+# thresholds, then combined with the multi-agency scope flag m. The impact
+# vector comes from the scanner; CR/IR/AR derive from the asset's
+# resource-classification tags in the canonical inventory. This retires the flat
+# severity->PAIN stub for CVE findings and fixes the availability blind spot (a
+# Low-vendor-severity availability DoS on a high-availability asset now lands at
+# the N-level its agency impact warrants, not at N1 by severity label).
+
+_CIA_LETTER = {"N": "none", "L": "low", "H": "high"}
+_CVSS_CIA_RE = re.compile(r"/([CIA]):([NLH])")
+
+# Conservative fail-safe asset classification for an unresolved asset (memo s7):
+# missing metadata must not lower PAIN, so an unknown asset scores loudly.
+_FAILSAFE_CLASSIFICATION = {
+    "data_sensitivity": "cui", "mission_criticality": "high",
+    "internet_reachable": True, "agency_scope": "single",
+}
+
+# (severity word, scope m) -> N-level, per memo Eq. 4.
+_WORD_SCOPE_TO_N = {
+    ("minimal", 0): "N1", ("minimal", 1): "N1",
+    ("narrow", 0): "N2", ("narrow", 1): "N2",
+    ("disruptive", 0): "N3", ("disruptive", 1): "N4",
+    ("debilitating", 0): "N4", ("debilitating", 1): "N5",
+}
+
+
+def parse_cvss_cia(vector, config):
+    """Extract (C, I, A) impact weights from a CVSS v3.x vector string using the
+    governed impact weights. Returns None when the vector carries no C/I/A
+    metrics (so the caller falls back to the severity proxy)."""
+    if not vector:
+        return None
+    found = dict(_CVSS_CIA_RE.findall(str(vector)))
+    if not {"C", "I", "A"} <= set(found):
+        return None
+    w = config["cvss_impact_weights"]
+    return tuple(w[_CIA_LETTER[found[x]]] for x in ("C", "I", "A"))
+
+
+def build_classification_index(ksi_signal_path):
+    """Index the canonical inventory's components by every identifier a finding
+    might carry (component_id and its tail, native_id/global_id, tf_name and its
+    Terraform-address form, PURL, name) -> the component's classification tags.
+    The VDR already binds to one inventory (invariant e); this reads the
+    classification that inventory published. Empty dict if the signal is absent."""
+    index = {}
+    p = Path(ksi_signal_path)
+    if not p.exists():
+        return index
+    try:
+        sig = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return index
+    for comp in sig.get("components") or []:
+        cls = (comp.get("attributes") or {}).get("classification")
+        if not cls:
+            continue
+        attrs = comp.get("attributes") or {}
+        keys = set()
+        cid = comp.get("component_id")
+        if cid:
+            keys.add(cid)
+            keys.add(cid.split("::")[-1])
+        for k in ("native_id", "global_id"):
+            if comp.get(k):
+                keys.add(comp[k])
+        for k in ("tf_name", "name", "purl"):
+            if attrs.get(k):
+                keys.add(attrs[k])
+        if attrs.get("tf_name") and comp.get("resource_type"):
+            keys.add(f"{comp['resource_type']}.{attrs['tf_name']}")
+        for key in keys:
+            index.setdefault(str(key), cls)
+    return index
+
+
+def resolve_classification(finding, index):
+    """Resolve a finding's affected asset to its classification tags. Tries the
+    finding's resource / tool_id / cve as exact index keys first, then a
+    containment match for PURL / 'ecosystem:name' SCA resources (e.g. the package
+    name 'widget' inside the resource 'pip:widget'). Falls back to the
+    conservative fail-safe when nothing resolves (memo s7: unknown scores loudly).
+
+    The containment match is deliberately conservative so it can never quietly
+    LOWER a finding's PAIN by latching onto the wrong, lower-criticality asset:
+    only specific keys (>= 4 chars) are eligible and the LONGEST (most specific)
+    match wins; anything ambiguous or unmatched takes the fail-safe."""
+    for c in (finding.get("resource"), finding.get("tool_id"), finding.get("cve")):
+        if c and str(c) in index:
+            return index[str(c)]
+    res = str(finding.get("resource") or "")
+    if res:
+        matches = [(key, cls) for key, cls in index.items()
+                   if len(key) >= 4 and (key in res or res in key)]
+        if matches:
+            matches.sort(key=lambda kc: len(kc[0]), reverse=True)
+            return matches[0][1]
+    return _FAILSAFE_CLASSIFICATION
+
+
+def requirement_triplet(classification, config):
+    """Map classification tags to (CR, IR, AR) requirement weights: CR from
+    data_sensitivity, IR and AR from mission_criticality, via the governed maps."""
+    rw = config["requirement_weights"]
+    ds = config["data_sensitivity_to_requirement"].get(
+        classification.get("data_sensitivity", "cui"), "high")
+    mc = config["mission_criticality_to_requirement"].get(
+        classification.get("mission_criticality", "high"), "high")
+    return rw[ds], rw[mc], rw[mc]
+
+
+def scope_flag(classification, config):
+    """The multi-agency scope term m: 1 only if the asset is tagged multi-agency,
+    else the governed default (0 for this single-operator system)."""
+    if classification.get("agency_scope") == "multi":
+        return 1
+    return int(config.get("multi_agency_default", 0))
+
+
+def severity_word(s, config):
+    """Bucket the normalized impact scalar S into a FedRAMP customer-effect word."""
+    t = config["pain_word_thresholds"]
+    if s < t["minimal_to_narrow"]:
+        return "minimal"
+    if s < t["narrow_to_disruptive"]:
+        return "narrow"
+    if s < t["disruptive_to_debilitating"]:
+        return "disruptive"
+    return "debilitating"
+
+
+def pain_from_environmental(cia, req, m, config, technical_impact=None):
+    """PAIN N-level from the impact triplet (C,I,A weights), the asset requirement
+    triplet (CR,IR,AR weights), and scope m (memo Eqs. 1-4). technical_impact ==
+    'total' floors each in-scope dimension to High before weighting (memo s6
+    refinement); it never invents impact on a dimension the CVE marks None."""
+    C, I, A = cia
+    CR, IR, AR = req
+    if technical_impact == "total":
+        high = config["cvss_impact_weights"]["high"]
+        C = high if C > 0 else C
+        I = high if I > 0 else I
+        A = high if A > 0 else A
+    cap = config["isc_cap"]
+    isc = min(1 - (1 - C * CR) * (1 - I * IR) * (1 - A * AR), cap)
+    s = isc / cap
+    return _WORD_SCOPE_TO_N[(severity_word(s, config), m)]
+
+
+def assign_pain(finding, index, config):
+    """VER-EVA-EPA: assign N1-N5 by the deterministic CVSS-Environmental method.
+
+    A CVE finding carrying a CVSS vector is scored by impact-re-weighted-by-asset
+    (CR/IR/AR resolved from the inventory classification), bucketed by the
+    governed thresholds and combined with the scope flag. A finding with no CVSS
+    vector (IaC/config/DAST) has no impact vector to weight, so it keeps the
+    documented severity-proxy fallback (SEVERITY_TO_PAIN)."""
+    cia = parse_cvss_cia(finding.get("cvss_vector"), config)
+    if cia is None:
+        sev = (finding.get("severity") or "MEDIUM").upper()
+        return SEVERITY_TO_PAIN.get(sev, "N2")
+    cls = resolve_classification(finding, index)
+    req = requirement_triplet(cls, config)
+    m = scope_flag(cls, config)
+    return pain_from_environmental(cia, req, m, config,
+                                   technical_impact=finding.get("technical_impact"))
 
 
 def class_c_sla_days(pain, lev, irv):
@@ -775,7 +978,16 @@ def consolidate_by_cve(report_findings, risk_accepted):
     return out
 
 
-def build_report(findings, suppressions, kev_cves, ledger):
+def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None):
+    # index: inventory classification index (asset CR/IR/AR source). config: the
+    # governed PAIN config. Both default for callers that don't supply them (e.g.
+    # unit tests); the config is loaded fail-closed so scoring is never silently
+    # uncalibrated. Without an index, CVE findings resolve to the conservative
+    # fail-safe classification (memo s7).
+    if config is None:
+        config, _ = load_pain_config()
+    if index is None:
+        index = {}
     now = datetime.now(timezone.utc)
     report_findings = []
     summary = {
@@ -789,7 +1001,7 @@ def build_report(findings, suppressions, kev_cves, ledger):
     blocking = []
 
     for f in findings:
-        pain = assign_pain(f)
+        pain = assign_pain(f, index, config)
         lev = is_likely_exploitable(f)
         irv = is_internet_reachable(f)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
@@ -1069,14 +1281,21 @@ def main():
     false_positives = ingest_false_positives(args.checkov_yaml)
     ledger = ingest_previous_ledger(args.previous_vdr)
 
-    report, blocking = build_report(findings, suppressions, kev_cves, ledger)
+    # Asset-classification index from the bound inventory: the source of each
+    # finding's CR/IR/AR in the CVSS-Environmental derivation.
+    classification_index = build_classification_index(args.ksi_signal)
+
+    report, blocking = build_report(findings, suppressions, kev_cves, ledger,
+                                    index=classification_index, config=pain_config)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Provenance for the PAIN derivation: which classifier produced these N-levels
-    # and which governed config calibrated it. pain_classifier is "severity-proxy"
-    # until the CVSS-Environmental derivation replaces the stub.
+    # and which governed config calibrated it. CVE findings with a CVSS vector are
+    # scored by the CVSS-Environmental method; vectorless IaC/config/DAST findings
+    # keep the documented severity-proxy fallback.
     report["methodology"] = {
-        "pain_classifier": "severity-proxy",
+        "pain_classifier": "cvss-environmental",
+        "pain_classifier_fallback": "severity-proxy (findings without a CVSS vector)",
         "pain_config_version": pain_config["version"],
         "pain_config_sha256": pain_config_sha256,
         "reference": pain_config.get("method_reference", ""),
