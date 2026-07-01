@@ -23,7 +23,19 @@ def _load():
 
 inj = _load()
 
+# The next tests are integration tests: they read the GENERATED
+# infrastructure/oscal-ssp.json (built by the pipeline, gitignored), so they
+# skip on a fresh checkout / the fast unit gate and run after a build (e.g. in
+# the deploy job, where the SSP exists). Figure freshness is separately enforced
+# at deploy time by scripts/inject-figures.py. Everything else in this file is a
+# pure unit test of stamp() and always runs.
+_needs_ssp = pytest.mark.skipif(
+    not inj.SSP.exists(),
+    reason="requires generated infrastructure/oscal-ssp.json (build the pipeline first)",
+)
 
+
+@_needs_ssp
 def test_figures_reproduce_published_numbers():
     f = inj.compute_figures()
     # hub split: hand-written + family-default = total
@@ -65,6 +77,7 @@ def test_attribute_order_tolerated():
     assert ">332/332<" in out
 
 
+@_needs_ssp
 def test_published_targets_are_current():
     """The committed paper + dashboard must already match their sources
     (this is the same invariant the deploy --check step enforces)."""
@@ -75,6 +88,7 @@ def test_published_targets_are_current():
         assert not changes, f"{path.name} has stale figures: {changes}"
 
 
+@_needs_ssp
 def test_altered_ssp_count_flows_to_html(tmp_path, monkeypatch):
     """Acceptance: add one implemented-requirement to the SSP and the stamped
     hub_total / hub_generated / moderate_coverage all move with it."""
