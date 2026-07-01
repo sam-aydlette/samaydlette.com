@@ -168,6 +168,94 @@ def check_a_completeness(signal, live_arns):
 
 
 # ----------------------------------------------------------------------------
+# (i) classification-tag reconciliation — live AWS resource tags must equal the
+# inventory's projected classification (attributes.classification). The build-time
+# OPA gate (PR-D Part 1) enforces tag *presence*; this enforces tag *values*
+# against the single source of truth, fail closed, verified against live cloud
+# state. Only per-deploy resources that carry our classification tags live are
+# reconciled; bootstrap/global resources not tagged by the per-deploy stack
+# (CloudFront, ACM, IAM — the latter outside the tagging API) are out of scope.
+# ----------------------------------------------------------------------------
+
+# inventory classification key -> live AWS tag key.
+CLASSIFICATION_TAG_MAP = {
+    "data_sensitivity": "DataSensitivity",
+    "mission_criticality": "MissionCriticality",
+    "internet_reachable": "InternetReachable",
+    "agency_scope": "AgencyScope",
+    "owner": "OwnerRole",
+    "archetype": "Archetype",
+}
+
+
+def enumerate_live_tags(region_primary="us-east-2", region_edge="us-east-1"):
+    """Live resource tags via the Resource Groups Tagging API, across both the
+    primary region and the edge region (the DNSSEC KSK lives in us-east-1).
+    Returns {arn: {tag_key: value}}. Raises on CLI failure so a broken
+    enumeration fails the gate closed rather than silently reporting 'no drift'."""
+    tags = {}
+    for region in (region_primary, region_edge):
+        token = None
+        while True:
+            args = ["resourcegroupstaggingapi", "get-resources",
+                    "--region", region, "--output", "json"]
+            if token:
+                args += ["--pagination-token", token]
+            out = subprocess.run(["aws", *args], capture_output=True, text=True)
+            if out.returncode != 0:
+                raise RuntimeError(f"aws {' '.join(args)} failed: {out.stderr.strip()}")
+            resp = json.loads(out.stdout or "null") or {}
+            for r in resp.get("ResourceTagMappingList", []):
+                arn = r.get("ResourceARN")
+                if arn:
+                    tags[arn] = {t["Key"]: t["Value"] for t in r.get("Tags", [])}
+            token = resp.get("PaginationToken")
+            if not token:
+                break
+    return tags
+
+
+def _match_live_tags(native_id, live_tags):
+    """Find the live tag set for a component's native_id, tolerating the ARN-form
+    differences the tagging API and Terraform sometimes disagree on (trailing
+    ':*', prefix)."""
+    target = (native_id or "").rstrip(":*")
+    if not target:
+        return None
+    for arn, t in live_tags.items():
+        a = arn.rstrip(":*")
+        if a == target or a.startswith(target) or target.startswith(a):
+            return t
+    return None
+
+
+def check_i_classification_tags(signal, live_tags):
+    """Every reconciled resource's live classification tags must equal the
+    inventory's projected classification. Fail closed on any drift."""
+    violations = []
+    our_tag_keys = set(CLASSIFICATION_TAG_MAP.values())
+    for c in signal.get("components", []):
+        cls = (c.get("attributes") or {}).get("classification")
+        nid = c.get("native_id")
+        if not cls or not nid:
+            continue
+        live = _match_live_tags(nid, live_tags)
+        if live is None or not (our_tag_keys & set(live)):
+            # Not a live resource we tag (bootstrap/global/non-cloud) — out of
+            # scope for value reconciliation; presence is a separate concern.
+            continue
+        cid = c.get("component_id")
+        for inv_key, tag_key in CLASSIFICATION_TAG_MAP.items():
+            want = cls.get(inv_key)
+            want = ("true" if want else "false") if inv_key == "internet_reachable" else str(want)
+            got = live.get(tag_key)
+            if got != want:
+                violations.append(
+                    f"(i) {cid}: live tag {tag_key}={got!r} != inventory {inv_key}={want!r}")
+    return violations
+
+
+# ----------------------------------------------------------------------------
 # (b) referential — SSP components and POA&M assets resolve to inventory entries
 # ----------------------------------------------------------------------------
 def check_b_referential(signal, ssp, poam):
@@ -402,7 +490,7 @@ def check_g_poam_parity(poam, poam_md_text):
 # ----------------------------------------------------------------------------
 def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
             ckv_to_poam, poam_md_text, false_positive_ckvs,
-            live_arns=None, expected_commit=None):
+            live_arns=None, expected_commit=None, live_tags=None):
     violations = []
     violations += check_d_impact(signal, ssp, poam, vdr, dashboard_html)
     violations += check_e_binding(signal, ssp, poam, vdr)
@@ -415,6 +503,8 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     violations += check_h_finding_coverage(vdr, poam)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
+    if live_tags is not None:
+        violations += check_i_classification_tags(signal, live_tags)
     return violations
 
 
@@ -452,8 +542,9 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--artifacts-dir", default="infrastructure",
                     help="dir holding ksi-signal.json, oscal-ssp.json, oscal-poam.json, vdr-report.json")
-    ap.add_argument("--live", action="store_true", help="enumerate live AWS for invariant (a) (CI)")
+    ap.add_argument("--live", action="store_true", help="enumerate live AWS for invariants (a) completeness and (i) classification tags (CI)")
     ap.add_argument("--live-fixture", default=None, help="JSON array of live ARNs (tests)")
+    ap.add_argument("--live-tags-fixture", default=None, help="JSON object {arn: {tag: value}} of live resource tags (tests)")
     ap.add_argument("--expect-commit", default=os.environ.get("GITHUB_SHA"),
                     help="commit the staged artifacts must carry (invariant f)")
     ap.add_argument("--dashboard", default=str(REPO / "website" / "viewer.html"))
@@ -478,15 +569,35 @@ def main():
     poam_md_text = Path(args.poam_md).read_text()
 
     live_arns = None
+    live_tags = None
     if args.live_fixture:
         live_arns = set(load_json(args.live_fixture))
     elif args.live:
         live_arns = enumerate_live_arns()
+    if args.live_tags_fixture:
+        live_tags = load_json(args.live_tags_fixture)
+    elif args.live:
+        # Rollout-safe: if the deploy role has not yet been granted
+        # tag:GetResources, skip invariant (i) with a loud warning rather than
+        # failing the whole gate closed. Any OTHER enumeration error still fails
+        # closed (a broken read must never read as "no drift"). Once the
+        # permission is provisioned, (i) activates automatically.
+        try:
+            live_tags = enumerate_live_tags()
+        except RuntimeError as e:
+            msg = str(e)
+            if "AccessDenied" in msg or "not authorized" in msg.lower():
+                print("::warning::reconcile: tag:GetResources not permitted; invariant (i) "
+                      "classification-tag reconciliation skipped until the deploy role is "
+                      "granted it (tag:GetResources).", file=sys.stderr)
+                live_tags = None
+            else:
+                raise
 
     violations = run_all(
         signal, ssp, poam, vdr, dashboard_html, checkov_text,
         _load_ckv_to_poam(), poam_md_text, _load_false_positives(poam_md_text),
-        live_arns=live_arns, expected_commit=args.expect_commit,
+        live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
     )
 
     if violations:
@@ -494,7 +605,12 @@ def main():
         for v in violations:
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
-    checks = "a-h" if live_arns is not None else "b-h (a deferred: no --live)"
+    if live_arns is not None and live_tags is not None:
+        checks = "a-i"
+    elif live_arns is not None:
+        checks = "a-h (i deferred: no live tags)"
+    else:
+        checks = "b-h (a,i deferred: no --live)"
     print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
     return 0
 
