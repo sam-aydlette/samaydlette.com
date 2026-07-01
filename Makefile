@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile
+.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
 
 # Default target
 help:
@@ -228,6 +228,14 @@ python-test:
 reconcile:
 	@echo "Running reconciliation gate..."
 	cd .. && python3 scripts/reconcile.py --artifacts-dir infrastructure $(RECONCILE_FLAGS)
+
+# Independent verification: fetch the LIVE published evidence and reproduce the
+# verdict from the public internet — cosign signature/provenance (Sigstore +
+# pinned identity), the dependency-free claims check, and the AWS-free
+# cross-artifact reconciliation. Needs no secrets and no AWS. Override the base
+# with VERIFY_BASE=https://host/.well-known.
+verify-published:
+	cd .. && scripts/verify-published.sh $(VERIFY_BASE)
 
 # Figure freshness gate: every <span data-figure> in the paper and dashboard
 # must match the value recomputed from the canonical artifacts. Fails if a
