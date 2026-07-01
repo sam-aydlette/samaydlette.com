@@ -206,6 +206,11 @@ def test_committed_clean_fixture_passes_via_main(monkeypatch):
     clean = REPO / "tests" / "fixtures" / "clean"
     if not clean.exists():
         pytest.skip("clean fixture dir not present")
+    # Hermetic: reconcile's --expect-commit defaults to $GITHUB_SHA, which is set
+    # in CI and would make freshness invariant (f) compare the fixture's pinned
+    # commit against the live run's SHA and fail. The fixture is not pinned to any
+    # particular run, so drop the ambient value (matches local behaviour).
+    monkeypatch.delenv("GITHUB_SHA", raising=False)
     monkeypatch.setattr(sys, "argv", ["reconcile.py", "--artifacts-dir", str(clean),
                                        "--dashboard", str(clean / "viewer.html"),
                                        "--live-fixture", str(clean / "live-arns.json"),
