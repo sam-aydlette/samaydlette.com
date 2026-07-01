@@ -1469,13 +1469,36 @@ jobs:
         
         echo "✅ CloudFront distribution ID: $DISTRIBUTION_ID"
         echo "Creating cache invalidation..."
-        
-        # Tell CDN to refresh all cached content
-        aws cloudfront create-invalidation \
+
+        # Tell CDN to refresh all cached content. Capture the id + distribution so
+        # the external-verifier smoke test can wait for this invalidation to
+        # complete before checking the live edge.
+        INVALIDATION_ID=$(aws cloudfront create-invalidation \
           --distribution-id $DISTRIBUTION_ID \
-          --paths "/*"
-        
-        echo "✅ CloudFront cache invalidation created"
+          --paths "/*" \
+          --query 'Invalidation.Id' --output text)
+        echo "CLOUDFRONT_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> "$GITHUB_ENV"
+        echo "CLOUDFRONT_INVALIDATION_ID=$INVALIDATION_ID" >> "$GITHUB_ENV"
+
+        echo "✅ CloudFront cache invalidation created ($INVALIDATION_ID)"
+
+    # -------------------------------------------------------------------------
+    # RECIPROCITY HANDSHAKE: prove the EXTERNAL verification path still works
+    # -------------------------------------------------------------------------
+    # Run the same verifier a third party would (scripts/verify-published.sh)
+    # against the LIVE public URL: fetch the artifacts, check the Sigstore
+    # signatures + SLSA provenance against the pinned identity, and reconcile
+    # them (AWS-free, invariants b–h). Waits for the invalidation above so the
+    # edge is serving this deploy's artifacts. Fails closed: if an outsider could
+    # not reproduce our verdict, the deploy is not done.
+    - name: External verifier smoke test (reciprocity handshake)
+      run: |
+        echo "Waiting for CloudFront invalidation $CLOUDFRONT_INVALIDATION_ID to complete..."
+        aws cloudfront wait invalidation-completed \
+          --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+          --id "$CLOUDFRONT_INVALIDATION_ID"
+        echo "Reproducing third-party verification against the live site:"
+        bash scripts/verify-published.sh
 
     # -------------------------------------------------------------------------
     # VERIFY EVERYTHING WORKED
