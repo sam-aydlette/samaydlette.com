@@ -43,7 +43,6 @@ def _selected_ids(profile):
     """Control ids selected by the profile's imports (with-ids, optional
     with-child-controls)."""
     ids = []
-    index = None
     for imp in profile.get("imports", []) or []:
         if imp.get("include-all") is not None:
             return None  # signal: include everything (caller handles)

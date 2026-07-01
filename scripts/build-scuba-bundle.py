@@ -108,7 +108,6 @@ def main():
 
     for ir in sorted(irs, key=lambda r: r["control-id"]):
         cid = ir["control-id"]
-        title = next((s for s in [prop(ir, "title")] if s), cid.upper())
         status = prop(ir, "implementation-status")
         orig = prop(ir, "control-origination")
         resp = classify(status, orig)

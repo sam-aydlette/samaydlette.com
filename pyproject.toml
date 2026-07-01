@@ -1,0 +1,23 @@
+# Python tooling for the compliance generators (scripts/) and their tests.
+# Both are enforced by the CI test gate (.github/workflows/deploy-with-opa.yml).
+#
+# The philosophy is Linus's: catch real bugs, not cosmetic style. Ruff runs a
+# curated ruleset — pyflakes (F) and bugbear (B) — and deliberately NOT the
+# pycodestyle E/W rules, so line length and whitespace are never a gate. Mypy
+# runs in lenient mode: it catches None-attribute access and similar type risks
+# without requiring the codebase to be fully annotated first (annotations can be
+# added incrementally). This is the safety net the panel review asked for.
+
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.lint]
+# F = pyflakes (undefined names, unused imports/variables, malformed f-strings).
+# B = flake8-bugbear (raise-without-from, assert False, mutable default args, ...).
+select = ["F", "B"]
+# B007 (unused loop-control variable) is idiomatic for `for k, v in items()` where
+# only the value is used; it is style, not a bug, so it is not enforced.
+ignore = ["B007"]
+
+[tool.mypy]
+ignore_missing_imports = true

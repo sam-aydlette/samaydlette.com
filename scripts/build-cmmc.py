@@ -186,7 +186,7 @@ def main():
             print(f"    {stack[k]:4}  {k}", file=sys.stderr)
     print(f"  [provider SSP view] inheritance-touched: {inh_full + inh_part}/110 "
           f"({inh_full} full + {inh_part} partial)", file=sys.stderr)
-    print(f"\n  === CMMC SRM (OSC view) — what a consuming OSC inherits ===", file=sys.stderr)
+    print("\n  === CMMC SRM (OSC view) — what a consuming OSC inherits ===", file=sys.stderr)
     print(f"    {srm_stack['inherited']:4}  inherited (CSP provides fully)", file=sys.stderr)
     print(f"    {srm_stack['shared']:4}  shared", file=sys.stderr)
     print(f"    {srm_stack['osc-responsibility']:4}  OSC responsibility", file=sys.stderr)
