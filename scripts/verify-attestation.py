@@ -110,8 +110,8 @@ def main():
 
     if errors:
         print(f"FAIL {args.bundle}:", file=sys.stderr)
-        for e in errors:
-            print(f"  - {e}", file=sys.stderr)
+        for err in errors:
+            print(f"  - {err}", file=sys.stderr)
         return 1
 
     subj = stmt["subject"][0]

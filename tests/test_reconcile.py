@@ -5,7 +5,6 @@
 # fixture under tests/fixtures/broken/ fails the gate (the Done-check).
 # =============================================================================
 import importlib.util
-import json
 from pathlib import Path
 
 import pytest

@@ -42,7 +42,6 @@
 import argparse
 import hashlib
 import json
-import os
 import re
 import sys
 import uuid
@@ -108,7 +107,7 @@ def load_pain_config(path=None):
     try:
         cfg = json.loads(raw)
     except json.JSONDecodeError as exc:
-        raise SystemExit(f"::error::PAIN config at {cfg_path} is not valid JSON: {exc}")
+        raise SystemExit(f"::error::PAIN config at {cfg_path} is not valid JSON: {exc}") from exc
     _validate_pain_config(cfg, cfg_path)
     return cfg, hashlib.sha256(raw).hexdigest()
 
@@ -1403,7 +1402,7 @@ def main():
     # satisfy the "human readable" obligation).
     if args.md_output:
         Path(args.md_output).write_text(render_markdown(report) + "\n")
-        print(f"vdr-report.md: human-readable rendering written")
+        print("vdr-report.md: human-readable rendering written")
 
     if blocking:
         print(f"::error::VDR build-block: {len(blocking)} finding(s) exceed Class C tolerance: {', '.join(blocking)}", file=sys.stderr)
