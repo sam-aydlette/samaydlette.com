@@ -141,6 +141,9 @@ data "aws_iam_policy_document" "reconcile_reads" {
       "kms:DescribeKey",
       "s3:ListAllMyBuckets",
       "logs:DescribeLogGroups",
+      # Reconciliation invariant (i): read live resource tags to assert they
+      # match the inventory's projected classification. Read-only, metadata only.
+      "tag:GetResources",
     ]
     # Resource "*" is required: these are account-wide enumeration actions
     # (List*/Describe*/apigateway:GET) that do not support resource-level
