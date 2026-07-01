@@ -35,6 +35,7 @@ from pathlib import Path
 # Reuse the signal builder's provenance logic so builder.id is single-sourced.
 _KSI_PATH = Path(__file__).resolve().parent / "build-ksi-signal.py"
 _spec = importlib.util.spec_from_file_location("ksi_builder", _KSI_PATH)
+assert _spec is not None and _spec.loader is not None
 _ksi = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_ksi)
 

@@ -86,6 +86,6 @@ def test_rejects_non_dsse_bundle(tmp_path):
     bundle = _write(tmp_path, "legacy.json", json.dumps({"cert": "...", "rekorBundle": {}}).encode())
     try:
         va.check(str(bundle), str(art))
-        assert False, "should have raised on a legacy (non-DSSE) bundle"
+        raise AssertionError("should have raised on a legacy (non-DSSE) bundle")
     except ValueError as e:
         assert "dsseEnvelope" in str(e)

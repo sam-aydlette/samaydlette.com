@@ -3,7 +3,6 @@
 # verification hint pins the exact identity, not a workflow wildcard.
 
 import importlib.util
-import os
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent

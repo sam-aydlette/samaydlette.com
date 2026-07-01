@@ -34,7 +34,6 @@ def _load(p):
 def load_mapping(path):
     doc = _load(path)["mapping-collection"]
     out = {}
-    residue = doc["mappings"][0].get("uuid")  # placeholder; residue is in remarks
     for mp in doc["mappings"]:
         for e in mp["maps"]:
             out[e["sources"][0]["id-ref"]] = (e["targets"][0]["id-ref"], e["relationship"])
@@ -93,8 +92,8 @@ def main():
                          "oscal-version": "1.2.2"},
             "import-profile": {"href": a.target_profile_href},
             "control-implementation": {
-                "description": (f"Projected from the 800-53 Rev5 SSP through "
-                                f"data/mappings (additive: evidence re-projected, not re-collected)."),
+                "description": ("Projected from the 800-53 Rev5 SSP through "
+                                "data/mappings (additive: evidence re-projected, not re-collected)."),
                 "implemented-requirements": projected,
             },
         }
