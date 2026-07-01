@@ -113,7 +113,10 @@
 
             <div class="verify-callout">
                 <h3>Verify it yourself</h3>
-                <p>This dashboard runs in your browser and reads the same JSON anyone else's tool would. To verify the deploy-time signal cryptographically, fetch the artifact and bundle and run <code>cosign verify-blob</code>:</p>
+                <p>You do not have to trust this site. Every claim it makes is published under <code>/.well-known/</code> and signed by the exact GitHub Actions workflow that produced it, recorded in the public Sigstore/Rekor transparency log. A stranger can reproduce the verdict from the public internet — that reproducibility is the whole point.</p>
+                <p><strong>One command</strong>, from a clone of the <a href="https://github.com/sam-aydlette/samaydlette.com">public repository</a>:</p>
+                <pre>scripts/verify-published.sh          # or: make verify-published</pre>
+                <p>It fetches the live artifacts and runs three layers, then prints <code>PASS</code>: the Sigstore signatures and SLSA provenance against the pinned workflow identity, the dependency-free in-toto claims check, and the AWS-free cross-artifact reconciliation (one inventory, one commit, POA&amp;M and VDR coherent). To verify a single artifact by hand with nothing but <code>cosign</code>:</p>
                 <pre>curl -sO https://samaydlette.com/.well-known/ksi-signal.json
 curl -sO https://samaydlette.com/.well-known/ksi-signal.bundle
 
@@ -122,7 +125,7 @@ cosign verify-blob \
   --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   ksi-signal.json</pre>
-                <p>The signature chain anchors in public infrastructure: Fulcio (the certificate authority), the GitHub Actions OIDC issuer, and the Rekor transparency log. Verification does not depend on trusting this site.</p>
+                <p>The trust roots are Sigstore (Fulcio + Rekor) and the pinned public identity — not this site, and not the verifier script. <strong>Honest limit:</strong> the two live-state checks — that the inventory is complete against live AWS, and that live resource tags match the inventory — need cloud credentials, so the provider runs them on every deploy and an outsider verifies the signed evidence, not the live account. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/verification.md">Full walkthrough &rarr;</a></p>
             </div>
 
             <section class="viewer-panel" id="vuln-trend-panel">
