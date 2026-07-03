@@ -1640,7 +1640,7 @@ jobs:
     # We point it at a directory and locate the SARIF afterwards.
     - name: Run Checkov
       id: checkov
-      uses: bridgecrewio/checkov-action@63fbdab56e22a18bbc16fdc5208c0d30a71f3a24 # v12.2937.0
+      uses: bridgecrewio/checkov-action@a7683e7b72a04503521247973281ec8142e1ac1f # v12.3112.0
       with:
         directory: .
         framework: terraform
