@@ -1686,7 +1686,7 @@ jobs:
 
     # Upload results to GitHub Security tab
     - name: Upload Checkov Results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@662472033e021d55d94146f66f6058822b0b39fd # v3.27.0
+      uses: github/codeql-action/upload-sarif@54f647b7e1bb85c95cddabcd46b0c578ec92bc1a # v4.36.3
       if: always()
       with:
         sarif_file: checkov-results.sarif
