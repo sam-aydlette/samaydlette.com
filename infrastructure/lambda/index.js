@@ -255,13 +255,16 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
     const validations = [];
     let validationIdx = 0;
 
-    // S3 bucket: there is one in this system.
-    const bucket = findComponent(components, 'object_store', () => true);
-    if (bucket) {
+    // S3 buckets: evaluate every object_store component in the canonical
+    // inventory (website origin + access-log bucket), so buckets that only
+    // the deploy-time gate used to see are re-validated at runtime too.
+    // Discovery comes from the inventory, never a hard-coded bucket name.
+    for (const bucket of components.filter((c) => c.type === 'object_store')) {
         const bucketName =
             bucket.attributes?.id ||
             (bucket.native_id?.split(':::').pop()) ||
             process.env.S3_BUCKET;
+        if (!bucketName) continue;
         const tfName = bucket.attributes?.tf_name;
         const input = await buildS3ResourceInput(s3, bucketName, tfName);
         const result = await evaluateResource(policy, input);
