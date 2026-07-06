@@ -42,11 +42,21 @@ JIT machinery (e.g., AWS Identity Center session-bound access) would add operati
 
 CloudWatch Logs is the SIEM equivalent for this system. Sources collected:
 
-- Lambda execution logs (via the Lambda runtime's standard logging integration)
-- CloudFront access logs — currently excluded for cost; revisit if any incident response would have benefited from them
-- CloudTrail (account-wide) — captures all AWS API calls, including the deployer's
+- Lambda execution logs (via the Lambda runtime's standard logging integration; 365-day retention, customer-CMK encrypted — POAM-017/018)
+- API Gateway access logs for the Silk Reeling HTTP API (same retention and encryption — POAM-024)
+- S3 server access logs and CloudFront access logs, delivered to the dedicated locked-down log bucket (POAM-005, C-3; 400-day lifecycle)
 
-For a two-resource, one-Lambda system, this is meaningfully a SIEM. Tamper resistance: log groups have 7-day retention and CloudTrail is account-managed, so logs are write-once from the producing service. The deployer credentials cannot delete CloudTrail logs without an additional IAM action that is not granted by default.
+Not collected: there is **no CloudTrail trail** in this account. AWS API
+activity is visible only through the default CloudTrail Event History (90
+days, management events only, not durable). Until a durable, validated
+management-events trail with S3 delivery exists, this "SIEM" covers the
+workload and access-log surface but not the AWS control plane — a known,
+honestly-stated gap.
+
+For a small single-account system this is meaningfully a SIEM for the workload
+surface. Tamper resistance: log groups are write-once from the producing
+services, retained 365 days under a customer CMK, and the log bucket denies
+non-TLS access, blocks public access, and is lifecycle-managed.
 
 If the system grew to require true SIEM features (correlation rules, alerting, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
 
