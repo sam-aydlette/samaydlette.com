@@ -80,61 +80,38 @@ accepted risk — rotation currency is now **verified automatically**: the runti
 KSI emitter reads the secret's `LastChangedDate` daily and fails an SC-12
 validation if rotation lapses past the cadence.
 
-**POAM-021 (added with the gated Silk Reeling app):** Access to the gated app is
-authenticated by an operator-configured username/password (HTTP Basic Auth) —
-single-factor, shared credential, with no MFA (IA-2(2)) and no account lockout
-(AC-7). This is a **customer-responsibility control**: the operator configures
-and owns the credential and accepts the residual risk. At the system's Moderate
-categorization this is a real IA-2(2)/AC-7 weakness, accepted only on an interim
-basis while remediation is implemented (see **Remediation** below: Cognito MFA +
-API Gateway authorizer, Task 3). The interim acceptance rests on the compensating
-controls, not on the categorization: the credential is held in Secrets Manager
-(CMK), transmitted only over TLS, and compared in constant time. The credential gate runs in the Lambda itself, so it
-applies to every request regardless of how the API Gateway endpoint is reached.
-**Risk acceptance:** the operator, acting as the **sole customer and sole user** of
-the system, has approved this operational requirement and accepted the residual
-risk — no third party bears it, so the acceptance is complete and authoritative.
-It is valid **only while the operator remains the sole customer**: onboarding any
-real user is a re-assessment trigger, and **any customer onboarded must explicitly
-accept this risk (recorded in the CRM) or adopt the upgrade path below**.
-**Upgrade path (available on request — not a deficiency):** federation to a
-customer IdP via SAML/OIDC, or native WebAuthn/FIDO2 with FIPS-AAGUID attestation,
-would provide phishing-resistant MFA (IA-2(1)) and move authentication to
-`customer-configured`; offered on request, not pre-built. FedRAMP control
-origination is tracked per-control in the OSCAL SSP (`control-origination` props)
-and is surfaced in the forthcoming CRM/SCuBA as a customer-accepted shared
-responsibility.
+**POAM-021 (closed 2026-06-22, Task 3 — historical record):** As shipped, access
+to the gated app was authenticated by an operator-configured username/password
+(HTTP Basic Auth) — single-factor, shared credential, no MFA (IA-2(2)), no
+account lockout (AC-7). The weakness was risk-accepted on an interim,
+sole-customer basis with compensating controls (credential in CMK-encrypted
+Secrets Manager, TLS-only, constant-time comparison) while the remediation was
+built. **Closure:** the Basic Auth gate was replaced by Amazon Cognito with
+mandatory TOTP MFA, a 14-character password policy, and admin-only user
+creation, fronted by an API Gateway JWT authorizer on the data routes. The
+shared single-factor credential no longer exists. Phishing-resistant
+authenticators (WebAuthn/FIDO2, IA-2(1)) remain the documented upgrade path and
+are tracked in the same family as POAM-025's hardware-token direction.
 
-**POAM-022 (API Gateway no authorizer):** An API Gateway HTTP API fronts the app
-Lambda and its `$default` route specifies no authorizer (Checkov CKV_AWS_309).
-This is deliberate: access control is enforced in the Lambda via HTTP Basic Auth,
-and a Gateway-level JWT/IAM authorizer would consume the `Authorization` header the
-app needs to read. API Gateway replaces a Lambda Function URL (which this AWS
-account blocks for public access); the Gateway passes the viewer's `Authorization`
-header through unchanged and the app rejects any request lacking a valid
-credential. **Remediation:** if the app later federates to an IdP (see POAM-021), a
-JWT authorizer on the route supersedes this acceptance. Applies only while the app
-is deployed.
+**POAM-022 (closed 2026-06-22, Task 3 — historical record):** The app's API
+Gateway HTTP API originally specified no authorizer on any route (Checkov
+CKV_AWS_309) — deliberate at the time, because the Lambda's Basic Auth gate
+consumed the `Authorization` header. **Closure:** the HTTP API now carries a
+Cognito JWT authorizer on the `ANY /api/{proxy+}` data routes; an
+unauthenticated request to the data API is rejected at the gateway (401) before
+the Lambda runs. The `$default` route intentionally stays open so the SPA shell
+and login page can load — that route serves static content only.
 
-**POAM-023 (no brute-force protection):** The Basic Auth endpoint has no account
-lockout (AC-7) and no rate limiting / WAF (SC-5) in front of it, so credential
-guessing is not throttled. Surfaced by the `software-security` review. At the
-system's Moderate categorization this is a real AC-7/SC-5 weakness, accepted only
-on an interim basis pending remediation (see **Remediation** below: API Gateway
-usage-plan throttling + Cognito lockout, Task 3). The interim acceptance rests on
-the compensating controls, not the categorization: the credential is a
-high-entropy operator-set secret compared in constant time, and a single shared
-credential is the only valid pair (no user enumeration). **Assessor
-posture:** a FedRAMP Recognized assessor penetration test may re-rate an unauthenticated-reachable,
-unthrottled credential endpoint above Low regardless of the compensating controls
-above; the operator's accepted position is explicitly conditional — any evidence of
-credential-guessing in the Lambda execution logs (`/aws/lambda/samaydlette-com-silk-reeling`)
-or CloudFront logs triggers **immediate** implementation of the deferred WAF
-rate-rule rather than continued acceptance, and an assessor finding that re-rates
-the residual is treated as that trigger. **Remediation:** attach AWS WAF with a
-rate-based rule to the CloudFront distribution, or add an API Gateway usage-plan
-throttle; deferred on cost (~$120/yr WAF, consistent with POAM-007). Applies only
-while the app is deployed.
+**POAM-023 (closed 2026-06-22, Task 3 — historical record):** The Basic Auth
+endpoint originally had no account lockout (AC-7) and no rate limiting (SC-5),
+so credential guessing was unthrottled. The interim acceptance carried an
+explicit trigger: any credential-guessing evidence in the app's execution logs
+would force the deferred WAF rate-rule immediately. **Closure:** API Gateway
+stage throttling (20 req/s, burst 10) now fronts the app and Cognito provides
+account lockout, so the trigger condition is structurally addressed at $0
+rather than via WAF (~$120/yr, still pre-authorized under this item's original
+terms if credential-guessing evidence ever appears in
+`/aws/lambda/samaydlette-com-silk-reeling` or the API access logs).
 
 **POAM-017 and POAM-024 closed (Task 7) — audit logging + retention.** *POAM-017:*
 every CloudWatch log group now has 365-day retention (AU-11) — the route53 query-log

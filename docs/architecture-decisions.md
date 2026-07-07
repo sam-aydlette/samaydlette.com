@@ -12,19 +12,20 @@ There is no separate change-management ticketing system because there is no sepa
 
 ## Ingress and egress restriction (KSI-CNA-RNT)
 
-The system has exactly one ingress: CloudFront, fronting an S3 bucket whose public access is fully blocked. CloudFront's origin access is restricted to the bucket via a service-principal policy with a `SourceArn` condition; no other principal can read the bucket directly. There is no public ingress to any compute resource.
+The system has two ingress paths:
 
-Egress: the Lambda calls AWS APIs for S3 and CloudFront within the account. The Lambda has no internet egress and no NAT gateway. Outbound traffic from the Lambda to AWS service endpoints stays within the AWS network.
+1. **CloudFront → S3** for the static site: the bucket's public access is fully blocked and CloudFront's origin access is restricted via a service-principal policy with a `SourceArn` condition; no other principal can read the bucket directly.
+2. **API Gateway → Silk Reeling Lambda** for the gated app: the HTTP API's data routes (`ANY /api/{proxy+}`) require a Cognito JWT authorizer, the stage is throttled (20 req/s, burst 10), and access-logged. This is the only public ingress to compute, added with SCN-2026-001.
 
-There are no other ingress or egress paths to control because there are no other moving parts.
+Egress: the compliance Lambda calls AWS APIs only, within the AWS network — no internet egress, no NAT gateway. The Silk Reeling Lambda additionally calls the external Anthropic API for feedback text; that interconnection is tracked as [POAM-020](poam.md) (SA-9/CA-3, risk-accepted).
 
 ## Traffic flow controls (KSI-CNA-ULN)
 
-The system has two logical paths: viewer→CloudFront→S3 (read-only, all viewers) and Lambda→AWS API (scoped via IAM). There is no internal east-west traffic to control. The IAM policy on the Lambda role is the entire traffic-flow control mechanism for the only non-public path that exists.
+The system has four logical paths: viewer→CloudFront→S3 (read-only, all viewers), authenticated user→API Gateway→Silk Reeling Lambda (JWT-gated, throttled), Silk Reeling Lambda→Anthropic API (egress interconnection, POAM-020), and compliance Lambda→AWS APIs (scoped via IAM). There is no internal east-west traffic to control; the IAM policies on the two Lambda roles and the gateway authorizer are the traffic-flow control mechanisms for the non-public paths.
 
 ## DDoS and unwanted-activity protection (KSI-CNA-RVP)
 
-CloudFront includes AWS Shield Standard at no cost; this is the baseline protection. AWS WAF was evaluated and consciously excluded as a cost trade-off (~$120/year) documented in the README. The threat model for a static personal site does not justify it: there are no forms, no authentication endpoints, no APIs, and no expensive backend resources to protect from request floods. Shield Standard handles the L3/L4 cases that exist.
+CloudFront includes AWS Shield Standard at no cost; this is the baseline protection. AWS WAF was evaluated and consciously excluded as a cost trade-off (~$120/year) documented in the README and POAM-007. Since the Silk Reeling app was added, the system does have an authentication endpoint and an API — those are protected by API Gateway stage throttling (20 req/s, burst 10), Cognito account lockout, and Shield Standard, which together cover the SC-5 cases at this scale. POAM-023's closure keeps a standing trigger: credential-guessing evidence in the app's logs forces the WAF rate-rule immediately.
 
 **Effectiveness review:** annually (see [`security-review.md`](security-review.md)). If traffic patterns change or the threat profile shifts (e.g., the site starts serving forms or APIs), the WAF decision is revisited.
 
@@ -54,7 +55,7 @@ If the system grew to require true SIEM features (correlation rules, alerting, l
 
 Quarterly. Specifically:
 
-- Review CloudTrail for any unexpected API calls (especially IAM and CloudFront writes from non-CI principals)
+- Review CloudTrail records for any unexpected API calls, especially IAM and CloudFront writes from non-CI principals (capture depth is documented in the SIEM section above)
 - Review Lambda execution logs for runtime KSI emitter failures
 - Review GitHub Actions workflow run history for unexpected workflow modifications
 
@@ -62,14 +63,14 @@ A no-finding review does not require a commit. Anomalies are recorded in [`secur
 
 ## Log access scoping (KSI-MLA-ALA)
 
-Log access is scoped via AWS IAM. The deployer credentials have CloudWatch Logs read access account-wide; the Lambda role has none. No other principal exists in the system.
+Log access is scoped via AWS IAM. The operator's IAM user holds the CloudWatch Logs read access (through group-attached policies); the OIDC-assumed deploy role can enumerate log groups for reconciliation but not read log events; neither Lambda role can read logs. No other principal exists in the system.
 
 ## CISA Secure-by-Design alignment (KSI-PIY-RSD)
 
 This system aligns with CISA Secure-by-Design principles by design and by accident, both:
 
-- **Memory safety:** N/A (no native code; the only compute is a short-lived Node.js Lambda)
-- **Eliminate default passwords:** No passwords in this system; AWS root requires MFA, deployer credentials are GitHub Actions encrypted secrets, signing is keyless
+- **Memory safety:** N/A (no native code; compute is a short-lived Node.js Lambda and a Python 3.13 Lambda)
+- **Eliminate default passwords:** No default or shared passwords; the app's Cognito pool enforces a 14-character policy with mandatory TOTP MFA, AWS root requires MFA, CI deploys via ephemeral OIDC role assumption, signing is keyless
 - **Single sign-on:** GitHub for repo access, AWS for cloud access
 - **Provenance for software components:** the canonical inventory carries PURL, ARN, and content hashes for every component; the deploy chain is signed via Sigstore; the bundle is verifiable against the public Rekor transparency log
 - **Vulnerability disclosure:** see [`/.well-known/security.txt`](../website/.well-known/security.txt)
@@ -87,7 +88,8 @@ The annual security review (see [`security-review.md`](security-review.md)) is t
 
 Secrets in scope:
 
-- **AWS access keys (deployer):** stored as GitHub Actions encrypted secrets; rotated every 90 days as a compensating control while the OIDC migration in [POAM-001](poam.md) remains deferred. Rotation procedure is in [`docs/policies/secure-configuration-guide.md`](policies/secure-configuration-guide.md); rotation events are logged in [`docs/security-review.md`](security-review.md).
+- **Deployer credentials:** none stored. CI deploys via GitHub OIDC role assumption ([POAM-001](poam.md), closed 2026-06-15); the ephemeral token exists only for the workflow run. The legacy long-lived access keys and their 90-day rotation procedure were retired with the migration.
+- **Anthropic API key (Silk Reeling app):** held in Secrets Manager under a customer CMK; a third-party credential with no programmatic rotation source, so the compensating control is an annual manual rotation whose currency the runtime emitter verifies daily against the secret's `LastChangedDate` (SC-12).
 - **TLS certificate:** ACM-managed, auto-rotated by AWS.
 - **GitHub PATs:** none in use. All GitHub access uses the workflow's `GITHUB_TOKEN` with workflow-scoped permissions, plus the OIDC token for cosign keyless signing (which is ephemeral).
 - **Sigstore signing identity:** ephemeral, generated per-run by Fulcio, never stored anywhere.
@@ -114,8 +116,8 @@ Token threat model, sized to the system's actual blast radius. Methodology: STRI
 **Top threats considered:**
 
 1. **GitHub repository compromise → arbitrary deploy.** An attacker with write access to `main` can push code that the OPA gate would have to flag. *Mitigations:* GitHub branch protection on `main`, OPA gate evaluating Terraform plan + content + IAM policy on every PR, Sigstore signing chain that records every produced artifact in the public Rekor log so a falsified deploy is externally detectable.
-2. **Deployer credential leak → AWS account access.** The long-lived AWS access keys in GitHub Actions secrets are the largest standing-privilege surface. *Mitigations:* GitHub secret scanning with push protection, scoped IAM permissions on the deployer principal, 90-day key rotation as an active compensating control (procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md), rotation events logged in [`security-review.md`](security-review.md)), and the planned migration to GitHub OIDC role assumption ([POAM-001](poam.md)) which is the durable answer.
-3. **Runtime Lambda compromise → falsified runtime signal.** An attacker with Lambda code-modification access could publish misleading runtime KSI signals. *Mitigations:* tight Lambda IAM (write only to one S3 key, read-only on three S3 config APIs and one CloudFront distribution), drift between deploy-time and runtime signals is detectable from outside, runtime signal is not currently signed (POAM-002).
+2. **Deploy-identity compromise → AWS account access.** CI assumes a scoped IAM role via GitHub OIDC ([POAM-001](poam.md), closed): there are no long-lived deployer keys to leak, and the token is valid only for the workflow run. *Mitigations:* OIDC trust policy scoped to this repository, scoped IAM permissions on the deploy role, GitHub secret scanning with push protection for the few remaining repository secrets (which carry no AWS credentials).
+3. **Runtime Lambda compromise → falsified runtime signal.** An attacker with Lambda code-modification access could publish misleading runtime KSI signals. *Mitigations:* tight Lambda IAM (write only to two S3 keys, read-only configuration-metadata access on the inventory's buckets and one CloudFront distribution), drift between deploy-time and runtime signals is detectable from outside, and the runtime signal is signed with a KMS ECC P-256 key (POAM-002, closed) whose public key is published for independent verification.
 4. **Sigstore-chain compromise.** A compromise of Fulcio, Rekor, or the GitHub OIDC issuer would invalidate the signing chain. *Mitigations:* none operator-side — these are public infrastructure components with thousands of independent observers; compromise of any one is detectable by anyone running independent verification.
 5. **Bucket policy weakening.** A change to the S3 bucket policy or public-access block that re-enabled public read or write. *Mitigations:* OPA gate at deploy time blocks the change; runtime KSI emitter detects the drift within 24 hours.
 
@@ -133,7 +135,9 @@ Cross-component communications:
 
 - viewer ↔ CloudFront: TLS 1.2+
 - CloudFront ↔ S3: TLS within the AWS network, with origin authentication via service principal + SourceArn
+- authenticated user ↔ API Gateway ↔ Silk Reeling Lambda: TLS, Cognito JWT verified at the gateway
+- Silk Reeling Lambda ↔ Anthropic API: TLS to the external endpoint (interconnection, POAM-020)
 - Lambda ↔ AWS service APIs: TLS within the AWS network
-- CI ↔ AWS APIs: TLS, with credentials scoped via IAM
+- CI ↔ AWS APIs: TLS, with an ephemeral OIDC-assumed role scoped via IAM
 
 Authenticity at the application layer: the canonical inventory is signed (KSI-SVC-VRI). Communication integrity at the transport layer is AWS-default TLS. End-to-end signed-message integrity at the application layer beyond the signed signal is not implemented because no application-layer protocol exists between components beyond the standard AWS APIs.

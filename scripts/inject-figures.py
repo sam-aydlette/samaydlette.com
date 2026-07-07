@@ -52,6 +52,9 @@ PROFILES = {
 TARGETS = [
     REPO / "website" / "research" / "the-plumbing.html",
     REPO / "website" / "viewer.html",
+    # README carries the headline implemented-requirements figure; GitHub
+    # renders inline HTML spans, so the same data-figure markers work there.
+    REPO / "README.md",
 ]
 
 
