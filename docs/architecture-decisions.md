@@ -47,17 +47,17 @@ CloudWatch Logs is the SIEM equivalent for this system. Sources collected:
 - API Gateway access logs for the Silk Reeling HTTP API (same retention and encryption — POAM-024)
 - S3 server access logs and CloudFront access logs, delivered to the dedicated locked-down log bucket (POAM-005, C-3; 400-day lifecycle)
 
-Not collected: there is **no CloudTrail trail** in this account. AWS API
-activity is visible only through the default CloudTrail Event History (90
-days, management events only, not durable). Until a durable, validated
-management-events trail with S3 delivery exists, this "SIEM" covers the
-workload and access-log surface but not the AWS control plane — a known,
-honestly-stated gap.
+- CloudTrail management events (all AWS API activity, including the deploy
+  role's), captured by a multi-region trail with log-file validation and
+  delivered to a dedicated TLS-only bucket with AU-11 retention tiering
+  (12 months active, Deep Archive to 30 months, then expire)
 
-For a small single-account system this is meaningfully a SIEM for the workload
-surface. Tamper resistance: log groups are write-once from the producing
-services, retained 365 days under a customer CMK, and the log bucket denies
-non-TLS access, blocks public access, and is lifecycle-managed.
+For a small single-account system this is meaningfully a SIEM. Tamper
+resistance: log groups are write-once from the producing services, retained
+365 days under a customer CMK; the trail's log-file validation makes
+after-the-fact tampering detectable; and the deploy role deliberately holds no
+`cloudtrail:StopLogging` / `cloudtrail:DeleteTrail`, so the automated pipeline
+cannot silence the audit record.
 
 If the system grew to require true SIEM features (correlation rules, alerting, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
 
