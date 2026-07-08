@@ -280,10 +280,14 @@ jobs:
       working-directory: infrastructure
       run: terraform validate
 
-    # Create a plan showing what will be built
+    # Create a plan showing what will be built. The state lock is shared with
+    # every other run's plan; the workflow-level concurrency group only
+    # serializes runs on the SAME ref, so plans from different open PRs can
+    # race for the lock. -lock-timeout makes a contending plan wait its turn
+    # instead of failing the check.
     - name: Terraform Plan
       working-directory: infrastructure
-      run: terraform plan -out=tfplan
+      run: terraform plan -lock-timeout=300s -out=tfplan
 
     # -------------------------------------------------------------------------
     # THE ACTUAL SECURITY CHECK
@@ -835,11 +839,11 @@ jobs:
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
-      run: terraform plan -out=tfplan
+      run: terraform plan -lock-timeout=300s -out=tfplan
 
     - name: Terraform Apply
       working-directory: infrastructure
-      run: terraform apply -auto-approve tfplan
+      run: terraform apply -lock-timeout=300s -auto-approve tfplan
 
     # -------------------------------------------------------------------------
     # SEED SILK REELING SECRETS (out-of-band) — set the Anthropic key into Secrets
