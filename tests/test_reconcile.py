@@ -229,3 +229,24 @@ def test_state_backend_bucket_excluded_from_live_sweep():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_j_unknown_poam_reference_fails():
+    s = clean_set()
+    s["signal"]["components"][0]["baseline_configuration"] = "hardened per POAM-999"
+    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    assert any("POAM-999" in x and "(j)" in x for x in v)
+
+
+def test_j_retired_id_is_referenceable():
+    s = clean_set()
+    s["ssp"]["system-security-plan"]["metadata"]["remarks"] = "multi-region declined; see POAM-016 (retired)"
+    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    assert v == [], v
+
+
+def test_j_register_items_and_valid_refs_pass():
+    s = clean_set()
+    s["signal"]["components"][0]["baseline_configuration"] = "throttled (POAM-007)"
+    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    assert v == [], v
