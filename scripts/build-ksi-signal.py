@@ -361,7 +361,7 @@ IIW_DEFAULTS = {
         "function": "CloudWatch log group for Lambda execution / Route 53 query logs",
         "diagram_label": "CloudWatch Logs",
         "public": False,
-        "baseline_configuration": "AWS CloudWatch; 365-day retention (AU-11; POAM-017 closed); customer-CMK encryption at rest (POAM-018 closed)",
+        "baseline_configuration": "AWS CloudWatch; 365-day retention (AU-11; POAM-017); customer-CMK encryption at rest (POAM-018)",
         "iiw_asset_type": "Log Group (CloudWatch)",
     },
     "external_service": {
