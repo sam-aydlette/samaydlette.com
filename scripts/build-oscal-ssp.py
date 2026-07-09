@@ -188,6 +188,126 @@ def _load_hub_overrides():
 
 CONTROL_OVERRIDES = _load_hub_overrides()
 
+# =============================================================================
+# INVENTORY-DERIVED APP-AUTHENTICATION DISPOSITIONS
+# =============================================================================
+# The hub and the family fall-throughs were written for the pre-app system
+# ("no human end users"). When the canonical inventory carries an
+# identity_provider component (the Silk Reeling Cognito pool), the user-facing
+# authentication controls are real and implemented — and when the app is torn
+# down, they honestly revert to the hub/family dispositions. Deriving this
+# from the inventory (not a hand-set flag) means the SSP cannot claim an
+# authentication surface that isn't deployed, or deny one that is.
+# =============================================================================
+
+APP_AUTH_CONTROL_PROFILES = {
+    "ia-2": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "Every human user is uniquely identified and authenticated. The "
+            "operator (sole organizational user) authenticates to GitHub with "
+            "password plus TOTP MFA and to AWS via IAM with MFA; CI "
+            "authenticates via ephemeral GitHub OIDC role assumption with no "
+            "stored credentials. Application end-users authenticate through "
+            "Amazon Cognito: individually invited accounts (admin-only "
+            "creation), 14-character minimum password, mandatory TOTP MFA. "
+            "The API Gateway data routes validate the Cognito-issued JWT "
+            "before any application code runs (POAM-021/022 closed "
+            "2026-06-22). This disposition is derived from the canonical "
+            "inventory's identity_provider component and reverts if the "
+            "application is decommissioned."
+        ),
+    },
+    "ia-2.1": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "MFA for privileged accounts: the operator's GitHub and AWS "
+            "identities — the only privileged accounts — require virtual "
+            "TOTP MFA. Hardware (phishing-resistant) authenticators are the "
+            "tracked upgrade under POAM-025 (see the register for status)."
+        ),
+    },
+    "ia-2.2": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "MFA for non-privileged accounts: application end-user accounts "
+            "in the Cognito pool have MFA configuration ON (mandatory TOTP); "
+            "a user cannot complete sign-in without the second factor."
+        ),
+    },
+    "ia-2.8": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "Replay resistance: end-user sessions use short-lived, "
+            "expiry-bound Cognito JWTs validated at the API Gateway; TOTP "
+            "codes are one-time by construction; AWS API access uses "
+            "SigV4-signed requests; CI tokens are single-run OIDC tokens. "
+            "Phishing-resistant (WebAuthn) authenticators remain the "
+            "documented upgrade path (POAM-025 direction)."
+        ),
+    },
+    "ia-8": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "Non-organizational users — the invited application end-users of "
+            "the gated Silk Reeling app — are identified and authenticated "
+            "through Amazon Cognito with mandatory TOTP MFA before the API "
+            "Gateway authorizer admits any data-route request. No federal "
+            "customer or agency users exist; anonymous public access is "
+            "limited to the static site's read-only content."
+        ),
+    },
+    "ac-7": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "Unsuccessful logon attempts are bounded by Amazon Cognito's "
+            "account lockout on repeated failures, and the API stage is "
+            "throttled (20 req/s, burst 10), so credential guessing is both "
+            "locked out per-account and rate-limited in aggregate "
+            "(POAM-023 closed 2026-06-22)."
+        ),
+    },
+    "ac-11": {
+        "status": "not-applicable",
+        "origination": "sp-system",
+        "statement": (
+            "Device session lock with pattern-hiding is a function of the "
+            "end user's device, outside this system's boundary; the "
+            "browser-based SPA holds no server-side session to lock. "
+            "Exposure from an unattended session is bounded by AC-12's "
+            "token expiry instead."
+        ),
+    },
+    "ac-12": {
+        "status": "implemented",
+        "origination": "sp-system",
+        "statement": (
+            "Session termination is automatic: application sessions are "
+            "Cognito-issued JWTs with bounded validity, enforced at the API "
+            "Gateway authorizer on every request — an expired token "
+            "terminates access with no server-side session to linger. "
+            "Operator console/CLI sessions use AWS's default session "
+            "expiration."
+        ),
+    },
+}
+
+
+def _app_auth_overrides(signal):
+    """Return the app-authentication control profiles iff the canonical
+    inventory carries an identity_provider component (the app's Cognito
+    pool). An empty dict otherwise, so the pre-app dispositions apply."""
+    components = signal.get("components") or []
+    has_idp = any(c.get("type") == "identity_provider" for c in components)
+    return APP_AUTH_CONTROL_PROFILES if has_idp else {}
+
+
 FAMILY_DEFAULTS = {
     # Access Control — explicit overrides handle AC-2/3/4/6/17. The remaining
     # AC-* and AC-*.* enhancements are dominated by user-account features
@@ -199,14 +319,14 @@ FAMILY_DEFAULTS = {
         "origination": "sp-system",
         "statement": (
             "Access Control family controls beyond those with explicit "
-            "overrides (AC-2/3/4/6/17) are predominantly user-account "
-            "features (session management, wireless access, mobile-device "
-            "authentication, attribute-based access). The system has no "
-            "human end users, no wireless interfaces, no mobile clients, "
-            "and no internal session model — these controls are "
-            "structurally not applicable. The few that are not user-"
-            "centric (e.g., AC-20 use of external systems) are addressed "
-            "by the AWS-managed service boundary."
+            "overrides (AC-2/3/4/6/17) and the inventory-derived "
+            "app-authentication profiles (AC-7/11/12 while the gated app "
+            "is deployed) are predominantly features of environments this "
+            "system does not have: wireless interfaces, mobile clients, "
+            "and multi-user internal session models. Those remaining "
+            "controls are structurally not applicable; the few that are "
+            "not user-centric (e.g., AC-20 use of external systems) are "
+            "addressed by the AWS-managed service boundary."
         ),
     },
     # Audit — most enhancements are inherited from AWS (CloudTrail handles
@@ -216,13 +336,15 @@ FAMILY_DEFAULTS = {
         "origination": "shared",
         "statement": (
             "Audit family controls beyond those with explicit overrides "
-            "(AU-2/3/12) are addressed primarily through CloudTrail "
-            "(account-wide AWS API logging, inherited from AWS) and "
-            "CloudWatch Logs (Lambda execution, configured by the system). "
-            "Audit storage capacity, time-stamp generation, and audit-"
-            "record protection are AWS-managed features of those services. "
-            "Audit review cadence is documented in docs/architecture-"
-            "decisions.md (KSI-MLA-RVL section)."
+            "(AU-2/3/12) are addressed through CloudWatch Logs (Lambda "
+            "execution and API access logs, 365-day CMK-encrypted "
+            "retention), the S3/CloudFront access logs in the dedicated "
+            "log bucket, and the account's CloudTrail management-event "
+            "capture for control-plane activity. Audit storage capacity, "
+            "time-stamp generation, and audit-record protection are "
+            "AWS-managed features of those services. Audit review cadence "
+            "is documented in docs/architecture-decisions.md "
+            "(KSI-MLA-RVL section)."
         ),
     },
     # Assessment, Authorization, and Monitoring — assessment is the OPA gate;
@@ -267,15 +389,16 @@ FAMILY_DEFAULTS = {
         "status": "not-applicable",
         "origination": "sp-system",
         "statement": (
-            "Identification and Authentication family controls beyond IA-3 "
-            "(non-user identification, addressed via AWS IAM principals) "
-            "are dominated by user-facing features: MFA, password "
-            "complexity, identity proofing, authenticator management for "
-            "human accounts. The system has no human end users; these "
-            "controls are structurally not applicable. The few exceptions "
-            "(IA-5 authenticator management for the deployer's secrets) "
-            "are addressed via GitHub Actions encrypted secrets and "
-            "tracked under POAM-001 for migration to OIDC."
+            "Identification and Authentication family controls beyond "
+            "IA-3 (non-user identification, addressed via AWS IAM "
+            "principals) and the inventory-derived app-authentication "
+            "profiles (IA-2 and enhancements, IA-8, while the gated app "
+            "is deployed) cover identity-proofing and authenticator-"
+            "management machinery for user populations this system does "
+            "not have; those remaining enhancements are structurally not "
+            "applicable. Deployer authentication holds no stored "
+            "credential at all: CI assumes a scoped role via ephemeral "
+            "GitHub OIDC tokens (POAM-001 closed 2026-06-15)."
         ),
     },
     # Incident Response — explicit overrides handle IR-4/6/8; remaining
@@ -704,15 +827,21 @@ FAMILY_NAMES = {
 }
 
 
-def resolve_control_profile(control_id, control_title):
+def resolve_control_profile(control_id, control_title, app_overrides=None):
     """Return (status, origination, statement) for a NIST 800-53 control.
 
     Resolution order:
-      1. Explicit per-control override in CONTROL_OVERRIDES.
-      2. *-1 controls (policy and procedures) hit POLICY_AND_PROCEDURES_DEFAULT.
-      3. Family default in FAMILY_DEFAULTS.
-      4. Last-resort generic fallback.
+      1. Inventory-derived app-authentication profile (present only while
+         the canonical inventory carries an identity_provider component).
+      2. Explicit per-control override in CONTROL_OVERRIDES.
+      3. *-1 controls (policy and procedures) hit POLICY_AND_PROCEDURES_DEFAULT.
+      4. Family default in FAMILY_DEFAULTS.
+      5. Last-resort generic fallback.
     """
+    if app_overrides and control_id in app_overrides:
+        p = app_overrides[control_id]
+        return p["status"], p["origination"], p["statement"]
+
     if control_id in CONTROL_OVERRIDES:
         p = CONTROL_OVERRIDES[control_id]
         return p["status"], p["origination"], p["statement"]
@@ -1254,6 +1383,7 @@ def build_control_implementation(signal, catalog):
     # Per-KSI fail tracking from the live signal. We surface a per-control
     # remark when one of the contributing KSIs has an open failure.
     failing_ksis = _failing_ksis_from_signal(signal)
+    app_auth = _app_auth_overrides(signal)
 
     # Emit an implemented-requirement for every control that is either:
     # (a) referenced by an in-scope KSI, (b) in the FedRAMP Rev 5 Moderate
@@ -1282,6 +1412,7 @@ def build_control_implementation(signal, catalog):
         purely_inherited = (
             control_id in INHERITED_FROM_AWS
             and control_id not in CONTROL_OVERRIDES
+            and control_id not in app_auth
             and not ksis
         )
 
@@ -1300,7 +1431,8 @@ def build_control_implementation(signal, catalog):
                 f"silent because the control has no tenant-side surface."
             )
         else:
-            status, origination, statement = resolve_control_profile(control_id, title)
+            status, origination, statement = resolve_control_profile(
+                control_id, title, app_overrides=app_auth)
 
         # Live-signal-driven downgrade: if a contributing KSI is currently
         # failing, force the status to `partial` and append a remark.
