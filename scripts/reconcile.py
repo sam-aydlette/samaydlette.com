@@ -25,6 +25,14 @@
 #   (g) POA&M parity   — the OSCAL POA&M's item set exactly equals the formal
 #                        POA&M items in docs/poam.md, so the human and
 #                        machine-readable registers can never silently drift
+#   (h) finding coverage — every VDR finding carries a poam_ref that resolves
+#                        to a POA&M item
+#   (i) classification tags — live resource tags match the inventory's
+#                        projected classification (with --live)
+#   (j) POA&M reference validity — every POAM-NNN mentioned anywhere in a
+#                        generated artifact resolves to a formal POA&M item
+#                        (or an explicitly retired ID), so a typo'd or
+#                        vanished cross-reference cannot publish silently
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -465,6 +473,37 @@ def check_h_finding_coverage(vdr, poam):
     return violations
 
 
+# ----------------------------------------------------------------------------
+# (j) POA&M reference validity — narrative cross-references resolve
+# ----------------------------------------------------------------------------
+# Generators embed POA&M IDs in narrative strings (baseline_configuration,
+# SSP statements, VDR dispositions) as traceability pointers. The IDs are
+# permanent, so referencing them is safe — but only if they resolve. Retired
+# IDs stay referenceable for history without being register items.
+RETIRED_POAM_IDS = {"POAM-016"}
+
+_POAM_REF_RE = re.compile(r"POAM-\d{3}")
+
+
+def check_j_poam_ref_validity(signal, ssp, poam, vdr):
+    """(j) Every POAM-NNN string in a generated artifact must be a formal item
+    in the OSCAL POA&M register or an explicitly retired ID."""
+    poam_ids = {
+        p["value"]
+        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
+        for p in (item.get("props", []) or [])
+        if p.get("name") == "poam-id" and p.get("value")
+    }
+    ok = poam_ids | RETIRED_POAM_IDS
+    violations = []
+    for name, art in (("signal", signal), ("ssp", ssp), ("poam", poam), ("vdr", vdr)):
+        refs = set(_POAM_REF_RE.findall(json.dumps(art)))
+        for ref in sorted(refs - ok):
+            violations.append(
+                f"(j) {name} references {ref}, which is neither a POA&M item nor a retired ID")
+    return violations
+
+
 def check_g_poam_parity(poam, poam_md_text):
     """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
     in docs/poam.md. Both registers are hand-maintained; without this check they
@@ -501,6 +540,7 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     violations += check_f_freshness(signal, ssp, poam, vdr, expected_commit)
     violations += check_g_poam_parity(poam, poam_md_text)
     violations += check_h_finding_coverage(vdr, poam)
+    violations += check_j_poam_ref_validity(signal, ssp, poam, vdr)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     if live_tags is not None:
@@ -606,11 +646,11 @@ def main():
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
     if live_arns is not None and live_tags is not None:
-        checks = "a-i"
+        checks = "a-j"
     elif live_arns is not None:
-        checks = "a-h (i deferred: no live tags)"
+        checks = "a-h,j (i deferred: no live tags)"
     else:
-        checks = "b-h (a,i deferred: no --live)"
+        checks = "b-h,j (a,i deferred: no --live)"
     print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
     return 0
 
