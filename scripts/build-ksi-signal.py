@@ -319,7 +319,7 @@ IIW_DEFAULTS = {
         "function": "Authoritative DNS for the public domain",
         "diagram_label": "Route 53 hosted zone",
         "public": True,
-        "baseline_configuration": "AWS Route 53 default; DNSSEC not enabled",
+        "baseline_configuration": "AWS Route 53; DNSSEC signing enabled (customer-managed KSK in KMS us-east-1, D-3; SC-20/SC-21)",
         "iiw_asset_type": "DNS Zone (Route 53)",
     },
     "tls_certificate": {
@@ -361,7 +361,7 @@ IIW_DEFAULTS = {
         "function": "CloudWatch log group for Lambda execution / Route 53 query logs",
         "diagram_label": "CloudWatch Logs",
         "public": False,
-        "baseline_configuration": "AWS CloudWatch default; 7-day retention (POAM-017); AWS-default encryption (POAM-018)",
+        "baseline_configuration": "AWS CloudWatch; 365-day retention (AU-11; POAM-017); customer-CMK encryption at rest (POAM-018)",
         "iiw_asset_type": "Log Group (CloudWatch)",
     },
     "external_service": {
