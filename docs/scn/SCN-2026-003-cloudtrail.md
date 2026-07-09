@@ -6,7 +6,7 @@
 | **SCN ID** | SCN-2026-003 |
 | **System** | samaydlette.com (FedRAMP 20x KSI Certification + OSCAL Rev 5 Moderate SSP) |
 | **SCN type** | **Adaptive** (`SCN-ADP`) |
-| **Status** | Proposed — implemented when the `infra/cloudtrail-management-trail` change merges and the bootstrap grant is applied |
+| **Status** | Implemented — live and delivering since 2026-07-09; post-implementation verification complete 2026-07-09 |
 | **Date initiated** | 2026-07-08 |
 | **Approver** | Sam Aydlette — System Owner / Authorizing Operator |
 | **Authoritative source** | CR26 corpus (`final_consolidated_rules_2026/2026-markdown`) |
@@ -43,7 +43,21 @@ bucket; KSI-MLA-RVL).
 
 ### Verification plan (post-implementation)
 
-After the bootstrap apply + merge + deploy: `describe-trails` shows the trail
-(multi-region, validation on), `get-trail-status` shows `IsLogging: true`, the
-bucket receives `AWSLogs/<account>/CloudTrail/...` objects, and the canonical
+After the bootstrap apply + merge + deploy: the trail delivers
+`AWSLogs/<account>/CloudTrail/...` objects to the bucket, and the canonical
 inventory carries the new `audit_log_trail` component in the next signal.
+
+### Verification result — COMPLETE (2026-07-09)
+
+The bootstrap grant was applied by the operator and the trail created by the
+gated deploy. The first deploy after creation failed closed at the
+reconciliation gate — five scanner findings for the deliberately-declined
+options lacked POA&M dispositions and two classification tags disagreed with
+the inventory's projection — and was remediated the same day (POAM-029
+extension + new POAM-032; internal-sensitivity tag profile on the trail;
+security-tooling archetype override for the delivery bucket). Verified after
+the remediation deploy: `AWSLogs/<account>/` objects delivered to the bucket;
+the published signal carries `aws::audit_log_trail::management` with
+`data_sensitivity: internal` and zero failing validations; the published VDR
+dispositions all trail findings to POAM-029/POAM-032; the OSCAL POA&M carries
+31 items in parity with `docs/poam.md`.

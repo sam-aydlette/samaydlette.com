@@ -37,4 +37,4 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
 | --- | --- | --- | --- |
 | [SCN-2026-001](SCN-2026-001-silk-reeling.md) | Adaptive | "Silk Reeling Mirror" gated app | Implemented + post-impl. verified 2026-06-08 (live since 2026-06-03) |
 | [SCN-2026-002](SCN-2026-002-cognito-auth.md) | Adaptive | Silk Reeling auth: Basic Auth → Cognito MFA + JWT authorizer (backfilled record) | Implemented 2026-06-22 (POAM-021/022/023 closed) + post-impl. verified 2026-07-06 |
-| [SCN-2026-003](SCN-2026-003-cloudtrail.md) | Adaptive | CloudTrail management-events trail | Proposed (implements with the trail PR + bootstrap apply) |
+| [SCN-2026-003](SCN-2026-003-cloudtrail.md) | Adaptive | CloudTrail management-events trail | Implemented + post-impl. verified 2026-07-09 |
