@@ -10,7 +10,7 @@ This is the central hub for what's going on with me. The repository also doubles
 - **Automated accessibility testing** — Section 508 checks run in the same gate as the infrastructure checks; same shape, same reporting.
 - **Continuous runtime validation** — A Lambda re-validates the live AWS configuration on a schedule against what was deployed.
 - **A KSI signal informed by a canonical inventory** — Every deploy publishes a JSON document at `/.well-known/ksi-signal.json` containing (1) a snapshot of this system's canonical inventory (PURL for software, ARN paired with a normalized type for cloud resources, sha256 for static artifacts) and (2) policy results attached to specific inventory components by reference, signed via Sigstore keyless. The inventory is the layer; the signal is one report built on it. SBOMs, vulnerability scans, license reports, and configuration drift reports could all ride on the same layer. See [docs/ksi-signal.md](docs/ksi-signal.md) for the full reference.
-- **An OSCAL Rev 5 System Security Plan** — Every deploy also generates and publishes a NIST OSCAL System Security Plan at `/.well-known/oscal-ssp.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. 331 NIST 800-53 Rev 5 implemented-requirements (the full FedRAMP Moderate baseline of 323 controls plus 8 KSI-extension controls) with differentiated `implementation-status` (74% implemented, 26% not-applicable, 0% partial) and FedRAMP-style `control-origination` (52% sp-system, 19% sp-corporate, 16% shared with AWS, 13% inherited) per control, plus an actual implementation statement per control rather than a mass-assigned default. Two views of the same truth: the KSI signal is the wire format; the OSCAL SSP is the human-and-tool-friendly compliance artifact.
+- **An OSCAL Rev 5 System Security Plan** — Every deploy also generates and publishes a NIST OSCAL System Security Plan at `/.well-known/oscal-ssp.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. <span data-figure="hub_total">331</span> NIST 800-53 Rev 5 implemented-requirements (the full FedRAMP Moderate baseline plus KSI-extension controls) with differentiated `implementation-status` and FedRAMP-style `control-origination` per control — including automatic downgrade to `partial` while a live validation is failing — plus an actual implementation statement per control rather than a mass-assigned default. Two views of the same truth: the KSI signal is the wire format; the OSCAL SSP is the human-and-tool-friendly compliance artifact.
 
 ## How the Compliance Pipeline Works
 
@@ -100,12 +100,12 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 | File | KSIs addressed | Purpose |
 |------|---------------|---------|
 | [`docs/ksi-signal.md`](docs/ksi-signal.md) | KSI-PIY-GIV, KSI-MLA-LET, KSI-CNA-EIS, KSI-SVC-VRI | Schema, join semantics, normalization decisions, verification |
-| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-RVP, KSI-CNA-RNT/03/05/06, KSI-IAM-JIT, KSI-MLA-OSM/02/08, KSI-PIY-RSD, KSI-SVC-EIS/06/08/09 | ADR-style records of architectural decisions per KSI |
+| [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-RVP, KSI-CNA-RNT/ULN/RVP/OFA, KSI-IAM-JIT, KSI-MLA-OSM/RVL/ALA, KSI-PIY-RSD, KSI-SVC-EIS/ASM/PRR/VCM | ADR-style records of architectural decisions per KSI |
 | [`docs/incident-response.md`](docs/incident-response.md) | KSI-INR-RIR, KSI-INR-RPI, KSI-INR-AAR | IR runbook with detection sources, triage, after-action template |
 | [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-RRO, KSI-RPL-ARP, KSI-RPL-ABO, KSI-RPL-TRC | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
 | [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-RIS | Annual security review template + first entry |
 | [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-SCR-MIT, KSI-SCR-MON | SCRM with Dependabot config in `.github/dependabot.yml` |
-| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-RAT, KSI-CED-RAT, KSI-CED-RAT, KSI-CED-RAT | Self-attested training log |
+| [`docs/training-log.md`](docs/training-log.md) | KSI-CED-RAT | Self-attested training log |
 | [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans (kept in sync with `/.well-known/oscal-poam.json`) |
 | [`docs/policies/`](docs/policies/) | NIST 800-53 Rev 5 *-1 controls (AC-1, AT-1, ... SR-1, PT-1) | Per-family policy and procedures docs, plus the FedRAMP 20x Secure Configuration Guide. Each file integrates the relevant 20x rules (SCN, VDR, MAS, SCG, CCM, ICP, FSI, UCM) and cites AWS authorization package AGENCYAMAZONEW for inherited families |
 | [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, annual review) |
@@ -148,10 +148,12 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 
 ### Tracked POA&M items
 
-Known security gaps with remediation plans documented in [`docs/poam.md`](docs/poam.md):
+The authoritative register is [`docs/poam.md`](docs/poam.md), kept in sync with the machine-readable OSCAL POA&M published at [`/.well-known/oscal-poam.json`](https://samaydlette.com/.well-known/oscal-poam.json) on every deploy. The register currently runs POAM-001 through POAM-031 (POAM-016 was retired): a mix of closed remediations, documented false positives, and open risk acceptances, each with its rationale and — where open — a review trigger.
 
-- **POAM-001:** Migrate the deployer from long-lived AWS access keys to GitHub OIDC role assumption. (Medium severity; the Sigstore signing chain in this repo already proves the OIDC pattern works for cosign — POAM-001 extends it to AWS.)
-- **POAM-002:** Sign the runtime KSI signal cryptographically (currently trusted implicitly via S3 + IAM). (Low for PoC, Medium in portfolio context; KMS asymmetric signing is the proposed approach.)
+Two early items this README used to track as open are now closed:
+
+- **POAM-001** (closed 2026-06-15): the deployer was migrated from long-lived AWS access keys to GitHub OIDC role assumption; the legacy IAM user, its keys, and the repository secrets were deleted.
+- **POAM-002** (closed 2026-06-17): the runtime KSI signal is signed with a KMS ECC P-256 key; the public key is published at `/.well-known/runtime-signing-pubkey.pem` and the signature travels in the signal's `provenance.attestation`.
 
 ## Architecture
 
@@ -336,14 +338,12 @@ Push to `main` branch triggers automatic deployment with compliance validation.
 
 | Feature | Security Benefit | Annual Cost | Decision | POA&M |
 |---------|------------------|-------------|----------|-------|
-| CloudFront WAF | DDoS/attack protection | +$120 | **Risk-accepted** — static content, low risk | [POAM-007](docs/poam.md) |
+| CloudFront WAF | DDoS/attack protection | +$120 | **Risk-accepted** — managed interfaces + Shield Standard + throttling cover SC-7/SC-5; WAF's incremental layer-7 filtering is the documented residual | [POAM-007](docs/poam.md) |
 | Lambda in VPC | Network isolation | +$540 | **Risk-accepted** — no sensitive data processing | [POAM-010](docs/poam.md) |
-| S3 access logging | Detailed audit trail | +$180 | **Risk-accepted** — CloudTrail provides the audit basics | [POAM-005](docs/poam.md) |
-| Multi-region active-passive | Regional failover | +$300 | **Risk-accepted** — declared 21-day RTO accommodates regional failure | [POAM-016](docs/poam.md) |
+| S3 access logging | Detailed audit trail | ~$0 at current traffic | **Implemented** (2026-06-18) — S3 server-access + CloudFront logs delivered to a dedicated locked-down log bucket | [POAM-005](docs/poam.md) (closed) |
+| Multi-region active-passive | Regional failover | +$300 | **Risk-accepted** — declared 21-day RTO accommodates regional failure ([recovery plan](docs/recovery-plan.md)) | POAM-016 (retired) |
 
-The full register of risk-accepted items, including the 13 inline Checkov suppressions in `infrastructure/main.tf`, lives in [`docs/poam.md`](docs/poam.md) as POA&M entries with status `Risk-accepted`. This table is the budget-context summary; the POA&M is the authoritative register.
-
-**For Enterprise Use:** Remove the `#checkov:skip` comments and reopen the corresponding POA&M entries to enable these features.
+The full register of dispositions — closed remediations, documented false positives, and open risk acceptances, including the scanner suppressions carried with inline rationale — lives in [`docs/poam.md`](docs/poam.md). This table is the budget-context summary; the POA&M is the authoritative register.
 
 ## When Things Break (And They Will)
 
