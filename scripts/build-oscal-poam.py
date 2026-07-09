@@ -415,12 +415,15 @@ POAM_ITEMS = [
         "id": "POAM-029", "controls": ["sc-28"],
         "title": "Selected internal storage uses AWS-managed at-rest encryption (AES256) rather than a customer CMK",
         "description": (
-            "Scanners flag three internal resources for encrypting at rest with "
+            "Scanners flag internal resources for encrypting at rest with "
             "AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket "
             "samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler "
             "s3_bucket_default_encryption — a check Prowler marks deprecated), the "
-            "Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), and the "
-            "Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), all "
+            "Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the "
+            "Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — "
+            "extended 2026-07-09 — the CloudTrail management trail's log files "
+            "(CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket "
+            "samaydlette-com-cloudtrail (CKV_AWS_145), all "
             "inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every "
             "case; a customer CMK is declined deliberately, for a different reason per "
             "resource: the log bucket holds only low-sensitivity public-resource access "
@@ -471,6 +474,31 @@ POAM_ITEMS = [
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "status_date": "2026-06-29",
         "status": "closed", "category": "closed",
+    },
+    {
+        "id": "POAM-032", "controls": ["au-6", "si-4"],
+        "title": "CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications",
+        "description": (
+            "The CloudTrail management trail (SCN-2026-003) delivers to S3 only: "
+            "Checkov CKV2_AWS_10 / tfsec AVD-AWS-0162 flag the missing CloudWatch "
+            "Logs integration and CKV_AWS_252 the missing SNS delivery topic, both "
+            "inline-skipped in infrastructure/cloudtrail.tf. CloudWatch Logs "
+            "integration duplicates every management event into paid log-group "
+            "storage to enable real-time metric filters that this single-operator "
+            "system replaces with the quarterly audit-log review (KSI-MLA-RVL); "
+            "per-delivery SNS notifications have no consumer. Residual risk: no "
+            "real-time alerting on control-plane events — accepted at this scale, "
+            "revisited if the operating model gains a second principal or an "
+            "incident shows the review cadence was too slow. Compensating: "
+            "log-file validation on the trail; the delivery bucket is TLS-only, "
+            "versioned, public-access-blocked, lifecycle-tiered (AU-11)."
+        ),
+        "weakness_detector_source": "Checkov, tfsec",
+        "weakness_source_identifier": "CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162",
+        "asset_identifiers": ["aws-cloudtrail::management"],
+        "original_detection_date": "2026-07-09", "status_date": "2026-07-09",
+        "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
+        "category": "configuration",  # → status open, disposition risk-accepted
     },
 ]
 

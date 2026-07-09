@@ -129,6 +129,8 @@ POAM_BY_CHECK_ID = {
     # the distribution's default behavior (bootstrap/cloudfront.tf), so the check
     # passes on its own and the suppression mapping is removed.
     "CKV2_AWS_56": "POAM-026",  # operator IAM admin group (inline skip, bootstrap/main.tf)
+    "CKV2_AWS_10": "POAM-032",  # CloudTrail CloudWatch Logs integration declined (inline skip, cloudtrail.tf)
+    "CKV_AWS_252": "POAM-032",  # CloudTrail SNS delivery notifications declined (inline skip, cloudtrail.tf)
     # CKV_AWS_173 (POAM-011) closed under Task 6 — suppression removed from
     # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
     # CKV_AWS_338 (POAM-017) + CKV_AWS_158 (POAM-018) closed — suppressions removed
@@ -161,6 +163,7 @@ FALSE_POSITIVE_BY_CHECK_ID = {
     "CKV_AWS_18":  "POAM-028",  # log-target bucket self-logging (inline)
     "CKV_AWS_145": "POAM-029",  # SSE-S3 vs CMK: log bucket + tfstate bucket (inline)
     "CKV_AWS_119": "POAM-029",  # DynamoDB lock table default SSE vs CMK (inline)
+    "CKV_AWS_35":  "POAM-029",  # CloudTrail log files SSE-S3 vs CMK (inline, cloudtrail.tf)
 }
 
 # tfsec (Aqua AVD-*) rule IDs → their Checkov equivalent, so a tfsec finding for
@@ -170,6 +173,8 @@ FALSE_POSITIVE_BY_CHECK_ID = {
 TFSEC_TO_CHECKOV = {
     "AVD-AWS-0089": "CKV_AWS_18",   # S3 server access logging enabled
     "AVD-AWS-0132": "CKV_AWS_145",  # S3 encryption uses a customer-managed key
+    "AVD-AWS-0015": "CKV_AWS_35",   # CloudTrail log files use a customer-managed key
+    "AVD-AWS-0162": "CKV2_AWS_10",  # CloudTrail CloudWatch Logs integration
 }
 
 
@@ -200,6 +205,9 @@ SUPPRESSION_EVALUATION = {
     "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_310": {"pain": "N1", "irv": False, "lev": False},
     "CKV_AWS_117": {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_35":  {"pain": "N1", "irv": False, "lev": False},
+    "CKV2_AWS_10": {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_252": {"pain": "N1", "irv": False, "lev": False},
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
@@ -209,6 +217,9 @@ SUPPRESSION_RATIONALE = {
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
     "CKV_AWS_310": "The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair; an origin group would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
+    "CKV_AWS_35":  "CloudTrail log files use SSE-S3, consistent with the POAM-029 decision family: service-written control-plane records about this account's own infrastructure; a CMK adds key sprawl and a decrypt dependency for every consumer without a confidentiality benefit.",
+    "CKV2_AWS_10": "CloudWatch Logs integration declined: it duplicates every management event into paid log-group storage to enable metric filters this single-operator system reviews quarterly instead (KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.",
+    "CKV_AWS_252": "SNS delivery notifications declined: no consumer exists for a per-delivery notification; the quarterly review reads the bucket directly.",
 }
 
 # Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving

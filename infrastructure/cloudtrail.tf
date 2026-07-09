@@ -128,7 +128,10 @@ resource "aws_cloudtrail" "management" {
   include_global_service_events = true
   enable_log_file_validation    = true
 
-  tags = merge(local.cls.security_tooling, {
+  # security_tooling_internal, not security_tooling: the inventory derives the
+  # trail's data_sensitivity as internal (control-plane audit records), and
+  # reconcile invariant (i) requires live tags == projected classification.
+  tags = merge(local.cls.security_tooling_internal, {
     Name               = "${var.domain_name}-management-trail"
     Environment        = var.environment
     CostCenter         = var.cost_center
