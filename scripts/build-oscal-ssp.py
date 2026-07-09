@@ -1414,30 +1414,34 @@ def build_control_implementation(signal, catalog):
 
 
 def _failing_ksis_from_signal(signal):
-    """Return the set of KSI ids whose contributing validations include any
-    `result: "fail"` in the live signal. Used to downgrade affected controls
-    from `implemented` to `partial` automatically.
+    """Return the set of KSI ids the signal itself marks as failing. Used to
+    downgrade affected controls from `implemented` to `partial` automatically.
+
+    The signal's ksis[] block is the authoritative per-KSI verdict (status
+    plus evidence.failed_validation_ids), so consume that attribution rather
+    than re-deriving it here from validations[] with a coarse policy-id map —
+    the map both missed KSIs the signal marks failing and dragged in KSIs the
+    signal marks passing.
     """
+    ksi_records = signal.get("ksis") or []
+    if ksi_records:
+        return {
+            k["id"]
+            for k in ksi_records
+            if k.get("status") == "fail"
+            or (k.get("evidence") or {}).get("failed_validation_ids")
+        }
+    # Legacy fallback for signals predating the ksis[] block: coarse
+    # policy-id convention mapping over raw validations.
     failing = set()
-    # The KSI signal's validations carry policy.id and component_refs. Only
-    # the runtime emitter currently uses a policy id like 'runtime.s3_security';
-    # the deploy-time gate's validations use 'terraform.compliance' and don't
-    # encode a KSI id directly. So we surface failures conservatively: any
-    # validation with result=='fail' marks the catch-all bucket so SSP
-    # consumers know to look at the signal.
     for v in signal.get("validations") or []:
         if v.get("result") == "fail":
-            # Map runtime-policy ids to KSI ids by convention. Best-effort.
             policy_id = (v.get("policy") or {}).get("id", "")
             if policy_id == "runtime.s3_security":
                 failing.update({"KSI-SVC-ACM", "KSI-SVC-SIN", "KSI-CMT-LMC"})
             elif policy_id == "runtime.cloudfront_security":
                 failing.update({"KSI-SVC-VCM", "KSI-CNA-ULN"})
             elif policy_id == "terraform.compliance":
-                # Deploy-time policy: granular KSI mapping not encoded.
-                # Mark representative ids so the downgrade fires for affected
-                # controls; we treat infrastructure findings as touching
-                # config/monitoring families broadly.
                 failing.update({"KSI-MLA-EVC", "KSI-SVC-ACM"})
     return failing
 
