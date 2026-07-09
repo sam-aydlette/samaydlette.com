@@ -56,9 +56,12 @@ rm -f tfplan tfplan.json
 echo "Initializing Terraform..."
 terraform init
 
-# Create a plan showing exactly what infrastructure will be created/changed
+# Create a plan showing exactly what infrastructure will be created/changed.
+# -lock-timeout: this script also runs in every PR's compliance check, where
+# it can contend for the shared state lock with sibling PR checks or a
+# main-branch deploy mid-apply; wait for the lock instead of failing.
 echo "Generating Terraform plan..."
-terraform plan -out=tfplan
+terraform plan -lock-timeout=300s -out=tfplan
 
 # =============================================================================
 # CONVERT PLAN TO READABLE FORMAT
