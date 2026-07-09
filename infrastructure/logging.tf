@@ -15,6 +15,7 @@ resource "aws_s3_bucket" "logs" {
   tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-logs"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })
