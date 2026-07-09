@@ -395,6 +395,53 @@ resource "aws_iam_role_policy" "log_bucket_management" {
   policy = data.aws_iam_policy_document.log_bucket_management.json
 }
 
+# Audit-trail remediation (AU-2/AU-11): permissions to create and manage the
+# CloudTrail management-events trail and its delivery bucket. The trail
+# statement is ARN-scoped and DELIBERATELY omits cloudtrail:DeleteTrail and
+# cloudtrail:StopLogging — the automated deploy identity must never be able to
+# silence the account's audit record; disabling the trail is an operator
+# break-glass action performed with the operator's own credentials.
+data "aws_iam_policy_document" "cloudtrail_management" {
+  # checkov:skip=CKV_AWS_356:cloudtrail:DescribeTrails/ListTrails are account-level enumeration actions that do not support resource-level scoping; the management statement is ARN-scoped and excludes delete/stop. Documented exception.
+  statement {
+    sid    = "ManageManagementTrail"
+    effect = "Allow"
+    actions = [
+      "cloudtrail:CreateTrail", "cloudtrail:UpdateTrail", "cloudtrail:StartLogging",
+      "cloudtrail:GetTrailStatus", "cloudtrail:GetTrail",
+      "cloudtrail:PutEventSelectors", "cloudtrail:GetEventSelectors",
+      "cloudtrail:AddTags", "cloudtrail:RemoveTags", "cloudtrail:ListTags",
+    ]
+    resources = ["arn:aws:cloudtrail:${var.aws_region}:${data.aws_caller_identity.current.account_id}:trail/${local.domain_dashed}-management"]
+  }
+  statement {
+    sid       = "DescribeTrails"
+    effect    = "Allow"
+    actions   = ["cloudtrail:DescribeTrails", "cloudtrail:ListTrails"]
+    resources = ["*"]
+  }
+  statement {
+    # Create + configure the trail's delivery bucket; same shape and rationale
+    # as ManageLogBucket above.
+    sid    = "ManageCloudTrailBucket"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket", "s3:Get*", "s3:ListBucket",
+      "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
+      "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning", "s3:PutLifecycleConfiguration",
+      "s3:PutBucketPolicy", "s3:PutBucketTagging",
+    ]
+    resources = ["arn:aws:s3:::${local.domain_dashed}-cloudtrail"]
+  }
+}
+
+resource "aws_iam_role_policy" "cloudtrail_management" {
+  # checkov:skip=CKV_AWS_356:cloudtrail:DescribeTrails/ListTrails cannot be resource-scoped; the management statement is ARN-scoped and excludes delete/stop. Documented exception.
+  name   = "cloudtrail-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.cloudtrail_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."
