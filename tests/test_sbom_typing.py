@@ -63,7 +63,6 @@ def test_npm_sbom_dep_is_not_lambda_runtime():
 
 def test_pypi_package_passes_schema():
     # The KSI signal containing a pypi_package validates against the updated schema.
-    import jsonschema
     schema = json.loads((REPO / "infrastructure/schemas/ksi-signal.schema.json").read_text())
     comp = _build()[0]  # a pypi_package
     # minimal signal envelope: validate the component subschema if present, else
