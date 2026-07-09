@@ -523,9 +523,11 @@ CLASSIFICATION_OVERRIDES = {
     # "function" type default by accident.
     ("function", "silk_reeling"):  {"internet_reachable": True},
     ("function", "opa_compliance"): {"internet_reachable": False, "archetype": "security-tooling"},
-    # The log bucket is security-tooling by role, unlike the site bucket which
-    # serves public content under the object_store default.
+    # The log and CloudTrail-delivery buckets are security-tooling by role,
+    # unlike the site bucket which serves public content under the
+    # object_store default.
     ("object_store", "logs"): {"archetype": "security-tooling"},
+    ("object_store", "cloudtrail"): {"archetype": "security-tooling"},
 }
 
 # Conservative fail-safe for an untagged/unknown-type resource: assume the worst
