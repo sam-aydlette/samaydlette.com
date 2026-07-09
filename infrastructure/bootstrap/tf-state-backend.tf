@@ -72,7 +72,8 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
 resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
   rule {
-    id     = "tfstate-housekeeping"
+    id = "tfstate-housekeeping"
+    filter {} # apply to the whole bucket; explicit per provider requirement
     status = "Enabled"
     abort_incomplete_multipart_upload {
       days_after_initiation = 7
