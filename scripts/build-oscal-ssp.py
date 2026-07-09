@@ -226,7 +226,7 @@ APP_AUTH_CONTROL_PROFILES = {
             "MFA for privileged accounts: the operator's GitHub and AWS "
             "identities — the only privileged accounts — require virtual "
             "TOTP MFA. Hardware (phishing-resistant) authenticators are the "
-            "tracked upgrade under POAM-025 (operational requirement, open)."
+            "tracked upgrade under POAM-025 (see the register for status)."
         ),
     },
     "ia-2.2": {
