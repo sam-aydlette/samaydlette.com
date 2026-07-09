@@ -452,6 +452,23 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
       },
       {
+        # The emitter re-validates every object_store component in the
+        # canonical inventory, so it needs the same bucket-attribute reads on
+        # the access-log bucket. Bucket-level configuration metadata only —
+        # deliberately no s3:GetObject here, so the Lambda can never read the
+        # access logs themselves.
+        Effect = "Allow"
+        Action = [
+          "s3:GetBucketVersioning",
+          "s3:GetEncryptionConfiguration",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:GetBucketTagging"
+        ]
+        Resource = [
+          aws_s3_bucket.logs.arn
+        ]
+      },
+      {
         # The runtime KSI emitter publishes its signal and signing public key back
         # to /.well-known/ on the same bucket. Scoped to exactly those two keys so
         # the Lambda cannot overwrite arbitrary site content.
