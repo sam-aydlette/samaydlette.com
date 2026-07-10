@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OPA compliance-gate input",
+  "description": "The three input shapes the terraform.compliance policy accepts. Wired to the policy via its package METADATA (schemas: input: schema.gate_input) and enforced by 'opa check --strict --schema infrastructure/schemas/policy-input'. Shape 1 is raw 'terraform show -json' plan output (deploy-time); shape 2 is the runtime Lambda's normalized single resource; shape 3 is an HTML document for the Section 508 checks.",
+  "anyOf": [
+    {
+      "title": "terraform show -json plan",
+      "type": "object",
+      "required": ["resource_changes"],
+      "properties": {
+        "format_version": { "type": "string" },
+        "terraform_version": { "type": "string" },
+        "resource_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "address": { "type": "string" },
+              "mode": { "type": "string" },
+              "type": { "type": "string" },
+              "name": { "type": "string" },
+              "change": {
+                "type": "object",
+                "properties": {
+                  "actions": { "type": "array", "items": { "type": "string" } },
+                  "after": {},
+                  "after_unknown": {}
+                }
+              }
+            }
+          }
+        },
+        "planned_values": { "type": "object" },
+        "configuration": { "type": "object" }
+      }
+    },
+    {
+      "title": "normalized single resource (runtime emitter)",
+      "type": "object",
+      "required": ["resource"],
+      "properties": {
+        "resource": {
+          "type": "object",
+          "properties": {
+            "address": { "type": "string" },
+            "type": { "type": "string" },
+            "name": { "type": "string" },
+            "mode": { "type": "string" },
+            "tags": { "type": "object" },
+            "tags_all": { "type": "object" },
+            "versioning_enabled": { "type": "boolean" },
+            "encryption_enabled": { "type": "boolean" },
+            "public_access_blocked": { "type": "boolean" },
+            "viewer_protocol_policy": { "type": "string" },
+            "minimum_protocol_version": { "type": "string" }
+          }
+        }
+      }
+    },
+    {
+      "title": "HTML document (Section 508 checks)",
+      "type": "object",
+      "required": ["html_content", "file_name"],
+      "properties": {
+        "html_content": { "type": "string" },
+        "file_name": { "type": "string" }
+      }
+    }
+  ]
+}

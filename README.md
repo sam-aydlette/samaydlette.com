@@ -255,25 +255,34 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ### Policy Development in Practice
 
 ```bash
-# Test policies as you write them:
-make test-policies
+# Test policies as you write them (from the repo root):
+opa test infrastructure/policies.rego infrastructure/policies_test.rego
 
-# Test specific scenarios:
-opa eval -d policies.rego -i test-input.json "data.terraform.compliance.compliance_report"
+# Test a specific scenario against a checked-in fixture:
+opa eval --strict-builtin-errors -d infrastructure/policies.rego \
+    -i tests/fixtures/plans/s3-missing-tags.json \
+    "data.terraform.compliance.compliance_report"
 
-# Debug policy failures:
+# Debug policy failures against a real plan — the policy consumes raw
+# `terraform show -json` output directly (run in infrastructure/):
 terraform plan -out=tfplan
 terraform show -json tfplan > tfplan.json
-opa eval -d policies.rego -i tfplan.json "data.terraform.compliance.compliance_report"
+opa eval --strict-builtin-errors -d policies.rego -i tfplan.json "data.terraform.compliance.compliance_report"
 ```
+
+The policy fails closed: input that matches none of its supported shapes
+(a plan's `resource_changes[]`, a single `{resource}`, or
+`{html_content, file_name}`) yields an explicit `input_error` violation and
+`"compliant": false` — never a vacuous pass.
 
 ### Real Policy Example
 
 ```rego
 # This actually runs in production:
-s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"
-    not input.resource.encryption_enabled
+s3_bucket_violations contains violation if {
+    some r in resources
+    r.type == "aws_s3_bucket"
+    not r.encryption_enabled
     violation := {
         "type": "encryption_disabled",
         "message": "S3 bucket server-side encryption must be enabled",
