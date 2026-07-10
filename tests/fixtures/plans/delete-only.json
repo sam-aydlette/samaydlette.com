@@ -1,0 +1,44 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": []
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket.legacy",
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "legacy",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "delete"
+        ],
+        "before": {
+          "bucket": "samaydlette-com-legacy-synthetic",
+          "force_destroy": false,
+          "tags": {},
+          "tags_all": {}
+        },
+        "after": null,
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": false
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": []
+    }
+  },
+  "_fixture": {
+    "name": "delete-only",
+    "synthetic": true,
+    "note": "A non-compliant bucket being destroyed: a delete-only change must not raise violations.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/s3-missing-tags.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_s3_bucket",
+    "name": "logs",
+    "mode": "managed",
+    "values": {
+      "bucket": "samaydlette-com-logs-synthetic",
+      "force_destroy": false,
+      "tags": {
+        "Environment": "prod"
+      },
+      "tags_all": {
+        "Environment": "prod",
+        "AgencyScope": "single",
+        "OwnerRole": "platform-operator",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store"
+      }
+    },
+    "tags": {
+      "Environment": "prod"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store"
+    },
+    "versioning_enabled": true,
+    "encryption_enabled": true,
+    "public_access_blocked": true
+  }
+}

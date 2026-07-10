@@ -1,0 +1,21 @@
+{
+  "fixture": "tests/fixtures/html/missing-alt.html",
+  "opa_version": "0.57.0",
+  "harness": "opa eval of data.terraform.compliance.compliance_report with {html_content, file_name} input (as terraform-plan.sh does)",
+  "report": {
+    "compliant": true,
+    "policy_version": "1.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  }
+}

@@ -1,0 +1,521 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "logs",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette-com-logs-synthetic",
+            "force_destroy": false,
+            "tags": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store"
+            },
+            "tags_all": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store",
+              "AgencyScope": "single",
+              "OwnerRole": "platform-operator"
+            }
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket_versioning.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_versioning",
+          "name": "logs",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette-com-logs-synthetic",
+            "versioning_configuration": [
+              {
+                "status": "Enabled",
+                "mfa_delete": ""
+              }
+            ]
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket_server_side_encryption_configuration.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_server_side_encryption_configuration",
+          "name": "logs",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette-com-logs-synthetic",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "sse_algorithm": "AES256",
+                    "kms_master_key_id": ""
+                  }
+                ],
+                "bucket_key_enabled": null
+              }
+            ]
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "logs",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette-com-logs-synthetic",
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "mode": "managed",
+          "type": "aws_cloudfront_distribution",
+          "name": "cdn",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "enabled": true,
+            "is_ipv6_enabled": true,
+            "price_class": "PriceClass_100",
+            "aliases": [
+              "example.com"
+            ],
+            "default_cache_behavior": [
+              {
+                "viewer_protocol_policy": "redirect-to-https",
+                "allowed_methods": [
+                  "GET",
+                  "HEAD"
+                ],
+                "cached_methods": [
+                  "GET",
+                  "HEAD"
+                ],
+                "compress": true,
+                "target_origin_id": "s3-origin"
+              }
+            ],
+            "viewer_certificate": [
+              {
+                "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+                "minimum_protocol_version": "TLSv1.2_2021",
+                "ssl_support_method": "sni-only",
+                "cloudfront_default_certificate": false
+              }
+            ],
+            "tags": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store"
+            },
+            "tags_all": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store",
+              "AgencyScope": "single",
+              "OwnerRole": "platform-operator"
+            }
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_kms_key.at_rest",
+          "mode": "managed",
+          "type": "aws_kms_key",
+          "name": "at_rest",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "description": "at-rest encryption key",
+            "enable_key_rotation": true,
+            "deletion_window_in_days": 30,
+            "tags": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store"
+            },
+            "tags_all": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store",
+              "AgencyScope": "single",
+              "OwnerRole": "platform-operator"
+            }
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket.logs",
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "logs",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette-com-logs-synthetic",
+          "force_destroy": false,
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_versioning.logs",
+      "mode": "managed",
+      "type": "aws_s3_bucket_versioning",
+      "name": "logs",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette-com-logs-synthetic",
+          "versioning_configuration": [
+            {
+              "status": "Enabled",
+              "mfa_delete": ""
+            }
+          ]
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_server_side_encryption_configuration.logs",
+      "mode": "managed",
+      "type": "aws_s3_bucket_server_side_encryption_configuration",
+      "name": "logs",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette-com-logs-synthetic",
+          "rule": [
+            {
+              "apply_server_side_encryption_by_default": [
+                {
+                  "sse_algorithm": "AES256",
+                  "kms_master_key_id": ""
+                }
+              ],
+              "bucket_key_enabled": null
+            }
+          ]
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_public_access_block.logs",
+      "mode": "managed",
+      "type": "aws_s3_bucket_public_access_block",
+      "name": "logs",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette-com-logs-synthetic",
+          "block_public_acls": true,
+          "block_public_policy": true,
+          "ignore_public_acls": true,
+          "restrict_public_buckets": true
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cloudfront_distribution.cdn",
+      "mode": "managed",
+      "type": "aws_cloudfront_distribution",
+      "name": "cdn",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "enabled": true,
+          "is_ipv6_enabled": true,
+          "price_class": "PriceClass_100",
+          "aliases": [
+            "example.com"
+          ],
+          "default_cache_behavior": [
+            {
+              "viewer_protocol_policy": "redirect-to-https",
+              "allowed_methods": [
+                "GET",
+                "HEAD"
+              ],
+              "cached_methods": [
+                "GET",
+                "HEAD"
+              ],
+              "compress": true,
+              "target_origin_id": "s3-origin"
+            }
+          ],
+          "viewer_certificate": [
+            {
+              "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+              "minimum_protocol_version": "TLSv1.2_2021",
+              "ssl_support_method": "sni-only",
+              "cloudfront_default_certificate": false
+            }
+          ],
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_kms_key.at_rest",
+      "mode": "managed",
+      "type": "aws_kms_key",
+      "name": "at_rest",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "description": "at-rest encryption key",
+          "enable_key_rotation": true,
+          "deletion_window_in_days": 30,
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "logs",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        },
+        {
+          "address": "aws_s3_bucket_versioning.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_versioning",
+          "name": "logs",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "aws_s3_bucket.logs.id",
+                "aws_s3_bucket.logs"
+              ]
+            }
+          }
+        },
+        {
+          "address": "aws_s3_bucket_server_side_encryption_configuration.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_server_side_encryption_configuration",
+          "name": "logs",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "aws_s3_bucket.logs.id",
+                "aws_s3_bucket.logs"
+              ]
+            }
+          }
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.logs",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "logs",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "aws_s3_bucket.logs.id",
+                "aws_s3_bucket.logs"
+              ]
+            }
+          }
+        },
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "mode": "managed",
+          "type": "aws_cloudfront_distribution",
+          "name": "cdn",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        },
+        {
+          "address": "aws_kms_key.at_rest",
+          "mode": "managed",
+          "type": "aws_kms_key",
+          "name": "at_rest",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        }
+      ]
+    }
+  },
+  "_fixture": {
+    "name": "compliant-stack",
+    "synthetic": true,
+    "note": "Fully compliant stack: tagged+classified bucket with split versioning/sse/pab sub-resources, compliant CloudFront, classified KMS key.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

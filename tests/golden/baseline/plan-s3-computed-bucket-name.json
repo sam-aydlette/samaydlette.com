@@ -1,0 +1,82 @@
+{
+  "fixture": "tests/fixtures/plans/s3-computed-bucket-name.json",
+  "opa_version": "0.57.0",
+  "harness": "verbatim flattener extracted from scripts/terraform-plan.sh + per-resource opa eval of data.terraform.compliance.compliance_report",
+  "flattener": "ok",
+  "resources": [
+    {
+      "address": "aws_s3_bucket.artifacts",
+      "report": {
+        "compliant": false,
+        "policy_version": "1.0",
+        "total_violations": 3,
+        "violations": [
+          {
+            "message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
+            "resource": "artifacts",
+            "severity": "HIGH",
+            "type": "public_access_not_fully_blocked"
+          },
+          {
+            "message": "S3 bucket server-side encryption must be enabled",
+            "resource": "artifacts",
+            "severity": "HIGH",
+            "type": "encryption_disabled"
+          },
+          {
+            "message": "S3 bucket versioning must be enabled for compliance",
+            "resource": "artifacts",
+            "severity": "MEDIUM",
+            "type": "versioning_disabled"
+          }
+        ],
+        "violations_by_severity": {
+          "HIGH": 2,
+          "LOW": 0,
+          "MEDIUM": 1
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 3
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket_versioning.artifacts",
+      "report": {
+        "compliant": true,
+        "policy_version": "1.0",
+        "total_violations": 0,
+        "violations": [],
+        "violations_by_severity": {
+          "HIGH": 0,
+          "LOW": 0,
+          "MEDIUM": 0
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 0
+        }
+      }
+    }
+  ],
+  "raw_direct_eval": {
+    "compliant": true,
+    "policy_version": "1.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  },
+  "raw_direct_eval_note": "README.md debug path: raw plan piped straight into opa eval"
+}

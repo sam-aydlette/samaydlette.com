@@ -1,0 +1,21 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/s3-public-access-open.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_s3_bucket_public_access_block",
+    "name": "logs",
+    "mode": "managed",
+    "values": {
+      "bucket": "samaydlette-com-logs-synthetic",
+      "block_public_acls": false,
+      "block_public_policy": true,
+      "ignore_public_acls": true,
+      "restrict_public_buckets": true
+    },
+    "tags": {},
+    "tags_all": {}
+  }
+}

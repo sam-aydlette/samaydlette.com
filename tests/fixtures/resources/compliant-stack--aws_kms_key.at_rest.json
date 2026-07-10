@@ -1,0 +1,61 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/compliant-stack.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_kms_key",
+    "name": "at_rest",
+    "mode": "managed",
+    "values": {
+      "description": "at-rest encryption key",
+      "enable_key_rotation": true,
+      "deletion_window_in_days": 30,
+      "tags": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store"
+      },
+      "tags_all": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store",
+        "AgencyScope": "single",
+        "OwnerRole": "platform-operator"
+      }
+    },
+    "tags": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator"
+    }
+  }
+}

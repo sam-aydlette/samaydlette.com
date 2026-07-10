@@ -1,0 +1,28 @@
+{
+  "fixture": "tests/fixtures/html/missing-lang.html",
+  "opa_version": "0.57.0",
+  "harness": "opa eval of data.terraform.compliance.compliance_report with {html_content, file_name} input (as terraform-plan.sh does)",
+  "report": {
+    "compliant": false,
+    "policy_version": "1.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "message": "HTML file missing-lang.html missing language declaration (html lang attribute)",
+        "resource": "missing-lang.html",
+        "severity": "HIGH",
+        "type": "missing_language_declaration"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 1,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  }
+}

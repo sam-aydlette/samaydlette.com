@@ -1,0 +1,14 @@
+{
+  "_fixture": {
+    "name": "garbage",
+    "synthetic": true,
+    "note": "Wrong shape entirely: neither resource_changes nor resource present."
+  },
+  "unexpected": {
+    "stuff": [
+      1,
+      2,
+      3
+    ]
+  }
+}
