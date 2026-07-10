@@ -298,7 +298,7 @@ git clone <your-repo-url>
 cd <repo-name>
 
 # 2. Install OPA (automated in scripts)
-curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static
 chmod 755 ./opa && sudo mv opa /usr/local/bin
 
 # 3. Configure your deployment

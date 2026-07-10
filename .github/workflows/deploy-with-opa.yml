@@ -75,7 +75,7 @@ env:
   # re-adopt every live resource into a fresh/empty state.
   REBUILD_STATE: "false"
   TERRAFORM_VERSION: 1.5.0
-  OPA_VERSION: 0.57.0
+  OPA_VERSION: 1.18.2
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
   # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
   OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986

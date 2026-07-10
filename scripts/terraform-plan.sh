@@ -29,7 +29,7 @@ echo "=== Terraform Plan with OPA Compliance Check + Section 508 ==="
 # Make sure OPA (security policy checker) is installed
 if ! command -v opa &> /dev/null; then
     echo "Error: OPA is not installed. Please install OPA first:"
-    echo "  curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static"
+    echo "  curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static"
     echo "  chmod 755 ./opa"
     echo "  sudo mv opa /usr/local/bin"
     exit 1

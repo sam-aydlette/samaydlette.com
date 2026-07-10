@@ -1,7 +1,7 @@
 package vdr.triage
 
 # false-positive: no risk, no remediation, no SLA
-test_false_positive {
+test_false_positive if {
 	d := decision with input as {
 		"id": "CKV_AWS_144", "scanner_severity": "LOW",
 		"asserted": {"disposition": "false-positive"},
@@ -14,7 +14,7 @@ test_false_positive {
 }
 
 # operational requirement: real risk, accepted, not patched
-test_operational_requirement {
+test_operational_requirement if {
 	d := decision with input as {
 		"id": "CKV_AWS_68", "scanner_severity": "MEDIUM", "internet_reachable": true,
 		"asserted": {"disposition": "operational-requirement"},
@@ -26,7 +26,7 @@ test_operational_requirement {
 
 # risk adjustment: HIGH cvss adjusted down to LOW is valid; remediates on the
 # adjusted (lower) timeline
-test_risk_adjustment_valid {
+test_risk_adjustment_valid if {
 	d := decision with input as {
 		"id": "CVE-2026-1", "cvss": 7.5,
 		"internet_reachable": false, "likely_exploitable": false,
@@ -39,7 +39,7 @@ test_risk_adjustment_valid {
 }
 
 # risk adjustment that tries to keep/raise severity is flagged invalid
-test_risk_adjustment_invalid {
+test_risk_adjustment_invalid if {
 	d := decision with input as {
 		"id": "CVE-2026-2", "cvss": 4.0,
 		"asserted": {"disposition": "risk-adjustment", "adjusted_severity": "HIGH"},
@@ -48,7 +48,7 @@ test_risk_adjustment_invalid {
 }
 
 # immutable: a KEV vulnerability must be patched now regardless of thresholds
-test_kev_must_patch_now {
+test_kev_must_patch_now if {
 	d := decision with input as {
 		"id": "CVE-2026-3", "cvss": 9.8, "is_kev": true,
 		"internet_reachable": true, "likely_exploitable": true,
@@ -60,7 +60,7 @@ test_kev_must_patch_now {
 }
 
 # threshold: HIGH, reachable + exploitable -> PAIN bumped, SLA from table
-test_threshold_high_reachable_exploitable {
+test_threshold_high_reachable_exploitable if {
 	d := decision with input as {
 		"id": "CVE-2026-4", "cvss": 7.5, "is_kev": false,
 		"internet_reachable": true, "likely_exploitable": true,
@@ -72,7 +72,7 @@ test_threshold_high_reachable_exploitable {
 }
 
 # historical: a shorter precedent tightens the timeline
-test_historical_tightens {
+test_historical_tightens if {
 	d := decision with input as {
 		"id": "CVE-2026-5", "cvss": 5.0, "is_kev": false,
 		"internet_reachable": false, "likely_exploitable": false,
@@ -84,7 +84,7 @@ test_historical_tightens {
 }
 
 # escalation: architectural change required routes to a human
-test_escalation_architectural {
+test_escalation_architectural if {
 	d := decision with input as {
 		"id": "CVE-2026-6", "cvss": 6.0,
 		"asserted": {"disposition": "remediate", "architectural_change_required": true},
@@ -95,7 +95,7 @@ test_escalation_architectural {
 }
 
 # escalation: unprecedented critical risk with no history
-test_escalation_unprecedented_critical {
+test_escalation_unprecedented_critical if {
 	d := decision with input as {
 		"id": "CVE-2026-7", "cvss": 9.5, "is_kev": false,
 		"asserted": {"disposition": "remediate"},
@@ -105,7 +105,7 @@ test_escalation_unprecedented_critical {
 }
 
 # default disposition is remediate when none asserted
-test_default_disposition_remediate {
+test_default_disposition_remediate if {
 	d := decision with input as {"id": "CVE-2026-8", "cvss": 5.0, "asserted": {}}
 	d.disposition == "remediate"
 	d.remediation_required == true

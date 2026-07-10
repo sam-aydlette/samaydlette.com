@@ -34,7 +34,7 @@ check_prerequisites() {
     # Check OPA
     if ! command -v opa &> /dev/null; then
         echo "Installing OPA..."
-        curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+        curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
         echo "OPA installed successfully."

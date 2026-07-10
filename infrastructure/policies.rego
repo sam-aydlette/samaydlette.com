@@ -36,7 +36,7 @@ required_tags := {
 # =============================================================================
 
 # This rule finds tags that should be there but aren't
-missing_required_tags[tag] {
+missing_required_tags contains tag if {
 	tag := required_tags[_] # Look at each required tag
 	not input.resource.tags[tag] # Check if this tag is missing
 }
@@ -78,33 +78,33 @@ taggable_types := {
 
 # A classification key counts as present if it is in either the resource's own
 # tags or the provider default_tags (which Terraform merges into tags_all).
-classification_present(key) {
+classification_present(key) if {
 	input.resource.tags_all[key]
 }
 
-classification_present(key) {
+classification_present(key) if {
 	input.resource.tags[key]
 }
 
 # Data sources share a managed resource's type (e.g. data.aws_s3_bucket.website)
 # but carry no tags; the gate applies only to managed resources. A missing mode
 # is treated as managed (fail-safe: the gate still applies).
-is_managed {
+is_managed if {
 	input.resource.mode != "data"
 }
 
-is_managed {
+is_managed if {
 	not input.resource.mode
 }
 
-missing_classification[key] {
+missing_classification contains key if {
 	is_managed
 	taggable_types[input.resource.type]
 	key := required_classification_tags[_]
 	not classification_present(key)
 }
 
-classification_violations[violation] {
+classification_violations contains violation if {
 	is_managed
 	taggable_types[input.resource.type]
 	count(missing_classification) > 0
@@ -123,7 +123,7 @@ classification_violations[violation] {
 # =============================================================================
 
 # Flag S3 buckets that are missing required tags
-s3_bucket_violations[violation] {
+s3_bucket_violations contains violation if {
 	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
 	count(missing_required_tags) > 0 # Some required tags are missing
 	violation := {
@@ -135,7 +135,7 @@ s3_bucket_violations[violation] {
 }
 
 # Flag S3 buckets that don't have versioning turned on
-s3_bucket_violations[violation] {
+s3_bucket_violations contains violation if {
 	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
 	not input.resource.versioning_enabled # Versioning is not enabled
 	violation := {
@@ -147,7 +147,7 @@ s3_bucket_violations[violation] {
 }
 
 # Flag S3 buckets that don't have encryption turned on
-s3_bucket_violations[violation] {
+s3_bucket_violations contains violation if {
 	input.resource.type == "aws_s3_bucket" # Only check S3 buckets
 	not input.resource.encryption_enabled # Encryption is not enabled
 	violation := {
@@ -162,7 +162,7 @@ s3_bucket_violations[violation] {
 # both deploy time (terraform-plan.sh populates this from
 # aws_s3_bucket_public_access_block resources) and at runtime (the Lambda
 # populates it from GetPublicAccessBlock API calls).
-s3_bucket_violations[violation] {
+s3_bucket_violations contains violation if {
 	input.resource.type == "aws_s3_bucket"
 	not input.resource.public_access_blocked
 	violation := {
@@ -180,7 +180,7 @@ s3_bucket_violations[violation] {
 # =============================================================================
 
 # Flag CloudFront that allows insecure HTTP connections
-cloudfront_violations[violation] {
+cloudfront_violations contains violation if {
 	input.resource.type == "aws_cloudfront_distribution" # Only check CloudFront
 	input.resource.viewer_protocol_policy != "redirect-to-https" # Not forcing HTTPS
 	violation := {
@@ -192,7 +192,7 @@ cloudfront_violations[violation] {
 }
 
 # Flag CloudFront using old/weak encryption
-cloudfront_violations[violation] {
+cloudfront_violations contains violation if {
 	input.resource.type == "aws_cloudfront_distribution" # Only check CloudFront
 	input.resource.minimum_protocol_version != "TLSv1.2_2021" # Using old encryption
 	violation := {
@@ -210,7 +210,7 @@ cloudfront_violations[violation] {
 # =============================================================================
 
 # Flag HTML files that don't have a language declaration
-accessibility_violations[violation] {
+accessibility_violations contains violation if {
 	input.html_content != "" # Only check when HTML content exists
 	input.file_name != "" # And we have a filename
 	not contains(input.html_content, "html lang=") # Missing lang attribute
@@ -223,7 +223,7 @@ accessibility_violations[violation] {
 }
 
 # Flag HTML files that have images without alt text
-accessibility_violations[violation] {
+accessibility_violations contains violation if {
 	input.html_content != "" # Only check when HTML content exists
 	input.file_name != "" # And we have a filename
 	contains(input.html_content, "<img") # Contains images
@@ -241,7 +241,7 @@ accessibility_violations[violation] {
 }
 
 # Flag HTML files that don't have proper heading structure
-accessibility_violations[violation] {
+accessibility_violations contains violation if {
 	input.html_content != "" # Only check when HTML content exists
 	input.file_name != "" # And we have a filename
 	not contains(input.html_content, "<h1") # No H1 heading found
@@ -254,7 +254,7 @@ accessibility_violations[violation] {
 }
 
 # Flag HTML files that have empty alt attributes (alt="" with no text)
-accessibility_violations[violation] {
+accessibility_violations contains violation if {
 	input.html_content != "" # Only check when HTML content exists
 	input.file_name != "" # And we have a filename
 	contains(input.html_content, `alt=""`) # Contains empty alt attributes
@@ -268,7 +268,7 @@ accessibility_violations[violation] {
 }
 
 # Flag HTML files missing proper document structure
-accessibility_violations[violation] {
+accessibility_violations contains violation if {
 	input.html_content != "" # Only check when HTML content exists
 	input.file_name != "" # And we have a filename
 	not contains(input.html_content, "<!DOCTYPE html>") # Missing DOCTYPE declaration
@@ -287,24 +287,24 @@ accessibility_violations[violation] {
 # =============================================================================
 
 # Start by assuming everything is compliant
-default compliant = true
+default compliant := true
 
 # Block deployment if any S3 bucket has violations
-compliant = false {
+compliant := false if {
 	count(s3_bucket_violations) > 0
 }
 
 # Block deployment if any CloudFront has violations
-compliant = false {
+compliant := false if {
 	count(cloudfront_violations) > 0
 }
 
 # Block deployment if any accessibility violations are found
-compliant = false {
+compliant := false if {
 	count(classification_violations) > 0
 }
 
-compliant = false {
+compliant := false if {
 	count(accessibility_violations) > 0
 }
 

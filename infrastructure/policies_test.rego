@@ -18,7 +18,7 @@ _complete_all := {
 }
 
 # A fully-classified taggable resource passes.
-test_classification_complete_passes {
+test_classification_complete_passes if {
 	count(classification_violations) == 0 with input as {"resource": {
 		"type": "aws_kms_key", "name": "at_rest",
 		"tags": {}, "tags_all": _complete_all,
@@ -26,7 +26,7 @@ test_classification_complete_passes {
 }
 
 # The constant axes may come only from default_tags (tags_all): still complete.
-test_constant_axes_from_default_tags_pass {
+test_constant_axes_from_default_tags_pass if {
 	count(classification_violations) == 0 with input as {"resource": {
 		"type": "aws_apigatewayv2_api", "name": "silk_reeling",
 		"tags": {"DataSensitivity": "public", "MissionCriticality": "moderate", "InternetReachable": "true", "Archetype": "public-edge"},
@@ -35,7 +35,7 @@ test_constant_axes_from_default_tags_pass {
 }
 
 # BROKEN FIXTURE: a taggable resource missing classification keys fails the gate.
-test_missing_classification_fails {
+test_missing_classification_fails if {
 	count(classification_violations) > 0 with input as {"resource": {
 		"type": "aws_lambda_function", "name": "silk_reeling",
 		"tags": {"DataSensitivity": "public"},
@@ -44,7 +44,7 @@ test_missing_classification_fails {
 }
 
 # A missing classification tag makes the whole resource non-compliant.
-test_missing_classification_makes_noncompliant {
+test_missing_classification_makes_noncompliant if {
 	compliant == false with input as {"resource": {
 		"type": "aws_lambda_function", "name": "silk_reeling",
 		"tags": {}, "tags_all": {"AgencyScope": "single"},
@@ -52,7 +52,7 @@ test_missing_classification_makes_noncompliant {
 }
 
 # Sub-resource configs that do not accept AWS tags are not gated.
-test_non_taggable_type_ignored {
+test_non_taggable_type_ignored if {
 	count(classification_violations) == 0 with input as {"resource": {
 		"type": "aws_s3_bucket_versioning", "name": "website",
 		"tags": {}, "tags_all": {},
@@ -60,7 +60,7 @@ test_non_taggable_type_ignored {
 }
 
 # A data source sharing a managed type (data.aws_s3_bucket.website) is not gated.
-test_data_source_not_gated {
+test_data_source_not_gated if {
 	count(classification_violations) == 0 with input as {"resource": {
 		"type": "aws_s3_bucket", "name": "website", "mode": "data",
 		"tags": {}, "tags_all": {},
@@ -68,7 +68,7 @@ test_data_source_not_gated {
 }
 
 # A managed resource of the same type, missing tags, still fails.
-test_managed_resource_still_gated {
+test_managed_resource_still_gated if {
 	count(classification_violations) > 0 with input as {"resource": {
 		"type": "aws_s3_bucket", "name": "logs", "mode": "managed",
 		"tags": {}, "tags_all": {},
