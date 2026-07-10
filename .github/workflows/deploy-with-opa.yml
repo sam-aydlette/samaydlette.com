@@ -267,7 +267,11 @@ jobs:
         opa build -t wasm -e terraform/compliance/compliance_report \
           -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
-        ls -la lambda/policy.wasm
+        # Parameters-as-data: the bundle's data document (built from
+        # infrastructure/policy/config/data.json) ships alongside the wasm;
+        # the Lambda loads it via setData at cold start.
+        tar -xzOf /tmp/opa-bundle.tar.gz /data.json > lambda/policy-data.json
+        ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
         cd lambda
@@ -462,7 +466,11 @@ jobs:
         opa build -t wasm -e terraform/compliance/compliance_report \
           -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
-        ls -la lambda/policy.wasm
+        # Parameters-as-data: the bundle's data document (built from
+        # infrastructure/policy/config/data.json) ships alongside the wasm;
+        # the Lambda loads it via setData at cold start.
+        tar -xzOf /tmp/opa-bundle.tar.gz /data.json > lambda/policy-data.json
+        ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
         cd lambda

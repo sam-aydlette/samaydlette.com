@@ -202,3 +202,53 @@ resources := {r} if {
 	}
 	r := object.union(base, input.resource)
 }
+
+# =============================================================================
+# CONFIGURATION GUARD — FAIL CLOSED ON MISSING PARAMETERS
+# =============================================================================
+# The enforcement parameters (tag lists, type scopes, the TLS floor) live in
+# data.config (infrastructure/policy/config/data.json at deploy time; the
+# bundle's data document in the runtime Lambda). A gate whose parameters
+# failed to load must not silently enforce nothing.
+# =============================================================================
+
+required_config_paths := {
+	["gate", "required_tags"],
+	["gate", "governance_tag_types"],
+	["gate", "required_classification_tags"],
+	["gate", "taggable_types"],
+	["gate", "tls", "minimum"],
+	["gate", "tls", "order"],
+}
+
+# The whole config document is missing (e.g. the Wasm host never called
+# setData). object.get(data.config, ...) below is UNDEFINED when data.config
+# itself is absent — the per-path rule would silently vanish, which is
+# exactly the fail-open this guard exists to prevent. This rule covers the
+# absent-document case explicitly.
+violations contains violation if {
+	not data.config
+	violation := {
+		"id": "config_error",
+		"type": "config_error",
+		"category": "input",
+		"severity": "HIGH",
+		"resource": "config",
+		"address": "data.config",
+		"message": "Policy configuration document (data.config) is missing entirely; refusing to enforce with no parameters loaded.",
+	}
+}
+
+violations contains violation if {
+	some config_path in required_config_paths
+	object.get(data.config, config_path, null) == null
+	violation := {
+		"id": "config_error",
+		"type": "config_error",
+		"category": "input",
+		"severity": "HIGH",
+		"resource": "config",
+		"address": sprintf("data.config.%s", [concat(".", config_path)]),
+		"message": sprintf("Required policy parameter data.config.%s is missing; refusing to enforce with incomplete configuration.", [concat(".", config_path)]),
+	}
+}

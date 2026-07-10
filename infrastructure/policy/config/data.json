@@ -1,0 +1,56 @@
+{
+  "gate": {
+    "required_tags": [
+      "Environment",
+      "CostCenter",
+      "DataClassification",
+      "Owner"
+    ],
+    "governance_tag_types": [
+      "aws_kms_key",
+      "aws_lambda_function",
+      "aws_iam_role",
+      "aws_s3_bucket",
+      "aws_cloudwatch_log_group",
+      "aws_sqs_queue",
+      "aws_secretsmanager_secret",
+      "aws_cognito_user_pool",
+      "aws_apigatewayv2_api",
+      "aws_apigatewayv2_stage",
+      "aws_cloudwatch_event_rule"
+    ],
+    "required_classification_tags": [
+      "DataSensitivity",
+      "MissionCriticality",
+      "InternetReachable",
+      "AgencyScope",
+      "OwnerRole",
+      "Archetype"
+    ],
+    "taggable_types": [
+      "aws_kms_key",
+      "aws_lambda_function",
+      "aws_iam_role",
+      "aws_s3_bucket",
+      "aws_cloudwatch_log_group",
+      "aws_sqs_queue",
+      "aws_secretsmanager_secret",
+      "aws_cognito_user_pool",
+      "aws_apigatewayv2_api",
+      "aws_apigatewayv2_stage",
+      "aws_cloudwatch_event_rule"
+    ],
+    "tls": {
+      "minimum": "TLSv1.2_2021",
+      "order": [
+        "SSLv3",
+        "TLSv1",
+        "TLSv1_2016",
+        "TLSv1.1_2016",
+        "TLSv1.2_2018",
+        "TLSv1.2_2019",
+        "TLSv1.2_2021"
+      ]
+    }
+  }
+}

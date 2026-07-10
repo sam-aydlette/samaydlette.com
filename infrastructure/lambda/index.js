@@ -72,9 +72,16 @@ async function getPolicy() {
     const wasmPath = path.join(__dirname, 'policy.wasm');
     const wasmBytes = fs.readFileSync(wasmPath);
     cachedPolicy = await loadPolicy(wasmBytes);
-    // Use a stable hash of the wasm bytes as the policy version. Two Lambda
-    // containers running the same wasm produce the same version.
-    cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).digest('hex').slice(0, 12);
+    // Parameters-as-data: the enforcement parameters (tag lists, TLS floor)
+    // live in the bundle's data document (built from
+    // infrastructure/policy/config/data.json), shipped in this zip as
+    // policy-data.json. Without it the policy fails closed with config_error,
+    // so a packaging mistake surfaces as a red validation, not a silent pass.
+    const dataBytes = fs.readFileSync(path.join(__dirname, 'policy-data.json'));
+    cachedPolicy.setData(JSON.parse(dataBytes));
+    // Use a stable hash of the wasm + data bytes as the policy version. Two
+    // Lambda containers running the same policy produce the same version.
+    cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).update(dataBytes).digest('hex').slice(0, 12);
     return { policy: cachedPolicy, version: cachedPolicyVersion };
 }
 

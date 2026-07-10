@@ -79,3 +79,18 @@ test_managed_resource_still_gated if {
 		"tags": {}, "tags_all": {},
 	}}
 }
+
+# Parameters as data: narrowing the governance scope via config alone changes
+# enforcement with no .rego edit.
+_untagged_kms := {"resource": {"type": "aws_kms_key", "name": "k", "tags": {}, "tags_all": {}}}
+
+governance_violations(v) := [x | some x in v; x.id == "missing_required_tags"]
+
+test_governance_uniform_by_default if {
+	count(governance_violations(tagging.violations)) > 0 with input as _untagged_kms
+}
+
+test_governance_scope_config_driven if {
+	count(governance_violations(tagging.violations)) == 0 with input as _untagged_kms
+		with data.config.gate.governance_tag_types as ["aws_s3_bucket"]
+}
