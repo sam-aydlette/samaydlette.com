@@ -11,7 +11,7 @@
 // validations on component_refs without caring which emitter produced them.
 //
 // Policy evaluation uses the same Rego source as the deploy-time gate. The
-// CI workflow compiles `infrastructure/policies.rego` to `policy.wasm` via
+// CI workflow compiles the policy packages (`infrastructure/policy/`) to `policy.wasm` via
 // `opa build -t wasm` and bundles it into this Lambda's deployment zip. At
 // runtime the Lambda loads the Wasm module via @open-policy-agent/opa-wasm
 // and evaluates each cloud component's live configuration against the same
@@ -82,7 +82,7 @@ async function getPolicy() {
 // LIVE-CONFIG → REGO INPUT TRANSFORMERS
 // =============================================================================
 // Each transformer queries the AWS API for one cloud component and produces
-// the {resource: {...}} shape `policies.rego` expects. The Rego rules are
+// the {resource: {...}} shape the Rego gate expects. The Rego rules are
 // identical to the ones the deploy-time gate evaluates, so the transformer's
 // only job is to make live config look like a Terraform plan resource.
 // =============================================================================
@@ -175,7 +175,7 @@ async function buildCloudFrontResourceInput(cf, distributionId, tfName) {
 // POLICY EVALUATION
 // =============================================================================
 // One Rego evaluation per cloud component. The `compliance_report` rule in
-// policies.rego returns a single object with `compliant`, `total_violations`,
+// the terraform.compliance package returns a single object with `compliant`, `total_violations`,
 // `violations[]`, and a few summary fields. We extract `compliant` and
 // `violations[]` for the KSI signal's validation entry.
 // =============================================================================

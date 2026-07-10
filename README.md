@@ -198,7 +198,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── main.tf                    # Primary Terraform configuration
 │   ├── variables.tf               # Input variables and validation
 │   ├── outputs.tf                 # Resource outputs and URLs
-│   ├── policies.rego              # OPA compliance policies
+│   ├── policy/                    # OPA policy packages (gate, s3, cloudfront, tagging, accessibility, main)
 │   ├── schemas/
 │   │   ├── ksi-signal.schema.json # JSON Schema for the KSI signal
 │   │   └── ksi-catalog.json       # FedRAMP KSI catalog (FRMR.KSI source)
@@ -256,10 +256,10 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 
 ```bash
 # Test policies as you write them (from the repo root):
-opa test infrastructure/policies.rego infrastructure/policies_test.rego
+opa test infrastructure/policy/
 
 # Test a specific scenario against a checked-in fixture:
-opa eval --strict-builtin-errors -d infrastructure/policies.rego \
+opa eval --strict-builtin-errors -d infrastructure/policy/ \
     -i tests/fixtures/plans/s3-missing-tags.json \
     "data.terraform.compliance.compliance_report"
 
@@ -267,7 +267,7 @@ opa eval --strict-builtin-errors -d infrastructure/policies.rego \
 # `terraform show -json` output directly (run in infrastructure/):
 terraform plan -out=tfplan
 terraform show -json tfplan > tfplan.json
-opa eval --strict-builtin-errors -d policies.rego -i tfplan.json "data.terraform.compliance.compliance_report"
+opa eval --strict-builtin-errors -d policy/ -i tfplan.json "data.terraform.compliance.compliance_report"
 ```
 
 The policy fails closed: input that matches none of its supported shapes
@@ -361,10 +361,10 @@ The full register of dispositions — closed remediations, documented false posi
 **OPA Policy Failures**
 ```bash
 # First, check your policy syntax:
-opa fmt policies.rego
+opa fmt --list policy/
 
 # Then test with minimal data:
-echo '{"resource":{"type":"aws_s3_bucket","tags":{}}}' | opa eval -I -d policies.rego "data.terraform.compliance"
+echo '{"resource":{"type":"aws_s3_bucket","tags":{}}}' | opa eval -I -d policy/ "data.terraform.compliance"
 ```
 
 **Certificate Validation Issues**

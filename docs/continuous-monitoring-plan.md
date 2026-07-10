@@ -14,7 +14,7 @@ The Silk Reeling Mirror app is **active in production** (`create_silk_reeling = 
 
 Four mechanisms operate concurrently:
 
-**1. Deploy-time policy gate (per pull request).** Every PR triggers the OPA compliance gate (`infrastructure/policies.rego` evaluated by `scripts/terraform-plan.sh`). The gate evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego rules. PR cannot merge if the gate fails. Frequency: per PR.
+**1. Deploy-time policy gate (per pull request).** Every PR triggers the OPA compliance gate (the `infrastructure/policy/` packages evaluated by `scripts/terraform-plan.sh`). The gate evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego rules. PR cannot merge if the gate fails. Frequency: per PR.
 
 **2. Build-time vulnerability evaluation (per deploy).** Every deploy runs the VDR aggregator (`scripts/build-vdr-report.py`) which ingests OPA gate output, Checkov SARIF, tfsec JSON, Dependabot alerts, Grype SCA output (Syft SBOM → Grype, over the built Silk Reeling Lambda + SPA artifact — the detection source for the app's PyPI and client-JS dependencies), and the CISA KEV catalog. Findings are classified per FedRAMP 20x VDR-EVA-* (PAIN N1-N5, IRV, LEV, KEV) and emitted as `/.well-known/vdr-report.json`. The build is the report. Build blocks if any finding exceeds Class C tolerance. Frequency: per deploy (which exceeds VER-TFR-MHR's monthly minimum).
 

@@ -15,7 +15,7 @@ Hold two facts at once — they shape every decision:
 
 Confirm against the working tree on first run; correct this section if reality differs.
 
-- `infrastructure/` — Terraform (`main.tf`), OPA policy (`policies.rego`), JSON schemas (`schemas/ksi-signal.schema.json`, `schemas/ksi-catalog.json`), runtime Lambda (`lambda/index.js`).
+- `infrastructure/` — Terraform (`main.tf`), OPA policy packages (`policy/`), JSON schemas (`schemas/ksi-signal.schema.json`, `schemas/ksi-catalog.json`), runtime Lambda (`lambda/index.js`).
 - `scripts/` — the artifact **generators**: `build-ksi-signal.py` (the canonical inventory), `build-oscal-ssp.py`, `build-oscal-poam.py`, and the VDR builder. These are the source of truth for everything published.
 - `website/` — static site content. `website/.well-known/` holds the **published** artifacts (KSI signal + bundle, OSCAL SSP/POA&M, VDR + trend, IIW CSV, runtime signal, signing pubkey, schema).
 - `docs/` — `poam.md` (the human POA&M, including the False Positives register), `policies/`, and `assessment/` (e.g. `ground-truth.md`).

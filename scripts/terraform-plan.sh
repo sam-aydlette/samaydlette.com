@@ -9,7 +9,7 @@
 # The script is deliberately thin. All interpretation of the plan — iterating
 # resource_changes, skipping deletes, joining provider >= 4.x S3
 # sub-resources to their buckets — lives in the Rego policy itself
-# (infrastructure/policies.rego), which consumes raw `terraform show -json`
+# (infrastructure/policy/), which consumes raw `terraform show -json`
 # output directly. The shell's only jobs are:
 #   1. Produce the plan JSON.
 #   2. Run `opa eval` (once for infrastructure, once per HTML file).
@@ -77,12 +77,12 @@ echo "Running infrastructure compliance checks..."
 VIOLATIONS_FOUND=false
 
 opa eval --strict-builtin-errors \
-    -d policies.rego \
+    -d policy/ \
     -i tfplan.json \
     "data.terraform.compliance.compliance_report" > opa-report.json
 
 opa eval --strict-builtin-errors \
-    -d policies.rego \
+    -d policy/ \
     -i tfplan.json \
     "data.terraform.compliance.resource_reports" > opa-resources.json
 
@@ -147,7 +147,7 @@ if [ -n "$WEBSITE_DIR" ]; then
         jq -n --rawfile content "$html_file" --arg name "$filename" \
             '{html_content: $content, file_name: $name}' > accessibility-input.json
 
-        opa eval -d policies.rego -i accessibility-input.json \
+        opa eval -d policy/ -i accessibility-input.json \
             "data.terraform.compliance.compliance_report" > accessibility-result.json
 
         ACCESSIBLE=$(jq -r '.result[0].expressions[0].value.compliant' accessibility-result.json)

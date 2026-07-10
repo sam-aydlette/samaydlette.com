@@ -165,8 +165,8 @@ validate:
 	@echo "Validating Terraform configuration..."
 	terraform validate
 	@echo "Validating OPA policies..."
-	opa fmt --list policies.rego
-	opa test policies.rego policies_test.rego
+	opa fmt --list policy/
+	opa test policy/
 	@echo "✅ Validation complete"
 
 # Show outputs
@@ -248,7 +248,7 @@ figures-check:
 test-policies:
 	@echo "Testing OPA policies..."
 	@echo '{"resource":{"type":"aws_s3_bucket","name":"test-bucket","tags":{}}}' > test-input.json
-	opa eval -d policies.rego -i test-input.json "data.terraform.compliance.compliance_report"
+	opa eval --strict-builtin-errors -d policy/ -i test-input.json "data.terraform.compliance.compliance_report"
 	@rm -f test-input.json
 	@echo "✅ Policy test complete"
 
@@ -256,7 +256,7 @@ test-policies:
 fmt:
 	@echo "Formatting code..."
 	terraform fmt -recursive
-	opa fmt --write policies.rego
+	opa fmt --write policy/
 	@echo "✅ Code formatted"
 
 # Security scan

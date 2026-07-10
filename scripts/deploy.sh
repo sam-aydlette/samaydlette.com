@@ -62,9 +62,10 @@ prepare_lambda() {
         npm ci --omit=dev
     fi
 
-    # policies.rego is intentionally NOT copied here. The Lambda runs a
-    # JavaScript port of the relevant rules; OPA is enforced at build time
-    # only. Bundling the .rego in the deployed zip would be dead weight.
+    # The .rego sources are intentionally NOT copied here. The Lambda executes
+    # policy.wasm — compiled from infrastructure/policy/ by the CI workflow and
+    # placed in lambda/ before this zip is built. Bundling the .rego source in
+    # the deployed zip would be dead weight.
 
     cd ..
 

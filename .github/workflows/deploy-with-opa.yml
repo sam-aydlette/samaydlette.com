@@ -132,7 +132,7 @@ jobs:
 
     - name: OPA policy tests
       run: |
-        opa test infrastructure/policies.rego infrastructure/policies_test.rego
+        opa test infrastructure/policy/
         opa test policies/triage.rego policies/triage_test.rego
 
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
@@ -263,9 +263,9 @@ jobs:
     - name: Create Lambda zip file
       working-directory: infrastructure
       run: |
-        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        echo "Compiling the policy packages to Wasm for the runtime emitter..."
         opa build -t wasm -e terraform/compliance/compliance_report \
-          -o /tmp/opa-bundle.tar.gz policies.rego
+          -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
         ls -la lambda/policy.wasm
 
@@ -374,7 +374,7 @@ jobs:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
 
-    # OPA is required here so the deploy job can compile policies.rego to Wasm
+    # OPA is required here so the deploy job can compile the policy packages to Wasm
     # for bundling into the Lambda zip. Same version + same SHA pin as the
     # compliance-check job, so the deploy-time gate and the runtime emitter
     # evaluate identical compiled bytes.
@@ -456,11 +456,11 @@ jobs:
         # The runtime Lambda evaluates the same Rego policies the deploy gate
         # uses, compiled to Wasm. One source of truth, one trust chain, no
         # hand-port drift. The Wasm build is byte-stable for a fixed OPA
-        # version + policies.rego, so terraform's source_code_hash from the
+        # version + policy sources, so terraform's source_code_hash from the
         # compliance-check job matches the bytes deployed here.
-        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        echo "Compiling the policy packages to Wasm for the runtime emitter..."
         opa build -t wasm -e terraform/compliance/compliance_report \
-          -o /tmp/opa-bundle.tar.gz policies.rego
+          -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
         ls -la lambda/policy.wasm
 
@@ -994,7 +994,7 @@ jobs:
     # -------------------------------------------------------------------------
     # SIGN + VERIFY THE OPA POLICY BUNDLE (supply-chain hardening — Task 13 / S1)
     # -------------------------------------------------------------------------
-    # The deploy gate evaluates policies.rego and the runtime emitter re-validates
+    # The deploy gate evaluates the policy packages and the runtime emitter re-validates
     # with the Wasm compiled from the same source (/tmp/opa-bundle.tar.gz, built in
     # the "Create Lambda zip file" step and shipped in the Lambda package). Sign
     # that compiled bundle keyless and verify the signature here against the pinned
