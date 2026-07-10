@@ -64,3 +64,54 @@ test_resource_reports_shape if {
 	reports[0].compliant == false
 	count(reports[0].violations) > 0
 }
+
+# =============================================================================
+# Exceptions-as-code tests
+# =============================================================================
+
+_weak_cf := {"resource": {
+	"type": "aws_cloudfront_distribution", "name": "cdn",
+	"viewer_protocol_policy": "redirect-to-https",
+	"minimum_protocol_version": "TLSv1_2016",
+}}
+
+_weak_tls_exception := {
+	"resource": "cdn",
+	"rule_id": "weak_tls",
+	"justification": "test fixture",
+	"expiry": "2099-01-01",
+	"ticket": "TEST-1",
+}
+
+# An active exception suppresses the violation from the decision...
+test_active_exception_suppresses if {
+	compliance.compliant == true with input as _weak_cf
+		with data.exceptions as [_weak_tls_exception]
+		with data.runtime as {"evaluated_at": "2026-07-10T00:00:00Z"}
+}
+
+# ...but the suppressed finding stays visible under `excepted`, carrying the
+# exception that silenced it.
+test_excepted_findings_stay_visible if {
+	report := compliance.compliance_report with input as _weak_cf
+		with data.exceptions as [_weak_tls_exception]
+		with data.runtime as {"evaluated_at": "2026-07-10T00:00:00Z"}
+	count(report.violations) == 0
+	count(report.excepted) == 1
+	report.excepted[0].violation.id == "weak_tls"
+	report.excepted[0].exception.ticket == "TEST-1"
+}
+
+# An expired exception suppresses nothing: the violation resurfaces.
+test_expired_exception_resurfaces if {
+	compliance.compliant == false with input as _weak_cf
+		with data.exceptions as [object.union(_weak_tls_exception, {"expiry": "2020-01-01"})]
+		with data.runtime as {"evaluated_at": "2026-07-10T00:00:00Z"}
+}
+
+# Fail-safe: with no evaluation timestamp supplied, expiry cannot be checked,
+# so no exception is active and the violation surfaces.
+test_exception_inactive_without_timestamp if {
+	compliance.compliant == false with input as _weak_cf
+		with data.exceptions as [_weak_tls_exception]
+}

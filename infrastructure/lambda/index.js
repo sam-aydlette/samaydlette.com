@@ -78,7 +78,12 @@ async function getPolicy() {
     // policy-data.json. Without it the policy fails closed with config_error,
     // so a packaging mistake surfaces as a red validation, not a silent pass.
     const dataBytes = fs.readFileSync(path.join(__dirname, 'policy-data.json'));
-    cachedPolicy.setData(JSON.parse(dataBytes));
+    const policyData = JSON.parse(dataBytes);
+    // The exceptions register checks expiry against data.runtime.evaluated_at
+    // (kept out of `input` so inputs stay pure resource facts). Without a
+    // timestamp no exception is active — fail-safe, never fail-open.
+    policyData.runtime = { evaluated_at: new Date().toISOString() };
+    cachedPolicy.setData(policyData);
     // Use a stable hash of the wasm + data bytes as the policy version. Two
     // Lambda containers running the same policy produce the same version.
     cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).update(dataBytes).digest('hex').slice(0, 12);

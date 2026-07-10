@@ -37,6 +37,51 @@ all_violations := {violation |
 }
 
 # =============================================================================
+# EXCEPTIONS-AS-CODE (POA&M-as-code)
+# =============================================================================
+# data.exceptions (infrastructure/policy/exceptions/data.json) is the
+# machine-readable register of accepted findings: each entry names the
+# violation it suppresses ({resource, rule_id}), the justification, an expiry
+# date, and a ticket (the docs/poam.md or False Positives register entry it
+# traces to). Suppression happens HERE, in the aggregator — never inside a
+# rule — so every rule keeps reporting the raw fact and the report shows
+# suppressed findings under `excepted` for auditability.
+#
+# Expiry is evaluated against data.runtime.evaluated_at (RFC3339, supplied by
+# the wrapper script / the Lambda alongside the config document), not
+# time.now_ns(), keeping evaluation deterministic and Wasm-host-independent.
+# FAIL-SAFE: an exception with no parseable evaluation timestamp, or one past
+# its expiry, does NOT suppress — the violation resurfaces. An expired entry
+# also fails CI via scripts/check-exceptions.py.
+# =============================================================================
+
+exception_active(ex) if {
+	evaluated_at := time.parse_rfc3339_ns(data.runtime.evaluated_at)
+	expiry := time.parse_rfc3339_ns(sprintf("%sT00:00:00Z", [ex.expiry]))
+	evaluated_at < expiry
+}
+
+exceptions_for(violation) := [ex |
+	some ex in data.exceptions
+	ex.rule_id == violation.id
+	ex.resource == violation.resource
+	exception_active(ex)
+]
+
+active_violations := {violation |
+	some violation in all_violations
+	count(exceptions_for(violation)) == 0
+}
+
+# Suppressed findings stay visible: the report carries the violation AND the
+# exception that silenced it, so an auditor sees what was accepted, why, by
+# which ticket, and until when.
+excepted := [{"violation": violation, "exception": exceptions_for(violation)[0]} |
+	some violation in all_violations
+	count(exceptions_for(violation)) > 0
+]
+
+# =============================================================================
 # OVERALL COMPLIANCE DECISION — FAIL CLOSED
 # =============================================================================
 
@@ -44,7 +89,7 @@ default compliant := false
 
 compliant if {
 	gate.valid_input
-	count(all_violations) == 0
+	count(active_violations) == 0
 }
 
 # =============================================================================
@@ -57,7 +102,7 @@ compliant if {
 # =============================================================================
 
 violations_for(r) := [v |
-	some v in all_violations
+	some v in active_violations
 	object.get(v, "address", v.resource) == gate.address_of(r)
 ]
 
@@ -84,8 +129,8 @@ resource_reports := [report |
 violations_by_type := object.union(
 	{"infrastructure": 0, "accessibility": 0, "classification": 0, "input": 0},
 	{category: n |
-		some category in {c | some v in all_violations; c := v.category}
-		n := count([v | some v in all_violations; v.category == category])
+		some category in {c | some v in active_violations; c := v.category}
+		n := count([v | some v in active_violations; v.category == category])
 	},
 )
 
@@ -95,14 +140,15 @@ violations_by_type := object.union(
 # entrypoint: true
 compliance_report := {
 	"compliant": compliant, # Overall pass/fail
-	"total_violations": count(all_violations), # How many problems found
+	"total_violations": count(active_violations), # How many problems found
 	"violations_by_severity": {
-		"HIGH": count([v | some v in all_violations; v.severity == "HIGH"]),
-		"MEDIUM": count([v | some v in all_violations; v.severity == "MEDIUM"]),
-		"LOW": count([v | some v in all_violations; v.severity == "LOW"]),
+		"HIGH": count([v | some v in active_violations; v.severity == "HIGH"]),
+		"MEDIUM": count([v | some v in active_violations; v.severity == "MEDIUM"]),
+		"LOW": count([v | some v in active_violations; v.severity == "LOW"]),
 	},
 	"violations_by_type": violations_by_type,
-	"violations": all_violations, # List of all problems
+	"violations": active_violations, # The findings the gate acts on
+	"excepted": excepted, # Suppressed findings, kept visible for audit
 	# The emitter (terraform-plan.sh or the runtime Lambda) supplies the
 	# observation timestamp via the KSI signal's `emitted_at`; not duplicated
 	# here. This also keeps the rule pure so it compiles to Wasm cleanly

@@ -13,6 +13,8 @@ The FedRAMP Excel template separates findings across tabs by lifecycle and sourc
 
 The 20x VDR rules call risk-accepted entries "Accepted Vulnerabilities" (`VER-RPT-AVI`); the same items appear in machine-readable form at `/.well-known/vdr-report.json`, with `poam_ref` cross-references back to the entries below.
 
+**POA&M-as-code for the OPA gate:** findings raised by the deploy/runtime policy gate itself are suppressed only through the machine-readable exceptions register at [`infrastructure/policy/exceptions/data.json`](../infrastructure/policy/exceptions/data.json). Each entry names the violation (`resource`, `rule_id`), a justification, an expiry date, and a `ticket` referencing its entry in this document (a False Positive or risk-accepted item). Suppression happens in the policy aggregator, suppressed findings remain visible in the gate report under `excepted`, an entry past its expiry stops suppressing at evaluation time, and CI fails on any expired entry (`scripts/check-exceptions.py`) so the register cannot rot. When adding or closing an exception, update the corresponding entry here in the same change.
+
 Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 
 ---

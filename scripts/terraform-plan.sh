@@ -76,13 +76,20 @@ terraform show -json tfplan > tfplan.json
 echo "Running infrastructure compliance checks..."
 VIOLATIONS_FOUND=false
 
+# The evaluation timestamp rides in as DATA (data.runtime.evaluated_at), not
+# input — the input stays the raw terraform plan. The exceptions register
+# checks expiry against it; without it no exception is active (fail-safe).
+jq -n --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{runtime: {evaluated_at: $now}}' > eval-context.json
+
 opa eval --strict-builtin-errors \
     -d policy/ \
+    -d eval-context.json \
     -i tfplan.json \
     "data.terraform.compliance.compliance_report" > opa-report.json
 
 opa eval --strict-builtin-errors \
     -d policy/ \
+    -d eval-context.json \
     -i tfplan.json \
     "data.terraform.compliance.resource_reports" > opa-resources.json
 
@@ -147,7 +154,7 @@ if [ -n "$WEBSITE_DIR" ]; then
         jq -n --rawfile content "$html_file" --arg name "$filename" \
             '{html_content: $content, file_name: $name}' > accessibility-input.json
 
-        opa eval -d policy/ -i accessibility-input.json \
+        opa eval -d policy/ -d eval-context.json -i accessibility-input.json \
             "data.terraform.compliance.compliance_report" > accessibility-result.json
 
         ACCESSIBLE=$(jq -r '.result[0].expressions[0].value.compliant' accessibility-result.json)
@@ -197,7 +204,7 @@ fi
 # =============================================================================
 # CLEAN UP TEMPORARY FILES
 # =============================================================================
-rm -f opa-report.json opa-resources.json accessibility-input.json accessibility-result.json validations.ndjson
+rm -f opa-report.json opa-resources.json accessibility-input.json accessibility-result.json validations.ndjson eval-context.json
 
 # =============================================================================
 # FINAL DECISION: ALLOW OR BLOCK DEPLOYMENT

@@ -141,6 +141,11 @@ jobs:
     - name: Policy annotation ↔ KSI catalog diff
       run: python3 scripts/check-policy-annotations.py
 
+    # Exceptions-as-code hygiene: an expired exception no longer suppresses at
+    # eval time AND fails the build here, so the register cannot rot.
+    - name: Exception register expiry check
+      run: python3 scripts/check-exceptions.py
+
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
     # check. Config in pyproject.toml. Catches the class of latent bug the panel
     # review flagged (e.g. the unhashable-dict crash) before it reaches a deploy.
