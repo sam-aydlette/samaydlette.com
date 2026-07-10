@@ -57,20 +57,46 @@ valid_input if is_resource_input
 valid_input if is_html_input
 
 # Every package under data.policy that gates something exposes a `violations`
-# set of uniform objects: {id, type, category, severity, resource, address,
-# message}. The aggregator (terraform.compliance) discovers these sets
-# dynamically — adding a package requires no aggregator edit.
+# set of uniform objects built by make_violation below. The aggregator
+# (terraform.compliance) discovers these sets dynamically — adding a package
+# requires no aggregator edit.
+
+# Uniform violation constructor. `meta` is the calling rule's
+# rego.metadata.rule().custom block; the rego.metadata.rule() call must
+# happen inside the calling rule itself — placed here it would read this
+# function's metadata, not the rule's. The annotation is therefore the single
+# source of truth for a rule's id, severity, and control lineage, and
+# scripts/check-policy-annotations.py verifies that lineage against the KSI
+# catalog in CI.
+make_violation(meta, resource, address, message) := {
+	"id": meta.id,
+	"type": meta.id, # legacy alias of id; published consumers key on `type`
+	"category": meta.category,
+	"severity": meta.severity,
+	"control_ids": object.get(meta, "nist_controls", []),
+	"ksi_ids": object.get(meta, "ksi_ids", []),
+	"resource": resource,
+	"address": address,
+	"message": message,
+}
+
+# METADATA
+# title: Input shape recognized
+# description: Unrecognized gate input must fail closed, never pass vacuously.
+# custom:
+#   id: input_error
+#   category: input
+#   severity: HIGH
+#   nist_controls: [si-10]
+#   ksi_ids: [KSI-PIY-RSD]
 violations contains violation if {
 	not valid_input
-	violation := {
-		"id": "input_error",
-		"type": "input_error",
-		"category": "input",
-		"severity": "HIGH",
-		"resource": "input",
-		"address": "input",
-		"message": "Input matches no supported shape (terraform plan JSON with resource_changes[], {resource: ...}, or {html_content, file_name}). Refusing to report compliance on input the policy cannot read.",
-	}
+	violation := make_violation(
+		rego.metadata.rule().custom,
+		"input",
+		"input",
+		"Input matches no supported shape (terraform plan JSON with resource_changes[], {resource: ...}, or {html_content, file_name}). Refusing to report compliance on input the policy cannot read.",
+	)
 }
 
 # =============================================================================
@@ -226,29 +252,41 @@ required_config_paths := {
 # itself is absent — the per-path rule would silently vanish, which is
 # exactly the fail-open this guard exists to prevent. This rule covers the
 # absent-document case explicitly.
+# METADATA
+# title: Policy configuration document present
+# description: A gate whose parameter document never loaded must fail closed.
+# custom:
+#   id: config_error
+#   category: input
+#   severity: HIGH
+#   nist_controls: [cm-6, ca-7]
+#   ksi_ids: [KSI-MLA-EVC]
 violations contains violation if {
 	not data.config
-	violation := {
-		"id": "config_error",
-		"type": "config_error",
-		"category": "input",
-		"severity": "HIGH",
-		"resource": "config",
-		"address": "data.config",
-		"message": "Policy configuration document (data.config) is missing entirely; refusing to enforce with no parameters loaded.",
-	}
+	violation := make_violation(
+		rego.metadata.rule().custom,
+		"config",
+		"data.config",
+		"Policy configuration document (data.config) is missing entirely; refusing to enforce with no parameters loaded.",
+	)
 }
 
+# METADATA
+# title: Policy configuration parameters complete
+# description: Every required organization-defined parameter must be present.
+# custom:
+#   id: config_error
+#   category: input
+#   severity: HIGH
+#   nist_controls: [cm-6, ca-7]
+#   ksi_ids: [KSI-MLA-EVC]
 violations contains violation if {
 	some config_path in required_config_paths
 	object.get(data.config, config_path, null) == null
-	violation := {
-		"id": "config_error",
-		"type": "config_error",
-		"category": "input",
-		"severity": "HIGH",
-		"resource": "config",
-		"address": sprintf("data.config.%s", [concat(".", config_path)]),
-		"message": sprintf("Required policy parameter data.config.%s is missing; refusing to enforce with incomplete configuration.", [concat(".", config_path)]),
-	}
+	violation := make_violation(
+		rego.metadata.rule().custom,
+		"config",
+		sprintf("data.config.%s", [concat(".", config_path)]),
+		sprintf("Required policy parameter data.config.%s is missing; refusing to enforce with incomplete configuration.", [concat(".", config_path)]),
+	)
 }

@@ -89,6 +89,10 @@ violations_by_type := object.union(
 	},
 )
 
+# METADATA
+# title: Compliance report
+# description: The single decision document both enforcement points consume.
+# entrypoint: true
 compliance_report := {
 	"compliant": compliant, # Overall pass/fail
 	"total_violations": count(all_violations), # How many problems found

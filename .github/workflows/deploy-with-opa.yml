@@ -135,6 +135,12 @@ jobs:
         opa test infrastructure/policy/
         opa test policies/triage.rego policies/triage_test.rego
 
+    # Control lineage has one source of truth: each rule's METADATA is diffed
+    # against the KSI catalog, so a rule cannot claim a NIST control its
+    # declared KSIs do not carry.
+    - name: Policy annotation ↔ KSI catalog diff
+      run: python3 scripts/check-policy-annotations.py
+
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
     # check. Config in pyproject.toml. Catches the class of latent bug the panel
     # review flagged (e.g. the unhashable-dict crash) before it reaches a deploy.

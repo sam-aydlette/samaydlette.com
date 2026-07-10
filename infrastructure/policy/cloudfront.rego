@@ -30,37 +30,48 @@ meets_tls_minimum(version) if {
 	tls_rank(version) >= tls_rank(data.config.gate.tls.minimum)
 }
 
-# Flag CloudFront that allows insecure HTTP connections
+# METADATA
+# title: CloudFront redirects HTTP to HTTPS
+# description: Viewers must never receive content over plaintext HTTP.
+# custom:
+#   id: insecure_protocol
+#   category: infrastructure
+#   severity: HIGH
+#   nist_controls: [sc-8, sc-8.1]
+#   ksi_ids: [KSI-SVC-SIN, KSI-CNA-ULN]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudfront_distribution"
 	r.viewer_protocol_policy != "redirect-to-https"
-	violation := {
-		"id": "insecure_protocol",
-		"type": "insecure_protocol",
-		"category": "infrastructure",
-		"severity": "HIGH",
-		"resource": r.name,
-		"address": gate.address_of(r),
-		"message": "CloudFront must redirect HTTP to HTTPS",
-	}
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		"CloudFront must redirect HTTP to HTTPS",
+	)
 }
 
-# Flag CloudFront below the configured TLS floor
+# METADATA
+# title: CloudFront viewer TLS meets the configured floor
+# description: The viewer security policy must rank at or above data.config.gate.tls.minimum.
+# custom:
+#   id: weak_tls
+#   category: infrastructure
+#   severity: MEDIUM
+#   nist_controls: [sc-8, sc-13]
+#   ksi_ids: [KSI-SVC-SIN]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudfront_distribution"
 	not meets_tls_minimum(r.minimum_protocol_version)
-	violation := {
-		"id": "weak_tls",
-		"type": "weak_tls",
-		"category": "infrastructure",
-		"severity": "MEDIUM",
-		"resource": r.name,
-		"address": gate.address_of(r),
-		# %q is avoided here deliberately: sprintf compiles to a host builtin
-		# under Wasm, and the JS host (sprintf-js in opa-wasm) does not
-		# support the %q verb — it would throw at runtime in the Lambda.
-		"message": sprintf("CloudFront viewer security policy must rank at or above %s (got '%s')", [data.config.gate.tls.minimum, r.minimum_protocol_version]),
-	}
+
+	# %q is avoided here deliberately: sprintf compiles to a host builtin
+	# under Wasm, and the JS host (sprintf-js in opa-wasm) does not
+	# support the %q verb — it would throw at runtime in the Lambda.
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		sprintf("CloudFront viewer security policy must rank at or above %s (got '%s')", [data.config.gate.tls.minimum, r.minimum_protocol_version]),
+	)
 }

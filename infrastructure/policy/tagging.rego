@@ -71,36 +71,46 @@ missing_classification(r) := {key |
 	not classification_present(r, key)
 }
 
-# Flag governed resources that are missing required governance tags
+# METADATA
+# title: Governance tags present
+# description: Governed resource types must carry the configured governance tags.
+# custom:
+#   id: missing_required_tags
+#   category: infrastructure
+#   severity: HIGH
+#   nist_controls: [cm-8, cm-12]
+#   ksi_ids: [KSI-PIY-GIV]
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
 	governance_tag_types[r.type]
 	count(missing_required_tags(r)) > 0
-	violation := {
-		"id": "missing_required_tags",
-		"type": "missing_required_tags",
-		"category": "infrastructure",
-		"severity": "HIGH",
-		"resource": r.name,
-		"address": gate.address_of(r),
-		"message": sprintf("%s missing required tags: %v", [r.type, missing_required_tags(r)]),
-	}
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		sprintf("%s missing required tags: %v", [r.type, missing_required_tags(r)]),
+	)
 }
 
-# Flag taggable resources missing classification axes
+# METADATA
+# title: Classification axes complete
+# description: Every taggable resource must carry all governed classification axes.
+# custom:
+#   id: missing_classification_tag
+#   category: classification
+#   severity: HIGH
+#   nist_controls: [cm-8, cm-8.1, cm-12]
+#   ksi_ids: [KSI-PIY-GIV]
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
 	taggable_types[r.type]
 	count(missing_classification(r)) > 0
-	violation := {
-		"id": "missing_classification_tag",
-		"type": "missing_classification_tag",
-		"category": "classification",
-		"severity": "HIGH",
-		"resource": r.name,
-		"address": gate.address_of(r),
-		"message": sprintf("%s.%s is missing classification tags: %v", [r.type, r.name, missing_classification(r)]),
-	}
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		sprintf("%s.%s is missing classification tags: %v", [r.type, r.name, missing_classification(r)]),
+	)
 }
