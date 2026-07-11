@@ -125,7 +125,13 @@ if [ "$COMPLIANT" != "true" ]; then
 fi
 
 # =============================================================================
-# RUN SECTION 508 ACCESSIBILITY CHECKS
+# RUN SECTION 508 ACCESSIBILITY CHECKS — SCANNER PRODUCES FACTS, OPA DECIDES
+# =============================================================================
+# pa11y (tools/a11y/scan.js) renders every page under website/ in headless
+# Chromium (WCAG 2 AA) and emits ONE JSON facts document. The policy
+# (policy.accessibility) decides which issue types fail the gate; accepted
+# findings flow through the exceptions register and stay visible in the
+# report under `excepted`.
 # =============================================================================
 echo "Running Section 508 accessibility checks..."
 
@@ -135,54 +141,65 @@ if [ -d "../website" ]; then
     WEBSITE_DIR="../website"
 elif [ -d "website" ]; then
     WEBSITE_DIR="website"
-else
-    echo "Warning: Could not find website directory, skipping accessibility checks"
 fi
 
-if [ -n "$WEBSITE_DIR" ]; then
-    # Process substitution (`done < <(find ...)`) is used here instead of the
-    # more common `find ... | while read` because the pipe form runs the loop
-    # body in a subshell, which means a `VIOLATIONS_FOUND=true` set inside the
-    # loop would not propagate back to this script's parent shell — and the
-    # accessibility gate would silently pass even on real violations. The
-    # process-substitution form keeps the loop in the parent shell.
-    while IFS= read -r html_file; do
-        echo "Checking accessibility: $html_file"
+A11Y_TOOL_DIR="../tools/a11y"
+if [ ! -d "$A11Y_TOOL_DIR" ]; then
+    A11Y_TOOL_DIR="tools/a11y"
+fi
 
-        filename=$(basename "$html_file")
-
-        jq -n --rawfile content "$html_file" --arg name "$filename" \
-            '{html_content: $content, file_name: $name}' > accessibility-input.json
-
-        opa eval -d policy/ -d eval-context.json -i accessibility-input.json \
-            "data.terraform.compliance.compliance_report" > accessibility-result.json
-
-        ACCESSIBLE=$(jq -r '.result[0].expressions[0].value.compliant' accessibility-result.json)
-
-        # Persist this result for the KSI signal emitter
-        jq -c --arg kind "accessibility" \
-              --arg file_name "$filename" \
-              --arg file_path "$html_file" \
-              --argjson compliant "$ACCESSIBLE" \
-              '{kind: $kind,
-                file_name: $file_name,
-                file_path: $file_path,
-                compliant: $compliant,
-                violations: (.result[0].expressions[0].value.violations // []),
-                policy_version: (.result[0].expressions[0].value.policy_version // "unknown")}' \
-            accessibility-result.json >> validations.ndjson
-
-        if [ "$ACCESSIBLE" != "true" ]; then
-            VIOLATIONS_FOUND=true
-            echo "❌ ACCESSIBILITY VIOLATION in $filename:"
-            jq -r '.result[0].expressions[0].value.violations[]? | "  - \(.type): \(.message) (Severity: \(.severity))"' accessibility-result.json
-            echo
-        else
-            echo "✅ $filename is accessible"
-        fi
-    done < <(find "$WEBSITE_DIR" -name "*.html" -type f)
+if [ -z "$WEBSITE_DIR" ]; then
+    echo "Warning: Could not find website directory, skipping accessibility checks"
+elif [ "$SKIP_A11Y" = "1" ]; then
+    echo "Warning: SKIP_A11Y=1 — accessibility checks skipped by explicit request (local use only; CI never sets this)"
+elif ! command -v node > /dev/null 2>&1 || [ ! -d "$A11Y_TOOL_DIR/node_modules" ]; then
+    # Fail closed: an unavailable scanner must not look like an accessible
+    # site. Local runs without Chromium can opt out explicitly (SKIP_A11Y=1).
+    VIOLATIONS_FOUND=true
+    echo "❌ Accessibility scanner unavailable (need node and 'npm ci' in tools/a11y)."
+    echo "   Install it, or set SKIP_A11Y=1 to skip in a local run (never in CI)."
 else
-    echo "Skipping accessibility checks - no website directory found"
+    # Prefer a system browser (CI runners ship Chrome; PUPPETEER_SKIP_DOWNLOAD
+    # avoids a 150MB download at npm ci time).
+    A11Y_CHROME="${A11Y_CHROME:-$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)}"
+    export A11Y_CHROME
+    echo "Scanning $WEBSITE_DIR with pa11y (browser: ${A11Y_CHROME:-puppeteer-bundled})..."
+    node "$A11Y_TOOL_DIR/scan.js" "$WEBSITE_DIR" --out a11y-scan.json 2> /dev/null
+
+    opa eval --strict-builtin-errors \
+        -d policy/ \
+        -d eval-context.json \
+        -i a11y-scan.json \
+        "data.terraform.compliance.compliance_report" > a11y-report.json
+
+    opa eval --strict-builtin-errors \
+        -d policy/ \
+        -d eval-context.json \
+        -i a11y-scan.json \
+        "data.terraform.compliance.page_reports" > a11y-pages.json
+
+    A11Y_COMPLIANT=$(jq -r '.result[0].expressions[0].value.compliant' a11y-report.json)
+
+    # Per-page results join the same validations stream as the infrastructure
+    # results (kind: accessibility), keeping the KSI signal contract intact.
+    jq -c '.result[0].expressions[0].value[]' a11y-pages.json >> validations.ndjson
+
+    jq -r '.result[0].expressions[0].value[] |
+        if .compliant then "✅ \(.file_name) is accessible"
+        else "❌ ACCESSIBILITY VIOLATION in \(.file_name):\n" +
+             ([.violations[] | "  - \(.code // .type): \(.message) (Severity: \(.severity))"] | join("\n"))
+        end' a11y-pages.json
+
+    EXCEPTED_COUNT=$(jq -r '.result[0].expressions[0].value.excepted | length' a11y-report.json)
+    if [ "$EXCEPTED_COUNT" != "0" ]; then
+        echo "ℹ️  $EXCEPTED_COUNT accessibility finding(s) suppressed by the exceptions register (still visible in the report):"
+        jq -r '.result[0].expressions[0].value.excepted[] | "  - \(.violation.resource) \(.violation.code // .violation.id): \(.exception.justification) (expires \(.exception.expiry), \(.exception.ticket))"' a11y-report.json
+    fi
+
+    if [ "$A11Y_COMPLIANT" != "true" ]; then
+        VIOLATIONS_FOUND=true
+        echo "❌ Overall accessibility verdict: non-compliant"
+    fi
 fi
 
 # =============================================================================
@@ -204,7 +221,7 @@ fi
 # =============================================================================
 # CLEAN UP TEMPORARY FILES
 # =============================================================================
-rm -f opa-report.json opa-resources.json accessibility-input.json accessibility-result.json validations.ndjson eval-context.json
+rm -f opa-report.json opa-resources.json a11y-scan.json a11y-report.json a11y-pages.json validations.ndjson eval-context.json
 
 # =============================================================================
 # FINAL DECISION: ALLOW OR BLOCK DEPLOYMENT

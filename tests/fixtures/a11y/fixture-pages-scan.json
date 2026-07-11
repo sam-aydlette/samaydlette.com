@@ -1,0 +1,62 @@
+{
+  "accessibility_scan": {
+    "scanner": {
+      "name": "pa11y",
+      "version": "9.1.1",
+      "standard": "WCAG2AA"
+    },
+    "pages": [
+      {
+        "file_name": "compliant.html",
+        "file_path": "tests/fixtures/html/compliant.html",
+        "issues": []
+      },
+      {
+        "file_name": "decorative-empty-alt.html",
+        "file_path": "tests/fixtures/html/decorative-empty-alt.html",
+        "issues": []
+      },
+      {
+        "file_name": "empty-alt.html",
+        "file_path": "tests/fixtures/html/empty-alt.html",
+        "issues": []
+      },
+      {
+        "file_name": "missing-alt.html",
+        "file_path": "tests/fixtures/html/missing-alt.html",
+        "issues": [
+          {
+            "code": "WCAG2AA.Principle1.Guideline1_1.1_1_1.H37",
+            "type": "error",
+            "message": "Img element missing an alt attribute. Use the alt attribute to specify a short text alternative.",
+            "selector": "html > body > img",
+            "context": "<img src=\"diagram.png\">"
+          }
+        ]
+      },
+      {
+        "file_name": "missing-doctype.html",
+        "file_path": "tests/fixtures/html/missing-doctype.html",
+        "issues": []
+      },
+      {
+        "file_name": "missing-h1.html",
+        "file_path": "tests/fixtures/html/missing-h1.html",
+        "issues": []
+      },
+      {
+        "file_name": "missing-lang.html",
+        "file_path": "tests/fixtures/html/missing-lang.html",
+        "issues": [
+          {
+            "code": "WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2",
+            "type": "error",
+            "message": "The html element should have a lang or xml:lang attribute which describes the language of the document.",
+            "selector": "html",
+            "context": "<html><head><meta charset=\"utf-8\"><ti...</html>"
+          }
+        ]
+      }
+    ]
+  }
+}

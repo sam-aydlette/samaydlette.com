@@ -61,10 +61,18 @@ exception_active(ex) if {
 	evaluated_at < expiry
 }
 
+# An exception may carry an optional `code` (e.g. a specific WCAG rule) to
+# accept one finding on a resource without silencing every other finding the
+# same rule reports for it.
+exception_code_matches(ex, _) if not ex.code
+
+exception_code_matches(ex, violation) if ex.code == object.get(violation, "code", null)
+
 exceptions_for(violation) := [ex |
 	some ex in data.exceptions
 	ex.rule_id == violation.id
 	ex.resource == violation.resource
+	exception_code_matches(ex, violation)
 	exception_active(ex)
 ]
 
@@ -116,6 +124,33 @@ resource_reports := [report |
 		"resource_name": r.name,
 		"compliant": count(violations_for(r)) == 0,
 		"violations": violations_for(r),
+		"policy_version": policy_version,
+	}
+]
+
+# =============================================================================
+# PER-PAGE RESULTS FOR THE KSI SIGNAL EMITTER (accessibility scans)
+# =============================================================================
+# Mirror of resource_reports for the accessibility facts input: one entry per
+# scanned page, in the validations.json accessibility entry shape.
+# =============================================================================
+
+page_violations(page) := [v |
+	some v in active_violations
+	v.category == "accessibility"
+	v.address == page.file_path
+]
+
+page_reports := [report |
+	some file_path in sort([p.file_path | some p in input.accessibility_scan.pages])
+	some page in input.accessibility_scan.pages
+	page.file_path == file_path
+	report := {
+		"kind": "accessibility",
+		"file_name": page.file_name,
+		"file_path": page.file_path,
+		"compliant": count(page_violations(page)) == 0,
+		"violations": page_violations(page),
 		"policy_version": policy_version,
 	}
 ]

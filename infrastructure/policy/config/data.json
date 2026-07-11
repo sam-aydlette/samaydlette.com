@@ -51,6 +51,11 @@
         "TLSv1.2_2019",
         "TLSv1.2_2021"
       ]
+    },
+    "accessibility": {
+      "fail_on": [
+        "error"
+      ]
     }
   }
 }

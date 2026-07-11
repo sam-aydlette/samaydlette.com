@@ -315,6 +315,15 @@ jobs:
 
     # -------------------------------------------------------------------------
     # THE ACTUAL SECURITY CHECK
+    # The accessibility scanner (pa11y) renders pages in the runner's system
+    # Chrome; PUPPETEER_SKIP_DOWNLOAD avoids fetching a duplicate browser.
+    # terraform-plan.sh fails closed if this install is missing.
+    - name: Install accessibility scanner
+      working-directory: tools/a11y
+      env:
+        PUPPETEER_SKIP_DOWNLOAD: "1"
+      run: npm ci --no-audit --no-fund
+
     # -------------------------------------------------------------------------
     # This is where we check if the planned infrastructure is safe
     # If this fails, nothing gets deployed

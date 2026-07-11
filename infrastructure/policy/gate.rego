@@ -18,7 +18,8 @@
 #      The Lambda emitter builds this shape from live AWS API responses and
 #      evaluates the same compiled policy, so one Rego artifact serves both
 #      enforcement points.
-#   3. `{"html_content": ..., "file_name": ...}` for the Section 508 checks.
+#   3. An `accessibility_scan` facts document produced by the pa11y scanner
+#      (tools/a11y/scan.js) for the Section 508 decision.
 #
 # Anything else — including an empty document — produces an explicit
 # `input_error` violation and a non-compliant report. A gate that cannot
@@ -45,16 +46,18 @@ is_resource_input if {
 	is_object(input.resource)
 }
 
-is_html_input if {
-	is_string(input.html_content)
-	is_string(input.file_name)
-}
+# The accessibility scanner's facts document (tools/a11y/scan.js output):
+# one entry per scanned page. Scanners produce facts; the policy decides.
+# (A raw {html_content, file_name} shape used to be accepted here for the
+# in-Rego string checks; those checks are gone, so that shape is now an
+# input_error like any other unrecognized document.)
+is_scan_input if is_array(input.accessibility_scan.pages)
 
 valid_input if is_plan_input
 
 valid_input if is_resource_input
 
-valid_input if is_html_input
+valid_input if is_scan_input
 
 # Every package under data.policy that gates something exposes a `violations`
 # set of uniform objects built by make_violation below. The aggregator
@@ -95,7 +98,7 @@ violations contains violation if {
 		rego.metadata.rule().custom,
 		"input",
 		"input",
-		"Input matches no supported shape (terraform plan JSON with resource_changes[], {resource: ...}, or {html_content, file_name}). Refusing to report compliance on input the policy cannot read.",
+		"Input matches no supported shape (terraform plan JSON with resource_changes[], {resource: ...}, or an accessibility_scan facts document). Refusing to report compliance on input the policy cannot read.",
 	)
 }
 
@@ -245,6 +248,7 @@ required_config_paths := {
 	["gate", "taggable_types"],
 	["gate", "tls", "minimum"],
 	["gate", "tls", "order"],
+	["gate", "accessibility", "fail_on"],
 }
 
 # The whole config document is missing (e.g. the Wasm host never called

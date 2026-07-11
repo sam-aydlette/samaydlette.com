@@ -23,8 +23,13 @@ test_resource_shape_recognized if {
 	count(input_errors(gate.violations)) == 0 with input as {"resource": {"type": "aws_s3_bucket", "name": "x"}}
 }
 
-test_html_shape_recognized if {
-	count(input_errors(gate.violations)) == 0 with input as {"html_content": "<p>x</p>", "file_name": "x.html"}
+test_scan_shape_recognized if {
+	count(input_errors(gate.violations)) == 0 with input as {"accessibility_scan": {"pages": []}}
+}
+
+# The retired raw-HTML shape is no longer a recognized input.
+test_html_shape_now_rejected if {
+	count(input_errors(gate.violations)) == 1 with input as {"html_content": "<p>x</p>", "file_name": "x.html"}
 }
 
 # A gate whose parameters failed to load must fail closed, not enforce
@@ -45,6 +50,7 @@ test_partial_config_fails_closed if {
 			"governance_tag_types": ["aws_s3_bucket"],
 			"required_classification_tags": ["DataSensitivity"],
 			"taggable_types": ["aws_s3_bucket"],
+			"accessibility": {"fail_on": ["error"]},
 			"tls": {"minimum": "TLSv1.2_2021"},
 		}}
 }

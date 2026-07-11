@@ -500,6 +500,26 @@ POAM_ITEMS = [
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "category": "configuration",  # → status open, disposition risk-accepted
     },
+    {
+        "id": "POAM-033", "controls": [],  # Section 508 / WCAG 1.4.3, not an 800-53 control
+        "title": "pa11y contrast finding on decorative aria-hidden separators (silk-reeling-mirror.html)",
+        "description": (
+            "The accessibility gate (pa11y WCAG 2 AA + OPA decision) flags "
+            "WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail on the footer's "
+            "decorative dot separators, which are marked aria-hidden=\"true\". "
+            "WCAG 1.4.3 exempts pure decoration from contrast minima; the "
+            "scanner cannot see decorative intent. Suppressed via the gate's "
+            "machine-readable exceptions register "
+            "(infrastructure/policy/exceptions/data.json, expires 2027-01-15); "
+            "the finding stays visible in the gate report under 'excepted'."
+        ),
+        "weakness_detector_source": "pa11y (HTML_CodeSniffer WCAG2AA)",
+        "weakness_source_identifier": "WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail",
+        "asset_identifiers": ["html-artifact::silk-reeling-mirror.html"],
+        "original_detection_date": "2026-07-10", "status_date": "2026-07-10",
+        "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
+        "status": "false-positive", "category": "false-positive",
+    },
 ]
 
 
