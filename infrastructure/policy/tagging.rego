@@ -89,7 +89,11 @@ violations contains violation if {
 		rego.metadata.rule().custom,
 		r.name,
 		gate.address_of(r),
-		sprintf("%s missing required tags: %v", [r.type, missing_required_tags(r)]),
+		# Sets are joined explicitly: sprintf's %v renders a set differently
+		# in the Go runtime and the Wasm JS host, which would make the two
+		# enforcement points emit different messages (caught by the parity
+		# test in CI).
+		sprintf("%s missing required tags: %s", [r.type, concat(", ", sort(missing_required_tags(r)))]),
 	)
 }
 
@@ -111,6 +115,6 @@ violations contains violation if {
 		rego.metadata.rule().custom,
 		r.name,
 		gate.address_of(r),
-		sprintf("%s.%s is missing classification tags: %v", [r.type, r.name, missing_classification(r)]),
+		sprintf("%s.%s is missing classification tags: %s", [r.type, r.name, concat(", ", sort(missing_classification(r)))]),
 	)
 }

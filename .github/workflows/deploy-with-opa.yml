@@ -307,6 +307,17 @@ jobs:
         echo "Zip file created:"
         ls -la opa-compliance.zip
 
+    # One artifact, two enforcement points: prove the CLI evaluation (deploy
+    # gate) and the Wasm evaluation (the runtime Lambda's opa-wasm host)
+    # agree on the full fixture corpus before this exact wasm ships. Wasm
+    # builtins are partly implemented by the JS host, so agreement is a test
+    # result, not a given (a %v-formatted set already diverged once).
+    - name: Policy parity test (CLI vs Wasm)
+      run: |
+        NODE_PATH=infrastructure/lambda/node_modules node scripts/policy-parity-test.js \
+          --wasm infrastructure/lambda/policy.wasm \
+          --data infrastructure/lambda/policy-data.json
+
     # -------------------------------------------------------------------------
     # CHECK WHAT INFRASTRUCTURE WILL BE BUILT
     # -------------------------------------------------------------------------
