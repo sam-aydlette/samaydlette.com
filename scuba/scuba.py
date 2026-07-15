@@ -122,7 +122,8 @@ def main():
             ok, detail = True, p.get("default_detail", "")
             default_by_resp[p.get("responsibility", "implemented")] += 1
         else:  # customer-action -> evaluate with OPA locally
-            res = opa_eval(Path(a.bundle) / p["rego"], p["package"], a.config)
+            rego_rel = p.get("rego") or f"policies/{p['name']}.rego"
+            res = opa_eval(Path(a.bundle) / rego_rel, p["package"], a.config)
             ok, detail = bool(res.get("pass")), res.get("detail", "")
             n_pass_actions += ok
             actions.append((p, ok, detail))
