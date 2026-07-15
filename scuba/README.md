@@ -19,10 +19,19 @@ control" — evidence, not an authorization.
 
 ## Run
 ```bash
-python3 scuba/scuba.py --config your-config.json --output results.json
-# demo:
+# production: fetch the signed bundle from the provider and verify it before
+# ANY policy executes (requires cosign; refuses to run unverified code):
+python3 scuba/scuba.py --remote --config your-config.json --output results.json
+
+# local demo (repo-committed bespoke bundle, no fetch):
 python3 scuba/scuba.py --config scuba/sample-config.json --output /tmp/results.json
 ```
+
+The published bundle at `/.well-known/scuba-bundle.json` is generated on every
+deploy from the hub SSP (one policy per control), carries the canonical
+inventory's `ksi_signal_id`, and is Sigstore-signed by the pinned CI workflow
+identity. Reconcile invariant (k) fails the deploy if the bundle's binding or
+its control set drifts from the SSP it derives from.
 
 ## A policy
 Each policy is `policies/<name>.rego` (the OPA check) + `policies/<name>.md` (the
@@ -40,5 +49,6 @@ SCG-ENH-CMP / SCG-ENH-API) — the SCuBA pattern, named.
 2 representative policies (phishing-resistant MFA → IA-2(1); TLS → SC-8).
 Framework projection currently lights up 800-53 Rev5/Rev4 + FedRAMP Moderate;
 CMMC / GovRAMP / TX-RAMP / IRAP light up automatically as their control mappings
-land at each spoke checkpoint. Bundle **signing** (Sigstore) + publication at
-`/.well-known/` is the next wiring step.
+land at each spoke checkpoint. The complete bundle (one policy per SSP control)
+is generated, signed, and published at `/.well-known/scuba-bundle.json` on every
+deploy; `--remote` fetches and cosign-verifies it before evaluation.

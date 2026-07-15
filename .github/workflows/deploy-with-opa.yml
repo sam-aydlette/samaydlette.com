@@ -1204,6 +1204,32 @@ jobs:
         cosign sign-blob --yes --bundle iiw.bundle iiw.csv
 
     # -------------------------------------------------------------------------
+    # BUILD THE SCuBA BUNDLE  (the executable CRM — customer-run assessment)
+    # -------------------------------------------------------------------------
+    # One policy (Rego + markdown) per SSP control, derived from the hub SSP,
+    # bound to the canonical inventory's signal_id, and published as ONE
+    # self-contained signed JSON so scuba.py --remote can fetch + cosign-verify
+    # before executing anything. Reconcile invariant (k) asserts the binding
+    # and that the bundle's control set equals the SSP's.
+    # -------------------------------------------------------------------------
+    - name: Build SCuBA bundle (executable CRM)
+      working-directory: infrastructure
+      run: |
+        echo "Building SCuBA customer-responsibility bundle..."
+        python3 ../scripts/build-scuba-bundle.py \
+          --ssp oscal-ssp.json \
+          --ksi-signal ksi-signal.json \
+          --out scuba-dist \
+          --inline-output scuba-bundle.json
+        jq '{policies: (.policies | length), ksi_signal_id}' scuba-bundle.json
+
+    - name: Sign SCuBA bundle
+      working-directory: infrastructure
+      run: |
+        echo "Signing scuba-bundle.json with cosign keyless..."
+        cosign sign-blob --yes --bundle scuba-bundle.bundle scuba-bundle.json
+
+    # -------------------------------------------------------------------------
     # BUILD THE OSCAL POA&M  (published after the reconciliation gate)
     # -------------------------------------------------------------------------
     # NIST OSCAL Plan of Action and Milestones format. Imports the OSCAL SSP
@@ -1330,6 +1356,9 @@ jobs:
         # IIW
         aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
         aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
+
+        aws s3 cp scuba-bundle.json "s3://$BUCKET_NAME/.well-known/scuba-bundle.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp scuba-bundle.bundle "s3://$BUCKET_NAME/.well-known/scuba-bundle.bundle" --content-type application/json --cache-control "public, max-age=300"
         # OSCAL POA&M
         aws s3 cp oscal-poam.json "s3://$BUCKET_NAME/.well-known/oscal-poam.json" --content-type application/oscal+json --cache-control "public, max-age=300"
         aws s3 cp oscal-poam.bundle "s3://$BUCKET_NAME/.well-known/oscal-poam.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1450,6 +1479,7 @@ jobs:
         check availability.json .well-known/availability.json
         check policy-index.json .well-known/policy-index.json
         check security-decision-record.json .well-known/security-decision-record.json
+        check scuba-bundle.json .well-known/scuba-bundle.json
         check certification-package-overview.json .well-known/certification-package-overview.json
         check iiw.csv .well-known/iiw.csv
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.

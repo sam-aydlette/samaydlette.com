@@ -93,6 +93,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ssp", required=True)
     ap.add_argument("--out", default=str(HERE / "scuba" / "dist"))
+    ap.add_argument("--ksi-signal", default=None,
+                    help="canonical inventory; stamps the signal_id/commit binding "
+                         "into the manifest so reconcile invariant (k) can assert it")
+    ap.add_argument("--inline-output", default=None,
+                    help="also emit ONE self-contained JSON (policy sources inlined) "
+                         "for signed publication at /.well-known/scuba-bundle.json")
     a = ap.parse_args()
 
     bespoke = {p["control"]: p for p in json.loads(BESPOKE_MANIFEST.read_text())["policies"]}
@@ -141,7 +147,25 @@ def main():
                                          "default_detail": f"No customer action required; satisfied by {WHO.get(resp)}."})
             kinds["default"] += 1
 
+    if a.ksi_signal:
+        sig = json.loads(Path(a.ksi_signal).read_text())
+        manifest["ksi_signal_id"] = sig.get("signal_id")
+        manifest["commit"] = (sig.get("provenance") or {}).get("source", {}).get("commit")
+        manifest["emitted_at"] = sig.get("emitted_at")
+
     (out / "bundle.json").write_text(json.dumps(manifest, indent=2) + "\n")
+
+    if a.inline_output:
+        # One self-contained artifact: the manifest with every policy's Rego
+        # and markdown inlined, so a consumer verifies ONE signed blob and
+        # needs no directory fetch. This is the published form.
+        inline = json.loads(json.dumps(manifest))
+        for p in inline["policies"]:
+            p["rego_source"] = (out / p["rego"]).read_text()
+            p["md_source"] = (out / p["md"]).read_text()
+        Path(a.inline_output).write_text(json.dumps(inline, indent=2) + "\n")
+        print(f"inline bundle -> {a.inline_output}")
+
     print(f"generated {len(manifest['policies'])} policies -> {out}")
     print(f"  kinds: {dict(kinds)}")
     print(f"  by responsibility: {dict(resp_counts)}")
