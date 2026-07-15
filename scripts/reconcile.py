@@ -33,6 +33,11 @@
 #                        generated artifact resolves to a formal POA&M item
 #                        (or an explicitly retired ID), so a typo'd or
 #                        vanished cross-reference cannot publish silently
+#   (k) SCuBA bundle binding — when the published customer-assessment bundle
+#                        is present it binds to the same inventory signal_id
+#                        and its policy set equals the SSP's control set
+#                        (the executable CRM cannot drift from the SSP it
+#                        derives from)
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -504,6 +509,42 @@ def check_j_poam_ref_validity(signal, ssp, poam, vdr):
     return violations
 
 
+# ----------------------------------------------------------------------------
+# (k) SCuBA bundle binding + derivation (presence-gated)
+# ----------------------------------------------------------------------------
+def check_k_scuba_binding(signal, ssp, scuba):
+    """(k) The published SCuBA bundle must bind to the same inventory
+    (ksi_signal_id) and derive from the same SSP (its policy set covers
+    exactly the SSP's implemented-requirements control ids). Skipped when no
+    bundle is staged."""
+    if scuba is None:
+        return []
+    violations = []
+    sid = signal.get("signal_id")
+    if scuba.get("ksi_signal_id") != sid:
+        violations.append(
+            f"(k) scuba bundle ksi_signal_id {scuba.get('ksi_signal_id')!r} "
+            f"!= inventory signal_id {sid!r}")
+    ssp_ids = {
+        r["control-id"]
+        for r in ssp.get("system-security-plan", {})
+        .get("control-implementation", {})
+        .get("implemented-requirements", []) or []
+    }
+    bundle_ids = {p.get("control") for p in scuba.get("policies", []) or []}
+    missing = sorted(ssp_ids - bundle_ids)
+    extra = sorted(bundle_ids - ssp_ids)
+    if missing:
+        violations.append(
+            f"(k) scuba bundle missing policies for {len(missing)} SSP "
+            f"controls (first: {missing[:5]})")
+    if extra:
+        violations.append(
+            f"(k) scuba bundle carries policies for {len(extra)} controls "
+            f"not in the SSP (first: {extra[:5]})")
+    return violations
+
+
 def check_g_poam_parity(poam, poam_md_text):
     """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
     in docs/poam.md. Both registers are hand-maintained; without this check they
@@ -529,7 +570,7 @@ def check_g_poam_parity(poam, poam_md_text):
 # ----------------------------------------------------------------------------
 def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
             ckv_to_poam, poam_md_text, false_positive_ckvs,
-            live_arns=None, expected_commit=None, live_tags=None):
+            live_arns=None, expected_commit=None, live_tags=None, scuba=None):
     violations = []
     violations += check_d_impact(signal, ssp, poam, vdr, dashboard_html)
     violations += check_e_binding(signal, ssp, poam, vdr)
@@ -541,6 +582,7 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     violations += check_g_poam_parity(poam, poam_md_text)
     violations += check_h_finding_coverage(vdr, poam)
     violations += check_j_poam_ref_validity(signal, ssp, poam, vdr)
+    violations += check_k_scuba_binding(signal, ssp, scuba)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     if live_tags is not None:
@@ -604,6 +646,12 @@ def main():
         print(f"reconcile: missing artifact: {e}", file=sys.stderr)
         return 2
 
+    # Optional artifact: the SCuBA customer-assessment bundle (invariant k).
+    # Presence-gated so pre-wiring checkouts and partial local builds still
+    # reconcile; in CI the bundle is built before this gate runs.
+    scuba_path = d / "scuba-bundle.json"
+    scuba = load_json(scuba_path) if scuba_path.exists() else None
+
     dashboard_html = Path(args.dashboard).read_text() if Path(args.dashboard).exists() else None
     checkov_text = Path(args.checkov).read_text()
     poam_md_text = Path(args.poam_md).read_text()
@@ -638,6 +686,7 @@ def main():
         signal, ssp, poam, vdr, dashboard_html, checkov_text,
         _load_ckv_to_poam(), poam_md_text, _load_false_positives(poam_md_text),
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
+        scuba=scuba,
     )
 
     if violations:
@@ -646,11 +695,11 @@ def main():
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
     if live_arns is not None and live_tags is not None:
-        checks = "a-j"
+        checks = "a-j" + (",k" if scuba is not None else "")
     elif live_arns is not None:
-        checks = "a-h,j (i deferred: no live tags)"
+        checks = "a-h,j" + (",k" if scuba is not None else "") + " (i deferred: no live tags)"
     else:
-        checks = "b-h,j (a,i deferred: no --live)"
+        checks = "b-h,j" + (",k" if scuba is not None else "") + " (a,i deferred: no --live)"
     print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
     return 0
 

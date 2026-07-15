@@ -249,3 +249,39 @@ def test_j_register_items_and_valid_refs_pass():
     s["signal"]["components"][0]["baseline_configuration"] = "throttled (POAM-007)"
     v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
     assert v == [], v
+
+
+def _scuba_for(ssp, sid=SIGNAL_ID):
+    ids = [r["control-id"] for r in ssp["system-security-plan"]
+           .get("control-implementation", {}).get("implemented-requirements", [])]
+    return {"ksi_signal_id": sid,
+            "policies": [{"control": c} for c in ids]}
+
+
+def test_k_absent_bundle_skips():
+    s = clean_set()
+    assert rc.check_k_scuba_binding(s["signal"], s["ssp"], None) == []
+
+
+def test_k_binding_mismatch_fails():
+    s = clean_set()
+    scuba = _scuba_for(s["ssp"], sid="not-the-signal")
+    v = rc.check_k_scuba_binding(s["signal"], s["ssp"], scuba)
+    assert any("(k)" in x and "signal_id" in x for x in v)
+
+
+def test_k_control_set_drift_fails():
+    s = clean_set()
+    s["ssp"]["system-security-plan"]["control-implementation"] = {
+        "implemented-requirements": [{"control-id": "ac-2"}, {"control-id": "sc-8"}]}
+    scuba = {"ksi_signal_id": SIGNAL_ID, "policies": [{"control": "ac-2"}]}
+    v = rc.check_k_scuba_binding(s["signal"], s["ssp"], scuba)
+    assert any("missing policies" in x for x in v)
+
+
+def test_k_clean_bundle_passes():
+    s = clean_set()
+    s["ssp"]["system-security-plan"]["control-implementation"] = {
+        "implemented-requirements": [{"control-id": "ac-2"}, {"control-id": "sc-8"}]}
+    scuba = _scuba_for(s["ssp"])
+    assert rc.check_k_scuba_binding(s["signal"], s["ssp"], scuba) == []

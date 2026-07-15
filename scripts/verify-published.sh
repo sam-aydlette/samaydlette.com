@@ -48,6 +48,7 @@ echo "== Fetching published evidence from $BASE =="
 for f in ksi-signal.json ksi-signal.bundle \
          oscal-ssp.json oscal-ssp.json.intoto.jsonl \
          oscal-poam.json \
+         scuba-bundle.json scuba-bundle.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl; do
   if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f"; then
     echo "  got  $f ($(wc -c < "$work/$f") bytes)"
@@ -64,6 +65,14 @@ if cosign verify-blob --bundle "$work/ksi-signal.bundle" \
   ok "ksi-signal.json signed by the pinned workflow on main"
 else
   bad "ksi-signal.json signature"
+fi
+
+if cosign verify-blob --bundle "$work/scuba-bundle.bundle" \
+     --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" \
+     "$work/scuba-bundle.json" >/dev/null 2>&1; then
+  ok "scuba-bundle.json signed by the pinned workflow on main"
+else
+  bad "scuba-bundle.json signature"
 fi
 for art in oscal-ssp.json vdr-report.json; do
   if cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \

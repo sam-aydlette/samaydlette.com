@@ -21,6 +21,8 @@ import argparse
 import json
 import subprocess
 import sys
+import tempfile
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +30,55 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 NS = uuid.UUID("5c0ba000-0000-5000-8000-000000000001")
+
+# The published bundle is signed by the provider's pinned CI workflow identity
+# (same pin as scripts/verify-published.sh). The bundle contains EXECUTABLE
+# Rego this tool will run, so remote mode refuses to evaluate anything that
+# does not verify: no cosign, no verification, no execution.
+DEFAULT_BASE = "https://samaydlette.com/.well-known"
+IDENTITY = "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main"
+ISSUER = "https://token.actions.githubusercontent.com"
+
+
+def fetch_verified_bundle(base):
+    """Fetch scuba-bundle.json + its Sigstore bundle, verify the signature
+    against the pinned workflow identity, and materialize the inlined policies
+    into a temp dir. Returns the temp bundle dir. Exits non-zero on ANY
+    verification problem — this path executes provider-shipped policy code."""
+    work = Path(tempfile.mkdtemp(prefix="scuba-remote-"))
+    for name in ("scuba-bundle.json", "scuba-bundle.bundle"):
+        url = f"{base}/{name}"
+        try:
+            with urllib.request.urlopen(url, timeout=30) as r:
+                (work / name).write_bytes(r.read())
+        except Exception as e:
+            sys.exit(f"scuba: could not fetch {url}: {e}")
+    probe = subprocess.run(["cosign", "version"], capture_output=True)
+    if probe.returncode != 0:
+        sys.exit("scuba: cosign is required for --remote (the bundle contains "
+                 "executable policy; it must be signature-verified before use). "
+                 "Install cosign or run against a local --bundle you trust.")
+    v = subprocess.run(
+        ["cosign", "verify-blob",
+         "--bundle", str(work / "scuba-bundle.bundle"),
+         "--certificate-identity", IDENTITY,
+         "--certificate-oidc-issuer", ISSUER,
+         str(work / "scuba-bundle.json")],
+        capture_output=True, text=True,
+    )
+    if v.returncode != 0:
+        sys.exit("scuba: SIGNATURE VERIFICATION FAILED for the fetched bundle — "
+                 "refusing to evaluate it. cosign said: " + v.stderr.strip()[:200])
+    print("  verified: scuba-bundle.json signed by the pinned workflow on main")
+    manifest = json.loads((work / "scuba-bundle.json").read_text())
+    (work / "policies").mkdir(exist_ok=True)
+    for p in manifest.get("policies", []):
+        rego_rel = p.get("rego") or f"policies/{p['name']}.rego"
+        if p.get("rego_source"):
+            (work / rego_rel).parent.mkdir(parents=True, exist_ok=True)
+            (work / rego_rel).write_text(p["rego_source"])
+    (work / "bundle.json").write_text(json.dumps(manifest))
+    return work
 
 
 def opa_eval(rego_path, package, config_path):
@@ -101,7 +152,15 @@ def main():
     ap.add_argument("--config", required=True)
     ap.add_argument("--bundle", default=str(HERE))
     ap.add_argument("--output", default=None)
+    ap.add_argument("--remote", nargs="?", const=DEFAULT_BASE, default=None,
+                    metavar="BASE_URL",
+                    help="fetch the signed bundle from the provider's "
+                         "/.well-known/ and cosign-verify it before evaluating "
+                         f"(default base: {DEFAULT_BASE})")
     a = ap.parse_args()
+
+    if a.remote:
+        a.bundle = str(fetch_verified_bundle(a.remote.rstrip("/")))
 
     bundle = json.loads((Path(a.bundle) / "bundle.json").read_text())
     proj = load_framework_projection()
@@ -159,7 +218,7 @@ def main():
     print(f"\n  NO CUSTOMER ACTION REQUIRED ({sum(default_by_resp.values())}):")
     for resp, n in default_by_resp.most_common():
         print(f"     {n:4}  {label.get(resp, resp)}")
-    print(f"  (every control still has a policy + markdown in the bundle: policies/<control>.md)\n")
+    print("  (every control still has a policy + markdown in the bundle: policies/<control>.md)\n")
     print(f"  ── {len(observations)}/{len(observations)} controls covered; "
           f"{n_pass_actions}/{len(actions)} customer actions pass ──\n")
     n_pass = n_pass_actions + sum(default_by_resp.values())
