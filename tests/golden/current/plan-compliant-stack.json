@@ -1,0 +1,72 @@
+{
+  "fixture": "tests/fixtures/plans/compliant-stack.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": true,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "cdn",
+      "resource_type": "aws_cloudfront_distribution",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "at_rest",
+      "resource_type": "aws_kms_key",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_public_access_block",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_server_side_encryption_configuration",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_versioning",
+      "violations": []
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "fixture": "tests/fixtures/a11y/fixture-pages-scan.json",
+  "harness": "direct opa eval of scanner facts",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 2,
+    "violations": [
+      {
+        "address": "tests/fixtures/html/missing-alt.html",
+        "category": "accessibility",
+        "code": "WCAG2AA.Principle1.Guideline1_1.1_1_1.H37",
+        "control_ids": [],
+        "id": "a11y_error",
+        "ksi_ids": [],
+        "message": "missing-alt.html: 1 gating issue(s) for WCAG2AA.Principle1.Guideline1_1.1_1_1.H37 — e.g. Img element missing an alt attribute. Use the alt attribute to specify a short text alternative.",
+        "resource": "missing-alt.html",
+        "severity": "HIGH",
+        "type": "a11y_error"
+      },
+      {
+        "address": "tests/fixtures/html/missing-lang.html",
+        "category": "accessibility",
+        "code": "WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2",
+        "control_ids": [],
+        "id": "a11y_error",
+        "ksi_ids": [],
+        "message": "missing-lang.html: 1 gating issue(s) for WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2 — e.g. The html element should have a lang or xml:lang attribute which describes the language of the document.",
+        "resource": "missing-lang.html",
+        "severity": "HIGH",
+        "type": "a11y_error"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 2,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 2,
+      "classification": 0,
+      "infrastructure": 0,
+      "input": 0
+    }
+  },
+  "page_reports": [
+    {
+      "compliant": true,
+      "file_name": "compliant.html",
+      "file_path": "tests/fixtures/html/compliant.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "file_name": "decorative-empty-alt.html",
+      "file_path": "tests/fixtures/html/decorative-empty-alt.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "file_name": "empty-alt.html",
+      "file_path": "tests/fixtures/html/empty-alt.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": []
+    },
+    {
+      "compliant": false,
+      "file_name": "missing-alt.html",
+      "file_path": "tests/fixtures/html/missing-alt.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": [
+        {
+          "address": "tests/fixtures/html/missing-alt.html",
+          "category": "accessibility",
+          "code": "WCAG2AA.Principle1.Guideline1_1.1_1_1.H37",
+          "control_ids": [],
+          "id": "a11y_error",
+          "ksi_ids": [],
+          "message": "missing-alt.html: 1 gating issue(s) for WCAG2AA.Principle1.Guideline1_1.1_1_1.H37 — e.g. Img element missing an alt attribute. Use the alt attribute to specify a short text alternative.",
+          "resource": "missing-alt.html",
+          "severity": "HIGH",
+          "type": "a11y_error"
+        }
+      ]
+    },
+    {
+      "compliant": true,
+      "file_name": "missing-doctype.html",
+      "file_path": "tests/fixtures/html/missing-doctype.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "file_name": "missing-h1.html",
+      "file_path": "tests/fixtures/html/missing-h1.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": []
+    },
+    {
+      "compliant": false,
+      "file_name": "missing-lang.html",
+      "file_path": "tests/fixtures/html/missing-lang.html",
+      "kind": "accessibility",
+      "policy_version": "2.0",
+      "violations": [
+        {
+          "address": "tests/fixtures/html/missing-lang.html",
+          "category": "accessibility",
+          "code": "WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2",
+          "control_ids": [],
+          "id": "a11y_error",
+          "ksi_ids": [],
+          "message": "missing-lang.html: 1 gating issue(s) for WCAG2AA.Principle3.Guideline3_1.3_1_1.H57.2 — e.g. The html element should have a lang or xml:lang attribute which describes the language of the document.",
+          "resource": "missing-lang.html",
+          "severity": "HIGH",
+          "type": "a11y_error"
+        }
+      ]
+    }
+  ]
+}

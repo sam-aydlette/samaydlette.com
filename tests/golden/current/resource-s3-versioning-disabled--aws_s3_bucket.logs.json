@@ -1,0 +1,40 @@
+{
+  "fixture": "tests/fixtures/resources/s3-versioning-disabled--aws_s3_bucket.logs.json",
+  "harness": "direct opa eval (runtime Lambda input shape)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "logs",
+        "category": "infrastructure",
+        "control_ids": [
+          "cp-9",
+          "cp-10",
+          "si-12"
+        ],
+        "id": "versioning_disabled",
+        "ksi_ids": [
+          "KSI-RPL-ABO"
+        ],
+        "message": "S3 bucket versioning must be enabled for compliance",
+        "resource": "logs",
+        "severity": "MEDIUM",
+        "type": "versioning_disabled"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 1
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  }
+}

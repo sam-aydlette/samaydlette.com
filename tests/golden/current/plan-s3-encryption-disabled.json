@@ -1,0 +1,82 @@
+{
+  "fixture": "tests/fixtures/plans/s3-encryption-disabled.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "aws_s3_bucket.logs",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-28",
+          "sc-28.1"
+        ],
+        "id": "encryption_disabled",
+        "ksi_ids": [
+          "KSI-SVC-SIN"
+        ],
+        "message": "S3 bucket server-side encryption must be enabled",
+        "resource": "logs",
+        "severity": "HIGH",
+        "type": "encryption_disabled"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": false,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket",
+      "violations": [
+        {
+          "address": "aws_s3_bucket.logs",
+          "category": "infrastructure",
+          "control_ids": [
+            "sc-28",
+            "sc-28.1"
+          ],
+          "id": "encryption_disabled",
+          "ksi_ids": [
+            "KSI-SVC-SIN"
+          ],
+          "message": "S3 bucket server-side encryption must be enabled",
+          "resource": "logs",
+          "severity": "HIGH",
+          "type": "encryption_disabled"
+        }
+      ]
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_public_access_block",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_versioning",
+      "violations": []
+    }
+  ]
+}

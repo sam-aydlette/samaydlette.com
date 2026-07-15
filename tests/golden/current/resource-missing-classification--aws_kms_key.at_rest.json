@@ -1,0 +1,40 @@
+{
+  "fixture": "tests/fixtures/resources/missing-classification--aws_kms_key.at_rest.json",
+  "harness": "direct opa eval (runtime Lambda input shape)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "at_rest",
+        "category": "classification",
+        "control_ids": [
+          "cm-8",
+          "cm-8.1",
+          "cm-12"
+        ],
+        "id": "missing_classification_tag",
+        "ksi_ids": [
+          "KSI-PIY-GIV"
+        ],
+        "message": "aws_kms_key.at_rest is missing classification tags: AgencyScope, Archetype, DataSensitivity, InternetReachable, MissionCriticality, OwnerRole",
+        "resource": "at_rest",
+        "severity": "HIGH",
+        "type": "missing_classification_tag"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 1,
+      "infrastructure": 0,
+      "input": 0
+    }
+  }
+}

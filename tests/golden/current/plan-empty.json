@@ -1,0 +1,39 @@
+{
+  "fixture": "tests/fixtures/plans/empty.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "input",
+        "category": "input",
+        "control_ids": [
+          "si-10"
+        ],
+        "id": "input_error",
+        "ksi_ids": [
+          "KSI-PIY-RSD"
+        ],
+        "message": "Input matches no supported shape (terraform plan JSON with resource_changes[], {resource: ...}, or an accessibility_scan facts document). Refusing to report compliance on input the policy cannot read.",
+        "resource": "input",
+        "severity": "HIGH",
+        "type": "input_error"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0,
+      "input": 1
+    }
+  },
+  "resource_reports": []
+}

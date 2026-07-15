@@ -1,0 +1,72 @@
+{
+  "fixture": "tests/fixtures/resources/s3-computed-bucket-name--aws_s3_bucket.artifacts.json",
+  "harness": "direct opa eval (runtime Lambda input shape)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 3,
+    "violations": [
+      {
+        "address": "artifacts",
+        "category": "infrastructure",
+        "control_ids": [
+          "cp-9",
+          "cp-10",
+          "si-12"
+        ],
+        "id": "versioning_disabled",
+        "ksi_ids": [
+          "KSI-RPL-ABO"
+        ],
+        "message": "S3 bucket versioning must be enabled for compliance",
+        "resource": "artifacts",
+        "severity": "MEDIUM",
+        "type": "versioning_disabled"
+      },
+      {
+        "address": "artifacts",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-28",
+          "sc-28.1"
+        ],
+        "id": "encryption_disabled",
+        "ksi_ids": [
+          "KSI-SVC-SIN"
+        ],
+        "message": "S3 bucket server-side encryption must be enabled",
+        "resource": "artifacts",
+        "severity": "HIGH",
+        "type": "encryption_disabled"
+      },
+      {
+        "address": "artifacts",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-7",
+          "sc-7.7"
+        ],
+        "id": "public_access_not_fully_blocked",
+        "ksi_ids": [
+          "KSI-CNA-ULN"
+        ],
+        "message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
+        "resource": "artifacts",
+        "severity": "HIGH",
+        "type": "public_access_not_fully_blocked"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 2,
+      "LOW": 0,
+      "MEDIUM": 1
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 3,
+      "input": 0
+    }
+  }
+}

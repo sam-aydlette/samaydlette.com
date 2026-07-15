@@ -1,0 +1,90 @@
+{
+  "fixture": "tests/fixtures/plans/s3-missing-tags.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "aws_s3_bucket.logs",
+        "category": "infrastructure",
+        "control_ids": [
+          "cm-8",
+          "cm-12"
+        ],
+        "id": "missing_required_tags",
+        "ksi_ids": [
+          "KSI-PIY-GIV"
+        ],
+        "message": "aws_s3_bucket missing required tags: CostCenter, DataClassification, Owner",
+        "resource": "logs",
+        "severity": "HIGH",
+        "type": "missing_required_tags"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": false,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket",
+      "violations": [
+        {
+          "address": "aws_s3_bucket.logs",
+          "category": "infrastructure",
+          "control_ids": [
+            "cm-8",
+            "cm-12"
+          ],
+          "id": "missing_required_tags",
+          "ksi_ids": [
+            "KSI-PIY-GIV"
+          ],
+          "message": "aws_s3_bucket missing required tags: CostCenter, DataClassification, Owner",
+          "resource": "logs",
+          "severity": "HIGH",
+          "type": "missing_required_tags"
+        }
+      ]
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_public_access_block",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_server_side_encryption_configuration",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "logs",
+      "resource_type": "aws_s3_bucket_versioning",
+      "violations": []
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "fixture": "tests/fixtures/plans/cloudfront-insecure-protocol.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "aws_cloudfront_distribution.cdn",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-8",
+          "sc-8.1"
+        ],
+        "id": "insecure_protocol",
+        "ksi_ids": [
+          "KSI-SVC-SIN",
+          "KSI-CNA-ULN"
+        ],
+        "message": "CloudFront must redirect HTTP to HTTPS",
+        "resource": "cdn",
+        "severity": "HIGH",
+        "type": "insecure_protocol"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": false,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "cdn",
+      "resource_type": "aws_cloudfront_distribution",
+      "violations": [
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "category": "infrastructure",
+          "control_ids": [
+            "sc-8",
+            "sc-8.1"
+          ],
+          "id": "insecure_protocol",
+          "ksi_ids": [
+            "KSI-SVC-SIN",
+            "KSI-CNA-ULN"
+          ],
+          "message": "CloudFront must redirect HTTP to HTTPS",
+          "resource": "cdn",
+          "severity": "HIGH",
+          "type": "insecure_protocol"
+        }
+      ]
+    }
+  ]
+}
