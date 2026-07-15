@@ -31,6 +31,7 @@ init:
 	@if ! command -v opa >/dev/null 2>&1; then \
 		echo "Installing OPA..."; \
 		curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static; \
+		echo "9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8  opa" | sha256sum -c -; \
 		chmod 755 ./opa; \
 		sudo mv opa /usr/local/bin; \
 	fi

@@ -264,8 +264,42 @@ pass, and the full CI-equivalent policy suite is green end-to-end.
    finer per-indicator status.
 4. **Runtime `excepted` surfacing:** the runtime signal could publish the
    `excepted` list for full external auditability of active exceptions.
-5. **Checksum-pin the Regal/OPA binaries in CI** (currently version-pinned
-   URLs, matching the repo's existing style for OPA).
-6. **Run CodeGuard (`/codeguard`) against the branch diff when opening the
-   PR** — the branch was left local per the brief, so the mandatory pre-PR
-   CodeGuard pass has not run yet.
+5. ~~Checksum-pin the Regal/OPA binaries in CI~~ — **done in the CodeGuard
+   remediation commit** (see below).
+6. ~~Run CodeGuard against the branch diff~~ — **done**; findings and
+   dispositions below.
+
+## CodeGuard security review of the branch diff
+
+Run post-implementation over `git diff main...HEAD` (Project CodeGuard
+software-security skill). Scans clean: no hardcoded credentials (the only
+account id in fixtures is the AWS documentation placeholder, labeled), no
+injection patterns (no shell=True/eval; execFileSync list-form; all shell
+expansions quoted; jq fed via --arg/--argjson only), TLS floor consistent
+with modern-crypto guidance, no new workflow permissions or secret usage,
+and fail-closed behavior at every error path. Findings and dispositions:
+
+1. **FIXED — real bug caught:** the workflow already pinned the OPA binary
+   by SHA-256, and the R1 version bump updated `OPA_VERSION` but not
+   `OPA_SHA256` — every CI job would have failed (closed) at the checksum
+   step. Updated to the published v1.18.2 hash, verified against the exact
+   binary used for all of this branch's local verification.
+2. **FIXED:** the new Regal download step lacked the checksum verification
+   the OPA steps have — added `REGAL_SHA256` (from the release's
+   checksums.txt) + `sha256sum -c`. The operator-run install paths
+   (deploy.sh, Makefile, README quickstart) now verify the OPA hash too.
+3. **FIXED:** `npm ci` for the scanner in the credentialed compliance job
+   now runs `--ignore-scripts` — none of pa11y's 113 transitive packages
+   can execute lifecycle scripts there (re-verified the scanner works when
+   installed this way).
+4. **Recorded, not changed (informational):** pa11y executes scanned pages'
+   JavaScript in headless Chromium inside the credentialed compliance job.
+   Exposure is limited — the workflow triggers on `pull_request` (fork PRs
+   receive no secrets), so only content from write-access authors is
+   rendered, and CI Chromium keeps its sandbox (`--no-sandbox` is a local
+   opt-in only). Defense-in-depth option if wanted: move the scan to an
+   uncredentialed job that publishes the facts document as an artifact.
+5. **Recorded, not changed (by design):** the exceptions register is a
+   policy-suppression path gated by PR review. That is the design —
+   suppressions are diffable, expire, fail CI when stale, and stay visible
+   under `excepted`.

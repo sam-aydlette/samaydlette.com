@@ -79,7 +79,10 @@ env:
   REGAL_VERSION: 0.41.1
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
   # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
-  OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986
+  OPA_SHA256: 9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8
+  # Published SHA-256 of regal_Linux_x86_64 for REGAL_VERSION above. Refresh
+  # together; source: the release's checksums.txt on github.com/open-policy-agent/regal
+  REGAL_SHA256: 6769dcd8e88bc5ba5ff4fac500e4a99d55b3eec3d1d0842833d84f6820a2a80f
   NODE_VERSION: 22
   # Anchore Syft (SBOM) + Grype (SCA) for the Silk Reeling dependency scan. The
   # tool version and the install.sh fetched to install it are pinned to the same
@@ -148,6 +151,7 @@ jobs:
       run: |
         curl -L --fail --retry 3 -o regal \
           "https://github.com/open-policy-agent/regal/releases/download/v${REGAL_VERSION}/regal_Linux_x86_64"
+        echo "${REGAL_SHA256}  regal" | sha256sum -c -
         chmod +x regal
         ./regal lint --format github infrastructure/policy
 
@@ -349,7 +353,10 @@ jobs:
       working-directory: tools/a11y
       env:
         PUPPETEER_SKIP_DOWNLOAD: "1"
-      run: npm ci --no-audit --no-fund
+      # --ignore-scripts: no dependency lifecycle script runs in this
+      # credentialed job; puppeteer's browser download is skipped anyway
+      # (the scan uses the runner's system Chrome).
+      run: npm ci --no-audit --no-fund --ignore-scripts
 
     # -------------------------------------------------------------------------
     # This is where we check if the planned infrastructure is safe
