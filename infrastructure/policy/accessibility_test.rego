@@ -1,4 +1,4 @@
-package policy_test.accessibility
+package accessibility_test
 
 import data.policy.accessibility
 import data.terraform.compliance
@@ -27,7 +27,11 @@ _warning_issue := {
 	"context": "<p>x</p>",
 }
 
-_bad_page := {"file_name": "missing-alt.html", "file_path": "../website/missing-alt.html", "issues": [_alt_error, _warning_issue]}
+_bad_page := {
+	"file_name": "missing-alt.html",
+	"file_path": "../website/missing-alt.html",
+	"issues": [_alt_error, _warning_issue],
+}
 
 _scan(pages) := {"accessibility_scan": {
 	"scanner": {"name": "pa11y", "version": "9.1.1", "standard": "WCAG2AA"},
@@ -43,8 +47,12 @@ test_clean_scan_compliant if {
 # the old lookahead-regex rule silently missed (A3): a page with an image
 # missing alt text MUST produce a violation.
 test_missing_alt_must_fire if {
-	some v in accessibility.violations with input as _scan([_clean_page, _bad_page])
-	v.id == "a11y_error" with input as _scan([_clean_page, _bad_page])
+	vs := accessibility.violations with input as _scan([_clean_page, _bad_page])
+	some v in vs
+	v.id == "a11y_error"
+}
+
+test_missing_alt_fails_gate if {
 	compliance.compliant == false with input as _scan([_clean_page, _bad_page])
 }
 

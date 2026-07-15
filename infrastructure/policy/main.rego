@@ -27,10 +27,10 @@ policy_version := "2.0"
 # =============================================================================
 
 # CONVENTION: because this walks the entire data.policy subtree, ONLY policy
-# packages may live under data.policy. Test packages go under
-# data.policy_test — a test rule that referenced `compliant` from inside
-# data.policy would create a static recursion cycle through this walk.
-all_violations := {violation |
+# packages may live under data.policy. Test packages live OUTSIDE it (in
+# top-level *_test packages) — a test rule that referenced `compliant` from
+# inside data.policy would create a static recursion cycle through this walk.
+all_violations contains violation if {
 	walk(data.policy, [path, value])
 	path[count(path) - 1] == "violations"
 	some violation in value
@@ -66,7 +66,7 @@ exception_active(ex) if {
 # same rule reports for it.
 exception_code_matches(ex, _) if not ex.code
 
-exception_code_matches(ex, violation) if ex.code == object.get(violation, "code", null)
+exception_code_matches(ex, violation) if ex.code == violation.code
 
 exceptions_for(violation) := [ex |
 	some ex in data.exceptions
@@ -76,7 +76,7 @@ exceptions_for(violation) := [ex |
 	exception_active(ex)
 ]
 
-active_violations := {violation |
+active_violations contains violation if {
 	some violation in all_violations
 	count(exceptions_for(violation)) == 0
 }
@@ -164,7 +164,7 @@ page_reports := [report |
 violations_by_type := object.union(
 	{"infrastructure": 0, "accessibility": 0, "classification": 0, "input": 0},
 	{category: n |
-		some category in {c | some v in active_violations; c := v.category}
+		some category in {v.category | some v in active_violations}
 		n := count([v | some v in active_violations; v.category == category])
 	},
 )

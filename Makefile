@@ -244,9 +244,11 @@ figures-check:
 	@echo "Checking single-source figures..."
 	cd .. && python3 scripts/inject-figures.py --check
 
-# Test OPA policies locally
+# Test OPA policies locally (unit tests + coverage floor + one live example)
 test-policies:
 	@echo "Testing OPA policies..."
+	opa test --coverage --threshold 90 policy/ > /dev/null
+	opa test policy/
 	@echo '{"resource":{"type":"aws_s3_bucket","name":"test-bucket","tags":{}}}' > test-input.json
 	opa eval --strict-builtin-errors -d policy/ -i test-input.json "data.terraform.compliance.compliance_report"
 	@rm -f test-input.json

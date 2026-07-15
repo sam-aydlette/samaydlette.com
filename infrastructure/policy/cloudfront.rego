@@ -72,6 +72,9 @@ violations contains violation if {
 		rego.metadata.rule().custom,
 		r.name,
 		gate.address_of(r),
-		sprintf("CloudFront viewer security policy must rank at or above %s (got '%s')", [data.config.gate.tls.minimum, r.minimum_protocol_version]),
+		sprintf(
+			"CloudFront viewer security policy must rank at or above %s (got '%s')",
+			[data.config.gate.tls.minimum, r.minimum_protocol_version],
+		),
 	)
 }

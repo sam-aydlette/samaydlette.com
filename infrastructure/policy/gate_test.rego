@@ -1,4 +1,4 @@
-package policy_test.gate
+package gate_test
 
 import data.policy.gate
 

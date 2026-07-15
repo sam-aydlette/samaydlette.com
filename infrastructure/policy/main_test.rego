@@ -40,10 +40,12 @@ _dummy_violation := {
 	"message": "synthetic violation injected by main_test",
 }
 
+_plain_resource := {"resource": {"type": "aws_s3_bucket_policy", "name": "website", "tags": {}}}
+
 test_new_package_violations_are_aggregated if {
-	report := compliance.compliance_report with input as {"resource": {
-		"type": "aws_s3_bucket_policy", "name": "website", "tags": {},
-	}}
+	# future_domain deliberately does not exist: the test proves an unseen
+	# package aggregates with no aggregator edit (excepted in .regal/config.yaml).
+	report := compliance.compliance_report with input as _plain_resource
 		with data.policy.future_domain.violations as {_dummy_violation}
 	report.compliant == false
 	report.total_violations == 1

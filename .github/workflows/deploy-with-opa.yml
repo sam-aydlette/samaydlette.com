@@ -76,6 +76,7 @@ env:
   REBUILD_STATE: "false"
   TERRAFORM_VERSION: 1.5.0
   OPA_VERSION: 1.18.2
+  REGAL_VERSION: 0.41.1
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
   # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
   OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986
@@ -130,10 +131,25 @@ jobs:
     - name: Python unit tests
       run: python3 -m pytest tests/ -q
 
-    - name: OPA policy tests
+    # The policy suite is an exhibit: format is enforced, strict compilation
+    # with the input schema is enforced, coverage has a floor, and every eval
+    # path uses --strict-builtin-errors so a broken builtin (the class of bug
+    # that silently killed the old alt-text rule) fails loudly instead of
+    # evaluating to undefined.
+    - name: OPA policy checks (fmt, strict check, tests + coverage)
       run: |
+        opa fmt --fail --list infrastructure/policy/
+        opa check --strict --schema infrastructure/schemas/policy-input infrastructure/policy
+        opa test --coverage --threshold 90 infrastructure/policy/ > /dev/null
         opa test infrastructure/policy/
         opa test policies/triage.rego policies/triage_test.rego
+
+    - name: Regal lint (Rego linter, pinned)
+      run: |
+        curl -L --fail --retry 3 -o regal \
+          "https://github.com/open-policy-agent/regal/releases/download/v${REGAL_VERSION}/regal_Linux_x86_64"
+        chmod +x regal
+        ./regal lint --format github infrastructure/policy
 
     # Control lineage has one source of truth: each rule's METADATA is diffed
     # against the KSI catalog, so a rule cannot claim a NIST control its

@@ -1,4 +1,4 @@
-package policy_test.cloudfront
+package cloudfront_test
 
 import data.policy.terraform.cloudfront
 

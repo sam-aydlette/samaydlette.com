@@ -1,4 +1,4 @@
-package policy_test.tagging
+package tagging_test
 
 import data.policy.tagging
 import data.terraform.compliance
@@ -34,8 +34,15 @@ test_classification_complete_passes if {
 test_constant_axes_from_default_tags_pass if {
 	count(classification_violations(tagging.violations)) == 0 with input as {"resource": {
 		"type": "aws_apigatewayv2_api", "name": "silk_reeling",
-		"tags": {"DataSensitivity": "public", "MissionCriticality": "moderate", "InternetReachable": "true", "Archetype": "public-edge"},
-		"tags_all": {"DataSensitivity": "public", "MissionCriticality": "moderate", "InternetReachable": "true", "Archetype": "public-edge", "AgencyScope": "single", "OwnerRole": "platform-operator"},
+		"tags": {
+			"DataSensitivity": "public", "MissionCriticality": "moderate",
+			"InternetReachable": "true", "Archetype": "public-edge",
+		},
+		"tags_all": {
+			"DataSensitivity": "public", "MissionCriticality": "moderate",
+			"InternetReachable": "true", "Archetype": "public-edge",
+			"AgencyScope": "single", "OwnerRole": "platform-operator",
+		},
 	}}
 }
 

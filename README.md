@@ -215,7 +215,6 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── terraform-plan.sh          # Pre-deployment compliance check
 │   ├── build-ksi-signal.py        # Deploy-time KSI signal emitter
 │   ├── build-oscal-ssp.py         # OSCAL Rev 5 SSP generator
-│   └── test-policies.sh           # OPA policy testing
 ├── docs/
 │   ├── ksi-signal.md              # KSI signal technical reference
 │   ├── architecture-decisions.md  # Architectural decisions per KSI
