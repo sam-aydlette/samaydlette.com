@@ -1,29 +1,38 @@
 # SCuBA policy: phishing-resistant MFA for application access.
 # Maps to NIST 800-53 Rev5 IA-2(1). Evaluated locally by the customer against
 # their own configuration; nothing leaves their environment.
+#
+# Since 2026-06-22 the CSO enforces mandatory TOTP MFA at the identity provider
+# for every account (POAM-021 closed), so single-factor access is not possible
+# and the old sole-customer risk-acceptance branch is gone. The customer's
+# remaining responsibility is authenticator POSTURE: TOTP meets IA-2(1) but is
+# phishable; WebAuthn/FIDO2/PIV is the phishing-resistant target (M-22-09;
+# tracked directionally with POAM-025).
 package scuba.phishing_resistant_mfa
 
 import future.keywords.if
+import future.keywords.in
 
 default pass := false
 
-# Pass if the customer enforces phishing-resistant MFA (WebAuthn/FIDO2 or PIV)...
-pass if input.auth.phishing_resistant == true
+phishing_resistant if input.auth.mfa_type in {"webauthn", "fido2", "piv"}
 
-# ...or has explicitly accepted the single-factor residual risk (valid only for a
-# sole operator-as-customer; onboarding real users re-opens this — see POAM-021).
-pass if input.auth.risk_accepted == true
+# Phishing-resistant authenticators: the target posture.
+pass if phishing_resistant
 
-detail := "Phishing-resistant MFA (WebAuthn/PIV) enforced." if input.auth.phishing_resistant == true
+# TOTP: the CSO-enforced baseline. Meets IA-2(1) (MFA for privileged/all
+# accounts); flagged as phishable so the upgrade path stays visible.
+pass if input.auth.mfa_type == "totp"
 
-detail := "Single-factor auth; residual risk accepted by the sole customer (POAM-021)." if {
-	input.auth.phishing_resistant != true
-	input.auth.risk_accepted == true
+detail := "Phishing-resistant MFA (WebAuthn/FIDO2/PIV) enforced — target posture." if phishing_resistant
+
+detail := "TOTP MFA enforced (the CSO baseline) — meets IA-2(1); TOTP is phishable, WebAuthn/FIDO2 is the recommended upgrade (M-22-09)." if {
+	input.auth.mfa_type == "totp"
 }
 
-detail := "Single-factor auth and risk NOT accepted — IA-2(1) not satisfied." if {
-	input.auth.phishing_resistant != true
-	input.auth.risk_accepted != true
+detail := "No MFA claimed — inconsistent with this CSO (the identity provider enforces TOTP for every account since 2026-06-22); correct your configuration or verify you are assessing the right deployment." if {
+	not phishing_resistant
+	not input.auth.mfa_type == "totp"
 }
 
 result := {"pass": pass, "detail": detail}

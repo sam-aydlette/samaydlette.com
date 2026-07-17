@@ -1,6 +1,6 @@
 {
-  "name": "Silk Reeling Mirror — Customer Responsibility SCuBA",
-  "version": "1.0.0",
+  "name": "Silk Reeling Mirror \u2014 Customer Responsibility SCuBA",
+  "version": "1.1.0",
   "description": "Secure-configuration baseline for the customer responsibilities of consuming this cloud service offering. Customer-run: fetch this signed bundle, assess your own configuration LOCALLY (nothing leaves your environment), and get a per-policy pass/fail plus the frameworks each result satisfies. Each policy maps to an 800-53 Rev5 control (the hub) and projects to every framework via the published control mappings.",
   "hub_catalog": "NIST 800-53 Rev5",
   "policies": [
