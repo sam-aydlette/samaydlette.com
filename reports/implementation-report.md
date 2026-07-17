@@ -221,18 +221,21 @@ their verdicts for the right reasons rather than vacuously.
 
 ## PROPOSED — needs human review
 
-Operator review 2026-07-17: items 2, 3 and 5 below are **ratified** as
-implemented (severities carried over; POAM-033 false-positive disposition and
-its 2027-01-15 expiry; tag values in `main.tf`; reports published with the
-branch). Item 1 (control mappings) is under item-by-item operator review;
-item 4 (fixture realism) remains an accepted limitation with the follow-up
-noted.
+Operator review 2026-07-17: items 1, 2, 3 and 5 below are **ratified**. The
+control mappings were reviewed item-by-item — the six clear-cut mappings
+confirmed as a set, and the three judgment calls (versioning → KSI-RPL-ABO
+with cp-9/cp-10/si-12; input_error → KSI-PIY-RSD with si-10; config_error →
+KSI-MLA-EVC with cm-6/ca-7) each confirmed against the considered
+alternatives (control trimming, remapping to a gate-integrity KSI, or
+carrying no control claim). Item 4 (fixture realism) remains an accepted
+limitation with the follow-up noted.
 
 1. **Every rule→KSI→NIST mapping** in the METADATA annotations
    (`s3.rego`, `cloudfront.rego`, `tagging.rego`, `gate.rego`). The CI diff
    guarantees *consistency with the catalog*, not correctness of my choices.
    Notable judgment calls: versioning → KSI-RPL-ABO (cp-9/cp-10/si-12);
    input_error → KSI-PIY-RSD (si-10); config_error → KSI-MLA-EVC (cm-6/ca-7).
+   *Ratified 2026-07-17 (item-by-item, alternatives considered).*
 2. **Severity assignments** — carried over from the pre-refactor strings, now
    authoritative in METADATA. *Ratified 2026-07-17.*
 3. **POAM-033 disposition** (contrast FP per WCAG 1.4.3) and its 2027-01-15
