@@ -166,6 +166,12 @@ jobs:
     - name: Exception register expiry check
       run: python3 scripts/check-exceptions.py
 
+    # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
+    # banned at lint time; the parity test catches what the corpus exercises,
+    # this catches the rest before it exists.
+    - name: Wasm-safe builtin check
+      run: python3 scripts/check-wasm-safe.py
+
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
     # check. Config in pyproject.toml. Catches the class of latent bug the panel
     # review flagged (e.g. the unhashable-dict crash) before it reaches a deploy.

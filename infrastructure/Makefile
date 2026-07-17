@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
+.PHONY: a11y help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
 
 # Default target
 help:
@@ -254,6 +254,22 @@ test-policies:
 	opa eval --strict-builtin-errors -d policy/ -i test-input.json "data.terraform.compliance.compliance_report"
 	@rm -f test-input.json
 	@echo "✅ Policy test complete"
+
+# Scan ../website for WCAG 2 AA errors locally — the same scanner + policy
+# the CI gate runs, so new content fails at your desk instead of in CI.
+# One-time setup: (cd ../tools/a11y && npm ci --ignore-scripts). If browser
+# autodetection misses, set A11Y_CHROME=/path/to/chromium; in container/root
+# environments set A11Y_NO_SANDBOX=1.
+a11y:
+	@echo "Scanning ../website with pa11y (WCAG 2 AA)..."
+	cd .. && node tools/a11y/scan.js website --out a11y-scan.json && \
+	jq -n --arg now "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{runtime: {evaluated_at: $$now}}' > eval-context.json && \
+	opa eval --strict-builtin-errors -d infrastructure/policy -d eval-context.json \
+		-i a11y-scan.json "data.terraform.compliance.compliance_report" > a11y-report.json && \
+	jq '.result[0].expressions[0].value | {compliant, violations: [.violations[] | {resource, code}], excepted: [.excepted[] | {resource: .violation.resource, ticket: .exception.ticket}]}' a11y-report.json && \
+	COMPLIANT=$$(jq -r '.result[0].expressions[0].value.compliant' a11y-report.json); \
+	rm -f a11y-scan.json a11y-report.json eval-context.json; \
+	if [ "$$COMPLIANT" = "true" ]; then echo "✅ Accessibility gate green"; else echo "❌ Accessibility violations found"; exit 1; fi
 
 # Format code
 fmt:

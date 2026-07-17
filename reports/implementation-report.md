@@ -221,24 +221,32 @@ their verdicts for the right reasons rather than vacuously.
 
 ## PROPOSED — needs human review
 
+Operator review 2026-07-17: items 2, 3 and 5 below are **ratified** as
+implemented (severities carried over; POAM-033 false-positive disposition and
+its 2027-01-15 expiry; tag values in `main.tf`; reports published with the
+branch). Item 1 (control mappings) is under item-by-item operator review;
+item 4 (fixture realism) remains an accepted limitation with the follow-up
+noted.
+
 1. **Every rule→KSI→NIST mapping** in the METADATA annotations
    (`s3.rego`, `cloudfront.rego`, `tagging.rego`, `gate.rego`). The CI diff
    guarantees *consistency with the catalog*, not correctness of my choices.
    Notable judgment calls: versioning → KSI-RPL-ABO (cp-9/cp-10/si-12);
    input_error → KSI-PIY-RSD (si-10); config_error → KSI-MLA-EVC (cm-6/ca-7).
 2. **Severity assignments** — carried over from the pre-refactor strings, now
-   authoritative in METADATA.
+   authoritative in METADATA. *Ratified 2026-07-17.*
 3. **POAM-033 disposition** (contrast FP per WCAG 1.4.3) and its 2027-01-15
    expiry; also the `DataClassification`/`CostCenter` values added to five
-   `main.tf` resources.
+   `main.tf` resources. *Ratified 2026-07-17; the tag change is additionally
+   verified by CI's plan gate on the PR.*
 4. **Fixture realism** — all plan fixtures are synthetic (no credentials →
    no real plan). Modeled on terraform 1.9.x / provider-4.x output and the
    resource layout observed in public CI logs; labeled in each `_fixture`
    block. A real `terraform show -json` capture would be a strictly better
    fixture source.
 5. **`reports/` publicity** — this report and the Phase 1 report are
-   committed per the task brief; the repo is public, so decide whether they
-   ride along in any pushed branch/PR or stay local.
+   committed per the task brief. *Ratified 2026-07-17: they publish with the
+   branch as showcase artifacts.*
 
 ## Known local-environment caveat (not caused by this branch)
 
