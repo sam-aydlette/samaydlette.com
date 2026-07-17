@@ -1,0 +1,48 @@
+{
+  "fixture": "tests/fixtures/plans/data-source-website-bucket.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": true,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "website",
+      "resource_type": "aws_s3_bucket_public_access_block",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "website",
+      "resource_type": "aws_s3_bucket_server_side_encryption_configuration",
+      "violations": []
+    },
+    {
+      "compliant": true,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "website",
+      "resource_type": "aws_s3_bucket_versioning",
+      "violations": []
+    }
+  ]
+}

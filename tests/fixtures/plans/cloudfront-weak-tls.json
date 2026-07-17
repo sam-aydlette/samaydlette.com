@@ -1,0 +1,164 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "mode": "managed",
+          "type": "aws_cloudfront_distribution",
+          "name": "cdn",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "enabled": true,
+            "is_ipv6_enabled": true,
+            "price_class": "PriceClass_100",
+            "aliases": [
+              "example.com"
+            ],
+            "default_cache_behavior": [
+              {
+                "viewer_protocol_policy": "redirect-to-https",
+                "allowed_methods": [
+                  "GET",
+                  "HEAD"
+                ],
+                "cached_methods": [
+                  "GET",
+                  "HEAD"
+                ],
+                "compress": true,
+                "target_origin_id": "s3-origin"
+              }
+            ],
+            "viewer_certificate": [
+              {
+                "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+                "minimum_protocol_version": "TLSv1_2016",
+                "ssl_support_method": "sni-only",
+                "cloudfront_default_certificate": false
+              }
+            ],
+            "tags": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store"
+            },
+            "tags_all": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette",
+              "DataSensitivity": "public",
+              "MissionCriticality": "core",
+              "InternetReachable": "yes",
+              "Archetype": "object-store",
+              "AgencyScope": "single",
+              "OwnerRole": "platform-operator"
+            }
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_cloudfront_distribution.cdn",
+      "mode": "managed",
+      "type": "aws_cloudfront_distribution",
+      "name": "cdn",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "enabled": true,
+          "is_ipv6_enabled": true,
+          "price_class": "PriceClass_100",
+          "aliases": [
+            "example.com"
+          ],
+          "default_cache_behavior": [
+            {
+              "viewer_protocol_policy": "redirect-to-https",
+              "allowed_methods": [
+                "GET",
+                "HEAD"
+              ],
+              "cached_methods": [
+                "GET",
+                "HEAD"
+              ],
+              "compress": true,
+              "target_origin_id": "s3-origin"
+            }
+          ],
+          "viewer_certificate": [
+            {
+              "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+              "minimum_protocol_version": "TLSv1_2016",
+              "ssl_support_method": "sni-only",
+              "cloudfront_default_certificate": false
+            }
+          ],
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "public",
+            "MissionCriticality": "core",
+            "InternetReachable": "yes",
+            "Archetype": "object-store",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "mode": "managed",
+          "type": "aws_cloudfront_distribution",
+          "name": "cdn",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        }
+      ]
+    }
+  },
+  "_fixture": {
+    "name": "cloudfront-weak-tls",
+    "synthetic": true,
+    "note": "CloudFront minimum_protocol_version below TLSv1.2_2021.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

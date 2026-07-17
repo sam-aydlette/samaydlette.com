@@ -1,0 +1,23 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/compliant-stack.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_s3_bucket_versioning",
+    "name": "logs",
+    "mode": "managed",
+    "values": {
+      "bucket": "samaydlette-com-logs-synthetic",
+      "versioning_configuration": [
+        {
+          "status": "Enabled",
+          "mfa_delete": ""
+        }
+      ]
+    },
+    "tags": {},
+    "tags_all": {}
+  }
+}

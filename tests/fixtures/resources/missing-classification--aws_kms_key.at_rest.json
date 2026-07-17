@@ -1,0 +1,41 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/missing-classification.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_kms_key",
+    "name": "at_rest",
+    "mode": "managed",
+    "values": {
+      "description": "at-rest encryption key",
+      "enable_key_rotation": true,
+      "deletion_window_in_days": 30,
+      "tags": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette"
+      },
+      "tags_all": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette"
+      }
+    },
+    "tags": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette"
+    }
+  }
+}

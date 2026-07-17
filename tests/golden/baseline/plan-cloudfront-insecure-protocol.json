@@ -1,0 +1,51 @@
+{
+  "fixture": "tests/fixtures/plans/cloudfront-insecure-protocol.json",
+  "opa_version": "0.57.0",
+  "harness": "verbatim flattener extracted from scripts/terraform-plan.sh + per-resource opa eval of data.terraform.compliance.compliance_report",
+  "flattener": "ok",
+  "resources": [
+    {
+      "address": "aws_cloudfront_distribution.cdn",
+      "report": {
+        "compliant": false,
+        "policy_version": "1.0",
+        "total_violations": 1,
+        "violations": [
+          {
+            "message": "CloudFront must redirect HTTP to HTTPS",
+            "resource": "cdn",
+            "severity": "HIGH",
+            "type": "insecure_protocol"
+          }
+        ],
+        "violations_by_severity": {
+          "HIGH": 1,
+          "LOW": 0,
+          "MEDIUM": 0
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 1
+        }
+      }
+    }
+  ],
+  "raw_direct_eval": {
+    "compliant": true,
+    "policy_version": "1.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  },
+  "raw_direct_eval_note": "README.md debug path: raw plan piped straight into opa eval"
+}

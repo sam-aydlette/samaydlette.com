@@ -1,0 +1,66 @@
+{
+  "fixture": "tests/fixtures/plans/cloudfront-weak-tls.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "aws_cloudfront_distribution.cdn",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-8",
+          "sc-13"
+        ],
+        "id": "weak_tls",
+        "ksi_ids": [
+          "KSI-SVC-SIN"
+        ],
+        "message": "CloudFront viewer security policy must rank at or above TLSv1.2_2021 (got 'TLSv1_2016')",
+        "resource": "cdn",
+        "severity": "MEDIUM",
+        "type": "weak_tls"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 1
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  },
+  "resource_reports": [
+    {
+      "compliant": false,
+      "kind": "infrastructure",
+      "policy_version": "2.0",
+      "resource_name": "cdn",
+      "resource_type": "aws_cloudfront_distribution",
+      "violations": [
+        {
+          "address": "aws_cloudfront_distribution.cdn",
+          "category": "infrastructure",
+          "control_ids": [
+            "sc-8",
+            "sc-13"
+          ],
+          "id": "weak_tls",
+          "ksi_ids": [
+            "KSI-SVC-SIN"
+          ],
+          "message": "CloudFront viewer security policy must rank at or above TLSv1.2_2021 (got 'TLSv1_2016')",
+          "resource": "cdn",
+          "severity": "MEDIUM",
+          "type": "weak_tls"
+        }
+      ]
+    }
+  ]
+}

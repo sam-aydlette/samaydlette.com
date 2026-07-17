@@ -75,10 +75,14 @@ env:
   # re-adopt every live resource into a fresh/empty state.
   REBUILD_STATE: "false"
   TERRAFORM_VERSION: 1.5.0
-  OPA_VERSION: 0.57.0
+  OPA_VERSION: 1.18.2
+  REGAL_VERSION: 0.41.1
   # Published SHA-256 of opa_linux_amd64_static for OPA_VERSION above.
   # Refresh together with OPA_VERSION; source: https://openpolicyagent.org/downloads/v<version>/opa_linux_amd64_static.sha256
-  OPA_SHA256: b52c1d58d9c7ffe378d5bda0ab1aeed7eb6a662a466484c92dce0af803a13986
+  OPA_SHA256: 9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8
+  # Published SHA-256 of regal_Linux_x86_64 for REGAL_VERSION above. Refresh
+  # together; source: the release's checksums.txt on github.com/open-policy-agent/regal
+  REGAL_SHA256: 6769dcd8e88bc5ba5ff4fac500e4a99d55b3eec3d1d0842833d84f6820a2a80f
   NODE_VERSION: 22
   # Anchore Syft (SBOM) + Grype (SCA) for the Silk Reeling dependency scan. The
   # tool version and the install.sh fetched to install it are pinned to the same
@@ -130,10 +134,43 @@ jobs:
     - name: Python unit tests
       run: python3 -m pytest tests/ -q
 
-    - name: OPA policy tests
+    # The policy suite is an exhibit: format is enforced, strict compilation
+    # with the input schema is enforced, coverage has a floor, and every eval
+    # path uses --strict-builtin-errors so a broken builtin (the class of bug
+    # that silently killed the old alt-text rule) fails loudly instead of
+    # evaluating to undefined.
+    - name: OPA policy checks (fmt, strict check, tests + coverage)
       run: |
-        opa test infrastructure/policies.rego infrastructure/policies_test.rego
+        opa fmt --fail --list infrastructure/policy/
+        opa check --strict --schema infrastructure/schemas/policy-input infrastructure/policy
+        opa test --coverage --threshold 90 infrastructure/policy/ > /dev/null
+        opa test infrastructure/policy/
         opa test policies/triage.rego policies/triage_test.rego
+
+    - name: Regal lint (Rego linter, pinned)
+      run: |
+        curl -L --fail --retry 3 -o regal \
+          "https://github.com/open-policy-agent/regal/releases/download/v${REGAL_VERSION}/regal_Linux_x86_64"
+        echo "${REGAL_SHA256}  regal" | sha256sum -c -
+        chmod +x regal
+        ./regal lint --format github infrastructure/policy
+
+    # Control lineage has one source of truth: each rule's METADATA is diffed
+    # against the KSI catalog, so a rule cannot claim a NIST control its
+    # declared KSIs do not carry.
+    - name: Policy annotation ↔ KSI catalog diff
+      run: python3 scripts/check-policy-annotations.py
+
+    # Exceptions-as-code hygiene: an expired exception no longer suppresses at
+    # eval time AND fails the build here, so the register cannot rot.
+    - name: Exception register expiry check
+      run: python3 scripts/check-exceptions.py
+
+    # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
+    # banned at lint time; the parity test catches what the corpus exercises,
+    # this catches the rest before it exists.
+    - name: Wasm-safe builtin check
+      run: python3 scripts/check-wasm-safe.py
 
     # Real-bug lint (pyflakes + bugbear, not cosmetic style) and lenient type
     # check. Config in pyproject.toml. Catches the class of latent bug the panel
@@ -263,11 +300,15 @@ jobs:
     - name: Create Lambda zip file
       working-directory: infrastructure
       run: |
-        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        echo "Compiling the policy packages to Wasm for the runtime emitter..."
         opa build -t wasm -e terraform/compliance/compliance_report \
-          -o /tmp/opa-bundle.tar.gz policies.rego
+          -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
-        ls -la lambda/policy.wasm
+        # Parameters-as-data: the bundle's data document (built from
+        # infrastructure/policy/config/data.json) ships alongside the wasm;
+        # the Lambda loads it via setData at cold start.
+        tar -xzOf /tmp/opa-bundle.tar.gz /data.json > lambda/policy-data.json
+        ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
         cd lambda
@@ -275,6 +316,17 @@ jobs:
         cd ..
         echo "Zip file created:"
         ls -la opa-compliance.zip
+
+    # One artifact, two enforcement points: prove the CLI evaluation (deploy
+    # gate) and the Wasm evaluation (the runtime Lambda's opa-wasm host)
+    # agree on the full fixture corpus before this exact wasm ships. Wasm
+    # builtins are partly implemented by the JS host, so agreement is a test
+    # result, not a given (a %v-formatted set already diverged once).
+    - name: Policy parity test (CLI vs Wasm)
+      run: |
+        NODE_PATH=infrastructure/lambda/node_modules node scripts/policy-parity-test.js \
+          --wasm infrastructure/lambda/policy.wasm \
+          --data infrastructure/lambda/policy-data.json
 
     # -------------------------------------------------------------------------
     # CHECK WHAT INFRASTRUCTURE WILL BE BUILT
@@ -300,6 +352,18 @@ jobs:
 
     # -------------------------------------------------------------------------
     # THE ACTUAL SECURITY CHECK
+    # The accessibility scanner (pa11y) renders pages in the runner's system
+    # Chrome; PUPPETEER_SKIP_DOWNLOAD avoids fetching a duplicate browser.
+    # terraform-plan.sh fails closed if this install is missing.
+    - name: Install accessibility scanner
+      working-directory: tools/a11y
+      env:
+        PUPPETEER_SKIP_DOWNLOAD: "1"
+      # --ignore-scripts: no dependency lifecycle script runs in this
+      # credentialed job; puppeteer's browser download is skipped anyway
+      # (the scan uses the runner's system Chrome).
+      run: npm ci --no-audit --no-fund --ignore-scripts
+
     # -------------------------------------------------------------------------
     # This is where we check if the planned infrastructure is safe
     # If this fails, nothing gets deployed
@@ -374,7 +438,7 @@ jobs:
         terraform_version: ${{ env.TERRAFORM_VERSION }}
         terraform_wrapper: false
 
-    # OPA is required here so the deploy job can compile policies.rego to Wasm
+    # OPA is required here so the deploy job can compile the policy packages to Wasm
     # for bundling into the Lambda zip. Same version + same SHA pin as the
     # compliance-check job, so the deploy-time gate and the runtime emitter
     # evaluate identical compiled bytes.
@@ -456,13 +520,17 @@ jobs:
         # The runtime Lambda evaluates the same Rego policies the deploy gate
         # uses, compiled to Wasm. One source of truth, one trust chain, no
         # hand-port drift. The Wasm build is byte-stable for a fixed OPA
-        # version + policies.rego, so terraform's source_code_hash from the
+        # version + policy sources, so terraform's source_code_hash from the
         # compliance-check job matches the bytes deployed here.
-        echo "Compiling policies.rego to Wasm for the runtime emitter..."
+        echo "Compiling the policy packages to Wasm for the runtime emitter..."
         opa build -t wasm -e terraform/compliance/compliance_report \
-          -o /tmp/opa-bundle.tar.gz policies.rego
+          -o /tmp/opa-bundle.tar.gz policy/
         tar -xzf /tmp/opa-bundle.tar.gz -C lambda /policy.wasm
-        ls -la lambda/policy.wasm
+        # Parameters-as-data: the bundle's data document (built from
+        # infrastructure/policy/config/data.json) ships alongside the wasm;
+        # the Lambda loads it via setData at cold start.
+        tar -xzOf /tmp/opa-bundle.tar.gz /data.json > lambda/policy-data.json
+        ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
         cd lambda
@@ -994,7 +1062,7 @@ jobs:
     # -------------------------------------------------------------------------
     # SIGN + VERIFY THE OPA POLICY BUNDLE (supply-chain hardening — Task 13 / S1)
     # -------------------------------------------------------------------------
-    # The deploy gate evaluates policies.rego and the runtime emitter re-validates
+    # The deploy gate evaluates the policy packages and the runtime emitter re-validates
     # with the Wasm compiled from the same source (/tmp/opa-bundle.tar.gz, built in
     # the "Create Lambda zip file" step and shipped in the Lambda package). Sign
     # that compiled bundle keyless and verify the signature here against the pinned

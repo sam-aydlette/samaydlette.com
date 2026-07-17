@@ -1,0 +1,82 @@
+{
+  "fixture": "tests/fixtures/plans/data-source-website-bucket.json",
+  "opa_version": "0.57.0",
+  "harness": "verbatim flattener extracted from scripts/terraform-plan.sh + per-resource opa eval of data.terraform.compliance.compliance_report",
+  "flattener": "ok",
+  "resources": [
+    {
+      "address": "aws_s3_bucket_versioning.website",
+      "report": {
+        "compliant": true,
+        "policy_version": "1.0",
+        "total_violations": 0,
+        "violations": [],
+        "violations_by_severity": {
+          "HIGH": 0,
+          "LOW": 0,
+          "MEDIUM": 0
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 0
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket_server_side_encryption_configuration.website",
+      "report": {
+        "compliant": true,
+        "policy_version": "1.0",
+        "total_violations": 0,
+        "violations": [],
+        "violations_by_severity": {
+          "HIGH": 0,
+          "LOW": 0,
+          "MEDIUM": 0
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 0
+        }
+      }
+    },
+    {
+      "address": "aws_s3_bucket_public_access_block.website",
+      "report": {
+        "compliant": true,
+        "policy_version": "1.0",
+        "total_violations": 0,
+        "violations": [],
+        "violations_by_severity": {
+          "HIGH": 0,
+          "LOW": 0,
+          "MEDIUM": 0
+        },
+        "violations_by_type": {
+          "accessibility": 0,
+          "classification": 0,
+          "infrastructure": 0
+        }
+      }
+    }
+  ],
+  "raw_direct_eval": {
+    "compliant": true,
+    "policy_version": "1.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  },
+  "raw_direct_eval_note": "README.md debug path: raw plan piped straight into opa eval"
+}

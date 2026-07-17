@@ -1,0 +1,9 @@
+{
+  "name": "samaydlette-a11y-scanner",
+  "private": true,
+  "description": "Accessibility fact-producer for the OPA gate: runs pa11y (WCAG2AA, HTML_CodeSniffer) over built site HTML and emits one JSON facts document. The scanner produces facts; the policy (infrastructure/policy/accessibility.rego) makes the pass/fail decision.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "pa11y": "9.1.1"
+  }
+}

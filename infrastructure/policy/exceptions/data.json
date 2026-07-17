@@ -1,0 +1,10 @@
+[
+  {
+    "resource": "silk-reeling-mirror.html",
+    "rule_id": "a11y_error",
+    "code": "WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail",
+    "justification": "False positive: the flagged elements are decorative dot separators ('\u00b7') marked aria-hidden=\"true\". WCAG 1.4.3 exempts text that is pure decoration from contrast requirements; HTML_CodeSniffer cannot see decorative intent and flags all rendered text.",
+    "expiry": "2027-01-15",
+    "ticket": "POAM-033 (docs/poam.md False Positives)"
+  }
+]

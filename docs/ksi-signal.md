@@ -219,5 +219,5 @@ The canonical inventory composes across CSPs because the schema makes a small nu
 | [`scripts/build-oscal-ssp.py`](../scripts/build-oscal-ssp.py) | OSCAL Rev 5 SSP generator. Runs after the KSI emitter; consumes the live signal + the catalog. |
 | [`scripts/terraform-plan.sh`](../scripts/terraform-plan.sh) | OPA gate; produces `validations.json` consumed by the emitter. |
 | [`infrastructure/lambda/index.js`](../infrastructure/lambda/index.js) | Runtime KSI emitter. |
-| [`infrastructure/policies.rego`](../infrastructure/policies.rego) | Source-of-truth policies for the deploy-time gate. Runtime emitter ports the same rules to JavaScript. |
+| [`infrastructure/policy/`](../infrastructure/policy/) | Source-of-truth policy packages for both enforcement points: the deploy gate evaluates them with the OPA CLI; CI compiles the same source to Wasm (`opa build -t wasm`) and the runtime emitter executes it via `@open-policy-agent/opa-wasm`. There is no JavaScript port of the rules; a CI parity test (`scripts/policy-parity-test.js`) proves the two evaluators agree on the full fixture corpus. |
 | [`.github/workflows/deploy-with-opa.yml`](../.github/workflows/deploy-with-opa.yml) | CI pipeline: gate → apply → build signal → cosign sign → build SSP → publish. |

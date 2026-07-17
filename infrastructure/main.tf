@@ -563,6 +563,7 @@ resource "aws_kms_key" "at_rest" {
   tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-at-rest"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })
@@ -602,6 +603,7 @@ resource "aws_kms_key" "runtime_signing" {
   tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-runtime-signing"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })
@@ -661,6 +663,7 @@ resource "aws_kms_key" "dnssec_ksk" {
   tags = merge(local.cls.identity_secrets_public, {
     Name               = "${var.domain_name}-dnssec-ksk"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })
@@ -702,6 +705,7 @@ resource "aws_cloudwatch_log_group" "opa_compliance" {
   tags = merge(local.cls.security_tooling, {
     Name               = "${var.domain_name}-opa-compliance-logs"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })
@@ -719,6 +723,7 @@ resource "aws_sqs_queue" "compliance_dlq" {
   tags = merge(local.cls.security_tooling_internal, {
     Name               = "${var.domain_name}-opa-compliance-dlq"
     Environment        = var.environment
+    CostCenter         = var.cost_center
     DataClassification = "Internal"
     Owner              = var.owner
   })

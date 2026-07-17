@@ -1,0 +1,37 @@
+# Regal (Rego linter) configuration — pinned regal v0.41.1 in CI.
+# Zero-finding policy: anything not justified here must be fixed, not ignored.
+rules:
+  imports:
+    unresolved-reference:
+      # data.config, data.exceptions and data.runtime are DATA DOCUMENTS
+      # loaded at evaluation time (infrastructure/policy/config/data.json,
+      # infrastructure/policy/exceptions/data.json, and the wrapper's
+      # eval-context.json / the Lambda's setData) — not Rego packages, so the
+      # linter cannot resolve them statically. They are exactly the
+      # organization-defined-parameter and exception registers the policies
+      # are supposed to read.
+      except-paths:
+        - data.config
+        - data.config.**
+        - data.exceptions
+        - data.exceptions.**
+        - data.runtime
+        - data.runtime.**
+        # main_test's mock package: deliberately nonexistent, proving a new
+        # package aggregates with no aggregator edit.
+        - data.policy.future_domain.**
+  idiomatic:
+    directory-package-mismatch:
+      # The policy tree is loaded as one directory (-d infrastructure/policy)
+      # with deliberately namespaced packages (policy.gate,
+      # policy.terraform.s3, terraform.compliance). Mirroring package paths
+      # as directories would bury six small files in nested single-file
+      # directories for no reader benefit.
+      level: ignore
+  style:
+    rule-name-repeats-package:
+      # terraform.compliance.compliance_report and policy.gate.gated_changes
+      # are published interface names (queried by the wrapper, the CI
+      # workflow's Wasm entrypoint, and the runtime Lambda). Renaming them
+      # would break consumers to satisfy a naming aesthetic.
+      level: ignore

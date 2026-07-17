@@ -1,0 +1,207 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket_versioning.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_versioning",
+          "name": "website",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette.com",
+            "versioning_configuration": [
+              {
+                "status": "Enabled",
+                "mfa_delete": ""
+              }
+            ]
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket_server_side_encryption_configuration.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_server_side_encryption_configuration",
+          "name": "website",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette.com",
+            "rule": [
+              {
+                "apply_server_side_encryption_by_default": [
+                  {
+                    "sse_algorithm": "AES256",
+                    "kms_master_key_id": ""
+                  }
+                ],
+                "bucket_key_enabled": null
+              }
+            ]
+          },
+          "sensitive_values": {}
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "website",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "bucket": "samaydlette.com",
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_s3_bucket_versioning.website",
+      "mode": "managed",
+      "type": "aws_s3_bucket_versioning",
+      "name": "website",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette.com",
+          "versioning_configuration": [
+            {
+              "status": "Enabled",
+              "mfa_delete": ""
+            }
+          ]
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_server_side_encryption_configuration.website",
+      "mode": "managed",
+      "type": "aws_s3_bucket_server_side_encryption_configuration",
+      "name": "website",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette.com",
+          "rule": [
+            {
+              "apply_server_side_encryption_by_default": [
+                {
+                  "sse_algorithm": "AES256",
+                  "kms_master_key_id": ""
+                }
+              ],
+              "bucket_key_enabled": null
+            }
+          ]
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_public_access_block.website",
+      "mode": "managed",
+      "type": "aws_s3_bucket_public_access_block",
+      "name": "website",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette.com",
+          "block_public_acls": true,
+          "block_public_policy": true,
+          "ignore_public_acls": true,
+          "restrict_public_buckets": true
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_s3_bucket_versioning.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_versioning",
+          "name": "website",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "data.aws_s3_bucket.website.id",
+                "data.aws_s3_bucket.website"
+              ]
+            }
+          }
+        },
+        {
+          "address": "aws_s3_bucket_server_side_encryption_configuration.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_server_side_encryption_configuration",
+          "name": "website",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "data.aws_s3_bucket.website.id",
+                "data.aws_s3_bucket.website"
+              ]
+            }
+          }
+        },
+        {
+          "address": "aws_s3_bucket_public_access_block.website",
+          "mode": "managed",
+          "type": "aws_s3_bucket_public_access_block",
+          "name": "website",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {
+            "bucket": {
+              "references": [
+                "data.aws_s3_bucket.website.id",
+                "data.aws_s3_bucket.website"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "_fixture": {
+    "name": "data-source-website-bucket",
+    "synthetic": true,
+    "note": "Mirrors the production stack: the website bucket is a data source (not in planned_values); only its sub-resources are planned. Deploy-time S3 bucket rules cannot see this bucket; the runtime Lambda covers it.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

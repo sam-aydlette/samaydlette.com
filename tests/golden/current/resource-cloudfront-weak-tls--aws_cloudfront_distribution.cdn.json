@@ -1,0 +1,39 @@
+{
+  "fixture": "tests/fixtures/resources/cloudfront-weak-tls--aws_cloudfront_distribution.cdn.json",
+  "harness": "direct opa eval (runtime Lambda input shape)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "cdn",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-8",
+          "sc-13"
+        ],
+        "id": "weak_tls",
+        "ksi_ids": [
+          "KSI-SVC-SIN"
+        ],
+        "message": "CloudFront viewer security policy must rank at or above TLSv1.2_2021 (got 'TLSv1_2016')",
+        "resource": "cdn",
+        "severity": "MEDIUM",
+        "type": "weak_tls"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 1
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  }
+}

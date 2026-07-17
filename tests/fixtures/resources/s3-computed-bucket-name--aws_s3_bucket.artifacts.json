@@ -1,0 +1,61 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/s3-computed-bucket-name.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_s3_bucket",
+    "name": "artifacts",
+    "mode": "managed",
+    "values": {
+      "force_destroy": false,
+      "tags": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store"
+      },
+      "tags_all": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store",
+        "AgencyScope": "single",
+        "OwnerRole": "platform-operator"
+      }
+    },
+    "tags": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator"
+    },
+    "versioning_enabled": false,
+    "encryption_enabled": false
+  }
+}

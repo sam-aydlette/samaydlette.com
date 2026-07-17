@@ -1,6 +1,6 @@
 # Makefile for Website Deployment with OPA Compliance
 
-.PHONY: help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
+.PHONY: a11y help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
 
 # Default target
 help:
@@ -30,7 +30,8 @@ init:
 	@echo "Checking for OPA..."
 	@if ! command -v opa >/dev/null 2>&1; then \
 		echo "Installing OPA..."; \
-		curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static; \
+		curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static; \
+		echo "9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8  opa" | sha256sum -c -; \
 		chmod 755 ./opa; \
 		sudo mv opa /usr/local/bin; \
 	fi
@@ -165,8 +166,8 @@ validate:
 	@echo "Validating Terraform configuration..."
 	terraform validate
 	@echo "Validating OPA policies..."
-	opa fmt --list policies.rego
-	opa test policies.rego policies_test.rego
+	opa fmt --list policy/
+	opa test policy/
 	@echo "✅ Validation complete"
 
 # Show outputs
@@ -244,19 +245,37 @@ figures-check:
 	@echo "Checking single-source figures..."
 	cd .. && python3 scripts/inject-figures.py --check
 
-# Test OPA policies locally
+# Test OPA policies locally (unit tests + coverage floor + one live example)
 test-policies:
 	@echo "Testing OPA policies..."
+	opa test --coverage --threshold 90 policy/ > /dev/null
+	opa test policy/
 	@echo '{"resource":{"type":"aws_s3_bucket","name":"test-bucket","tags":{}}}' > test-input.json
-	opa eval -d policies.rego -i test-input.json "data.terraform.compliance.compliance_report"
+	opa eval --strict-builtin-errors -d policy/ -i test-input.json "data.terraform.compliance.compliance_report"
 	@rm -f test-input.json
 	@echo "✅ Policy test complete"
+
+# Scan ../website for WCAG 2 AA errors locally — the same scanner + policy
+# the CI gate runs, so new content fails at your desk instead of in CI.
+# One-time setup: (cd ../tools/a11y && npm ci --ignore-scripts). If browser
+# autodetection misses, set A11Y_CHROME=/path/to/chromium; in container/root
+# environments set A11Y_NO_SANDBOX=1.
+a11y:
+	@echo "Scanning ../website with pa11y (WCAG 2 AA)..."
+	cd .. && node tools/a11y/scan.js website --out a11y-scan.json && \
+	jq -n --arg now "$$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{runtime: {evaluated_at: $$now}}' > eval-context.json && \
+	opa eval --strict-builtin-errors -d infrastructure/policy -d eval-context.json \
+		-i a11y-scan.json "data.terraform.compliance.compliance_report" > a11y-report.json && \
+	jq '.result[0].expressions[0].value | {compliant, violations: [.violations[] | {resource, code}], excepted: [.excepted[] | {resource: .violation.resource, ticket: .exception.ticket}]}' a11y-report.json && \
+	COMPLIANT=$$(jq -r '.result[0].expressions[0].value.compliant' a11y-report.json); \
+	rm -f a11y-scan.json a11y-report.json eval-context.json; \
+	if [ "$$COMPLIANT" = "true" ]; then echo "✅ Accessibility gate green"; else echo "❌ Accessibility violations found"; exit 1; fi
 
 # Format code
 fmt:
 	@echo "Formatting code..."
 	terraform fmt -recursive
-	opa fmt --write policies.rego
+	opa fmt --write policy/
 	@echo "✅ Code formatted"
 
 # Security scan

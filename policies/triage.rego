@@ -27,15 +27,18 @@
 # =============================================================================
 package vdr.triage
 
-import future.keywords.in
-
 # Boolean rules default to false so they are always defined (an undefined rule
 # referenced inside `decision` would make the whole object undefined).
 default remediation_required := false
+
 default must_patch_now := false
+
 default escalate := false
+
 default invalid_risk_adjustment := false
+
 default historical_present := false
+
 default tighter_history := false
 
 # Context flags read with defaults so a finding that omits them is still defined.
@@ -46,30 +49,45 @@ lev := object.get(input, "likely_exploitable", false)
 sev_rank := {"NONE": 0, "LOW": 1, "MEDIUM": 2, "MODERATE": 2, "HIGH": 3, "CRITICAL": 4}
 
 # CVSS base score -> severity bucket (CVSS v3 ranges).
-cvss_severity(score) = "CRITICAL" { score >= 9.0 }
-cvss_severity(score) = "HIGH"     { score >= 7.0; score < 9.0 }
-cvss_severity(score) = "MEDIUM"   { score >= 4.0; score < 7.0 }
-cvss_severity(score) = "LOW"      { score > 0.0;  score < 4.0 }
-cvss_severity(score) = "NONE"     { score <= 0.0 }
+cvss_severity(score) := "CRITICAL" if score >= 9.0
+
+cvss_severity(score) := "HIGH" if {
+	score >= 7.0
+	score < 9.0
+}
+
+cvss_severity(score) := "MEDIUM" if {
+	score >= 4.0
+	score < 7.0
+}
+
+cvss_severity(score) := "LOW" if {
+	score > 0.0
+	score < 4.0
+}
+
+cvss_severity(score) := "NONE" if score <= 0.0
 
 # Baseline anchor, in preference order:
 #   1. the CVE's base CVSS score          (preferred)
 #   2. the scanner's own numeric score    (0-10 scale)
 #   3. the scanner's severity label
 default has_cvss := false
-has_cvss { is_number(input.cvss) }
+
+has_cvss if is_number(input.cvss)
 
 default has_scanner_score := false
-has_scanner_score { is_number(input.scanner_score) }
 
-base_severity := cvss_severity(input.cvss) { has_cvss }
+has_scanner_score if is_number(input.scanner_score)
 
-base_severity := cvss_severity(input.scanner_score) {
+base_severity := cvss_severity(input.cvss) if has_cvss
+
+base_severity := cvss_severity(input.scanner_score) if {
 	not has_cvss
 	has_scanner_score
 }
 
-base_severity := upper(object.get(input, "scanner_severity", "MEDIUM")) {
+base_severity := upper(object.get(input, "scanner_severity", "MEDIUM")) if {
 	not has_cvss
 	not has_scanner_score
 }
@@ -79,44 +97,44 @@ valid_dispositions := {"false-positive", "operational-requirement", "risk-adjust
 
 default disposition := "remediate"
 
-disposition := d {
+disposition := d if {
 	d := object.get(input.asserted, "disposition", null)
 	d != null
 	d in valid_dispositions
 }
 
 # ---- effective severity (what the timeline is computed against) -------------
-effective_severity := "NONE" { disposition == "false-positive" }
+effective_severity := "NONE" if disposition == "false-positive"
 
-effective_severity := base_severity {
+effective_severity := base_severity if {
 	disposition == "operational-requirement"
 }
 
 # Risk adjustment may only LOWER severity, and is anchored to the base (CVSS
 # preferred). A valid adjustment uses the adjusted value; an adjustment at or
 # above the base is invalid (flagged) and falls back to the base severity.
-effective_severity := adj {
+effective_severity := adj if {
 	disposition == "risk-adjustment"
 	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
 	sev_rank[adj] < sev_rank[base_severity]
 }
 
-effective_severity := base_severity {
+effective_severity := base_severity if {
 	disposition == "risk-adjustment"
 	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
 	sev_rank[adj] >= sev_rank[base_severity]
 }
 
-effective_severity := base_severity { disposition == "remediate" }
+effective_severity := base_severity if disposition == "remediate"
 
 # An invalid risk adjustment (tried to raise or keep severity) is flagged.
-invalid_risk_adjustment {
+invalid_risk_adjustment if {
 	disposition == "risk-adjustment"
 	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
 	sev_rank[adj] >= sev_rank[base_severity]
 }
 
-remediation_required {
+remediation_required if {
 	disposition in {"remediate", "risk-adjustment"}
 }
 
@@ -126,24 +144,24 @@ pain_base := {"NONE": 1, "LOW": 1, "MEDIUM": 2, "MODERATE": 2, "HIGH": 3, "CRITI
 # Reachable AND exploitable bumps PAIN one notch (capped at N5).
 default reachable_and_exploitable := false
 
-reachable_and_exploitable {
+reachable_and_exploitable if {
 	irv
 	lev
 }
 
-pain_n := n {
+pain_n := n if {
 	reachable_and_exploitable
 	n := min([5, pain_base[effective_severity] + 1])
 }
 
-pain_n := pain_base[effective_severity] {
+pain_n := pain_base[effective_severity] if {
 	not reachable_and_exploitable
 }
 
 pain := sprintf("N%d", [pain_n])
 
 # ---- 2. immutable: CISA KEV must-patch-now ---------------------------------
-must_patch_now {
+must_patch_now if {
 	remediation_required
 	input.is_kev
 }
@@ -159,12 +177,12 @@ sla_table := {
 	"N5|true|true": 2, "N5|true|false": 4, "N5|false|true": 16, "N5|false|false": 16,
 }
 
-sla_key := k {
+sla_key := k if {
 	pain == "N1"
 	k := "N1|x|x"
 }
 
-sla_key := k {
+sla_key := k if {
 	pain != "N1"
 	k := sprintf("%s|%v|%v", [pain, lev, irv])
 }
@@ -172,41 +190,41 @@ sla_key := k {
 threshold_days := object.get(sla_table, sla_key, 365)
 
 # ---- 4. historical: similar past cases may tighten the timeline -------------
-historical_days := d {
+historical_days := d if {
 	d := input.historical.median_days
 	is_number(d)
 }
 
 # ---- 5. escalation ----------------------------------------------------------
-escalate {
+escalate if {
 	remediation_required
 	object.get(input.asserted, "architectural_change_required", false)
 }
 
-escalate {
+escalate if {
 	remediation_required
 	effective_severity == "CRITICAL"
 	not historical_present
 }
 
-historical_present {
+historical_present if {
 	is_number(input.historical.median_days)
 }
 
-escalation_reason := "architectural change required" {
+escalation_reason := "architectural change required" if {
 	object.get(input.asserted, "architectural_change_required", false)
 }
 
-escalation_reason := "unprecedented critical risk, no historical precedent" {
+escalation_reason := "unprecedented critical risk, no historical precedent" if {
 	not object.get(input.asserted, "architectural_change_required", false)
 	effective_severity == "CRITICAL"
 	not historical_present
 }
 
 # ---- final SLA + deciding layer --------------------------------------------
-sla_days := 0 { must_patch_now }
+sla_days := 0 if must_patch_now
 
-sla_days := d {
+sla_days := d if {
 	not must_patch_now
 	remediation_required
 	historical_present
@@ -214,22 +232,39 @@ sla_days := d {
 	d := historical_days
 }
 
-sla_days := threshold_days {
+sla_days := threshold_days if {
 	not must_patch_now
 	remediation_required
 	not tighter_history
 }
 
-tighter_history {
+tighter_history if {
 	historical_present
 	historical_days < threshold_days
 }
 
-decided_by := "disposition" { not remediation_required }
-decided_by := "immutable" { must_patch_now }
-decided_by := "escalation" { not must_patch_now; remediation_required; escalate }
-decided_by := "historical" { not must_patch_now; remediation_required; not escalate; tighter_history }
-decided_by := "threshold" { not must_patch_now; remediation_required; not escalate; not tighter_history }
+decided_by := "disposition" if not remediation_required
+decided_by := "immutable" if must_patch_now
+
+decided_by := "escalation" if {
+	not must_patch_now
+	remediation_required
+	escalate
+}
+
+decided_by := "historical" if {
+	not must_patch_now
+	remediation_required
+	not escalate
+	tighter_history
+}
+
+decided_by := "threshold" if {
+	not must_patch_now
+	remediation_required
+	not escalate
+	not tighter_history
+}
 
 # ---- decision ---------------------------------------------------------------
 decision := {
@@ -247,8 +282,8 @@ decision := {
 }
 
 # sla_days only meaningful when remediation is required.
-sla_days_out := sla_days { remediation_required }
-sla_days_out := null { not remediation_required }
+sla_days_out := sla_days if remediation_required
+sla_days_out := null if not remediation_required
 
-reason_out := escalation_reason { escalate }
-reason_out := "" { not escalate }
+reason_out := escalation_reason if escalate
+reason_out := "" if not escalate

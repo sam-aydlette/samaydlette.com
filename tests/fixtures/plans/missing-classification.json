@@ -1,0 +1,92 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_kms_key.at_rest",
+          "mode": "managed",
+          "type": "aws_kms_key",
+          "name": "at_rest",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "schema_version": 0,
+          "values": {
+            "description": "at-rest encryption key",
+            "enable_key_rotation": true,
+            "deletion_window_in_days": 30,
+            "tags": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette"
+            },
+            "tags_all": {
+              "Environment": "prod",
+              "CostCenter": "website-ops",
+              "DataClassification": "public",
+              "Owner": "sam-aydlette"
+            }
+          },
+          "sensitive_values": {}
+        }
+      ]
+    }
+  },
+  "resource_changes": [
+    {
+      "address": "aws_kms_key.at_rest",
+      "mode": "managed",
+      "type": "aws_kms_key",
+      "name": "at_rest",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "description": "at-rest encryption key",
+          "enable_key_rotation": true,
+          "deletion_window_in_days": 30,
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "public",
+            "Owner": "sam-aydlette"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_kms_key.at_rest",
+          "mode": "managed",
+          "type": "aws_kms_key",
+          "name": "at_rest",
+          "provider_config_key": "aws",
+          "schema_version": 0,
+          "expressions": {}
+        }
+      ]
+    }
+  },
+  "_fixture": {
+    "name": "missing-classification",
+    "synthetic": true,
+    "note": "Taggable resource (KMS key) with governance tags but none of the six classification axes.",
+    "generated_from": "hand-modeled on terraform 1.9.x / hashicorp-aws 4.x plan JSON; no real plan was run (would require cloud credentials)."
+  }
+}

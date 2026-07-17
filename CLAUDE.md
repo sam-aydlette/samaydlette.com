@@ -15,13 +15,13 @@ Hold two facts at once — they shape every decision:
 
 Confirm against the working tree on first run; correct this section if reality differs.
 
-- `infrastructure/` — Terraform (`main.tf`), OPA policy (`policies.rego`), JSON schemas (`schemas/ksi-signal.schema.json`, `schemas/ksi-catalog.json`), runtime Lambda (`lambda/index.js`).
+- `infrastructure/` — Terraform (`main.tf`), OPA policy packages (`policy/`), JSON schemas (`schemas/ksi-signal.schema.json`, `schemas/ksi-catalog.json`), runtime Lambda (`lambda/index.js`).
 - `scripts/` — the artifact **generators**: `build-ksi-signal.py` (the canonical inventory), `build-oscal-ssp.py`, `build-oscal-poam.py`, and the VDR builder. These are the source of truth for everything published.
 - `website/` — static site content. `website/.well-known/` holds the **published** artifacts (KSI signal + bundle, OSCAL SSP/POA&M, VDR + trend, IIW CSV, runtime signal, signing pubkey, schema).
 - `docs/` — `poam.md` (the human POA&M, including the False Positives register), `policies/`, and `assessment/` (e.g. `ground-truth.md`).
 - `website/research/` — methodology and scope docs rendered on the site: `authorization-boundary.html`, `the-plumbing.html`. **Read these first for the "why."**
 - `website/viewer.html` — the dashboard. It is a presentational shell; **the JSON under `/.well-known/` is the source of truth, not the HTML.**
-- `.github/workflows/deploy-with-opa.yml`, `Makefile`, `.checkov.yaml` — the pipeline, entry points, and IaC scan config.
+- `.github/workflows/deploy-with-opa.yml`, `infrastructure/Makefile`, `.checkov.yaml` — the pipeline, entry points, and IaC scan config.
 
 AWS: account is referenced in the published KSI signal; `us-east-2` for the site/app/Lambda/S3/CloudWatch/API Gateway/Secrets Manager, `us-east-1` for ACM/CloudFront and the DNSSEC/CloudFront KMS keys. Confirm before acting.
 

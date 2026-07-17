@@ -1,0 +1,39 @@
+{
+  "fixture": "tests/fixtures/resources/s3-public-access-open--aws_s3_bucket.logs.json",
+  "harness": "direct opa eval (runtime Lambda input shape)",
+  "report": {
+    "compliant": false,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "address": "logs",
+        "category": "infrastructure",
+        "control_ids": [
+          "sc-7",
+          "sc-7.7"
+        ],
+        "id": "public_access_not_fully_blocked",
+        "ksi_ids": [
+          "KSI-CNA-ULN"
+        ],
+        "message": "S3 bucket must block all public access (ACLs, policy, ignore, restrict)",
+        "resource": "logs",
+        "severity": "HIGH",
+        "type": "public_access_not_fully_blocked"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 1,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 1,
+      "input": 0
+    }
+  }
+}

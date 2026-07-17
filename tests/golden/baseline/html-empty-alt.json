@@ -1,0 +1,28 @@
+{
+  "fixture": "tests/fixtures/html/empty-alt.html",
+  "opa_version": "0.57.0",
+  "harness": "opa eval of data.terraform.compliance.compliance_report with {html_content, file_name} input (as terraform-plan.sh does)",
+  "report": {
+    "compliant": false,
+    "policy_version": "1.0",
+    "total_violations": 1,
+    "violations": [
+      {
+        "message": "HTML file empty-alt.html contains images with empty alt text",
+        "resource": "empty-alt.html",
+        "severity": "MEDIUM",
+        "type": "empty_alt_text"
+      }
+    ],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 1
+    },
+    "violations_by_type": {
+      "accessibility": 1,
+      "classification": 0,
+      "infrastructure": 0
+    }
+  }
+}

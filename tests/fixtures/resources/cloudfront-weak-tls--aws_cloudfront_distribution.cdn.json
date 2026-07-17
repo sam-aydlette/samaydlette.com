@@ -1,0 +1,89 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "derived_from": "tests/fixtures/plans/cloudfront-weak-tls.json",
+    "note": "Flattened single-resource input in the bespoke pre-refactor contract; same shape the runtime Lambda feeds the policy."
+  },
+  "resource": {
+    "type": "aws_cloudfront_distribution",
+    "name": "cdn",
+    "mode": "managed",
+    "values": {
+      "enabled": true,
+      "is_ipv6_enabled": true,
+      "price_class": "PriceClass_100",
+      "aliases": [
+        "example.com"
+      ],
+      "default_cache_behavior": [
+        {
+          "viewer_protocol_policy": "redirect-to-https",
+          "allowed_methods": [
+            "GET",
+            "HEAD"
+          ],
+          "cached_methods": [
+            "GET",
+            "HEAD"
+          ],
+          "compress": true,
+          "target_origin_id": "s3-origin"
+        }
+      ],
+      "viewer_certificate": [
+        {
+          "acm_certificate_arn": "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000",
+          "minimum_protocol_version": "TLSv1_2016",
+          "ssl_support_method": "sni-only",
+          "cloudfront_default_certificate": false
+        }
+      ],
+      "tags": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store"
+      },
+      "tags_all": {
+        "Environment": "prod",
+        "CostCenter": "website-ops",
+        "DataClassification": "public",
+        "Owner": "sam-aydlette",
+        "DataSensitivity": "public",
+        "MissionCriticality": "core",
+        "InternetReachable": "yes",
+        "Archetype": "object-store",
+        "AgencyScope": "single",
+        "OwnerRole": "platform-operator"
+      }
+    },
+    "tags": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "public",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "public",
+      "MissionCriticality": "core",
+      "InternetReachable": "yes",
+      "Archetype": "object-store",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator"
+    },
+    "viewer_protocol_policy": "redirect-to-https",
+    "minimum_protocol_version": "TLSv1_2016"
+  }
+}

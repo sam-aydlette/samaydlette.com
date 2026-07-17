@@ -34,7 +34,8 @@ check_prerequisites() {
     # Check OPA
     if ! command -v opa &> /dev/null; then
         echo "Installing OPA..."
-        curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+        curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static
+        echo "9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8  opa" | sha256sum -c -
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
         echo "OPA installed successfully."
@@ -62,9 +63,10 @@ prepare_lambda() {
         npm ci --omit=dev
     fi
 
-    # policies.rego is intentionally NOT copied here. The Lambda runs a
-    # JavaScript port of the relevant rules; OPA is enforced at build time
-    # only. Bundling the .rego in the deployed zip would be dead weight.
+    # The .rego sources are intentionally NOT copied here. The Lambda executes
+    # policy.wasm — compiled from infrastructure/policy/ by the CI workflow and
+    # placed in lambda/ before this zip is built. Bundling the .rego source in
+    # the deployed zip would be dead weight.
 
     cd ..
 

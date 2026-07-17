@@ -7,7 +7,7 @@ This is the central hub for what's going on with me. The repository also doubles
 - **Pre-deployment validation** — OPA evaluates the Terraform plan and the static content before any AWS resource is touched. Violations block the deploy.
 - **Real-world policy writing** — Policies that go past trivial examples to handle attribute-only resources, content checks, and severity gating.
 - **Cost-aware compliance** — Documented trade-offs for which controls are on, off, and why.
-- **Automated accessibility testing** — Section 508 checks run in the same gate as the infrastructure checks; same shape, same reporting.
+- **Automated accessibility testing** — pa11y (WCAG 2 AA in headless Chromium) produces facts; the same OPA gate makes the pass/fail decision and reporting. Scanners produce facts, OPA decides.
 - **Continuous runtime validation** — A Lambda re-validates the live AWS configuration on a schedule against what was deployed.
 - **A KSI signal informed by a canonical inventory** — Every deploy publishes a JSON document at `/.well-known/ksi-signal.json` containing (1) a snapshot of this system's canonical inventory (PURL for software, ARN paired with a normalized type for cloud resources, sha256 for static artifacts) and (2) policy results attached to specific inventory components by reference, signed via Sigstore keyless. The inventory is the layer; the signal is one report built on it. SBOMs, vulnerability scans, license reports, and configuration drift reports could all ride on the same layer. See [docs/ksi-signal.md](docs/ksi-signal.md) for the full reference.
 - **An OSCAL Rev 5 System Security Plan** — Every deploy also generates and publishes a NIST OSCAL System Security Plan at `/.well-known/oscal-ssp.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. <span data-figure="hub_total">331</span> NIST 800-53 Rev 5 implemented-requirements (the full FedRAMP Moderate baseline plus KSI-extension controls) with differentiated `implementation-status` and FedRAMP-style `control-origination` per control — including automatic downgrade to `partial` while a live validation is failing — plus an actual implementation statement per control rather than a mass-assigned default. Two views of the same truth: the KSI signal is the wire format; the OSCAL SSP is the human-and-tool-friendly compliance artifact.
@@ -25,7 +25,7 @@ terraform plan
     → invalidate CloudFront
 
 # All run in one make target:
-make pipeline
+cd infrastructure && make pipeline
 ```
 
 **What's Different:** Compliance is not just a gate. It is also an output. Every deploy emits a structured, signed KSI signal naming what was deployed, what was validated, and how to verify it. The signal is informed by a canonical inventory of components — names that are global by construction (PURL, ARN, sha256) — so a consumer can curl the document from any machine, validate it against the schema, verify the cosign bundle against the public Sigstore transparency log, and join validations to components by reference. The canonical inventory layer is what makes the signal compose across CSPs and across systems within a portfolio without a separate inventory deliverable; the signal is one report on top of it.
@@ -198,10 +198,20 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── main.tf                    # Primary Terraform configuration
 │   ├── variables.tf               # Input variables and validation
 │   ├── outputs.tf                 # Resource outputs and URLs
-│   ├── policies.rego              # OPA compliance policies
+│   ├── Makefile                   # Common operations (run from infrastructure/)
+│   ├── policy/                    # OPA policy packages
+│   │   ├── gate.rego              # Input contract + normalization (the only input reader)
+│   │   ├── s3.rego                # policy.terraform.s3
+│   │   ├── cloudfront.rego        # policy.terraform.cloudfront (ordered TLS minimum)
+│   │   ├── tagging.rego           # policy.tagging (governance + classification)
+│   │   ├── accessibility.rego     # policy.accessibility (decides over pa11y facts)
+│   │   ├── main.rego              # terraform.compliance aggregator (walk + fail-closed + exceptions)
+│   │   ├── config/data.json       # Organization-defined parameters (data, not code)
+│   │   └── exceptions/data.json   # Exceptions register (POA&M-as-code)
 │   ├── schemas/
 │   │   ├── ksi-signal.schema.json # JSON Schema for the KSI signal
-│   │   └── ksi-catalog.json       # FedRAMP KSI catalog (FRMR.KSI source)
+│   │   ├── ksi-catalog.json       # FedRAMP KSI catalog (FRMR.KSI source)
+│   │   └── policy-input/          # JSON Schema for the gate's input shapes
 │   ├── lambda/
 │   │   ├── index.js               # Runtime KSI signal emitter
 │   │   └── package.json           # AWS SDK v3 dependencies
@@ -215,7 +225,6 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── terraform-plan.sh          # Pre-deployment compliance check
 │   ├── build-ksi-signal.py        # Deploy-time KSI signal emitter
 │   ├── build-oscal-ssp.py         # OSCAL Rev 5 SSP generator
-│   └── test-policies.sh           # OPA policy testing
 ├── docs/
 │   ├── ksi-signal.md              # KSI signal technical reference
 │   ├── architecture-decisions.md  # Architectural decisions per KSI
@@ -225,9 +234,12 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── supply-chain.md            # Supply-chain risk (KSI-SCR-MIT/MON)
 │   ├── training-log.md            # Self-attested training (KSI-CED-RAT..04)
 │   └── poam.md                    # Plan of Action & Milestones for tracked gaps
+├── tools/a11y/                    # pa11y accessibility scanner (facts producer for the gate)
+├── tests/
+│   ├── fixtures/                  # Plan / resource / scanner-facts fixtures
+│   └── golden/                    # Frozen pre-refactor baseline + current goldens
 ├── .github/workflows/
 │   └── deploy-with-opa.yml        # GitHub Actions CI/CD pipeline
-├── Makefile                       # Common operations
 └── README.md                      # This file
 ```
 
@@ -242,10 +254,12 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 - Public access prevention
 
 **Section 508 Accessibility:**
-- Alt text for all images
-- HTML language declaration
-- Proper heading structure
-- Color-independent information
+- pa11y renders every page in headless Chromium and checks WCAG 2 AA
+  (alt text, language, labels, ARIA names, contrast — things string
+  matching can't see)
+- OPA decides over the scanner's JSON facts: which issue types fail the
+  gate is configuration, and accepted findings go through the exceptions
+  register with justification + expiry, staying visible under `excepted`
 
 **What's Intentionally NOT Covered:**
 - VPC configurations (static website doesn't need them)
@@ -254,26 +268,47 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 
 ### Policy Development in Practice
 
+The gate is a set of OPA packages under `infrastructure/policy/`, one per
+domain, each emitting uniform violation objects; the aggregator
+(`terraform.compliance`) discovers every `violations` set under
+`data.policy` dynamically, so a new policy package participates with zero
+aggregator edits. The decision is fail-closed (`default compliant := false`),
+unreadable input yields an explicit `input_error`, enforcement parameters
+live in `config/data.json` (800-53 organization-defined parameters as data),
+accepted findings live in `exceptions/data.json` with justification + expiry
+(POA&M-as-code), and every rule's METADATA carries its NIST/KSI lineage —
+diffed against the KSI catalog in CI. The same source is compiled to Wasm
+for the runtime Lambda; a CI parity test proves both evaluators agree.
+
 ```bash
-# Test policies as you write them:
-make test-policies
+# Test policies as you write them (from the repo root):
+opa test infrastructure/policy/
 
-# Test specific scenarios:
-opa eval -d policies.rego -i test-input.json "data.terraform.compliance.compliance_report"
+# Test a specific scenario against a checked-in fixture:
+opa eval --strict-builtin-errors -d infrastructure/policy/ \
+    -i tests/fixtures/plans/s3-missing-tags.json \
+    "data.terraform.compliance.compliance_report"
 
-# Debug policy failures:
+# Debug policy failures against a real plan — the policy consumes raw
+# `terraform show -json` output directly (run in infrastructure/):
 terraform plan -out=tfplan
 terraform show -json tfplan > tfplan.json
-opa eval -d policies.rego -i tfplan.json "data.terraform.compliance.compliance_report"
+opa eval --strict-builtin-errors -d policy/ -i tfplan.json "data.terraform.compliance.compliance_report"
 ```
+
+The policy fails closed: input that matches none of its supported shapes
+(a plan's `resource_changes[]`, a single `{resource}`, or
+`{html_content, file_name}`) yields an explicit `input_error` violation and
+`"compliant": false` — never a vacuous pass.
 
 ### Real Policy Example
 
 ```rego
 # This actually runs in production:
-s3_bucket_violations[violation] {
-    input.resource.type == "aws_s3_bucket"
-    not input.resource.encryption_enabled
+s3_bucket_violations contains violation if {
+    some r in resources
+    r.type == "aws_s3_bucket"
+    not r.encryption_enabled
     violation := {
         "type": "encryption_disabled",
         "message": "S3 bucket server-side encryption must be enabled",
@@ -298,7 +333,8 @@ git clone <your-repo-url>
 cd <repo-name>
 
 # 2. Install OPA (automated in scripts)
-curl -L -o opa https://openpolicyagent.org/downloads/v0.57.0/opa_linux_amd64_static
+curl -L -o opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static
+echo "9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8  opa" | sha256sum -c -   # published hash for v1.18.2
 chmod 755 ./opa && sudo mv opa /usr/local/bin
 
 # 3. Configure your deployment
@@ -352,10 +388,10 @@ The full register of dispositions — closed remediations, documented false posi
 **OPA Policy Failures**
 ```bash
 # First, check your policy syntax:
-opa fmt policies.rego
+opa fmt --list policy/
 
 # Then test with minimal data:
-echo '{"resource":{"type":"aws_s3_bucket","tags":{}}}' | opa eval -I -d policies.rego "data.terraform.compliance"
+echo '{"resource":{"type":"aws_s3_bucket","tags":{}}}' | opa eval -I -d policy/ "data.terraform.compliance"
 ```
 
 **Certificate Validation Issues**

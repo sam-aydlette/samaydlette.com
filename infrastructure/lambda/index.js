@@ -11,7 +11,7 @@
 // validations on component_refs without caring which emitter produced them.
 //
 // Policy evaluation uses the same Rego source as the deploy-time gate. The
-// CI workflow compiles `infrastructure/policies.rego` to `policy.wasm` via
+// CI workflow compiles the policy packages (`infrastructure/policy/`) to `policy.wasm` via
 // `opa build -t wasm` and bundles it into this Lambda's deployment zip. At
 // runtime the Lambda loads the Wasm module via @open-policy-agent/opa-wasm
 // and evaluates each cloud component's live configuration against the same
@@ -72,9 +72,21 @@ async function getPolicy() {
     const wasmPath = path.join(__dirname, 'policy.wasm');
     const wasmBytes = fs.readFileSync(wasmPath);
     cachedPolicy = await loadPolicy(wasmBytes);
-    // Use a stable hash of the wasm bytes as the policy version. Two Lambda
-    // containers running the same wasm produce the same version.
-    cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).digest('hex').slice(0, 12);
+    // Parameters-as-data: the enforcement parameters (tag lists, TLS floor)
+    // live in the bundle's data document (built from
+    // infrastructure/policy/config/data.json), shipped in this zip as
+    // policy-data.json. Without it the policy fails closed with config_error,
+    // so a packaging mistake surfaces as a red validation, not a silent pass.
+    const dataBytes = fs.readFileSync(path.join(__dirname, 'policy-data.json'));
+    const policyData = JSON.parse(dataBytes);
+    // The exceptions register checks expiry against data.runtime.evaluated_at
+    // (kept out of `input` so inputs stay pure resource facts). Without a
+    // timestamp no exception is active — fail-safe, never fail-open.
+    policyData.runtime = { evaluated_at: new Date().toISOString() };
+    cachedPolicy.setData(policyData);
+    // Use a stable hash of the wasm + data bytes as the policy version. Two
+    // Lambda containers running the same policy produce the same version.
+    cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).update(dataBytes).digest('hex').slice(0, 12);
     return { policy: cachedPolicy, version: cachedPolicyVersion };
 }
 
@@ -82,7 +94,7 @@ async function getPolicy() {
 // LIVE-CONFIG → REGO INPUT TRANSFORMERS
 // =============================================================================
 // Each transformer queries the AWS API for one cloud component and produces
-// the {resource: {...}} shape `policies.rego` expects. The Rego rules are
+// the {resource: {...}} shape the Rego gate expects. The Rego rules are
 // identical to the ones the deploy-time gate evaluates, so the transformer's
 // only job is to make live config look like a Terraform plan resource.
 // =============================================================================
@@ -175,7 +187,7 @@ async function buildCloudFrontResourceInput(cf, distributionId, tfName) {
 // POLICY EVALUATION
 // =============================================================================
 // One Rego evaluation per cloud component. The `compliance_report` rule in
-// policies.rego returns a single object with `compliant`, `total_violations`,
+// the terraform.compliance package returns a single object with `compliant`, `total_violations`,
 // `violations[]`, and a few summary fields. We extract `compliant` and
 // `violations[]` for the KSI signal's validation entry.
 // =============================================================================

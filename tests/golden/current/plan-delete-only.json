@@ -1,0 +1,23 @@
+{
+  "fixture": "tests/fixtures/plans/delete-only.json",
+  "harness": "direct opa eval of the raw fixture (strict builtin errors)",
+  "report": {
+    "compliant": true,
+    "excepted": [],
+    "policy_version": "2.0",
+    "total_violations": 0,
+    "violations": [],
+    "violations_by_severity": {
+      "HIGH": 0,
+      "LOW": 0,
+      "MEDIUM": 0
+    },
+    "violations_by_type": {
+      "accessibility": 0,
+      "classification": 0,
+      "infrastructure": 0,
+      "input": 0
+    }
+  },
+  "resource_reports": []
+}
