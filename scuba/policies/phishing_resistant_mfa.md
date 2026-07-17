@@ -4,24 +4,26 @@
 **Severity:** high · **Customer responsibility**
 
 ## What it checks
-Whether access to the application is protected by **phishing-resistant MFA**
-(WebAuthn/FIDO2 or PIV), or — for a sole operator-as-customer — whether the
-single-factor residual risk has been explicitly accepted.
+Which **authenticator posture** the customer's application accounts operate.
+Since 2026-06-22 the CSO enforces mandatory TOTP MFA at the identity provider
+for every account (the POAM-021 closure), so single-factor access is not
+possible — the old sole-customer risk-acceptance branch no longer exists.
 
 ```
-auth.phishing_resistant == true   # WebAuthn/FIDO2 or PIV
-  OR
-auth.risk_accepted == true        # sole-customer risk acceptance (POAM-021)
+auth.mfa_type == "webauthn" | "fido2" | "piv"   # phishing-resistant — target posture
+auth.mfa_type == "totp"                         # CSO-enforced baseline — passes, flagged phishable
+anything else                                   # FAIL — inconsistent with this CSO
 ```
 
 ## Why
-Single-factor / OTP authentication is phishable. M-22-09 and modern FedRAMP/CMMC
-posture require phishing-resistant MFA for IA-2(1). A customer consuming this CSO
-must either federate to an IdP that enforces phishing-resistant MFA (or use native
-WebAuthn with FIPS-AAGUID attestation), or — if they are the sole user — accept the
-residual risk explicitly. Onboarding additional users re-opens this.
+TOTP satisfies IA-2(1)'s MFA requirement (and CMMC 3.5.3), but OTP codes are
+phishable; M-22-09 and modern FedRAMP/CJIS posture prefer phishing-resistant
+authenticators. The provider tracks the phishing-resistant direction under
+POAM-025; the customer's share is enrolling WebAuthn/FIDO2 (or PIV-federated)
+authenticators for their users when available.
 
-## How to remediate a fail
-Set `auth.phishing_resistant = true` after enabling WebAuthn/FIDO2 or IdP
-federation, **or** record an explicit `auth.risk_accepted = true` with an
-authorized acceptance.
+## How to remediate
+A **fail** means your configuration claims no MFA, which this CSO does not
+permit — fix the config (or confirm you are assessing the right deployment).
+A **pass on TOTP** is compliant today; to reach the target posture, enroll
+WebAuthn/FIDO2 authenticators and set `auth.mfa_type = "webauthn"`.
