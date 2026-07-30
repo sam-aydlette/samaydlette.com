@@ -70,46 +70,70 @@
 <p>The standing temptation in a project like this is to make the pattern tidier than it is. Where I have had to resist it, I say so and show the wrong turn, because the places where the tidy version fails are the informative ones.</p>
 <h3 id="part-1-the-guitarist">The Note</h3>
 <p><em>Register: worked example. The mathematics here is elementary and standard, and the equivalence claimed at the end of it is a fifty-year-old result in laser physics.</em></p>
-<p>Before semi-formalizing threshold structure, we develop intuition through a concrete example: a guitarist sustaining a note through feedback.</p>
-<h4 id="the-physical-setup">The Physical Setup</h4>
-<p>A guitarist plays an electric guitar through an amplifier. They press a string, pluck it, and then hold their finger lightly on the vibrating string while the amplifier feeds back.</p>
-<p>Done right, the note sustains indefinitely, a warm, singing tone that seems to float.</p>
-<p>Done wrong, the system either dies (too much finger pressure, damping the vibration) or screeches (too little pressure, runaway feedback). The sweet spot is threshold: the boundary between silence and screech.</p>
-<h4 id="the-basic-dynamics">The Basic Dynamics</h4>
-<p><strong>The string</strong> oscillates. Without damping, it would vibrate forever. With damping (from air, from the finger), it decays.</p>
-<p><strong>The amplifier</strong> picks up the string's vibration and feeds it back as sound, which vibrates the string further. This is positive feedback. It fights the decay.</p>
-<p><strong>The finger</strong> adds damping. More pressure means more friction, faster decay.</p>
-<p>The three effects compete: natural decay pulls toward silence, amplifier feedback pushes toward growth, and finger damping pulls toward silence.</p>
-<h4 id="mathematical-model-and-eigenvalue-picture">Gain, Loss, and the Eigenvalue</h4>
-<p>Write $\gamma$ for the damping the finger supplies and $\alpha$ for the gain the amplifier supplies. Everything about the note is decided by which is bigger.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
-<ol type="1">
-<li><p><strong>$\gamma &gt; \alpha$</strong> (damping exceeds feedback): Net damping positive. String spirals inward to silence. Note dies.</p></li>
-<li><p><strong>$\gamma &lt; \alpha$</strong> (feedback exceeds damping): Net damping negative. String spirals outward. Screech (until nonlinear limits kick in).</p></li>
-<li><p><strong>$\gamma = \alpha$</strong> (balance): Net damping zero. Closed orbits. Sustained oscillation.</p></li>
-</ol>
-<p><strong>In plain language:</strong> The eigenvalue's real part is a single number summarizing whether the system is growing, shrinking, or balanced. Negative means the note is dying. Positive means it is screeching. Zero means sustained. <strong>The threshold is $\gamma = \alpha$</strong>, where that number crosses zero. Every other system in this essay is a more complicated way of asking the same question.</p>
-<h4 id="the-feedback-system">The Feedback System</h4>
-<p>The guitarist doesn't set $\gamma$ once and forget it. They continuously adjust, responding to the sound: finger pressure rises when the note gets too loud and eases when it gets too soft. This closes another feedback loop. The guitarist hears the sound, compares it to an internal reference, and adjusts.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
-<p>The full system operates on <strong>multiple timescales</strong>: milliseconds (string vibration), tens of milliseconds (finger pressure adjustment), seconds (attention shifts, fatigue), and minutes to years (aesthetic reference, what counts as "good" sustain). The slow loops modulate the fast loops.</p>
-<p>The guitarist also has a <strong>self-model</strong>: they know how hard they're pressing, what the sound is doing, and whether it matches their intention. And their target amplitude is not fixed externally. It is an <strong>adaptive reference</strong> developed through practice. A beginner doesn't know what good sustain sounds like. Through experience, the reference state emerges from the system's own history.</p>
-<h4 id="the-threshold-as-skill">The Threshold as Skill</h4>
-<p>The guitarist's skill is <strong>living at threshold</strong>, maintaining the system at the critical point where it neither diverges nor collapses.</p>
-<p>This requires awareness of the current state through hearing and touch, will to adjust as finger pressure responds to intention, and desire that is self-discovered — a sense of what counts as good sustain.</p>
-<p>The guitarist doesn't observe the system from outside. They're part of it: a participant rather than a component, and the part of the loop that has an inside.</p>
-<h4 id="what-the-example-shows">The Guitar Is a Laser</h4>
+<p>There is a moment, when you are standing in front of an amplifier with an electric guitar, just after you pluck the string and just before the note decides what it is going to be. The string is moving. The speaker is pushing air at it. The air is moving the string again. If you stand still and do nothing, one of two things happens, and which one is not up to you. Either the note swells into a shriek that will not stop until you mute it, or it thins out and dies while you are still listening for it.</p>
+<p>What you do instead is put a finger on the string. Barely. Less pressure than you would use to hold a pencil. And then you keep adjusting it, for as long as you want the note to last.</p>
+<p>I spent a long time thinking the skill was control, which is exactly why I was bad at it. When the note got away from me I pressed harder, and the note died, and I concluded that I had not pressed hard enough soon enough. It took me an embarrassingly long time to stop drawing that lesson. The skill is not holding the string still. It is finding the place where a very small change in what your finger is doing produces a very large change in what the room is doing, and then staying there, making those small changes continuously, for as long as you want the sound to go on.</p>
+<p>The word for what is happening between the string and the speaker is <strong>feedback</strong>, and I want it to carry its narrow meaning from here on, not the loose one. Not "getting a response." The output of the system is going back into it as input, so the system is now partly determining what happens to itself, and the person with the finger on the string is inside that arrangement rather than operating it from outside.</p>
+<p>What I did not understand for a long time is that none of this was a fact about guitars.</p>
+<p>So: a string, an amplifier, and a finger. Left alone the string decays, because air and flesh take energy out of it. The amplifier picks up the vibration and pushes it back into the room as sound, which drives the string again, which puts energy in. The finger takes energy out, and how much depends on how hard it presses. Three effects, one of them feeding the note and two of them draining it.</p>
+<p>Write $\gamma$ for the damping the finger supplies and $\alpha$ for the gain the amplifier supplies. Everything about the note is settled by which of the two is larger.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> When $\gamma$ exceeds $\alpha$ the vibration spirals inward and the note dies. When $\alpha$ exceeds $\gamma$ it spirals outward and you get the shriek, until something nonlinear puts a ceiling on it. When the two are equal the losses cancel the gains exactly, nothing grows and nothing decays, and the note sustains.</p>
+<p>That difference between them is a single number, and it has a name I am going to lean on for the rest of this. The real part of the <strong>eigenvalue</strong> tells you whether the system is growing, shrinking, or holding steady. Negative and the note is dying. Positive and it is screeching. Zero is the threshold, the condition $\gamma = \alpha$, and it is the only place a sustained note can live. Every other system I take up here is a more elaborate way of asking that same question about that same number.</p>
+<p>The guitarist does not set $\gamma$ once and leave it. The pressure changes continuously in response to what the room is doing, easing when the note thins and firming when it swells, which closes a second loop on top of the first. The sound reaches the player, the player measures it against some idea of how it ought to sound, and the finger moves.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
+<p>That arrangement runs on several clocks at once. The string vibrates in milliseconds. The finger corrects in tens of milliseconds. Attention drifts and the forearm tires over seconds and minutes. And the idea of how it ought to sound, which is the standard all those corrections are being measured against, took years to form and is still moving. The slow clocks set the terms the fast ones work under.</p>
+<p>Two things about that are worth marking, because both come back. The player knows roughly what they are doing: how hard they are pressing, what the sound is doing, whether the two match. And the target is not handed to them from outside. A beginner cannot aim at good sustain because a beginner does not yet know what it sounds like. The reference comes out of the playing.</p>
+<p>The guitarist is not observing any of this from outside. They are in it, and more particularly they are the part of the loop that has an inside.</p>
 <p>One more thing about the guitar, and it is not a decoration. <strong>The feedback system in this example is a laser.</strong> Not like a laser: a laser. A gain medium, a loss term, and a threshold where the two balance, below which you get noise and above which you get coherent sustained oscillation. That is the guitarist's finger and the guitarist's amplifier, and it is also the physics of the device rendering this sentence on your screen.</p>
-<p>The equivalence is not my analogy. In 1970 two groups showed independently that the laser threshold is formally a second-order phase transition, with the light field playing the part of the order parameter and the pump rate playing the part of temperature, the same critical exponents, the same divergence of fluctuations at the transition.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> One of those groups was Hermann Haken's, and the machinery he built to handle it (synergetics, and the slaving principle in particular) turns out to be the rigorous version of the multi-scale claim I make as T2 below.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
-<p>So the most accessible thing in this essay is also the most firmly established. I want to state that plainly, because much of what follows is not.</p>
+<p>The equivalence is not my analogy. In 1970 two groups showed independently that the laser threshold is formally a second-order phase transition. The light field plays the part of the <strong>order parameter</strong>, the quantity that sits at zero on one side of a transition and grows on the other, and the pump rate plays the part of temperature. Same critical exponents, same divergence of fluctuations at the transition.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> One of those groups was Hermann Haken's, and the machinery he built to handle it (synergetics, and the slaving principle in particular) turns out to be the rigorous version of a claim I make later, that slow variables govern fast ones.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<p>So the most accessible thing here is also the most firmly established. I want to state that plainly, because much of what follows is not.</p>
 <h3 id="part-2-mathematical-foundations">Going Critical</h3>
 <p><em>Register: established mathematics, except where flagged. Most of what follows is textbook and I say so as it arrives. The six conditions are mine, and three of the six are not formalized.</em></p>
 <p>On 2 December 1942, under the stands of a squash court at the University of Chicago, a pile of graphite and uranium was assembled until one number reached one. The number was $k_{\text{eff}}$: the average count of neutrons from one fission that go on to cause another. Below one, the chain reaction dies. Above one, it grows. At exactly one, it sustains, and the pile is said to have <em>gone critical</em>.</p>
-<p>That is where the word comes from. And $k_{\text{eff}}$ is a dominant eigenvalue: the largest eigenvalue of the neutron transport operator. So when this essay claims that thresholds across domains are governed by a dominant eigenvalue crossing a critical value, it is using physics' own original term, in its first sense, rather than borrowing a metaphor. Whether it survives the trip to the other domains is the question the rest of the essay is about.</p>
+<p>That is where the word comes from. And $k_{\text{eff}}$ is a dominant eigenvalue: the largest eigenvalue of the neutron transport operator. So when I claim that thresholds across domains are governed by a dominant eigenvalue crossing a critical value, I am using physics' own original term in its first sense, not borrowing a metaphor. Whether it survives the trip to the other domains is the question the rest of this is about.</p>
 <h4 id="dynamical-systems">Dynamical Systems</h4>
 <p>A <strong>dynamical system</strong> is anything whose state changes over time according to fixed rules. Its <em>state space</em> is the set of all configurations it could be in; its <em>vector field</em> says which way it moves from each one.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
 <p>An <strong>equilibrium</strong> is where the system stops moving. Stability asks: if you nudge it slightly, does it come back or drift away? The answer is encoded in the <strong>Jacobian</strong>, a matrix capturing how sensitive each variable is to small changes in every other variable: the system's local response fingerprint. Its eigenvalues decide the outcome. All negative: perturbations decay, the equilibrium is stable. Any positive: perturbations grow, it is unstable. One sitting at zero: threshold, the boundary between the two.</p>
-<p>An <strong>attractor</strong> is a set that nearby trajectories converge to and stay near: a stable equilibrium point, a stable cycle, or something stranger.</p>
+<p>An <strong>attractor</strong> is a set that nearby trajectories converge to and stay near: a stable equilibrium point, a stable cycle, or something stranger. The states that end up there are its <strong>basin</strong>. A deep basin corrects a shove. A shallow one does not, and the difference between those two is most of what follows.</p>
+<h4 id="bifurcation-theory">Bifurcation Theory</h4>
+<p>A <strong>bifurcation</strong> is a tipping point where the rules of the game change qualitatively. Before it, the system has certain stable states; after, those states may vanish, split, or swap stability. Formally it is where an eigenvalue crosses zero, or crosses the imaginary axis, as a <strong>control parameter</strong> varies. The control parameter is the thing being turned from outside the fast dynamics: nutrient load in a lake, pump rate in a laser, alert volume on an operations floor.</p>
+<table>
+<colgroup>
+<col class="col-w-25" />
+<col class="col-w-40" />
+<col class="col-w-34" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Bifurcation</th>
+<th>Eigenvalue Behavior</th>
+<th>Physical Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Saddle-node</td>
+<td>Real $\lambda$ crosses 0</td>
+<td>Stable equilibrium vanishes; system tips</td>
+</tr>
+<tr class="even">
+<td>Transcritical</td>
+<td>Real $\lambda$ crosses 0, equilibria exchange stability</td>
+<td>Triage quality inverts as load crosses threshold</td>
+</tr>
+<tr class="odd">
+<td>Hopf</td>
+<td>Complex pair crosses imaginary axis</td>
+<td>System begins oscillating between states</td>
+</tr>
+<tr class="even">
+<td>Pitchfork</td>
+<td>Real $\lambda$ crosses 0, one equilibrium becomes two</td>
+<td>System splits into distinct modes</td>
+</tr>
+</tbody>
+</table>
+<p>The canonical saddle-node is $dx/dt = \mu - x^2$. For $\mu &gt; 0$ there are two equilibria at $\pm\sqrt{\mu}$; at $\mu = 0$ they collide; for $\mu &lt; 0$ there is nothing left and the system runs away. That collision-and-annihilation is the shape of most operational failures I have watched: not a gradual worsening, but a stable state that stops existing.</p>
 <h4 id="eigenvalue-structure-and-critical-slowing-down">Eigenvalue Structure and Critical Slowing Down</h4>
-<p>Order the Jacobian's eigenvalues by real part, largest first. The <strong>dominant eigenvalue</strong> $\lambda_1$ governs long-term behavior: it is the slowest-decaying direction, the one that outlasts all the others. It is well-defined when there is a spectral gap between it and the next one. Codimension-1 bifurcations, the generic case, have a single eigenvalue crossing zero, so the dominant eigenvalue is typically unambiguous near the transitions that matter here.</p>
+<p>Order the Jacobian's eigenvalues by real part, largest first. The <strong>dominant eigenvalue</strong> $\lambda_1$ governs long-term behavior: it is the slowest-decaying direction, the one that outlasts all the others. It is well-defined when there is a spectral gap between it and the next one. <strong>Codimension-1</strong> bifurcations, the ones you reach by tuning a single control parameter, have exactly one eigenvalue crossing zero. That is the generic case and the only one I treat, and it is why the dominant eigenvalue is usually unambiguous near the transitions that matter here.</p>
 <table>
 <colgroup>
 <col class="col-w-50" />
@@ -190,46 +214,7 @@
 </table>
 <p><strong>My machinery is sense 1.</strong> Every claim I make about $\lambda_1$, recovery time, and early warning signals lives there. Senses 2 and 3 are real, and the mathematics I am entitled to borrow from them is narrow.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
 <p>The distinction matters because sense 2's vocabulary travels much more easily than sense 2's mathematics. Scale invariance, self-similarity, the same pattern at every magnification: those are properties of a diverging correlation length in a spatially extended system at a critical point. They are not properties of an eigenvalue crossing zero in a low-dimensional ODE. So where "scale invariance," "power law," or "self-similar" appear from here on, I say which sense I mean, and wherever the argument is doing mathematical work the answer is that sense 1 supplies none of them.</p>
-<p>Two boundaries on that, stated once here instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work rather than closed work.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a><a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem to solve, not a reason to stop.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> Where the sections below treat $\lambda_1$ as measurable, the slow-forcing regime is what they mean.</p>
-<h4 id="bifurcation-theory">Bifurcation Theory</h4>
-<p>A <strong>bifurcation</strong> is a tipping point where the rules of the game change qualitatively. Before it, the system has certain stable states; after, those states may vanish, split, or swap stability. Formally it is where an eigenvalue crosses zero (or the imaginary axis) as a parameter varies.</p>
-<table>
-<colgroup>
-<col class="col-w-25" />
-<col class="col-w-40" />
-<col class="col-w-34" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Bifurcation</th>
-<th>Eigenvalue Behavior</th>
-<th>Physical Example</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Saddle-node</td>
-<td>Real $\lambda$ crosses 0</td>
-<td>Stable equilibrium vanishes; system tips</td>
-</tr>
-<tr class="even">
-<td>Transcritical</td>
-<td>Real $\lambda$ crosses 0, equilibria exchange stability</td>
-<td>Triage quality inverts as load crosses threshold</td>
-</tr>
-<tr class="odd">
-<td>Hopf</td>
-<td>Complex pair crosses imaginary axis</td>
-<td>System begins oscillating between states</td>
-</tr>
-<tr class="even">
-<td>Pitchfork</td>
-<td>Real $\lambda$ crosses 0, one equilibrium becomes two</td>
-<td>System splits into distinct modes</td>
-</tr>
-</tbody>
-</table>
-<p>The canonical saddle-node is $dx/dt = \mu - x^2$. For $\mu &gt; 0$ there are two equilibria at $\pm\sqrt{\mu}$; at $\mu = 0$ they collide; for $\mu &lt; 0$ there is nothing left and the system runs away. That collision-and-annihilation is the shape of most operational failures I have watched: not a gradual worsening, but a stable state that stops existing.</p>
+<p>Two boundaries on that, stated once here instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work, not closed work.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a><a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem to solve, not a reason to stop.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> Where the sections below treat $\lambda_1$ as measurable, the slow-forcing regime is what they mean.</p>
 <h4 id="coupled-dynamical-systems">Coupled Dynamical Systems</h4>
 <p>Two systems are <strong>coupled</strong> when each one's evolution depends on the other's state. The coupled system has its own state space, its own attractors, and its own bifurcation structure.</p>
 <p><strong>Key principle:</strong> the attractor of the coupled system is not generally the product of the individual attractors. Coupling creates dynamics that neither system has alone. This is why you cannot assess a security program by assessing its components separately, and it is the formal content behind every complaint that a control checklist misses the real risk.</p>
@@ -344,7 +329,7 @@
 <p><strong>Characterization, not derivation.</strong> T1–T6 characterize a structure that complex systems near tipping points share. They do not derive it from anything. The value of the exercise, if it has value, is in naming clearly what practitioners already sense: replacing vague talk of "resilience" and "fragility" with a structure — part mathematical, part experiential — that generates testable signatures across domains.</p>
 <h5 id="why-the-recurrence-happens">Why the recurrence happens</h5>
 <p>I have been treating the cross-domain recurrence as a remarkable observation. It is not. It is a theorem, and saying so is both a large upgrade and a significant demotion.</p>
-<p>Two results do the work. <strong>Center-manifold reduction with normal-form theory</strong> says that near a codimension-1 bifurcation, all the fast-decaying directions can be eliminated. The dynamics collapse onto a one- or two-dimensional manifold whose behavior matches one of a very short list of standard forms.<a href="#fn17" class="footnote-ref" id="fnref17" role="doc-noteref"><sup>17</sup></a> <strong>Renormalization-group universality</strong> says that near a critical point (sense 2), microscopic detail is irrelevant and only symmetry and dimensionality survive.<a href="#fn18" class="footnote-ref" id="fnref18" role="doc-noteref"><sup>18</sup></a></p>
+<p>Two results do the work. <strong>Center-manifold reduction with normal-form theory</strong> says that near a codimension-1 bifurcation, all the fast-decaying directions can be eliminated. The dynamics collapse onto a one- or two-dimensional manifold whose behaviour matches one of a very short list of standard equations, the <strong>normal forms</strong>.<a href="#fn17" class="footnote-ref" id="fnref17" role="doc-noteref"><sup>17</sup></a> <strong>Renormalization-group universality</strong> says that near a critical point (sense 2), microscopic detail is irrelevant and only symmetry and dimensionality survive.<a href="#fn18" class="footnote-ref" id="fnref18" role="doc-noteref"><sup>18</sup></a></p>
 <p><strong>In plain language:</strong> a lake, a laser, and a security operations center look alike near threshold because almost everything that made them different has been thrown away. The recurrence is a theorem about <em>information loss</em>, not about a shared essence. There is no deep unity being revealed. There is a projection, and the projection has a very small image.</p>
 <p>The corollary is unavoidable and I would rather state it than have a reviewer state it for me: <strong>the transferable payload is thin.</strong> Knowing you are at a saddle-node buys you square-root scaling, hysteresis, and the critical-slowing-down signatures. It does not tell you where the threshold is, what the state variables are, which parameter is the control parameter, or what to do about any of it. Every domain-specific fact has to be earned again in the domain. T1, T2, and T5 give real transfer, and it is thin transfer. My claims that would be <em>thick</em>, the ones about awareness, desire, and will crossing domains, are the ones carrying no transfer mechanism at all.</p>
 <h5 id="pattern-forming-instabilities">Pattern-forming instabilities, which really are thresholds</h5>
@@ -407,7 +392,7 @@
 </tbody>
 </table>
 <p>Two of these deserve a sentence more.<a href="#fn29" class="footnote-ref" id="fnref29" role="doc-noteref"><sup>29</sup></a></p>
-<p><strong>The word came from the reactor.</strong> As this Part opened: $k_{\text{eff}}$ is a dominant eigenvalue and "critical" is what you call the pile when it hits one. Everything else here is downstream of that usage, including the ecological literature I mostly draw on.</p>
+<p><strong>The word came from the reactor.</strong> As I said at the outset: $k_{\text{eff}}$ is a dominant eigenvalue and "critical" is what you call the pile when it hits one. Everything else here is downstream of that usage, including the ecological literature I mostly draw on.</p>
 <p><strong>Soft-mode transitions are literally "tuning the eigenvalue."</strong> In ferroelectrics like SrTiO₃ and PbTiO₃, a lattice vibration frequency (an eigenvalue of the dynamical matrix) decreases as the crystal is cooled and goes to zero at the transition temperature. The restoring force for that particular pattern of atomic motion vanishes, so the atoms slide into the new structure. Cochran and Anderson worked this out around 1959–60, and the critical slowing down is <em>measured directly</em> in neutron and Raman scattering.<a href="#fn30" class="footnote-ref" id="fnref30" role="doc-noteref"><sup>30</sup></a> My central image, the thing I thought I was noticing, is sixty-year-old textbook solid-state physics.</p>
 <p>Chemistry supplies four more in one breath: thermal ignition is a saddle-node in the heat balance, the ignition–extinction hysteresis of a stirred tank reactor is textbook bistability, the Belousov–Zhabotinsky reaction is a Hopf bifurcation, and the sol–gel transition is a percolation threshold.<a href="#fn31" class="footnote-ref" id="fnref31" role="doc-noteref"><sup>31</sup></a></p>
 <p>And for the strongest single piece of evidence that "threshold structure" names something real, and not a family resemblance, look at universality (sense 2). The liquid–gas critical point and the ferromagnetic Curie point have <em>measured critical exponents that agree</em>, despite having nothing chemically in common. Both belong to the 3D Ising class. When two systems that share no substance share a number to several decimal places, the number is not describing the substance.</p>
