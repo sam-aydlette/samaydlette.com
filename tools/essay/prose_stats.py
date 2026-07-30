@@ -38,7 +38,12 @@ _DISCOURSE = (r'naming|stating|noting|marking|mentioning|saying|spelling|pointin
 ANNOUNCE = re.compile(r'\bworth (?:' + _DISCOURSE + r')\b'
                       r'|\bI want to (?:be|say|state|name|mark|flag)\b'
                       r'|\bit is important to (?:note|say)\b', re.I)
-VIRTUE = re.compile(r'\bhonest(?:ly)?\b(?!\s+feedback)|\bplainly\b|\b(?:precisely|exactly)\s+(?:the|what|why|because|this|that)\b', re.I)
+# Tuned to the tic and not to the words: "honest feedback" and "honest enough"
+# describe a real property, "plainly not" is an ordinary adverb, and "exactly what
+# I have to do" means exactly. Only the virtue-claiming forms are flagged.
+VIRTUE = re.compile(r'\bhonest(?:ly)?\b(?!\s+(?:feedback|enough))'
+                    r'|\b(?:say|says|saying|said|stat\w+|put|putting)\s+(?:it\s+|this\s+|that\s+|so\s+)?plainly\b'
+                    r'|\b(?:precisely|exactly)\s+(?:the|why|because|this|that)\b', re.I)
 ESSAY = re.compile(r'\b(?:this essay|the essay|this Part|this section)\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
 
