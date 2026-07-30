@@ -9,6 +9,9 @@ Six levers, measured against the author's own baseline (pinned revision):
   5 short       sentences <= 8 words (punch; we want MORE, not fewer)
   6 announce    announcing a speech act instead of performing it ("worth naming",
                 "I want to state"). Zero in the author's prose; a machine tell.
+  7 virtue      claiming a virtue instead of exhibiting it ("the honest version",
+                "stating this plainly"), plus "precisely/exactly" used as a bare
+                intensifier. All near-zero in the author's prose.
 
 Usage:  python3 prose_stats.py            # per-section table for the problem region
         python3 prose_stats.py --totals   # region totals + baseline comparison only
@@ -35,6 +38,7 @@ _DISCOURSE = (r'naming|stating|noting|marking|mentioning|saying|spelling|pointin
 ANNOUNCE = re.compile(r'\bworth (?:' + _DISCOURSE + r')\b'
                       r'|\bI want to (?:be|say|state|name|mark|flag)\b'
                       r'|\bit is important to (?:note|say)\b', re.I)
+VIRTUE = re.compile(r'\bhonest(?:ly)?\b(?!\s+feedback)|\bplainly\b|\b(?:precisely|exactly)\s+(?:the|what|why|because|this|that)\b', re.I)
 ESSAY = re.compile(r'\b(?:this essay|the essay|this Part|this section)\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
 
@@ -61,7 +65,7 @@ def stats(t):
     return dict(words=w, sents=len(ss),
                 xref=len(XREF.findall(t)), essay=len(ESSAY.findall(t)),
                 rather=len(RATHER.findall(t)),
-                announce=len(ANNOUNCE.findall(t)),
+                announce=len(ANNOUNCE.findall(t)) + len(VIRTUE.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
                 short=sum(1 for s in ss if len(s.split()) <= 8))
 
