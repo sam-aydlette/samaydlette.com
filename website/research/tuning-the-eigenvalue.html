@@ -68,10 +68,6 @@
 <p>Two conventions make that honesty structural rather than decorative. Each Part opens with an italic line naming the kind of claim it contains: theorem, empirical result, interpretation, or speculation. And the speculation is quarantined at the back rather than distributed through the argument, in a numbered section called <a href="#queries">Queries</a>, after Newton, who appended his undemonstrated guesses to the <em>Opticks</em> as a numbered list rather than smuggling them into the body.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> Part 3 argues that Newton's alchemy was not an embarrassment. It seemed only fair to steal his filing system.</p>
 <p>A note on the mathematics. You can read the whole argument without reading a single equation; the body carries the claims and the plain-language glosses carry the meaning. The formal statements, derivations, and estimator details live in the footnotes, where a reader who wants to check my work can find all of it. The footnotes also carry the biography, the source summaries, and, the part I think matters most: what the critics of each result say.</p>
 <p>The standing temptation in a project like this is to make the pattern tidier than it is. Where I have had to resist it, I say so and show the wrong turn, because the places where the tidy version fails are the informative ones.</p>
-<h3 id="abstract">Abstract</h3>
-<p>The central observation is simple: systems near tipping points, where the dominant eigenvalue of the Jacobian approaches zero, share structural features across wildly different domains. A security operations center approaching overload, a lake approaching eutrophication, a brain sustaining consciousness, a guitarist sustaining a note at the edge of feedback. In each case the same local mathematics applies: critical slowing down, rising autocorrelation, divergent recovery times, sensitivity to small perturbations.</p>
-<p>I call the shared structure <strong>threshold structure</strong>: a dynamical configuration characterized by environmental feedback closure, multi-scale nesting, self-modeling, adaptive reference states, threshold sensitivity, and volitional modulation. The mathematical foundation draws on critical transitions (Scheffer), second-order cybernetics (von Foerster), and resilience theory (Holling). The dominant eigenvalue $\lambda_1$ of the system's Jacobian serves as the central quantity: when $\lambda_1 \to 0$, the system is at threshold, maximally sensitive, poised between attractors.</p>
-<p>Two caveats belong in the abstract rather than buried later, because they bound everything that follows. First, the recurrence across domains is <em>a theorem, and a deflationary one</em>: near a codimension-1 bifurcation almost all information about what a system is gets destroyed, which is why a lake and a laser look alike there. The recurrence is real, and the transferable payload is correspondingly thin (Section 2.9.1). Second, the whole framework linearizes around an equilibrium and reads $\lambda_1$ off a <em>fixed</em> Jacobian, while its own subject matter, systems that reorganize when they sense the boundary, changes the Jacobian in the one regime where the number would be most useful (Section 4.7). I do not have a solution to the second problem.</p>
 <h3 id="part-1-the-guitarist">Part 1: The Guitarist—A Pedagogical Example</h3>
 <p><em>Register: worked example. The mathematics in this Part is elementary and standard; the equivalence claimed at the end of it is a fifty-year-old result in laser physics.</em></p>
 <p>Before semi-formalizing threshold structure, we develop intuition through a concrete example: a guitarist sustaining a note through feedback.</p>
@@ -101,42 +97,6 @@
 <p>This requires awareness of the current state through hearing and touch, will to adjust as finger pressure responds to intention, and desire that is self-discovered — a sense of what counts as good sustain.</p>
 <p>The guitarist doesn't observe the system from outside. They're part of it: a participant rather than a component, and the part of the loop that has an inside.</p>
 <h4 id="what-the-example-shows">1.6 What the Example Shows</h4>
-<p>The guitarist illustrates all components of threshold structure:</p>
-<table>
-<thead>
-<tr class="header">
-<th>Component</th>
-<th>In the Guitarist</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>T1 (Environmental feedback)</td>
-<td>Sound feeds back through amplifier</td>
-</tr>
-<tr class="even">
-<td>T2 (Multi-scale nesting)</td>
-<td>Milliseconds to years</td>
-</tr>
-<tr class="odd">
-<td>T3 (Self-model)</td>
-<td>Knows own state, hears own sound</td>
-</tr>
-<tr class="even">
-<td>T4 (Adaptive reference)</td>
-<td>Aesthetic sense develops through practice</td>
-</tr>
-<tr class="odd">
-<td>T5 (Threshold sensitivity)</td>
-<td>Operates at $\gamma = \alpha$ boundary</td>
-</tr>
-<tr class="even">
-<td>T6 (Volitional modulation)</td>
-<td>Adjusts finger based on intention</td>
-</tr>
-</tbody>
-</table>
-<p>The formal definitions of T1–T6 follow in Part 2.</p>
 <p>One more thing about the guitar, and it is not a decoration. <strong>The feedback system in this example is a laser.</strong> Not like a laser: a laser. A gain medium, a loss term, and a threshold where the two balance, below which you get noise and above which you get coherent sustained oscillation. That is the guitarist's finger and the guitarist's amplifier, and it is also the physics of the device rendering this sentence on your screen.</p>
 <p>The equivalence is not my analogy. In 1970 two groups showed independently that the laser threshold is formally a second-order phase transition, with the light field playing the part of the order parameter and the pump rate playing the part of temperature, the same critical exponents, the same divergence of fluctuations at the transition.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> One of those groups was Hermann Haken's, and the machinery he built to handle it (synergetics, and the slaving principle in particular) turns out to be the rigorous version of the multi-scale claim I make as T2 below.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
 <p>So the most accessible thing in this essay is also the most firmly established. I want to state that plainly, because much of what follows is not.</p>
@@ -404,7 +364,7 @@
 <p>It is tempting to argue <em>for</em> Claim B using examples of Claim A, and the golden ratio is where the temptation is strongest. The golden angle in phyllotaxis is a <strong>strongly attracting</strong> fixed point. Its whole interest is how robust it is: how fast the convergence, how insensitive to initial conditions. Citing it as evidence for threshold structure was citing maximal stability as evidence for marginal stability. It is the exact opposite condition, on the exact quantity I care about.</p>
 <p>The fix is to split the claim and say which is which. <strong>Sacred geometry is a catalog of nature's attractors. I am writing about the boundaries between them.</strong> That is the cleaner thesis, and it resolves a tension that otherwise sits unnamed in any account of this kind: the quiet insistence that stability and instability are somehow the same insight.</p>
 <h5 id="attractors-as-recurring-patterns">2.10.2 Claim A: the catalog of attractors</h5>
-<p>Sacred geometry describes forms that recur across cultures and scales: spirals in galaxies and nautilus shells, branching in rivers and bronchial trees, hexagonal tessellation in honeycombs and basalt columns, bilateral symmetry in organisms and crystals. These recur because they are dynamically stable: attractors of the processes that generate them. A nautilus shell spirals because spiral growth maintains constant proportions under continuous accretion. A river branches because branching minimizes transport cost. In each case the pattern solves an optimization problem posed by physical constraints. It persists because perturbations away from it are corrected by the dynamics.</p>
+<p>Sacred geometry describes forms that recur across cultures and scales: spirals in galaxies and nautilus shells,<a href="#fn52" class="footnote-ref" id="fnref52" role="doc-noteref"><sup>52</sup></a> branching in rivers and bronchial trees, hexagonal tessellation in honeycombs and basalt columns, bilateral symmetry in organisms and crystals. These recur because they are dynamically stable: attractors of the processes that generate them. A nautilus shell spirals because spiral growth maintains constant proportions under continuous accretion. A river branches because branching minimizes transport cost. In each case the pattern solves an optimization problem posed by physical constraints. It persists because perturbations away from it are corrected by the dynamics.</p>
 <p>The cultures that revered these forms were responding to something real. Certain geometries are privileged by the dynamics of the physical world. That is Claim A, it is true, and it is not about thresholds.</p>
 <p>The golden ratio is the cleanest instance. $\varphi$ is the fixed point of the map $x \mapsto 1 + 1/x$, the Fibonacci ratios are the trajectory converging to it, and the convergence is fast. The golden angle of about $137.5°$ shows up in phyllotaxis because $\varphi$ is, in a precise sense, the hardest number to approximate by rationals, so successive elements overlap least. The "most irrational number" phrasing is folk, but it is defensible, and there is a real theorem underneath it.<a href="#fn24" class="footnote-ref" id="fnref24" role="doc-noteref"><sup>24</sup></a> Douady and Couder then did the experiment that settles the mechanism. Drops of magnetic fluid fall into a dish, repel each other, and spontaneously produce the golden angle and the Fibonacci spiral counts, with no biology involved at all. It is a local iterative repulsion rule, and the golden angle is its attractor.<a href="#fn25" class="footnote-ref" id="fnref25" role="doc-noteref"><sup>25</sup></a></p>
 <p>Beautiful, real, well-established, and evidence for Claim A only.</p>
@@ -418,11 +378,6 @@
 <p>Now the honest part, which costs the section its tidiness.</p>
 <p>The usual list of examples is a grab bag of unrelated mechanisms grouped by how they look. Hexagonal honeycomb is wax surface tension plus bee behavior, with Hales' honeycomb theorem supplying the optimality claim.<a href="#fn28" class="footnote-ref" id="fnref28" role="doc-noteref"><sup>28</sup></a> Basalt columns are thermal-contraction fracture propagating down a cooling front. Turing hexagons are a bifurcation of a reaction-diffusion system. River branching is an erosion optimality problem. These have almost nothing to do with each other. They produce similar shapes for entirely different reasons.</p>
 <p><strong>Grouping them by appearance instead of by mechanism is precisely what makes sacred-geometry arguments unfalsifiable.</strong> If any hexagon counts as evidence for one underlying principle, then no observation can ever count against it, and the argument has stopped being about the world. Sorting by mechanism costs me the unity. I no longer get to say "and here is the single reason nature loves hexagons," because there isn't one. It buys rigor, and it buys the ability to be wrong, which is the same purchase.</p>
-<h5 id="the-spiral-as-developmental-geometry">2.10.5 The spiral, and what it is doing here</h5>
-<p>The logarithmic spiral is self-similar under rotation: each quarter-turn reproduces the same shape at larger scale. It is the geometry of systems that return to similar states at greater magnitude. Same angle, greater radius.</p>
-<p>Development follows this pattern. An organism revisits homeostatic challenges at each stage of growth, meeting similar problems with expanded capacity. A person encounters the same existential tensions (autonomy versus connection, security versus exploration, discipline versus spontaneity) across decades, each time at larger scale. An organization cycles through similar crises of coordination and identity as it grows.</p>
-<p>This connects to T2 and T4: the slow variables set the scale of the spiral, the fast variables trace the local curvature, and the reference states evolve with each revolution. Same challenge, same structure, developed reference. The spiral is not repetition; it is recurrence with development.</p>
-<p><strong>And it is an interpretation, not a result.</strong> The self-similarity of the logarithmic spiral is a fact about a curve. That organizational crises recur at increasing scale is an observation I find useful and cannot measure. The connection between them is analogy, which is fine as long as I say so. This paragraph is doing literary work, not mathematical work. Forgetting which is which is how the last programme like this one died.</p>
 <h4 id="where-the-threshold-is-literally-an-eigenvalue">2.11 Where the Threshold Really Is an Eigenvalue</h4>
 <p>Every domain in Part 4 is a soft-boundary domain: ecology, medicine, finance, neuroscience, governance, security. A skeptical reader will reasonably suspect I am doing analogy and calling it mathematics. So it is worth spending a page on the cases where a dominant eigenvalue crossing a critical value is not an analogy for the physics. It <em>is</em> the physics.</p>
 <table>
@@ -491,11 +446,6 @@
 <p>It is tempting to go one step further and claim that the maxim is <em>a consequence of criticality</em>: that the Hermeticists observed a structural fact about scale invariance at critical points and expressed it in the vocabulary available to them. That single step is the one I want to refuse. The reason matters, because that is the reasoning I most need to avoid.</p>
 <p>It fails twice <em>as a derivation</em>. Mathematically, scale invariance belongs to sense 2 of criticality: a diverging correlation length in a spatially extended system. My machinery is sense 1, which produces no such thing. So the physics being invoked is not the physics being used. And historically, the claim is untestable. I have no access to what the Hermeticists observed. "They perceived the structure and lacked our vocabulary" is a story that could be told about any tradition and any result, which is what makes it useless as <em>evidence</em>.</p>
 <p>None of which makes the maxim false. It makes it <strong>unproven, and unprovable by this route</strong>, and I argued above that the difference is worth keeping. So I use it the way I actually came by it: as the intuition that patterns recur across scales, which is what made me look for a shared structure across domains at all. It earns its place as a question worth chasing, not as a premise the mathematics has settled, and <a href="#queries">Query 4</a> states it as the question it is.</p>
-<h4 id="aristotle-and-the-threshold-of-virtue">3.2 Aristotle and the Threshold of Virtue</h4>
-<p>Aristotle's natural philosophy operated within this participatory frame. Nature was not mechanism but <em>physis</em>, an inner principle of change. Every substance possessed <em>telos</em>, inherent directedness toward flourishing. The observer was part of nature, and the highest human activity, <em>theoria</em>, was contemplative participation in the rational structure of the cosmos.</p>
-<p>Aristotle's virtue ethics made this explicit at the human scale (<em>Nicomachean Ethics</em>, Books II and VI). Virtue (<em>arete</em>) is not following rules but developing a stable disposition to perceive and respond well. The virtuous person sees what the situation calls for, a perception that cannot be codified, requiring <em>phronesis</em> (practical wisdom) developed through practice. Virtue is a "mean between extremes": courage between cowardice and recklessness, generosity between stinginess and wastefulness. This is not a static point but a dynamic balance, the threshold appropriate to context.</p>
-<p>Aristotle's "habituation" (<em>ethismos</em>) is how virtue is acquired: by repeatedly acting courageously, one becomes courageous. In dynamical systems terms, practice carves attractor basins. Repeated actions strengthen response patterns until they become stable. Virtue is a learned attractor. Practical wisdom maps to threshold-sensing. The mean maps to operating at threshold between excess and deficiency. Habituation maps to a learning rule shaping the attractor landscape. Character (<em>ethos</em>) maps to slow variables modulating fast responses (T2).</p>
-<p>Whether these parallels are deep or superficial, both describe systems that maintain intelligent responsiveness through internal self-regulation. I lean toward superficial. The mapping renames Aristotle in a second vocabulary without predicting anything about virtue that Aristotle had not already supplied.</p>
 <h4 id="the-cartesian-split">3.3 The Cartesian Split</h4>
 <p>Francis Bacon (1561-1626) proposed replacing Aristotelian scholasticism with empirical investigation. His <em>Novum Organum</em> (1620) made the shift explicit: "Human knowledge and human power meet in one; for where the cause is not known the effect cannot be produced. Nature to be commanded must be obeyed." Knowledge was no longer for contemplation or the transformation of the knower. It was for control. The method would be public, repeatable, cumulative. The transformation of the knower, which the alchemist insisted was necessary for material success, was precisely what Bacon rejected. The observer would stand outside nature, interrogating it.</p>
 <p>René Descartes (1596-1650) provided the metaphysical framework. In the <em>Meditations</em> (1641), he rebuilt the world split in two: <em>res cogitans</em> (thinking substance: mind, consciousness, without extension) and <em>res extensa</em> (extended substance: matter, without thought). Animals were pure mechanism. The body, including the human body, could be understood without reference to soul or purpose. His analytic geometry embodied this philosophy: the observer stands outside the coordinate grid, at no location, viewing it from above. The meaningful world, the sensing body, participation, qualitative richness were subtracted from reality. These exclusions were not mistakes. They were methodological choices that enabled tremendous progress. But what began as "let us bracket this for now" became "this does not exist."</p>
@@ -516,7 +466,7 @@
 <p><strong>The near-critical version is better for my argument than the flat one.</strong> A brain pinned exactly at $\lambda_1 = 0$ is a brain one fluctuation from a seizure. A brain held slightly below zero is something else. Close enough to threshold for sensitivity and dynamic range, far enough from it to avoid runaway excitation. It has <em>tuned</em> its eigenvalue and paid a deliberate price for stability. That is the thesis, in a way that "pinned at criticality" never was, and it is the main reason I trust the narrower claim.</p>
 <p>Two thinkers make the case for the body more directly.</p>
 <p>D.H. Lawrence argued that modern thought over-emphasizes the brain at the expense of the body's own intelligence: "My great religion is a belief in the blood, the flesh, as being wiser than the intellect. We can go wrong in our minds. But what our blood feels and believes and says, is always true" (Lawrence, letter to Ernest Collings, 17 January 1913). In <em>Fantasia of the Unconscious</em> (1922) he proposed that consciousness is distributed through the body. Not only in the brain, but in ganglia like the solar plexus and cardiac plexus. That anticipates recent work on the enteric nervous system (Gershon 1998), interoception, and embodied cognition. "Anticipates" is doing generous work there. And Lawrence's claim as stated, "always true," is false, as I concede below.</p>
-<p>Hubert Dreyfus spent decades demonstrating the same point from within philosophy. In <em>What Computers Can't Do</em> (1972), he showed that human expertise does not work the way AI programmers assumed. The chess master does not search a decision tree. The experienced driver does not consult rules. The skilled nurse does not run through a checklist. They perceive the situation directly and respond from a capacity built through years of embodied practice. Dreyfus and his brother Stuart (1986) formalized a model of skill acquisition: novice (follows rules), advanced beginner (recognizes patterns), competent (plans), proficient (sees what the situation calls for), expert (responds without deliberation).<a href="#fn36" class="footnote-ref" id="fnref36" role="doc-noteref"><sup>36</sup></a></p>
+<p>Hubert Dreyfus spent decades demonstrating the same point from within philosophy. In <em>What Computers Can't Do</em> (1972), he showed that human expertise does not work the way AI programmers assumed. The chess master does not search a decision tree. The experienced driver does not consult rules. The skilled nurse does not run through a checklist. They perceive the situation directly and respond from a capacity built through years of embodied practice. Dreyfus and his brother Stuart (1986) formalized a model of skill acquisition: novice (follows rules), advanced beginner (recognizes patterns), competent (plans), proficient (sees what the situation calls for), expert (responds without deliberation).<a href="#fn53" class="footnote-ref" id="fnref53" role="doc-noteref"><sup>53</sup></a><a href="#fn36" class="footnote-ref" id="fnref36" role="doc-noteref"><sup>36</sup></a></p>
 <p>Translated into eigenvalues: the novice's skill sits near $\lambda_1 \approx 0$. Effortful, fragile, slow to recover from perturbation. The expert's skill is a deep attractor basin, $\lambda_1$ strongly negative, fluid and resilient. The shift from competent to proficient is the bifurcation, the point where the skill stops being consciously maintained and becomes dynamically stable. I like this mapping. I also want to flag that it is a mapping. Dreyfus supplies the stages; I am supplying the eigenvalues, and I have not measured one.</p>
 <p>The felt sense of stability, instability, and threshold is, I think, the body's continuous estimate of that quantity. The gut feeling that something is wrong, the calm that settles when a situation is under control, the electric alertness when conditions are changing fast. What Lawrence called blood knowledge, what clinicians call clinical intuition, what traders call feel for the market. The next two sections are about how far to trust it.</p>
 <h4 id="theory-as-extension">3.6 Theory as Extension</h4>
@@ -614,53 +564,13 @@
 <p><strong>Neuroscience</strong> <em>(strong data, contested interpretation)</em>. Cortex operates <em>near</em> criticality, and the best subsampling-corrected estimates put it slightly below the critical point, not at it. Awareness correlates with near-critical dynamics; deep sleep and anesthesia show markedly more subcritical dynamics. It is tempting to offer this as a "consistency check" confirming that T3 requires T5. It is not a check. The correlation is real, and reading it as confirmation of my axioms is exactly the after-the-fact accommodation I warned about above.</p>
 <p><strong>Clinical Medicine</strong> <em>(good, and better documented by others than by me)</em>. Patient acuity, nurse-to-patient ratios, bed availability, staff fatigue. The nurse-to-patient ratio works as an eigenvalue proxy: below threshold, recovery time from patient crises diverges, cross-patient correlations rise, and "failure to rescue" cascades emerge. Cook and Rasmussen described the saturated state directly, and gave it the name clinicians already used: <strong>"going solid."</strong> A hospital with every bed full and nothing deferrable. No slack anywhere, so any new demand must displace something.<a href="#fn44" class="footnote-ref" id="fnref44" role="doc-noteref"><sup>44</sup></a> That is $\lambda_1 \approx 0$ described from the floor, by people who did not need the eigenvalue to see it.</p>
 <p><strong>Financial Markets</strong> <em>(suggestive, retrospective)</em>. Leverage, liquidity, spreads, volatility. The 2008 crisis exhibited rising cross-asset correlations, increasing autocorrelation in credit spreads, and declining liquidity before the Lehman bifurcation. I flag this one as retrospective because that is what it is: the signatures are visible in the data <em>now</em>. Reading them live, in advance, with a false-positive rate low enough to act on, is the hard problem and it is not solved by noticing them afterwards.</p>
-<p><strong>Democratic Governance</strong> <em>(analogy)</em>. Trust as an eigenvalue proxy: high trust means institutions recover from scandals; eroded trust means each crisis reinforces distrust. I find this illuminating and I have no measurement to offer. It belongs in the same category as the developmental spiral earlier: literary work, honestly labeled.</p>
-<p><strong>Organizational Change</strong> <em>(analogy)</em>. Adoption rate, resistance, leadership commitment. Same caveat.</p>
 <h4 id="participatory-vs-regulatory-feedback">4.4 Participatory vs. Regulatory Feedback</h4>
 <p>Classical control theory distinguishes the controller from the system. The thermostat regulates temperature but does not participate in the thermodynamics. It observes, compares to setpoint, and actuates. The feedback is regulatory: deviation triggers correction.</p>
 <p>But humans embedded in complex systems are not thermostats. The security analyst is a state variable. Her attention, fatigue, and judgment are inside the dynamics. The feedback loop passes through her. She does not merely observe the system; she participates in its trajectory. As with the guitarist (Part 1), the skill is maintaining dynamic equilibrium through continuous modulation—not at a fixed setpoint, but at the edge where the system could go either way.</p>
-<p><strong>Definition 3.4.1 (Participatory Feedback).</strong> <em>Participatory feedback</em> occurs when the observer is a state variable whose dynamics couple to the system's dominant eigenvalue. The participant's modulation shifts $\lambda_1$.</p>
+<p>That is the whole distinction: the observer is a state variable whose dynamics couple to the system's dominant eigenvalue, and the participant's modulation shifts $\lambda_1$.</p>
 <p>This is the difference between a switch and a living being. Regulatory feedback responds to the loop. Participatory feedback plays it.</p>
 <h4 id="the-paradigm-shift">4.5 The Paradigm Shift</h4>
 <p>Classical cybernetics established the mathematics of feedback control, but assumed a separation: the governor is not the engine. That separation breaks down in complex adaptive systems where humans are participants.</p>
-<table>
-<colgroup>
-<col class="col-w-50" />
-<col class="col-w-50" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Classical Control</th>
-<th>Threshold Paradigm</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Controller outside system</td>
-<td>Participant inside system</td>
-</tr>
-<tr class="even">
-<td>Fixed setpoint</td>
-<td>Dynamic equilibrium at $\lambda_1 \approx 0$</td>
-</tr>
-<tr class="odd">
-<td>Deviation is error</td>
-<td>Sensitivity is leverage</td>
-</tr>
-<tr class="even">
-<td>Goal: eliminate perturbation</td>
-<td>Goal: modulate at the edge</td>
-</tr>
-<tr class="odd">
-<td>Stability = returning to setpoint</td>
-<td>Stability = keeping $\lambda_1 &lt; 0$ while staying near threshold</td>
-</tr>
-<tr class="even">
-<td>Control through actuation</td>
-<td>Influence through participation</td>
-</tr>
-</tbody>
-</table>
 <p>The paradigm shift is this: <strong>humans do not control complex systems from outside; they tune eigenvalues from within.</strong></p>
 <h4 id="the-resilience-engineering-lineage">4.6 The Lineage This Reinvents</h4>
 <p>I need to give a substantial amount of credit back. Part 4 recapitulates about thirty years of resilience engineering, and for a long time I did not know it existed. The readers I most want are the people who run security operations and reliability organizations. To them the omission would read as not having done the reading, and they would be right.</p>
@@ -718,60 +628,8 @@
 <p>Is brittleness, meaning how <em>abruptly</em> a system fails once it exceeds its boundary, a property of the bifurcation type instead of the distance to the bifurcation, and if so, can it be estimated separately from $\lambda_1$?</p>
 <p><em>Why it is answerable:</em> this one is a Query and not a result only because I have not done it, and unlike the others it does not need any quantum mechanics. I credited Woods above with the observation that brittleness and closeness-to-boundary are different things, and that my framework collapses them. Bifurcation type is determined by the higher-order terms in the normal form, and those are in principle estimable from the same time series that give $\lambda_1$. The quadratic coefficient distinguishes a saddle-node from a transcritical. The sign of the cubic term separates a subcritical from a supercritical Hopf, which is the difference between a system that fails gently and one that fails catastrophically. If that estimation is feasible on operational data, it is the most useful thing here, and it belongs in Part 4 rather than down here. I have put it in the Queries because I have not established that it is feasible, and I would rather be caught not having tried than be caught implying I had.</p>
 <h3 id="conclusion">Conclusion</h3>
-<p>A system has <strong>threshold structure</strong> if it satisfies:</p>
-<table>
-<colgroup>
-<col class="col-w-42" />
-<col class="col-w-23" />
-<col class="col-w-34" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Condition</th>
-<th>Name</th>
-<th>Content</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>T1</td>
-<td>Environmental Feedback Closure</td>
-<td>Feedback loops pass through environment</td>
-</tr>
-<tr class="even">
-<td>T2</td>
-<td>Multi-Scale Nesting</td>
-<td>Multiple timescale levels</td>
-</tr>
-<tr class="odd">
-<td>T3</td>
-<td>Awareness</td>
-<td>Self-model tracking internal and environmental states</td>
-</tr>
-<tr class="even">
-<td>T4</td>
-<td>Desire</td>
-<td>Self-evaluated adaptive reference states</td>
-</tr>
-<tr class="odd">
-<td>T5</td>
-<td>Threshold Sensitivity</td>
-<td>Operation near bifurcation ($\lambda_1 \to 0$)</td>
-</tr>
-<tr class="even">
-<td>T6</td>
-<td>Will</td>
-<td>Volitional modulation of environmental coupling</td>
-</tr>
-</tbody>
-</table>
 <p>This exploration started with something I know well: security operations centers approaching overload, the signatures that precede failure, the experience of being inside a system that is losing its grip. The mathematics of critical transitions gave me language for what I was seeing. The eigenvalue gave me a number.</p>
-<p>From there I followed threads. Four things about the structure at the end of them matter more than the observation that started it.</p>
-<p>The recurrence across domains is <strong>a theorem, not a discovery</strong>, and a deflationary one. A lake and a laser resemble each other near threshold because the reduction destroys almost everything that made them different. That is why the pattern is real and why the transferable content is thin.</p>
-<p>The pattern material <strong>splits in two</strong>. Nature's recurring forms are attractors: maximally stable, deep basins. My subject is the boundaries between attractors, which is the opposite condition on the same quantity. Sacred geometry catalogs the attractors; I am interested in the edges. Citing one as evidence for the other is the easiest mistake in the subject.</p>
-<p>The obvious headline metric <strong>does not work</strong>. MTTR cannot proxy an eigenvalue, because incident durations are heavy-tailed and the mean of a heavy-tailed distribution describes its outliers. What does work is less convenient: fit the recovery curve of individually identified perturbations, one at a time, and never pool across incident classes.</p>
-<p>And the deepest problem is <strong>unsolved</strong>. The framework holds the Jacobian fixed, while its subject matter, systems with the capacity to reorganize when they sense a boundary, changes the Jacobian at the boundary. So the estimate is trustworthy in the regime where nothing is about to happen and unreliable in the regime it was built for. I do not know how to fix this, and I think it is the most interesting thing here.</p>
-<p>What survives all of that is narrow, and I trust it more for being narrow. Systems near tipping points exhibit specific, measurable signatures: slowing recovery, rising variance, rising autocorrelation. They arise from one mathematical cause, and they can be detected in real time series without knowing the equations. Those signatures work for one route to collapse under one set of conditions, and they are silent about the others. Humans embedded in such systems are not outside them, and their modulation is part of the dynamics, not a control input applied to it. Scheffer's own group has now demonstrated the model-free version as a working safety monitor on real hardware. That is the strongest evidence available that the transfer out of ecology into engineered systems is legitimate.</p>
+<p>What survives is narrow, and I trust it more for being narrow. Systems near tipping points exhibit specific, measurable signatures: slowing recovery, rising variance, rising autocorrelation. They arise from one mathematical cause, and they can be detected in real time series without knowing the equations. Those signatures work for one route to collapse under one set of conditions, and they are silent about the others. Humans embedded in such systems are not outside them, and their modulation is part of the dynamics, not a control input applied to it. Scheffer's own group has now demonstrated the model-free version as a working safety monitor on real hardware. That is the strongest evidence available that the transfer out of ecology into engineered systems is legitimate.</p>
 <h4 id="the-bet">A prediction I am willing to be judged on</h4>
 <p>I committed above to a Lakatosian standard: a programme earns its keep by predicting novel facts, not by accommodating known ones. So here is the bet, stated in advance, in a form that can come back false.</p>
 <p><strong>The prediction.</strong> In a security operations organization drifting toward a capacity threshold, the <em>upper quantiles</em> of the perturbation-recovery-time distribution will broaden <strong>before</strong> the incident rate rises, leading it by weeks, not following it. Concretely: track the ratio of the 90th percentile to the median recovery time across individually identified perturbations. That ratio should rise measurably while the incident count is still flat, and it should rise before any of the conventional indicators (queue depth, alert volume, MTTR itself) move.</p>
@@ -797,6 +655,14 @@
 <td>Set in state space that trajectories converge toward. Far from threshold: $\lambda_1 \ll 0$</td>
 </tr>
 <tr class="even">
+<td>Autocorrelation</td>
+<td>Correlation of a signal with itself one step later. Rises toward 1 as $\lambda_1 \to 0$, because the system is increasingly just repeating its own recent state</td>
+</tr>
+<tr class="odd">
+<td>Basin of attraction</td>
+<td>The set of states from which trajectories fall into a given attractor. Deep basin: perturbations are corrected. Shallow basin: they are not</td>
+</tr>
+<tr class="even">
 <td>Bifurcation</td>
 <td>Qualitative change in dynamics as a parameter varies</td>
 </tr>
@@ -805,20 +671,28 @@
 <td>How abruptly a system fails once it exceeds its boundary. Closer to bifurcation <em>type</em> than to distance from it (Woods)</td>
 </tr>
 <tr class="even">
+<td>Codimension-1</td>
+<td>A bifurcation reached by tuning a single parameter. The generic case, and the only one this essay treats</td>
+</tr>
+<tr class="odd">
+<td>Control parameter</td>
+<td>The quantity being tuned from outside the fast dynamics: nutrient load, pump rate, movement frequency, alert volume. Crossing its critical value is what causes the bifurcation</td>
+</tr>
+<tr class="even">
+<td>Critical slowing down</td>
+<td>Divergent recovery time as $\lambda_1 \to 0$</td>
+</tr>
+<tr class="odd">
 <td>Criticality (sense 1)</td>
 <td>Local bifurcation; the <em>time</em> constant diverges. My machinery</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Criticality (sense 2)</td>
 <td>Critical point of a phase transition; the <em>correlation length</em> diverges. Scale invariance, power laws, universality</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Criticality (sense 3)</td>
 <td>Self-organized criticality; power-law avalanches with no tuned parameter (Bak)</td>
-</tr>
-<tr class="odd">
-<td>Critical slowing down</td>
-<td>Divergent recovery time as $\lambda_1 \to 0$</td>
 </tr>
 <tr class="even">
 <td>Dark debt</td>
@@ -841,6 +715,14 @@
 <td>Matrix of partial derivatives encoding linearized dynamics near equilibrium. Assumed fixed: see Section 4.8</td>
 </tr>
 <tr class="odd">
+<td>Normal form</td>
+<td>The simplest equation a system is equivalent to near a bifurcation, after the fast directions have been eliminated. The short list of normal forms is why unrelated systems resemble each other at threshold</td>
+</tr>
+<tr class="even">
+<td>Order parameter</td>
+<td>The quantity that becomes non-zero on one side of a transition and measures how far it has gone: the light field of a laser, the relative phase of two moving fingers</td>
+</tr>
+<tr class="odd">
 <td>Participatory feedback</td>
 <td>Feedback where the observer is a state variable whose dynamics couple to $\lambda_1$</td>
 </tr>
@@ -858,7 +740,11 @@
 </tr>
 </tbody>
 </table>
-<h3 id="appendix-b-key-equations">Appendix B: Key Equations</h3>
+<h3 id="appendix-b-key-equations">Appendix B: The Claims, and the Equations</h3>
+<p><em>The argument in the order a reviewer would want it, before the story. If you came for the conclusions rather than the route to them, start here.</em></p>
+<p>Systems near tipping points, where the dominant eigenvalue of the Jacobian approaches zero, share structural features across wildly different domains. A security operations center approaching overload, a lake approaching eutrophication, a brain sustaining consciousness, a guitarist sustaining a note at the edge of feedback. In each case the same local mathematics applies: critical slowing down, rising autocorrelation, divergent recovery times, sensitivity to small perturbations.</p>
+<p>I call the shared structure <strong>threshold structure</strong>: a dynamical configuration characterized by environmental feedback closure, multi-scale nesting, self-modeling, adaptive reference states, threshold sensitivity, and volitional modulation. The foundation draws on critical transitions (Scheffer), second-order cybernetics (von Foerster), and resilience theory (Holling). The dominant eigenvalue $\lambda_1$ of the Jacobian is the central quantity: when $\lambda_1 \to 0$ the system is at threshold, maximally sensitive, poised between attractors.</p>
+<p>Two caveats bound everything. First, the recurrence across domains is <em>a theorem, and a deflationary one</em>: near a codimension-1 bifurcation almost all information about what a system is gets destroyed, which is why a lake and a laser look alike there. The recurrence is real, and the transferable payload is correspondingly thin. Second, the framework linearizes around an equilibrium and reads $\lambda_1$ off a <em>fixed</em> Jacobian, while its own subject matter, systems that reorganize when they sense the boundary, changes the Jacobian in the one regime where the number would be most useful. I do not have a solution to the second problem.</p>
 <p><strong>Dynamical system:</strong> $$\frac{d\mathbf{s}}{dt} = \mathbf{F}(\mathbf{s})$$</p>
 <p><strong>Stability (linearized about an equilibrium $\mathbf{s}^*$):</strong> $$\frac{d(\mathbf{s}-\mathbf{s}^*)}{dt} \approx J(\mathbf{s}-\mathbf{s}^*), \qquad J_{ij} = \frac{\partial F_i}{\partial s_j}\bigg|_{\mathbf{s}^*}$$ Stable if all eigenvalues have $\text{Re}(\lambda) &lt; 0$.</p>
 <p><strong>Critical slowing down:</strong> $$\tau = \frac{1}{|\text{Re}(\lambda_1)|} \to \infty \text{ as } \lambda_1 \to 0$$</p>
@@ -1288,6 +1174,10 @@
 <li id="fn51"><p><strong>Source for Query 3.</strong> Tim Maudlin, "Three Measurement Problems," <em>Topoi</em> 14, 7-15 (1995), <a href="https://doi.org/10.1007/BF00763473">doi:10.1007/BF00763473</a>.</p>
 <p>Maudlin's contribution is to show that "the measurement problem" names three distinct and inequivalent problems, and that different interpretations of quantum mechanics solve different ones, so a proposal can look like a solution while addressing a problem its proponents were not worried about. Roughly: the problem of outcomes (how a determinate result arises from a superposed state), the problem of statistics (why the Born rule), and the problem of effect (how the measured system is disturbed).</p>
 <p><strong>Why this is the right citation for a Query I expect to fail.</strong> Query 3 asks whether the measurement problem and the self-representation problem are the same question in different vocabularies. Maudlin's analysis is the sharpest available reason to think they are not: at least two of his three problems are about the <em>structure of the theory</em> (its dynamical laws and their consistency) rather than about the representational capacities of any physical system, and a theorem about self-representation (note 15) has no evident purchase on either. Citing him is the honest way to state the Query, because it puts the strongest objection to it in the same place as the Query itself.<a href="#fnref51" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<!-- TYPE A -->
+<li id="fn52"><p><strong>The spiral, and why it is down here.</strong> The logarithmic spiral is self-similar under rotation: each quarter-turn reproduces the same shape at larger scale, which makes it the natural geometry for systems that return to similar states at greater magnitude. Development looks like that. An organism meets homeostatic challenges again at each stage of growth with expanded capacity; a person meets the same tensions across decades at larger scale. I find the picture useful and I cannot measure it. The self-similarity of the curve is a fact; the developmental claim is an analogy, and the connection between them is literary work rather than mathematical work. It sits in a note because that is what it is worth.<a href="#fnref52" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<!-- TYPE B -->
+<li id="fn53"><p><strong>Aristotle got here first, in a different vocabulary.</strong> Habituation (<em>ethismos</em>) in the <em>Nicomachean Ethics</em> is skill acquisition described from the inside: by repeatedly acting courageously one becomes courageous, which in this vocabulary is practice carving an attractor basin. Virtue as a mean between extremes is not a static point but a dynamic balance, and <em>phronesis</em>, the perception of what a situation calls for, is threshold-sensing under another name. Character as the slow variable modulating fast response is T2. I am not claiming this as a result. The mapping renames Aristotle in a second vocabulary without predicting anything about virtue that he had not already supplied, and a resemblance that predicts nothing is a resemblance.<a href="#fnref53" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
 
