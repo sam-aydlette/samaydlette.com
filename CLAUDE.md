@@ -19,7 +19,8 @@ Confirm against the working tree on first run; correct this section if reality d
 - `scripts/` — the artifact **generators**: `build-ksi-signal.py` (the canonical inventory), `build-oscal-ssp.py`, `build-oscal-poam.py`, and the VDR builder. These are the source of truth for everything published.
 - `website/` — static site content. `website/.well-known/` holds the **published** artifacts (KSI signal + bundle, OSCAL SSP/POA&M, VDR + trend, IIW CSV, runtime signal, signing pubkey, schema).
 - `docs/` — `poam.md` (the human POA&M, including the False Positives register), `policies/`, and `assessment/` (e.g. `ground-truth.md`).
-- `website/research/` — methodology and scope docs rendered on the site: `authorization-boundary.html`, `the-plumbing.html`. **Read these first for the "why."**
+- `website/research/` — methodology and scope docs rendered on the site: `authorization-boundary.html`, `the-plumbing.html`. **Read these first for the "why."** Also the long-form essays: `tuning-the-eigenvalue.html` (threshold dynamics; retitled "Being in the Loop" but the filename is referenced by `build-ksi-signal.py`, so **do not rename it**) and its methods companion `estimating-lambda1-from-compliance-telemetry.html`.
+- `tools/essay/` — gates for the essays, run from the repo root: `integrity.py` (HTML balance, duplicate ids, footnote ref/backlink parity, broken anchors) and `prose_stats.py` (prose levers against a baseline revision pinned in the script). `ed.py` is an exact-replacement helper that writes only if every pattern matches exactly once.
 - `website/viewer.html` — the dashboard. It is a presentational shell; **the JSON under `/.well-known/` is the source of truth, not the HTML.**
 - `.github/workflows/deploy-with-opa.yml`, `infrastructure/Makefile`, `.checkov.yaml` — the pipeline, entry points, and IaC scan config.
 
@@ -32,6 +33,7 @@ The system rests on one idea: **the canonical inventory is the single source of 
 - **NEVER hand-edit generated artifacts** (`/.well-known/*.json`, the SSP/POA&M, the KSI signal, the VDR). Change the **generator** in `scripts/` and regenerate.
 - All artifacts must build from one inventory `signal_id`/hash and carry it. Keep `docs/poam.md` and the generated `oscal-poam.json` in sync — change both together.
 - A **reconciliation gate** runs in CI before publish and **fails closed**. **NEVER disable, weaken, or bypass it (or the OPA gate) to make a build pass.** Fix the underlying issue or raise it.
+- **Site content is inventoried content.** `build_html_components()` in `scripts/build-ksi-signal.py` hashes **every** `*.html` under `website/` into the canonical inventory as an `html_artifact`. So editing a page changes its sha256 in the KSI signal, the SSP, and the VDR, and *adding* a page adds a component. Both are fine and both are generator-driven: run the pipeline, never hand-add the entry. A content-only change is still a pipeline change.
 - **Publish freshness:** a green pipeline must publish *this run's* artifacts. The served `/.well-known/*` must carry the current commit and a fresh `emitted_at`; a stale serve is a bug, not a cache quirk. This has bitten before — verify the post-deploy round-trip.
 
 ## How to work

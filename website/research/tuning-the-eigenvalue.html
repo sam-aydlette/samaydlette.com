@@ -594,47 +594,6 @@
 <p>One general caution before the methods, because it invalidates a lot of standard practice and the MTTR problem below is a special case of it: <strong>heavy-tailed operational data breaks mean-based estimators, and most operational data is heavy-tailed.</strong> Any time I propose a metric of the form "average time to X," or anyone else does, ask first what the distribution looks like. If it has a long right tail, and incident data reliably does, the average is a number about the outliers, not about the system.</p>
 <h4 id="use-case-security-operations">4.2 Use Case: Security Operations</h4>
 <p><em>The security operations center is a good proving ground: it produces time series, has measurable state variables, exhibits observable threshold dynamics, and is staffed by humans whose attention and judgment are inside the loop rather than outside it.</em></p>
-<h5 id="security-state-space">4.2.1 Security State Space</h5>
-<p>Represent the security state as a vector with components for vulnerability state (count, severity, exploitability), configuration drift from baseline, exposure or attack surface, analyst attention and fatigue, and response capacity. Additional components can be added; these are the ones that reliably move.</p>
-<p>Note that analyst attention is a <em>state variable</em>, not a parameter. That is the whole difference between this model and a conventional risk model, and everything interesting follows from it.</p>
-<h5 id="evolution-equation">4.2.2 Evolution Equation</h5>
-<p>The state evolves under three influences: internal dynamics (automated processes, natural drift, attention decay), threat forcing (attacker activity, new CVEs), and development forcing (deployments, changes). For stability analysis we absorb the time-averaged forcing into the equilibrium condition and treat deviations as perturbations.</p>
-<p>That absorption is a real assumption and it is doing more work than it looks like. It requires the forcing to be roughly stationary over the estimation window. An adversary who adapts to your defenses is not stationary forcing, which is one reason the Jacobian problem below matters.</p>
-<h5 id="equilibria-and-the-jacobian">4.2.3 Equilibria and the Jacobian</h5>
-<p>Multiple equilibria may exist: a <strong>secure attractor</strong> where detection outpaces exploitation and remediation outpaces introduction, and a <strong>compromised attractor</strong> where the system drifts toward breach. The Jacobian at an equilibrium encodes how each state variable responds to changes in every other one.</p>
-<p><strong>In plain language:</strong> each entry answers a question like "if the vulnerability count goes up by one, how fast does configuration drift change?" The matrix is a complete map of how every variable influences every other, evaluated at the current steady state. The eigenvalue conditions from Part 2 then apply directly: a negative real eigenvalue means an alert spike triggers a response and the system returns to normal. A positive one means alert fatigue spirals: more alerts, less attention, more missed alerts, more alerts. Complex eigenvalues with negative real part describe oscillating remediation cycles that eventually settle; complex with positive real part describes escalating boom-bust.</p>
-<h5 id="security-bifurcations">4.2.4 Security Bifurcations</h5>
-<table>
-<colgroup>
-<col class="col-w-37" />
-<col class="col-w-62" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Bifurcation</th>
-<th>Security Manifestation</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Saddle-node</td>
-<td>Staffing drops below minimum; the secure equilibrium vanishes</td>
-</tr>
-<tr class="even">
-<td>Transcritical</td>
-<td>Alert volume crosses threshold; triage quality inverts</td>
-</tr>
-<tr class="odd">
-<td>Hopf</td>
-<td>System begins oscillating between alert flood and calm</td>
-</tr>
-<tr class="even">
-<td>Pitchfork</td>
-<td>Security posture splits into "good team" / "bad team" modes</td>
-</tr>
-</tbody>
-</table>
-<p>The saddle-node is the most operationally relevant, and it is the one in the 3 a.m. scenario. In the one-dimensional reduction $dx/dt = \mu - x^2$, the parameter $\mu$ is remediation capacity minus vulnerability introduction rate. When $\mu$ crosses zero the secure equilibrium does not degrade. It <em>ceases to exist</em>. There is no warning in the state variable itself, only in how it recovers.</p>
 <h5 id="why-mttr-fails">4.2.5 Why MTTR fails as an eigenvalue proxy</h5>
 <p>The obvious operational proxy for $1/|\lambda_1|$ is mean time to recover. Proposition 1 says recovery time is the quantity that diverges at threshold, and everyone already tracks MTTR. So $\text{MTTR} \propto 1/|\lambda_1|$ is the obvious headline measurement to reach for.</p>
 <p>It does not work. This is the error most likely to be caught immediately by the readers I most want, because the people who run incident response already know the counter-evidence.</p>
@@ -648,55 +607,7 @@
 <li><p><strong>The distribution of recovery times, tracked by quantile</strong>: the fallback when you cannot identify discrete perturbations. Track the median and the 90th percentile separately and watch them move. A rising median with a stable p90 means something different from a stable median with a rising p90, and the mean collapses both into one uninformative number.</p></li>
 </ol>
 <p>The approach to avoid is the aggregate-metric one: composite stability indices built from ratios of averages, say a product of remediation-to-introduction, detection, and capacity ratios. It is intuitive, it is easy to put on a slide, and it inherits every distributional problem above from each of its three factors at once.</p>
-<h5 id="fedramp-ksi-eigenvalue-estimation">4.2.6 Estimating the eigenvalue from compliance telemetry</h5>
-<p><a href="https://www.fedramp.gov/20x/">FedRAMP 20x</a> mandates deterministic telemetry and persistent validation, which means a compliance pipeline now emits the kind of uniformly-sampled time series that eigenvalue estimation needs. This is a new opportunity: continuous monitoring data was designed to answer "are you compliant today," and it happens to also answer "how fast do you recover," which is a much harder question and a more useful one.</p>
-<p><strong>What the method does.</strong> Take seven observable Key Security Indicators: open vulnerabilities, critical findings, configuration drift, remediation queue depth, response capacity, patch compliance, and asset telemetry coverage: sampled daily. Fit a model that predicts tomorrow's vector from today's. The eigenvalues of the fitted coefficient matrix say whether the system returns to equilibrium after a disturbance and how fast. Convert those to continuous time and the dominant one is $\lambda_1$.</p>
-<p><strong>What it needs.</strong> Roughly ten observations per variable for the autoregressive fit, so about seventy days of daily data for a seven-component vector; two weeks after a perturbation for the response method; ninety days for reliable trend detection in the slowing-down indicators.</p>
-<p><strong>What it outputs.</strong> A dominant eigenvalue with a sign and a magnitude: negative and large means a comfortable stability margin, negative and near zero means the margin has gone, positive means the system is diverging and the only question is when. Plus the off-diagonal structure, which says which subsystems are coupled: usually the more actionable result, because coupling is something you can go and cut.</p>
-<p>The full method: the estimator, the algorithm, the data sources, the sampling requirements, the detection rules for critical slowing down, and the back-testing procedure: is in <a href="#appendix-d-estimation-method">Appendix D</a>. It is a methods paper and it does not belong in the middle of this one.<a href="#fn42" class="footnote-ref" id="fnref42" role="doc-noteref"><sup>42</sup></a></p>
-<p>One warning that does belong here. Everything in that appendix estimates a Jacobian from history and assumes it still applies. Section 4.8 is about why that assumption fails hardest in the situations you built the estimator for.</p>
-<h5 id="multi-threshold-cascade-analysis">4.2.7 Multi-Threshold Cascade Analysis</h5>
-<p>Real environments have several thresholds operating semi-independently: alert volume, staffing, vulnerability accumulation, configuration drift. Each is a condition where some subsystem's dominant eigenvalue approaches zero.</p>
-<p>They are coupled, which means crossing one shifts the effective parameters of the others. A cascade occurs when that shift is enough to push a neighbouring subsystem across its own threshold. In practice: an alert volume spike produces analyst fatigue, which produces missed vulnerabilities, which pushes vulnerability accumulation across its threshold, which produces the compromise. Each step is small and each step is legible only in retrospect.</p>
-<p>This is the mechanism Woods calls <strong>decompensation</strong>: a system that absorbs a challenge, then absorbs the next one with less margin, then falls over, and the fall looks sudden from outside even though the capacity was draining the entire time.</p>
-<h5 id="control-implications">4.2.8 Control Implications</h5>
-<p>Control theory provides tools for <strong>eigenvalue placement</strong>: designing feedback to shift eigenvalues leftward, increasing the stability margin. For security operations that means strengthening negative feedback (faster detection-response loops), weakening positive feedback (breaking alert-fatigue spirals), and increasing damping (reducing oscillation).</p>
-<table>
-<colgroup>
-<col class="col-w-48" />
-<col class="col-w-51" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Desired Eigenvalue Shift</th>
-<th>Operational Implementation</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>More negative real part</td>
-<td>Faster recovery, automation, reduced queue depth</td>
-</tr>
-<tr class="even">
-<td>Reduced imaginary part</td>
-<td>Smoother workflows, reduced boom-bust cycles</td>
-</tr>
-<tr class="odd">
-<td>Increased stability margin</td>
-<td>Capacity buffer, redundancy, cross-training</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Observability:</strong> can we infer system state from available measurements? Telemetry gaps create unobservable modes: eigenvalues we cannot detect. <strong>Controllability:</strong> can we influence all state variables? Uncontrollable modes, such as threat actor behavior, must be treated as forcing functions, not state variables.</p>
-<p>Note the tension with the drift argument above. Eigenvalue placement says: buy margin. The law of stretched systems says: any margin you buy will be spent on new demand unless something actively protects it. Both are true, which means the control problem is not technical.</p>
-<h5 id="worked-example-two-variable-model">4.2.9 Worked Example: Two Variables, One Number</h5>
-<p>The smallest model that shows the real behavior has two variables: $V$, the open vulnerability count, and $R$, effective response capacity. Four things happen. Vulnerabilities arrive at rate $\alpha$. They get remediated, but the remediation <em>saturates</em>: when the queue is short, more vulnerabilities means proportionally more fixed; when the queue is long, each additional one gets less attention and the total rate flattens out. Vulnerabilities also decay on their own as the environment rotates. And capacity drains: every open vulnerability consumes some analyst attention, so a growing queue directly reduces the capacity available to shrink it.</p>
-<p>That last coupling is where the failure comes from. It is a positive feedback loop between workload and incapacity, and it is why the failure is a cliff, not a slope.<a href="#fn43" class="footnote-ref" id="fnref43" role="doc-noteref"><sup>43</sup></a></p>
-<p><strong>The result.</strong> With plausible default parameters, the model undergoes a saddle-node bifurcation at</p>
-<p>$$\alpha_c \approx 6.09 \text{ vulnerabilities per day.}$$</p>
-<p>Below that rate, a stable equilibrium exists, perturbations decay, and recovery time scales as $1/|\lambda_1|$. As $\alpha$ climbs toward 6.09, the equilibrium still exists but $\lambda_1 \to 0^-$: recovery slows, variance grows, autocorrelation approaches 1. Above 6.09 there is no equilibrium at all. Vulnerabilities accumulate, capacity drains, and the feedback between them accelerates the divergence.</p>
-<p><strong>In plain language:</strong> there is an arrival rate above which this team cannot exist in a steady state, not "performs badly," but has no steady state to be in. And the number is not large. Six vulnerabilities a day is an unremarkable Tuesday. The interesting operational fact is that the team at $\alpha = 5.5$ and the team at $\alpha = 6.5$ look almost identical on any static dashboard, and are in completely different dynamical regimes.</p>
-<p>I want to be clear about what this number is and is not. It is a property of a two-equation toy with parameters I chose to be plausible. It is not a measurement of anything, and 6.09 is not a threshold anyone should adopt. What is transferable is the <em>shape</em>: saturating response plus capacity drain gives you a saddle-node, and a saddle-node gives you a cliff with critical slowing down in front of it. Section 2.9.1 is the reason that shape transfers and the specific number does not.</p>
+<p>The method itself is a separate document: <a href="estimating-lambda1-from-compliance-telemetry.html">Estimating the Dominant Eigenvalue from Compliance Telemetry</a>. It carries the state space, the estimator, the algorithm, the data sources, the sampling requirements, the detection rules, and the back-testing procedure, in the order of preference just given. It is a methods paper and it was making this one unreadable.</p>
 <h4 id="applications-across-domains">4.3 Applications Across Domains</h4>
 <p>The same structure appears across domains, each with its own state variables, threshold conditions, and tuning mechanisms. I have marked how much confidence each one carries, because they are not equal and it would be easy to present them as though they were.</p>
 <p><strong>Ecology</strong> <em>(strongest. This is the source domain)</em>. Scheffer's original field. Species populations, resource concentrations, environmental parameters; the dominant eigenvalue governs recovery rate after perturbation. Critical slowing down has been reported preceding lake eutrophication, savanna-forest transitions, and coral reef collapse. A clear lake receiving increasing nutrient input maintains clarity through feedback until $\lambda_1 \to 0$. After that, recovery from algal blooms takes longer and longer, until it tips to a turbid state. This is also the domain with the sharpest published challenge to the method,<a href="#fn12" class="footnote-ref" role="doc-noteref"><sup>12</sup></a> which is what a healthy field looks like.</p>
@@ -1024,183 +935,6 @@
 </tr>
 </tbody>
 </table>
-<h3 id="appendix-d-estimation-method">Appendix D: Estimating $\lambda_1$ from Compliance Telemetry</h3>
-<p><em>This is the methods material formerly embedded in Part 4. It is here because it is a methods paper and it was making the body unreadable. Section 4.2.6 summarizes what it does; this is how.</em></p>
-<p><strong>Read Section 4.2.5 first.</strong> The single most important thing in this appendix is which estimator you use. The perturbation-response method is a direct measurement; everything else is an inference from a summary statistic, and summary statistics of heavy-tailed operational data are treacherous. Order of preference: perturbation-response, then autoregressive fit, then the slowing-down indicators, then variance amplification. Do not build a composite index out of means.</p>
-<h4 id="d1-state-vector">D.1 The KSI state vector</h4>
-<p><a href="https://www.fedramp.gov/20x/">FedRAMP 20x</a> mandates deterministic telemetry and persistent validation, which yields uniformly sampled time series. Define the observable state vector:</p>
-<p>$$\mathbf{K}(t) = \begin{pmatrix} V_{\text{open}}(t) \\ V_{\text{critical}}(t) \\ C_{\text{drift}}(t) \\ Q_{\text{depth}}(t) \\ R_{\text{capacity}}(t) \\ P_{\text{compliance}}(t) \\ A_{\text{coverage}}(t) \end{pmatrix}$$</p>
-<table>
-<colgroup>
-<col class="col-w-20" />
-<col class="col-w-38" />
-<col class="col-w-41" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Component</th>
-<th>Meaning</th>
-<th>Data source</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>$V_{\text{open}}$</td>
-<td>Count of open vulnerabilities</td>
-<td>Vulnerability scanner exports</td>
-</tr>
-<tr class="even">
-<td>$V_{\text{critical}}$</td>
-<td>Critical/high severity findings</td>
-<td>Filtered scanner data (CVSS ≥ 7.0)</td>
-</tr>
-<tr class="odd">
-<td>$C_{\text{drift}}$</td>
-<td>Configuration drift (% deviation from baseline)</td>
-<td>Configuration management delta reports</td>
-</tr>
-<tr class="even">
-<td>$Q_{\text{depth}}$</td>
-<td>Remediation queue depth</td>
-<td>Ticketing system query</td>
-</tr>
-<tr class="odd">
-<td>$R_{\text{capacity}}$</td>
-<td>Available response capacity (FTEs × efficiency)</td>
-<td>Staffing records × utilization</td>
-</tr>
-<tr class="even">
-<td>$P_{\text{compliance}}$</td>
-<td>Patch compliance rate (% systems current)</td>
-<td>Patch management reports</td>
-</tr>
-<tr class="odd">
-<td>$A_{\text{coverage}}$</td>
-<td>Asset coverage ratio (% assets with telemetry)</td>
-<td>Asset inventory vs. telemetry coverage</td>
-</tr>
-</tbody>
-</table>
-<p>Recommended sampling: daily snapshots for all components, weekly aggregates for trend analysis, monthly rolling windows for eigenvalue estimation.</p>
-<p>Minimum data requirements: autoregressive estimation needs $N \geq 10d$ observations, so 70+ days for a 7-component vector; perturbation-response needs 14+ days post-perturbation; slowing-down detection needs 90+ days for reliable trend detection.</p>
-<h4 id="d2-perturbation-response">D.2 Perturbation-response method (preferred)</h4>
-<p>This method exploits natural experiments: known perturbations followed by measurable recovery. Suitable events include a major CVE disclosure affecting the environment, a significant deployment or infrastructure change, an analyst departure or addition, a tool outage and restoration, or an audit finding requiring remediation.</p>
-<p><em>Step 1.</em> At time $t_0$, identify a perturbation $\delta\mathbf{K}$: a vulnerability spike, a queue surge, with a known magnitude.</p>
-<p><em>Step 2.</em> Track the deviation from the pre-perturbation baseline: $\Delta K_i(t) = K_i(t) - K_i^{\text{baseline}}$.</p>
-<p><em>Step 3.</em> For a stable system the deviation decays exponentially, $\Delta K_i(t) \approx \Delta K_i(t_0) e^{\lambda_1 (t - t_0)}$. Fit by log-linear regression:</p>
-<p>$$\ln|\Delta K_i(t)| = \ln|\Delta K_i(t_0)| + \lambda_1 (t - t_0)$$</p>
-<p>The slope is $\lambda_1$ directly.</p>
-<p><em>Step 4.</em> If multiple components are perturbed, the full recovery decomposes over modes, $\Delta\mathbf{K}(t) = \sum_i c_i \mathbf{v}_i e^{\lambda_i (t - t_0)}$, and principal component analysis of the recovery trajectory separates them.</p>
-<p><strong>Why this one is preferred:</strong> it never pools across incident classes. Each event carries its own magnitude and its own recovery curve, so the heavy-tail problem that destroys mean-based metrics (Section 4.2.5) does not arise. Report the resulting $\lambda_1$ estimates as a distribution across events, by quantile, not as an average.</p>
-<h4 id="d3-var">D.3 Autoregressive estimation</h4>
-<p><em>Step 1.</em> Collect $N$ observations at uniform intervals $\Delta t$ and standardize each component to zero mean and unit variance: $\tilde{K}_i(t) = (K_i(t) - \bar{K}_i)/\sigma_{K_i}$.</p>
-<p><em>Step 2.</em> Fit the first-order model $\tilde{\mathbf{K}}(t + \Delta t) = A \tilde{\mathbf{K}}(t) + \boldsymbol{\epsilon}(t)$ by ordinary least squares:</p>
-<p>$$\hat{A} = \left( \sum_{t=1}^{N-1} \tilde{\mathbf{K}}(t+1) \tilde{\mathbf{K}}(t)^T \right) \left( \sum_{t=1}^{N-1} \tilde{\mathbf{K}}(t) \tilde{\mathbf{K}}(t)^T \right)^{-1}$$</p>
-<p><em>Step 3.</em> Compute the eigenvalues $\{\mu_i\}$ of $\hat{A}$ from $\det(\hat{A} - \mu I) = 0$.</p>
-<p><em>Step 4.</em> Convert to continuous time: $\lambda_i = \ln(\mu_i)/\Delta t$. For complex $\mu_i = r e^{i\theta}$, $\lambda_i = \ln(r)/\Delta t + i\theta/\Delta t$.</p>
-<p><em>Stability criterion:</em> System is stable if $|\mu_i| &lt; 1$ for all $i$ (equivalently, $\text{Re}(\lambda_i) &lt; 0$).</p>
-<p><strong>In plain language:</strong> the model treats tomorrow's metrics as a weighted combination of today's plus noise. The weights form a matrix, and the eigenvalues of that matrix say whether the system is stable (all inside the unit circle) or drifting toward instability (any approaching the boundary). The discrete-to-continuous conversion translates "multiplied each day" into "growing or shrinking per unit time."</p>
-<pre><code>ALGORITHM: Eigenvalue_Estimation_From_KSI
-
-INPUT:
-  K[1..N, 1..d]  -- N observations of d KSIs
-  dt             -- sampling interval (days)
-
-OUTPUT:
-  lambda[1..d]   -- continuous-time eigenvalues
-  stability      -- boolean stability assessment
-  margin         -- distance to instability
-
-PROCEDURE:
-  1. Standardize data:
-     FOR i = 1 TO d:
-       mean[i] = MEAN(K[*, i])
-       std[i] = STDEV(K[*, i])
-       K_tilde[*, i] = (K[*, i] - mean[i]) / std[i]
-
-  2. Construct design matrices:
-     Y = K_tilde[2..N, *]           -- (N-1) x d matrix
-     X = K_tilde[1..N-1, *]         -- (N-1) x d matrix
-
-  3. Estimate coefficient matrix:
-     A = (Y^T * X) * INVERSE(X^T * X)
-
-  4. Compute eigenvalues of A:
-     mu[1..d] = EIGENVALUES(A)
-
-  5. Convert to continuous-time:
-     FOR i = 1 TO d:
-       lambda[i] = LOG(mu[i]) / dt
-
-  6. Assess stability:
-     max_real = MAX(REAL(lambda[*]))
-     stability = (max_real &lt; 0)
-     margin = -max_real
-
-  7. RETURN lambda, stability, margin</code></pre>
-<h4 id="d4-csd">D.4 Critical slowing down detection (model-free)</h4>
-<p>These work without fitting an explicit model, which is what makes them deployable, and it is the approach van Beers et al. used for real-time monitoring (Section 4.7).</p>
-<p><em>Method 1: lag-1 autocorrelation.</em> $\rho_1 = \text{Cov}(K(t), K(t + \Delta t))/\text{Var}(K(t))$. For an AR(1) process $\rho_1 \approx e^{\lambda_1 \Delta t}$, so $\rho_1 \to 1$ as $\lambda_1 \to 0^-$. Compute in rolling windows (30 days is a reasonable default); rising $\rho_1$ signals threshold proximity.</p>
-<p><em>Method 2: variance amplification.</em> Near threshold $\sigma^2 \propto \sigma^2_{\text{forcing}}/(2|\lambda_1|)$. Track the coefficient of variation in rolling windows, controlling for changes in the mean.</p>
-<p><em>Method 3: detrended fluctuation analysis.</em> Compute the cumulative deviation $Y(t) = \sum_{s \leq t} (K(s) - \bar{K})$, divide into windows of size $n$, detrend each window, and compute the RMS fluctuation $F(n)$. The scaling exponent $\alpha$ from $F(n) \propto n^\alpha$ indicates white noise at $\alpha = 0.5$, persistent correlations above it, and strong persistence approaching $\alpha \to 1$.</p>
-<p><strong>Scope, carried forward from Section 2.2:</strong> all three detect <em>bifurcation-induced</em> tipping under <em>slow</em> forcing. Rate-induced and noise-induced tipping need different instruments, and so does the case where the eigenvalue driving the failure is not the one driving the observed fluctuations.</p>
-<h4 id="d5-coupling">D.5 Jacobian structure from cross-correlations</h4>
-<p>The off-diagonal elements encode coupling between KSIs, and in practice this is the more actionable output: coupling is something you can go and cut.</p>
-<p>Compute the cross-correlation matrix $C_{ij}(\tau) = \text{Corr}(K_i(t), K_j(t + \tau))$. Contemporaneous correlation $C_{ij}(0)$ indicates shared forcing or fast coupling; lagged correlation at $\tau &gt; 0$ suggests $K_i$ influences future $K_j$. A Granger causality test, whether past values of $K_i$ improve prediction of $K_j$ beyond $K_j$'s own history, gives evidence that $J_{ji} \neq 0$.</p>
-<p>Granger causality is predictive precedence, not causation, and in a system where both variables respond to an unmeasured third the test will happily report a coupling that does not exist. Treat the results as hypotheses about structure, to be checked against how the work actually happens.</p>
-<h4 id="d6-interpretation">D.6 Interpretation and calibration</h4>
-<table>
-<colgroup>
-<col class="col-w-34" />
-<col class="col-w-34" />
-<col class="col-w-31" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Eigenvalue Condition</th>
-<th>Operational Meaning</th>
-<th>Recommended Action</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>All $\text{Re}(\lambda_i) &lt; -0.1$</td>
-<td>Strong stability margin</td>
-<td>Monitor; maintain current processes</td>
-</tr>
-<tr class="even">
-<td>Dominant $-0.1 &lt; \text{Re}(\lambda_1) &lt; 0$</td>
-<td>Reduced stability margin</td>
-<td>Increase monitoring frequency; review capacity</td>
-</tr>
-<tr class="odd">
-<td>$\text{Re}(\lambda_1) \approx 0$</td>
-<td>Threshold proximity</td>
-<td>Immediate intervention; add capacity; reduce load</td>
-</tr>
-<tr class="even">
-<td>$\text{Re}(\lambda_1) &gt; 0$</td>
-<td>Unstable; diverging</td>
-<td>Emergency response; stop non-critical changes; surge capacity</td>
-</tr>
-<tr class="odd">
-<td>Complex eigenvalues, $\text{Im}(\lambda) \neq 0$</td>
-<td>Oscillatory dynamics</td>
-<td>Identify feedback delays; smooth batch processes</td>
-</tr>
-<tr class="even">
-<td>Large off-diagonal $|J_{ij}|$</td>
-<td>Strong coupling</td>
-<td>Monitor upstream system; consider decoupling</td>
-</tr>
-</tbody>
-</table>
-<p>The numerical boundaries above are placeholders pending calibration against a specific environment. They are not thresholds anyone should adopt as given; $\lambda_1$ has units of inverse time, so the meaning of $-0.1$ depends entirely on the sampling interval and the domain's natural timescale.</p>
-<p><strong>Back-testing.</strong> Identify historical threshold crossings (major incidents, prolonged degradation), compute eigenvalue estimates for the periods leading up to them, check whether $\lambda_1 \to 0$ actually preceded the crossing, and calibrate warning thresholds against the lead time you need. Test robustness against different window sizes, first- versus second-order models, missing data, and outliers.</p>
-<p><strong>Ground truth validation.</strong> Where possible, compare eigenvalue-based predictions to actual incident rates, audit findings, red team/penetration test results, and known staffing or tooling degradation periods.</p>
-<p><strong>And the limit on all of it.</strong> Every method here estimates a Jacobian from history and assumes it still applies. Section 4.8 explains why that assumption fails hardest in the near-threshold regime the methods exist to detect. Back-testing partially conceals this problem instead of solving it: a historical crossing is an episode in which the organization was reorganizing, so a model fitted across it is fitted across several different vector fields. Good back-test performance is weaker evidence than it appears.</p>
-<h4 id="d7-implementation">D.7 Reference implementation</h4>
-<p>A Python implementation of the two-variable model from Section 4.2.9 and its seven-dimensional extension is available on request. It demonstrates eigenvalue estimation from synthetic time series, critical slowing down detection, and early warning behavior: on synthetic data, where the generating process is known and the Jacobian genuinely is fixed. That is the right place to validate an estimator and the wrong place to conclude anything about real operations.</p>
 <h3 id="references">References</h3>
 <p><em>A bibliography longer than the reading behind it is a claim, and not one I want to make. What follows is what the argument actually uses. DOIs below were checked to resolve.</em></p>
 <h4 id="critical-slowing-down-and-early-warning-signals">Critical Transitions and Early Warning Signals</h4>
@@ -1357,7 +1091,7 @@ PROCEDURE:
 <p>Standard treatments: Strogatz (2015); Hirsch, Smale &amp; Devaney (2012); Guckenheimer &amp; Holmes (1983).<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
 <li id="fn7"><p><strong>Critical slowing down, derived.</strong> Near a stable equilibrium, a perturbation $\delta$ along the dominant eigendirection evolves as $\delta(t) = \delta(0)e^{\lambda_1 t}$ with $\text{Re}(\lambda_1) &lt; 0$. The characteristic return time is the $e$-folding time $\tau = 1/|\text{Re}(\lambda_1)|$. As a control parameter approaches a bifurcation value, $\text{Re}(\lambda_1) \to 0^-$ and therefore $\tau \to \infty$.</p>
-<p>The eigenvalues have dimensions of inverse time, which matters because it is the source of a common error: a statement like "$\lambda_1 = -0.1$ indicates a healthy margin" is meaningless without a sampling interval and a domain timescale attached. Appendix D.6 gives such numbers and flags them as placeholders for this reason.</p>
+<p>The eigenvalues have dimensions of inverse time, which matters because it is the source of a common error: a statement like "$\lambda_1 = -0.1$ indicates a healthy margin" is meaningless without a sampling interval and a domain timescale attached. The <a href="estimating-lambda1-from-compliance-telemetry.html#d6-interpretation">method note</a> gives such numbers and flags them as placeholders for this reason.</p>
 <p>For the canonical saddle-node $\dot{x} = \mu - x^2$, the equilibria are $x^* = \pm\sqrt{\mu}$ and $\lambda = \mp 2\sqrt{\mu}$, so on the stable branch $\lambda_1 = -2\sqrt{\mu} \to 0$ as $\mu \to 0^+$. Note the square root: the eigenvalue approaches zero as the <em>square root</em> of the distance to the bifurcation, so the recovery time diverges as $\mu^{-1/2}$. This is the "square-root scaling" referred to in Section 2.9.1 as part of the thin transferable payload, and it has a practical consequence: the slowing is gradual over most of the approach and then sharp at the end, which is a bad shape for an early warning system.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn8"><p><strong>Source and derivation: the observable signatures.</strong> For a linear system driven by white noise of variance $\sigma^2_{\text{forcing}}$ (an Ornstein–Uhlenbeck process), the stationary variance is $\sigma^2 = \sigma^2_{\text{forcing}} / (2|\lambda_1|)$, which diverges as $\lambda_1 \to 0$, and the lag-$\Delta t$ autocorrelation is $\rho(\Delta t) = e^{\lambda_1 \Delta t} \to 1$. Both signatures therefore have the same single cause and are not independent evidence: seeing both is one observation, not two, and treating them as corroborating is a mistake I have seen made and have probably made.</p>
@@ -1379,7 +1113,7 @@ PROCEDURE:
 <!-- TYPE D -->
 <li id="fn12"><p><strong>Dissent: the flagship example, directly challenged.</strong> O'Brien et al., "Early warning signals have limited applicability to empirical lake data," <em>Nature Communications</em> 14, 7942 (2023), <a href="https://doi.org/10.1038/s41467-023-43744-8">doi:10.1038/s41467-023-43744-8</a>.</p>
 <p>Lake eutrophication is the worked example everyone reaches for when explaining critical transitions, including this essay. O'Brien and colleagues tested the standard early-warning indicators against a large body of empirical lake monitoring data and found their applicability limited. The indicators did not reliably behave as theory predicts on real records, as distinct from on simulated data where they behave beautifully.</p>
-<p>It is a direct challenge to the example this essay leans on hardest, and it illustrates the general shape of the problem: these methods work well on synthetic data generated by the model they assume, and less well on real data generated by something else. That gap is a measurement and estimation problem, which is the kind that gets solved. Appendix D.7 makes the same point about my own reference implementation.<a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p>It is a direct challenge to the example this essay leans on hardest, and it illustrates the general shape of the problem: these methods work well on synthetic data generated by the model they assume, and less well on real data generated by something else. That gap is a measurement and estimation problem, which is the kind that gets solved. The <a href="estimating-lambda1-from-compliance-telemetry.html#d7-implementation">method note</a> makes the same point about my own reference implementation.<a href="#fnref12" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
 <li id="fn13"><p><strong>Estimating eigenvalues from time series.</strong> Four methods, with the reasons for the preference ordering.</p>
 <p><em>1. Perturbation-response.</em> After an identified perturbation, fit the exponential recovery: $\ln|\Delta K(t)| = \ln|\Delta K(t_0)| + \lambda_1(t - t_0)$, and read $\lambda_1$ off the slope. This is a direct measurement of the quantity of interest on a single event. Preferred, and Section 4.2.5 explains why the alternative of aggregating recovery times across events destroys the information.</p>
@@ -1420,7 +1154,7 @@ PROCEDURE:
 <!-- TYPE D -->
 <li id="fn20"><p><strong>Dissent: the critique that ended catastrophe theory.</strong> Héctor Sussmann and Raphael Zahler, "Catastrophe theory as applied to the social and biological sciences: a critique," <em>Synthese</em> 37, 117-216 (1978), <a href="https://doi.org/10.1007/BF00869575">doi:10.1007/BF00869575</a>. It runs to a hundred pages and it is worth reading in full by anyone attempting cross-domain modeling.</p>
 <p>Their central charges, in the order that matters for this essay. First, the applications outside physics did not derive their models from any dynamics; they postulated a potential function of the required shape and then fitted it to observations after the fact. Second, the qualitative predictions (hysteresis, sudden jumps, divergence, bimodality) are compatible with such a wide range of observations that confirming them establishes almost nothing. Third, and most damaging, the classification theorem, though true, constrains essentially nothing empirically: knowing that a system's behavior must be one of seven forms is not a restriction if you are free to choose which form and free to choose the coordinates.</p>
-<p><strong>How this lands on me.</strong> Charge three is the one I cannot fully escape, and Section 2.9.1 concedes a version of it in advance: my normal-form argument proves the recurrence and simultaneously proves that the recurrence carries little information. Charge two applies squarely to T3, T4, T6 — "the system has an adaptive reference state" is compatible with nearly any observation. Charge one is the one I think I evade, and only in Part 4, where the state variables come from operational telemetry that exists independently of my model and the estimation procedure is specified in advance in Appendix D. That is a narrow escape and it is available only for the measurable axioms.<a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p><strong>How this lands on me.</strong> Charge three is the one I cannot fully escape, and Section 2.9.1 concedes a version of it in advance: my normal-form argument proves the recurrence and simultaneously proves that the recurrence carries little information. Charge two applies squarely to T3, T4, T6 — "the system has an adaptive reference state" is compatible with nearly any observation. Charge one is the one I think I evade, and only in Part 4, where the state variables come from operational telemetry that exists independently of my model and the estimation procedure is specified in advance in the <a href="estimating-lambda1-from-compliance-telemetry.html">method note</a>. That is a narrow escape and it is available only for the measurable axioms.<a href="#fnref20" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn21"><p><strong>Source: the Duhem–Quine thesis.</strong> W.V.O. Quine, "Two Dogmas of Empiricism," <em>The Philosophical Review</em> 60, 20-43 (1951), <a href="https://doi.org/10.2307/2181906">doi:10.2307/2181906</a>; the underdetermination point is developed further in <em>Word and Object</em> (1960). Pierre Duhem's earlier version, in <em>La Théorie Physique</em> (1906), concerned physics specifically. Overview: the <a href="https://plato.stanford.edu/entries/duhem/">Stanford Encyclopedia of Philosophy</a> entry on the Duhem thesis and underdetermination.</p>
 <p>The claim: hypotheses are never tested in isolation but always in conjunction with auxiliary assumptions about instruments, initial conditions, and background theory. When a prediction fails, logic tells you that the conjunction is false, not which conjunct. So a failed test never uniquely falsifies the target hypothesis; the blame can always be relocated to an auxiliary. Quine's stronger version holds that no statement is immune to revision and none is confirmed in isolation.</p>
@@ -1462,7 +1196,7 @@ PROCEDURE:
 <p><em>Reactor criticality.</em> The neutron transport (or diffusion) equation is written as an eigenvalue problem in which $k_{\text{eff}}$ is defined as the factor by which the fission source must be divided for a steady-state solution to exist. It is the dominant eigenvalue of the fission-to-source operator, and the reactor is subcritical, critical, or supercritical as $k_{\text{eff}}$ is less than, equal to, or greater than 1. The delayed-neutron fraction is what makes the critical state controllable in practice rather than merely a mathematical point.</p>
 <p><em>Euler buckling.</em> For a pin-ended column, $EI\,d^4w/dx^4 + P\,d^2w/dx^2 = 0$ has non-trivial solutions only at $P_n = n^2\pi^2 EI/L^2$. The critical load is the smallest eigenvalue of the linearized operator, and the bifurcation is a pitchfork: the column can buckle either way, and which way it goes is decided by imperfection. Euler published this in 1744, which makes it plausibly the first eigenvalue-threshold calculation in engineering.</p>
 <p><em>Epidemic threshold.</em> For a heterogeneous population, the next-generation matrix $K$ has entries $K_{ij}$ giving the expected secondary infections in group $i$ from an infected individual in group $j$. $R_0$ is defined as the dominant eigenvalue of $K$, and the epidemic threshold is $R_0 = 1$. This is a $\lambda_1$ crossing a critical value, and the "critical slowing down" analogue, the divergence of epidemic growth timescales near $R_0 = 1$, is real and well known.</p>
-<p><em>May's random-ecosystem result.</em> May (1972, <a href="https://doi.org/10.1038/238413a0">doi:10.1038/238413a0</a>) considered a random community matrix with $S$ species, connectance $C$, and interaction strengths of standard deviation $\sigma$. By the circular law, the eigenvalues fill a disc of radius $\sigma\sqrt{SC}$, so stability requires $\sigma\sqrt{SC} &lt; 1$: larger, more connected, more strongly coupled systems are <em>less</em> likely to be stable. This overturned the prevailing "complexity begets stability" view and is the origin of the diversity–stability debate. It is also directly relevant to Section 4.2.7: adding coupling between subsystems is not neutral, and the intuition that integration improves robustness is not generally true.<a href="#fnref29" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p><em>May's random-ecosystem result.</em> May (1972, <a href="https://doi.org/10.1038/238413a0">doi:10.1038/238413a0</a>) considered a random community matrix with $S$ species, connectance $C$, and interaction strengths of standard deviation $\sigma$. By the circular law, the eigenvalues fill a disc of radius $\sigma\sqrt{SC}$, so stability requires $\sigma\sqrt{SC} &lt; 1$: larger, more connected, more strongly coupled systems are <em>less</em> likely to be stable. This overturned the prevailing "complexity begets stability" view and is the origin of the diversity–stability debate. It is also directly relevant to the <a href="estimating-lambda1-from-compliance-telemetry.html#multi-threshold-cascade-analysis">cascade analysis</a>: adding coupling between subsystems is not neutral, and the intuition that integration improves robustness is not generally true.<a href="#fnref29" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn30"><p><strong>Source: soft-mode phase transitions.</strong> W. Cochran, "Crystal stability and the theory of ferroelectricity," <em>Advances in Physics</em> 9, 387-423 (1960), <a href="https://doi.org/10.1080/00018736000101229">doi:10.1080/00018736000101229</a>; and P.W. Anderson's closely contemporaneous argument, presented in 1959 and later collected in his selected papers. The two arrived at the picture independently.</p>
 <p>The claim: a displacive structural phase transition occurs because the frequency of a particular lattice vibration (an eigenvalue of the crystal's dynamical matrix) decreases as the transition is approached and vanishes at $T_c$. The restoring force for that specific pattern of atomic displacement goes to zero, so the atoms move into the new structure. In ferroelectrics such as SrTiO₃ and PbTiO₃ the softening mode is a polar optical phonon, which is why the transition produces a spontaneous polarization.</p>
@@ -1515,24 +1249,6 @@ PROCEDURE:
 <p>Štěpán Davidovič, at Google, used Monte Carlo simulation to ask whether an organization could reliably detect a genuine improvement in incident duration using MTTR: generating synthetic incident populations with a known underlying change and testing whether the statistic recovers it. The conclusion is that reliable calculation of incident duration improvements is not possible with MTTR at realistic incident volumes: the sampling variability of the mean of a heavy-tailed variable swamps the effect size you are trying to detect. Published as <em>Incident Metrics in SRE: Critically Evaluating MTTR and Friends</em> (O'Reilly).</p>
 <p>Lorin Hochstein has made the stronger analytical point on <a href="https://surfingcomplexity.blog/">Surfing Complexity</a>: if incident durations follow a power-law distribution, then depending on the exponent the mean may have infinite variance or fail to exist at all in the population sense, so the sample mean does not converge to anything as you collect more data. An observed trend in MTTR then conveys no information about the system whatsoever: the statistic wanders because that is what sample means of such distributions do.</p>
 <p><strong>How this relates to my claim.</strong> These are the two objections a practitioner reader would raise immediately, and they are correct. They also bound my replacement metric, not just the one I discarded: the conclusion's stated prediction is about a <em>ratio of quantiles</em> specifically because quantiles remain estimable where means do not, and even then the estimator's noise at realistic event counts is the failure mode I flag there as most likely.<a href="#fnref41" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<!-- TYPE C -->
-<li id="fn42"><p><strong>Why the method sits in an appendix.</strong> The estimation methodology is in <a href="#appendix-d-estimation-method">Appendix D</a> rather than in the body: the KSI state vector, the ordinary-least-squares estimator for the coefficient matrix, the discrete-to-continuous eigenvalue conversion, the algorithm in pseudocode, the data-source mapping, the sampling and minimum-observation requirements, the three model-free detection methods, the Granger-causality treatment of coupling, and the back-testing procedure. Nothing was deleted.</p>
-<p>The reason is that it was a methods paper embedded inside a philosophical essay, and the two were damaging each other: a reader following the argument hit forty equations and a pseudocode listing, while a reader wanting the method had to extract it from a discussion of Merleau-Ponty. Appendix D also orders the estimators by how far they can be trusted, which matters more than where they sit. The natural presentation puts the autoregressive fit first and treats perturbation-response as an alternative; Section 4.2.5 explains why that ordering is backwards.<a href="#fnref42" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<!-- TYPE C -->
-<li id="fn43"><p><strong>The two-variable model in full.</strong></p>
-<p>State variables: $V$ (open vulnerability count) and $R$ (effective response capacity, in FTEs).</p>
-<p>$$\frac{dV}{dt} = \alpha - \frac{\beta R V}{V + K_v} - \eta V \qquad \frac{dR}{dt} = \gamma(R_0 - R) - \delta V$$</p>
-<p>$\alpha$ is the vulnerability introduction rate and the bifurcation parameter. The term $\beta R V/(V + K_v)$ is saturating remediation in Michaelis–Menten form: linear in $V$ at low load, saturating at $\beta R$ at high load, with $K_v$ the half-saturation constant. $\eta V$ is natural decay from environment rotation and upstream patching. $\gamma(R_0 - R)$ is capacity recovery toward baseline $R_0$. $\delta V$ is capacity drain, each open vulnerability consumes attention.</p>
-<p><em>Why not Lotka–Volterra.</em> The classical predator-prey form has $\det(J) = 0$ at its coexistence equilibrium, giving a centre rather than a stable node or spiral: marginal stability as a structural artifact rather than as a finding. It also has no saddle-node, so the stable state shifts under stress instead of vanishing. Saturating remediation and linear capacity drain fix both.</p>
-<p><em>Equilibrium.</em> $dR/dt = 0$ gives $R^* = R_0 - \delta V^*/\gamma$. Substituting into $dV/dt = 0$:</p>
-<p>$$\alpha = \frac{\beta(R_0 - \delta V^*/\gamma)V^*}{V^* + K_v} + \eta V^*$$</p>
-<p>which is nonlinear in $V^*$ with no closed form.</p>
-<p><em>Jacobian.</em> With $J_{11} = -\beta R^* K_v/(V^* + K_v)^2 - \eta$ and $J_{12} = -\beta V^*/(V^* + K_v)$:</p>
-<p>$$J = \begin{pmatrix} J_{11} &amp; J_{12} \\ -\delta &amp; -\gamma \end{pmatrix}$$</p>
-<p>$$\text{tr}(J) = J_{11} - \gamma &lt; 0 \qquad \det(J) = \gamma\left(\frac{\beta R^* K_v}{(V^* + K_v)^2} + \eta\right) + \frac{\delta \beta V^*}{V^* + K_v} &gt; 0$$</p>
-<p>Both determinant terms are positive whenever $R^* &gt; 0$, so the equilibrium has genuine asymptotic stability. Eigenvalues are $\lambda_{1,2} = \left(\text{tr}(J) \pm \sqrt{\text{tr}(J)^2 - 4\det(J)}\right)/2$.</p>
-<p><em>Bifurcation.</em> As $\alpha \to \alpha_c$ the stable node and a saddle collide and annihilate; at the collision $\det(J) = 0$ and $\lambda_1 = 0$. There is no closed form for $\alpha_c$, but it is located numerically as the $\alpha$ at which $\max(\text{Re}(\lambda_i)) = 0$. With $\beta = 0.5$, $K_v = 80$, $\eta = 0.01$, $\gamma = 0.2$, $R_0 = 15$, $\delta = 0.005$: $\alpha_c \approx 6.09$ vulnerabilities per day.</p>
-<p><strong>Status of that number.</strong> It is a property of this toy at these parameters, and the parameters were chosen to be plausible rather than measured. Section 2.9.1 is the reason the qualitative shape transfers and the number does not.<a href="#fnref43" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn44"><p><strong>Source: "going solid."</strong> Richard Cook and Jens Rasmussen, "'Going solid': a model of system dynamics and consequences for patient safety," <em>Quality and Safety in Health Care</em> 14, 130-134 (2005), <a href="https://doi.org/10.1136/qshc.2003.009530">doi:10.1136/qshc.2003.009530</a>.</p>
 <p>The paper borrows a term from nuclear engineering, where a "solid" system is one filled with incompressible fluid so that any input produces an immediate pressure change with nothing to absorb it. Applied to hospitals: a unit with every bed occupied and no deferrable work has no slack, so every new demand must displace existing work rather than being buffered, and the coupling between previously independent activities becomes tight and immediate. Cook and Rasmussen argue that healthcare systems are pushed toward this state by the same efficiency pressures as in the migration model (note 38), and that going solid is not itself an accident but the condition under which ordinary variation produces one.</p>
@@ -1541,18 +1257,18 @@ PROCEDURE:
 <li id="fn45"><p><strong>Source: above the line, below the line, and dark debt.</strong> David Woods, Richard Cook and John Allspaw, <em>STELLA: Report from the SNAFUcatchers Workshop on Coping with Complexity</em> (2017), freely available at <a href="https://snafucatchers.github.io/">snafucatchers.github.io</a>. The workshop examined real anomalies from the participating companies' own production systems.</p>
 <p><strong>Above/below the line.</strong> The report draws a line across its central diagram. Below it sits the technical system: processes, hosts, network, code as it actually executes. Above it sit the people, their mental models, their representations, and the artifacts they act through: dashboards, logs, runbooks, each other. The claim is that <em>nothing above the line ever perceives below the line directly.</em> All action is mediated by representations, and those representations are always partial, always somewhat stale, and unevenly distributed across the people involved. Anomalies are characteristically the moments when a representation and the system diverge, and much of the observed work of incident response is the reconstruction of a workable model rather than the repair of a component.</p>
 <p><strong>Dark debt.</strong> The report's other contribution: failures arising from unappreciated interactions between parts of the system, with no component at fault, invisible until an anomaly reveals them. Unlike technical debt, dark debt cannot be found by inspection or paid down deliberately, because its existence is not known until it produces the failure.</p>
-<p><strong>How it relates to my claims.</strong> Above/below the line is a sharper T3 than mine, where I say the system tracks its own state, they say the tracking is necessarily partial and locate the interesting dynamics in the gap, converging with the theorem in note 15 from the opposite direction. Dark debt is a direct warning about the program in Appendix D: an eigenvalue estimated from seven chosen indicators characterizes the dynamics those indicators span, and the dominant failure mode of a monitored system is by construction one the monitoring does not span. That is not an argument against instrumentation, but it is an argument against reading a healthy $\lambda_1$ as evidence of safety.<a href="#fnref45" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p><strong>How it relates to my claims.</strong> Above/below the line is a sharper T3 than mine, where I say the system tracks its own state, they say the tracking is necessarily partial and locate the interesting dynamics in the gap, converging with the theorem in note 15 from the opposite direction. Dark debt is a direct warning about the program in the <a href="estimating-lambda1-from-compliance-telemetry.html">method note</a>: an eigenvalue estimated from seven chosen indicators characterizes the dynamics those indicators span, and the dominant failure mode of a monitored system is by construction one the monitoring does not span. That is not an argument against instrumentation, but it is an argument against reading a healthy $\lambda_1$ as evidence of safety.<a href="#fnref45" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE D -->
 <li id="fn46"><p><strong>Dissent: the case against doing what this essay does.</strong> John Allspaw, of <a href="https://www.adaptivecapacitylabs.com/">Adaptive Capacity Labs</a> and a co-author of the STELLA report, argues against reducing incidents to quantitative summaries: the "shallow data" critique, developed in his writing and talks on incident analysis.</p>
 <p>The argument has two parts, and the second is the one that should worry me. The first is that countable attributes of an incident (duration, severity, count, time-to-detect) capture almost none of what determined how it went. They omit how the problem was recognized, what hypotheses were formed and discarded, how coordination happened, which representations misled people, and what was improvised. The second part is about displacement rather than incompleteness: the availability of a number tends to <em>substitute</em> for the investigation that would have produced understanding. An organization that has an MTTR chart believes it has learned something about its incidents and stops there, and the metric therefore actively destroys the learning it appeared to summarize.</p>
-<p><strong>How it relates to this essay.</strong> It is a direct objection to the whole of Part 4 and Appendix D, from people with much more incident data than I have, and I do not think it is wrong. Section 4.6 states the narrowest synthesis I can honestly defend: qualitative incident analysis has to generate and validate the state variables, and the eigenvalue is a summary computed afterwards rather than the instrument of understanding. Run in the other order: pick easily-collected metrics, compute $\lambda_1$, treat the number as the finding, and the result is shallow data with a Greek letter on it, which would be a worse outcome than not having done it. I cannot rule out that a reader will do exactly that with this essay, and the displacement objection says the essay's existence makes it likelier.<a href="#fnref46" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p><strong>How it relates to this essay.</strong> It is a direct objection to the whole of Part 4 and the <a href="estimating-lambda1-from-compliance-telemetry.html">method note</a>, from people with much more incident data than I have, and I do not think it is wrong. Section 4.6 states the narrowest synthesis I can honestly defend: qualitative incident analysis has to generate and validate the state variables, and the eigenvalue is a summary computed afterwards rather than the instrument of understanding. Run in the other order: pick easily-collected metrics, compute $\lambda_1$, treat the number as the finding, and the result is shallow data with a Greek letter on it, which would be a worse outcome than not having done it. I cannot rule out that a reader will do exactly that with this essay, and the displacement objection says the essay's existence makes it likelier.<a href="#fnref46" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn47"><p><strong>Source: critical slowing down as a working safety monitor.</strong> Jasper J. van Beers, Marten Scheffer, Prashant Solanki, Ingrid A. van de Leemput, Egbert H. van Nes and Coen C. de Visser, "Early warning signals for loss of control in complex systems," <em>PNAS</em> 123 (2026), <a href="https://doi.org/10.1073/pnas.2608847123">doi:10.1073/pnas.2608847123</a>; preprint <a href="https://arxiv.org/abs/2512.20868">arXiv:2512.20868</a>.</p>
 <p>The work treats loss of control in a feedback-controlled vehicle as a critical transition and monitors for it in real time using generic resilience indicators (lag-1 autocorrelation and variance computed in moving windows), deliberately without requiring a model of the system. Demonstrated on drones, with reactors, aircraft and self-driving cars named as intended application domains. Scheffer, van de Leemput and van Nes are from the Wageningen group that developed the ecological early-warning programme (Scheffer's profile: <a href="https://research.wur.nl/en/persons/marten-scheffer">research.wur.nl</a>); de Visser and van Beers are from aerospace engineering at Delft.</p>
 <p><strong>How it relates to my claim.</strong> It is Part 4's thesis executed as validated engineering, by the group that originated the ecological version, in a domain with hard physical consequences. What it establishes for my purposes is limited but real: the transfer of model-free critical slowing down out of ecology into engineered feedback systems is legitimate, so the objection that this is a category error does not stand in general. What it does not establish is anything about <em>my</em> application. A drone's control loop is a physical system with a fixed dynamics, high sample rates, and no volition, which is to say it satisfies the assumption that Section 4.8 identifies as failing for organizations. The result is encouraging about the method and silent about the hardest case.<a href="#fnref47" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
 <li id="fn48"><p><strong>The fixed-Jacobian problem, stated precisely.</strong></p>
-<p>The framework assumes an autonomous system $\dot{\mathbf{s}} = \mathbf{F}(\mathbf{s})$ with $\mathbf{F}$ independent of time, linearizes about an equilibrium $\mathbf{s}^*$, and reads stability from the eigenvalues of the constant matrix $J = D\mathbf{F}(\mathbf{s}^*)$. Everything downstream. Propositions 1 and 2, the estimators in Appendix D, the whole notion that "the" dominant eigenvalue is a property of the system: depends on $J$ being fixed over the window of observation.</p>
+<p>The framework assumes an autonomous system $\dot{\mathbf{s}} = \mathbf{F}(\mathbf{s})$ with $\mathbf{F}$ independent of time, linearizes about an equilibrium $\mathbf{s}^*$, and reads stability from the eigenvalues of the constant matrix $J = D\mathbf{F}(\mathbf{s}^*)$. Everything downstream. Propositions 1 and 2, the estimators in the <a href="estimating-lambda1-from-compliance-telemetry.html">method note</a>, the whole notion that "the" dominant eigenvalue is a property of the system: depends on $J$ being fixed over the window of observation.</p>
 <p>A system satisfying T6 does not have that property. It has $\dot{\mathbf{s}} = \mathbf{F}(\mathbf{s}, \mathbf{p})$ where the parameter vector $\mathbf{p}$ is itself modulated by the system in response to its own state, and specifically in response to its own proximity to the bifurcation:</p>
 <p>$$\dot{\mathbf{p}} = \mathbf{G}\big(\mathbf{s}, \|\mu - \mu_c\|\big)$$</p>
 <p>Two distinct problems follow, and they have different remedies.</p>
