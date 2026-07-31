@@ -95,11 +95,13 @@
 <p>One piece of arithmetic before we move on. The reactor's condition is $k_{\text{eff}} = 1$. The condition I use everywhere else is $\lambda_1 = 0$. Those are the same statement in two registers. $k$ is a multiplicative gain, the factor by which one generation of neutrons becomes the next, and its neutral value is one. $\lambda$ is an additive growth rate, and its neutral value is zero. The logarithm converts between them, $\lambda = \ln(k)/\Delta t$, and $\ln(1) = 0$. Marginality looks like one when you are multiplying and like zero when you are adding. It is the same margin.</p>
 <p>Either way the number needs somewhere to count from, a reference point the measurement does not itself disturb. Under a squash court in 1942 that was straightforward to arrange. Everywhere else it is not so simple.</p>
 <p>Before we move forward, a brief interlude into the terminology. Again, if math isn't your thing, feel free to skip to the <a href="#what-makes-a-threshold-a-self">What Makes a Threshold a Self</a> section.</p>
-<h4 id="dynamical-systems">Dynamical Systems</h4>
+<div class="math-block">
+<h4 id="the-machinery">The Machinery</h4>
+<h5 id="dynamical-systems">Dynamical Systems</h5>
 <p>A <strong>dynamical system</strong> is anything whose state changes over time according to fixed rules. Its <em>state space</em> is the set of all configurations it could be in; its <em>vector field</em> says which way it moves from each one.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
 <p>An <strong>equilibrium</strong> is where the system stops moving. Stability asks: if you nudge it slightly, does it come back or drift away? The answer is encoded in the <strong>Jacobian</strong>, a matrix capturing how sensitive each variable is to small changes in every other variable: the system's local response fingerprint. Its eigenvalues decide the outcome. All negative: perturbations decay, the equilibrium is stable. Any positive: perturbations grow, it is unstable. One sitting at zero: threshold, the boundary between the two.</p>
 <p>An <strong>attractor</strong> is a set that nearby trajectories converge to and stay near: a stable equilibrium point, a stable cycle, or something stranger. The states that end up there are its <strong>basin</strong>. A deep basin corrects a shove. A shallow one does not, and the difference between those two is most of what follows.</p>
-<h4 id="bifurcation-theory">Bifurcation Theory</h4>
+<h5 id="bifurcation-theory">Bifurcation Theory</h5>
 <p>A <strong>bifurcation</strong> is a tipping point where the rules of the game change qualitatively. Before it, the system has certain stable states; after, those states may vanish, split, or swap stability. Formally it is where an eigenvalue crosses zero, or crosses the imaginary axis, as a <strong>control parameter</strong> varies. The control parameter is the thing being turned from outside the fast dynamics: nutrient load in a lake, pump rate in a laser, alert volume on an operations floor.</p>
 <table>
 <colgroup>
@@ -138,7 +140,7 @@
 </tbody>
 </table>
 <p>The canonical saddle-node is $dx/dt = \mu - x^2$. For $\mu &gt; 0$ there are two equilibria at $\pm\sqrt{\mu}$; at $\mu = 0$ they collide; for $\mu &lt; 0$ there is nothing left and the system runs away. That collision-and-annihilation is the shape of most operational failures I have watched: not a gradual worsening, but a stable state that stops existing.</p>
-<h4 id="eigenvalue-structure-and-critical-slowing-down">Eigenvalue Structure and Critical Slowing Down</h4>
+<h5 id="eigenvalue-structure-and-critical-slowing-down">Eigenvalue Structure and Critical Slowing Down</h5>
 <p>Order the Jacobian's eigenvalues by real part, largest first. The <strong>dominant eigenvalue</strong> $\lambda_1$ governs long-term behavior: it is the slowest-decaying direction, the one that outlasts all the others. It is well-defined when there is a spectral gap between it and the next one. <strong>Codimension-1</strong> bifurcations, the ones you reach by tuning a single control parameter, have exactly one eigenvalue crossing zero. That is the generic case and the only one I treat, and it is why the dominant eigenvalue is usually unambiguous near the transitions that matter here.</p>
 <table>
 <colgroup>
@@ -186,6 +188,8 @@
 <p>These follow from $\lambda_1 \to 0$ in the linearized dynamics, and they are measurable from time series without knowing the underlying equations.<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></p>
 <p><strong>One signature that is missing, deliberately.</strong> Lists of this kind usually carry a fifth item: power-law distributed event sizes. It does not follow from $\lambda_1 \to 0$.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> A saddle-node bifurcation in two variables has a diverging <em>time</em> constant and no spatial structure whatsoever. It does not produce power laws, scale invariance, or self-similarity. Those belong to a different phenomenon that happens to share the word "critical."</p>
 <p>Two boundaries on the derivation, stated once instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work, not closed work.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a><a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem, and measurement problems get solved.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> Where the sections below treat $\lambda_1$ as measurable, the slow-forcing regime is what they mean.</p>
+<p class="math-block-end">That is the whole of the apparatus. What it is an apparatus for is the next question.</p>
+</div>
 <h4 id="what-makes-a-threshold-a-self">What Makes a Threshold a Self</h4>
 <p>In order for a threshold to be a self, and not just something that "happens," six things have to be true. They stack in the sense that the later ones have nothing to work with until the earlier ones are in place.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a></p>
 <p><strong>1) Feedback closure.</strong> The system's outputs come back to it as inputs along a path running through the outside world. Without that there is no loop, only a thing being acted upon.</p>

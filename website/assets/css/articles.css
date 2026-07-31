@@ -305,3 +305,29 @@
 .col-w-62 { width: 62%; }
 .col-w-66 { width: 66%; }
 .col-w-75 { width: 75%; }
+
+/* The derivations in the threshold essay, set as an inset panel so a reader can
+   see where the mathematics starts and where the argument resumes. Skippable by
+   design: the body carries the claims, this carries the workings. */
+.article-content .math-block {
+    border-left: 3px solid var(--border-color, #d0d0d0);
+    background: var(--bg-secondary, rgba(127, 127, 127, 0.05));
+    border-radius: 4px;
+    padding: 0.25rem 1.5rem 1rem;
+    margin: 2rem 0;
+}
+
+.article-content .math-block > h4 {
+    font-family: var(--font-mono, monospace);
+    letter-spacing: 0.02em;
+}
+
+.article-content .math-block-end {
+    font-style: italic;
+    opacity: 0.85;
+    margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+    .article-content .math-block { padding: 0.25rem 1rem 1rem; }
+}
