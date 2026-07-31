@@ -24,10 +24,25 @@ FILE = 'website/research/tuning-the-eigenvalue.html'
 START = 'id="three-things-called-criticality"'   # 2.2.1 — everything from here on
 END = 'id="references"'
 
-# The lever baseline is the author's own prose as it stood before the July 2026
-# revision. Pinned by sha rather than HEAD so the comparison stays fixed as the
-# restructure commits on top of it.
+# TWO baselines, because they answer different questions.
+#
+# STRUCTURAL levers (cross-references, essay self-reference) are genre-bound: a
+# memoir has no reason to say "Section 4.2". Those calibrate against the essay as
+# it stood before the July 2026 revision, pinned by sha.
 BASELINE_REV = '6e016a9c6453bc14b9d48ffa7c89333dac7214cf'
+#
+# VOICE levers (the tic families, sentence rhythm) must NOT calibrate against that
+# text, because it is itself partly machine-written, so any tic present in both it
+# and the revision passes silently. They calibrate against ~38k words the operator
+# wrote by hand. Measured there: >30w 12.4%, <=8w 25.2%, mean 17.3 words.
+VOICE_CORPUS = [
+    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/'
+    'American Values Digital Edition Revised Edition 2024 v3.md',
+    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/Dancing With My Fate.md',
+    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/meditation_on_writing.md',
+]
+VOICE_LONG_PCT = 12.4   # NOT 9.3, which is what the contaminated baseline claimed
+VOICE_SHORT_PCT = 25.2
 
 XREF = re.compile(r'\b(?:Section\s+\d[\d.]*|Appendix\s+[A-D](?:\.\d+)?|note\s+\d+|Query\s+\d+|Proposition\s+\d)')
 # The announce-then-do construction: telling the reader a speech act is coming
@@ -46,6 +61,9 @@ VIRTUE = re.compile(r'\bhonest(?:ly)?\b(?!\s+(?:feedback|enough))'
                     r'|\b(?:precisely|exactly)\s+(?:the|why|because|this|that)\b', re.I)
 ESSAY = re.compile(r'\b(?:this essay|the essay|this Part|this section)\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
+# Measured against the hand-written corpus, not against the essay: 0.08/1k there,
+# 0.61/1k here. "not A but B" is NOT included -- that one is genuinely his (0.42/1k).
+NOTY = re.compile(r',\s+not\s+(?:a|an|the|its|his|her|my|only)\b|\bwhich is why\b', re.I)
 
 
 def prose(x):
@@ -71,6 +89,7 @@ def stats(t):
                 xref=len(XREF.findall(t)), essay=len(ESSAY.findall(t)),
                 rather=len(RATHER.findall(t)),
                 announce=len(ANNOUNCE.findall(t)) + len(VIRTUE.findall(t)),
+                noty=len(NOTY.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
                 short=sum(1 for s in ss if len(s.split()) <= 8))
 
@@ -127,12 +146,14 @@ def main():
 
     w = tot['words'] / 1000
     print("\n=== edit sites remaining to reach baseline rates ===")
-    print(f"  {'announce-then-do':<16}{tot['announce']:>4} -> 0    (author uses it 0 times)")
+    print(f"  {'announce-then-do':<16}{tot['announce']:>4} -> 0    (0 in 38k hand-written words)")
+    print(f"  {'X-not-Y / why':<16}{tot['noty']:>4} -> ~{round(0.08*w):<3} (0.08/1k in the hand-written corpus)")
+    print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{round(VOICE_LONG_PCT/100*tot['sents']):<3} "
+          f"({VOICE_LONG_PCT}% is his real rate; the old baseline said 9.3%)")
     for key, label in (('xref', 'cross-refs'), ('essay', "'this essay'"), ('rather', "'rather than'")):
         target = round(per1k(B, key) * w)
         print(f"  {label:<16}{tot[key]:>4} -> ~{target:<4} (cut ~{max(0, tot[key]-target)})")
-    tl = round(B['long'] / B['sents'] * tot['sents'])
-    print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{tl:<4} (split ~{max(0, tot['long']-tl)})")
+
 
 
 if __name__ == '__main__':
