@@ -342,6 +342,18 @@ PROCEDURE:
 <p><strong>And the limit on all of it.</strong> Every method here estimates a Jacobian from history and assumes it still applies. <a href="tuning-the-eigenvalue.html#limitations-fixed-jacobian">The essay</a> explains why that assumption fails hardest in the near-threshold regime these methods exist to detect. Back-testing partially conceals this problem instead of solving it: a historical crossing is an episode in which the organization was reorganizing, so a model fitted across it is fitted across several different vector fields. Good back-test performance is weaker evidence than it appears.</p>
 <h4 id="d7-implementation">2.7 Reference implementation</h4>
 <p>A Python implementation of the two-variable model in 1.8 and its seven-dimensional extension is available on request. It demonstrates eigenvalue estimation from synthetic time series, critical slowing down detection, and early warning behavior: on synthetic data, where the generating process is known and the Jacobian genuinely is fixed. That is the right place to validate an estimator and the wrong place to conclude anything about real operations.</p>
+<h3 id="references">References</h3>
+<p><em>What the method actually uses. The essay it accompanies carries its own list.</em></p>
+<h4 id="statistical-methods-and-time-series-analysis">Statistical Methods and Time Series Analysis</h4>
+<ol start="90" type="1">
+<li>Hamilton, J.D. (1994). <em>Time Series Analysis</em>. Princeton University Press.</li>
+<li>Peng, C.-K., Buldyrev, S.V., Havlin, S., Simons, M., Stanley, H.E., &amp; Goldberger, A.L. (1994). "Mosaic organization of DNA nucleotides." <em>Physical Review E</em> 49, 1685-1689.</li>
+<li>Granger, C.W.J. (1969). "Investigating Causal Relations by Econometric Models and Cross-spectral Methods." <em>Econometrica</em> 37, 424-438.</li>
+</ol>
+<h4 id="security-and-risk">Security and Compliance</h4>
+<ol start="89" type="1">
+<li>FedRAMP Program Management Office (2025). <em>FedRAMP 20x Framework</em>. <a href="https://www.fedramp.gov/20x/">fedramp.gov/20x</a></li>
+</ol>
 <section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr />
 <ol>
