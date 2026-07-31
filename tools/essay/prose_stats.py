@@ -21,7 +21,12 @@ import subprocess
 import sys
 
 FILE = 'website/research/tuning-the-eigenvalue.html'
-START = 'id="three-things-called-criticality"'   # 2.2.1 — everything from here on
+# The whole body, matching the span the baseline is measured over. This was
+# scoped to the problem region during the prose pass; the restructure since then
+# has rewritten everything, and the front matter had never been measured at all,
+# which is how "an exploration, not a proof" and a stray honesty claim survived
+# four cleanup passes in the Author's Note.
+START = 'id="authors-note"'
 END = 'id="references"'
 
 # TWO baselines, because they answer different questions.
@@ -139,7 +144,7 @@ def main():
 
     print(f"\n{'corpus':<24}{'words':>7}{'sents':>7}{'xref/1k':>9}{'essay/1k':>10}"
           f"{'rthan/1k':>10}{'annc':>7}{'>30w%':>8}{'<=8w%':>8}")
-    for label, s in (('BASELINE (author)', B), ('REGION 2.2.1+', tot)):
+    for label, s in (('BASELINE (author)', B), ('CURRENT (whole body)', tot)):
         print(f"{label:<24}{s['words']:>7}{s['sents']:>7}{per1k(s,'xref'):>9.1f}"
               f"{per1k(s,'essay'):>10.1f}{per1k(s,'rather'):>10.1f}{s['announce']:>7d}"
               f"{s['long']/s['sents']*100:>8.1f}{s['short']/s['sents']*100:>8.1f}")
