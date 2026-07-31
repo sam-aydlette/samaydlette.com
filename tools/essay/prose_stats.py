@@ -16,6 +16,7 @@ Six levers, measured against the author's own baseline (pinned revision):
 Usage:  python3 prose_stats.py            # per-section table for the problem region
         python3 prose_stats.py --totals   # region totals + baseline comparison only
 """
+import os
 import re
 import subprocess
 import sys
@@ -40,12 +41,13 @@ BASELINE_REV = '6e016a9c6453bc14b9d48ffa7c89333dac7214cf'
 # text, because it is itself partly machine-written, so any tic present in both it
 # and the revision passes silently. They calibrate against ~38k words the operator
 # wrote by hand. Measured there: >30w 12.4%, <=8w 25.2%, mean 17.3 words.
-VOICE_CORPUS = [
-    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/'
-    'American Values Digital Edition Revised Edition 2024 v3.md',
-    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/Dancing With My Fate.md',
-    '/home/saydlette/workspace/risk_book_recovered/files/writing_examples/meditation_on_writing.md',
-]
+# The corpus is the operator's own hand-written prose and is deliberately not
+# named here: this repo is public, and the paths were local to one machine, so
+# committing them disclosed a home directory and the working titles of
+# unpublished drafts without making the script portable to anyone else. Only the
+# measured rates are committed, because only the rates are what the gate reads.
+# Point VOICE_CORPUS_DIR at a directory of hand-written prose to recompute them.
+VOICE_CORPUS_DIR = os.environ.get('VOICE_CORPUS_DIR')
 VOICE_LONG_PCT = 12.4   # NOT 9.3, which is what the contaminated baseline claimed
 VOICE_SHORT_PCT = 25.2
 
