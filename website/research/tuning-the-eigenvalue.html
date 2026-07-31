@@ -218,82 +218,27 @@
 <p><strong>My machinery is sense 1.</strong> Every claim I make about $\lambda_1$, recovery time, and early warning signals lives there. Senses 2 and 3 are real, and the mathematics I am entitled to borrow from them is narrow.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a></p>
 <p>The distinction matters because sense 2's vocabulary travels much more easily than sense 2's mathematics. Scale invariance, self-similarity, the same pattern at every magnification: those are properties of a diverging correlation length in a spatially extended system at a critical point. They are not properties of an eigenvalue crossing zero in a low-dimensional ODE. So where "scale invariance," "power law," or "self-similar" appear from here on, I say which sense I mean, and wherever the argument is doing mathematical work the answer is that sense 1 supplies none of them.</p>
 <p>Two boundaries on that, stated once here instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work, not closed work.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a><a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem to solve, not a reason to stop.<a href="#fn12" class="footnote-ref" id="fnref12" role="doc-noteref"><sup>12</sup></a> Where the sections below treat $\lambda_1$ as measurable, the slow-forcing regime is what they mean.</p>
-<h4 id="formal-definition-of-threshold-structure">Threshold Structure: T1–T6</h4>
-<p>A system has <strong>threshold structure</strong> if it satisfies six conditions. Three are mathematically precise. Three are not, and I want the seam between them visible, not smoothed over.<a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a></p>
-<table>
-<colgroup>
-<col class="col-w-12" />
-<col class="col-w-25" />
-<col class="col-w-40" />
-<col class="col-w-22" />
-</colgroup>
-<thead>
-<tr class="header">
-<th></th>
-<th>Name</th>
-<th>In plain language</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><strong>T1</strong></td>
-<td>Environmental feedback closure</td>
-<td>The system's outputs come back to it as inputs, by a path that runs through the outside world. It does not evolve in isolation.</td>
-<td>Formal</td>
-</tr>
-<tr class="even">
-<td><strong>T2</strong></td>
-<td>Multi-scale nesting</td>
-<td>Fast processes sit inside slow ones, and the slow ones act as parameters on the fast ones. Neural firing inside learning; alert triage inside staffing.</td>
-<td>Formal</td>
-</tr>
-<tr class="odd">
-<td><strong>T3</strong></td>
-<td>Awareness</td>
-<td>The system tracks its own state, and what it learns about itself changes what it does next.</td>
-<td><strong>Not formalized</strong></td>
-</tr>
-<tr class="even">
-<td><strong>T4</strong></td>
-<td>Desire</td>
-<td>It has reference states, a sense of where it is trying to be, that it derived from its own history rather than receiving from outside.</td>
-<td><strong>Not formalized</strong></td>
-</tr>
-<tr class="odd">
-<td><strong>T5</strong></td>
-<td>Threshold sensitivity</td>
-<td>It operates near a bifurcation: $\lambda_1$ is close to zero.</td>
-<td>Formal</td>
-</tr>
-<tr class="even">
-<td><strong>T6</strong></td>
-<td>Will</td>
-<td>It can change how strongly it couples to its environment, based on T3 and T4.</td>
-<td><strong>Not formalized</strong></td>
-</tr>
-</tbody>
-</table>
-<p>T1, T2, and T5 are ordinary dynamical systems theory and generate measurable signatures. T2 in particular is not my observation: it is <a href="#fn5">Haken's slaving principle</a>, and it is rigorous via center-manifold reduction, not merely noticed.</p>
-<p><strong>T3, T4, and T6 do not give you a number.</strong> They are things you can watch a system do. "Awareness," "desire" and "will" are loaded words, and I kept them because every neutral substitute I tried drained the meaning out, but there is nothing mystical in what they name. A system tracking its own state, working toward a reference it arrived at itself, and changing how tightly it couples to its surroundings are all things you can watch happen. Later on I watch all three happen, and one of them break an estimator.</p>
-<p>So the line between the two groups is measurability, not respectability. A case you can describe but not compute is weaker evidence than a time series, and it is not no evidence. Where it goes wrong is if I use one of the three to explain a measurement, if I ever find myself saying that the system <em>wants</em> in order to account for a number. That is the move that killed the last programme like this one, and it is the thing to watch me for.</p>
-<p>T3 does have a ceiling, and the ceiling is a theorem. Fields, Glazebrook and Levin proved that adding observational, representational, or control capability to a meta-level component cannot in principle yield a complete meta-level representation of the system as a whole.<a href="#fn15" class="footnote-ref" id="fnref15" role="doc-noteref"><sup>15</sup></a> So partial self-modeling is the permanent condition of any system that models itself. Not an engineering limitation better instrumentation would remove. The interesting dynamics are in the gap, and the operational sections pick that up, where the same point has been made from the inside of an incident.</p>
-<p>One adjacent formalism, since its absence would be noticed. Karl Friston's active inference gives precise machinery for belief updating, for goals encoded as priors, and for selecting actions. It is real mathematics where I have none. It also takes the goals as given, which is the part T4 was trying to name, and it is silent on awareness.<a href="#fn16" class="footnote-ref" id="fnref16" role="doc-noteref"><sup>16</sup></a></p>
+<h4 id="formal-definition-of-threshold-structure">What Kind of System This Applies To</h4>
+<p>Not every system. The machinery above needs a particular sort of arrangement, and six things have to be true of it. Three of them I can compute. Three I can only watch, and the difference between those two groups matters a great deal more than the list does.<a href="#fn14" class="footnote-ref" id="fnref14" role="doc-noteref"><sup>14</sup></a></p>
+<p><strong>The three I can compute.</strong> The system's outputs come back to it as inputs along a path that runs through the outside world, so it is not evolving in isolation. Fast processes sit inside slow ones, with the slow ones setting the terms the fast ones work under: neural firing inside learning, alert triage inside staffing. And it is operating near a bifurcation, which is to say $\lambda_1$ is close to zero. Each of those gives a number. The middle one is not my observation but <a href="#fn5">Haken's slaving principle</a>, rigorous via center-manifold reduction rather than merely noticed.</p>
+<p><strong>The three I can only watch.</strong> The system tracks its own state, and what it learns about itself changes what it does next. It works toward reference states it arrived at through its own history rather than receiving from outside. And it can change how strongly it couples to its environment, on the basis of the first two.</p>
+<p>I have called those three awareness, desire and will, and I kept the loaded words because every neutral substitute drained the meaning out of them. There is nothing mystical in what they name. A system tracking its own state, working toward a reference it generated, and adjusting its own coupling are all things you can watch happen, and later on I watch all three happen and one of them break an estimator.</p>
+<p>So the line between the two groups is measurability, not respectability. A case you can describe but not compute is weaker evidence than a time series, and it is not no evidence. Where it goes wrong is if I use one of the second three to explain a measurement, if I ever find myself saying that a system <em>wants</em> in order to account for a number. That is the move that killed the last programme like this one, and it is the thing to watch me for.</p>
+<p>Degrees matter more than membership. A thermostat has the first condition and weakly has threshold sensitivity. A photodiode has both. A nervous system has all six. Humanness is irrelevant here; the arrangement is what matters.</p>
+<p>Self-tracking does have a ceiling, and the ceiling is a theorem. Fields, Glazebrook and Levin proved that adding observational, representational, or control capability to a meta-level component cannot in principle yield a complete meta-level representation of the system as a whole.<a href="#fn15" class="footnote-ref" id="fnref15" role="doc-noteref"><sup>15</sup></a> So partial self-modeling is the permanent condition of anything that models itself, and not an engineering limitation better instrumentation would remove. The interesting dynamics are in the gap, and the operational sections pick that up, where the same point has been made from inside an incident.</p>
+<p>One adjacent formalism, since its absence would be noticed. Karl Friston's active inference gives precise machinery for belief updating, for goals encoded as priors, and for selecting actions. It is real mathematics where I have none. It also takes the goals as given, which is the part about self-generated reference states that I most wanted named, and it is silent on self-tracking.<a href="#fn16" class="footnote-ref" id="fnref16" role="doc-noteref"><sup>16</sup></a></p>
 <h5 id="the-catastrophe-theory-warning">What happened to the last programme that tried this</h5>
 <p>In 1972 René Thom published <em>Stabilité structurelle et morphogénèse</em>. He proposed to classify the ways smooth systems can jump, then to apply that classification across biology, linguistics, psychology, and social behavior. Christopher Zeeman popularized it energetically. Catastrophe theory had a genuine classification theorem behind it, one considerably stronger than anything backing my own.<a href="#fn17" class="footnote-ref" id="fnref17" role="doc-noteref"><sup>17</sup></a></p>
 <p>It collapsed in the late 1970s. Sussmann and Zahler's critique showed that the applications outside physics were, in case after case, unfalsifiable. The models were fitted to data after the fact. The qualitative predictions were compatible with nearly any observation. And the classification theorem, true as mathematics, constrained essentially nothing empirically.<a href="#fn18" class="footnote-ref" id="fnref18" role="doc-noteref"><sup>18</sup></a></p>
 <p>I am describing this at length because the obvious objection is "this is catastrophe theory again." A reader who reaches that thought without my having reached it first is entitled to stop reading.</p>
 <p>So: what is different here, and where does the risk stand?</p>
-<p><strong>What is different.</strong> Catastrophe theory failed hardest where it had no measurement. Its applications to aggression, prison riots, and stock markets produced diagrams, not instruments. T1, T2, and T5 generate specific, computable signatures on real time series: recovery-time distributions, lag-1 autocorrelation, variance ratios. Later I apply them to data a compliance pipeline already emits. That is a different kind of claim, and it can fail in public.</p>
-<p><strong>Where the risk stands.</strong> The danger is not that T3, T4 and T6 are meaningless. It is that they are the appealing part, and appeal is what stops a programme from testing itself. They are separated from the computable three and labelled as such, and if I use one of them to explain a number, the objection has landed.</p>
-<h4 id="degrees-of-threshold-structure">Degrees of Threshold Structure</h4>
-<p>Threshold structure admits degrees. T1 grades by the number and complexity of environmental feedback loops; T2 by the number of timescale levels; T5 by proximity to bifurcation, meaning $|\lambda_1|$. Those three are measurable. T3, T4, and T6 grade conceptually at best: a nervous system has more awareness, richer desire, and finer-grained will than a thermostat, and I cannot put a number on the difference.</p>
-<p><strong>Threshold structure is a matter of degree.</strong> A thermostat satisfies (T1) and weakly satisfies (T5), but lacks (T2)–(T4) and (T6). A photodiode satisfies (T1) and (T5). A nervous system satisfies all six. Humanness is irrelevant; threshold structure is what matters.</p>
+<p><strong>What is different.</strong> Catastrophe theory failed hardest where it had no measurement. Its applications to aggression, prison riots, and stock markets produced diagrams and not instruments. The three computable conditions generate specific signatures on real time series: recovery-time distributions, lag-1 autocorrelation, variance ratios. Later I apply them to data a compliance pipeline already emits. That is a different kind of claim, and it can fail in public.</p>
+<p><strong>Where the risk stands.</strong> The danger is not that the three I can only watch are meaningless. It is that they are the appealing part, and appeal is what stops a programme from testing itself. They are separated from the computable three and labelled as such, and if I use one of them to explain a number, the objection has landed.</p>
 <h4 id="scope-and-interpretation">Scope and Interpretation</h4>
-<p><strong>Characterization, not derivation.</strong> T1–T6 characterize a structure that complex systems near tipping points share. They do not derive it from anything. The value of the exercise, if it has value, is in naming clearly what practitioners already sense: replacing vague talk of "resilience" and "fragility" with a structure — part mathematical, part experiential — that generates testable signatures across domains.</p>
+<p><strong>Characterisation, not derivation.</strong> The six conditions characterise a structure that complex systems near tipping points share. They do not derive it from anything. The value of the exercise, if it has value, is in naming clearly what practitioners already sense: replacing vague talk of "resilience" and "fragility" with a structure — part mathematical, part experiential — that generates testable signatures across domains.</p>
 <h5 id="why-the-recurrence-happens">What Transfers, and What Does Not</h5>
 <p>A lake, a laser and an operations floor look alike near threshold because the reduction throws away almost everything that made them different. The recurrence is a theorem about information loss, not about a shared essence. There is no deep unity being revealed. There is a projection, and the projection has a very small image.</p>
-<p>That sets a limit on what travels. Knowing you are at a saddle-node buys you the shape of the approach and the warning signatures. It does not tell you where the threshold is, what the state variables are, which parameter is the control parameter, or what to do about any of it. Every domain-specific fact has to be earned again in the domain. T1, T2 and T5 give real transfer and it is thin transfer. My claims that would be thick, the ones about awareness and desire and will crossing domains, carry no transfer mechanism at all.</p>
+<p>That sets a limit on what travels. Knowing you are at a saddle-node buys you the shape of the approach and the warning signatures. It does not tell you where the threshold is, what the state variables are, which parameter is the control parameter, or what to do about any of it. Every domain-specific fact has to be earned again in the domain. The computable three give real transfer, and it is thin. My claims that would be thick, the ones about awareness and desire and will crossing domains, carry no transfer mechanism at all.</p>
 <h4 id="where-the-threshold-is-literally-an-eigenvalue">Where the Threshold Really Is an Eigenvalue</h4>
 <p>Every domain I apply this to is a soft-boundary domain: ecology, medicine, finance, neuroscience, governance, security. A skeptical reader will reasonably suspect I am doing analogy and calling it mathematics. So here are the cases where a dominant eigenvalue crossing a critical value is not an analogy for the physics. It <em>is</em> the physics.</p>
 <table>
@@ -489,7 +434,7 @@
 <p>Now the meeting.</p>
 <p>A vendor came to sell us a product a couple of years ago and I was the person who had been asked to decide whether we bought it. The chief executive flew in with several of his people and we sat at a long table in a room with glass walls. I had a list of questions. He answered the first before I had finished asking it. He answered the second by referring back to his answer to the first. He answered the third by referring back to the first two. Somewhere around the fourth I stopped asking questions and started watching, because the thing in front of me had stopped being a conversation. It was a man restating his own previous answers in slightly different language. The people who came with him supplied the responses that made the restatements feel like answers. One of them laughed, quietly, in the small gaps where he paused for breath.</p>
 <p>He was not stupid and he was not lying. He believed every answer he gave. He had given those answers to so many rooms so similar to this one that they no longer required questions to attach to. The questions had become occasions. Nothing in that room was permitted to land on him as genuinely new. I drove home having signed nothing, and spent the evening trying to name what I had watched.</p>
-<p>What I had watched was a loop with its return path removed, and the vocabulary for it is already on the table. T1, environmental feedback closure, is the condition that a system's outputs come back to it through the world. His did not. They came back through people whose positions depended on him. That is a shorter path, and a flattering one, and it carries almost no information about the world the outputs went into. Meanwhile T3, the self-model, went on updating perfectly well. It was updating on its own echo. A system that models itself from its own output is not tracking anything. It is confirming.</p>
+<p>What I had watched was a loop with its return path removed, and the vocabulary for it is already on the table. Feedback closure is the condition that a system's outputs come back to it through the world. His did not. They came back through people whose positions depended on him. That is a shorter path, and a flattering one, and it carries almost no information about the world the outputs went into. Meanwhile the self-model went on updating perfectly well. It was updating on its own echo. A system that models itself from its own output is not tracking anything. It is confirming.</p>
 <p>That description is structural and it should stay structural. The failure is not that the man is a bad man. It is that the arrangement around him has been optimised until nothing genuinely other can reach it, by his schedule and his payroll and the ordinary gravity of a powerful person's calendar. I was the one response in that room that had not been arranged in advance. The apparatus smoothed me into a feature of the presentation before I got to my fourth question.</p>
 <p>And I run a smaller version of the same arrangement every time I decide which indicators to collect. A dashboard with seven variables on it is a decision about which seven kinds of trouble are permitted to reach me, taken months in advance, by a version of me with less information than the one who will need it. He arranged his by payroll. I arrange mine by schema. Neither of us experiences it as arranging anything.</p>
 <p>The same shape appears at larger scale and with better funding. Evan Osnos went asking around Silicon Valley and came back with Reid Hoffman's estimate. More than half the billionaires Hoffman knew had acquired some version of what he called apocalypse insurance. A bunker, a second property, somewhere to go.<a href="#fn42" class="footnote-ref" id="fnref42" role="doc-noteref"><sup>42</sup></a> Douglas Rushkoff was flown to a desert resort to talk about the future of technology to five men from the upper end of the hedge fund world. They wanted to discuss the Event instead, and its logistics. One of them asked him how he would maintain authority over his security force after money stopped meaning anything.<a href="#fn43" class="footnote-ref" id="fnref43" role="doc-noteref"><sup>43</sup></a></p>
@@ -502,13 +447,13 @@
 <p><em>Register: this is the result. It is also the concession, and those turn out to be the same thing.</em></p>
 <p>The limitation is mechanical, and I have no solution to it.</p>
 <p><strong>Linearizing around an equilibrium and reading $\lambda_1$ off the Jacobian assumes the vector field is fixed.</strong> The whole apparatus (the eigenvalues, the critical slowing down, the estimation from time series) is derived for a system whose rules stay put while you perturb it and watch it recover.</p>
-<p>But my subject is systems with T6. Systems that reorganize when they sense the boundary. An organization approaching saturation does not politely continue obeying the same equations at a smaller margin. It mobilizes reserves, reprioritizes ruthlessly, cancels the roadmap, calls people back from leave, invents a workaround nobody documented. Analysts stop working the queue in order and start triaging by smell. Someone escalates to a vice president and a rule changes.</p>
+<p>But my subject is systems that reorganize when they sense the boundary. An organization approaching saturation does not politely continue obeying the same equations at a smaller margin. It mobilizes reserves, reprioritizes ruthlessly, cancels the roadmap, calls people back from leave, invents a workaround nobody documented. Analysts stop working the queue in order and start triaging by smell. Someone escalates to a vice president and a rule changes.</p>
 <p><strong>That is not a perturbation around a fixed vector field. It is a change to the vector field, triggered by proximity to the boundary.</strong><a href="#fn44" class="footnote-ref" id="fnref44" role="doc-noteref"><sup>44</sup></a></p>
 <p>The consequence is precise and it is bad: <strong>$\lambda_1$ estimated from historical time series mis-predicts hardest where it matters most.</strong> Far from the boundary the system is not adapting, the Jacobian is roughly constant, and the estimate is good. It is also uninteresting, because nothing is about to happen. Near the boundary, where you actually want the number, the system is busy rewriting the dynamics your estimator learned. The regime where the measurement is trustworthy and the regime where the measurement is needed are close to disjoint.</p>
 <p>This is not a data problem. A longer window does not fix it; a longer window averages over more distinct vector fields and gives you a confident estimate of a system that never existed. Higher sampling frequency does not fix it. It is an assumption violation, and the assumption is load-bearing.</p>
 <p>Woods' <strong>graceful extensibility</strong> is the same observation from the other side, and putting the two together states the problem cleanly. Graceful extensibility is the capacity to extend the boundary when surprised: to do something that was not in the model. In this vocabulary, <em>that capacity is the capacity to change the Jacobian.</em> So the quantity Woods identifies as the thing most worth measuring about an adaptive system is the quantity my framework is structurally unable to represent. It holds the Jacobian fixed in order to have eigenvalues at all.</p>
 <p><strong>A theory of threshold systems that assumes a fixed Jacobian cannot represent its own central phenomenon.</strong></p>
-<p>I do not have a fix. There are directions. Time-varying and switched linear systems. Adaptive control. Hybrid automata that model the reconfiguration as a discrete mode change. And treating the adaptation itself as a slow variable in the sense of T2, so the Jacobian's drift becomes part of the model instead of a violation of it. The last is the one I would try first. That is a research programme. I do not have a method. It also may not help. T6 modulation is triggered by proximity to threshold, so the slow variable's dynamics depend on the fast variable's distance from a bifurcation. That is not a timescale separation any more. It is a feedback loop between the levels.</p>
+<p>I do not have a fix. There are directions. Time-varying and switched linear systems. Adaptive control. Hybrid automata that model the reconfiguration as a discrete mode change. And treating the adaptation itself as another slow variable, so the Jacobian's drift becomes part of the model instead of a violation of it. The last is the one I would try first. That is a research programme. I do not have a method. It also may not help. That reorganising is triggered by proximity to threshold, so the slow variable's dynamics depend on the fast variable's distance from a bifurcation. That is not a timescale separation any more. It is a feedback loop between the levels.</p>
 <p>Saying that costs me my strongest operational claim: that you can measure how close a human system is to tipping over. The narrower claim is this: <strong>you can measure how close a human system is to tipping over, in the regime where it is not yet doing anything about it.</strong> After that, the number is measuring a system that no longer exists, and the people inside it know things the estimator does not.</p>
 <h4 id="query-5">Brittleness Is a Different Question</h4>
 <p>Is brittleness, meaning how <em>abruptly</em> a system fails once it exceeds its boundary, a property of the bifurcation type instead of the distance to the bifurcation, and if so, can it be estimated separately from $\lambda_1$?</p>
@@ -689,7 +634,7 @@
 </tr>
 <tr class="odd">
 <td>Threshold structure</td>
-<td>Dynamical configuration satisfying T1–T6 (three formal, three not)</td>
+<td>A system meeting the six conditions in Appendix C: three computable, three only observable</td>
 </tr>
 </tbody>
 </table>
@@ -705,8 +650,63 @@
 <p><strong>Saddle-node bifurcation (canonical form):</strong> $$\frac{dx}{dt} = \mu - x^2$$</p>
 <p><strong>VAR eigenvalue estimation:</strong> $$\tilde{\mathbf{K}}(t + \Delta t) = A \tilde{\mathbf{K}}(t) + \boldsymbol{\epsilon}(t), \qquad \lambda_i = \frac{\ln(\mu_i)}{\Delta t}$$ where $\mu_i$ are the eigenvalues of the fitted matrix $A$.</p>
 <p><strong>Perturbation-response estimation (preferred; see <a href="#why-mttr-fails">why MTTR fails</a>):</strong> $$\ln|\Delta K_i(t)| = \ln|\Delta K_i(t_0)| + \lambda_1 (t - t_0)$$ The slope of the log-deviation against time is $\lambda_1$, measured on a single identified event.</p>
-<p><strong>What none of this covers.</strong> Every equation above assumes $J$ is constant over the estimation window. <a href="#limitations-fixed-jacobian">What the Number Cannot See</a> is about why that assumption fails in systems satisfying T6, and it is not a small caveat.</p>
-<h3 id="appendix-c-mapping-to-standard-terminology">Appendix C: Mapping to Standard Terminology</h3>
+<p><strong>What none of this covers.</strong> Every equation above assumes $J$ is constant over the estimation window. <a href="#limitations-fixed-jacobian">What the Number Cannot See</a> is about why that assumption fails in systems that reorganise when they sense their own boundary, and it is not a small caveat.</p>
+<h3 id="appendix-c-mapping-to-standard-terminology">Appendix C: The Six Conditions, and Their Standard Names</h3>
+<p><em>The body states these in prose, in the two groups that matter. Here they are numbered, for anyone who wants to refer to one of them or check it against the literature.</em></p>
+<table>
+<colgroup>
+<col class="col-w-12" />
+<col class="col-w-25" />
+<col class="col-w-40" />
+<col class="col-w-22" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th>Name</th>
+<th>In plain language</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>T1</strong></td>
+<td>Environmental feedback closure</td>
+<td>The system's outputs come back to it as inputs, by a path that runs through the outside world. It does not evolve in isolation.</td>
+<td>Formal</td>
+</tr>
+<tr class="even">
+<td><strong>T2</strong></td>
+<td>Multi-scale nesting</td>
+<td>Fast processes sit inside slow ones, and the slow ones act as parameters on the fast ones. Neural firing inside learning; alert triage inside staffing.</td>
+<td>Formal</td>
+</tr>
+<tr class="odd">
+<td><strong>T3</strong></td>
+<td>Awareness</td>
+<td>The system tracks its own state, and what it learns about itself changes what it does next.</td>
+<td><strong>Not formalized</strong></td>
+</tr>
+<tr class="even">
+<td><strong>T4</strong></td>
+<td>Desire</td>
+<td>It has reference states, a sense of where it is trying to be, that it derived from its own history rather than receiving from outside.</td>
+<td><strong>Not formalized</strong></td>
+</tr>
+<tr class="odd">
+<td><strong>T5</strong></td>
+<td>Threshold sensitivity</td>
+<td>It operates near a bifurcation: $\lambda_1$ is close to zero.</td>
+<td>Formal</td>
+</tr>
+<tr class="even">
+<td><strong>T6</strong></td>
+<td>Will</td>
+<td>It can change how strongly it couples to its environment, based on T3 and T4.</td>
+<td><strong>Not formalized</strong></td>
+</tr>
+</tbody>
+</table>
 <p>Wherever I have invented a term that an established field already had, the established term is better and should be preferred.</p>
 <table>
 <colgroup>
