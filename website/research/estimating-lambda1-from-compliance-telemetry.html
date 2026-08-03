@@ -58,7 +58,7 @@
 
                 <div class="article-content">
                     <div class="article-summary">
-                        <strong>A method note. How to estimate $\lambda_1$ for a security programme from telemetry a compliance pipeline already emits, and what the estimate is worth.</strong>
+                        <strong>A method note. How to estimate $\lambda_1$ for a security program from telemetry a compliance pipeline already emits, and what the estimate is worth.</strong>
                     </div>
 
 <p><em>This is the methods companion to <a href="tuning-the-eigenvalue.html">Being in the Loop</a>.
@@ -71,10 +71,10 @@ deploy, but it carries <strong>no federal data and it has no agency sponsor</str
 mechanism; it is not an authorized system, and nothing below should be read as a claim that a control has
 been assessed by anyone other than me. The state vector is a worked example, not an attestation.</p>
 <p>Two limits inherited from the essay, stated once here rather than repeated throughout. Every estimator
-below assumes the Jacobian holds still over the estimation window, and a security programme that senses its
+below assumes the Jacobian holds still over the estimation window, and a security program that senses its
 own boundary does not hold still. And every mean-based summary of a heavy-tailed quantity describes its
 outliers. Both are reasons to distrust the number in exactly the situation you most want it.</p>
-<h3 id="state-space">1. A state space for a security programme</h3>
+<h3 id="state-space">1. A state space for a security program</h3>
 <h4 id="security-state-space">1.1 Security State Space</h4>
 <p>Represent the security state as a vector with components for vulnerability state (count, severity, exploitability), configuration drift from baseline, exposure or attack surface, analyst attention and fatigue, and response capacity. Additional components can be added; these are the ones that reliably move.</p>
 <p>Note that analyst attention is a <em>state variable</em>, not a parameter. That is the whole difference between this model and a conventional risk model, and everything interesting follows from it.</p>
@@ -125,7 +125,7 @@ outliers. Both are reasons to distrust the number in exactly the situation you m
 <p>One warning belongs up front. Everything in section 2 estimates a Jacobian from history and assumes it still applies, and <a href="tuning-the-eigenvalue.html#limitations-fixed-jacobian">the essay's closing argument</a> is about why that assumption fails hardest in exactly the situations you built the estimator for.</p>
 <h4 id="multi-threshold-cascade-analysis">1.6 Multi-Threshold Cascade Analysis</h4>
 <p>Real environments have several thresholds operating semi-independently: alert volume, staffing, vulnerability accumulation, configuration drift. Each is a condition where some subsystem's dominant eigenvalue approaches zero.</p>
-<p>They are coupled, which means crossing one shifts the effective parameters of the others. A cascade occurs when that shift is enough to push a neighbouring subsystem across its own threshold. In practice: an alert volume spike produces analyst fatigue, which produces missed vulnerabilities, which pushes vulnerability accumulation across its threshold, which produces the compromise. Each step is small and each step is legible only in retrospect.</p>
+<p>They are coupled, which means crossing one shifts the effective parameters of the others. A cascade occurs when that shift is enough to push a neighboring subsystem across its own threshold. In practice: an alert volume spike produces analyst fatigue, which produces missed vulnerabilities, which pushes vulnerability accumulation across its threshold, which produces the compromise. Each step is small and each step is legible only in retrospect.</p>
 <p>This is the mechanism Woods calls <strong>decompensation</strong>: a system that absorbs a challenge, then absorbs the next one with less margin, then falls over, and the fall looks sudden from outside even though the capacity was draining the entire time.</p>
 <h4 id="control-implications">1.7 Control Implications</h4>
 <p>Control theory provides tools for <strong>eigenvalue placement</strong>: designing feedback to shift eigenvalues leftward, increasing the stability margin. For security operations that means strengthening negative feedback (faster detection-response loops), weakening positive feedback (breaking alert-fatigue spirals), and increasing damping (reducing oscillation).</p>
@@ -365,7 +365,7 @@ PROCEDURE:
 <p>State variables: $V$ (open vulnerability count) and $R$ (effective response capacity, in FTEs).</p>
 <p>$$\frac{dV}{dt} = \alpha - \frac{\beta R V}{V + K_v} - \eta V \qquad \frac{dR}{dt} = \gamma(R_0 - R) - \delta V$$</p>
 <p>$\alpha$ is the vulnerability introduction rate and the bifurcation parameter. The term $\beta R V/(V + K_v)$ is saturating remediation in Michaelis–Menten form: linear in $V$ at low load, saturating at $\beta R$ at high load, with $K_v$ the half-saturation constant. $\eta V$ is natural decay from environment rotation and upstream patching. $\gamma(R_0 - R)$ is capacity recovery toward baseline $R_0$. $\delta V$ is capacity drain, each open vulnerability consumes attention.</p>
-<p><em>Why not Lotka–Volterra.</em> The classical predator-prey form has $\det(J) = 0$ at its coexistence equilibrium, giving a centre rather than a stable node or spiral: marginal stability as a structural artifact rather than as a finding. It also has no saddle-node, so the stable state shifts under stress instead of vanishing. Saturating remediation and linear capacity drain fix both.</p>
+<p><em>Why not Lotka–Volterra.</em> The classical predator-prey form has $\det(J) = 0$ at its coexistence equilibrium, giving a center rather than a stable node or spiral: marginal stability as a structural artifact rather than as a finding. It also has no saddle-node, so the stable state shifts under stress instead of vanishing. Saturating remediation and linear capacity drain fix both.</p>
 <p><em>Equilibrium.</em> $dR/dt = 0$ gives $R^* = R_0 - \delta V^*/\gamma$. Substituting into $dV/dt = 0$:</p>
 <p>$$\alpha = \frac{\beta(R_0 - \delta V^*/\gamma)V^*}{V^* + K_v} + \eta V^*$$</p>
 <p>which is nonlinear in $V^*$ with no closed form.</p>
