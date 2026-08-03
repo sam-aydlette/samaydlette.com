@@ -86,6 +86,12 @@ GRADE = re.compile(
     r'|\bthe part (?:that|which) (?:matters|generalizes|counts)\b'
     r'|\bis precise about\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
+# Appositive doubling: a clause, then a second characterization of the same thing
+# bolted on with "and it is". 0.12/1k in the pinned baseline, 1.68/1k after a
+# session of rewriting, which is drift and not voice. Some survivors are real
+# parallels ("what makes it restful, and it is what makes it useless"), so this
+# lever is a density signal rather than a list of errors.
+DOUBLE = re.compile(r', and (?:it|that|this|they) (?:is|are|was|were)\b', re.I)
 # Measured against the hand-written corpus, not against the essay: 0.08/1k there,
 # 0.61/1k here. "not A but B" is NOT included -- that one is genuinely his (0.42/1k).
 NOTY = re.compile(r',\s+not\s+(?:a|an|the|its|his|her|my|only)\b|\bwhich is why\b', re.I)
@@ -115,6 +121,7 @@ def stats(t):
                 rather=len(RATHER.findall(t)),
                 announce=len(ANNOUNCE.findall(t)) + len(VIRTUE.findall(t)),
                 grade=len(GRADE.findall(t)),
+                double=len(DOUBLE.findall(t)),
                 noty=len(NOTY.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
                 short=sum(1 for s in ss if len(s.split()) <= 8))
@@ -175,6 +182,7 @@ def main():
     print(f"  {'announce-then-do':<16}{tot['announce']:>4} -> 0    (0 in 38k hand-written words)")
     print(f"  {'self-grading':<16}{tot['grade']:>4} -> 0    (grading a point instead of making it)")
     print(f"  {'X-not-Y / why':<16}{tot['noty']:>4} -> ~{round(0.08*w):<3} (0.08/1k in the hand-written corpus)")
+    print(f"  {'"and it is" doubling':<16}{tot['double']:>4} -> ~{round(0.12*w):<3} (0.12/1k in the pinned baseline)")
     print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{round(VOICE_LONG_PCT/100*tot['sents']):<3} "
           f"({VOICE_LONG_PCT}% is his real rate; the old baseline said 9.3%)")
     for key, label in (('xref', 'cross-refs'), ('essay', "'this essay'"), ('rather', "'rather than'")):
