@@ -79,7 +79,12 @@ GRADE = re.compile(
     r'|\bmore (?:precise|interesting|serious|important|useful|subtle) than\b'
     r'|\bis the (?:interesting|useful|uncomfortable|important) part\b'
     r'|\bwhich is the (?:more|most) \w+ (?:problem|part|question|claim)\b'
-    r'|\band the kind matters\b|\bis not (?:a )?(?:cosmetic|small|trivial|minor)\b', re.I)
+    r'|\band the kind matters\b|\bis not (?:a )?(?:cosmetic|small|trivial|minor)\b'
+    # the same verdict worn as a relative clause: "the part that matters",
+    # "the fiction is precise about...". Excludes "the part about X", which names
+    # a part rather than ranking it.
+    r'|\bthe part (?:that|which) (?:matters|generalizes|counts)\b'
+    r'|\bis precise about\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
 # Measured against the hand-written corpus, not against the essay: 0.08/1k there,
 # 0.61/1k here. "not A but B" is NOT included -- that one is genuinely his (0.42/1k).
