@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prose-rules measurement for tuning-the-eigenvalue.html.
 
-Six levers, measured against the author's own baseline (pinned revision):
+Eight levers, measured against the author's own baseline (pinned revision):
   1 xref        cross-referential scaffolding (Section N, note N, Appendix X, Query N)
   2 essay       'this essay' / 'the essay' / 'this section' self-reference
   3 ratherthan  the corrective 'X rather than Y' frame
@@ -12,6 +12,9 @@ Six levers, measured against the author's own baseline (pinned revision):
   7 virtue      claiming a virtue instead of exhibiting it ("the honest version",
                 "stating this plainly"), plus "precisely/exactly" used as a bare
                 intensifier. All near-zero in the author's prose.
+  8 grade       grading a point instead of making it ("a sharper problem than it
+                first sounds", "and the kind matters"). Six in the body before the
+                cut, zero after; the reader decides what is interesting.
 
 Usage:  python3 prose_stats.py            # per-section table for the problem region
         python3 prose_stats.py --totals   # region totals + baseline comparison only
@@ -67,6 +70,16 @@ VIRTUE = re.compile(r'\bhonest(?:ly)?\b(?!\s+(?:feedback|enough))'
                     r'|\b(?:say|says|saying|said|stat\w+|put|putting)\s+(?:it\s+|this\s+|that\s+|so\s+)?plainly\b'
                     r'|\b(?:precisely|exactly)\s+(?:the|why|because|this|that)\b', re.I)
 ESSAY = re.compile(r'\b(?:this essay|the essay|this Part|this section)\b', re.I)
+# Grading a point instead of making it: telling the reader the coming statement is
+# sharper, more interesting, or less embarrassing than they would expect. Distinct
+# from ANNOUNCE, which flags a speech act; this flags a verdict on the author's own
+# material. "which matters because X" is excluded: it gives a reason, not a grade.
+GRADE = re.compile(
+    r'\bthan (?:it|they|that|this) (?:sounds?|looks?|seems?|first \w+)'
+    r'|\bmore (?:precise|interesting|serious|important|useful|subtle) than\b'
+    r'|\bis the (?:interesting|useful|uncomfortable|important) part\b'
+    r'|\bwhich is the (?:more|most) \w+ (?:problem|part|question|claim)\b'
+    r'|\band the kind matters\b|\bis not (?:a )?(?:cosmetic|small|trivial|minor)\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
 # Measured against the hand-written corpus, not against the essay: 0.08/1k there,
 # 0.61/1k here. "not A but B" is NOT included -- that one is genuinely his (0.42/1k).
@@ -96,6 +109,7 @@ def stats(t):
                 xref=len(XREF.findall(t)), essay=len(ESSAY.findall(t)),
                 rather=len(RATHER.findall(t)),
                 announce=len(ANNOUNCE.findall(t)) + len(VIRTUE.findall(t)),
+                grade=len(GRADE.findall(t)),
                 noty=len(NOTY.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
                 short=sum(1 for s in ss if len(s.split()) <= 8))
@@ -154,6 +168,7 @@ def main():
     w = tot['words'] / 1000
     print("\n=== edit sites remaining to reach baseline rates ===")
     print(f"  {'announce-then-do':<16}{tot['announce']:>4} -> 0    (0 in 38k hand-written words)")
+    print(f"  {'self-grading':<16}{tot['grade']:>4} -> 0    (grading a point instead of making it)")
     print(f"  {'X-not-Y / why':<16}{tot['noty']:>4} -> ~{round(0.08*w):<3} (0.08/1k in the hand-written corpus)")
     print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{round(VOICE_LONG_PCT/100*tot['sents']):<3} "
           f"({VOICE_LONG_PCT}% is his real rate; the old baseline said 9.3%)")
