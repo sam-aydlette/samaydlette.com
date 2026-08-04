@@ -15,6 +15,10 @@ Eight levers, measured against the author's own baseline (pinned revision):
   8 grade       grading a point instead of making it ("a sharper problem than it
                 first sounds", "and the kind matters"). Six in the body before the
                 cut, zero after; the reader decides what is interesting.
+  9 hedge       apologising for the claim before anyone attacks it ("what I can
+                defend is narrow" when it is not, "a slightly embarrassing
+                comfort"). Distinct from real scoping, which the essay needs and
+                keeps; see the comment on HEDGE for the test.
 
 Usage:  python3 prose_stats.py            # per-section table for the problem region
         python3 prose_stats.py --totals   # region totals + baseline comparison only
@@ -86,6 +90,29 @@ GRADE = re.compile(
     r'|\bthe part (?:that|which) (?:matters|generalizes|counts)\b'
     r'|\bis precise about\b', re.I)
 RATHER = re.compile(r'\brather than\b', re.I)
+# Pre-emptive self-diminishment: apologising for the claim before anyone attacks
+# it. The inverse of GRADE, and the harder one, because the essay's credibility
+# rests on real scoping and this looks identical to it.
+#
+# The test is what the hedge is about:
+#   evidence  -> keep. "the transferable payload is correspondingly thin" is a
+#                theorem. "the narrower claim is this: X" follows a real
+#                concession. "it cost me my strongest operational claim" is the
+#                Lakatos credential being paid.
+#   standing  -> cut. "what I can defend is narrow" when the claim is a general
+#                one about method. "I trust it more for being narrow", modesty
+#                offered as a credential. "a slightly embarrassing comfort",
+#                apologising for having a feeling.
+#
+# Only the second kind is flagged. "slightly" is scoped to self-deprecating
+# adjectives so it does not catch "slightly subcritical", which is a measurement.
+HEDGE = re.compile(
+    r'\bslightly (?:embarrass|awkward|odd|strange|silly|absurd|ridiculous)\w*'
+    r'|\b(?:embarrassing|embarrassed) to (?:say|admit|report|report that)\b'
+    r'|\bwhat I can (?:defend|claim|offer|say) is (?:narrow|small|thin|modest|little)\b'
+    r'|\bI trust it more for being\b'
+    r'|\bfor what (?:it is|it’s) worth\b'
+    r'|\bI am aware of how (?:thin|weak|slight)\b', re.I)
 # Appositive doubling: a clause, then a second characterization of the same thing
 # bolted on with "and it is". 0.12/1k in the pinned baseline, 1.68/1k after a
 # session of rewriting, which is drift and not voice. Some survivors are real
@@ -121,6 +148,7 @@ def stats(t):
                 rather=len(RATHER.findall(t)),
                 announce=len(ANNOUNCE.findall(t)) + len(VIRTUE.findall(t)),
                 grade=len(GRADE.findall(t)),
+                hedge=len(HEDGE.findall(t)),
                 double=len(DOUBLE.findall(t)),
                 noty=len(NOTY.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
@@ -181,6 +209,7 @@ def main():
     print("\n=== edit sites remaining to reach baseline rates ===")
     print(f"  {'announce-then-do':<16}{tot['announce']:>4} -> 0    (0 in 38k hand-written words)")
     print(f"  {'self-grading':<16}{tot['grade']:>4} -> 0    (grading a point instead of making it)")
+    print(f"  {'self-diminishing':<16}{tot['hedge']:>4} -> 0    (apologising for the claim, not scoping it)")
     print(f"  {'X-not-Y / why':<16}{tot['noty']:>4} -> ~{round(0.08*w):<3} (0.08/1k in the hand-written corpus)")
     print(f"  {'"and it is" doubling':<16}{tot['double']:>4} -> ~{round(0.12*w):<3} (0.12/1k in the pinned baseline)")
     print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{round(VOICE_LONG_PCT/100*tot['sents']):<3} "
