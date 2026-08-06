@@ -47,6 +47,7 @@ const {
     DescribeSecretCommand,
 } = require('@aws-sdk/client-secrets-manager');
 const { canonicalize } = require('./canonical');
+const { computeDivergence } = require('./divergence');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
@@ -101,7 +102,18 @@ async function getPolicy() {
 
 const REQUIRED_TAGS = ['Environment', 'CostCenter', 'DataClassification', 'Owner'];
 
+// A failed describe call is NOT evidence that a setting is off. Every attribute
+// this transformer cannot read is recorded in `read_errors`, and policy.gate
+// turns those into a `resource_read_error` finding instead of letting the
+// attribute rules report a security violation on a value never observed.
+// Without this, an IAM gap on one bucket is published — signed — as
+// "encryption disabled / public access not blocked" against a bucket that is
+// correctly configured. The resource is still non-compliant either way, so the
+// gate does not fail open; only the stated reason changes, from a fabricated
+// control failure to an honest "could not assess".
 async function buildS3ResourceInput(s3, bucketName, tfName) {
+    const readErrors = [];
+
     let encryptionEnabled = false;
     try {
         const enc = await s3.send(new GetBucketEncryptionCommand({ Bucket: bucketName }));
@@ -109,7 +121,15 @@ async function buildS3ResourceInput(s3, bucketName, tfName) {
             ?.ApplyServerSideEncryptionByDefault?.SSEAlgorithm;
         encryptionEnabled = algorithm === 'AES256' || algorithm === 'aws:kms';
     } catch (err) {
-        console.warn(`GetBucketEncryption failed for ${bucketName}: ${err.name}`);
+        // ServerSideEncryptionConfigurationNotFoundError is a real answer:
+        // the bucket has no default encryption. Anything else means we did
+        // not get an answer at all.
+        if (err.name === 'ServerSideEncryptionConfigurationNotFoundError') {
+            encryptionEnabled = false;
+        } else {
+            readErrors.push('encryption');
+            console.warn(`GetBucketEncryption failed for ${bucketName}: ${err.name}`);
+        }
     }
 
     let versioningEnabled = false;
@@ -117,6 +137,7 @@ async function buildS3ResourceInput(s3, bucketName, tfName) {
         const ver = await s3.send(new GetBucketVersioningCommand({ Bucket: bucketName }));
         versioningEnabled = ver?.Status === 'Enabled';
     } catch (err) {
+        readErrors.push('versioning');
         console.warn(`GetBucketVersioning failed for ${bucketName}: ${err.name}`);
     }
 
@@ -129,7 +150,14 @@ async function buildS3ResourceInput(s3, bucketName, tfName) {
             cfg.IgnorePublicAcls && cfg.RestrictPublicBuckets
         );
     } catch (err) {
-        console.warn(`GetPublicAccessBlock failed for ${bucketName}: ${err.name}`);
+        // NoSuchPublicAccessBlockConfiguration is a real answer: no block
+        // configuration exists, which is genuinely non-compliant.
+        if (err.name === 'NoSuchPublicAccessBlockConfiguration') {
+            publicAccessBlocked = false;
+        } else {
+            readErrors.push('public_access_block');
+            console.warn(`GetPublicAccessBlock failed for ${bucketName}: ${err.name}`);
+        }
     }
 
     const tags = {};
@@ -140,11 +168,12 @@ async function buildS3ResourceInput(s3, bucketName, tfName) {
         // NoSuchTagSet is a normal AWS response when no tags are set; treat
         // as empty tag map. Rego will flag missing required tags.
         if (err.name !== 'NoSuchTagSet') {
+            readErrors.push('tags');
             console.warn(`GetBucketTagging failed for ${bucketName}: ${err.name}`);
         }
     }
 
-    return {
+    const resource = {
         type: 'aws_s3_bucket',
         name: tfName || bucketName,
         tags,
@@ -152,6 +181,10 @@ async function buildS3ResourceInput(s3, bucketName, tfName) {
         versioning_enabled: versioningEnabled,
         public_access_blocked: publicAccessBlocked,
     };
+    // Only present when something actually failed, so the plan-shaped
+    // contract and existing fixtures are unchanged.
+    if (readErrors.length > 0) resource.read_errors = readErrors;
+    return resource;
 }
 
 async function buildCloudFrontResourceInput(cf, distributionId, tfName) {
@@ -347,6 +380,9 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
         provenance,
         components,
         validations,
+        // Inside the signed payload, so the divergence verdict is as
+        // tamper-evident as the validations it is derived from.
+        divergence: computeDivergence(deploySignal, validations),
     };
 }
 

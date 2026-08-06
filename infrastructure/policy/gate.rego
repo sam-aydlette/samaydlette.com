@@ -163,6 +163,68 @@ violations contains violation if {
 	)
 }
 
+# =============================================================================
+# RUNTIME READ FAILURES — "UNOBSERVED" IS NOT "OFF"
+# =============================================================================
+# The deploy path derives every security attribute from the plan, so an absent
+# attribute genuinely means "not configured" and must fail closed (see the S3
+# join LIMITATION above). The runtime path derives the same attributes from
+# AWS API calls, where a failed call means "not observed" — a different fact,
+# with a different remedy, pointing at the evaluator rather than the resource.
+#
+# Collapsing the two makes an IAM gap indistinguishable from a misconfigured
+# bucket. A role missing s3:GetBucketVersioning on some bucket then publishes
+# "versioning must be enabled" against a bucket that has versioning enabled —
+# a fabricated finding, signed, with a control id attached to a check that
+# never ran.
+#
+# A transformer that could not read an attribute lists it in `read_errors`.
+# Those attributes raise resource_read_error below INSTEAD of the attribute
+# rule's security finding. The resource still has a violation, so the gate
+# stays shut and nothing fails open; what changes is that the report says
+# "could not assess" rather than naming a control that was never evaluated.
+#
+# Plan input never carries read_errors, so deploy-time behaviour is unchanged:
+# an absent attribute with no declared read failure still fails closed.
+# =============================================================================
+
+# METADATA
+# title: Live resource facts were readable
+# description: >-
+#   A resource whose live configuration could not be read must be reported as
+#   unassessed, never as assessed-and-failing on attributes never observed.
+# custom:
+#   id: resource_read_error
+#   category: input
+#   severity: HIGH
+#   nist_controls: [cm-6, ca-7]
+#   ksi_ids: [KSI-MLA-EVC]
+violations contains violation if {
+	some r in resources
+	some attr in read_errors_of(r)
+	violation := make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		address_of(r),
+		sprintf(
+			concat(" ", [
+				"Live %s configuration for %s could not be read;",
+				"this resource is UNASSESSED for that attribute, not",
+				"assessed-and-failing. Check the evaluator's permissions.",
+			]),
+			[attr, address_of(r)],
+		),
+	)
+}
+
+read_errors_of(r) := e if {
+	e := r.read_errors
+	is_array(e)
+} else := []
+
+# True when `attr` was actually observed for this resource.
+attribute_read_ok(r, attr) if not attr in read_errors_of(r)
+
 # The parameter paths the guard above requires.
 required_config_paths := {
 	["gate", "required_tags"],

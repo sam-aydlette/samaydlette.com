@@ -30,6 +30,7 @@ import data.policy.gate
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"
+	gate.attribute_read_ok(r, "versioning")
 	not r.versioning_enabled
 	violation := gate.make_violation(
 		rego.metadata.rule().custom,
@@ -51,6 +52,7 @@ violations contains violation if {
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"
+	gate.attribute_read_ok(r, "encryption")
 	not r.encryption_enabled
 	violation := gate.make_violation(
 		rego.metadata.rule().custom,
@@ -75,6 +77,7 @@ violations contains violation if {
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"
+	gate.attribute_read_ok(r, "public_access_block")
 	not r.public_access_blocked
 	violation := gate.make_violation(
 		rego.metadata.rule().custom,
