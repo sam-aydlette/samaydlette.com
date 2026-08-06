@@ -272,6 +272,10 @@
 
 .badge-pass        { color: #2a7d2a; }
 .badge-fail        { color: #b22222; }
+/* Divergence panel: an attribute the runtime evaluator could not read is not a
+   failure of the resource, so it must not borrow the failure colour. */
+.badge-unassessed  { color: #b07d00; }
+.badge-unknown     { color: var(--text-muted); }
 .badge-implemented { color: #2a7d2a; }
 .badge-partial     { color: #b07d00; }
 .badge-not-applicable { color: var(--text-muted); }

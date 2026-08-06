@@ -454,9 +454,17 @@ resource "aws_iam_role_policy" "lambda_opa" {
       {
         # The emitter re-validates every object_store component in the
         # canonical inventory, so it needs the same bucket-attribute reads on
-        # the access-log bucket. Bucket-level configuration metadata only —
+        # the audit buckets. Bucket-level configuration metadata only —
         # deliberately no s3:GetObject here, so the Lambda can never read the
-        # access logs themselves.
+        # access logs or the trail events themselves.
+        #
+        # EVERY object_store component in the inventory must appear here. A
+        # bucket that is inventoried but unreadable is not silently skipped:
+        # the transformer records the failed reads and the gate raises
+        # resource_read_error, so the omission surfaces as an unassessed
+        # resource rather than as fabricated security findings. The CloudTrail
+        # bucket was inventoried without this grant and produced exactly that
+        # failure mode.
         Effect = "Allow"
         Action = [
           "s3:GetBucketVersioning",
@@ -465,7 +473,8 @@ resource "aws_iam_role_policy" "lambda_opa" {
           "s3:GetBucketTagging"
         ]
         Resource = [
-          aws_s3_bucket.logs.arn
+          aws_s3_bucket.logs.arn,
+          aws_s3_bucket.cloudtrail.arn
         ]
       },
       {

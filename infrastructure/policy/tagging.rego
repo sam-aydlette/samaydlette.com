@@ -83,6 +83,7 @@ missing_classification(r) := {key |
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
+	gate.attribute_read_ok(r, "tags")
 	governance_tag_types[r.type]
 	count(missing_required_tags(r)) > 0
 	violation := gate.make_violation(
@@ -109,6 +110,7 @@ violations contains violation if {
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
+	gate.attribute_read_ok(r, "tags")
 	taggable_types[r.type]
 	count(missing_classification(r)) > 0
 	violation := gate.make_violation(

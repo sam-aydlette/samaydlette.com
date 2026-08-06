@@ -128,6 +128,19 @@ cosign verify-blob \
                 <p>The trust roots are Sigstore (Fulcio + Rekor) and the pinned public identity — not this site, and not the verifier script. <strong>Honest limit:</strong> the two live-state checks — that the inventory is complete against live AWS, and that live resource tags match the inventory — need cloud credentials, so the provider runs them on every deploy and an outsider verifies the signed evidence, not the live account. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/verification.md">Full walkthrough &rarr;</a></p>
             </div>
 
+            <section class="viewer-panel" id="divergence-panel">
+                <div class="viewer-panel-header">
+                    <h2>Deploy &harr; Runtime Divergence</h2>
+                    <span class="raw-link"><a href="/.well-known/ksi-signal-runtime.json">raw JSON</a></span>
+                </div>
+                <p>The deploy gate evaluates a Terraform plan; a Lambda re-evaluates the live account daily against the same compiled policy. This is the comparison between them, computed by the runtime emitter and carried inside the signed signal &mdash; not recomputed by this page.</p>
+                <p>Two failure modes are kept apart deliberately. A <strong>regression</strong> is a KSI that passed the deploy gate and is failing against the running system: real drift, and it blocks the next deploy. An <strong>unassessed</strong> KSI is one the evaluator could not reach a verdict on, usually a missing read permission &mdash; a fault in the observer rather than the system, which is reported but never treated as drift.</p>
+                <dl class="meta-grid" id="divergence-meta"></dl>
+                <div id="divergence-body">
+                    <p class="viewer-loading">Loading…</p>
+                </div>
+            </section>
+
             <section class="viewer-panel" id="vuln-trend-panel">
                 <div class="viewer-panel-header">
                     <h2>Vulnerability Trend</h2>

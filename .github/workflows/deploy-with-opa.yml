@@ -914,6 +914,26 @@ jobs:
           import_silk 'aws_cognito_user_pool_domain.silk_reeling[0]' 'samaydlette-com-silk-reeling'
         echo "Silk Reeling import step complete"
 
+    # -------------------------------------------------------------------------
+    # STOP THE LINE — refuse to deploy over a system already in drift.
+    #
+    # The runtime Lambda compares its daily live evaluation against the published
+    # deploy-time verdict and records the result in the signed runtime signal.
+    # This reads that verdict and blocks BEFORE anything is mutated: after
+    # `terraform apply` it would be too late to stop, and the reconciliation gate
+    # (which runs post-apply, pre-publish) answers a different question.
+    #
+    # It blocks ONLY on status=diverged with a fresh signal. An unreadable,
+    # missing, stale, or degraded signal warns and proceeds — a gate that can
+    # only be cleared by deploying must not be wedgeable by the absence of its
+    # own input. See the script header for the full rationale.
+    #
+    # Break glass when the deploy IS the fix:
+    #   --allow-divergence "reason"
+    # -------------------------------------------------------------------------
+    - name: Runtime divergence pre-flight (stop the line)
+      run: python3 scripts/check-runtime-divergence.py
+
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -lock-timeout=300s -out=tfplan
@@ -977,7 +997,28 @@ jobs:
         
         cd ..
         
-        # Upload website files, skip infrastructure code
+        # Upload website files, skip infrastructure code.
+        #
+        # ALL of .well-known/ is EXCLUDED. Everything served from there is a
+        # generated, signed artifact published by an explicit `aws s3 cp` later
+        # in this job — none of it is in website/, because .gitignore keeps
+        # generated artifacts out of the tree. That meant `--delete` removed 48
+        # published objects on every deploy and the later steps put them back
+        # roughly three minutes afterwards, so a third party fetching during a
+        # deploy got a 404 for the compliance artifacts and, worse, for
+        # runtime-signing-pubkey.pem — the key needed to verify the runtime
+        # signal. A verifiable-by-anyone system should not be unverifiable for
+        # several minutes a day.
+        #
+        # It also subsumes the vdr-trend.json exclusion: that ledger accumulates
+        # in the published object, and syncing the committed seed over it reset
+        # the history on every deploy.
+        #
+        # Consequence: any file genuinely served from .well-known/ must be
+        # published explicitly below (see security.txt), exactly as
+        # silk-reeling-auth.json already is. tests/test_wellknown_publish.py
+        # fails if a tracked file under website/.well-known/ has no publish
+        # step, so this cannot silently drop content.
         aws s3 sync website/ s3://$BUCKET_NAME/ \
           --exclude "*.tf" \
           --exclude "*.tfvars*" \
@@ -990,7 +1031,15 @@ jobs:
           --exclude "Makefile" \
           --exclude ".gitignore" \
           --exclude ".github/*" \
+          --exclude ".well-known/*" \
           --delete
+
+        # Site content that genuinely lives under .well-known/ and is committed
+        # (not generated) has to be published by hand now that the sync skips
+        # the whole prefix. RFC 9116 requires text/plain.
+        aws s3 cp website/.well-known/security.txt "s3://$BUCKET_NAME/.well-known/security.txt" \
+          --content-type "text/plain; charset=utf-8" --cache-control "public, max-age=3600"
+        echo "✅ Published /.well-known/security.txt"
 
         echo "✅ Website content synced successfully"
 
@@ -1239,6 +1288,20 @@ jobs:
           echo "::warning::No previous VDR trend ledger; starting a fresh one."
           rm -f vdr-trend.json
         fi
+        # Merge the reconstructed history (data/vdr-trend-backfill.json) before
+        # appending today. Those points were rebuilt from stored vdr-report.json
+        # object versions after the sync bug reset the ledger, and they are
+        # committed so the reconstruction is reviewable in a diff rather than
+        # materialising from an S3 listing nobody sees. Merging here means the
+        # repaired ledger is signed by the same run that builds it; uploading a
+        # rebuilt ledger by hand would publish an object that disagreed with its
+        # signature until the next deploy.
+        #
+        # Reads no AWS API, so it needs no permission the deploy role lacks, and
+        # existing points always win — idempotent, a no-op once absorbed, and it
+        # re-heals the ledger if it is ever reset again.
+        python3 ../scripts/backfill-vdr-trend.py \
+          --points ../data/vdr-trend-backfill.json --trend vdr-trend.json
         python3 ../scripts/build-vdr-trend.py --report vdr-report.json --trend vdr-trend.json
         cosign sign-blob --yes --bundle vdr-trend.bundle vdr-trend.json
 
