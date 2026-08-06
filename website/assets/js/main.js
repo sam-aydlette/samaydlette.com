@@ -3,6 +3,7 @@ import { ImageHandler } from './components/ImageHandler.js';
 import { FormHandler } from './components/FormHandler.js';
 import { MobileMenu } from './components/mobile-menu.js';
 import { ThemeToggle } from './components/ThemeToggle.js';
+import { ComplianceStatus } from './components/ComplianceStatus.js';
 import { setupScrollObserver } from './utils/observers.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,5 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
   new FormHandler();
   new MobileMenu();
   new ThemeToggle();
+  new ComplianceStatus();
   setupScrollObserver();
 });

@@ -18,6 +18,9 @@ from html.parser import HTMLParser
 FILES = [
     'website/research/tuning-the-eigenvalue.html',
     'website/research/the-plumbing.html',
+    # Not long-form, but it links across the site (including to the dashboard), and
+    # those edges are worth the same check.
+    'website/index.html',
 ]
 # what a leading-slash href is relative to, as the site is served
 SITE_ROOT = 'website'
