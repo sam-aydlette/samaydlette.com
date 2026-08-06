@@ -94,20 +94,70 @@
         // Card 4: drift between deploy and runtime
         var driftCard = el('status-drift');
         if (driftCard) {
-            if (ksi && runtime) {
-                var d = compareValidations(ksi, runtime);
-                var cls = d.matches ? 'is-good' : 'is-bad';
-                driftCard.className = 'status-card ' + cls;
-                driftCard.querySelector('.status-value').textContent = d.matches ? 'in sync' : 'drift detected';
-                driftCard.querySelector('.status-detail').textContent = d.summary;
-            } else {
-                driftCard.className = 'status-card';
-                driftCard.querySelector('.status-value').textContent = 'unavailable';
-                driftCard.querySelector('.status-detail').textContent = ksi
-                    ? 'runtime signal needed to compare'
-                    : 'deploy-time signal needed to compare';
+            var verdict = divergenceVerdict(ksi, runtime);
+            driftCard.className = 'status-card ' + verdict.cls;
+            driftCard.querySelector('.status-value').textContent = verdict.value;
+            driftCard.querySelector('.status-detail').textContent = verdict.detail;
+        }
+    }
+
+    // The runtime emitter computes the deploy-vs-runtime comparison itself and
+    // records it in the SIGNED signal, so prefer that verdict: it is the one
+    // the deploy gate acts on, it is tamper-evident, and it separates a
+    // resource that regressed from an evaluator that could not look. Recomputing
+    // it here from raw validation results cannot make that distinction, because
+    // a validation carrying only a resource_read_error is a `fail` like any
+    // other -- which is how a missing IAM grant reads as infrastructure drift.
+    //
+    // compareValidations() below stays as the fallback for signals emitted
+    // before the divergence block existed.
+    function divergenceVerdict(ksi, runtime) {
+        var div = runtime && runtime.divergence;
+
+        if (div && div.status) {
+            var regressions = div.regressions || [];
+            var unassessed = div.unassessed || [];
+            if (div.status === 'diverged') {
+                return {
+                    cls: 'is-bad',
+                    value: 'drift detected',
+                    detail: regressions.length + ' KSI(s) passing at deploy time are failing at runtime: ' +
+                        regressions.slice(0, 3).map(function (r) { return r.ksi_id; }).join(', ') +
+                        (regressions.length > 3 ? ', …' : ''),
+                };
+            }
+            if (div.status === 'degraded') {
+                return {
+                    cls: 'is-warn',
+                    value: 'partly unassessed',
+                    detail: 'No drift found, but the runtime evaluator could not reach a verdict on ' +
+                        unassessed.length + ' KSI(s). This is an evaluator fault, not drift.',
+                };
+            }
+            if (div.status === 'converged') {
+                return {
+                    cls: 'is-good',
+                    value: 'in sync',
+                    detail: 'Runtime evaluation agrees with the published deploy-time verdict across ' +
+                        (div.ksis_compared || 0) + ' KSIs.',
+                };
             }
         }
+
+        if (ksi && runtime) {
+            var d = compareValidations(ksi, runtime);
+            return {
+                cls: d.matches ? 'is-good' : 'is-bad',
+                value: d.matches ? 'in sync' : 'drift detected',
+                detail: d.summary + ' (compared in-page; this signal predates the signed divergence verdict)',
+            };
+        }
+
+        return {
+            cls: '',
+            value: 'unavailable',
+            detail: ksi ? 'runtime signal needed to compare' : 'deploy-time signal needed to compare',
+        };
     }
 
     function formatRelative(iso) {
@@ -256,6 +306,93 @@
     function rowRaw(label, html) {
         if (html == null || html === '') return '';
         return '<dt>' + escape(label) + '</dt><dd>' + html + '</dd>';
+    }
+
+    // ---- Deploy <-> runtime divergence panel ------------------------------
+
+    function divergenceRows(entries) {
+        return entries.map(function (e) {
+            var rules = (e.violation_ids || []).map(escape).join(', ') || '—';
+            return '<tr>' +
+                '<td><code>' + escape(e.ksi_id) + '</code></td>' +
+                '<td><span class="badge badge-' + escape(e.deploy_status) + '">' +
+                    escape(e.deploy_status) + '</span></td>' +
+                '<td><span class="badge badge-' + escape(e.runtime_status) + '">' +
+                    escape(e.runtime_status) + '</span></td>' +
+                '<td class="wrap">' + rules + '</td>' +
+                '</tr>';
+        }).join('');
+    }
+
+    function divergenceTable(caption, entries) {
+        return '<h3>' + escape(caption) + '</h3>' +
+            '<div class="viewer-table-wrap"><table class="viewer-table">' +
+            '<thead><tr><th>KSI</th><th>deploy</th><th>runtime</th><th>rules</th></tr></thead>' +
+            '<tbody>' + divergenceRows(entries) + '</tbody></table></div>';
+    }
+
+    function renderDivergencePanel(runtime) {
+        var body = el('divergence-body');
+        var metaEl = el('divergence-meta');
+        if (!body) return;
+
+        if (!runtime) {
+            body.innerHTML = '<p class="viewer-note">Runtime signal not reachable, so no comparison is possible.</p>';
+            if (metaEl) metaEl.innerHTML = '';
+            return;
+        }
+
+        var div = runtime.divergence;
+        if (!div || !div.status) {
+            body.innerHTML = '<p class="viewer-note">This runtime signal carries no divergence verdict. ' +
+                'The emitter that produces it has not run since the check was added; the ' +
+                '<strong>Drift</strong> card above falls back to comparing validations in-page.</p>';
+            if (metaEl) metaEl.innerHTML = '';
+            return;
+        }
+
+        var against = div.compared_against || {};
+        if (metaEl) {
+            metaEl.innerHTML =
+                row('status', div.status) +
+                row('KSIs compared', div.ksis_compared) +
+                row('against deploy signal', against.signal_id) +
+                row('at commit', against.commit) +
+                row('deploy signal emitted', against.emitted_at);
+        }
+
+        var regressions = div.regressions || [];
+        var unassessed = div.unassessed || [];
+        var html = '';
+
+        if (div.status === 'converged') {
+            html += '<p class="component-summary">The daily runtime evaluation of the live account agrees ' +
+                'with the verdict published at deploy time. No KSI that passed the deploy gate is failing ' +
+                'against the running system.</p>';
+        }
+
+        if (regressions.length) {
+            html += '<p class="component-summary"><strong>These KSIs passed the deploy gate and are failing ' +
+                'against the live account.</strong> That is drift in the deployed system, and it blocks the ' +
+                'next deploy until it is investigated or explicitly overridden.</p>';
+            html += divergenceTable('Regressions', regressions);
+        }
+
+        if (unassessed.length) {
+            html += '<p class="component-summary">These KSIs could not be evaluated at all &mdash; the ' +
+                'runtime evaluator failed to read the resource, typically a missing permission. ' +
+                '<strong>This is a fault in the observer, not evidence that anything drifted</strong>, so it ' +
+                'is reported separately and does not block deploys. It does mean these controls are ' +
+                'currently unverified at runtime.</p>';
+            html += divergenceTable('Unassessed', unassessed);
+        }
+
+        if (div.unattributed_failures) {
+            html += '<p class="viewer-note">' + escape(String(div.unattributed_failures)) +
+                ' failing violation(s) carried no KSI mapping, so they are attributed to no indicator above.</p>';
+        }
+
+        body.innerHTML = html;
     }
 
     // ---- OSCAL SSP panel --------------------------------------------------
@@ -433,6 +570,7 @@
         Promise.all([ksiP, runtimeP, oscalP]).then(function (results) {
             var ksi = results[0], runtime = results[1], oscal = results[2];
             renderStatus(ksi, runtime, oscal);
+            renderDivergencePanel(runtime);
             if (ksi) renderKsiPanel(ksi);
             if (oscal) renderOscalPanel(oscal);
         });
