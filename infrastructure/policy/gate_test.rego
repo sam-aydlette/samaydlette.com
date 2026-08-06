@@ -40,18 +40,18 @@ test_html_shape_now_rejected if {
 # still fails closed while the published reason stays honest.
 # =============================================================================
 
+_res(overrides) := {"resource": object.union(
+	{"type": "aws_s3_bucket", "name": "b"},
+	overrides,
+)}
+
 test_read_error_raises_one_finding_per_attribute if {
-	count(read_errors(gate.violations)) == 2 with input as {"resource": {
-		"type": "aws_s3_bucket", "name": "cloudtrail",
-		"read_errors": ["encryption", "tags"],
-	}}
+	count(read_errors(gate.violations)) == 2 with input as _res({"read_errors": ["encryption", "tags"]})
 }
 
 # MUST-FIRE the other way: a clean resource raises nothing.
 test_no_read_errors_when_all_attributes_observed if {
-	count(read_errors(gate.violations)) == 0 with input as {"resource": {
-		"type": "aws_s3_bucket", "name": "website",
-	}}
+	count(read_errors(gate.violations)) == 0 with input as _res({})
 }
 
 # The plan path never carries read_errors, so deploy-time behaviour is
@@ -67,9 +67,7 @@ test_plan_input_raises_no_read_errors if {
 # A malformed read_errors value must not silently disable the check by making
 # the rule body undefined.
 test_malformed_read_errors_ignored if {
-	count(read_errors(gate.violations)) == 0 with input as {"resource": {
-		"type": "aws_s3_bucket", "name": "b", "read_errors": "encryption",
-	}}
+	count(read_errors(gate.violations)) == 0 with input as _res({"read_errors": "encryption"})
 }
 
 # A gate whose parameters failed to load must fail closed, not enforce
