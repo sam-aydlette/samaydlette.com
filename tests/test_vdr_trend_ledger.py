@@ -93,10 +93,15 @@ def sync_step_body():
 
 
 def test_content_sync_excludes_the_accumulating_ledger():
-    """Without this exclusion the sync replaces the live ledger with the seed."""
+    """Without this exclusion the sync replaces the live ledger with the seed.
+
+    Either the specific key or the whole prefix satisfies the invariant; the
+    prefix form is what ships, and it also closes the --delete window on every
+    other published artifact.
+    """
     body = sync_step_body()
-    assert f'--exclude "{LEDGER_KEY}"' in body, (
-        f"`aws s3 sync website/ ... --delete` must exclude {LEDGER_KEY}; the "
+    assert f'--exclude "{LEDGER_KEY}"' in body or '--exclude ".well-known/*"' in body, (
+        f"`aws s3 sync website/ ... --delete` must not touch {LEDGER_KEY}; the "
         "published object is the source of truth for this file and the sync "
         "would otherwise overwrite it with the committed seed."
     )
