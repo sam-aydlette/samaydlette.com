@@ -1,0 +1,998 @@
+{
+  "source": "s3://samaydlette.com/.well-known/vdr-report.json object versions",
+  "note": "Reconstructed RA-5(6) trend points. Merged into the published ledger by the pipeline; existing points always win.",
+  "points": [
+    {
+      "date": "2026-05-08",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 15
+    },
+    {
+      "date": "2026-06-04",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-05",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-06",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-07",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-08",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-09",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-10",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-11",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-12",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-13",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-14",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 18
+    },
+    {
+      "date": "2026-06-15",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 1,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 1,
+      "risk_accepted": 14
+    },
+    {
+      "date": "2026-06-16",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 2,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 2,
+      "risk_accepted": 12
+    },
+    {
+      "date": "2026-06-17",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 2,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 2,
+      "risk_accepted": 12
+    },
+    {
+      "date": "2026-06-18",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 8,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 9,
+      "risk_accepted": 5
+    },
+    {
+      "date": "2026-06-22",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 8,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 9,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-23",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-24",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-25",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-26",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-27",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-28",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 17,
+        "N3": 1,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 18,
+      "risk_accepted": 3
+    },
+    {
+      "date": "2026-06-29",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-06-30",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-01",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-02",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-03",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-04",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-05",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-06",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-07",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-08",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 10
+    },
+    {
+      "date": "2026-07-09",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-10",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-11",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-12",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-13",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-14",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-15",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-16",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-17",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-18",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-19",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-20",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-21",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-22",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-23",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-24",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-25",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-26",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-27",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-28",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-29",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-30",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-07-31",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-01",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-02",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-03",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-04",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-05",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    },
+    {
+      "date": "2026-08-06",
+      "unique_cves": 0,
+      "open_cves": 0,
+      "blocking": 0,
+      "kev": 0,
+      "by_pain": {
+        "N1": 0,
+        "N2": 0,
+        "N3": 0,
+        "N4": 0,
+        "N5": 0
+      },
+      "total_findings": 0,
+      "risk_accepted": 13
+    }
+  ]
+}
