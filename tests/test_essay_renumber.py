@@ -10,7 +10,6 @@ drone safety monitor and a magazine article about bunkers.
 """
 import importlib.util
 import pathlib
-import sys
 
 import pytest
 

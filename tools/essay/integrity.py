@@ -1,12 +1,30 @@
 #!/usr/bin/env python3
-"""Structural gate for tuning-the-eigenvalue.html. Must stay clean through the prose pass."""
+"""Structural gate for the long-form research pages. Must stay clean through the prose pass.
+
+Covers every file in FILES: tag balance, duplicate ids, footnote ref/backlink parity,
+and anchors that point nowhere.
+
+Anchors are checked *across* files as well as within them. The essay and its method
+note link into each other's sections by fragment, and a heading renamed on one side
+leaves a dead link on the other that neither file can see on its own. That has
+happened twice. A cross-file link is resolved relative to the linking file, so the
+target page must exist and must carry the id.
+"""
+import os
 import re
 import sys
 from html.parser import HTMLParser
 
-FILE = 'website/research/tuning-the-eigenvalue.html'
+FILES = [
+    'website/research/tuning-the-eigenvalue.html',
+    'website/research/estimating-lambda1-from-compliance-telemetry.html',
+]
+# what a leading-slash href is relative to, as the site is served
+SITE_ROOT = 'website'
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
         'source', 'track', 'wbr'}
+# href="page.html#frag" or href="page.html"
+LOCAL = re.compile(r'^([A-Za-z0-9._/-]+\.html)(?:#(.+))?$')
 
 
 class P(HTMLParser):
@@ -28,37 +46,82 @@ class P(HTMLParser):
             self.errs.append(t)
 
 
-h = open(FILE).read()
-p = P()
-p.feed(h)
+def ids_of(path, _cache={}):
+    """Every id in a page, or None if the page is not there."""
+    if path not in _cache:
+        try:
+            _cache[path] = set(re.findall(r'id="([^"]+)"', open(path).read()))
+        except OSError:
+            _cache[path] = None
+    return _cache[path]
 
-ids = re.findall(r'id="([^"]+)"', h)
-dupes = {i for i in ids if ids.count(i) > 1}
-notes = {int(x) for x in re.findall(r'id="fn(\d+)"', h)}
-refs = {int(x) for x in re.findall(r'href="#fn(\d+)"', h)}
-backs = {int(x) for x in re.findall(r'href="#fnref(\d+)"', h)}
-anchors = {a for a in re.findall(r'href="#([^"]+)"', h)}
-broken = sorted(a for a in anchors if a not in ids)
 
-fail = []
-if p.errs:
-    fail.append(f"unbalanced end tags: {p.errs[:8]}")
-if p.stack:
-    fail.append(f"unclosed tags: {p.stack[:8]}")
-if dupes:
-    fail.append(f"duplicate ids: {sorted(dupes)[:8]}")
-if refs - notes:
-    fail.append(f"refs with no footnote: {sorted(refs - notes)}")
-if notes - refs:
-    fail.append(f"footnotes never referenced: {sorted(notes - refs)}")
-if notes - backs:
-    fail.append(f"footnotes missing backlink: {sorted(notes - backs)}")
-if broken:
-    fail.append(f"broken anchors: {broken[:8]}")
+def check(path):
+    """Return (summary line, [failures]) for one page."""
+    h = open(path).read()
+    p = P()
+    p.feed(h)
 
-print(f"tags OK | ids {len(ids)} | footnotes {len(notes)} | "
-      f"refs {len(refs)} | anchors {len(anchors)}")
-for f in fail:
-    print("  FAIL:", f)
-print("PASS" if not fail else "FAIL")
-sys.exit(1 if fail else 0)
+    ids = re.findall(r'id="([^"]+)"', h)
+    dupes = {i for i in ids if ids.count(i) > 1}
+    notes = {int(x) for x in re.findall(r'id="fn(\d+)"', h)}
+    refs = {int(x) for x in re.findall(r'href="#fn(\d+)"', h)}
+    backs = {int(x) for x in re.findall(r'href="#fnref(\d+)"', h)}
+    hrefs = set(re.findall(r'href="([^"]+)"', h))
+    anchors = {a[1:] for a in hrefs if a.startswith('#')}
+    broken = sorted(a for a in anchors if a not in ids)
+
+    # cross-file: the target page must exist and must carry the fragment
+    here = os.path.dirname(path)
+    dead = []
+    for href in sorted(hrefs):
+        m = LOCAL.match(href)
+        if not m:
+            continue
+        page = m.group(1)
+        base = SITE_ROOT if page.startswith('/') else here
+        target = os.path.normpath(os.path.join(base, page.lstrip('/')))
+        tids = ids_of(target)
+        if tids is None:
+            dead.append(f'{href} (no such page)')
+        elif m.group(2) and m.group(2) not in tids:
+            dead.append(f'{href} (no such id)')
+
+    fail = []
+    if p.errs:
+        fail.append(f"unbalanced end tags: {p.errs[:8]}")
+    if p.stack:
+        fail.append(f"unclosed tags: {p.stack[:8]}")
+    if dupes:
+        fail.append(f"duplicate ids: {sorted(dupes)[:8]}")
+    if refs - notes:
+        fail.append(f"refs with no footnote: {sorted(refs - notes)}")
+    if notes - refs:
+        fail.append(f"footnotes never referenced: {sorted(notes - refs)}")
+    if notes - backs:
+        fail.append(f"footnotes missing backlink: {sorted(notes - backs)}")
+    if broken:
+        fail.append(f"broken anchors: {broken[:8]}")
+    if dead:
+        fail.append(f"broken cross-file links: {dead[:8]}")
+
+    summary = (f"{os.path.basename(path):<52} tags OK | ids {len(ids):>3} | "
+               f"footnotes {len(notes):>2} | refs {len(refs):>2} | "
+               f"anchors {len(anchors):>3} | out {len(hrefs) - len(anchors):>2}")
+    return summary, fail
+
+
+def main():
+    failed = False
+    for path in FILES:
+        summary, fail = check(path)
+        print(summary)
+        for f in fail:
+            print("  FAIL:", f)
+        failed |= bool(fail)
+    print("PASS" if not failed else "FAIL")
+    return 1 if failed else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

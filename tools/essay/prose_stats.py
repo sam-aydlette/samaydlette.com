@@ -122,6 +122,15 @@ DOUBLE = re.compile(r', and (?:it|that|this|they) (?:is|are|was|were)\b', re.I)
 # Measured against the hand-written corpus, not against the essay: 0.08/1k there,
 # 0.61/1k here. "not A but B" is NOT included -- that one is genuinely his (0.42/1k).
 NOTY = re.compile(r',\s+not\s+(?:a|an|the|its|his|her|my|only)\b|\bwhich is why\b', re.I)
+# Scoping as reflex. Distinct from HEDGE, which flags apology and deliberately
+# lets real concessions through; this counts the vocabulary of retreat itself,
+# whether or not any single instance is earned. Several of them are earned. What
+# the count catches is the habit: a claim announced as narrower before it is
+# stated, repeatedly, which reads as flinching even when each instance defends
+# itself. So this is a density signal like DOUBLE and not a list of errors.
+# Adverbs and participles are out ("narrowly", "narrowed", "narrowing") because
+# those report a result; only the bare adjective and its comparatives are in.
+SCOPE = re.compile(r'\bnarrow(?:er|est)?\b', re.I)
 
 
 def prose(x):
@@ -130,7 +139,14 @@ def prose(x):
     x = re.sub(r'<pre.*?</pre>', ' ', x, flags=re.S)
     x = re.sub(r'<h[1-6][^>]*>.*?</h[1-6]>', ' ', x, flags=re.S)
     x = re.sub(r'\$\$.*?\$\$', ' MATH ', x, flags=re.S)
-    x = re.sub(r'\$[^$]*\$', ' m ', x)
+    # Bounded on purpose. An unbalanced `$` anywhere in the prose (a dollar sign
+    # used as a dollar sign) makes every later delimiter pair with the wrong
+    # partner, and an unbounded `\$[^$]*\$` then eats thousands of words into a
+    # single ' m ' and under-reports every lever without failing. Real inline math
+    # here is short and never crosses a tag or a line, so refuse to match anything
+    # that does. KaTeX is not vulnerable to this: auto-render pairs delimiters
+    # only within one element's own text nodes, so the page still renders.
+    x = re.sub(r'\$[^$<\n]{1,200}\$', ' m ', x)
     x = re.sub(r'<[^>]+>', ' ', x)
     x = re.sub(r'&[a-z]+;|&#\d+;', ' ', x)
     return re.sub(r'\s+', ' ', x).strip()
@@ -151,6 +167,7 @@ def stats(t):
                 hedge=len(HEDGE.findall(t)),
                 double=len(DOUBLE.findall(t)),
                 noty=len(NOTY.findall(t)),
+                scope=len(SCOPE.findall(t)),
                 long=sum(1 for s in ss if len(s.split()) > 30),
                 short=sum(1 for s in ss if len(s.split()) <= 8))
 
@@ -214,7 +231,8 @@ def main():
     print(f"  {'"and it is" doubling':<16}{tot['double']:>4} -> ~{round(0.12*w):<3} (0.12/1k in the pinned baseline)")
     print(f"  {'long sentences':<16}{tot['long']:>4} -> ~{round(VOICE_LONG_PCT/100*tot['sents']):<3} "
           f"({VOICE_LONG_PCT}% is his real rate; the old baseline said 9.3%)")
-    for key, label in (('xref', 'cross-refs'), ('essay', "'this essay'"), ('rather', "'rather than'")):
+    for key, label in (('xref', 'cross-refs'), ('essay', "'this essay'"), ('rather', "'rather than'"),
+                       ('scope', "'narrow(er)'")):
         target = round(per1k(B, key) * w)
         print(f"  {label:<16}{tot[key]:>4} -> ~{target:<4} (cut ~{max(0, tot[key]-target)})")
 
