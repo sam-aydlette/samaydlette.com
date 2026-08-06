@@ -79,6 +79,25 @@ def test_footnote_parity_still_enforced(tmp_path):
     assert any('never referenced' in f for f in fail)
 
 
+def test_footnote_outside_the_footnotes_section_fails(tmp_path):
+    # regression: two notes drifted into the footer's link list and rendered as
+    # navigation bullets. Parity held perfectly, so nothing else caught it.
+    doc = page(refs=[1])
+    doc = doc.replace('<li id="fn1"><p>n<a href="#fnref1">b</a></p></li>', '')
+    doc += '<footer><ul><li id="fn1"><p>n<a href="#fnref1">b</a></p></li></ul></footer>'
+    (tmp_path / 'a.html').write_text(doc)
+    mod = load('integrity', SITE_ROOT=str(tmp_path))
+    _, fail = mod.check(str(tmp_path / 'a.html'))
+    assert any('outside the footnotes section' in f for f in fail)
+
+
+def test_footnote_inside_the_section_passes(tmp_path):
+    (tmp_path / 'a.html').write_text(page(refs=[1]))
+    mod = load('integrity', SITE_ROOT=str(tmp_path))
+    _, fail = mod.check(str(tmp_path / 'a.html'))
+    assert fail == []
+
+
 def test_both_files_are_checked_and_one_failure_fails_the_run(tmp_path, capsys):
     (tmp_path / 'ok.html').write_text(page())
     (tmp_path / 'bad.html').write_text(page('<a href="gone.html#x">n</a>'))

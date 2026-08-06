@@ -71,6 +71,21 @@ def check(path):
     anchors = {a[1:] for a in hrefs if a.startswith('#')}
     broken = sorted(a for a in anchors if a not in ids)
 
+    # Containment. Parity is not placement: a note that has drifted out of the
+    # footnotes section still has its id, its reference and its backlink, so every
+    # other check here passes while the note renders wherever it landed. Two of
+    # them once ended up inside the footer's link list and shipped as navigation
+    # bullets. Anchor at the <ol> rather than </section> so a nested </section>
+    # cannot end the range early.
+    stray = []
+    if '<section id="footnotes"' in h:
+        s = h.index('<section id="footnotes"')
+        e = h.index('</ol>', s) if '</ol>' in h[s:] else len(h)
+        held = {int(x) for x in re.findall(r'<li id="fn(\d+)">', h[s:e])}
+        stray = sorted(n for n in notes if n not in held)
+    elif notes:
+        stray = sorted(notes)
+
     # cross-file: the target page must exist and must carry the fragment
     here = os.path.dirname(path)
     dead = []
@@ -102,6 +117,8 @@ def check(path):
         fail.append(f"footnotes missing backlink: {sorted(notes - backs)}")
     if broken:
         fail.append(f"broken anchors: {broken[:8]}")
+    if stray:
+        fail.append(f"footnotes outside the footnotes section: {stray[:8]}")
     if dead:
         fail.append(f"broken cross-file links: {dead[:8]}")
 
