@@ -39,7 +39,6 @@ import sys
 
 FILES = [
     'website/research/tuning-the-eigenvalue.html',
-    'website/research/estimating-lambda1-from-compliance-telemetry.html',
 ]
 # surnames too common or too embedded in ordinary prose to match on
 STOPWORDS = {'may', 'young', 'best', 'field', 'fields', 'cook', 'woods', 'green'}

@@ -4,11 +4,11 @@
 Covers every file in FILES: tag balance, duplicate ids, footnote ref/backlink parity,
 and anchors that point nowhere.
 
-Anchors are checked *across* files as well as within them. The essay and its method
-note link into each other's sections by fragment, and a heading renamed on one side
-leaves a dead link on the other that neither file can see on its own. That has
-happened twice. A cross-file link is resolved relative to the linking file, so the
-target page must exist and must carry the id.
+Anchors are checked *across* files as well as within them. The essay links into the
+compliance paper's sections by fragment, and a heading renamed on one side leaves a
+dead link on the other that neither file can see on its own. That has happened
+twice. A cross-file link is resolved relative to the linking file, so the target
+page must exist and must carry the id.
 """
 import os
 import re
@@ -17,7 +17,7 @@ from html.parser import HTMLParser
 
 FILES = [
     'website/research/tuning-the-eigenvalue.html',
-    'website/research/estimating-lambda1-from-compliance-telemetry.html',
+    'website/research/the-plumbing.html',
 ]
 # what a leading-slash href is relative to, as the site is served
 SITE_ROOT = 'website'
