@@ -914,6 +914,26 @@ jobs:
           import_silk 'aws_cognito_user_pool_domain.silk_reeling[0]' 'samaydlette-com-silk-reeling'
         echo "Silk Reeling import step complete"
 
+    # -------------------------------------------------------------------------
+    # STOP THE LINE — refuse to deploy over a system already in drift.
+    #
+    # The runtime Lambda compares its daily live evaluation against the published
+    # deploy-time verdict and records the result in the signed runtime signal.
+    # This reads that verdict and blocks BEFORE anything is mutated: after
+    # `terraform apply` it would be too late to stop, and the reconciliation gate
+    # (which runs post-apply, pre-publish) answers a different question.
+    #
+    # It blocks ONLY on status=diverged with a fresh signal. An unreadable,
+    # missing, stale, or degraded signal warns and proceeds — a gate that can
+    # only be cleared by deploying must not be wedgeable by the absence of its
+    # own input. See the script header for the full rationale.
+    #
+    # Break glass when the deploy IS the fix:
+    #   --allow-divergence "reason"
+    # -------------------------------------------------------------------------
+    - name: Runtime divergence pre-flight (stop the line)
+      run: python3 scripts/check-runtime-divergence.py
+
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -lock-timeout=300s -out=tfplan

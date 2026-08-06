@@ -48,6 +48,32 @@ test_absent_fields_fail_closed if {
 	ids(s3.violations) == expected with input as {"resource": {"type": "aws_s3_bucket", "name": "b", "tags": {}}}
 }
 
+# =============================================================================
+# UNREADABLE != OFF. A runtime transformer that could not read an attribute
+# declares it in read_errors; the attribute rule must then stay silent so the
+# report does not name a control that was never evaluated. policy.gate raises
+# resource_read_error for the same resource (see gate_test), so the resource is
+# still non-compliant and the gate still fails closed.
+# =============================================================================
+
+test_unreadable_attributes_do_not_raise_security_findings if {
+	count(s3.violations) == 0 with input as _bucket({
+		"versioning_enabled": false,
+		"encryption_enabled": false,
+		"public_access_blocked": false,
+		"read_errors": ["versioning", "encryption", "public_access_block"],
+	})
+}
+
+# A read failure on one attribute must not mask a genuine failure on another.
+test_partial_read_error_still_reports_observed_failure if {
+	ids(s3.violations) == {"versioning_disabled"} with input as _bucket({
+		"versioning_enabled": false,
+		"encryption_enabled": false,
+		"read_errors": ["encryption"],
+	})
+}
+
 # Non-bucket types produce no S3 violations.
 test_other_types_ignored if {
 	count(s3.violations) == 0 with input as {"resource": {"type": "aws_lambda_function", "name": "f", "tags": {}}}

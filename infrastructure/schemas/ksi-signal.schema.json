@@ -219,6 +219,10 @@
           "type": "string"
         }
       }
+    },
+    "divergence": {
+      "description": "Result of comparing this runtime evaluation against the deploy gate's published verdict for the same system. Emitted by the runtime emitter only; absent from deploy-time signals. `regressions` lists KSIs the deploy gate published as passing that this evaluation found failing \u2014 a genuine disagreement about the resource. `unassessed` lists KSIs this evaluation could not reach a verdict on (category:input violations such as resource_read_error), which is an observer fault and must never be treated as drift.",
+      "$ref": "#/$defs/divergence"
     }
   },
   "$defs": {
@@ -556,6 +560,118 @@
               }
             }
           }
+        }
+      }
+    },
+    "divergence_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ksi_id",
+        "deploy_status",
+        "runtime_status",
+        "violation_ids"
+      ],
+      "properties": {
+        "ksi_id": {
+          "type": "string",
+          "description": "The KSI whose two verdicts disagree."
+        },
+        "deploy_status": {
+          "type": "string",
+          "description": "Status the deploy gate published for this KSI."
+        },
+        "runtime_status": {
+          "type": "string",
+          "enum": [
+            "fail",
+            "unassessed"
+          ],
+          "description": "'fail' means evaluated and failing; 'unassessed' means the evaluator could not reach a verdict."
+        },
+        "violation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Distinct policy rule ids behind this entry."
+        }
+      }
+    },
+    "divergence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "compared_against",
+        "ksis_compared",
+        "regressions",
+        "unassessed",
+        "unattributed_failures"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "converged",
+            "diverged",
+            "degraded"
+          ],
+          "description": "'converged': runtime agrees with deploy. 'diverged': at least one KSI the deploy gate passed is failing at runtime. 'degraded': no regression, but the evaluator could not assess something."
+        },
+        "compared_against": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "signal_id",
+            "emitted_at",
+            "commit"
+          ],
+          "description": "Identity of the deploy-time signal this evaluation was compared against.",
+          "properties": {
+            "signal_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "emitted_at": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "commit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "ksis_compared": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many KSIs the deploy signal carried."
+        },
+        "regressions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/divergence_entry"
+          },
+          "description": "KSIs passing at deploy time and failing at runtime. This is the actionable set."
+        },
+        "unassessed": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/divergence_entry"
+          },
+          "description": "KSIs the evaluator could not assess. Observer faults, not drift."
+        },
+        "unattributed_failures": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Failing violations carrying no ksi_ids, so attributable to no KSI."
         }
       }
     }

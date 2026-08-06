@@ -10,6 +10,8 @@ config_errors(v) := [x | some x in v; x.id == "config_error"]
 
 input_errors(v) := [x | some x in v; x.id == "input_error"]
 
+read_errors(v) := [x | some x in v; x.id == "resource_read_error"]
+
 # Unrecognized input must produce an explicit input_error.
 test_unrecognized_input_flagged if {
 	count(input_errors(gate.violations)) == 1 with input as {}
@@ -30,6 +32,44 @@ test_scan_shape_recognized if {
 # The retired raw-HTML shape is no longer a recognized input.
 test_html_shape_now_rejected if {
 	count(input_errors(gate.violations)) == 1 with input as {"html_content": "<p>x</p>", "file_name": "x.html"}
+}
+
+# =============================================================================
+# Read-failure contract: an attribute the evaluator could not observe must be
+# reported as unassessed, one finding per unreadable attribute, so the gate
+# still fails closed while the published reason stays honest.
+# =============================================================================
+
+test_read_error_raises_one_finding_per_attribute if {
+	count(read_errors(gate.violations)) == 2 with input as {"resource": {
+		"type": "aws_s3_bucket", "name": "cloudtrail",
+		"read_errors": ["encryption", "tags"],
+	}}
+}
+
+# MUST-FIRE the other way: a clean resource raises nothing.
+test_no_read_errors_when_all_attributes_observed if {
+	count(read_errors(gate.violations)) == 0 with input as {"resource": {
+		"type": "aws_s3_bucket", "name": "website",
+	}}
+}
+
+# The plan path never carries read_errors, so deploy-time behaviour is
+# unchanged and absent attributes keep failing closed as before.
+test_plan_input_raises_no_read_errors if {
+	count(read_errors(gate.violations)) == 0 with input as {"resource_changes": [{
+		"address": "aws_s3_bucket.b", "mode": "managed",
+		"type": "aws_s3_bucket", "name": "b",
+		"change": {"actions": ["create"], "after": {"bucket": "b", "tags": {}, "tags_all": {}}},
+	}]}
+}
+
+# A malformed read_errors value must not silently disable the check by making
+# the rule body undefined.
+test_malformed_read_errors_ignored if {
+	count(read_errors(gate.violations)) == 0 with input as {"resource": {
+		"type": "aws_s3_bucket", "name": "b", "read_errors": "encryption",
+	}}
 }
 
 # A gate whose parameters failed to load must fail closed, not enforce
