@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Left on Reciprocity - sam_aydlette</title>
+    <title>Automated Security Compliance - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
@@ -45,7 +45,7 @@
                 <span class="article-category">Research</span>
             </div>
 
-            <h1 class="article-title">Shift Left on Reciprocity</h1>
+            <h1 class="article-title">Automated Security Compliance: Evidence as a Continuous Output</h1>
 
             <div class="article-content">
                 <div class="article-summary">
@@ -66,6 +66,15 @@
                     <li><strong>Re-verified at runtime.</strong> A scheduled job re-evaluates the live configuration against the same policy the deploy gate used and re-signs the result every day, so the published state reflects the system as it is now, not as it was at the last code change.</li>
                 </ul>
                 <p>The result is a compliance posture that is continuous, tamper-evident, and verifiable by a third party without taking the producer's word for it. Those are the properties reciprocity is meant to deliver, produced as a byproduct of shipping.</p>
+
+                <h3 id="continuity">What continuity actually buys</h3>
+                <p>Continuous compliance is usually sold on speed: the same documents, produced faster and more often. That undersells it, and it misses where the difficulty actually is. The claim underneath is a control claim. A compliance posture is a system that drifts, and the only thing that keeps drift bounded is a correction loop that closes faster than the drift accumulates. An annual assessment is not a slow version of that loop. It is an open loop with a report at the end.</p>
+                <p>Stated that way, the design follows. The daily runtime re-evaluation is not a nicety; it sets the loop's period, and the period decides how far the system can travel before anything notices. The reconciliation gate is not a formality; it is the comparator, the step that gets to say the live account and the documents disagree. Signing is what makes the loop's output usable by somebody who was not present when it ran. Each of the five moves above is a component of a controller, and the interesting property of a controller is not its throughput. It is how long an error can persist before it is corrected.</p>
+                <p>Which is where the honest limits are, and they are worth stating in the same vocabulary.</p>
+                <p><strong>Cadence is not signal.</strong> A regime that mandates persistent validation gets you uniform sampling, and uniform sampling of the wrong quantity is still the wrong quantity. What this pipeline emits on a fixed schedule is a set of binary verdicts held at pass by a gate built to hold them there. That is the gate working as intended, and it is also what makes the series nearly informationless as a measurement: a control that is working suppresses the variation you would need in order to measure how well it is working.</p>
+                <p><strong>The gate is a control input, not an instrument.</strong> Enforcing compliance is an intervention on the dynamics you would have to observe to know whether compliance is stable. There is no version of this architecture that reads the system from outside it, because the publishing step is inside the loop it reports on. That is not a defect to be engineered away; it is the standing condition of anything that measures itself, and the useful response is to say so rather than to present the output as a neutral reading. The longer argument is in <a href="/research/tuning-the-eigenvalue.html">Being in the Loop</a>.</p>
+                <p><strong>A false positive is a perturbation with no recovery loop attached.</strong> A finding that is wrong does not decay, because nothing is going to remediate it, and it does not diverge either. It sits at its initial value until somebody dispositions it. Findings held that way are the failure mode this architecture has to watch for most closely, because on a dashboard they are indistinguishable from a real problem nobody is fixing, and because an operator who learns to expect them stops reading the channel they arrive on. That is why dispositions carry a written rationale and are never silently dropped, and why the deploy-time and runtime verdicts are reconciled against each other rather than trusted separately.</p>
+                <p>What this pipeline can honestly demonstrate is the instrumentation: that a compliance program can be made to emit a continuous, signed, independently checkable record of its own state at all. It does not demonstrate that such a record is a sufficient basis for predicting failure, and nothing here should be read as claiming it does.</p>
 
                 <h3 id="system">The system, and how it proves each control</h3>
                 <p>The system is <code>samaydlette.com</code>: a static personal website on AWS that doubles as the continuous-compliance pipeline described here, plus a small authenticated web application behind it. The authorization boundary is a set of managed AWS services, deployed from GitHub Actions over OIDC: CloudFront and S3 for the site, API Gateway and Lambda for the application, Cognito for application sign-in, Route 53 (DNSSEC-signed) for DNS, ACM for TLS, KMS for keys, Secrets Manager for the one application secret, and CloudWatch for logs. Physical, environmental, and media-protection families are inherited from AWS's own FedRAMP authorization and cited, not re-implemented. The system is rated FIPS 199 Moderate / FedRAMP 20x Class C throughout.</p>
