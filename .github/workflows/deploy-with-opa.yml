@@ -105,6 +105,62 @@ permissions:
 
 jobs:
   # ===========================================================================
+  # JOB -1: QUEUE WATCHDOG
+  # ===========================================================================
+  # `timeout-minutes` bounds a job that is RUNNING. It does nothing for a job
+  # that never gets a runner, and GitHub has no queue timeout of its own. On
+  # 2026-08-06 the compliance job sat in `queued` for 48 minutes with zero steps
+  # while its two siblings picked up runners and finished normally; the run hung
+  # until GitHub garbage-collected it, and the merged research paper sat
+  # undeployed the whole time.
+  #
+  # This waits for the three independent jobs to be picked up and cancels the
+  # run if any of them is still queued after the grace period, turning an
+  # open-ended hang into a fast, re-runnable failure.
+  #
+  # `deploy` and `notify` are deliberately not watched: they are queued waiting
+  # on their dependencies, which is correct behaviour and not a stuck runner.
+  #
+  # Known limitation: this job needs a runner too, so it cannot help when
+  # allocation fails completely. It covers the partial case actually observed,
+  # where some jobs get runners and others do not.
+  # ===========================================================================
+  queue-watchdog:
+    name: Queue watchdog
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: write   # cancel this run; nothing else
+    steps:
+    - name: Cancel the run if a job never gets a runner
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GRACE_MINUTES: '12'
+      run: |
+        set -euo pipefail
+        # Watch by exclusion, not by listing the jobs to watch. `deploy` and
+        # `notify` are queued waiting on their dependencies, which is correct;
+        # everything else queued has no runner. Excluding is the fail-safe
+        # direction: renaming a watched job would silently drop it from an
+        # inclusion list, whereas here it stays watched, and only a NEW dependent
+        # job could cause a false cancel — which is loud and gets noticed.
+        DEPENDENT='["Deploy Infrastructure","Notify on Failure","Queue watchdog"]'
+        stuck=''
+        for _ in $(seq 1 $(( GRACE_MINUTES * 2 ))); do
+          stuck=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" \
+                    --jq "[.jobs[] | select(.status == \"queued\") | .name] - $DEPENDENT | join(\", \")")
+          if [ -z "$stuck" ]; then
+            echo "All independent jobs have runners."
+            exit 0
+          fi
+          sleep 30
+        done
+        echo "::error::No runner after ${GRACE_MINUTES}m, still queued: ${stuck}"
+        echo "Cancelling so this fails fast and can be re-run."
+        gh api -X POST "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/cancel"
+        exit 1
+
+  # ===========================================================================
   # JOB 0: TEST GATE
   # ===========================================================================
   # Runs the Python unit suite and the OPA policy tests on every push and PR.
