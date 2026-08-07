@@ -1210,6 +1210,30 @@ jobs:
           ksi_signal_id: ."system-security-plan".metadata.props[0].value
         }' oscal-ssp.json
 
+    # Fail if the COMMITTED figures have drifted from the just-built sources.
+    #
+    # Stamping below fixes the published page but writes only to the runner's
+    # checkout, so the repository keeps whatever was last committed. That gap ran
+    # unnoticed: `test_published_targets_are_current` asserts exactly this
+    # invariant, but it needs oscal-ssp.json, which is built in THIS job and does
+    # not exist in the test job, so it skipped in CI and never fired. Four figures
+    # in the paper, the dashboard and the README were stale against a live site
+    # that had been serving the correct values for weeks.
+    #
+    # This is the one point in the pipeline where the sources exist, so the check
+    # belongs here. It fails closed for the same reason the reconciliation gate
+    # does: a compliance document carrying numbers that disagree with the system
+    # is the defect this project exists to argue against. The output names each
+    # stale figure and its correct value, so the fix is committing those values.
+    - name: Check committed figures against their sources
+      working-directory: infrastructure
+      run: |
+        if ! python3 ../scripts/inject-figures.py --check; then
+          echo "::error::Committed figures are stale. Update the data-figure spans"
+          echo "::error::to the values listed above and commit them."
+          exit 1
+        fi
+
     # Stamp the paper + dashboard figures from the just-built SSP (modifies the
     # local HTML only; the re-upload happens in the publish block after the gate).
     - name: Stamp single-source figures (paper + dashboard)

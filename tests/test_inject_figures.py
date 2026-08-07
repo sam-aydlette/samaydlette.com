@@ -29,9 +29,16 @@ inj = _load()
 # the deploy job, where the SSP exists). Figure freshness is separately enforced
 # at deploy time by scripts/inject-figures.py. Everything else in this file is a
 # pure unit test of stamp() and always runs.
+# These skip in CI, because the SSP is built in the deploy job and the test job
+# never sees it. That is not a gap any more: the same invariant is enforced by the
+# "Check committed figures against their sources" step in the deploy workflow,
+# which runs at the one point where the sources exist. It went unenforced for weeks
+# before that step was added, so do not weaken it here on the assumption that this
+# test covers it.
 _needs_ssp = pytest.mark.skipif(
     not inj.SSP.exists(),
-    reason="requires generated infrastructure/oscal-ssp.json (build the pipeline first)",
+    reason="requires generated infrastructure/oscal-ssp.json; enforced in CI by the "
+           "deploy job's figures check, which runs where the SSP exists",
 )
 
 
