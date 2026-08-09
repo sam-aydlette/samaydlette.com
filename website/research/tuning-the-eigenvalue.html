@@ -65,12 +65,13 @@
 <p>I came to the ideas in this document by exploring how dynamical systems theory applies to security operations.</p>
 <p>Along the way I noticed that the mathematics I am exploring for cybersecurity (eigenvalues, bifurcations, attractor dynamics) kept showing up in domains far from my own. The same patterns appear in ecology, clinical medicine, financial markets, neuroscience. I started pulling threads.</p>
 <p>This document is the result. For many of my claims the math is solid. Where I am speculating, I will say that.</p>
-<p>A note on the mathematics. I am not a mathematician, but I am empowered to augment my college calculus level understanding with the help of artificial intelligence. I think this is fun, but recognize that many people don't enjoy heavy math. So I've written the document so that you can read the whole argument without understanding a single equation; the body carries the claims and the plain-language explanations carry the meaning. The formal statements, derivations, and estimator details live in the footnotes, where a reader who wants to check my work can find all of it. The footnotes also carry the biography, the source summaries, and in some cases, what critics of the ideas I've referenced have said.</p>
+<p>A note on the mathematics. I am not a mathematician, but I am empowered to augment my college calculus level understanding with the help of artificial intelligence. I think this is fun, but recognize that many people don't enjoy heavy math. So this document carries the ideas and not the machinery. Attractor basins, eigenvalues, eigenvectors, thresholds: what they are, what they mean, and how they turn up in a guitar note and in a shove in the chest well before they turn up in a lake or on an operations floor. You can read the whole argument without working through a single equation. The equations do exist. They live in the <a href="the-plumbing.html">compliance paper</a>, where there is telemetry to point them at and a reason to be exact. The footnotes here carry the sources, the biography, and in some cases what critics of the ideas I've referenced have said.</p>
+<p>What I have tried not to do is hand you vocabulary in place of understanding. The argument of this whole document is that you cannot steer a thing from outside it, and reading an instrument you do not understand is one of the ways people arrange to believe they are outside.</p>
 <p>I hope you come away from this feeling the same sense of wonder and possibility around these ideas that I do. And I'd love to hear your perspective. Let's dive in.</p>
 <h3 id="abstract">Abstract</h3>
 <p>The central observation is that living beings, people and organisms and systems, exist at thresholds. Not only exist: we are defined by them. Consciousness in particular is defined by the ability to influence the thresholds in which we reside, mind in the older sense, a <em>nous</em> rather than a brain, but we will get there.</p>
-<p>The math supports my observation, up to a limit that is itself informative. Systems near tipping points, where the dominant eigenvalue of the Jacobian approaches zero, share structural features across wildly different domains. A security operations center approaching overload, a lake approaching eutrophication, a guitarist sustaining a note at the edge of feedback. In each case the same local mathematics applies: critical slowing down, rising autocorrelation, divergent recovery times, sensitivity to small perturbations.</p>
-<p>I call this shared structure <strong>threshold structure</strong>: a dynamical configuration characterized by environmental feedback closure, multi-scale nesting, self-modeling, adaptive reference states, threshold sensitivity, and volitional modulation. The mathematical foundation draws on critical transitions (Scheffer), second-order cybernetics (von Foerster), and resilience theory (Holling). The dominant eigenvalue $\lambda_1$ of the system's Jacobian serves as the central quantity: when $\lambda_1 \to 0$, the system is at threshold, maximally sensitive, poised between attractors.</p>
+<p>The math supports my observation, up to a limit that is itself informative. Systems near tipping points, where the slowest rate at which a system pulls itself back approaches zero, share structural features across wildly different domains. A security operations center approaching overload, a lake approaching eutrophication, a guitarist sustaining a note at the edge of feedback. In each case the same local mathematics applies: critical slowing down, rising autocorrelation, divergent recovery times, sensitivity to small perturbations.</p>
+<p>I call this shared structure <strong>threshold structure</strong>: a dynamical configuration characterized by environmental feedback closure, multi-scale nesting, self-modeling, adaptive reference states, threshold sensitivity, and volitional modulation. The mathematical foundation draws on critical transitions (Scheffer), second-order cybernetics (von Foerster), and resilience theory (Holling). That slowest return rate, $\lambda_1$, serves as the central quantity: when it reaches zero the system is at threshold, maximally sensitive, poised between attractors.</p>
 <p>At a certain point though, the math doesn't reach quite as far as I want it to. A system that senses its own boundary rewrites the rules the estimate was fitted to, so $\lambda_1$ mis-predicts hardest exactly where it is needed most. Whether this is a fundamental limit or a barrier to be overcome will be explored in subsequent sections.</p>
 
 <h2 id="part-one" class="essay-part">Part One: Being in the Loop</h2>
@@ -82,7 +83,7 @@
 <p>The word for what is happening between the string and the speaker is feedback. The output of the system is going back into it as input, so the system is now partly determining what happens to itself, and the person with the finger on the string is inside that arrangement rather than operating it from outside.</p>
 <p>This has profound implications far beyond guitars.</p>
 <p>So: a string, an amplifier, and a finger. Left alone the string decays, because air and flesh take energy out of it. The amplifier picks up the vibration and pushes it back into the room as sound, which drives the string again, which puts energy in. The finger takes energy out, and how much depends on how hard it presses. Three effects, one of them feeding the note and two of them draining it. Write $\gamma$ for the damping the finger supplies and $\alpha$ for the gain the amplifier supplies. Everything about the note is settled by which of the two is larger.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> When $\gamma$ exceeds $\alpha$ the vibration spirals inward and the note dies. When $\alpha$ exceeds $\gamma$ it spirals outward and you get the shriek, until something nonlinear puts a ceiling on it. When the two are equal the losses cancel the gains exactly, nothing grows and nothing decays, and the note sustains.</p>
-<p>That difference between them is a single number. The real part of the eigenvalue tells you whether the system is growing, shrinking, or holding steady. Negative and the note is dying. Positive and it is screeching. Zero is the threshold, the condition $\gamma = \alpha$. It is the only place a sustained note can live. Everything that follows is a more elaborate way of asking that same question about that same number.</p>
+<p>That difference between them is a single number. The eigenvalue tells you how hard the arrangement pulls back toward where it was. Positive and the note is dying. Negative and it is screeching. Zero is the threshold, the condition $\gamma = \alpha$. It is the only place a sustained note can live. Everything that follows is a more elaborate way of asking that same question about that same number.</p>
 <p>The guitarist does not set $\gamma$ once and leave it. The pressure changes continuously in response to what the room is doing, easing when the note thins and firming when it swells, which closes a second loop on top of the first. The sound reaches the player, the player measures it against some idea of how it ought to sound, and the finger moves.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
 <p>That arrangement runs on several clocks at once. The string vibrates in milliseconds. The finger corrects in tens of milliseconds. Attention drifts and the forearm tires over seconds and minutes. And the idea of how it ought to sound, which is the standard all those corrections are being measured against, took years to form and is still moving. The slow clocks set the terms the fast ones work under.</p>
 <p>Two things there come back later. The player knows roughly what they are doing: how hard they are pressing, what the sound is doing, whether the two match. And the target is not handed to them from outside. A beginner cannot aim at good sustain because a beginner does not yet know what it sounds like. The reference comes out of the playing.</p>
@@ -94,17 +95,21 @@
 <h3 id="part-2-mathematical-foundations">Going Critical</h3>
 <p>On 2 December 1942, under the stands of a squash court at the University of Chicago, a pile of graphite and uranium was assembled until one number reached one. The number was $k_{\text{eff}}$: the average count of neutrons from one fission that go on to cause another. Below one, the chain reaction dies. Above one, it grows. At exactly one, it sustains, and the pile is said to have <em>gone critical</em>.</p>
 <p>That is where the word comes from. And $k_{\text{eff}}$ is a dominant eigenvalue: the largest eigenvalue of the neutron transport operator. So when I claim that thresholds across domains are governed by a dominant eigenvalue crossing a critical value, I am using physics' own original term in its first sense, not borrowing a metaphor. Whether it survives the trip to the other domains is the question the rest of this is about.</p>
-<p>One piece of arithmetic before we move on. The reactor's condition is $k_{\text{eff}} = 1$. The condition I use everywhere else is $\lambda_1 = 0$. Those are the same statement in two registers. $k$ is a multiplicative gain, the factor by which one generation of neutrons becomes the next, and its neutral value is one. $\lambda$ is an additive growth rate, and its neutral value is zero. The logarithm converts between them, $\lambda = \ln(k)/\Delta t$, and $\ln(1) = 0$. Marginality looks like one when you are multiplying and like zero when you are adding. It is the same margin.</p>
+<p>One piece of arithmetic before we move on. The reactor's condition is $k_{\text{eff}} = 1$. The condition I use everywhere else is a return rate of zero. Those are the same statement in two registers. $k$ is a multiplicative gain, the factor by which one generation of neutrons becomes the next, and its neutral value is one. A rate is additive, and its neutral value is zero. The logarithm carries you from one register to the other, and the logarithm of one is zero. The two count in opposite directions, which is worth having straight: reactor physicists count the gain, so their number climbs as the pile heats up, and I count the restoring pull, so mine falls as things get worse. Marginality looks like one when you are multiplying and like zero when you are adding. It is the same margin.</p>
 <p>Either way the number needs somewhere to count from, a reference point the measurement does not itself disturb. Under a squash court in 1942 that was straightforward to arrange. Everywhere else it is not so simple.</p>
-<p>Before we move forward, a brief interlude into the terminology. Again, if math isn't your thing, feel free to skip to <a href="#the-self-at-the-threshold">The Self at the Threshold</a>.</p>
+<p>Before we move forward, a brief interlude into the terminology. It is the concepts and what they are called, and the equations behind them are in the <a href="the-plumbing.html#measuring-the-loop">compliance paper</a>. Again, if math isn't your thing, feel free to skip to <a href="#the-self-at-the-threshold">The Self at the Threshold</a>.</p>
 <div class="math-block">
 <h4 id="the-machinery">The Math</h4>
 <h5 id="dynamical-systems">Dynamical Systems</h5>
-<p>A <strong>dynamical system</strong> is anything whose state changes over time according to fixed rules. Its <em>state space</em> is the set of all configurations it could be in; its <em>vector field</em> says which way it moves from each one.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
-<p>An <strong>equilibrium</strong> is where the system stops moving. Stability asks: if you nudge it slightly, does it come back or drift away? The answer is encoded in the <strong>Jacobian</strong>, a matrix capturing how sensitive each variable is to small changes in every other variable: the system's local response fingerprint. Its eigenvalues decide the outcome. All negative: perturbations decay, the equilibrium is stable. Any positive: perturbations grow, it is unstable. One sitting at zero: threshold, the boundary between the two.</p>
-<p>An <strong>attractor</strong> is a set that nearby trajectories converge to and stay near: a stable equilibrium point, a stable cycle, or something stranger. The states that end up there are its <strong>basin</strong>. A deep basin corrects a shove. A shallow one does not, and the difference between those two is most of what follows.</p>
+<p>A <strong>dynamical system</strong> is anything whose state changes over time according to fixed rules. Its <em>state space</em> is the set of all configurations it could be in; its <em>vector field</em> says which way it moves from each one. A guitar string is one. So is a lake, and so is an operations floor on a Tuesday afternoon.</p>
+<p>An <strong>equilibrium</strong> is where the system stops moving. Stability asks one question: nudge it, and does it come back? The answer lives in the <strong>Jacobian</strong>, a table of how sensitively each part of the system responds to every other part. Think of it as the local response fingerprint. What you read off that table are the <strong>eigenvalues</strong>.</p>
+<p>An <strong>attractor</strong> is a set that nearby trajectories converge to and stay near: a resting point, a repeating cycle, or something stranger. The states that end up there are its <strong>basin</strong>. A deep basin corrects a shove. A shallow one does not. Hold the picture of a marble in a bowl, because most of what follows is about the shape of the bowl: steep sides return the marble quickly, and a bowl worn almost flat barely returns it at all.</p>
+<h5 id="eigenvalues-and-eigenvectors">Eigenvalues and Eigenvectors</h5>
+<p><strong>The eigenvalue is how fast you come back. The eigenvector is where.</strong> A system near a resting point has a handful of natural directions it moves along, and each direction has its own rate of return. The eigenvector names the direction. The eigenvalue is the rate.</p>
+<p><strong>How I count them.</strong> A positive eigenvalue means the system pulls back from a shove in that direction, so the equilibrium holds. A negative one means the shove grows instead. Zero is the boundary between the two. $\lambda_1$ names the smallest of them: the softest direction, the one that gives way first. That is the whole convention. Several of the fields I borrow from count the same quantity with the opposite sign, and where I borrow a result I keep their sign and say so.</p>
+<p>One consequence to carry forward. The system's <strong>gain</strong> runs as one over the return rate, so as the rate falls toward zero the same disturbance produces a larger and larger excursion. Near the bottom of a steep bowl you can lean on the marble all day. In a bowl worn flat, a breath moves it across the room.</p>
 <h5 id="bifurcation-theory">Bifurcation Theory</h5>
-<p>A <strong>bifurcation</strong> is a tipping point where the rules of the game change qualitatively. Before it, the system has certain stable states; after, those states may vanish, split, or swap stability. Formally it is where an eigenvalue crosses zero, or crosses the imaginary axis, as a <strong>control parameter</strong> varies. The control parameter is the thing being turned from outside the fast dynamics: nutrient load in a lake, pump rate in a laser, alert volume on an operations floor.</p>
+<p>A <strong>bifurcation</strong> is a tipping point where the rules of the game change qualitatively. Before it, the system has certain stable states; after, those states may vanish, split, or swap stability. It happens when a return rate reaches zero as a <strong>control parameter</strong> is turned. The control parameter is the thing being adjusted from outside the fast dynamics: nutrient load in a lake, pump rate in a laser, alert volume on an operations floor.</p>
 <table>
 <colgroup>
 <col class="col-w-25" />
@@ -114,83 +119,49 @@
 <thead>
 <tr class="header">
 <th>Bifurcation</th>
-<th>Eigenvalue Behavior</th>
+<th>What happens to the resting point</th>
 <th>Physical Example</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>Saddle-node</td>
-<td>Real $\lambda$ crosses 0</td>
+<td>A stable state and an unstable one drift together, collide, and both vanish</td>
 <td>Stable equilibrium vanishes; system tips</td>
 </tr>
 <tr class="even">
 <td>Transcritical</td>
-<td>Real $\lambda$ crosses 0, equilibria exchange stability</td>
+<td>Two states swap which of them is the stable one</td>
 <td>Triage quality inverts as load crosses threshold</td>
 </tr>
 <tr class="odd">
 <td>Hopf</td>
-<td>Complex pair crosses imaginary axis</td>
+<td>The resting point gives way to a cycle the system circles instead</td>
 <td>System begins oscillating between states</td>
 </tr>
 <tr class="even">
 <td>Pitchfork</td>
-<td>Real $\lambda$ crosses 0, one equilibrium becomes two</td>
+<td>One stable state becomes two, and the system has to pick</td>
 <td>System splits into distinct modes</td>
 </tr>
 </tbody>
 </table>
-<p>The canonical saddle-node is $dx/dt = \mu - x^2$. For $\mu &gt; 0$ there are two equilibria at $\pm\sqrt{\mu}$; at $\mu = 0$ they collide; for $\mu &lt; 0$ there is nothing left and the system runs away. That collision-and-annihilation is the shape of most operational failures I have watched: not a gradual worsening, but a stable state that stops existing.</p>
+<p>The saddle-node is the one that governs almost everything below. Two states, one stable and one not, slide toward each other as the control parameter turns, meet, and annihilate, leaving the system nowhere local to sit. That collision is the shape of most operational failures I have watched. Not a gradual worsening. A stable state that stops existing. The <a href="the-plumbing.html#the-model">compliance paper</a> works one through with the equations attached; the guitar note is the other kind, a Hopf, where what gives way is the stillness and not the state.</p>
 <h5 id="eigenvalue-structure-and-critical-slowing-down">Eigenvalue Structure and Critical Slowing Down</h5>
-<p>Order the Jacobian's eigenvalues by real part, largest first. The <strong>dominant eigenvalue</strong> $\lambda_1$ governs long-term behavior: it is the slowest-decaying direction, the one that outlasts all the others. It is well-defined when there is a spectral gap between it and the next one. <strong>Codimension-1</strong> bifurcations, the ones you reach by tuning a single control parameter, have exactly one eigenvalue crossing zero. That is the generic case and the only one I treat. It is why the dominant eigenvalue is usually unambiguous near the transitions that matter here.</p>
-<table>
-<colgroup>
-<col class="col-w-50" />
-<col class="col-w-50" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>Eigenvalue Type</th>
-<th>System Behavior</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>$\lambda &lt; 0$ (real, negative)</td>
-<td>Exponential decay toward equilibrium</td>
-</tr>
-<tr class="even">
-<td>$\lambda &gt; 0$ (real, positive)</td>
-<td>Exponential growth away from equilibrium</td>
-</tr>
-<tr class="odd">
-<td>$\lambda = \alpha \pm i\beta$, $\alpha &lt; 0$</td>
-<td>Damped oscillation</td>
-</tr>
-<tr class="even">
-<td>$\lambda = \alpha \pm i\beta$, $\alpha &gt; 0$</td>
-<td>Growing oscillation</td>
-</tr>
-<tr class="odd">
-<td>$\lambda = \pm i\beta$ (purely imaginary)</td>
-<td>Sustained oscillation (a centre; an isolated limit cycle needs nonlinearity)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Proposition 1 (Critical Slowing Down).</strong> As the system approaches a bifurcation, the dominant eigenvalue approaches zero, and the characteristic recovery time $\tau = 1/|\text{Re}(\lambda_1)|$ diverges.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
-<p><strong>In plain language:</strong> As a system approaches a tipping point, it takes longer and longer to bounce back from disturbances. This "critical slowing down" is the most important early warning signal in this exploration.</p>
+<p>Order the return rates smallest first. The smallest one, $\lambda_1$, governs the long run, because it is the direction that recovers last and therefore outlasts all the others. It is well defined when there is a clear gap between it and the next one up. The tipping points reached by turning a single control parameter have exactly one rate reaching zero. That is the generic case and the only one I treat. It is also why the softest direction is usually unambiguous near the transitions that matter here.</p>
+<p><strong>Proposition 1 (Critical Slowing Down).</strong> As a system approaches a tipping point, its softest return rate approaches zero, and the time it takes to recover from a disturbance grows without bound.<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a> Recovery time runs as one over the return rate, so a rate on its way to zero sends the recovery time the other way.</p>
+<p>Said without any of the vocabulary: as a system gets close to tipping, it takes longer and longer to bounce back from an ordinary knock. This "critical slowing down" is the most important early warning signal in this exploration, and everything operational later depends on it.</p>
 <p><strong>Proposition 2 (Observable Signatures).</strong> Near a threshold, four things happen to the statistics of the system's fluctuations:</p>
 <ol type="1">
-<li><strong>Recovery time rises.</strong> A direct consequence of $\lambda_1 \to 0$.</li>
+<li><strong>Recovery time rises.</strong> A direct consequence of the softest return rate falling toward zero.</li>
 <li><strong>Variance rises.</strong> Perturbations persist longer, so they accumulate.</li>
-<li><strong>Lag-1 autocorrelation rises toward 1.</strong> The state at time $t$ becomes more predictive of the state a moment later. The system is getting stuck.</li>
+<li><strong>Lag-1 autocorrelation rises toward 1.</strong> Where the system is now becomes more and more predictive of where it will be a moment later. The system is getting stuck.</li>
 <li><strong>Cross-correlation rises.</strong> Previously independent subsystems begin moving together.</li>
 </ol>
-<p>These follow from $\lambda_1 \to 0$ in the linearized dynamics. They are measurable from time series without knowing the underlying equations.<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></p>
-<p><strong>One signature that is missing, deliberately.</strong> Lists of this kind usually carry a fifth item: power-law distributed event sizes. It does not follow from $\lambda_1 \to 0$.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> A saddle-node bifurcation in two variables has a diverging <em>time</em> constant and no spatial structure whatsoever. It does not produce power laws, scale invariance, or self-similarity. Those belong to a different phenomenon that happens to share the word "critical."</p>
-<p>Two boundaries on the derivation, stated once instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work, not closed work.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a><a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem, and measurement problems get solved.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> Where the sections below treat $\lambda_1$ as measurable, the slow-forcing regime is what they mean.</p>
-<p class="math-block-end">That is the whole of the terminology.</p>
+<p>All four come from the one cause, which means that seeing two of them is one observation and not two. They are measurable from a record of how the system has behaved, without anybody knowing the equations underneath. The <a href="the-plumbing.html#measuring-the-loop">compliance paper</a> writes them down properly and says what it takes to estimate them.<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></p>
+<p><strong>One signature that is missing, deliberately.</strong> Lists of this kind usually carry a fifth item: power-law distributed event sizes. It does not follow from a return rate going to zero.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> A saddle-node bifurcation in two variables has a diverging <em>time</em> constant and no spatial structure whatsoever. It does not produce power laws, scale invariance, or self-similarity. Those belong to a different phenomenon that happens to share the word "critical."</p>
+<p>Two boundaries on the derivation, stated once instead of hedged throughout. The derivation assumes tipping driven by a parameter crossing a critical value under slow forcing. Tipping driven instead by the <em>rate</em> of change, or by a single large shock to an otherwise healthy basin, is a different problem, and building indicators for those cases is active work, not closed work.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a><a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> The indicators have also been tested against real monitoring records rather than simulated ones and found less reliable there, which is a measurement problem, and measurement problems get solved.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a> Where the sections below treat the return rate as measurable, the slow-forcing regime is what they mean.</p>
+<p class="math-block-end">That is the whole of the terminology. Strogatz's <em>Nonlinear Dynamics and Chaos</em> is the standard treatment of all of it, for anyone who wants the version with the proofs in.</p>
 </div>
 <h4 id="where-the-threshold-is-literally-an-eigenvalue">Where the Threshold Really Is an Eigenvalue</h4>
 <p>Every domain I apply this to is a soft-boundary domain: ecology, medicine, finance, neuroscience, governance, security. A skeptical reader will reasonably suspect I am doing analogy and calling it mathematics. So here are the cases where a dominant eigenvalue crossing a critical value is not an analogy for the physics. It <em>is</em> the physics.</p>
@@ -290,7 +261,7 @@
 <p>A starship bridge is that room drawn clearly enough that everyone recognizes it: the state of the ship continuously legible to the people who can act on it, the sensing reaching far past anybody's skin, and the captain unmistakably inside the thing being steered rather than watching it from somewhere else. That last part is what real organizations lose.</p>
 <p>They lose it because the loop has a characteristic failure. The instrumented picture is the most comfortable place in an organization to stand, since it is the only place where nothing is happening to you. That is what makes a dashboard restful and it is what makes it dangerous. The extension of the sense becomes a substitute for it, and what has been built at considerable expense is a view from nowhere.</p>
 <h4 id="the-threshold-as-dynamical-condition">The Threshold as Dynamical Condition</h4>
-<p>A threshold is not a number. In a typical Security Operations Center (SOC), on a Tuesday with six analysts four hundred tickets is a busy afternoon; at three in the morning with two it is the end of triage. Same point in state space, different condition. What changes is not where the system is but how it answers being pushed, whether a disturbance decays or persists. That is what $\lambda_1$ measures. Formally the threshold is $\text{Re}(\lambda_1) \to 0^-$: recovery time going to infinity, and the system's next state no longer settled by where it currently sits.</p>
+<p>A threshold is not a number. In a typical Security Operations Center (SOC), on a Tuesday with six analysts four hundred tickets is a busy afternoon; at three in the morning with two it is the end of triage. Same point in state space, different condition. What changes is not where the system is but how it answers being pushed, whether a disturbance decays or persists. That is what $\lambda_1$ measures. The threshold is the return rate falling to zero: recovery time going to infinity, and the system's next state no longer settled by where it currently sits.</p>
 <p>What that buys and what it costs are one property. Near threshold the system is at maximum gain. A small input produces a large change, because there is no restoring force left to absorb it. Far from threshold you get the reverse. Push on a system deep in its basin and the basin eats the effort, which is where most organizational energy goes to die. So thresholds are where leverage lives, and if you want to change something, that is where to stand.</p>
 <p>But something is always supplying the small inputs, and gain does not care whose hand is on them. It amplifies whatever arrives. So the question is never whether you are near a threshold. It is whether you are doing the tuning.</p>
 <p>More often than not, we aren't. Rasmussen's 1997 model of why not is instructive. It puts any operating system inside a space bounded by three constraints: economic failure, unacceptable workload, and unacceptable risk. Management pressure for efficiency pushes away from the economic boundary. Individual pressure for least effort pushes away from the workload boundary. Both push in the same direction: toward the risk boundary. So the operating point migrates, gradually and without anyone deciding to, until it rests against the only boundary that does not push back. That boundary is invisible until you cross it.<a href="#fn23" class="footnote-ref" id="fnref23" role="doc-noteref"><sup>23</sup></a></p>
@@ -398,7 +369,7 @@
 <p>The sensing half is the half everyone does. Organizations are covered in dashboards, and the state variables are not hard to name: queue depth, backlog age, how much of the on-call rotation is one person, how long a change waits between merge and production.</p>
 <p>The control parameters are harder, and those are the ones that decide whether any of it is tuning, because a knob that does not move $\lambda_1$ is not a knob. Arrival rate usually is not one, since alerts and incidents and customer demand arrive whether or not you consent. Capacity is. Admission policy is: what fraction of the week is committed before the week starts, and who is allowed to commit it. Batch size is, and it gets set by accident more often than any of the others. Ask an operations group what its control parameters are and you will often get a list of its state variables back, which is a precise description of an organization that is measuring itself and not steering.</p>
 <h4 id="reading-the-number">Reading the Number</h4>
-<p>The estimate requires less math than you might think. Disturb the system in an identified way and watch what it does afterward. Near a stable equilibrium the deviation decays exponentially, so the logarithm of the deviation falls in a straight line whose slope is $\lambda_1$. One identified perturbation, one recovery curve, one slope. Appendix B states it formally and the <a href="the-plumbing.html#perturbation-response">compliance paper</a> works it through on real telemetry.</p>
+<p>The estimate requires less math than you might think. Disturb the system in an identified way and watch what it does afterward. Near a stable equilibrium the deviation decays exponentially, so the logarithm of the deviation falls in a straight line whose slope is $\lambda_1$. One identified perturbation, one recovery curve, one slope. The <a href="the-plumbing.html#perturbation-response">compliance paper</a> states it formally and works it through on real telemetry.</p>
 <p>What the method requires is a perturbation you can identify. Not any disturbance, one whose size and moment you know. Which is the thing worth noticing about it, because it means the estimate is not something you extract from data you happen to be holding.</p>
 <p>Which rules out the obvious shortcut. You could try to read $\lambda_1$ out of the record you already have, fitting the whole history and letting the arithmetic find the slope. That works far from the boundary, where the system is not adapting and its rules hold roughly still, and it is useless there, because nothing is about to happen. Near the boundary, where the number is worth having, the system is busy rewriting the dynamics the estimator learned.<a href="#fn31" class="footnote-ref" id="fnref31" role="doc-noteref"><sup>31</sup></a> The regime where a historical estimate can be trusted and the regime where it is needed are close to disjoint, which is why the disturbance has to be one you introduced.</p>
 <h4 id="the-needlestack">Which Returns to the Needlestack</h4>
@@ -467,7 +438,7 @@
 <p>The note only sustains because the room is in the loop. Take the room away, isolate the string from everything that could feed it, and you have a system that decays, where nothing the finger does matters very much. The sound exists because the output comes back. And the finger can shape it only because it is touching the string, which is to say only because the player is not outside the instrument. The trick is to extend that, at larger scale, with worse instruments.</p>
 <p>The threshold is where inside meets outside, where the observer meets the observed, where the knower meets the known. I have tried to characterize that place.</p>
 <h2 id="apparatus" class="essay-part">Apparatus</h2>
-<p class="essay-part-blurb">The glossary, the claims stated formally, the six conditions with their standard names, and what the argument reads.</p>
+<p class="essay-part-blurb">The glossary, the six conditions with their standard names, and what the argument reads.</p>
 <h3 id="appendix-a-glossary">Appendix A: Glossary</h3>
 <table>
 <colgroup>
@@ -483,7 +454,7 @@
 <tbody>
 <tr class="odd">
 <td>Attractor</td>
-<td>Set in state space that trajectories converge toward. Far from threshold: $\lambda_1 \ll 0$</td>
+<td>Set in state space that trajectories converge toward. Far from threshold the return rate is large and the basin steep</td>
 </tr>
 <tr class="even">
 <td>Autocorrelation</td>
@@ -535,7 +506,7 @@
 </tr>
 <tr class="even">
 <td>Eigenvalue ($\lambda_1$)</td>
-<td>Dominant eigenvalue of the Jacobian; determines stability; has dimensions of inverse time</td>
+<td>The slowest rate at which the system pulls itself back toward equilibrium; determines stability; has dimensions of inverse time. Positive means restoring, zero is the threshold</td>
 </tr>
 <tr class="odd">
 <td>Going solid</td>
@@ -567,22 +538,11 @@
 </tr>
 <tr class="odd">
 <td>Threshold structure</td>
-<td>A system meeting the six conditions in Appendix C: three computable, three only observable</td>
+<td>A system meeting the six conditions in <a href="#appendix-b-the-six-conditions">Appendix B</a>: three computable, three only observable</td>
 </tr>
 </tbody>
 </table>
-<h3 id="appendix-b-key-equations">Appendix B: The Claims, and the Equations</h3>
-<p><em>The argument in the order a reviewer would want it, before the story. If you want the conclusions without the route to them, start here.</em></p>
-<p>The abstract states the claim; this is the apparatus under it. Two things bound everything below. First, the recurrence across domains is <em>a theorem</em>: near a codimension-1 bifurcation almost all information about what a system is gets destroyed, which is why a lake and a laser look alike there. What transfers is the shape of the approach and the warning signatures, and not the specifics of either system. Second, the framework linearizes around an equilibrium and reads $\lambda_1$ off a <em>fixed</em> Jacobian, while its own subject matter, systems that reorganize when they sense the boundary, changes the Jacobian in the one regime where the number would be most useful.</p>
-<p><strong>Dynamical system:</strong> $$\frac{d\mathbf{s}}{dt} = \mathbf{F}(\mathbf{s})$$</p>
-<p><strong>Stability (linearized about an equilibrium $\mathbf{s}^*$):</strong> $$\frac{d(\mathbf{s}-\mathbf{s}^*)}{dt} \approx J(\mathbf{s}-\mathbf{s}^*), \qquad J_{ij} = \frac{\partial F_i}{\partial s_j}\bigg|_{\mathbf{s}^*}$$ Stable if all eigenvalues have $\text{Re}(\lambda) &lt; 0$, unstable if any has positive real part. If the largest has zero real part the linearization is inconclusive and higher-order terms decide, which is the threshold case, and why the interesting regime is the one where the linear analysis stops being sufficient.</p>
-<p><strong>Critical slowing down:</strong> $$\tau = \frac{1}{|\text{Re}(\lambda_1)|} \to \infty \text{ as } \lambda_1 \to 0$$ Stated for a general system. For a defined one, with the state variables and coefficients written out, see <a href="the-plumbing.html#the-model">the security-operations model</a> in the compliance paper.</p>
-<p><strong>Observable signatures near threshold</strong> (a linear system driven by white noise of variance $\sigma^2_{\text{forcing}}$, an Ornstein–Uhlenbeck process)<strong>:</strong> $$\sigma^2 = \frac{\sigma^2_{\text{forcing}}}{2|\lambda_1|} \qquad \rho(\Delta t) \approx e^{\lambda_1 \Delta t} \to 1 \text{ as } \lambda_1 \to 0^-$$</p>
-<p><strong>Saddle-node bifurcation (canonical form):</strong> $$\frac{dx}{dt} = \mu - x^2$$ The equilibria are $x^* = \pm\sqrt{\mu}$ with $\lambda = \mp 2\sqrt{\mu}$, so on the stable branch $\lambda_1 = -2\sqrt{\mu} \to 0$ as $\mu \to 0^+$. The eigenvalue approaches zero as the <em>square root</em> of the distance to the bifurcation, and the recovery time diverges as $\mu^{-1/2}$.</p>
-<p><strong>VAR eigenvalue estimation:</strong> $$\tilde{\mathbf{K}}(t + \Delta t) = A \tilde{\mathbf{K}}(t) + \boldsymbol{\epsilon}(t), \qquad \lambda_i = \frac{\ln(z_i)}{\Delta t}$$ where $z_i$ are the eigenvalues of the fitted matrix $A$, in discrete time.</p>
-<p><strong>Perturbation-response estimation (preferred; see <a href="the-plumbing.html#why-not-mttr">why not MTTR</a>):</strong> $$\ln|\Delta K_i(t)| = \ln|\Delta K_i(t_0)| + \lambda_1 (t - t_0)$$ The slope of the log-deviation against time is $\lambda_1$, measured on a single identified event.</p>
-<p><strong>What none of this covers.</strong> Every equation above assumes $J$ is constant over the estimation window. <a href="#what-is-still-open">What Is Still Open</a> is about why that assumption fails in systems that reorganize when they sense their own boundary.</p>
-<h3 id="appendix-c-mapping-to-standard-terminology">Appendix C: The Six Conditions, and Their Standard Names</h3>
+<h3 id="appendix-b-the-six-conditions">Appendix B: The Six Conditions, and Their Standard Names</h3>
 <p><em>The body states these in prose, in the two groups that matter. Here they are numbered, stated formally where they can be, and set against the standard names, for anyone who wants to refer to one of them or check it against the literature.</em></p>
 <table>
 <colgroup>
@@ -681,7 +641,7 @@
 <td>Resilience engineering (STELLA); Fields et al.</td>
 </tr>
 <tr class="even">
-<td>$\lambda_1$ (dominant eigenvalue)</td>
+<td>$\lambda_1$ (slowest return rate)</td>
 <td>Stability parameter; $k_{\text{eff}}$; $R_0$</td>
 <td>Control theory; reactor physics; epidemiology</td>
 </tr>
@@ -785,7 +745,7 @@
 <p>$$A = \begin{pmatrix} 0 &amp; 1 \\ -\omega^2 &amp; -(\gamma - \alpha) \end{pmatrix}$$</p>
 <p>with eigenvalues</p>
 <p>$$\lambda = \frac{-(\gamma - \alpha) \pm \sqrt{(\gamma - \alpha)^2 - 4\omega^2}}{2} \approx -\frac{(\gamma - \alpha)}{2} \pm i\omega$$</p>
-<p>where the approximation holds in the usual regime of damping small compared to frequency. The real part is $-(\gamma - \alpha)/2$: negative when damping exceeds gain (stable, spiralling in), positive when gain exceeds damping (unstable, spiralling out), zero at $\gamma = \alpha$. At that point the eigenvalues are purely imaginary and the orbits are closed: sustained oscillation. Note that this is a Hopf-type condition, a complex pair crossing the imaginary axis, not the saddle-node that governs most of <a href="#part-4-applications">Extending Proprioception</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p>where the approximation holds in the usual regime of damping small compared to frequency. The return rate is $(\gamma - \alpha)/2$, which is minus the real part of the eigenvalue as most textbooks write it: positive when damping exceeds gain (stable, spiralling in), negative when gain exceeds damping (unstable, spiralling out), zero at $\gamma = \alpha$. At that point the eigenvalues are purely imaginary and the orbits are closed: sustained oscillation. Note that this is a Hopf-type condition, a complex pair crossing the imaginary axis, not the saddle-node that governs most of <a href="#part-4-applications">Extending Proprioception</a>.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
 <li id="fn2"><p><strong>The second loop.</strong> Treat finger pressure $p$ as a dynamic variable with $\dot{p} = k(A - A^*)$, where $A$ is current amplitude, $A^*$ the desired amplitude, and $k$ the response rate. This makes $\gamma$ a function of $p$ rather than a constant, so the guitarist is modulating a parameter of the fast system on a slower timescale, which is the T2 structure, and also, in miniature, the problem of <a href="#what-is-still-open">What Is Still Open</a>: the "fixed" Jacobian of the string subsystem is being continuously rewritten by the player. In the guitar case the separation of timescales is clean enough that the standard treatment works. In an organization it is not.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
@@ -794,19 +754,13 @@
 <!-- TYPE A -->
 <li id="fn4"><p><strong>The slaving principle.</strong> Hermann Haken's synergetics (<em>Synergetics: An Introduction</em>, 3rd ed., Springer, 1983) holds that near an instability a small number of slowly varying order parameters enslave the many fast-decaying modes, so a high-dimensional system's behaviour is set by a low-dimensional set of amplitudes. That is formally T2 in <a href="#what-makes-a-threshold-a-self">What Makes a Threshold a Self</a>, and it is rigorous and not observational: it is center-manifold reduction, and the fast modes are eliminated by a theorem. <a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
-<li id="fn5"><p><strong>Formal definitions.</strong></p>
-<p><em>Dynamical system.</em> A pair $(\mathcal{S}, \mathbf{F})$ where $\mathcal{S}$ is a state space (typically $\mathbb{R}^n$) and $\mathbf{F}: \mathcal{S} \to T\mathcal{S}$ is a vector field assigning each state its rate of change.</p>
-<p><em>Equilibrium.</em> An equilibrium $\mathbf{s}^*$ satisfies $\mathbf{F}(\mathbf{s}^*) = 0$. The linearization about it, and the stability condition read off the eigenvalues of $J$, are in <a href="#appendix-b-key-equations">Appendix B</a>, which is where the equations live.</p>
-<p><em>Attractor.</em> A set $\Omega \subset \mathcal{S}$ such that trajectories starting near $\Omega$ remain near it and converge to it as $t \to \infty$, and which is minimal in containing no smaller such set. Types: point attractor (stable equilibrium), limit cycle (stable periodic orbit), strange attractor (chaotic but bounded).</p>
-<p>Standard treatment: Strogatz (2015).<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<!-- TYPE C -->
-<li id="fn6"><p><strong>Critical slowing down: two things the equations do not say.</strong> The derivation, and the square-root scaling that comes with it, are in <a href="#appendix-b-key-equations">Appendix B</a>.</p>
-<p>First, the eigenvalues have dimensions of inverse time, which matters because it is the source of a common error: a statement like "$\lambda_1 = -0.1$ indicates a healthy margin" is meaningless without a sampling interval and a domain timescale attached. The <a href="the-plumbing.html#d6-interpretation">compliance paper</a> gives such numbers and flags them as placeholders for this reason.</p>
+<li id="fn6"><p><strong>Critical slowing down: two things the equations do not say.</strong> The derivation, and the square-root scaling that comes with it, are in the <a href="the-plumbing.html#measuring-the-loop">compliance paper</a>.</p>
+<p>First, the eigenvalues have dimensions of inverse time, which matters because it is the source of a common error: a statement like "$\lambda_1 = 0.1$ indicates a healthy margin" is meaningless without a sampling interval and a domain timescale attached. The <a href="the-plumbing.html#d6-interpretation">compliance paper</a> gives such numbers and flags them as placeholders for this reason.</p>
 <p>Second, the square root has a practical consequence. The slowing is gradual over most of the approach and then sharp at the end, which is a bad shape for an early warning system: the signal is weakest in the interval where there would still be time to act on it.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
-<li id="fn7"><p><strong>Source and caveat: the observable signatures.</strong> The equations are in <a href="#appendix-b-key-equations">Appendix B</a>. What matters here is that both signatures have the same single cause and are therefore not independent evidence: seeing both is one observation, not two, and treating them as corroborating is a mistake I have seen made and have probably made.</p>
+<li id="fn7"><p><strong>Source and caveat: the observable signatures.</strong> The equations are in the <a href="the-plumbing.html#measuring-the-loop">compliance paper</a>. What matters here is that both signatures have the same single cause and are therefore not independent evidence: seeing both is one observation, not two, and treating them as corroborating is a mistake I have seen made and have probably made.</p>
 <p>Scheffer et al. (2009), <em>Nature</em> 461, 53, showed that variance and lag-1 autocorrelation rise as ecological systems approach regime shifts and proposed them as generic early-warning indicators.</p>
-<p><strong>How this relates to my claim, and where I am reaching further than they do.</strong> Scheffer's group frames these as indicators of <em>resilience loss</em> rather than as estimates of an eigenvalue. That is a weaker and more defensible claim than mine: "resilience is declining" survives a good deal of model misspecification, whereas "$\lambda_1 = -0.03$" asserts that a particular linearization is valid. Where this essay treats the indicators as the observable face of $\lambda_1 \to 0$, it is going beyond what the source claims, and the reader should hold me rather than them responsible for the difference.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<p><strong>How this relates to my claim, and where I am reaching further than they do.</strong> Scheffer's group frames these as indicators of <em>resilience loss</em> rather than as estimates of an eigenvalue. That is a weaker and more defensible claim than mine: "resilience is declining" survives a good deal of model misspecification, whereas "$\lambda_1 = 0.03$" asserts that a particular linearization is valid. Where this essay treats the indicators as the observable face of $\lambda_1 \to 0$, it is going beyond what the source claims, and the reader should hold me rather than them responsible for the difference.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn8"><p><strong>Three things called criticality.</strong> The word does three jobs, and conclusions do not transfer between them. Sense 1 is the one I use everywhere in this essay; senses 2 and 3 are real and I claim nothing from them.</p>
 <table>
@@ -867,7 +821,7 @@
 <p>The claim: a displacive structural phase transition occurs because the frequency of a particular lattice vibration (an eigenvalue of the crystal's dynamical matrix) decreases as the transition is approached and vanishes at $T_c$. The restoring force for that specific pattern of atomic displacement goes to zero, so the atoms move into the new structure. In ferroelectrics such as SrTiO₃ and PbTiO₃ the softening mode is a polar optical phonon, so the transition produces a spontaneous polarization.</p>
 <p><strong>How it relates to this essay, which is deflating for the essay.</strong> This is not analogous to "tuning the eigenvalue." It <em>is</em> tuning the eigenvalue, with temperature as the control parameter, and the critical slowing down is measured directly: the soft-mode frequency and its damping are observed in inelastic neutron scattering and Raman spectroscopy, and the mode's approach to zero frequency is followed experimentally across the transition. So the essay's central image and its central measurement both existed, in a mature quantitative form, roughly sixty years before I thought of them. <a href="#the-limits-of-the-math">The Limits of the Math</a> explains why I should have expected that.<a href="#fnref13" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
-<li id="fn14"><p>The six are numbered T1–T6, with formal statements where they exist and their standard names in the literature, in <a href="#appendix-c-mapping-to-standard-terminology">Appendix C</a>. Three of the six have no formal statement. That absence is the substantive content.<a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn14"><p>The six are numbered T1–T6, with formal statements where they exist and their standard names in the literature, in <a href="#appendix-b-the-six-conditions">Appendix B</a>. Three of the six have no formal statement. That absence is the substantive content.<a href="#fnref14" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE A -->
 <li id="fn15"><p>Self-tracking has a ceiling, and the ceiling is a theorem. Fields, Glazebrook and Levin proved that adding observational, representational, or control capability to a meta-level component cannot in principle yield a complete meta-level representation of the system as a whole. So partial self-modeling is the permanent condition of anything that models itself, and not an engineering limitation better instrumentation would remove. The interesting dynamics are in the gap, and the <a href="#applications-across-domains">operational sections</a> pick that up, where the same point has been made from inside an incident.</p>
 <p><strong>Source.</strong> Chris Fields, James Glazebrook and Michael Levin, "Principled Limitations on Self-Representation for Generic Physical Systems," <em>Entropy</em> 26, 194 (2024), <a href="https://doi.org/10.3390/e26030194">doi:10.3390/e26030194</a>. Fields' own work is collected at <a href="https://chrisfieldsresearch.com/">chrisfieldsresearch.com</a>.</p>
@@ -920,11 +874,9 @@
 <!-- TYPE A -->
 <li id="fn30"><p><strong>The security force question.</strong> Douglas Rushkoff, "Survival of the Richest," published on Medium in July 2018 and later expanded into a book of the same title. Rushkoff was paid to speak about the future of technology and found himself instead answering questions from five men from the hedge fund world about where to site a bunker and how to keep a security detail loyal once currency had stopped working. The line I am relying on is one of them asking how he maintains authority over his security force after the event. Rushkoff does not name them, and neither do I; the account is his and the reading of it is mine.<a href="#fnref30" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <!-- TYPE C -->
-<li id="fn31"><p><strong>The fixed-Jacobian problem, stated precisely.</strong></p>
-<p>The framework assumes an autonomous system $\dot{\mathbf{s}} = \mathbf{F}(\mathbf{s})$ with $\mathbf{F}$ independent of time, linearizes about an equilibrium $\mathbf{s}^*$, and reads stability from the eigenvalues of the constant matrix $J = D\mathbf{F}(\mathbf{s}^*)$. Everything downstream. Propositions 1 and 2, the estimators in the <a href="the-plumbing.html#measuring-the-loop">compliance paper</a>, the whole notion that "the" dominant eigenvalue is a property of the system: depends on $J$ being fixed over the window of observation.</p>
-<p>A system satisfying T6 does not have that property. It has $\dot{\mathbf{s}} = \mathbf{F}(\mathbf{s}, \mathbf{p})$ where the parameter vector $\mathbf{p}$ is itself modulated by the system in response to its own state, and specifically in response to its own proximity to the bifurcation:</p>
-<p>$$\dot{\mathbf{p}} = \mathbf{G}\big(\mathbf{s}, \|\mu - \mu_c\|\big)$$</p>
-<p>Two distinct problems follow, and they have different remedies.</p>
+<li id="fn31"><p><strong>The fixed-Jacobian problem, stated plainly.</strong></p>
+<p>The framework assumes the rules of the system do not themselves change while you are watching. It linearizes about an equilibrium and reads stability off a response fingerprint taken once, and treats that fingerprint as a standing property. Everything downstream. Propositions 1 and 2, the estimators in the <a href="the-plumbing.html#measuring-the-loop">compliance paper</a>, the whole notion that a system <em>has</em> a return rate: depends on the fingerprint holding still over the window of observation.</p>
+<p>A system satisfying T6 does not hold still. Its parameters are knobs the system turns on itself, in response to its own state, and specifically in response to how close it senses it is to the boundary. So the rate at which the knobs move is a function of the distance to the very threshold you were trying to measure. Two distinct problems follow, and they have different remedies.</p>
 <p><em>Non-autonomy.</em> If $\mathbf{p}$ merely varies slowly and exogenously, the standard machinery survives with care: the eigenvalues become slowly varying, "frozen-time" analysis is valid under a timescale separation, and this is the ordinary setting for early warning signals: a slowly ramped control parameter is what Scheffer's program assumes.</p>
 <p><em>State-dependent, threshold-triggered modulation.</em> This is the hard case and it is the one T6 describes. Because $\mathbf{G}$ depends on the distance to the bifurcation, the modulation switches on precisely when the eigenvalue approaches zero. The timescale separation that justified frozen-time analysis fails there, since the parameter dynamics become fast in the regime of interest. Worse, the feedback is stabilizing by design: the organization mobilizes to avoid the cliff, so the observed recovery is a composite of the original dynamics and the adaptive response, and the estimated $\lambda_1$ measures neither. It will typically look <em>better</em> than the underlying system, because you are measuring a system with its emergency response engaged.</p>
 <p>Note that this is not the rate-induced tipping problem of note 9, though the two compound: there the parameter moves too fast for the state to track, here the parameter's motion is itself caused by the state's proximity to threshold.</p>
