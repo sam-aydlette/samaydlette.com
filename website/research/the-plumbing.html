@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Automated Security Compliance - sam_aydlette</title>
+    <title>Security Risk as a Dynamical System - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
     <!-- KaTeX for math rendering (self-hosted; no third-party CDN. SA-9 / KSI-3IR) -->
@@ -50,7 +50,7 @@
                 <span class="article-category">Research</span>
             </div>
 
-            <h1 class="article-title">Automated Security Compliance: Evidence as a Continuous Output</h1>
+            <h1 class="article-title">Security Risk as a Dynamical System: Continuous Evidence, Measured Recovery, Real Leverage</h1>
 
             <div class="article-content">
                 <div class="article-summary">
@@ -116,7 +116,22 @@
                 <p><strong>One implementation, many frameworks.</strong> All of the above is written against NIST 800-53 Rev 5, once. From that single set of control implementations (<span data-figure="hub_handwritten">115</span> hand-written, the rest resolved by family-level defaults, <span data-figure="hub_total">333</span> in all), the pipeline projects a security plan for each framework a reader might ask about: FedRAMP Rev 5 Moderate (<span data-figure="moderate_coverage">333/333</span> requirements addressed), FedRAMP 20x Class C, NIST 800-53 Rev 4, CMMC Level 2 (<span data-figure="cmmc_coverage">110/110</span>), GovRAMP Moderate with the CJIS overlay (<span data-figure="govramp_coverage">339/339</span>), and TX-RAMP Levels 1 (<span data-figure="txramp1_coverage">122/122</span>) and 2 (<span data-figure="txramp2_coverage">322/322</span>). Each is a profile or a crosswalk plus one projection run; none required rewriting a control. A consuming organization gets the same treatment in reverse: a single check of its own configuration reports every framework requirement that check satisfies at once. The package is built to conform to FedRAMP's Consolidated Rules for 2026, mechanized ahead of the deadline rather than after it.</p>
 
                 <h3 id="measuring-the-loop">Measuring the loop</h3>
-                <p>If the worth of a compliance loop is set by how fast it closes, then the quantity to measure is recovery: how long a disturbance persists before the system is back where it belongs. That is measurable from telemetry a compliance program already emits. It is also the place where the obvious measurement is the wrong one, so this section is what the measurement takes, what to avoid, and what it would look like for the claim to fail. The formal treatment is in <a href="/research/tuning-the-eigenvalue.html">the essay</a>; what follows is the operational version.</p>
+                <p>If the worth of a compliance loop is set by how fast it closes, then the quantity to measure is recovery: how long a disturbance persists before the system is back where it belongs. That is measurable from telemetry a compliance program already emits. It is also the place where the obvious measurement is the wrong one, so this section is what the measurement takes, what to avoid, and what it would look like for the claim to fail. The <a href="/research/tuning-the-eigenvalue.html">companion essay</a> makes the case for measuring this at all, in words and without the algebra; the formal treatment is here.</p>
+
+                <h4 id="the-eigenvalue">The number being measured</h4>
+                <p>The <a href="/research/tuning-the-eigenvalue.html">companion essay</a> argues for this quantity in words and keeps the equations out on purpose. They belong here. What follows is the whole of the formal apparatus the rest of this section runs on, and every line of it carries a plain-language reading, because a formula nobody can state in a sentence is a formula nobody should act on.</p>
+                <p><strong>The convention, fixed once.</strong> Write the state as a displacement $\delta$ from the equilibrium the system rests at. Near that point the motion is $\dot{\delta} = -H\delta$, where $H$ is the <strong>stiffness matrix</strong>, measuring how steeply the basin walls rise in each direction. Its eigenvalues $0 &lt; \lambda_1 \le \lambda_2 \le \dots$ are <em>return rates</em>, and the smallest of them, $\lambda_1$, is the softest direction: the one that gives way first. Much of the literature works instead with the Jacobian $J = -H$, whose leading eigenvalue is $-\lambda_1$, and every sign below inverts under that reading. I count restoring stiffness so the number falls as the system gets worse, which is the direction a risk audience reads without having to translate. In plain language: $\lambda_1$ is how hard the system pulls itself back along its weakest direction. Zero means it no longer does.</p>
+                <p><strong>Critical slowing down.</strong></p>
+                <p>$$\tau = \frac{1}{\lambda_1} \to \infty \quad \text{as} \quad \lambda_1 \to 0^+$$</p>
+                <p>Recovery time is one over the return rate. As the restoring pull vanishes, the time to come back from a disturbance grows without bound. That divergence is what the whole measurement programme is chasing.</p>
+                <p><strong>Observable signatures.</strong> Drive that linear system with white noise of variance $\sigma^2_{\text{forcing}}$ and it becomes an Ornstein&ndash;Uhlenbeck process, whose stationary statistics along the softest direction are</p>
+                <p>$$\sigma^2 = \frac{\sigma^2_{\text{forcing}}}{2\lambda_1} \qquad \rho(\Delta t) = e^{-\lambda_1 \Delta t} \to 1 \ \text{ as } \ \lambda_1 \to 0^+$$</p>
+                <p>Variance rises because disturbances persist longer and pile up on each other. Lag-1 autocorrelation climbs toward one because a system recovering ever more slowly increasingly just repeats where it already was. Both are readable from a time series with no knowledge of the equations underneath, which is what makes them useful and also what makes them easy to over-read: they have one common cause, so observing both is a single measurement and not two.</p>
+                <p><strong>The square root, and why it is bad news.</strong> The canonical saddle-node is $dx/dt = \mu - x^2$, with $\mu$ the distance to the fold. Its equilibria sit at $x^* = \pm\sqrt{\mu}$, and on the stable branch the return rate is</p>
+                <p>$$\lambda_1 = 2\sqrt{\mu} \ \longrightarrow \ 0 \quad \text{as} \quad \mu \to 0^+$$</p>
+                <p>so recovery time diverges as $\mu^{-1/2}$. The return rate falls to zero as the <em>square root</em> of the distance to the tipping point, which is an unfriendly shape for a warning system. The signal is flat and small across most of the approach and then moves fast at the very end, so it is weakest over the interval where there would still be time to act on it. Every early-warning scheme built on this inherits that shape, and no amount of estimator work removes it.</p>
+                <p><strong>What none of it covers.</strong> Every expression above assumes $H$ holds still over the estimation window. <a href="/research/tuning-the-eigenvalue.html#what-is-still-open">The essay</a> is about why that assumption fails hardest in systems that reorganize when they sense their own boundary, which is the regime these methods exist to detect.</p>
+
 
                 <h4 id="the-model">The system being modeled</h4>
                 <p>The arguments below come from dynamical systems, and they apply to a system only once it has been defined. The object of study is a <em>staffed security operation</em>: a team with finite attention working a queue of vulnerabilities that arrives whether or not they are keeping up. Not this website, which is the special case at the end of this section.</p>
