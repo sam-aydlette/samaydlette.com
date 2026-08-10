@@ -68,7 +68,7 @@ env:
   # (/research/the-plumbing.html + its Sigstore bundle). When "true" the deploy
   # syncs, signs, and serves the paper. Set "false" to hold it back during a
   # revision (the draft stays in the repo either way).
-  PUBLISH_PLUMBING_PAPER: "true"
+  PUBLISH_PLUMBING_PAPER: "false"
   # The per-deploy stack now persists state in S3 (Task 16), so resources no
   # longer need re-importing every run. The import steps are skipped by default
   # and kept only as a disaster-recovery path: set REBUILD_STATE=true to

@@ -185,6 +185,12 @@ def load():
 
 def main():
     cur, base = load()
+    # The essay is sometimes replaced by a placeholder at its own URL while it
+    # is being rewritten. There is no prose to measure then, and crashing on a
+    # missing marker reads like a broken tool rather than an absent essay.
+    if START not in cur or END not in cur:
+        print('essay is a placeholder (no %s section) - nothing to measure' % START)
+        return 0
     region = cur[cur.index(START):cur.index(END)]
     b = base[base.index('id="authors-note"'):base.index('id="references"')]
     B = stats(prose(b))
