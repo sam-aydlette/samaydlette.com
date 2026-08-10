@@ -145,7 +145,16 @@ def _coverage_layers(components):
     for c in components:
         by_type.setdefault(c.get("type", "unknown"), []).append(c)
 
-    deps = sum(len(v) for t, v in by_type.items() if t in {"npm_package", "pypi_package"})
+    # deps_scanned counts what ships. Build-time packages are inventoried but
+    # are not part of the deployed dependency set, and folding them in would
+    # move a published figure without the thing it measures having changed.
+    dep_types = {"npm_package", "pypi_package"}
+    deps = sum(1 for c in components
+               if c.get("type") in dep_types
+               and c.get("attributes", {}).get("lifecycle", "runtime") != "build-time")
+    build_deps = sum(1 for c in components
+                     if c.get("type") in dep_types
+                     and c.get("attributes", {}).get("lifecycle") == "build-time")
     content = len(by_type.get("html_artifact", []))
     cloud_types = {t: v for t, v in by_type.items() if t not in NON_RUNTIME_TYPES}
     cloud = sum(len(v) for v in cloud_types.values())
@@ -158,6 +167,7 @@ def _coverage_layers(components):
     return {
         "total": len(components),
         "deps": deps,
+        "build_deps": build_deps,
         "content": content,
         "cloud": cloud,
         "cloud_types": len(cloud_types),
@@ -202,6 +212,7 @@ def compute_figures():
         # adequacy of the continuous checks
         "inventory_total": str(lay["total"]),
         "deps_scanned": str(lay["deps"]),
+        "build_deps_scanned": str(lay["build_deps"]),
         "content_hashed": str(lay["content"]),
         "cloud_components": str(lay["cloud"]),
         "cloud_types": str(lay["cloud_types"]),

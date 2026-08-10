@@ -904,22 +904,28 @@ jobs:
         # lockfile the canonical inventory reads are the same set — the scan
         # covers exactly the components the inventory names, not a superset.
         syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript || true
+        # The accessibility scanner. Build tooling, so it never deploys, but its
+        # output is policy input to the deploy gate and it is inventoried as a
+        # build-time component — anything the inventory names should be scannable
+        # against the same database on the same day.
+        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript || true
         # Grype each SBOM. `|| true` so a scan error still leaves a file behind.
         grype sbom:sbom-python.json -o json > grype-python.json || true
         grype sbom:sbom-js.json     -o json > grype-js.json     || true
         grype sbom:sbom-lambda.json -o json > grype-lambda.json || true
+        grype sbom:sbom-a11y.json   -o json > grype-a11y.json   || true
         # Normalize: any file that is missing/invalid/lacking .matches becomes an
         # empty match set so the merge below cannot fail and ingest_grype always
         # gets a valid top-level .matches[] array.
-        for f in grype-python.json grype-js.json grype-lambda.json; do
+        for f in grype-python.json grype-js.json grype-lambda.json grype-a11y.json; do
           jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
         done
         # Merge the two scans into one grype.json (single .matches[] array) that
         # --grype reads. The aggregator is what classifies and gates them.
         jq -s '{matches: (map(.matches) | add)}' \
-          grype-python.json grype-js.json grype-lambda.json > grype.json
+          grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json
         echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Silk Reeling Python + JS and the compliance Lambda"
-        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)"
+        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)  a11y: $(jq '.matches | length' grype-a11y.json)"
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't

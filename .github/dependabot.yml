@@ -15,6 +15,23 @@ updates:
       prefix: "deps(lambda)"
       include: "scope"
 
+  # The accessibility scanner. Security alerts already reached this lockfile
+  # (Dependabot raises those against every manifest it detects), but routine
+  # version updates did not, because only configured directories get them. That
+  # asymmetry is how it ended up three advisories behind on a transitive
+  # dependency with nobody bumping it.
+  - package-ecosystem: "npm"
+    directory: "/tools/a11y"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "build-tooling"
+    commit-message:
+      prefix: "deps(a11y)"
+      include: "scope"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
