@@ -18,6 +18,7 @@ from html.parser import HTMLParser
 FILES = [
     'website/research/tuning-the-eigenvalue.html',
     'website/research/the-plumbing.html',
+    'website/research/eigenvalue-risk-model.html',
     # Not long-form, but it links across the site (including to the dashboard), and
     # those edges are worth the same check.
     'website/index.html',

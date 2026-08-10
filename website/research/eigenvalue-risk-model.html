@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Eigenvalue Risk Model - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
+    <!-- KaTeX for math rendering (self-hosted; no third-party CDN. SA-9 / KSI-3IR) -->
+    <link rel="stylesheet" href="/assets/vendor/katex/katex.min.css">
+    <script defer src="/assets/vendor/katex/katex.min.js"></script>
+    <script defer src="/assets/vendor/katex/auto-render.min.js"></script>
+    <script defer src="/assets/vendor/katex/katex-init.js"></script>
+    <!-- Apply theme immediately to prevent flash -->
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link active">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card">
+            <div class="article-meta">
+                <span class="article-category">Research</span>
+            </div>
+
+            <h1 class="article-title">The Eigenvalue Risk Model: Fragile Directions in a Control Portfolio</h1>
+
+            <div class="article-content">
+                <div class="article-summary">
+                    <strong>A proposed model, with unvalidated parameters and an estimator that has not been built. It is the most rigorous thing in this project and therefore the most likely to be mistaken for a result.</strong>
+                </div>
+
+                <p>This is the technical note behind two other pages. <a href="/research/tuning-the-eigenvalue.html">Being in the Loop</a> argues in words that organizations sit at thresholds and that the number worth watching is how fast they recover. <a href="/research/the-plumbing.html">Security Risk as a Dynamical System</a> builds the pipeline that emits the telemetry and works a two-equation capacity model through on it. This page carries the general version: a state space over control families, a barrier between a healthy configuration and a breached one, and a set of directions along which that barrier is cheapest to cross.</p>
+
+                <p><strong>What this is not.</strong> Nothing here has been fitted to data. No parameter below has been measured. The estimator in <a href="#estimation">Estimating the stiffness</a> exists as a specification and not as code. Two of the model's own headline quantities are shown further down to be either unidentifiable from the data anyone actually has, or governed by the wrong law under the noise this domain actually exhibits. Those are not caveats appended at the end. They are the most useful things on the page, because they are the parts that can be checked and found wanting.</p>
+
+                <h3 id="intuition">The picture, in one paragraph</h3>
+                <p>An organization's security posture lives somewhere in a space of many dimensions. It normally rests in a <strong>healthy basin</strong>, a configuration it returns to after ordinary disturbances. Somewhere else in that space is a <strong>breached basin</strong> it would also stay in, and between them runs a ridge. Risk is not the rate at which the system returns to the bottom of the healthy basin, because that is just stability. Risk is how close the current state sits to the ridge and how large a shock is needed to push it over. The curvature of the basin says which directions are cheapest to push along; the height of the ridge says how much push it takes. As the ridge is approached the softest curvature collapses toward zero, and that collapse is visible in ordinary telemetry before anything tips.</p>
+
+                <h3 id="notation">Notation and orientation</h3>
+                <p><strong>The convention, and it is the same one the other two pages use.</strong> Write the state as a displacement $\delta$ from the healthy equilibrium. Near that point the motion is $\dot{\delta} = -H\delta$, where $H$ is the <strong>stiffness matrix</strong>: the second derivative of the potential, measuring how steeply the basin walls rise in each direction. Its eigenvalues are <em>return rates</em>,</p>
+                <p>$$H v_k = \lambda_k v_k, \qquad 0 &lt; \lambda_1 \le \lambda_2 \le \dots \le \lambda_n$$</p>
+                <p>and $\lambda_1$, the smallest, is the softest direction. Large $\lambda_k$ means a stiff direction that is expensive to push along. Small $\lambda_k$ means a weak restoring force, which is to say fragility. The Jacobian is $J = -H$, so the leading eigenvalue of the Jacobian is $-\lambda_1$; much of the dynamical-systems literature works that way and every sign here inverts under that reading. Everything is oriented so that <strong>larger is more dangerous</strong>: fragility rises toward 1, the barrier falls toward 0. The commonest implementation bug in a model of this shape is a flipped sign on one dimension.</p>
+                <p>This also settles an ambiguity a careful reader of the essay will have noticed. An eigenvalue is a return rate, so a <em>large</em> one is good; and the <em>smallest</em> one shrinking is what signals the approach to the ridge. Both are true. Along mode $k$ the recovery is $\delta_k(t) = \delta_k(0)e^{-\lambda_k t}$, so every $\lambda_k$ is a rate, and it is the smallest of them that gives way first while the others are still holding.</p>
+
+                <h3 id="state-space">The state space, and what choosing it costs</h3>
+                <p>The dimensions are the twenty NIST SP 800-53 Rev 5 control families: AC, AT, AU, CA, CM, CP, IA, IR, MA, MP, PE, PL, PM, PS, PT, RA, SA, SC, SI, SR. Each carries a fragility $x_i \in [0,1]$, with 0 healthy and 1 fully degraded, rolled up from the pass state of the controls in that family weighted by baseline tier, by how many other controls depend on it, and by published attack-relevance rankings such as the CIS Critical Security Controls.</p>
+                <p>Families rather than individual controls, because twenty dimensions can be estimated from real data and a thousand cannot. That is a defensible trade and it has a price worth stating plainly: <strong>the basis is administrative, not dynamical.</strong> The twenty families are a taxonomy built for auditability. Nothing guarantees that the directions a system actually moves along line up with the way NIST grouped controls, so the components of a fragile direction will partly describe the dynamics and partly describe the filing system. The choice buys interpretability and estimability, and it costs the assurance that an eigenvector means what it appears to mean. A finding that a particular combination of families is soft should be read as a hypothesis about the system, checkable against incidents, rather than as a measurement of its geometry.</p>
+
+                <h3 id="dynamics">Dynamics, and the approximation that makes leverage trivial</h3>
+                <p>Write $\dot{x} = f(x) + \eta(t)$ with $\eta$ a shock term: new vulnerabilities, intrusion attempts, whatever arrives uninvited. Assume $f$ has two stable fixed points with basins separated by a ridge through a saddle.</p>
+                <p>The tractable first version takes $f$ to be a <strong>gradient flow</strong>, $\dot{x} = -\nabla V(x) + \eta$, which guarantees the two-basin picture and makes the barrier language exact instead of metaphorical. It is the honest starting point. It also has a consequence that has to be said out loud rather than left for a reader to discover:</p>
+                <p><strong>The gradient assumption destroys the leverage argument.</strong> A gradient flow has a symmetric $H$, and a symmetric matrix has left and right eigenvectors that coincide. Where the system moves when disturbed and where you would push to move it become the same direction. The whole left-versus-right distinction that <a href="/research/the-plumbing.html#leverage">the leverage material</a> in the companion paper is built on collapses to nothing. So the gradient form is the approximation in which leverage is trivial, and the leverage argument is a claim about <em>non-normal</em> systems specifically. The two frames cannot be used interchangeably, and this page tries never to do so.</p>
+                <p>Real security posture is not conservative. An adversary adapting to defences is a circulating flow rather than a downhill roll, and circulation is exactly the antisymmetric part that the gradient form throws away. When an estimated $H$ turns out to be non-symmetric, that is the signature of the interesting dynamics and should be reported rather than smoothed off.</p>
+
+                <h4 id="non-normality">Non-normality, and why eigenvalues can be the wrong thing to watch</h4>
+                <p>Dropping symmetry costs more than the leverage argument gains. A <strong>non-normal</strong> matrix has eigenvectors that are not orthogonal and can be nearly linearly dependent, and for such a system the eigenvalues describe only what happens in the long run. A non-normal system can have every eigenvalue comfortably stable, so that every mode decays and the model reports a healthy margin, and still amplify a disturbance by orders of magnitude <em>transiently</em> — enough to carry the state over the ridge while no eigenvalue has moved at all.</p>
+                <p>The direction of maximum transient growth is not $v_1$. It comes from the singular values of the propagator $e^{-Ht}$, which is a different computation answering a different question. The reference point is the pseudospectra literature: for a normal matrix the pseudospectral contours hug the eigenvalues, and for a non-normal one they can extend a long way from them, which is a measure of how misleading the eigenvalues are.<sup><a href="#refs">refs</a></sup></p>
+                <p>This is a limitation on the whole model and not a footnote to one section. Every early-warning quantity below is an eigenvalue quantity, so every one of them can read healthy while a non-normal system is one transient away from the ridge. I have not established the size of the effect for anything resembling this state space, and until a planted-and-recovered experiment says otherwise the honest position is that the model watches the long run and is blind to the transient.</p>
+
+                <h3 id="barrier">The barrier, and the score I am not going to promote</h3>
+                <p>The activation energy for a crossing is the height of the ridge above the healthy resting point, $\Delta V = V(x^*_S) - V(x^*_H)$. Locally it scales as $\Delta V \sim \tfrac{1}{2}\lambda_1 d_1^2$, where $d_1$ is the distance to the saddle along the fragile direction — an order-of-magnitude relation and not an identity, since the potential is not quadratic all the way up. The reading is that a barrier is high only when the soft direction is <em>both</em> stiff and far from the ridge. Softening alone erodes it, and drift alone erodes it.</p>
+                <p>It is tempting to normalise that against a baseline and put $R = 1 - \Delta V/\Delta V_0$ at the top of a dashboard as the single number. I am not going to, and the reason is that both companion pages argue against exactly this. The essay's subject is what happens to people who read a number instead of the thing it summarises. The compliance paper refuses to treat its own coverage ratio as a score to maximise, on the grounds that a promoted scalar gets optimised.</p>
+                <p>This model is unusually specific about what would happen. A promoted $R$ gets optimised, and the model itself says which way the optimiser will push: along whichever direction moves $R$ per unit of effort, which is the soft direction, which means the cheapest way to raise the score is to work on whatever the score is most sensitive to rather than on whatever is most dangerous. Those coincide only if the model is right. Goodhart's law with the gradient written down.</p>
+                <p>What is meant for human attention is the per-family decomposition in the next section, which says <em>which families, in what combination</em>, are currently eroding the barrier. That is a list a person can act on and argue with. A scalar is not.</p>
+
+                <h3 id="fragility">Fragility weighting, and a quantity I had mislabelled</h3>
+                <p>Weighting every family equally wastes the geometry. Measuring displacement in the inverse-stiffness metric amplifies motion along soft directions automatically:</p>
+                <p>$$\rho = \sum_{k=1}^{n} \frac{(v_k^{\top}\delta)^2}{\lambda_k} = \delta^{\top} H^{-1} \delta$$</p>
+                <p>A unit of displacement along a soft direction contributes far more than the same displacement along a stiff one, which is the intended behaviour. The quantity is right and I had the name wrong. I called it a Mahalanobis-type norm; it is close to the opposite. Under equipartition, $\Sigma_\eta = 2\sigma^2 I$, the stationary covariance is $\Sigma = \sigma^2 H^{-1}$, so $\rho \propto \delta^{\top}\Sigma\,\delta$. The Mahalanobis distance is $\delta^{\top}\Sigma^{-1}\delta$, which weights high-variance directions <em>least</em>. This weights them <em>most</em>. Same shape, inverted role, and the inversion is the entire point of the quantity.</p>
+                <p>Getting the name right has a practical consequence worth more than the correction. If $\rho \propto \delta^{\top}\Sigma\delta$, then $\rho$ can be estimated straight from the observed covariance of the family scores, with no need to solve for $H$ at all. That makes it the most reachable quantity in the model by a wide margin, and it decomposes per family, so it is also the one meant for human attention. The rest of this page is about quantities that are much harder to get.</p>
+
+                <h3 id="escape">Escape, and the law that fails in this domain</h3>
+                <p>Shocks are random, so the operational question is how often one is large enough to cross. For noise-driven escape over a barrier the standard result is Kramers–Arrhenius: the mean time to escape goes as $e^{\Delta V/\sigma^2}$, exponential in the barrier height and inverse in the shock intensity. Two readings follow, and both are appealing. Breach probability is exponential in the barrier, so small erosion produces large increases in tip rate, which is why steady drift feels safe right up until it does not. And it couples defence to threat: the same posture is safe in quiet conditions and fragile under a surge.</p>
+                <p><strong>It does not hold here, and the reason comes from this project's own data.</strong> Kramers–Arrhenius is a weak-noise, light-tailed, gradient-flow result. It describes escape by the accumulation of many small fluctuations, which is why the barrier height appears in an exponent: you are waiting for a lot of small pushes to line up. The compliance paper spends a section establishing that operational data in this domain is <a href="/research/the-plumbing.html#why-not-mttr">heavy-tailed</a>, and uses that fact to discard mean-based metrics.</p>
+                <p>Under heavy-tailed shocks the escape mechanism changes character. Escape is dominated by single large jumps rather than by accumulated small ones, and a jump is not impeded by the barrier it clears. Mean escape time follows a power law in the noise intensity instead of an exponential, and it depends on the <em>width</em> of the barrier rather than its <em>height</em>.<sup><a href="#refs">refs</a></sup> So $\Delta V$, the quantity this page spent two sections building toward, stops being what governs the escape rate.</p>
+                <p>This is the sharpest thing on the page and I would rather lead with it than bury it. The model's own escape law is invalidated by a noise property the same project documented, in the same domain, for an unrelated reason. It is not a hypothetical objection borrowed from a literature; it is an internal collision between two things I wrote. What survives is the geometry — the fragile direction, the per-family decomposition of $\rho$, the ordering of which families are soft. What does not survive is any statement of the form "the barrier is high, therefore breach is unlikely."</p>
+
+                <h3 id="estimation">Estimating the stiffness, and the two obstacles</h3>
+                <p>The attraction of the whole construction is that the approach to the ridge should be measurable from ordinary telemetry without knowing $f$ or $V$. As $\lambda_1 \to 0$, return time rises as $1/\lambda_1$, variance along the fragile direction rises, and lag-1 autocorrelation of the family scores rises toward one.</p>
+
+                <h4 id="identifiability">The stationary covariance is not enough</h4>
+                <p>The obvious estimator models fluctuations around the healthy point as a multivariate Ornstein–Uhlenbeck process, $\dot{\delta} = -H\delta + \eta$, whose stationary covariance satisfies the Lyapunov equation $H\Sigma + \Sigma H^{\top} = \Sigma_\eta$, and then solves that for $H$ given a windowed estimate of $\Sigma$ and an assumed $\Sigma_\eta$. That is what I originally specified, and it does not work in general.</p>
+                <p>Count the unknowns. $H$ has $n^2$ entries. Both sides of the Lyapunov equation are symmetric, so it supplies only $n(n+1)/2$ independent equations. The shortfall is $n(n-1)/2$, which is exactly the dimension of the antisymmetric matrices — and indeed for any antisymmetric $Q$, the matrix $H' = H + Q\Sigma^{-1}$ satisfies the same equation, because the extra terms are $Q + Q^{\top} = 0$. <strong>The stationary covariance determines the symmetric part of the stiffness and says nothing about the rest.</strong> Under the gradient assumption that is harmless, since $H$ is symmetric there. Away from it, the antisymmetric part is precisely the adaptive-adversary circulation that makes the model interesting, and it is invisible to this estimator.</p>
+                <p>This is not a small correction. Run at twenty dimensions with a deliberately non-symmetric $H$, two stiffness matrices with identical stationary covariance and identical assumed shock covariance can differ substantially in their softest return rate — in a five-dimensional check I ran while writing this, 5.81 against 7.66. The headline early-warning quantity is not identified by the data the estimator was going to be fed.</p>
+                <p>The fix is to use time-lagged covariance, which carries the time-asymmetry the stationary covariance has thrown away. For the same process, $\Sigma(\tau) = e^{-H\tau}\Sigma(0)$, so</p>
+                <p>$$H = -\frac{1}{\tau}\,\log\!\big(\Sigma(\tau)\,\Sigma(0)^{-1}\big)$$</p>
+                <p>using the matrix logarithm. This recovers the full $H$, antisymmetric part included, and it has a second advantage: it never requires $\Sigma_\eta$, which was the least knowable quantity in the original specification. On synthetic data with a planted $H$ this recovers the planted matrix to numerical precision. That is the version to build, and building it against a planted matrix is the first milestone, ahead of any claim about real telemetry.</p>
+
+                <h4 id="autocorrelation">Rising autocorrelation has a mundane explanation</h4>
+                <p>The flagship early-warning signal is rising lag-1 autocorrelation of the family scores. In this data it is confounded, and the confound is structural rather than statistical.</p>
+                <p>A failing control stays failing until somebody fixes it. So the autocorrelation of a control-score series is substantially a measurement of remediation latency. If remediation slows because of staffing, competing priorities, a holiday, or a hiring freeze, autocorrelation rises — with no change whatever in the system's proximity to any separatrix. Critical slowing down and an understaffed quarter produce the same signature in the same series.</p>
+                <p>What would distinguish them is perturbation response. Critical slowing down predicts that the recovery <em>rate</em> after an identified disturbance of known size degrades; a remediation backlog predicts that the recovery rate is unchanged while the queue is longer. Those come apart under the per-event fitting the compliance paper already prefers over pooled statistics, which is a second and independent reason to prefer it. Until that is instrumented, a rising autocorrelation in this data should be read as a statement about the team before it is read as a statement about the barrier.</p>
+
+                <h4 id="sample-size">How much data this needs</h4>
+                <p>Twenty dimensions means a covariance matrix with 210 independent entries. Estimating it stably needs a number of independent observations several times that, and daily telemetry from a single operator produces one observation per day. The series required before an estimate means anything is measured in years, not months. Worse, control scores in a working system sit pinned near their boundary, so there is very little variance to estimate from in the first place — the same problem the compliance paper describes when it says a control that is working suppresses the variation you would need in order to measure how well it is working.</p>
+                <p>Reducing the dimension would help and would cost the per-family interpretability that is the model's main practical virtue. I have not resolved that trade and do not want to pretend it is resolved.</p>
+
+                <h3 id="status">What is solid, what is not</h3>
+                <p>Solid enough to build against: the state space and the rollup; the local eigen-analysis and the per-family decomposition of $\rho$; the lagged-covariance estimator as a specification. Reachable soonest: $\rho$ itself, which needs only the observed covariance.</p>
+                <p>Not established, and load-bearing: the global form of $V$, and therefore the location of the saddle, and therefore $\Delta V$ in absolute terms; the weight blend; the shock intensity; whether the empirical stiffness is symmetric; and whether any of the twenty-dimensional geometry survives contact with a real incident.</p>
+                <p><strong>The first milestone is a test this model can fail.</strong> Generate synthetic family-score series from a planted gradient double-well. Check that the lagged-covariance estimator recovers the planted stiffness. Then lower the barrier deliberately and check that variance and autocorrelation rise the way the theory says. If the estimator cannot recover a matrix that was put there on purpose, in data generated by the model's own assumptions, then nothing downstream is worth attempting on real telemetry. That result would be worth publishing too.</p>
+
+                <h3 id="refs">Sources</h3>
+                <ol>
+                    <li>Trefethen, L.N., &amp; Embree, M. (2005). <em>Spectra and Pseudospectra: The Behavior of Nonnormal Matrices and Operators</em>. Princeton University Press. The reference for transient growth in non-normal systems and for why eigenvalues alone can mislead.</li>
+                    <li>Imkeller, P., &amp; Pavlyukevich, I. (2006). "First exit times of SDEs driven by stable Lévy processes." <em>Stochastic Processes and their Applications</em> 116, 611-642. Escape under heavy-tailed noise is single-jump dominated, with power-law rather than exponential mean exit times.</li>
+                    <li>Ditlevsen, P.D. (1999). "Observation of α-stable noise induced millennial climate changes from an ice-core record." <em>Geophysical Research Letters</em> 26(10), 1441-1444. The worked case of heavy-tailed noise driving transitions in a real bistable system.</li>
+                    <li>Kramers, H.A. (1940). "Brownian motion in a field of force and the diffusion model of chemical reactions." <em>Physica</em> 7(4), 284-304. The light-tailed result the escape section departs from.</li>
+                    <li>Caswell, H. (1978). "A general formula for the sensitivity of population growth rate to changes in life history parameters." <em>Theoretical Population Biology</em> 14, 215-230. Eigenvalue sensitivity via left and right eigenvectors, which is the leverage formula in the companion paper.</li>
+                    <li>NIST SP 800-53 Rev 5, <em>Security and Privacy Controls for Information Systems and Organizations</em>. The source of the twenty control families used as the state space.</li>
+                </ol>
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1777894583070"></script>
+</body>
+</html>
