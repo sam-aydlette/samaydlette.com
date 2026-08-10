@@ -82,13 +82,13 @@
                 <p>What this pipeline can honestly demonstrate is the instrumentation: that a compliance program can be made to emit a continuous, signed, independently checkable record of its own state at all. It does not demonstrate that such a record is a sufficient basis for predicting failure, and nothing here should be read as claiming it does.</p>
 
                 <h4 id="what-the-verdict-covers">What the verdict covers</h4>
-                <p>A daily verdict of <em>converged, no regressions</em> is only worth what it covers, so here is the coverage, and it is layered rather than uniform. The canonical inventory currently holds <span data-figure="inventory_total">214</span> components, checked by three mechanisms on three different cadences.</p>
+                <p>A daily verdict of <em>converged, no regressions</em> is only worth what it covers, so here is the coverage, and it is layered rather than uniform. The canonical inventory currently holds <span data-figure="inventory_total">215</span> components, checked by three mechanisms on three different cadences.</p>
                 <table>
                 <colgroup><col class="col-w-19" /><col class="col-w-33" /><col class="col-w-48" /></colgroup>
                 <thead><tr class="header"><th>Components</th><th>Mechanism</th><th>Cadence</th></tr></thead>
                 <tbody>
                 <tr class="odd"><td><span data-figure="deps_scanned">140</span> dependencies</td><td>Grype and Dependabot against the dependency set</td><td>every build, plus a daily rebuild against a freshly pulled vulnerability database</td></tr>
-                <tr class="even"><td><span data-figure="content_hashed">43</span> content artifacts</td><td>sha256 reconciliation against the inventory</td><td>every deploy</td></tr>
+                <tr class="even"><td><span data-figure="content_hashed">44</span> content artifacts</td><td>sha256 reconciliation against the inventory</td><td>every deploy</td></tr>
                 <tr class="odd"><td><span data-figure="cloud_components">31</span> cloud resources</td><td>policy re-evaluation against the live account</td><td>daily, and this is the layer with a gap</td></tr>
                 </tbody>
                 </table>
