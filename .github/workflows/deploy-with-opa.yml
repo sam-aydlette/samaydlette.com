@@ -855,16 +855,29 @@ jobs:
 
     # -------------------------------------------------------------------------
     # SCAN SILK REELING DEPENDENCIES (Software Composition Analysis) — closes the
-    # VDR-CSO-DET gap for the Silk Reeling app. Dependabot watches only this
-    # repo's npm/Terraform/Actions manifests; the app's dep manifests live in the
-    # separate silk-reeling-mirror repo and reach production via the slim Lambda
-    # zip (_pkg) and the SPA bundle. Syft inventories both dependency trees and
-    # Grype maps them to CVEs/GHSAs. The VDR aggregator (downstream) is what
+    # Dependency SCA for everything that reaches production. Three trees, and
+    # they get here by different routes:
+    #
+    #   _pkg               Silk Reeling's Python deps, staged for its Lambda zip.
+    #   _silk_src/frontend Silk Reeling's SPA. Both manifests live in the separate
+    #                      silk-reeling-mirror repo, so Dependabot never sees them
+    #                      — this scan is the only CVE coverage they get.
+    #   lambda             The compliance/KSI Lambda's own npm tree. Dependabot
+    #                      DOES watch this manifest, but Dependabot alerts are not
+    #                      the VDR: until this scan existed, 106 of the inventory's
+    #                      140 dependency components were in the canonical
+    #                      inventory and in the authorization boundary while never
+    #                      being CVE-mapped into the published vulnerability
+    #                      report. The coverage table claimed Grype covered the
+    #                      dependency set; it covered 34 of it.
+    #
+    # Syft inventories each tree and Grype maps them to CVEs/GHSAs. The VDR
+    # aggregator (downstream) is what
     # evaluates and enforces the Class C remediation SLAs, so this step never
     # fails the build on findings — it only has to emit a valid grype.json.
     # Runs unconditionally on the deploy path, mirroring the build step above.
     # -------------------------------------------------------------------------
-    - name: Scan Silk Reeling dependencies (Syft SBOM + Grype)
+    - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
       run: |
         set +e   # SCA findings must never fail the build; the VDR gate does that
@@ -885,19 +898,28 @@ jobs:
         # golang/stdlib findings that are in neither the Lambda nor the browser.
         syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python     || true
         syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript || true
+        # The compliance Lambda's own tree. node_modules is present because the
+        # "Install Lambda dependencies" step above ran `npm ci --omit=dev` in this
+        # same job. It has no devDependencies, so the installed tree and the
+        # lockfile the canonical inventory reads are the same set — the scan
+        # covers exactly the components the inventory names, not a superset.
+        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript || true
         # Grype each SBOM. `|| true` so a scan error still leaves a file behind.
         grype sbom:sbom-python.json -o json > grype-python.json || true
         grype sbom:sbom-js.json     -o json > grype-js.json     || true
+        grype sbom:sbom-lambda.json -o json > grype-lambda.json || true
         # Normalize: any file that is missing/invalid/lacking .matches becomes an
         # empty match set so the merge below cannot fail and ingest_grype always
         # gets a valid top-level .matches[] array.
-        for f in grype-python.json grype-js.json; do
+        for f in grype-python.json grype-js.json grype-lambda.json; do
           jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
         done
         # Merge the two scans into one grype.json (single .matches[] array) that
         # --grype reads. The aggregator is what classifies and gates them.
-        jq -s '{matches: (map(.matches) | add)}' grype-python.json grype-js.json > grype.json
-        echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Python + JS deps"
+        jq -s '{matches: (map(.matches) | add)}' \
+          grype-python.json grype-js.json grype-lambda.json > grype.json
+        echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Silk Reeling Python + JS and the compliance Lambda"
+        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)"
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
