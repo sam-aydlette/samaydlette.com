@@ -352,3 +352,44 @@
     font-style: italic;
     opacity: 0.8;
 }
+
+/* Placeholder shown at the URL of a piece that has been taken down while it is
+   rewritten. The page stays at its own address rather than 404ing or
+   redirecting: an inbound link from an article, the dashboard or a search
+   result should explain itself, not dead-end. Paired with .article-card.revising
+   on the listing pages so the state is visible before the click, too. */
+.revising-notice .revising-badge {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 1px solid var(--border-color, #d0d0d0);
+    border-radius: 3px;
+    padding: 0.1rem 0.45rem;
+    opacity: 0.75;
+}
+
+.revising-notice .revising-lede {
+    font-size: 1.15rem;
+    line-height: 1.5;
+    border-left: 3px solid var(--border-color, #d0d0d0);
+    padding-left: 1rem;
+    margin-bottom: 1.4rem;
+}
+
+/* Listing state: readable, clearly not available, and still explaining itself. */
+.article-card.revising .article-title a {
+    opacity: 0.55;
+    text-decoration-style: dotted;
+}
+
+.article-card.revising > p {
+    opacity: 0.6;
+}
+
+.article-card.revising .revising-note {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    opacity: 0.8;
+}
