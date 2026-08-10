@@ -322,6 +322,8 @@ jobs:
         manage_dns = ${{ vars.MANAGE_DNS || 'true' }}
         compliance_check_schedule = "${{ vars.COMPLIANCE_SCHEDULE || 'rate(1 day)' }}"
         section_508_compliance_level = "${{ vars.SECTION_508_LEVEL || 'AA' }}"
+        create_silk_reeling = true
+        silk_reeling_package_path = "./silk-reeling.zip"
         EOF
 
     # -------------------------------------------------------------------------
@@ -402,6 +404,39 @@ jobs:
     # serializes runs on the SAME ref, so plans from different open PRs can
     # race for the lock. -lock-timeout makes a contending plan wait its turn
     # instead of failing the check.
+    # The Silk Reeling resources are gated behind create_silk_reeling, and this
+    # job now sets it true so the plan describes the same resource set the deploy
+    # job applies. Without that the count collapsed to zero and EVERY pull
+    # request planned to destroy 19 live resources — identically, whether the PR
+    # touched infrastructure or bumped a GitHub Action. The gate passed anyway,
+    # so it was evaluating a configuration that would tear down the app, and
+    # returning the same answer regardless of its input.
+    #
+    # Turning the flag on needs a file to exist: the Lambda computes
+    # source_code_hash = filebase64sha256(var.silk_reeling_package_path), which
+    # terraform evaluates at PLAN time and errors on if the path is missing. This
+    # job cannot build the real package — that needs the mirror repository, whose
+    # token is not available here and is not in the Dependabot secret store at
+    # all, so dependency PRs could never build it. A placeholder satisfies the
+    # hash so the other resources plan against their real configuration.
+    #
+    # Consequence to expect, and to leave alone: the Lambda itself shows a diff
+    # on filename/source_code_hash, because the placeholder is not the deployed
+    # package. That is one known-noisy resource in exchange for the rest planning
+    # honestly. This job never applies — the only terraform apply is in the
+    # deploy job, which builds the real package first.
+    - name: Stage a placeholder Silk Reeling package for planning
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        rm -rf _silk_stub silk-reeling.zip
+        mkdir -p _silk_stub
+        printf 'def handler(event, context):\n    raise RuntimeError("plan-only placeholder")\n' \
+          > _silk_stub/lambda_handler.py
+        ( cd _silk_stub && zip -qr ../silk-reeling.zip . )
+        rm -rf _silk_stub
+        test -s silk-reeling.zip && echo "placeholder staged for plan only (never applied)"
+
     - name: Terraform Plan
       working-directory: infrastructure
       run: terraform plan -lock-timeout=300s -out=tfplan
