@@ -1226,7 +1226,16 @@ def build_system_implementation(signal):
         })
 
     # Summary of software components (npm packages from the Lambda runtime).
-    npm_count = sum(1 for c in signal.get("components", []) if c.get("type") == "npm_package")
+    # Build-time packages are inventoried too (the accessibility scanner), and
+    # they are NOT part of the Lambda's runtime stack: counting them here would
+    # describe CI tooling as running inside the deployed function.
+    npm_runtime = [c for c in signal.get("components", [])
+                   if c.get("type") == "npm_package"
+                   and c.get("attributes", {}).get("lifecycle", "runtime") != "build-time"]
+    npm_build = [c for c in signal.get("components", [])
+                 if c.get("type") == "npm_package"
+                 and c.get("attributes", {}).get("lifecycle") == "build-time"]
+    npm_count = len(npm_runtime)
     if npm_count:
         components.append({
             "uuid": stable_uuid("component:lambda-software-stack"),
@@ -1243,6 +1252,33 @@ def build_system_implementation(signal):
             "props": [
                 {"name": "package-count", "value": str(npm_count)},
                 {"name": "ecosystem", "value": "npm"},
+                {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
+            ],
+            "status": {"state": "operational"},
+        })
+
+    # Build-time software: inventoried, not deployed. Kept as its own component
+    # so a reader can see that the boundary distinction is deliberate rather
+    # than inferring it from a count that does not add up.
+    if npm_build:
+        components.append({
+            "uuid": stable_uuid("component:build-time-software-stack"),
+            "type": "software",
+            "title": "Build-time software stack",
+            "description": (
+                f"Aggregated software components ({len(npm_build)} npm packages) "
+                "that run only in the build pipeline and are never deployed. "
+                "Currently the accessibility scanner, whose output the deploy "
+                "gate evaluates as policy input, which is why it is inventoried "
+                "rather than treated as out of scope. The full PURL-identified "
+                "enumeration is in the canonical inventory at "
+                "/.well-known/ksi-signal.json (components[] where type == "
+                "'npm_package' and attributes.lifecycle == 'build-time')."
+            ),
+            "props": [
+                {"name": "package-count", "value": str(len(npm_build))},
+                {"name": "ecosystem", "value": "npm"},
+                {"name": "lifecycle", "value": "build-time"},
                 {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
             ],
             "status": {"state": "operational"},

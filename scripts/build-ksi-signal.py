@@ -870,8 +870,24 @@ def build_live_log_groups(existing_components, region="us-east-2"):
     return new
 
 
-def build_npm_components(lock_path):
-    """Read package-lock.json (lockfileVersion 3) and emit npm components."""
+def build_npm_components(lock_path, function=None, lifecycle="runtime",
+                         existing_components=None):
+    """Read package-lock.json (lockfileVersion 3) and emit npm components.
+
+    lifecycle distinguishes what a package is doing here. "runtime" means it
+    ships and executes in the deployed system. "build-time" means it runs only
+    in CI and is never deployed — build tooling whose output the pipeline
+    nonetheless trusts, which is why it is inventoried rather than ignored.
+
+    function overrides the per-type IIW default, which is written for the
+    compliance Lambda and is false for anything else; passing the wrong one
+    silently mislabels every component from that tree.
+
+    existing_components dedupes by PURL across sources, because the same
+    package@version can appear in more than one lockfile and the inventory holds
+    one component per PURL. Earlier callers win, so a package that is both
+    shipped and used at build time keeps its runtime classification.
+    """
     if not lock_path.exists():
         return []
     try:
@@ -880,7 +896,8 @@ def build_npm_components(lock_path):
         print(f"warning: could not parse {lock_path}", file=sys.stderr)
         return []
     components = []
-    seen = set()
+    seen = {c.get("global_id", {}).get("purl")
+            for c in (existing_components or [])} - {None}
     for path, info in (lock.get("packages") or {}).items():
         if path == "":
             # The root package is the Lambda itself, not a dependency.
@@ -913,6 +930,9 @@ def build_npm_components(lock_path):
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
+        component["attributes"]["lifecycle"] = lifecycle
+        if function:
+            component["attributes"]["function"] = function
         components.append(component)
     return components
 
@@ -1375,6 +1395,7 @@ def main():
     repo_root = cwd.parent
     website_root = repo_root / "website"
     lambda_lock = cwd / "lambda" / "package-lock.json"
+    a11y_lock = repo_root / "tools" / "a11y" / "package-lock.json"
     # CycloneDX SBOMs written by the deploy workflow's Syft SCA step (run from
     # this same infrastructure/ directory) for the Silk Reeling app's dependency
     # trees. Absent when that app wasn't built — build_sbom_components no-ops.
@@ -1406,6 +1427,19 @@ def main():
     # missed.
     components.extend(build_live_log_groups(components))
     components.extend(build_npm_components(lambda_lock))
+    # The accessibility scanner is build tooling: it never deploys and holds no
+    # data. It is inventoried anyway because it is not inert. Its own manifest
+    # calls it a "fact-producer for the OPA gate" — pa11y emits the facts that
+    # infrastructure/policy/accessibility.rego makes a pass/fail decision on, so
+    # a compromised dependency there could make a failing site pass a compliance
+    # gate. That is an integrity path into a control decision, and a supply
+    # chain that can influence a gate belongs in the inventory that the gate is
+    # reconciled against. Marked build-time so it never reads as deployed.
+    components.extend(build_npm_components(
+        a11y_lock,
+        function="Build-time dependency of the accessibility fact-producer (npm)",
+        lifecycle="build-time",
+        existing_components=components))
     # Ingest the Silk Reeling app's resolved dependency trees from the Syft
     # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and
     # SPA (npm) packages, not just the compliance Lambda's npm packages. Each
