@@ -10,10 +10,14 @@ backlink at the end of the definition; both conventions survive the remap.
 
     python3 tools/essay/renumber.py
 """
+import os
 import re
 import sys
 
-FILE = 'website/research/tuning-the-eigenvalue.html'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import ESSAY
+
+FILE = ESSAY
 SPLIT = '<section id="footnotes"'
 
 

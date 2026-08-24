@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prose-rules measurement for tuning-the-eigenvalue.html.
+"""Prose-rules measurement for staying-in-the-loop.html.
 
 Eight levers, measured against the author's own baseline (pinned revision):
   1 xref        cross-referential scaffolding (Section N, note N, Appendix X, Query N)
@@ -28,13 +28,16 @@ import re
 import subprocess
 import sys
 
-FILE = 'website/research/tuning-the-eigenvalue.html'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import BASELINE_ESSAY, BASELINE_REV, ESSAY
+
+FILE = ESSAY
 # The whole body, matching the span the baseline is measured over. This was
 # scoped to the problem region during the prose pass; the restructure since then
 # has rewritten everything, and the front matter had never been measured at all,
 # which is how "an exploration, not a proof" and a stray honesty claim survived
 # four cleanup passes in the Author's Note.
-START = 'id="authors-note"'
+START = 'id="essay-body"'
 END = 'id="references"'
 
 # TWO baselines, because they answer different questions.
@@ -42,7 +45,10 @@ END = 'id="references"'
 # STRUCTURAL levers (cross-references, essay self-reference) are genre-bound: a
 # memoir has no reason to say "Section 4.2". Those calibrate against the essay as
 # it stood before the July 2026 revision, pinned by sha.
-BASELINE_REV = '6e016a9c6453bc14b9d48ffa7c89333dac7214cf'
+# BASELINE_REV and BASELINE_ESSAY both come from paths.py. They are a fixed
+# point in history: the revision predates the rename, so the file it names is
+# the path the essay had then, not the path it has now.
+BASELINE_FILE = BASELINE_ESSAY
 #
 # VOICE levers (the tic families, sentence rhythm) must NOT calibrate against that
 # text, because it is itself partly machine-written, so any tic present in both it
@@ -178,7 +184,7 @@ def per1k(s, k):
 
 def load():
     cur = open(FILE).read()
-    base = subprocess.run(['git', 'show', BASELINE_REV + ':' + FILE], capture_output=True,
+    base = subprocess.run(['git', 'show', BASELINE_REV + ':' + BASELINE_FILE], capture_output=True,
                           text=True, check=True).stdout
     return cur, base
 

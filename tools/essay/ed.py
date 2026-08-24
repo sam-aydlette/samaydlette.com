@@ -6,7 +6,13 @@ Usage:
     ed.commit('3.5')
 Nothing is written unless every pattern matched exactly once.
 """
-FILE = 'website/research/tuning-the-eigenvalue.html'
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import ESSAY
+
+FILE = ESSAY
 ND = '–'
 _edits = []
 

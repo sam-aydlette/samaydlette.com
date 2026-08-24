@@ -10,11 +10,15 @@ drone safety monitor and a magazine article about bunkers.
 """
 import importlib.util
 import pathlib
+import sys
 
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-ESSAY = ROOT / 'website' / 'research' / 'tuning-the-eigenvalue.html'
+sys.path.insert(0, str(ROOT / 'tools' / 'essay'))
+from paths import ESSAY as ESSAY_REL
+
+ESSAY = ROOT / ESSAY_REL
 
 
 def load(tmp_file):

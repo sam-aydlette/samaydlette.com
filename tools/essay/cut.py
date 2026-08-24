@@ -8,9 +8,14 @@ left in a state the gate rejects.
     cut.section('theory-as-extension')
     cut.commit()
 """
+import os
 import re
+import sys
 
-FILE = 'website/research/tuning-the-eigenvalue.html'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import ESSAY
+
+FILE = ESSAY
 _pending = []
 
 
