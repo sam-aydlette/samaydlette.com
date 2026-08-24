@@ -9,5 +9,12 @@
       "decided_on": "2026-06-13"
     }
   },
-  "dispositions": {}
+  "dispositions": {
+    "grype-GHSA-jmr9-qjv8-65gv-pkg:npm/extract-zip@2.0.1": {
+      "disposition": "false-positive",
+      "justification": "Out of the authorization boundary. GHSA-jmr9-qjv8-65gv affects extract-zip 2.0.1, which is present only in tools/a11y/ as a transitive dependency of the accessibility scanner (pa11y -> puppeteer -> @puppeteer/browsers -> extract-zip). tools/a11y is build tooling: it runs in CI to produce policy input for the deploy gate and is never packaged or deployed. It is inventoried as a build-time component and scanned by Syft/Grype (sbom-a11y.json) for that reason, not because it ships. Verified absent from every deployed tree: the compliance Lambda (infrastructure/lambda/), the Lambda zip staging set (_pkg), and the Silk Reeling frontend bundle (_silk_src/frontend, whose dependency set is @mediapipe/tasks-vision, react, react-dom plus vite build tooling) carry no extract-zip at any depth. The vulnerable unzip path is therefore not reachable from any deployed artifact and presents no risk to the running system. Remediation is still preferred once pa11y ships an updated puppeteer; revisit this disposition when tools/a11y is next upgraded.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-08-24"
+    }
+  }
 }
