@@ -590,10 +590,17 @@ jobs:
     # invalidates `/*`; that is a whole-site operation and is not this
     # workflow's business.
     - name: Invalidate CloudFront cache (vdr paths only)
+      # The distribution id reaches the shell through the environment rather
+      # than being interpolated into the command line: an interpolated secret
+      # is expanded into the script text before the runner ever executes it, so
+      # it can surface in a trace or an error echo. Actions masks known secrets
+      # in log output, but not putting it there is the stronger habit.
+      env:
+        DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
       run: |
         set -euo pipefail
         aws cloudfront create-invalidation \
-          --distribution-id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}" \
+          --distribution-id "${DISTRIBUTION_ID}" \
           --paths "/.well-known/vdr-*" \
           --query 'Invalidation.Id' --output text
         echo "invalidation created for /.well-known/vdr-*"
