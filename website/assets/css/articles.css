@@ -182,6 +182,12 @@
     margin: 0 auto;
 }
 
+/* Portrait-orientation photographs. Without a cap, a 3:4 image renders taller
+   than the viewport on a wide column and pushes everything after it off screen. */
+.article-image.portrait img {
+    max-width: 460px;
+}
+
 .image-caption,
 .article-image figcaption {
     font-style: italic;
