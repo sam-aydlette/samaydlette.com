@@ -514,7 +514,23 @@ jobs:
     needs: [test, compliance-check, security-scan]
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
-    environment: ${{ github.event.inputs.environment || 'prod' }}
+    # Bind the deploy job to a GitHub Environment so its protection rules decide
+    # whether it may run. `prod` carries a required reviewer, so a merge to main
+    # no longer deploys on its own — it halts at "Review pending deployment" in
+    # the Actions UI until a human approves. Everything that makes the merge gate
+    # meaningful (test, compliance-check/OPA, security-scan) is in separate,
+    # ungated jobs that still run automatically on every push and PR.
+    #
+    # The daily `schedule:` run is deliberately routed to a SEPARATE, unprotected
+    # environment. That run exists to re-run the Silk Reeling SCA (Syft + Grype)
+    # against a fresh vulnerability DB, and the scan lives inside this job — so
+    # gating the cron would silently stop continuous vulnerability detection on
+    # the first unattended night, and (because `concurrency` never cancels) an
+    # un-approved cron run would also stall the next push's checks behind it. A
+    # cron redeploy of already-merged `main` is not a new human decision; the
+    # merge was. Only the repo's own scheduler can produce `schedule`, and it
+    # always runs the committed workflow on the default branch.
+    environment: ${{ github.event_name == 'schedule' && 'prod-scheduled' || github.event.inputs.environment || 'prod' }}
 
     steps:
     # -------------------------------------------------------------------------
