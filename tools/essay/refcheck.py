@@ -37,9 +37,10 @@ import os
 import re
 import sys
 
-FILES = [
-    'website/research/staying-in-the-loop.html',
-]
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import ESSAY
+
+FILES = [ESSAY]
 # surnames too common or too embedded in ordinary prose to match on
 STOPWORDS = {'may', 'young', 'best', 'field', 'fields', 'cook', 'woods', 'green'}
 

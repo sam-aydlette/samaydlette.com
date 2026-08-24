@@ -28,7 +28,10 @@ import re
 import subprocess
 import sys
 
-FILE = 'website/research/staying-in-the-loop.html'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import BASELINE_ESSAY, BASELINE_REV, ESSAY
+
+FILE = ESSAY
 # The whole body, matching the span the baseline is measured over. This was
 # scoped to the problem region during the prose pass; the restructure since then
 # has rewritten everything, and the front matter had never been measured at all,
@@ -42,11 +45,10 @@ END = 'id="references"'
 # STRUCTURAL levers (cross-references, essay self-reference) are genre-bound: a
 # memoir has no reason to say "Section 4.2". Those calibrate against the essay as
 # it stood before the July 2026 revision, pinned by sha.
-BASELINE_REV = '6e016a9c6453bc14b9d48ffa7c89333dac7214cf'
-# The essay was renamed to staying-in-the-loop.html after the baseline was
-# pinned, so the baseline revision only has it under its old path. Keep both:
-# the pin is a fixed point in history and must not drift to follow renames.
-BASELINE_FILE = 'website/research/tuning-the-eigenvalue.html'
+# BASELINE_REV and BASELINE_ESSAY both come from paths.py. They are a fixed
+# point in history: the revision predates the rename, so the file it names is
+# the path the essay had then, not the path it has now.
+BASELINE_FILE = BASELINE_ESSAY
 #
 # VOICE levers (the tic families, sentence rhythm) must NOT calibrate against that
 # text, because it is itself partly machine-written, so any tic present in both it

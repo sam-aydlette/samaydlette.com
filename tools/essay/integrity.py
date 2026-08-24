@@ -15,15 +15,12 @@ import re
 import sys
 from html.parser import HTMLParser
 
-FILES = [
-    'website/research/staying-in-the-loop.html',
-    'website/research/the-plumbing.html',
-    # Not long-form, but it links across the site (including to the dashboard), and
-    # those edges are worth the same check.
-    'website/index.html',
-]
-# what a leading-slash href is relative to, as the site is served
-SITE_ROOT = 'website'
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import ESSAY, INDEX, PAPER, SITE_ROOT
+
+# The paper is long-form too. The homepage is not, but it links across the site
+# (including to the dashboard), and those edges are worth the same check.
+FILES = [ESSAY, PAPER, INDEX]
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
         'source', 'track', 'wbr'}
 # href="page.html#frag" or href="page.html"
