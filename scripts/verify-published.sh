@@ -31,8 +31,50 @@ set -euo pipefail
 
 BASE="${1:-https://samaydlette.com/.well-known}"
 IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main'
+# The VDR — and only the VDR — has a second legitimate publisher. The deploy
+# workflow cannot run unattended (it applies Terraform and is bound to a
+# reviewed environment), so the nightly refresh that keeps the vulnerability
+# report inside its 24-hour freshness policy runs as its own workflow and signs
+# with its own identity. A verifier that pinned one identity would report the
+# published evidence as unauthentic for most of its life, which would be a
+# verifier bug, not a finding.
+#
+# Both identities are workflows in THIS repository, on `main`, so the trust
+# claim is unchanged: the evidence was produced by this repo's pinned CI, not by
+# a person with a key. Everything else — the canonical inventory, the SSP, the
+# SCuBA bundle — still verifies against the deploy identity alone.
+NIGHTLY_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
 ISSUER='https://token.actions.githubusercontent.com'
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Verify a blob signature against any of the accepted publisher identities.
+# Fails only if NO accepted identity validates it.
+verify_blob_any_identity() {
+  local bundle="$1" artifact="$2"; shift 2
+  local id
+  for id in "$@"; do
+    if cosign verify-blob --bundle "$bundle" \
+         --certificate-identity "$id" --certificate-oidc-issuer "$ISSUER" \
+         "$artifact" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+verify_attestation_any_identity() {
+  local bundle="$1" artifact="$2"; shift 2
+  local id
+  for id in "$@"; do
+    if cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \
+         --bundle "$bundle" \
+         --certificate-identity "$id" --certificate-oidc-issuer "$ISSUER" \
+         "$artifact" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
 
 for t in curl cosign jq python3; do
   command -v "$t" >/dev/null 2>&1 || { echo "verify-published: missing required tool: $t" >&2; exit 2; }
@@ -59,31 +101,31 @@ done
 
 echo ""
 echo "== 1. Signatures + provenance (independent: Sigstore + pinned workflow identity) =="
-if cosign verify-blob --bundle "$work/ksi-signal.bundle" \
-     --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" \
-     "$work/ksi-signal.json" >/dev/null 2>&1; then
+if verify_blob_any_identity "$work/ksi-signal.bundle" "$work/ksi-signal.json" "$IDENTITY"; then
   ok "ksi-signal.json signed by the pinned workflow on main"
 else
   bad "ksi-signal.json signature"
 fi
 
-if cosign verify-blob --bundle "$work/scuba-bundle.bundle" \
-     --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" \
-     "$work/scuba-bundle.json" >/dev/null 2>&1; then
+if verify_blob_any_identity "$work/scuba-bundle.bundle" "$work/scuba-bundle.json" "$IDENTITY"; then
   ok "scuba-bundle.json signed by the pinned workflow on main"
 else
   bad "scuba-bundle.json signature"
 fi
-for art in oscal-ssp.json vdr-report.json; do
-  if cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \
-       --bundle "$work/$art.intoto.jsonl" \
-       --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" \
-       "$work/$art" >/dev/null 2>&1; then
-    ok "$art attestation signed by the pinned workflow on main"
-  else
-    bad "$art attestation signature"
-  fi
-done
+if verify_attestation_any_identity "$work/oscal-ssp.json.intoto.jsonl" "$work/oscal-ssp.json" \
+     "$IDENTITY"; then
+  ok "oscal-ssp.json attestation signed by the pinned workflow on main"
+else
+  bad "oscal-ssp.json attestation signature"
+fi
+
+# The VDR is refreshed nightly, so either publisher identity is accepted here.
+if verify_attestation_any_identity "$work/vdr-report.json.intoto.jsonl" "$work/vdr-report.json" \
+     "$IDENTITY" "$NIGHTLY_IDENTITY"; then
+  ok "vdr-report.json attestation signed by a pinned workflow on main"
+else
+  bad "vdr-report.json attestation signature"
+fi
 
 echo ""
 echo "== 2. Provenance claims (dependency-free consumer) =="
