@@ -16,7 +16,7 @@ import sys
 from html.parser import HTMLParser
 
 FILES = [
-    'website/research/tuning-the-eigenvalue.html',
+    'website/research/staying-in-the-loop.html',
     'website/research/the-plumbing.html',
     # Not long-form, but it links across the site (including to the dashboard), and
     # those edges are worth the same check.

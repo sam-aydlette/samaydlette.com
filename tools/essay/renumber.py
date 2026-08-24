@@ -13,7 +13,7 @@ backlink at the end of the definition; both conventions survive the remap.
 import re
 import sys
 
-FILE = 'website/research/tuning-the-eigenvalue.html'
+FILE = 'website/research/staying-in-the-loop.html'
 SPLIT = '<section id="footnotes"'
 
 

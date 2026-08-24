@@ -14,7 +14,7 @@ import pathlib
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-ESSAY = ROOT / 'website' / 'research' / 'tuning-the-eigenvalue.html'
+ESSAY = ROOT / 'website' / 'research' / 'staying-in-the-loop.html'
 
 
 def load(tmp_file):
