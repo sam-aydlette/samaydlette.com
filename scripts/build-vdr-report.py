@@ -196,6 +196,88 @@ def classify_finding(tool_id):
         return ("false-positive", FALSE_POSITIVE_BY_CHECK_ID[cid])
     return (None, None)
 
+
+# =============================================================================
+# VULNERABILITY DISPOSITION REGISTER (data/vuln-dispositions.json)
+# =============================================================================
+# The check-ID maps above only speak Checkov/tfsec. A vulnerability from an SCA
+# or DAST scanner (Grype/Dependabot/ZAP) has no check ID — its tool_id is a
+# CVE/GHSA/alert reference — so classify_finding returns (None, None) for it and
+# the finding publishes with poam_ref: null, which reconciliation invariant (h)
+# fails closed on. Those findings are dispositioned by the operator in
+# data/vuln-dispositions.json, which scripts/vuln-gate.py already gates on but
+# which nothing previously fed back into the VDR. This reads the same register
+# so a dispositioned vulnerability carries its disposition and its POA&M
+# cross-reference into the published report.
+#
+# Kept deliberately in lockstep with vuln-gate.py:
+#   * DISPOSITION_REGISTER_PATH is the same default file.
+#   * VULN_SOURCES is the same source set (config scanners stay on
+#     classify_finding; this path never touches them).
+#   * register_vuln_id() mirrors vuln_gate.vulns_from_vdr's id resolution
+#     exactly — `cve or tracking_id or tool_id` — so the two gates agree on
+#     which register key a finding resolves to. If they diverged, a finding
+#     could carry a poam_ref the vulnerability gate never approved.
+#   * REGISTER_PASS_DISPOSITIONS is vuln_gate.PASS_DISPOSITIONS. A register
+#     entry whose disposition is not one the vulnerability gate accepts confers
+#     no poam_ref here either; that build fails at the vulnerability gate and
+#     must not look dispositioned in the VDR.
+DISPOSITION_REGISTER_PATH = (Path(__file__).resolve().parent.parent
+                             / "data" / "vuln-dispositions.json")
+
+# Scanner sources whose findings are vulnerabilities (governed by the register)
+# rather than configuration findings (governed by .checkov.yaml + the maps
+# above). Mirrors vuln-gate.py's VULN_SOURCES.
+VULN_SOURCES = {"grype", "zap", "dependabot"}
+
+# Only these dispositions let a vulnerability pass the vulnerability gate, so
+# only these confer a poam_ref here. Mirrors vuln-gate.py's PASS_DISPOSITIONS.
+REGISTER_PASS_DISPOSITIONS = {"false-positive", "operational-requirement"}
+
+
+def load_disposition_register(path=None):
+    """Load data/vuln-dispositions.json -> {vuln_id: entry}.
+
+    A missing register is not an error: the VDR still builds and every
+    vulnerability simply stays open (poam_ref null), which the vulnerability and
+    reconciliation gates then fail on. A malformed register IS an error — a
+    register that silently reads as empty would turn "dispositioned" into
+    "open" without saying so, so it fails closed like the PAIN config does."""
+    reg_path = Path(path) if path else DISPOSITION_REGISTER_PATH
+    if not reg_path.exists():
+        print(f"::warning::No vulnerability disposition register at {reg_path}; "
+              "SCA/DAST findings will carry no poam_ref.", file=sys.stderr)
+        return {}
+    try:
+        doc = json.loads(reg_path.read_text())
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"::error::vulnerability disposition register at {reg_path} "
+                         f"is not valid JSON: {exc}") from exc
+    return doc.get("dispositions", {}) or {}
+
+
+def register_vuln_id(finding):
+    """The register key for a finding, resolved exactly as vuln-gate.py does."""
+    return finding.get("cve") or finding.get("tracking_id") or finding.get("tool_id")
+
+
+def classify_vulnerability(finding, register):
+    """Return (disposition, poam_ref) for an SCA/DAST finding from the operator
+    disposition register, or (None, None) when it is not dispositioned there.
+
+    A dispositioned entry with no poam_ref deliberately yields (None, None):
+    the finding stays open and invariant (h) fails, which is the signal that the
+    operator dispositioned a vulnerability without giving it a POA&M home. It
+    must never publish as handled-but-untracked."""
+    if finding.get("source") not in VULN_SOURCES:
+        return (None, None)
+    entry = register.get(register_vuln_id(finding)) or {}
+    disposition = entry.get("disposition")
+    poam_ref = entry.get("poam_ref")
+    if disposition in REGISTER_PASS_DISPOSITIONS and poam_ref:
+        return (disposition, poam_ref)
+    return (None, None)
+
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
 # auditor would see in the POA&M.
@@ -1060,17 +1142,21 @@ def consolidate_by_cve(report_findings, risk_accepted):
 
 
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
-                 epss_scores=None):
+                 epss_scores=None, disposition_register=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
     # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
+    # disposition_register: the operator vulnerability disposition register.
     # All default for callers that don't supply them (e.g. unit tests); the config
     # is loaded fail-closed so scoring is never silently uncalibrated. Without an
     # index, CVE findings resolve to the conservative fail-safe classification
-    # (memo s7); without EPSS, LEV falls back to the severity proxy.
+    # (memo s7); without EPSS, LEV falls back to the severity proxy. Without a
+    # register, SCA/DAST findings stay open — the fail-closed default.
     if config is None:
         config, _ = load_pain_config()
     if index is None:
         index = {}
+    if disposition_register is None:
+        disposition_register = {}
     epss_scores = epss_scores or {}
     now = datetime.now(timezone.utc)
     report_findings = []
@@ -1097,7 +1183,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # carries its POA&M cross-reference — it is NOT a blocking open finding,
         # but it stays in findings[] so the raw finding remains individually
         # mappable to its POA&M item. Only an unmapped finding stays "open".
+        # A vulnerability (Grype/Dependabot/ZAP) carries no check ID, so it is
+        # dispositioned in data/vuln-dispositions.json rather than by the check-ID
+        # maps. Config findings are unaffected: classify_finding runs first and
+        # classify_vulnerability returns (None, None) for any non-VULN_SOURCES
+        # finding.
         disposition, finding_poam_ref = classify_finding(f.get("tool_id"))
+        if disposition is None:
+            disposition, finding_poam_ref = classify_vulnerability(f, disposition_register)
         is_suppressed = disposition is not None
 
         sla = class_c_sla_days(pain, lev, irv)
@@ -1124,13 +1217,18 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         #   2. Any N5+LEV+IRV finding (most-severe Class C tier, 2-day SLA).
         #   3. Any finding where days_since_detected exceeds the Class C SLA
         #      from VDR-TFR-PVR for its (PAIN, LEV, IRV) combination.
+        # KEV is tested BEFORE the suppression short-circuit: an actively-exploited
+        # CVE blocks the build even when the operator has dispositioned it, so
+        # adding a register entry can never buy a KEV out of the gate. Config
+        # findings are unaffected — they carry no CVE, so is_kev is always False
+        # for them and this branch reads exactly as it did before.
         block_this = False
         block_reason = None
-        if is_suppressed:
-            block_this = False  # documented suppression — carries a poam_ref, never blocks
-        elif is_kev:
+        if is_kev:
             block_this = True
             block_reason = "KEV (CISA Known Exploited Vulnerability)"
+        elif is_suppressed:
+            block_this = False  # documented suppression — carries a poam_ref, never blocks
         elif pain == "N5" and lev and irv:
             block_this = True
             block_reason = "N5+LEV+IRV (most-severe Class C tier)"
@@ -1175,7 +1273,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "remediation_due_at": None if is_suppressed else due_at,
             "is_overdue": False if is_suppressed else is_overdue,
             "will_be_overdue": False,
-            "overdue_explanation": (f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
+            "overdue_explanation": (block_reason if block_this
+                                    else f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
                                     if is_suppressed else overdue_explanation),
             "supplementary_info": "",
             "is_blocking": block_this,
@@ -1323,6 +1422,7 @@ def main():
     parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
     parser.add_argument("--pain-config", default=None, help="Governed PAIN classifier config (default: infrastructure/schemas/vdr-pain-config.json). Loaded and validated fail-closed; recorded in the report methodology block.")
+    parser.add_argument("--vuln-dispositions", default=None, help="Operator vulnerability disposition register (default: data/vuln-dispositions.json). The same file scripts/vuln-gate.py gates on; a dispositioned SCA/DAST finding carries its disposition and poam_ref into the report.")
     args = parser.parse_args()
 
     # Load the governed classifier calibration. Fails closed if absent/malformed
@@ -1372,9 +1472,15 @@ def main():
     # finding's CR/IR/AR in the CVSS-Environmental derivation.
     classification_index = build_classification_index(args.ksi_signal)
 
+    # Operator dispositions for SCA/DAST vulnerabilities — the same register the
+    # vulnerability gate reads, so a finding it accepts publishes with the POA&M
+    # cross-reference reconciliation invariant (h) requires.
+    disposition_register = load_disposition_register(args.vuln_dispositions)
+
     report, blocking = build_report(findings, suppressions, kev_cves, ledger,
                                     index=classification_index, config=pain_config,
-                                    epss_scores=epss_scores)
+                                    epss_scores=epss_scores,
+                                    disposition_register=disposition_register)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Provenance for the PAIN derivation: which classifier produced these N-levels

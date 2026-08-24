@@ -9,6 +9,7 @@ samaydlette.com is a static personal website on AWS **and** a working continuous
 Hold two facts at once — they shape every decision:
 
 - **It is a real, functioning production system.** Real AWS infrastructure, real CI/CD, real cryptographic signing. Changes must keep it deployable and keep the compliance gate green. Treat `main` as production.
+  - **Merging to `main` no longer deploys on its own:** the `deploy` job is bound to the `prod` GitHub Environment, which requires a human reviewer, so every deploy (including the nightly scheduled run) halts before `terraform apply` until someone approves it in the Actions UI.
 - **It is also a proof of concept for a scaled version** — a reference architecture for what agency- or enterprise-grade automated compliance ("evidence reciprocity") would look like across many systems. Favor designs that generalize and stay legible; treat the single-account, single-site specifics as stand-ins for a multi-system deployment. **Be honest about the gap:** this repo has **no federal data and no agency sponsor**. It demonstrates the mechanism; it is **not** an authorized system. Never imply otherwise in code, docs, or generated artifacts.
 
 ## Codebase map

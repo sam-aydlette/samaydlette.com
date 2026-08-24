@@ -1,13 +1,24 @@
 {
   "_note": "Operator disposition register for VULNERABILITIES (CVEs from ZAP/Grype/Dependabot). The build FAILS on any scanner-reported vulnerability of any severity (Critical/High/Medium/Low) that is not handled. A vulnerability is handled ONLY if it is (a) remediated/gone, or (b) dispositioned here as 'false-positive' (no real risk / N/A) or 'operational-requirement' (real risk, deliberately accepted). A risk-adjusted vulnerability still has a severity, so it does NOT pass the gate — fix it. Config-scanner suppressions (Checkov) live in .checkov.yaml + the VDR maps, not here.",
+  "_note_poam_ref": "Every entry MUST carry a 'poam_ref' naming the formal POA&M item that tracks it (an id in docs/poam.md, mirrored in scripts/build-oscal-poam.py). build-vdr-report.py copies the entry's disposition and poam_ref onto the matching VDR finding, which is what lets reconciliation invariant (h) — every VDR finding resolves to a POA&M item — hold for SCA/DAST vulnerabilities. A disposition without a poam_ref makes the vulnerability gate pass and the reconciliation gate fail; tests/test_vuln_gate.py asserts every entry here resolves.",
+  "_key_format": "The key is the id the vulnerability gate resolves for the finding: its CVE when it has one, else the scanner tracking id (e.g. 'grype-{vuln-id}-{purl}', 'zap-{alert-ref}'), else the tool id.",
   "_pass_dispositions": ["false-positive", "operational-requirement"],
   "_example": {
     "CVE-2025-00000": {
       "disposition": "false-positive",
       "justification": "Vulnerable code path is not reachable in the deployed app; the package is a build-time-only transitive dependency.",
+      "poam_ref": "POAM-000",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-06-13"
     }
   },
-  "dispositions": {}
+  "dispositions": {
+    "grype-GHSA-jmr9-qjv8-65gv-pkg:npm/extract-zip@2.0.1": {
+      "disposition": "false-positive",
+      "justification": "Out of the authorization boundary, and no upstream fix exists. GHSA-jmr9-qjv8-65gv (CVE-2026-56876, High, unvalidated symlink path traversal on extract) affects extract-zip 2.0.1, which is present only in tools/a11y/ as a transitive dependency of the accessibility scanner (pa11y -> puppeteer -> @puppeteer/browsers -> extract-zip). tools/a11y is build tooling: it runs in CI to produce policy input for the deploy gate and is never packaged or deployed. It is inventoried as a build-time component and scanned by Syft/Grype (sbom-a11y.json) for that reason, not because it ships. Verified absent from every deployed tree: the compliance Lambda (infrastructure/lambda/), the Lambda zip staging set (_pkg), and the Silk Reeling frontend bundle (_silk_src/frontend, whose dependency set is @mediapipe/tasks-vision, react, react-dom plus vite build tooling) carry no extract-zip at any depth. The vulnerable unzip path is therefore not reachable from any deployed artifact and presents no risk to the running system. Second leg: the advisory records firstPatchedVersion: null and extract-zip 2.0.1 is that package's final release, so there is no patched version to upgrade to; @puppeteer/browsers 3.x replaced extract-zip with modern-tar but is reachable only via puppeteer 25.x, outside the ^24.37.5 range pa11y 9.1.1 declares. Remediation is blocked upstream, not deferred by choice. Compensating control: the vulnerable code path is never executed. extract-zip is reached only when @puppeteer/browsers unpacks a downloaded browser archive, and the deploy workflow installs this tree with PUPPETEER_SKIP_DOWNLOAD=1 and npm ci --ignore-scripts, so no browser is ever downloaded and no dependency lifecycle script runs; pa11y renders against the runner's system Chrome instead. Continuous SCA coverage (Syft sbom-a11y.json + Grype every build) means a patched release or a change in reachability surfaces automatically rather than on a review cadence. Revisit when pa11y widens its puppeteer range to a release whose @puppeteer/browsers no longer depends on extract-zip, or when a patched extract-zip is published — whichever comes first.",
+      "poam_ref": "POAM-034",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-08-24"
+    }
+  }
 }

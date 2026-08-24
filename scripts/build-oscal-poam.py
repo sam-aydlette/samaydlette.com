@@ -520,6 +520,58 @@ POAM_ITEMS = [
         "original_risk_rating": "low", "adjusted_risk_rating": None, "risk_adjustment": False,
         "status": "false-positive", "category": "false-positive",
     },
+    {
+        "id": "POAM-034", "controls": ["si-2", "ra-5"],
+        "title": "extract-zip path-traversal advisory (GHSA-jmr9-qjv8-65gv / CVE-2026-56876) in the build-time accessibility scanner",
+        "description": (
+            "Grype reports GHSA-jmr9-qjv8-65gv (CVE-2026-56876, High — unvalidated "
+            "symlink path traversal on extract) against extract-zip 2.0.1 in "
+            "sbom-a11y.json. This is a false positive on two independent grounds. "
+            "(1) Not reachable from any deployed artifact: extract-zip exists only in "
+            "tools/a11y/ as a transitive dependency of the accessibility scanner "
+            "(pa11y -> puppeteer -> @puppeteer/browsers -> extract-zip). tools/a11y is "
+            "build tooling — it runs in CI to produce policy input for the deploy gate "
+            "and is never packaged or deployed; it is inventoried and SBOM-scanned as a "
+            "build-time component, not because it ships. The package is absent at every "
+            "depth from the compliance Lambda (infrastructure/lambda/), the Lambda zip "
+            "staging set (_pkg), and the Silk Reeling frontend bundle "
+            "(_silk_src/frontend). (2) No upstream fix exists: the advisory records "
+            "firstPatchedVersion: null and 2.0.1 is extract-zip's final release, so "
+            "there is no patched version to move to; @puppeteer/browsers 3.x replaced "
+            "extract-zip with modern-tar but is reachable only via puppeteer 25.x, "
+            "outside the ^24.37.5 range pa11y 9.1.1 declares. Remediation is blocked "
+            "upstream, not deferred by choice. Compensating control: the vulnerable code "
+            "path is never executed — extract-zip is reached only when "
+            "@puppeteer/browsers unpacks a downloaded browser archive, and the deploy "
+            "workflow installs this tree with PUPPETEER_SKIP_DOWNLOAD=1 and "
+            "npm ci --ignore-scripts, so no browser is fetched and no dependency "
+            "lifecycle script runs (pa11y renders against the runner's system Chrome). "
+            "SI-2/RA-5 are met by continuous SCA over this tree every build (Syft "
+            "sbom-a11y.json + Grype), so a patched release or a change in reachability "
+            "surfaces automatically. Revisit when pa11y widens its puppeteer range to a "
+            "release whose @puppeteer/browsers no longer depends on extract-zip, or when "
+            "a patched extract-zip is published. Dispositioned in "
+            "data/vuln-dispositions.json, which is the register the vulnerability gate "
+            "reads and from which build-vdr-report.py carries this poam_ref onto the "
+            "VDR finding."
+        ),
+        "weakness_detector_source": "Grype (SCA, Syft SBOM sbom-a11y.json)",
+        "weakness_source_identifier": "GHSA-jmr9-qjv8-65gv; CVE-2026-56876",
+        "asset_identifiers": ["npm-package::extract-zip@2.0.1 (tools/a11y build-time)"],
+        "resources_required": "None available: no patched upstream release exists. Operator time to re-test once pa11y widens its puppeteer range.",
+        "remediation_plan": (
+            "Blocked upstream — no patched extract-zip release exists. When pa11y "
+            "widens its puppeteer range to a release whose @puppeteer/browsers no longer "
+            "depends on extract-zip (or a patched extract-zip ships), upgrade "
+            "tools/a11y, confirm Grype no longer reports the advisory, and close this "
+            "item together with its entry in data/vuln-dispositions.json."
+        ),
+        "original_detection_date": "2026-08-13", "status_date": "2026-08-24",
+        "scheduled_completion_date": "n/a (blocked upstream; no fix published)",
+        "vendor_dependency": True,
+        "original_risk_rating": "high", "adjusted_risk_rating": None, "risk_adjustment": False,
+        "status": "false-positive", "category": "false-positive",
+    },
 ]
 
 
