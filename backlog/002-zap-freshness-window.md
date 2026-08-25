@@ -1,0 +1,25 @@
+# Make the ZAP DAST freshness window one number, agreed between `security/zap/README.md`, the `--zap-max-age-days` default, and the deploy workflow.
+REPO: samaydlette.com
+STATUS: QUEUED            # QUEUED | IN_PROGRESS | PARKED | DONE | FAILED
+ACCEPTANCE: `make check` passes, plus: a new test in `tests/` asserts the documented window and the effective window are the same number, and fails if either is changed alone (assert the `--zap-max-age-days` default parsed from `scripts/build-vdr-report.py`'s argparse equals the day count stated in `security/zap/README.md`, or equals the value the deploy workflow passes explicitly, whichever the fix chooses); `grep -c 'zap-max-age-days' .github/workflows/deploy-with-opa.yml` reflects the decision rather than relying on a default.
+OUT OF SCOPE: Running a ZAP scan, committing a `zap-report.json`, or changing `.github/workflows/zap-dast.yml`'s schedule, target, or `fail_action` setting. Changing what ZAP findings *do* once ingested — `ingest_zap`, the vulnerability gate in `scripts/vuln-gate.py`, and the disposition register `data/vuln-dispositions.json` all stay as they are. Making the missing-report case fail closed: today a missing report warns and the build stays green (deliberate bootstrapping behaviour, documented in the code comment at `scripts/build-vdr-report.py` ~L1447) — changing that is a separate decision with its own task. Anything in `docs/poam.md`, `website/.well-known/`, the reconciliation gate, or the OPA gate. Automating the commit of the scan output back into the repo — that is the real fix for the cadence problem and it deserves its own spec.
+LANDMINES: This is currently **moot and will stop being moot without warning.** `security/zap/` contains only `README.md`; no `zap-report.json` is committed. The deploy workflow does pass `--zap ../security/zap/zap-report.json` (`.github/workflows/deploy-with-opa.yml` ~L1406), and a *missing* file only emits a warning — so nothing is broken today and nothing will surface this in CI. The day someone commits a real report, the 14-day default starts enforcing. Second, sharper trap: `zap-dast.yml` runs on `cron: '23 7 1 * *'` — **monthly**. A 14-day window against a monthly scan cadence cannot be satisfied; a report committed on the 1st is stale by the 15th and the next scan is not until the following month, so every deploy in the back half of every month would fail closed. That is why the README says 35 days ("monthly + grace") and it is the README that has the defensible number. Whichever way this is resolved, do not resolve it by passing `--zap-max-age-days 0` — that disables the freshness check entirely and turns a skipped scan back into "zero findings", which is precisely the failure the gate exists to prevent. The root `Makefile` / `make check` gate lives on PR #305 (`chore/uniform-verify-interface`) and is not on `main` yet; if that has not merged, run `python3 -m pytest tests/ -q` instead.
+---
+Diagnosed 2026-08-24, recorded as deferred in `~/.claude/setup/SETUP-LOG.md` under Session 0b.
+
+Three places state the DAST freshness rule and they do not agree:
+
+- `security/zap/README.md` L15: the VDR build "fails closed if it is missing or **older than 35 days** (`--zap-max-age-days`, monthly + grace)".
+- `scripts/build-vdr-report.py` L1416: `parser.add_argument("--zap-max-age-days", type=int, default=14, ...)`.
+- `.github/workflows/deploy-with-opa.yml` L1406 passes `--zap <path>` and **never passes `--zap-max-age-days`**, so the effective window is the default: 14.
+
+So the documented contract is 35 days and the enforced contract is 14. Pick one and make the other follow. The README's reasoning ("monthly + grace") is sound and matches the actual scan cadence in `zap-dast.yml`, so 35 is probably the right number — but that is a security-posture call, not a formatting one, so state the reasoning in the PR either way.
+
+Two ways to fix, and they are not equivalent:
+
+- Change the argparse default to 35. Simplest, one line, and it moves the contract to where the tool lives. Downside: the workflow still relies on a default it does not state, so the next reader still has to open the Python to find out what CI enforces.
+- Keep the default at 14 and have the workflow pass `--zap-max-age-days 35` explicitly. More verbose, but the pipeline then says out loud what it enforces, which is the pattern the rest of this repo follows (every other gate flag is explicit on the command line).
+
+Preferring the second is defensible; preferring the first is defensible; leaving them disagreeing is not. Either way, update the README so the number in the prose is the number in the code, and add the test named in ACCEPTANCE so the two cannot drift apart again silently.
+
+Related, and deliberately not part of this task: `zap-dast.yml` uploads its report as a workflow artifact and opens a tracking issue, but nothing commits `zap-report.json` back into `security/zap/`. So the "committed monthly report" contract the README describes is currently manual. That gap is worth its own `/spec`.
