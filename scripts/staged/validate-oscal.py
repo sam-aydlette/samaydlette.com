@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: validation gate, never wired.
+#
+# Validates authored OSCAL against the vendored NIST v1.2.2 schemas. Never added to CI; the
+# artifacts are currently schema-checked only by scripts/validate-ksi-signal.py and the
+# reconciliation gate's cross-artifact invariants.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # OSCAL SCHEMA VALIDATION GATE  (Phase 2)
 # =============================================================================

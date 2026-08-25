@@ -39,6 +39,19 @@ def test_matching_tags_pass():
     assert rc.check_i_classification_tags(_SIGNAL, _MATCHING_TAGS) == []
 
 
+def test_tags_are_not_cross_matched_from_a_neighbouring_arn():
+    """A component must never be reconciled against a DIFFERENT resource's tags.
+
+    _match_live_tags used to prefix-match, so a component whose ARN was a prefix
+    of another live resource's could pick up that resource's tag set and either
+    pass on borrowed evidence or fail on someone else's drift.
+    """
+    neighbour = {_ARN + "-canary": {"Archetype": "app-tier", "OwnerRole": "someone-else"}}
+    assert rc._match_live_tags(_ARN, neighbour) is None
+    # and with no tag set of its own the component is out of scope, not a violation
+    assert rc.check_i_classification_tags(_SIGNAL, neighbour) == []
+
+
 def test_drifted_value_fails():
     # BROKEN FIXTURE: the live Archetype tag drifted from the inventory.
     drifted = {_ARN: dict(_MATCHING_TAGS[_ARN], Archetype="app-tier")}

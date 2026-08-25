@@ -16,24 +16,17 @@
 
 import argparse
 import json
+import os
+import sys
 from collections import Counter
 from pathlib import Path
 
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import classify, load_hub  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
-
-
-def classify(status, origination):
-    if status == "not-applicable":
-        return "not-applicable"
-    if status == "planned":
-        return "planned"
-    if origination == "inherited":
-        return "fully-inherited"
-    if origination == "shared":
-        return "partially-inherited"
-    if origination in ("customer-configured", "customer-provided"):
-        return "customer-responsibility"
-    return "implemented"
 
 
 def load_171_53():
@@ -52,15 +45,6 @@ def load_rev4_rev5():
 def load_catalog_reqs():
     cat = json.loads((REPO / "data/catalogs/NIST_SP-800-171_rev2_catalog.json").read_text())["catalog"]
     return [c["id"] for g in cat["groups"] for c in g["controls"]]
-
-
-def load_hub(ssp_path):
-    irs = json.loads(Path(ssp_path).read_text())["system-security-plan"]["control-implementation"]["implemented-requirements"]
-    def p(ir, n):
-        for x in ir.get("props", []) or []:
-            if x["name"] == n:
-                return x["value"]
-    return {ir["control-id"]: (p(ir, "implementation-status"), p(ir, "control-origination")) for ir in irs}
 
 
 def aggregate(classes):

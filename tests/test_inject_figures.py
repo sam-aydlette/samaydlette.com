@@ -84,15 +84,18 @@ def test_attribute_order_tolerated():
     assert ">332/332<" in out
 
 
-@_needs_ssp
-def test_published_targets_are_current():
-    """The committed paper + dashboard must already match their sources
-    (this is the same invariant the deploy --check step enforces)."""
-    figures = inj.compute_figures()
-    for path in inj.TARGETS:
-        _, changes, unknown, _ = inj.stamp(path.read_text(), figures, path.name)
-        assert not unknown, f"{path.name} references unknown figures: {unknown}"
-        assert not changes, f"{path.name} has stale figures: {changes}"
+# REMOVED: test_published_targets_are_current.
+#
+# It asserted that the committed paper and dashboard already match their sources.
+# That invariant is real and still enforced — by `inject-figures.py --check` in the
+# deploy job's "Check committed figures against their sources" step, and locally by
+# `make figures-check`. Both run where the sources actually exist.
+#
+# As a unit test it could not work in either direction: skipped in CI, because the
+# SSP is a build product the test job never sees, and RED on any dev machine whose
+# local build product came from a different commit than the committed HTML — which
+# is the normal state of a working tree. A test that is invisible where it would
+# matter and noisy where it would not teaches you to ignore a red suite.
 
 
 @_needs_ssp

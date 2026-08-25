@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: one-shot data vendoring.
+#
+# Already run; its output is the committed data/catalogs/NIST_SP-800-171_rev2_catalog.json.
+# Re-run only when NIST republishes the source spreadsheet. Needs openpyxl, which is
+# deliberately not a pipeline dependency.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # 800-171 Rev2 OSCAL CATALOG BUILDER  (Phase 2 / CMMC)
 # =============================================================================
@@ -14,9 +24,16 @@
 
 import argparse
 import json
+import os
 import re
+import sys
 import uuid
 from pathlib import Path
+
+# Shared generator helpers, one directory up. The insert is __file__-relative, so
+# this script stays runnable standalone from any cwd (see scripts/_common.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+from _common import sid  # noqa: E402
 
 import openpyxl
 
@@ -24,10 +41,6 @@ REPO = Path(__file__).resolve().parent.parent
 OUT = REPO / "data" / "catalogs" / "NIST_SP-800-171_rev2_catalog.json"
 NS = uuid.UUID("171a2000-0000-5000-8000-000000000002")
 LAST_MODIFIED = "2026-06-10T00:00:00Z"
-
-
-def sid(*p):
-    return str(uuid.uuid5(NS, ":".join(p)))
 
 
 def build(xlsx_path):
@@ -65,7 +78,7 @@ def build(xlsx_path):
 
     catalog = {
         "catalog": {
-            "uuid": sid("catalog", "800-171r2"),
+            "uuid": sid(NS, "catalog", "800-171r2"),
             "metadata": {
                 "title": "NIST SP 800-171 Revision 2 — Protecting CUI in Nonfederal Systems",
                 "last-modified": LAST_MODIFIED,

@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: Phase 2 spoke, not wired.
+#
+# Dispositions the above-Moderate residue the spokes surface. Consumed only by the spoke
+# generators above, so it is staged with them.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # BEYOND-MODERATE CONTROL DISPOSITIONS  (Phase 2 / residue reduction)
 # =============================================================================

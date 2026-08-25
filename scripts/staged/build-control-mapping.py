@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: one-shot data vendoring.
+#
+# Already run; its output is the committed data/mappings/SP800-53_rev4-to-rev5.mapping.json.
+# Re-run only when a vendored NIST catalog is replaced.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # CONTROL MAPPING  800-53 Rev4 -> Rev5   (Phase 2 / D — the Rev4 bridge)
 # =============================================================================
@@ -19,9 +28,16 @@
 # =============================================================================
 
 import json
+import os
+import sys
 import uuid
 from collections import Counter
 from pathlib import Path
+
+# Shared generator helpers, one directory up. The insert is __file__-relative, so
+# this script stays runnable standalone from any cwd (see scripts/_common.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+from _common import sid  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 R4 = REPO / "data/catalogs/NIST_SP-800-53_rev4_catalog.json"
@@ -42,10 +58,6 @@ def index(path):
             walk(g)
     walk(cat)
     return out
-
-
-def sid(*p):
-    return str(uuid.uuid5(NS, ":".join(p)))
 
 
 def withdrawal_target(ctrl):
@@ -91,7 +103,7 @@ def main():
             remark = None
         rels[relationship] += 1
         m = {
-            "uuid": sid("map", cid),
+            "uuid": sid(NS, "map", cid),
             "relationship": relationship,
             "sources": [{"type": "control", "id-ref": cid}],
             "targets": [{"type": "control", "id-ref": tgt}],
@@ -102,7 +114,7 @@ def main():
 
     doc = {
         "mapping-collection": {
-            "uuid": sid("mapping-collection", "rev4-to-rev5"),
+            "uuid": sid(NS, "mapping-collection", "rev4-to-rev5"),
             "metadata": {
                 "title": "NIST SP 800-53 Rev 4 → Rev 5 control mapping",
                 "last-modified": LAST_MODIFIED,
@@ -132,17 +144,17 @@ def main():
                 ),
             },
             "mappings": [{
-                "uuid": sid("mapping", "rev4-rev5"),
+                "uuid": sid(NS, "mapping", "rev4-rev5"),
                 "source-resource": {"type": "resource", "href": "#resource-rev4-catalog"},
                 "target-resource": {"type": "resource", "href": "#resource-rev5-catalog"},
                 "maps": maps,
             }],
             "back-matter": {
                 "resources": [
-                    {"uuid": sid("resource", "rev4"), "title": "NIST SP 800-53 Rev 4 catalog (OSCAL)",
+                    {"uuid": sid(NS, "resource", "rev4"), "title": "NIST SP 800-53 Rev 4 catalog (OSCAL)",
                      "props": [{"name": "id", "value": "resource-rev4-catalog"}],
                      "rlinks": [{"href": "../catalogs/NIST_SP-800-53_rev4_catalog.json"}]},
-                    {"uuid": sid("resource", "rev5"), "title": "NIST SP 800-53 Rev 5 catalog (OSCAL)",
+                    {"uuid": sid(NS, "resource", "rev5"), "title": "NIST SP 800-53 Rev 5 catalog (OSCAL)",
                      "props": [{"name": "id", "value": "resource-rev5-catalog"}],
                      "rlinks": [{"href": "../catalogs/NIST_SP-800-53_rev5_catalog.json"}]},
                 ]

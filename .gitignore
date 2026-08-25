@@ -157,3 +157,9 @@ tests/__pycache__/
 # Working/planning docs — kept local, not pushed to main (operator preference)
 /TASKS.md
 /docs/assessment/
+
+# Claude Code per-machine settings and their timestamped backups. This repo is
+# public; local settings can name paths, tools and permissions specific to one
+# machine. A shared .claude/settings.json would still be trackable.
+.claude/settings.local.json
+.claude/*.bak.*

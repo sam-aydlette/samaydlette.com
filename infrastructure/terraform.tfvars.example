@@ -1,0 +1,71 @@
+# =============================================================================
+# terraform.tfvars — example
+# =============================================================================
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored; only this
+# example is tracked.
+#
+#     cp terraform.tfvars.example terraform.tfvars
+#
+# This stack ADOPTS pre-existing global resources rather than creating them: the
+# S3 bucket, the CloudFront distribution, the Route53 zone and the ACM certificate
+# are provisioned by infrastructure/bootstrap/ (operator-applied, separate state)
+# and referenced here by id. That is why the values below are ids and ARNs of
+# things that already exist, not names of things to create.
+#
+# Every variable except existing_cloudfront_distribution_id has a working default
+# in variables.tf. The commented blocks show the default so you can see what you
+# are overriding; uncomment only what you actually change.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# REQUIRED
+# -----------------------------------------------------------------------------
+# ID of the existing CloudFront distribution to manage. No default — Terraform
+# will prompt if it is missing.
+existing_cloudfront_distribution_id = "E1234567890123"
+
+# -----------------------------------------------------------------------------
+# Existing resources to adopt. Empty means "look it up / skip".
+# -----------------------------------------------------------------------------
+# existing_s3_bucket_name      = ""   # should match domain_name
+# existing_route53_zone_id     = ""   # e.g. "Z1234567890123"
+# existing_ssl_certificate_arn = ""   # ACM cert; must live in us-east-1 for CloudFront
+
+# -----------------------------------------------------------------------------
+# Identity and placement
+# -----------------------------------------------------------------------------
+# domain_name = "samaydlette.com"
+# aws_region  = "us-east-2"    # site/app/Lambda/S3/CloudWatch/API GW/Secrets Manager.
+#                              # ACM, CloudFront and the DNSSEC/CloudFront KMS keys
+#                              # are pinned to us-east-1 in the config, not here.
+# environment = "prod"
+
+# -----------------------------------------------------------------------------
+# Tagging. These become cost-allocation tags and are visible in billing reports
+# and resource metadata, so keep them to a handle or team, never an email.
+# -----------------------------------------------------------------------------
+# cost_center = "website-ops"
+# owner       = "sam-aydlette"
+
+# -----------------------------------------------------------------------------
+# DNS and delivery
+# -----------------------------------------------------------------------------
+# manage_dns             = true             # requires an existing hosted zone
+# enable_route53_logging = false            # query logging; adds CloudWatch cost
+# cloudfront_price_class = "PriceClass_100" # US + Europe; the cheapest tier
+
+# -----------------------------------------------------------------------------
+# Compliance machinery
+# -----------------------------------------------------------------------------
+# create_lambda_compliance     = true          # the runtime KSI signal emitter
+# create_eventbridge_rules     = true          # its schedule
+# compliance_check_schedule    = "rate(1 day)"
+# section_508_compliance_level = "AA"          # A | AA | AAA
+# create_response_headers_policy = false
+
+# -----------------------------------------------------------------------------
+# Silk Reeling app (gated mirror). Off by default; CI builds the zip.
+# -----------------------------------------------------------------------------
+# create_silk_reeling           = false
+# silk_reeling_package_path     = "./silk-reeling.zip"
+# silk_reeling_max_concurrency  = 5            # caps cost and blast radius

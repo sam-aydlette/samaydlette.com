@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: one-shot data vendoring.
+#
+# Already run; its output is the committed infrastructure/schemas/ksi-catalog.json, which
+# build-oscal-ssp.py reads on every deploy. Re-run when FedRAMP republishes the CR26 corpus
+# — and treat the regenerated catalog as a reviewed change, not a refresh.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # KSI CATALOG BUILDER  (CR26 final)
 # =============================================================================

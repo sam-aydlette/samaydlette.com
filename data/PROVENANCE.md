@@ -33,14 +33,14 @@ Retrieval date: **2026-06-09**.
 
 ## Control Mappings (`mappings/`) — derived, OSCAL Control Mapping Model v1.2.x
 - `mappings/SP800-53_rev4-to-rev5.mapping.json` — Rev4→Rev5 control mapping, **derived
-  deterministically from the two vendored NIST catalogs** by `scripts/build-control-mapping.py`
+  deterministically from the two vendored NIST catalogs** by `scripts/staged/build-control-mapping.py`
   (same-id active → `equivalent`; controls withdrawn in Rev5 → the Rev5 catalog's *own*
   `incorporated-into`/`moved-to` link → `subset-of`). 919/922 mapped; 3 residue (no clean
   single successor) recorded in the document. No hand-keyed crosswalk.
 
 ## 800-171 Rev 2 (CMMC)
 - `catalogs/NIST_SP-800-171_rev2_catalog.json` — OSCAL catalog of the 110 requirements,
-  built by `scripts/build-171-catalog.py` from NIST's authoritative machine-readable
+  built by `scripts/staged/build-171-catalog.py` from NIST's authoritative machine-readable
   export. NIST does not publish 800-171 as OSCAL, so this is derived from the NIST source
   (not a community conversion).
 - `sources/sp800-171r2-security-reqs.csv` — the source, vendored from the citable NIST URL:
@@ -53,7 +53,7 @@ Retrieval date: **2026-06-09**.
 
 ## OSCAL JSON schemas (validation gate)
 - `schemas/oscal/oscal_{component,mapping,ssp}_schema.json` — vendored from the
-  **usnistgov/OSCAL v1.2.2** release. Used by `scripts/validate-oscal.py`. (Patterns
+  **usnistgov/OSCAL v1.2.2** release. Used by `scripts/staged/validate-oscal.py`. (Patterns
   are stripped at validation time — OSCAL's ECMA `\p{}` regex is incompatible with
   Python `re`; structure/required/enums are still enforced. Full Metaschema constraint
   validation via NIST `oscal-cli` is the CI gold standard.)

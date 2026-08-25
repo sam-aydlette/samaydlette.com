@@ -23,7 +23,10 @@ rc = _load()
 
 SIGNAL_ID = "11111111-1111-4111-8111-111111111111"
 COMMIT = "abc123"
-ARN_LAMBDA = "arn:aws:lambda:us-east-2:975050324277:function:app"
+# The AWS-documentation example account. Nothing here validates or asserts the
+# value, so it stays synthetic rather than naming the real one in a public repo.
+ACCOUNT = "123456789012"
+ARN_LAMBDA = f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:app"
 ARN_BUCKET = "arn:aws:s3:::samaydlette.com"
 
 
@@ -72,15 +75,37 @@ def test_clean_set_passes_all():
 
 def test_a_completeness_catches_missing_live_resource():
     s = clean_set()
-    extra = "arn:aws:secretsmanager:us-east-2:975050324277:secret:zzz"
+    extra = f"arn:aws:secretsmanager:us-east-2:{ACCOUNT}:secret:zzz"
     v = rc.check_a_completeness(s["signal"], {ARN_LAMBDA, ARN_BUCKET, extra})
     assert any("not in inventory" in x and extra in x for x in v)
+
+
+def test_a_completeness_rejects_arn_that_extends_an_inventoried_one():
+    """The hole the prefix match opened: a live resource whose ARN merely EXTENDS
+    an inventoried one is a different resource and must still fail the sweep.
+
+    Log groups and per-purpose buckets are where this bites — '<name>-archive'
+    next to an inventoried '<name>'. Under the old prefix comparison this passed
+    deny-by-default silently, which is the one thing invariant (a) exists to stop.
+    """
+    s = clean_set()
+    extends = ARN_BUCKET + "-archive"
+    v = rc.check_a_completeness(s["signal"], {ARN_LAMBDA, ARN_BUCKET, extends})
+    assert any(extends in x for x in v), v
+
+
+def test_a_completeness_still_tolerates_log_group_wildcard():
+    """The ':*' suffix is the one ARN-form difference that is genuinely the same
+    resource, and the normalization that replaced the prefix match must keep it."""
+    base = "arn:aws:logs:us-east-2:%s:log-group:/aws/lambda/app" % ACCOUNT
+    signal = {"components": [{"component_id": "lg", "native_id": base}]}
+    assert rc.check_a_completeness(signal, {base + ":*"}) == []
 
 
 def test_b_referential_catches_unresolved_poam_asset():
     s = clean_set()
     s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
-        {"props": [{"name": "aws-arn", "value": "arn:aws:lambda:us-east-2:975050324277:function:ghost"}]}
+        {"props": [{"name": "aws-arn", "value": f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:ghost"}]}
     ]
     v = rc.check_b_referential(s["signal"], s["ssp"], s["poam"])
     assert any("does not resolve" in x for x in v)

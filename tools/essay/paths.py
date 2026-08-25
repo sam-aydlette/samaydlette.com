@@ -21,9 +21,3 @@ INDEX = 'website/index.html'
 
 # What a leading-slash href is relative to, as the site is served.
 SITE_ROOT = 'website'
-
-# The pinned revision the prose levers calibrate against. It is a fixed point
-# in history: it must NOT drift to follow renames, which is why the file it
-# names is the path the essay had at that revision, not the path it has now.
-BASELINE_REV = '6e016a9c6453bc14b9d48ffa7c89333dac7214cf'
-BASELINE_ESSAY = 'website/research/tuning-the-eigenvalue.html'

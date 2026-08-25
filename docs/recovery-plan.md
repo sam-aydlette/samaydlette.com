@@ -41,9 +41,16 @@ cd infrastructure
 cp terraform.tfvars.example terraform.tfvars
 # Edit existing_cloudfront_distribution_id, existing_ssl_certificate_arn,
 # existing_s3_bucket_name with the new resource IDs.
-make pipeline
+make pipeline   # infrastructure only — this publishes nothing
 
-# 3. Verify.
+# 3. Restore content and the published evidence. `make pipeline` stops at
+# `terraform apply`: website content and every artifact under /.well-known/ are
+# published only by the CI deploy job, behind the reconciliation gate and the
+# prod environment approval. Push to `main` and approve the deploy. There is no
+# local publish path, by design — a partial, unsigned artifact set over the
+# published one is the failure mode the gate exists to prevent.
+
+# 4. Verify.
 curl -I https://samaydlette.com/
 curl -s https://samaydlette.com/.well-known/ksi-signal.json | jq '.signal_id, .emitted_at'
 ```

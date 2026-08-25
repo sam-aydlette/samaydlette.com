@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: one-shot data vendoring.
+#
+# Already run; its output is the committed data/mappings/SP800-171r2-to-SP800-53r4.mapping.json.
+# Re-run only when the extracted source table changes.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # 171 Rev2 -> 800-53 Rev4 OSCAL Control Mapping  (Phase 2 / CMMC)
 # =============================================================================
@@ -12,17 +21,20 @@
 # =============================================================================
 
 import json
+import os
+import sys
 import uuid
 from pathlib import Path
+
+# Shared generator helpers, one directory up. The insert is __file__-relative, so
+# this script stays runnable standalone from any cwd (see scripts/_common.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+from _common import sid  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / "data/mappings/SP800-171r2-to-SP800-53r4.source.json"
 OUT = REPO / "data/mappings/SP800-171r2-to-SP800-53r4.mapping.json"
 NS = uuid.UUID("171b5300-0000-5000-8000-000000000043")
-
-
-def sid(*p):
-    return str(uuid.uuid5(NS, ":".join(p)))
 
 
 def main():
@@ -33,11 +45,11 @@ def main():
     maps = []
     for req in sorted(mp):
         for ctl in sorted(mp[req]):
-            maps.append({"uuid": sid("map", req, ctl), "relationship": "subset-of",
+            maps.append({"uuid": sid(NS, "map", req, ctl), "relationship": "subset-of",
                          "sources": [{"type": "control", "id-ref": req}],
                          "targets": [{"type": "control", "id-ref": ctl}]})
     doc = {"mapping-collection": {
-        "uuid": sid("mc", "171r2-53r4"),
+        "uuid": sid(NS, "mc", "171r2-53r4"),
         "metadata": {
             "title": "NIST SP 800-171 Rev2 -> 800-53 Rev4 control mapping (Appendix D, Table D-1)",
             "last-modified": "2026-06-10T00:00:00Z", "version": "1.0.0", "oscal-version": "1.2.2",
@@ -50,15 +62,15 @@ def main():
                        "status": ("complete" if not residue else "not-complete"),
                        "mapping-description": ("NIST's authoritative 171->53 tailoring mapping (Table D-1); "
                                                "171 requirements are tailored subsets of the 800-53 controls.")},
-        "mappings": [{"uuid": sid("m", "171-53"),
+        "mappings": [{"uuid": sid(NS, "m", "171-53"),
                       "source-resource": {"type": "resource", "href": "#res-171r2"},
                       "target-resource": {"type": "resource", "href": "#res-53r4"},
                       "maps": maps}],
         "back-matter": {"resources": [
-            {"uuid": sid("r", "171"), "title": "NIST SP 800-171 Rev2 catalog",
+            {"uuid": sid(NS, "r", "171"), "title": "NIST SP 800-171 Rev2 catalog",
              "props": [{"name": "id", "value": "res-171r2"}],
              "rlinks": [{"href": "../catalogs/NIST_SP-800-171_rev2_catalog.json"}]},
-            {"uuid": sid("r", "53"), "title": "NIST SP 800-53 Rev4 catalog",
+            {"uuid": sid(NS, "r", "53"), "title": "NIST SP 800-53 Rev4 catalog",
              "props": [{"name": "id", "value": "res-53r4"}],
              "rlinks": [{"href": "../catalogs/NIST_SP-800-53_rev4_catalog.json"}]}]},
     }}

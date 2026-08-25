@@ -20,7 +20,9 @@ def _load():
 
 bks = _load()
 
-ACC = "arn:aws:iam::975050324277"
+# The AWS-documentation example account, not the real one — this repo is public.
+ACCOUNT = "123456789012"
+ACC = f"arn:aws:iam::{ACCOUNT}"
 BOOTSTRAP_STATE = {"values": {"root_module": {"resources": [
     {"type": "aws_iam_openid_connect_provider", "name": "github",
      "address": "aws_iam_openid_connect_provider.github",

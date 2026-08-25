@@ -34,6 +34,11 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import sha256_file  # noqa: E402
+
 # =============================================================================
 # CONSTANTS
 # =============================================================================
@@ -595,14 +600,6 @@ def run_terraform(args):
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"warning: terraform {' '.join(args)} failed: {exc}", file=sys.stderr)
         return None
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def component_id_for_cloud(tf_resource_name, normalized_type):

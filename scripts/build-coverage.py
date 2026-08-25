@@ -20,42 +20,26 @@
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter
+
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import classify, prop  # noqa: E402
 
 # FedRAMP control-origination + implementation-status -> responsibility class
 CLASSES = ["implemented", "partially-inherited", "fully-inherited",
            "customer-responsibility", "planned", "not-applicable"]
 
 
-def classify(status, origination):
-    if status == "not-applicable":
-        return "not-applicable"
-    if status == "planned":
-        return "planned"
-    # implemented / partial / alternative
-    if origination == "inherited":
-        return "fully-inherited"
-    if origination == "shared":
-        return "partially-inherited"      # shared (system + AWS) == partially inherited
-    if origination in ("customer-configured", "customer-provided"):
-        return "customer-responsibility"
-    return "implemented"                  # sp-system / sp-corporate (provider implements)
-
-
-def _prop(ir, name):
-    for p in ir.get("props", []) or []:
-        if p.get("name") == name:
-            return p.get("value")
-    return None
-
-
 def build_coverage(ssp, framework):
     irs = ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]
     hist = Counter()
     for ir in irs:
-        hist[classify(_prop(ir, "implementation-status"),
-                      _prop(ir, "control-origination"))] += 1
+        hist[classify(prop(ir, "implementation-status"),
+                      prop(ir, "control-origination"))] += 1
     total = len(irs)
     inherit_full = hist["fully-inherited"]
     inherit_part = hist["partially-inherited"]

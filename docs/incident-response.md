@@ -34,9 +34,9 @@ Active detection sources:
 2. **Contain.**
    - **Credential compromise (AWS):** rotate the IAM access keys via the IAM console; revoke any active sessions; rotate the GitHub Actions secret holding the credentials.
    - **Credential compromise (GitHub):** revoke any compromised PATs; rotate the workflow's `GITHUB_TOKEN` is automatic per-run; reset OAuth grants if external apps are involved.
-   - **Content compromise:** revert via `git`, redeploy via `make pipeline`. S3 versioning preserves the prior state; CloudFront invalidation refreshes the edge.
+   - **Content compromise:** revert via `git`, push to `main`, and approve the `prod` deploy. S3 versioning preserves the prior state; CloudFront invalidation refreshes the edge.
    - **Supply-chain compromise:** pin the offending dependency to a known-good version, redeploy, and file a Dependabot suppression if the alert source is the GitHub Advisory Database.
-3. **Eradicate.** Identify the root cause (credential, code, or config) and patch it. Confirm the patch holds via a fresh `make pipeline`.
+3. **Eradicate.** Identify the root cause (credential, code, or config) and patch it. Confirm the patch holds via a fresh approved deploy.
 4. **Recover.** Verify the runtime signal returns to clean. Verify `cosign verify-blob` still passes against the new signal and bundle. Confirm the site is reachable end-to-end.
 5. **Lessons learned.** Append an after-action entry to the section below.
 

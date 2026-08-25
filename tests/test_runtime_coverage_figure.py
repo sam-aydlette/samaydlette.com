@@ -17,11 +17,12 @@ import json
 import re
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parent.parent
 LAMBDA = REPO / "infrastructure" / "lambda" / "index.js"
-SIGNAL = REPO / "infrastructure" / "ksi-signal.json"
+# A committed, shape-only copy of the inventory: the real ksi-signal.json is a
+# build product that does not exist when the unit tests run in CI, so pinning the
+# derivation to it meant this file's last test never actually executed there.
+INVENTORY_SHAPE = REPO / "tests" / "fixtures" / "clean" / "inventory-shape.json"
 
 
 def figures_module():
@@ -69,7 +70,8 @@ def test_layers_partition_the_inventory():
              + ["kms_key"] * 3]
     lay = mod._coverage_layers(comps)
     assert lay["total"] == len(comps)
-    assert lay["deps"] + lay["content"] + lay["cloud"] == lay["total"]
+    assert (lay["deps"] + lay["build_deps"] + lay["content"] + lay["cloud"]
+            == lay["total"])
     assert lay["cloud"] == 7           # 2 buckets + 1 secret + 1 cdn + 3 kms
     assert lay["runtime_covered"] == 4  # both buckets, the secret, one cdn
     assert lay["uncovered_types"] == ["kms_key"]
@@ -89,10 +91,23 @@ def test_a_new_uncovered_type_lowers_coverage():
     assert r(after) < r(before), "growth into unchecked types must lower the ratio"
 
 
-@pytest.mark.skipif(not SIGNAL.exists(), reason="ksi-signal.json is a build product")
-def test_derivation_agrees_with_the_real_inventory():
+def test_derivation_agrees_with_a_realistic_inventory():
+    """The partition must hold over the real mix of component types, not just the
+    handful the synthetic case above uses.
+
+    `deps` deliberately counts only what SHIPS - build-time packages are
+    inventoried but excluded, so they are their own term. Asserting
+    deps + content + cloud == total (without build_deps) is the mistake this test
+    used to encode, and it went unnoticed because the skipif meant it only ever
+    ran on a dev machine that happened to have a build product lying around.
+    """
     mod = figures_module()
-    lay = mod._coverage_layers(json.loads(SIGNAL.read_text())["components"])
+    lay = mod._coverage_layers(json.loads(INVENTORY_SHAPE.read_text())["components"])
     assert lay["runtime_covered"] > 0
     assert lay["cloud"] >= lay["runtime_covered"]
-    assert lay["deps"] + lay["content"] + lay["cloud"] == lay["total"]
+    assert (lay["deps"] + lay["build_deps"] + lay["content"] + lay["cloud"]
+            == lay["total"])
+    # build-time packages are a real and large slice of this inventory; if they
+    # ever stop being excluded, the published deps figure moves without the thing
+    # it measures having changed.
+    assert lay["build_deps"] > 0

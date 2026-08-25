@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: one-time migration.
+#
+# Lifts CONTROL_OVERRIDES out of build-oscal-ssp.py into an OSCAL Component Definition. The
+# migration has not been taken; build-oscal-ssp.py is still the hub. Note this file pins
+# OSCAL_VERSION 1.2.2 while the live generators emit 1.1.2 — see scripts/_common.py.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # HUB MIGRATION — CONTROL_OVERRIDES  ->  OSCAL Component Definition
 # =============================================================================
@@ -21,8 +31,15 @@
 
 import importlib.util
 import json
+import os
+import sys
 import uuid
 from pathlib import Path
+
+# Shared generator helpers, one directory up. The insert is __file__-relative, so
+# this script stays runnable standalone from any cwd (see scripts/_common.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+from _common import sid  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SSP_GEN = REPO / "scripts" / "build-oscal-ssp.py"
@@ -51,10 +68,6 @@ def load_hub():
     return dict(m.CONTROL_OVERRIDES)
 
 
-def sid(*parts):
-    return str(uuid.uuid5(NS, ":".join(parts)))
-
-
 def build_component_definition(overrides):
     # Group implemented-requirements by component (per origination).
     comp_irs = {}  # comp_key -> list of implemented-requirement dicts
@@ -66,7 +79,7 @@ def build_component_definition(overrides):
         ckey, ctype, ctitle = COMPONENTS[orig]
         comp_meta[ckey] = (ctype, ctitle)
         comp_irs.setdefault(ckey, []).append({
-            "uuid": sid("ir", ckey, cid),
+            "uuid": sid(NS, "ir", ckey, cid),
             "control-id": cid,
             "description": o["statement"],
             "props": [
@@ -79,12 +92,12 @@ def build_component_definition(overrides):
     for ckey in sorted(comp_irs):
         ctype, ctitle = comp_meta[ckey]
         components.append({
-            "uuid": sid("component", ckey),
+            "uuid": sid(NS, "component", ckey),
             "type": ctype,
             "title": ctitle,
             "description": ctitle,
             "control-implementations": [{
-                "uuid": sid("control-impl", ckey),
+                "uuid": sid(NS, "control-impl", ckey),
                 "source": CATALOG_SOURCE,
                 "description": (
                     f"Control implementations satisfied by the {ckey} component, "
@@ -97,7 +110,7 @@ def build_component_definition(overrides):
 
     return {
         "component-definition": {
-            "uuid": sid("component-definition", "samaydlette-com"),
+            "uuid": sid(NS, "component-definition", "samaydlette-com"),
             "metadata": {
                 "title": "samaydlette.com — control implementation hub (Component Definition)",
                 "last-modified": LAST_MODIFIED,

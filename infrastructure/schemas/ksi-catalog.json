@@ -24,7 +24,7 @@
       {
         "id": "26.06",
         "published_date": "2026-06-24",
-        "description": "Consolidated Rules for 2026 (official launch). Key Security Indicators renumbered to mnemonic IDs; the AFR (Authorization by FedRAMP) family was retired and TPR (Third-Party) was renamed SCR (Supply Chain Risk). Rebuilt from the published markdown corpus by scripts/build-ksi-catalog.py."
+        "description": "Consolidated Rules for 2026 (official launch). Key Security Indicators renumbered to mnemonic IDs; the AFR (Authorization by FedRAMP) family was retired and TPR (Third-Party) was renamed SCR (Supply Chain Risk). Rebuilt from the published markdown corpus by scripts/staged/build-ksi-catalog.py."
       },
       {
         "id": "25.12A",
