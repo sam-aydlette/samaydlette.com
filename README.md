@@ -249,9 +249,15 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ├── scuba/                          # SCuBA-style executable CRM (policies + runner)
 ├── policies/triage.rego            # vulnerability triage policy
 ├── docs/                           # poam.md (+ False Positives), policies/, scn/, assessment/
-├── tools/
-│   ├── a11y/                       # pa11y scanner (facts producer for the a11y policy)
-│   └── essay/                      # structural HTML gates for the long-form pages
+├── tools/                          # both are CI gates, not optional tooling
+│   ├── a11y/                       # pa11y; renders every page and emits the facts
+│   │                               #   policy.accessibility decides over. Installed by
+│   │                               #   the blocking OPA job; terraform-plan.sh FAILS
+│   │                               #   CLOSED if it is missing.
+│   └── essay/                      # anchor/footnote/bibliography integrity for the
+│                                   #   long-form pages. Enforced by tests/test_essay_
+│                                   #   gates.py, which runs both gates against the real
+│                                   #   committed pages on every pytest run.
 ├── tests/                          # 300+ tests: one per gate invariant
 │   ├── fixtures/broken/            # committed must-FAIL fixtures — the gate's negative
 │   ├── fixtures/clean/ plans/      # hermetic inputs
