@@ -21,20 +21,17 @@ Exit non-zero (fail closed) on any missing/mismatched binding.
 """
 import argparse
 import base64
-import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import sha256_file  # noqa: E402
+
 SLSA_V1 = "https://slsa.dev/provenance/v1"
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def extract_statement(bundle):

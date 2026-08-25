@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# STAGED — NOT WIRED INTO THE PIPELINE. Kind: Phase 2 spoke, not wired.
+#
+# Emits the GovRAMP / TX-RAMP spoke profiles + coverage. Wiring it up means a deploy-job step
+# after the SSP build, a publish step, and a reconciliation-gate invariant binding each spoke
+# to the hub's signal_id — none of which exist yet.
+#
+# Nothing under scripts/staged/ runs in CI, in the Makefile, or in any test. It is
+# parked here so it cannot be mistaken for a live generator. See scripts/staged/README.md.
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # =============================================================================
 # BASELINE SPOKES — GovRAMP Moderate+CJIS, TX-RAMP L1/L2  (Phase 2)
 # =============================================================================
@@ -14,42 +24,22 @@
 # =============================================================================
 
 import json
+import os
+import sys
 import uuid
 from collections import Counter
 from pathlib import Path
+
+# Shared generator helpers, one directory up. The insert is __file__-relative, so
+# this script stays runnable standalone from any cwd (see scripts/_common.py).
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+from _common import classify, load_hub, sid  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SEL = REPO / "data/baselines/govramp-txramp-cjis.selections.json"
 NS = uuid.UUID("ba5e1100-0000-5000-8000-000000000005")
 CATALOG = {"rev5": "../catalogs/NIST_SP-800-53_rev5_catalog.json",
            "rev4": "../catalogs/NIST_SP-800-53_rev4_catalog.json"}
-
-
-def sid(*p):
-    return str(uuid.uuid5(NS, ":".join(p)))
-
-
-def classify(status, origination):
-    if status == "not-applicable":
-        return "not-applicable"
-    if status == "planned":
-        return "planned"
-    if origination == "inherited":
-        return "fully-inherited"
-    if origination == "shared":
-        return "partially-inherited"
-    if origination in ("customer-configured", "customer-provided"):
-        return "customer-responsibility"
-    return "implemented"
-
-
-def load_hub(ssp_path):
-    irs = json.loads(Path(ssp_path).read_text())["system-security-plan"]["control-implementation"]["implemented-requirements"]
-    def p(ir, n):
-        for x in ir.get("props", []) or []:
-            if x["name"] == n:
-                return x["value"]
-    return {ir["control-id"]: (p(ir, "implementation-status"), p(ir, "control-origination")) for ir in irs}
 
 
 def load_r4_r5():
@@ -59,7 +49,7 @@ def load_r4_r5():
 
 def build_profile(key, title, revision, controls):
     doc = {"profile": {
-        "uuid": sid("profile", key),
+        "uuid": sid(NS, "profile", key),
         "metadata": {"title": title, "last-modified": "2026-06-10T00:00:00Z",
                      "version": "1.0.0", "oscal-version": "1.2.2"},
         "imports": [{"href": CATALOG[revision],

@@ -1,0 +1,1645 @@
+{
+  "_comment": [
+    "Shape-only inventory fixture for the runtime-coverage figure tests.",
+    "Component type + lifecycle distribution is copied from a real build of the",
+    "canonical inventory (263 components); every identifier is synthetic and no",
+    "ARN, account, hash or package name is reproduced. It exists so the coverage",
+    "derivation can be tested against a realistic mix in CI, where the real",
+    "ksi-signal.json is a build product that does not exist at unit-test time.",
+    "Regenerate by re-profiling a fresh signal if the inventory shape changes",
+    "materially; the tests assert the partition holds, not the exact counts."
+  ],
+  "components": [
+    {
+      "component_id": "fixture::cdn_distribution::0",
+      "type": "cdn_distribution"
+    },
+    {
+      "component_id": "fixture::external_service::0",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::1",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::2",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::3",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::4",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::5",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::external_service::6",
+      "type": "external_service"
+    },
+    {
+      "component_id": "fixture::html_artifact::0",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::1",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::2",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::3",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::4",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::5",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::6",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::7",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::8",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::9",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::10",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::11",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::12",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::13",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::14",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::15",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::16",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::17",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::18",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::19",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::20",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::21",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::22",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::23",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::24",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::25",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::26",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::27",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::28",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::29",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::30",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::31",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::32",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::33",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::34",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::35",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::36",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::37",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::38",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::39",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::40",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::41",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::42",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::html_artifact::43",
+      "type": "html_artifact"
+    },
+    {
+      "component_id": "fixture::iam_group::0",
+      "type": "iam_group"
+    },
+    {
+      "component_id": "fixture::iam_group::1",
+      "type": "iam_group"
+    },
+    {
+      "component_id": "fixture::iam_policy::0",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::1",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::2",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::3",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::4",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::5",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::6",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::7",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_policy::8",
+      "type": "iam_policy"
+    },
+    {
+      "component_id": "fixture::iam_role::0",
+      "type": "iam_role"
+    },
+    {
+      "component_id": "fixture::log_group::0",
+      "type": "log_group"
+    },
+    {
+      "component_id": "fixture::log_group::1",
+      "type": "log_group"
+    },
+    {
+      "component_id": "fixture::log_group::2",
+      "type": "log_group"
+    },
+    {
+      "component_id": "fixture::npm_package::0",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::1",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::2",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::3",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::4",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::5",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::6",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::7",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::8",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::9",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::10",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::11",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::12",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::13",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::14",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::15",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::16",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::17",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::18",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::19",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::20",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::21",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::22",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::23",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::24",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::25",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::26",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::27",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::28",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::29",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::30",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::31",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::32",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::33",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::34",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::35",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::36",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::37",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::38",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::39",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::40",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::41",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::42",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::43",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::44",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::45",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::46",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::47",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::48",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::49",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::50",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::51",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::52",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::53",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::54",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::55",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::56",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::57",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::58",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::59",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::60",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::61",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::62",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::63",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::64",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::65",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::66",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::67",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::68",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::69",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::70",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::71",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::72",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::73",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::74",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::75",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::76",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::77",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::78",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::79",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::80",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::81",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::82",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::83",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::84",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::85",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::86",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::87",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::88",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::89",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::90",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::91",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::92",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::93",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::94",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::95",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::96",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::97",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::98",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::99",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::100",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::101",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::102",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::103",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::104",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::105",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::106",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::107",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::108",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::109",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::110",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::111",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "build-time"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::0",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::1",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::2",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::3",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::4",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::5",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::6",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::7",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::8",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::9",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::10",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::11",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::12",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::13",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::14",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::15",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::16",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::17",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::18",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::19",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::20",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::21",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::22",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::23",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::24",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::25",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::26",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::27",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::28",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::29",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::30",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::31",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::32",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::33",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::34",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::35",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::36",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::37",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::38",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::39",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::40",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::41",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::42",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::43",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::44",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::45",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::46",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::47",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::48",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::49",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::50",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::51",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::52",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::53",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::54",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::55",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::56",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::57",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::58",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::59",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::60",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::61",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::62",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::63",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::64",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::65",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::66",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::67",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::68",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::69",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::70",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::71",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::72",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::73",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::74",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::75",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::76",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::77",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::78",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::79",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::npm_package::80",
+      "type": "npm_package",
+      "attributes": {
+        "lifecycle": "runtime"
+      }
+    },
+    {
+      "component_id": "fixture::object_store::0",
+      "type": "object_store"
+    },
+    {
+      "component_id": "fixture::oidc_provider::0",
+      "type": "oidc_provider"
+    },
+    {
+      "component_id": "fixture::tls_certificate::0",
+      "type": "tls_certificate"
+    }
+  ]
+}

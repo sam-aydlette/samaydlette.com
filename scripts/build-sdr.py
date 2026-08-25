@@ -23,28 +23,27 @@
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import prop  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
 NA = "N/A — self-attested proof of concept; no FedRAMP Recognized independent assessment service engaged (IVV is not applicable to an unsponsored system)."
 
 
-def _prop(o, name):
-    for p in o.get("props", []) or []:
-        if p.get("name") == name:
-            return p.get("value")
-    return None
-
-
 def _control_map(ssp):
     """control_id -> {status, origination} from the OSCAL SSP."""
     m = {}
     for ir in ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]:
-        m[ir["control-id"]] = {"status": _prop(ir, "implementation-status"),
-                               "origination": _prop(ir, "control-origination")}
+        m[ir["control-id"]] = {"status": prop(ir, "implementation-status"),
+                               "origination": prop(ir, "control-origination")}
     return m
 
 

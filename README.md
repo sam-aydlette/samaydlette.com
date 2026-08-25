@@ -14,19 +14,40 @@ This is the central hub for what's going on with me. The repository also doubles
 
 ## How the Compliance Pipeline Works
 
-```bash
-# Every deployment goes through this gate:
-terraform plan
-    → OPA policy check (infrastructure + accessibility)
-    → terraform apply
-    → build KSI signal (joins state + package-lock + content hashes + provenance + validations)
-    → cosign sign-blob (Sigstore keyless via GitHub OIDC)
-    → publish ksi-signal.json + ksi-signal.bundle to /.well-known/
-    → invalidate CloudFront
-
-# All run in one make target:
-cd infrastructure && make pipeline
 ```
+Every deployment goes through this gate, in CI:
+
+  unit tests (pytest) + opa test + Regal + ruff/mypy
+    → terraform plan → OPA policy check (infrastructure + accessibility)
+    → [ prod environment: halts here for human approval ]
+    → terraform apply
+    → sync website/ to S3  (--exclude .well-known/*, which is published below)
+    → build KSI signal   joins terraform state + package-lock + CycloneDX SBOMs
+    │                    + every website/**/*.html sha256 + OPA validations
+    │                    + SLSA-style build provenance
+    ├─ build OSCAL Rev 5 SSP          ├─ build VDR + vuln trend ledger (RA-5(6))
+    ├─ build OSCAL POA&M              ├─ build IIW (SSP Appendix M)
+    ├─ build SCuBA bundle (CRM)       ├─ build Ongoing Certification Report
+    ├─ build SDR + CPO                └─ build CDS certification-data artifacts
+    │
+    → RECONCILIATION GATE — fails closed on any cross-artifact drift
+    │    (a) completeness   every live in-boundary AWS resource is inventoried,
+    │                       enumerated from the cloud API, deny-by-default
+    │    (b) referential    (c) suppressions     (d) impact level
+    │    (e) binding — every artifact carries ONE inventory signal_id
+    │    (f) publish freshness  (g) POA&M parity  (h) finding coverage
+    │    (i) live classification tags  (j) POA&M refs  (k) SCuBA binding
+    │
+    → cosign sign-blob (Sigstore keyless via GitHub OIDC) for every artifact
+    → publish the signed set to /.well-known/
+    → in-toto/SLSA provenance attestation
+    → invalidate CloudFront
+    → post-publish round-trip verify (the served bytes carry THIS commit)
+    → external verifier smoke test (the reciprocity handshake)
+```
+
+The gate and the publish step live in `.github/workflows/deploy-with-opa.yml` and
+run nowhere else. **`make` never publishes** — see Deployment Options below.
 
 **What's Different:** Compliance is not just a gate. It is also an output. Every deploy emits a structured, signed KSI signal naming what was deployed, what was validated, and how to verify it. The signal is informed by a canonical inventory of components — names that are global by construction (PURL, ARN, sha256) — so a consumer can curl the document from any machine, validate it against the schema, verify the cosign bundle against the public Sigstore transparency log, and join validations to components by reference. The canonical inventory layer is what makes the signal compose across CSPs and across systems within a portfolio without a separate inventory deliverable; the signal is one report on top of it.
 
@@ -194,54 +215,52 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ## File Structure
 
 ```
-├── infrastructure/
-│   ├── main.tf                    # Primary Terraform configuration
-│   ├── variables.tf               # Input variables and validation
-│   ├── outputs.tf                 # Resource outputs and URLs
-│   ├── Makefile                   # Common operations (run from infrastructure/)
-│   ├── policy/                    # OPA policy packages
-│   │   ├── gate.rego              # Input contract + normalization (the only input reader)
-│   │   ├── s3.rego                # policy.terraform.s3
-│   │   ├── cloudfront.rego        # policy.terraform.cloudfront (ordered TLS minimum)
-│   │   ├── tagging.rego           # policy.tagging (governance + classification)
-│   │   ├── accessibility.rego     # policy.accessibility (decides over pa11y facts)
-│   │   ├── main.rego              # terraform.compliance aggregator (walk + fail-closed + exceptions)
-│   │   ├── config/data.json       # Organization-defined parameters (data, not code)
-│   │   └── exceptions/data.json   # Exceptions register (POA&M-as-code)
-│   ├── schemas/
-│   │   ├── ksi-signal.schema.json # JSON Schema for the KSI signal
-│   │   ├── ksi-catalog.json       # FedRAMP KSI catalog (FRMR.KSI source)
-│   │   └── policy-input/          # JSON Schema for the gate's input shapes
-│   ├── lambda/
-│   │   ├── index.js               # Runtime KSI signal emitter
-│   │   └── package.json           # AWS SDK v3 dependencies
-│   └── terraform.tfvars.example   # Configuration template
-├── website/
-│   ├── .well-known/
-│   │   └── security.txt           # RFC 9116 vulnerability disclosure
-│   └── ...                        # Static website files
-├── scripts/
-│   ├── deploy.sh                  # Complete deployment automation
-│   ├── terraform-plan.sh          # Pre-deployment compliance check
-│   ├── build-ksi-signal.py        # Deploy-time KSI signal emitter
-│   ├── build-oscal-ssp.py         # OSCAL Rev 5 SSP generator
-├── docs/
-│   ├── ksi-signal.md              # KSI signal technical reference
-│   ├── architecture-decisions.md  # Architectural decisions per KSI
-│   ├── incident-response.md       # IR runbook (KSI-INR-RIR..03)
-│   ├── recovery-plan.md           # Recovery plan (KSI-RPL-RRO..04)
-│   ├── security-review.md         # Annual security review (KSI-PIY-RIS)
-│   ├── supply-chain.md            # Supply-chain risk (KSI-SCR-MIT/MON)
-│   ├── training-log.md            # Self-attested training (KSI-CED-RAT..04)
-│   └── poam.md                    # Plan of Action & Milestones for tracked gaps
-├── tools/a11y/                    # pa11y accessibility scanner (facts producer for the gate)
-├── tests/
-│   ├── fixtures/                  # Plan / resource / scanner-facts fixtures
-│   └── golden/                    # Frozen pre-refactor baseline + current goldens
-├── .github/workflows/
-│   └── deploy-with-opa.yml        # GitHub Actions CI/CD pipeline
-└── README.md                      # This file
+├── infrastructure/                 # the per-deploy Terraform stack
+│   ├── main.tf variables.tf outputs.tf backend.tf
+│   ├── cloudtrail.tf logging.tf cognito.tf silk-reeling.tf
+│   ├── Makefile                    # local work only — never publishes
+│   ├── terraform.tfvars.example    # copy to terraform.tfvars
+│   ├── policy/                     # OPA policy packages
+│   │   ├── gate.rego               # input contract + normalization (the only input reader)
+│   │   ├── s3.rego cloudfront.rego tagging.rego accessibility.rego
+│   │   ├── main.rego               # terraform.compliance aggregator
+│   │   │                           #   walk(data.policy) + fail-closed + exceptions
+│   │   ├── *_test.rego             # one test package per policy
+│   │   ├── config/data.json        # organization-defined parameters (data, not code)
+│   │   └── exceptions/data.json    # exceptions register (POA&M-as-code, dated + ticketed)
+│   ├── schemas/                    # KSI signal schema, FedRAMP KSI catalog, policy-input schemas
+│   ├── lambda/index.js             # runtime KSI emitter; runs the SAME Rego, compiled to Wasm
+│   └── bootstrap/                  # operator-applied: OIDC, IAM, CloudFront, DNSSEC, tf state
+├── scripts/                        # the artifact generators — 26 live
+│   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
+│   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
+│   ├── build-oscal-ssp.py build-oscal-poam.py build-vdr-report.py build-iiw.py
+│   ├── build-scuba-bundle.py build-sdr.py build-cpo.py build-ocr.py ...
+│   ├── reconcile.py                # the fail-closed reconciliation gate
+│   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py
+│   ├── verify-published.sh         # verify the LIVE evidence, no AWS needed
+│   └── staged/                     # NOT wired into the pipeline — see its README
+├── website/                        # static site; every *.html is hashed into the inventory
+│   ├── index.html viewer.html pages/ assets/
+│   ├── research/                   # methodology + scope docs; read these for the "why"
+│   └── .well-known/security.txt    # RFC 9116 (generated artifacts are NOT committed)
+├── data/                           # vendored NIST/FedRAMP source data + PROVENANCE.md
+│   ├── catalogs/ profiles/ mappings/ baselines/ schemas/oscal/
+├── scuba/                          # SCuBA-style executable CRM (policies + runner)
+├── policies/triage.rego            # vulnerability triage policy
+├── docs/                           # poam.md (+ False Positives), policies/, scn/, assessment/
+├── tools/
+│   ├── a11y/                       # pa11y scanner (facts producer for the a11y policy)
+│   └── essay/                      # structural HTML gates for the long-form pages
+├── tests/                          # 300+ tests: one per gate invariant
+│   ├── fixtures/broken/            # committed must-FAIL fixtures — the gate's negative
+│   ├── fixtures/clean/ plans/      # hermetic inputs
+│   └── golden/                     # frozen pre-refactor baseline + current OPA goldens
+└── .github/workflows/
+    ├── deploy-with-opa.yml         # the pipeline: gates, generation, signing, publish
+    ├── zap-dast.yml scn-tag.yml
 ```
+
 
 ## OPA Policies
 
@@ -341,27 +360,55 @@ chmod 755 ./opa && sudo mv opa /usr/local/bin
 cp infrastructure/terraform.tfvars.example infrastructure/terraform.tfvars
 # Edit terraform.tfvars with your AWS resource IDs
 
-# 4. Deploy with compliance checking
+# 4. Apply the infrastructure locally (this publishes nothing)
 cd infrastructure
-make pipeline
+make plan          # OPA compliance check against the plan
+make pipeline      # init + validate + plan + apply-infra
+
+# 5. Run the offline gates
+make python-test test-policies a11y
+make reconcile     # add RECONCILE_FLAGS=--live to reconcile against live AWS
 ```
+
+Content and the `/.well-known/` artifacts are published only by the CI deploy job.
+That is deliberate: a local publish would put an unsigned, unreconciled, partial
+artifact set over the published one, breaking the cross-artifact `signal_id`
+binding on the live site — with the gate that exists to catch exactly that never
+having run.
 
 ## Deployment Options
 
-### Automated (Recommended)
+### Publishing: CI only
+Push to `main`. The workflow runs the gates, then **halts** — the `deploy` job is
+bound to the `prod` GitHub Environment, which requires a human reviewer before
+`terraform apply`. Approve it in the Actions UI and the run continues through the
+reconciliation gate, signing, and publish. The nightly scheduled run halts the
+same way.
+
+There is no local publish target, by design.
+
+### Local: infrastructure and the offline gates
 ```bash
-make pipeline    # Full pipeline with compliance checks
+cd infrastructure
+make plan          # terraform plan + OPA compliance check
+make apply-infra   # apply the reviewed plan; stops there, publishes nothing
+make pipeline      # init + validate + plan + apply-infra
+
+make gate          # OPA gate against a plan
+make python-test   # pytest
+make test-policies # opa test + coverage floor
+make a11y          # pa11y scan (produces the facts the a11y policy decides over)
+make figures-check # committed figures vs. their sources
+make reconcile     # cross-artifact reconciliation (RECONCILE_FLAGS=--live)
 ```
 
-### Manual Steps
+### Verifying what is actually published
 ```bash
-make plan       # Check compliance before deployment
-make deploy     # Apply if compliant
-make sync-content # Update website files
+make verify-published   # fetch the LIVE evidence and reproduce the verdict
 ```
-
-### CI/CD via GitHub Actions
-Push to `main` branch triggers automatic deployment with compliance validation.
+Needs no AWS credentials and no secrets — it verifies the cosign signatures against
+the public Sigstore transparency log and re-runs the cross-artifact reconciliation
+over the served bytes. Anyone can run it.
 
 ## Security Trade-offs (The Hard Decisions)
 

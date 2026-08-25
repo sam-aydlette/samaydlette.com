@@ -25,12 +25,16 @@ Honesty note: the builder is this repo's self-hosted GitHub Actions identity
 this strengthens the evidence mechanism, not its authorization.
 """
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
 import sys
 from pathlib import Path
+
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import sha256_file  # noqa: E402
 
 # Reuse the signal builder's provenance logic so builder.id is single-sourced.
 _KSI_PATH = Path(__file__).resolve().parent / "build-ksi-signal.py"
@@ -45,14 +49,6 @@ BUILDER_ID_FALLBACK = (
     ".github/workflows/deploy-with-opa.yml@refs/heads/main"
 )
 BUILD_TYPE = "https://samaydlette.com/buildtypes/compliance-artifact/v1"
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def build_predicate(ksi_signal_path, generator_path):

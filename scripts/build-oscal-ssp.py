@@ -21,20 +21,23 @@
 # =============================================================================
 
 import json
+import os
 import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import FEDRAMP_NS, OSCAL_VERSION  # noqa: E402
+
 # =============================================================================
 # CONSTANTS
 # =============================================================================
 
-OSCAL_VERSION = "1.1.2"
 SSP_VERSION = "1.0.0"
 SYSTEM_NAMESPACE = uuid.UUID("8be0e36b-1be1-4c8a-b76f-1b9d6e4b0a53")  # arbitrary stable namespace
-
-FEDRAMP_NS = "https://fedramp.gov/ns/oscal"
 
 # FedRAMP-published Rev 5 Moderate baseline profile (canonical reference),
 # pinned at the authoritative source. NOTE: FedRAMP's OSCAL content moved from

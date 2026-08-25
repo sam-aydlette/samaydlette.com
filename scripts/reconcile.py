@@ -76,6 +76,23 @@ def normalize_impact(value):
             "class b": "high", "class a": "high"}.get(v, v)
 
 
+def arn_key(arn):
+    """Normalize an ARN for comparison.
+
+    The only real disagreement between the forms Terraform records and the forms
+    the AWS APIs return is a trailing ':*' wildcard on log-group ARNs, so
+    stripping it is the whole normalization. Comparison on this key is EXACT.
+
+    It used to be a prefix match ("h.startswith(a) or a.startswith(h)"), which was
+    redundant with this rstrip and unsound: any live resource whose ARN extended an
+    inventoried one passed the deny-by-default completeness sweep. A live,
+    un-inventoried '<prefix>-logs-archive' bucket was silently accepted whenever
+    '<prefix>-logs' was in the inventory. See test_a_completeness_rejects_arn_that
+    _extends_an_inventoried_one.
+    """
+    return (arn or "").rstrip(":*")
+
+
 def inventory_native_ids(signal):
     """All native_ids (ARNs/ids) present in the inventory."""
     ids = set()
@@ -170,14 +187,9 @@ def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
 
 def check_a_completeness(signal, live_arns):
     """Every live ARN must appear as a native_id in the inventory."""
-    have = {nid.rstrip(":*") for nid in inventory_native_ids(signal)}
-    violations = []
-    for arn in sorted(live_arns):
-        a = arn.rstrip(":*")
-        # match on exact or arn-prefix (log group arns sometimes carry :*)
-        if a not in have and not any(h.startswith(a) or a.startswith(h) for h in have):
-            violations.append(f"(a) live resource not in inventory: {arn}")
-    return violations
+    have = {arn_key(nid) for nid in inventory_native_ids(signal)}
+    return [f"(a) live resource not in inventory: {arn}"
+            for arn in sorted(live_arns) if arn_key(arn) not in have]
 
 
 # ----------------------------------------------------------------------------
@@ -229,15 +241,17 @@ def enumerate_live_tags(region_primary="us-east-2", region_edge="us-east-1"):
 
 
 def _match_live_tags(native_id, live_tags):
-    """Find the live tag set for a component's native_id, tolerating the ARN-form
-    differences the tagging API and Terraform sometimes disagree on (trailing
-    ':*', prefix)."""
-    target = (native_id or "").rstrip(":*")
+    """Find the live tag set for a component's native_id.
+
+    Exact match on the normalized ARN key. This was a prefix match, which could
+    return a DIFFERENT resource's tags for a component whose ARN happened to be a
+    prefix of another's — reconciling the inventory against the wrong live thing.
+    """
+    target = arn_key(native_id)
     if not target:
         return None
     for arn, t in live_tags.items():
-        a = arn.rstrip(":*")
-        if a == target or a.startswith(target) or target.startswith(a):
+        if arn_key(arn) == target:
             return t
     return None
 

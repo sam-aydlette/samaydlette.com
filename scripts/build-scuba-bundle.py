@@ -21,26 +21,19 @@
 
 import argparse
 import json
+import os
 import re
+import sys
 from pathlib import Path
+
+# Shared generator helpers. The insert is __file__-relative, so this script stays
+# runnable standalone from any working directory (see scripts/_common.py).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import classify, prop  # noqa: E402
 
 HERE = Path(__file__).resolve().parent.parent
 BESPOKE_DIR = HERE / "scuba" / "policies"
 BESPOKE_MANIFEST = HERE / "scuba" / "bundle.json"
-
-
-def classify(status, origination):
-    if status == "not-applicable":
-        return "not-applicable"
-    if status == "planned":
-        return "planned"
-    if origination == "inherited":
-        return "fully-inherited"
-    if origination == "shared":
-        return "partially-inherited"
-    if origination in ("customer-configured", "customer-provided"):
-        return "customer-responsibility"
-    return "implemented"
 
 
 WHO = {
@@ -55,13 +48,6 @@ WHO = {
 
 def pkg(cid):
     return "scuba.c_" + re.sub(r"[^a-z0-9]", "_", cid.lower())
-
-
-def prop(ir, name):
-    for p in ir.get("props", []) or []:
-        if p.get("name") == name:
-            return p.get("value")
-    return None
 
 
 def default_rego(cid, resp):

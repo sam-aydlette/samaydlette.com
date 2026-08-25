@@ -1,17 +1,35 @@
-# Makefile for Website Deployment with OPA Compliance
+# Makefile for local infrastructure work and the offline compliance gates.
+#
+# THIS MAKEFILE NEVER PUBLISHES. Nothing here writes to the website bucket or to
+# /.well-known/. Artifact generation, cosign signing, the reconciliation gate and
+# the publish step all live in .github/workflows/deploy-with-opa.yml, where the
+# `deploy` job is bound to the `prod` GitHub Environment and halts for a human
+# reviewer before `terraform apply`.
+#
+# That separation is the point. A local publish path would put an unsigned,
+# unreconciled, partial artifact set over the CI-published one, breaking the
+# cross-artifact signal_id binding on the live site with the gate that exists to
+# catch exactly that never having run. The sync targets that used to live here
+# did precisely that, and worse: they synced `.` (this directory) rather than
+# `website/`, with --delete and no .well-known/ exclusion.
 
-.PHONY: a11y help init plan deploy destroy check-compliance sync-content build-ksi-signal sync-ksi-signal build-oscal-ssp sync-oscal-ssp clean gate python-test figures-check reconcile verify-published
+.PHONY: a11y help init plan apply-infra deploy destroy check-compliance build-ksi-signal build-oscal-ssp clean gate python-test figures-check reconcile verify-published test-policies fmt security-scan validate outputs status dev-setup pipeline create-cert
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  init             - Initialize Terraform and install dependencies"
 	@echo "  plan             - Run Terraform plan with OPA compliance check"
-	@echo "  deploy           - Deploy infrastructure and sync website content"
-	@echo "  sync-content     - Sync website files to S3"
-	@echo "  check-compliance - Run post-deployment compliance check"
+	@echo "  apply-infra      - Apply the reviewed plan. Infrastructure only; publishes nothing."
+	@echo "  pipeline         - init + validate + plan + apply-infra"
+	@echo "  check-compliance - Invoke the compliance Lambda (read-only)"
+	@echo "  reconcile        - Cross-artifact reconciliation gate (RECONCILE_FLAGS=--live)"
+	@echo "  verify-published - Fetch and verify the LIVE published evidence"
+	@echo "  gate / python-test / test-policies / a11y / figures-check - offline gates"
 	@echo "  destroy          - Destroy all infrastructure"
 	@echo "  clean            - Clean temporary files"
+	@echo ""
+	@echo "Publishing to /.well-known/ happens in CI only. There is no local publish target."
 	@echo ""
 	@echo "Environment variables:"
 	@echo "  DOMAIN_NAME      - Domain name (default: samaydlette.com)"
@@ -46,95 +64,53 @@ plan:
 	fi
 	./terraform-plan.sh
 
-# Deploy infrastructure
-deploy:
-	@echo "Deploying infrastructure..."
+# Apply the reviewed plan. INFRASTRUCTURE ONLY — this publishes nothing.
+#
+# The old `deploy` target also uploaded content and artifacts. It is gone: it
+# synced `.` (infrastructure/) rather than website/ into the bucket root with
+# --delete and no .well-known/ exclusion, so it removed the whole site and the
+# published evidence and uploaded build junk in its place. CI does the equivalent
+# sync correctly (website/, --exclude ".well-known/*") and every artifact under
+# /.well-known/ is published there by an explicit, signed, post-gate step.
+apply-infra:
+	@echo "Applying infrastructure..."
 	@if [ ! -f tfplan ]; then \
 		echo "❌ No Terraform plan found. Run 'make plan' first."; \
 		exit 1; \
 	fi
 	terraform apply tfplan
-	@$(MAKE) sync-content
-	@$(MAKE) build-ksi-signal
-	@$(MAKE) sync-ksi-signal
-	@$(MAKE) build-oscal-ssp
-	@$(MAKE) sync-oscal-ssp
-	@$(MAKE) check-compliance
-	@echo "✅ Deployment complete!"
-	@echo "Website URL: $$(terraform output -raw website_urls | jq -r '.domain // .cloudfront')"
+	@echo "✅ Infrastructure applied. Nothing was published —"
+	@echo "   content and /.well-known/ artifacts are published by CI, behind"
+	@echo "   the reconciliation gate and the prod environment approval."
 
-# Sync website content to S3
-sync-content:
-	@echo "Syncing website content..."
-	@BUCKET_NAME=$$(terraform output -raw s3_bucket_name 2>/dev/null) || { \
-		echo "❌ Could not get S3 bucket name. Deploy infrastructure first."; \
-		exit 1; \
-	}; \
-	aws s3 sync . s3://$$BUCKET_NAME/ \
-		--exclude "*.tf" \
-		--exclude "*.tfvars*" \
-		--exclude "*.tfstate*" \
-		--exclude ".terraform/*" \
-		--exclude "lambda/*" \
-		--exclude "*.sh" \
-		--exclude "*.rego" \
-		--exclude "*.json" \
-		--exclude ".git/*" \
-		--exclude "README.md" \
-		--exclude "Makefile" \
-		--exclude ".gitignore" \
-		--delete
-	@echo "Invalidating CloudFront cache..."
-	@DISTRIBUTION_ID=$$(terraform output -raw cloudfront_distribution_id 2>/dev/null) || { \
-		echo "Warning: Could not get CloudFront distribution ID"; \
-		exit 0; \
-	}; \
-	aws cloudfront create-invalidation --distribution-id $$DISTRIBUTION_ID --paths "/*"
-	@echo "✅ Content sync complete"
+# Kept as an alias so muscle memory does not silently do nothing, but it no
+# longer deploys content. Publishing is not available locally by design.
+deploy:
+	@echo "❌ 'make deploy' has been removed."
+	@echo ""
+	@echo "   Infrastructure only:  make apply-infra"
+	@echo "   Publishing:           push to main and approve the prod environment"
+	@echo ""
+	@echo "   Local publishing is deliberately unavailable: it bypassed the"
+	@echo "   reconciliation gate and put a partial, unsigned artifact set over"
+	@echo "   the CI-published one."
+	@exit 1
 
 # Build the deploy-time KSI signal (ksi-signal.json) by joining Terraform state,
 # the Lambda's package-lock, the website's HTML hashes, the CI provenance, and
-# the OPA validations from terraform-plan.sh.
+# the OPA validations from terraform-plan.sh. Writes a local file; publishes nothing.
 build-ksi-signal:
 	@echo "Building deploy-time KSI signal..."
 	python3 ../scripts/build-ksi-signal.py
-	@echo "✅ ksi-signal.json built"
+	@echo "✅ ksi-signal.json built (local only)"
 
-# Publish the KSI signal and its schema at /.well-known/ on the live site so
-# any consumer can curl them. The aws s3 cp commands explicitly set
-# Content-Type so browsers and fetch() see them as JSON.
-sync-ksi-signal:
-	@echo "Publishing KSI signal to /.well-known/..."
-	@BUCKET_NAME=$$(terraform output -raw s3_bucket_name 2>/dev/null) || { \
-		echo "❌ Could not get S3 bucket name. Deploy infrastructure first."; \
-		exit 1; \
-	}; \
-	aws s3 cp ksi-signal.json s3://$$BUCKET_NAME/.well-known/ksi-signal.json \
-		--content-type application/json \
-		--cache-control "public, max-age=300"; \
-	aws s3 cp schemas/ksi-signal.schema.json s3://$$BUCKET_NAME/.well-known/ksi-signal.schema.json \
-		--content-type application/schema+json \
-		--cache-control "public, max-age=3600"
-	@echo "✅ KSI signal published"
-
-# Build the OSCAL Rev 5 System Security Plan from the canonical inventory and
-# the FedRAMP KSI catalog. Sits alongside the KSI signal at /.well-known/.
+# Build the OSCAL Rev 5 SSP from the canonical inventory and the FedRAMP KSI
+# catalog. Writes a local file; publishes nothing.
 build-oscal-ssp:
 	@echo "Building OSCAL Rev 5 SSP..."
 	python3 ../scripts/build-oscal-ssp.py
-	@echo "✅ oscal-ssp.json built"
+	@echo "✅ oscal-ssp.json built (local only)"
 
-# Publish the OSCAL SSP at /.well-known/oscal-ssp.json.
-sync-oscal-ssp:
-	@echo "Publishing OSCAL SSP to /.well-known/..."
-	@BUCKET_NAME=$$(terraform output -raw s3_bucket_name 2>/dev/null) || { \
-		echo "❌ Could not get S3 bucket name. Deploy infrastructure first."; \
-		exit 1; \
-	}; \
-	aws s3 cp oscal-ssp.json s3://$$BUCKET_NAME/.well-known/oscal-ssp.json \
-		--content-type application/oscal+json \
-		--cache-control "public, max-age=300"
-	@echo "✅ OSCAL SSP published"
 
 # Run compliance check
 check-compliance:
@@ -295,5 +271,11 @@ security-scan:
 	fi
 	@echo "✅ Security scan complete"
 
-# Full deployment pipeline
-pipeline: dev-setup validate plan deploy
+# Local infrastructure pipeline: set up, validate, plan, apply. Stops there.
+#
+# This is NOT the full compliance pipeline and never was — it does not build the
+# POA&M, VDR, IIW, SCuBA bundle, SDR, CPO or CDS artifacts, does not sign
+# anything with cosign, and does not run the reconciliation gate. That whole
+# sequence is .github/workflows/deploy-with-opa.yml. Run `make reconcile` and
+# `make gate` locally for the offline half.
+pipeline: dev-setup validate plan apply-infra

@@ -14,7 +14,7 @@
       "component_id": "aws::function::app",
       "type": "function",
       "resource_type": "AWS::Lambda::Function",
-      "native_id": "arn:aws:lambda:us-east-2:975050324277:function:app"
+      "native_id": "arn:aws:lambda:us-east-2:123456789012:function:app"
     },
     {
       "component_id": "aws::object_store::website",
