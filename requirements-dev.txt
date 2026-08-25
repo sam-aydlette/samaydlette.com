@@ -1,0 +1,52 @@
+# Development/test tooling for the compliance generators (scripts/) and their
+# tests (tests/).
+#
+# These are EXACTLY the packages the CI test gate installs, at the same pins:
+#   .github/workflows/deploy-with-opa.yml
+#     python3 -m pip install --user pytest jsonschema pyyaml 'ruff==0.15.20' 'mypy==2.1.0'
+#
+# The point of matching CI precisely is that a green `make check` at your desk
+# means the same thing CI asserts. If you bump a pin here, bump it there in the
+# same commit, or local green stops predicting CI green.
+#
+# Install into a local venv with `make dev-setup` (see the root Makefile).
+#
+# On partial pinning: pytest/jsonschema/pyyaml are intentionally unpinned here
+# because CI leaves them unpinned. Pinning them locally would make local and CI
+# disagree, which is the one thing this file exists to prevent. These are
+# dev/test-only tools — they are never installed into, or shipped with, the
+# deployed system — so the supply-chain exposure is a developer workstation and
+# the CI runner, not production. If the project later adopts hash-pinned
+# dev dependencies, pin them in CI first and mirror that here.
+#
+# Not covered here: OPA. It is a standalone binary, not a Python package, and
+# the pinned version + SHA-256 live in the workflow (OPA_VERSION / OPA_SHA256).
+# `make check` runs the policy suite and will tell you if opa is missing.
+
+pytest
+jsonschema
+pyyaml
+ruff==0.15.20
+mypy==2.1.0
+
+# NOT in CI's install list — deliberately added here.
+#
+# tests/test_runtime_signature.py does `pytest.importorskip("cryptography")`.
+# Without this package the whole module vanishes: 5 of its 6 tests are not even
+# collected and the suite reports a single innocuous skip. What disappears is
+# the signature-verification suite — valid-signature-verifies,
+# tampered-signal-fails, wrong-key-fails, PEM round-trip, pinned canonical form,
+# attestation-excluded-from-canonical-bytes. A gate that drops those without
+# saying so is worse than no gate.
+#
+# CI does not install it explicitly, but the GitHub ubuntu runner image provides
+# it: run 32751942007 reports "267 passed, 6 skipped", identical to this venv
+# with cryptography present. So CI is NOT skipping these six today — declaring
+# the dependency here is what makes a local venv match CI's *effective*
+# environment rather than its *declared* install list.
+#
+# It is still an implicit dependency on the runner image. If GitHub ever drops
+# cryptography from that image, those six tests would vanish from CI silently.
+# Adding it to the pip install line in .github/workflows/deploy-with-opa.yml
+# would close that, but nothing is broken today (out of scope for this change).
+cryptography
