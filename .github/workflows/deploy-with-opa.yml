@@ -14,19 +14,25 @@ name: Deploy Website with OPA Compliance
 # WHEN THIS RUNS
 # =============================================================================
 # Automatically when code changes, during code reviews, or manually
+#
+# NO `schedule:` TRIGGER — deliberately. This workflow's deploy job is bound to
+# the `prod` GitHub Environment, which requires a human reviewer, so a scheduled
+# run could never do the thing it was scheduled for: it stopped at the approval
+# gate every night and nobody approved it. The daily continuous-vulnerability
+# cadence (RA-5 / VDR-CSO-DET) now lives in `evidence-nightly.yml`, which
+# re-runs the Syft + Grype scan against a freshly-pulled Grype database, puts it
+# through the same vulnerability and reconciliation gates, and republishes only
+# the VDR and its trend ledger — no `terraform apply` anywhere in it.
+#
+# The effect on this file is that every remaining path to a deploy is
+# human-initiated (a merge to main, or an explicit dispatch) and every one of
+# them still halts behind the `prod` reviewer.
 # =============================================================================
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    # Daily redeploy so the Silk Reeling SCA (Syft + Grype) re-runs against a
-    # freshly-pulled Grype vulnerability DB. This gives continuous vulnerability
-    # detection (RA-5 / VDR-CSO-DET) for the deployed Python/JS dependency set —
-    # catching CVEs newly disclosed against unchanged, already-deployed
-    # dependencies, not just at code-change time. ~07:17 UTC daily.
-    - cron: '17 7 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -2026,33 +2032,88 @@ jobs:
   # ===========================================================================
   # Sends notifications and creates tickets when deployment fails
   # ===========================================================================
+  # This job used to report SUCCESS while the deploy underneath it failed, and it
+  # did so twelve nights running. Two defects, both fixed here:
+  #
+  # 1. The issue-creating step was gated on `github.event_name == 'push'`. On a
+  #    scheduled run the step was SKIPPED — and a job whose only step is skipped
+  #    concludes `success`. So the run summary showed a green "Notify on Failure"
+  #    next to a red deploy, and no issue was ever filed. The event gate is gone;
+  #    a failed deploy alerts however it was triggered.
+  #
+  # 2. Even when it did fire, it opened a brand-new issue every time. The
+  #    repository accumulated 15+ identical open "Deployment Failed" issues,
+  #    which is functionally the same as no alert: nothing distinguishes the one
+  #    that matters. It now reuses a single issue, reopening and commenting, and
+  #    assigns it to the repository owner so it reaches a person.
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
     needs: [compliance-check, deploy]
     if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
-    
+    permissions:
+      contents: read
+      issues: write
+
     steps:
-    # Create GitHub issue so failure doesn't get forgotten
-    - name: Create Issue on Failure
-      if: github.event_name == 'push'
+    - name: Raise or update the deployment-failure issue
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      # Job results reach the script through the environment rather than by
+      # `${{ }}` interpolation into the script body — templating workflow context
+      # straight into executable script is the habit that causes injection bugs.
+      env:
+        COMPLIANCE_RESULT: ${{ needs.compliance-check.result }}
+        DEPLOY_RESULT: ${{ needs.deploy.result }}
       with:
         script: |
-          github.rest.issues.create({
+          const TITLE = `Deployment failing: ${context.workflow}`;
+          const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+          const body = [
+            `The deploy pipeline failed. Until it succeeds, \`main\` is not reaching production.`,
+            ``,
+            `| | |`,
+            `|---|---|`,
+            `| Run | [${context.runId}](${runUrl}) |`,
+            `| Trigger | \`${context.eventName}\` |`,
+            `| Commit | ${context.sha} |`,
+            `| Ref | ${context.ref} |`,
+            `| Compliance check | \`${process.env.COMPLIANCE_RESULT}\` |`,
+            `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,
+            ``,
+            `Review the failing step in the run log, and the compliance reports it uploaded.`,
+            ``,
+            `This issue is reused rather than duplicated — each failure adds a comment. Close it once a deploy succeeds.`,
+          ].join('\n');
+
+          const existing = await github.paginate(github.rest.issues.listForRepo, {
             owner: context.repo.owner,
             repo: context.repo.repo,
-            title: `Deployment Failed: ${context.workflow}`,
-            body: `## Deployment Failure Report
-            
-            **Workflow**: ${context.workflow}
-            **Run ID**: ${context.runId}
-            **Commit**: ${context.sha}
-            **Branch**: ${context.ref}
-            
-            The deployment failed during the compliance check or deployment phase.
-            Please review the workflow logs and compliance reports.
-            
-            [View Workflow Run](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
-            labels: ['deployment', 'failure', 'urgent']
-          })
+            state: 'all',
+            per_page: 100,
+            labels: 'deploy-failure',
+          });
+          const match = existing.find(i => i.title === TITLE && !i.pull_request);
+
+          if (match) {
+            if (match.state === 'closed') {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, state: 'open',
+              });
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            core.notice(`Updated issue #${match.number}`);
+          } else {
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: TITLE,
+              body,
+              labels: ['deployment', 'deploy-failure', 'urgent'],
+              assignees: [context.repo.owner],
+            });
+            core.notice(`Created issue #${created.data.number}`);
+          }

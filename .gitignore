@@ -150,6 +150,16 @@ __pycache__/
 *.pyc
 tests/__pycache__/
 
+# Local dev virtualenv, created by `make dev-setup` from requirements-dev.txt.
+# (Python's venv also writes its own .venv/.gitignore, but that only covers the
+# .venv name; these cover the other conventional ones.)
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
 # Stale committed inventory snapshot — authoritative copies are generated+signed in CI and published at /.well-known/
 /ksi-signal.json
 /ksi-signal.bundle
