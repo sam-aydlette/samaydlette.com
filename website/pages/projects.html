@@ -73,12 +73,11 @@
             <section class="projects-section">
                 <h2 class="section-title">research</h2>
                 <div class="projects-list">
-                    <div class="article-card revising">
+                    <div class="article-card">
                         <h3 class="article-title">
-                            <a href="/research/the-plumbing.html">Automated Security Compliance</a>
+                            <a href="/research/the-plumbing.html">Security Risk as a Dynamical System</a>
                         </h3>
                         <p>A field report on automating security compliance end to end. Every deploy derives signed, machine-readable compliance documents from one canonical inventory, re-checks them against the live system, and projects a single 800-53 Rev 5 control hub into seven framework views: FedRAMP Rev 5 Moderate, FedRAMP 20x Class C, 800-53 Rev 4, CMMC Level 2, GovRAMP with the CJIS overlay, and both TX-RAMP levels. The paper separates the two things people call reciprocity (the government decision and the architecture decision), walks the system control-family by control-family, and ties it to the business case for continuous, verifiable compliance. Everything is verifiable from <code>/.well-known/</code> with curl, jq, and cosign, for a few dollars a month.</p>
-                        <p class="revising-note">being rewritten &mdash; <a href="/research/the-plumbing.html">why this is down</a></p>
                     </div>
                     <div class="article-card">
                         <h3 class="article-title">
@@ -86,6 +85,13 @@
                         </h3>
                         <p>There is no view from nowhere. We sit inside the feedback loops we try to observe, which makes each of us a threshold rather than an observer: the place where a system tips one way or the other. This essay argues that information-technology governance is finally flexible enough to extend that steering past the individual to organizations and communities.</p>
                                             </div>
+                    <div class="article-card">
+                        <h3 class="article-title">
+                            <a href="/research/eigenvalue-risk-model.html">The Eigenvalue Risk Model: Fragile Directions in a Control Portfolio</a>
+                        </h3>
+                        <p>The technical note behind the other two. A twenty-dimensional state space over the NIST 800-53 control families, a barrier between a healthy configuration and a breached one, and the directions along which that barrier is cheapest to cross. It is a proposed model with unvalidated parameters and an estimator that has not been built, and the most useful sections are the ones where it breaks: the headline barrier stops governing anything once the noise is heavy-tailed, which this domain&rsquo;s data is, and the obvious estimator turns out not to identify the quantity it was written to recover. Read alongside <a href="/research/the-plumbing.html">the risk paper</a>, which carries the operational half.</p>
+                        <a href="/research/eigenvalue-risk-model.html" class="read-more">read_paper</a>
+                    </div>
                 </div>
             </section>
     </main>

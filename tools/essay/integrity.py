@@ -16,11 +16,11 @@ import sys
 from html.parser import HTMLParser
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from paths import ESSAY, INDEX, PAPER, SITE_ROOT
+from paths import ESSAY, INDEX, PAPER, RISK_MODEL, SITE_ROOT
 
 # The paper is long-form too. The homepage is not, but it links across the site
 # (including to the dashboard), and those edges are worth the same check.
-FILES = [ESSAY, PAPER, INDEX]
+FILES = [ESSAY, PAPER, RISK_MODEL, INDEX]
 VOID = {'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta',
         'source', 'track', 'wbr'}
 # href="page.html#frag" or href="page.html"

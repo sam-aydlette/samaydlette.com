@@ -17,6 +17,7 @@ ESSAY = 'website/research/staying-in-the-loop.html'
 # homepage is not, but it links across the site and those edges are worth the
 # same anchor check.
 PAPER = 'website/research/the-plumbing.html'
+RISK_MODEL = 'website/research/eigenvalue-risk-model.html'
 INDEX = 'website/index.html'
 
 # What a leading-slash href is relative to, as the site is served.
