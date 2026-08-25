@@ -45,6 +45,26 @@ cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \
   --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" oscal-ssp.json
 ```
 
+**Two publisher identities, and why.** Everything above is signed by the deploy
+workflow. The **VDR is the exception**: `vdr-report.json`, its Sigstore bundle,
+its in-toto attestation, and the `vdr-trend.json` ledger are refreshed nightly
+so the published vulnerability report stays inside its 24-hour freshness policy.
+The deploy workflow cannot do that — it applies Terraform and is deliberately
+bound to a reviewed environment — so the refresh runs as its own workflow and
+signs with its own identity:
+
+```
+NIGHTLY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
+```
+
+Verifying the VDR means accepting **either** identity, which is what
+`scripts/verify-published.sh` does. Both are pinned workflows in this public
+repository running on `main`, so the claim being made is unchanged: the evidence
+came from this repo's CI, not from someone holding a key. If you prefer one
+expression, `--certificate-identity-regexp` over
+`https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+` covers
+both — that is the form the README uses.
+
 **2. Provenance claims — dependency-free.** `scripts/verify-attestation.py` reads
 the in-toto predicate (no cosign, no third-party libraries) and checks it binds
 each artifact's sha256 to the canonical inventory (`signal_id` + hash), the

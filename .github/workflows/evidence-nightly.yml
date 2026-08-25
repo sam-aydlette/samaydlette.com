@@ -1,0 +1,755 @@
+# =============================================================================
+# GitHub Actions Workflow: Evidence Nightly (VDR refresh)
+# =============================================================================
+# Published compliance reporting must be less than 24 hours old. That was policy
+# and nothing else: the freshness of the SERVED artifacts was never asserted
+# anywhere, so when the nightly deploy began failing on a vulnerability the gate
+# was right to block, the published VDR simply stopped moving. Twelve days, every
+# gate green, nobody told.
+#
+# The deploy path cannot be the answer. It is bound to the `prod` GitHub
+# Environment behind a human reviewer (deliberately — it applies Terraform over
+# the whole stack), so it cannot refresh anything unattended.
+#
+# So this workflow does the one thing that genuinely needs a daily cadence and
+# needs no infrastructure change at all: re-run the dependency scan against a
+# freshly-pulled Grype database, rebuild the VDR and its trend ledger, put them
+# through the same vulnerability and reconciliation gates, and republish exactly
+# those five objects. No Terraform apply. No website sync. No write outside
+# `.well-known/vdr-*`.
+#
+# THE TRADE, STATED PLAINLY: this replaces an unattended Terraform apply over
+# the whole stack with an unattended write to one S3 prefix. Narrower, but still
+# an unattended production write, and its GitHub Environment deliberately has no
+# required reviewer because it must run while nobody is awake. See CLAUDE.md.
+#
+# WHAT THIS DOES NOT REFRESH, and why that is safe:
+#   - The canonical inventory. This binds to the PUBLISHED ksi-signal.json
+#     (signature-verified against the deploy workflow's pinned identity) rather
+#     than rebuilding it, which is what satisfies reconciliation invariant (e)
+#     without touching the SSP/POA&M/IIW/SCuBA. A changed inventory means changed
+#     infrastructure, and that belongs on the reviewed deploy path.
+#   - The OPA gate axis. `validations.json` is produced by `terraform plan`,
+#     which this workflow has neither the state access nor the IAM rights to run.
+#     Empirically that axis contributes zero findings to any PUBLISHED VDR — a
+#     VDR with OPA violations in it could never publish, because the deploy gate
+#     blocks the deploy first. So its absence changes no published value. It does
+#     mean the nightly VDR is an SAST+SCA+DAST report re-verified against today's
+#     threat data, not a re-evaluation of the infrastructure plan.
+#   - The SSP, POA&M, IIW, SCuBA, OCR, CDS and provenance attestations. The SSP
+#     and POA&M ARE rebuilt here, but only as inputs to the reconciliation gate
+#     (it loads all four artifacts); they are never signed and never published.
+#     Rebuilding them from the published inventory keeps the gate evaluating one
+#     coherent version instead of mixing a 12-day-old published POA&M against
+#     today's docs/poam.md — a mismatch that would fail invariant (g) every time
+#     a POA&M item was merged but not yet deployed.
+#
+# A GENUINELY NEW CVE CANNOT AUTO-PUBLISH. Invariant (h) requires every VDR
+# finding to carry a poam_ref and (g) requires OSCAL POA&M parity with
+# docs/poam.md, a human-authored git file. A new finding therefore breaks this
+# workflow until a human dispositions it. That is the gate working, and it is
+# exactly why the alert job below has to be reliable.
+# =============================================================================
+
+name: Evidence Nightly (VDR refresh)
+
+on:
+  # The cadence the deploy workflow used to carry. Moved here so the only thing
+  # that runs unattended is this narrow refresh, and every path that can reach
+  # Terraform apply stays behind the `prod` reviewer gate.
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+# Never let two refreshes race for the same five objects.
+concurrency:
+  group: evidence-nightly
+  cancel-in-progress: false
+
+# Default-deny at the workflow level; each job widens only what it needs.
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  NODE_VERSION: 22
+  # Same pinned Anchore toolchain as the deploy path, so the nightly scan and the
+  # deploy scan inventory the same trees the same way. Refresh together with
+  # deploy-with-opa.yml or the two VDRs will disagree for tooling reasons.
+  SYFT_VERSION: v1.45.1
+  GRYPE_VERSION: v0.114.0
+  # The site bucket. Resolved as a literal rather than `terraform output` on
+  # purpose: reading a Terraform output needs backend state access and a role
+  # that can init the stack, which is exactly the blast radius this workflow
+  # exists to avoid. The value is the same literal the deploy job writes into
+  # terraform.tfvars as `existing_s3_bucket_name`.
+  SITE_BUCKET: samaydlette.com
+  SITE_ORIGIN: https://samaydlette.com
+  # The published-freshness policy, in one place.
+  MAX_EVIDENCE_AGE_HOURS: '24'
+  # The identity that signs the published inventory. The nightly binds its VDR to
+  # an artifact it fetched over the public internet, so it verifies that artifact
+  # against this pinned identity before trusting a single byte of it.
+  DEPLOY_SIGNER_IDENTITY: 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main'
+  COSIGN_OIDC_ISSUER: https://token.actions.githubusercontent.com
+
+jobs:
+  # ===========================================================================
+  # JOB 1: SAST — the IaC scan axis, credential-free
+  # ===========================================================================
+  # Checkov and tfsec are pure static analysis over the Terraform source. They
+  # need no AWS access at all, which is why they can run in an unprivileged job
+  # here rather than being inherited from the deploy path.
+  #
+  # They are NOT optional. The published VDR carries 31 Checkov and 6 tfsec
+  # findings; a nightly that skipped them would republish a report asserting
+  # those findings had disappeared. Same scanners, same pins, same soft-fail
+  # posture as the deploy workflow's security-scan job — the VDR aggregator and
+  # the vulnerability gate are what decide, not the scanners.
+  # ===========================================================================
+  sast:
+    name: SAST (Checkov + tfsec)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Run tfsec
+      uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
+      with:
+        # Authenticate the action's "resolve latest tfsec release" GitHub API
+        # call — anonymous requests get rate-limited on shared runners.
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        soft_fail: true
+        additional_args: --format json --out tfsec-results.json
+
+    - name: Run Checkov
+      uses: bridgecrewio/checkov-action@9b70310bcd306d11740313070b940167d6b23085 # v12.3115.0
+      with:
+        directory: .
+        framework: terraform
+        soft_fail: true
+        output_format: sarif
+        output_file_path: checkov-out
+
+    # Mirrors the deploy workflow's locate-or-fallback step: a scanner that
+    # produced nothing must yield a valid empty document, never a missing file,
+    # so a tooling failure cannot masquerade as "no findings" downstream.
+    - name: Locate or create SARIF and tfsec files
+      if: always()
+      run: |
+        SARIF_FOUND=$(find checkov-out -name "*.sarif" -type f 2>/dev/null | head -n1 || true)
+        if [ -n "$SARIF_FOUND" ]; then
+          cp "$SARIF_FOUND" checkov-results.sarif
+          echo "Located Checkov SARIF at $SARIF_FOUND ($(wc -c < checkov-results.sarif) bytes)"
+        else
+          echo "::warning::No SARIF produced by Checkov; creating empty fallback."
+          printf '%s' '{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Checkov","version":"fallback"}},"results":[]}]}' > checkov-results.sarif
+        fi
+        if [ ! -f tfsec-results.json ]; then
+          echo "::warning::No tfsec output; creating empty fallback."
+          echo '{"results": []}' > tfsec-results.json
+        else
+          echo "tfsec JSON size: $(wc -c < tfsec-results.json) bytes"
+        fi
+
+    - name: Upload SAST artifacts for VDR aggregation
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: always()
+      with:
+        name: nightly-sast-results
+        path: |
+          checkov-results.sarif
+          tfsec-results.json
+        retention-days: 5
+
+  # ===========================================================================
+  # JOB 2: REFRESH — rebuild, gate, and republish the VDR + trend
+  # ===========================================================================
+  refresh:
+    name: Refresh published VDR
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [sast]
+    # Its own GitHub Environment, with NO required reviewer, because it must run
+    # unattended. This is the trade named at the top of this file. The `prod`
+    # environment and its reviewer requirement are untouched, and the role this
+    # environment's OIDC subject can assume cannot apply Terraform, cannot sync
+    # the website, and cannot write outside `.well-known/vdr-*`.
+    environment: evidence-nightly
+    permissions:
+      contents: read
+      # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
+      # AWS role assumption. No AWS long-lived key.
+      id-token: write
+      # Lets GITHUB_TOKEN list this repo's Dependabot alerts (the CVE-bearing
+      # SCA findings the VDR builder cross-references against KEV).
+      security-events: read
+
+    steps:
+    # -------------------------------------------------------------------------
+    # SETUP
+    # -------------------------------------------------------------------------
+    # Full history: the published inventory names the commit it was built from,
+    # and this workflow refuses to bind to an inventory whose commit is not an
+    # ancestor of main. That ancestry test needs more than a shallow clone.
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: infrastructure/lambda/package-lock.json
+
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    - name: Download SAST results
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: nightly-sast-results
+        path: infrastructure/
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@517a711dbcd0e402f90c77e7e2f81e849156e31d # v6.2.2
+      # The OIDC AssumeRoleWithWebIdentity call to regional STS intermittently
+      # times out from GitHub runners; cap it and retry rather than hanging.
+      timeout-minutes: 6
+      with:
+        # A dedicated least-privilege role, NOT the deploy role. Its ARN is a
+        # repo variable so the account id stays out of this file.
+        # Defined in infrastructure/bootstrap/evidence-nightly.tf.
+        role-to-assume: ${{ vars.AWS_EVIDENCE_NIGHTLY_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        retry-max-attempts: 5
+
+    # -------------------------------------------------------------------------
+    # BIND TO THE PUBLISHED CANONICAL INVENTORY
+    # -------------------------------------------------------------------------
+    # This is the step that makes a VDR-only refresh legitimate. Reconciliation
+    # invariant (e) requires every artifact to carry one inventory's signal_id.
+    # Rather than rebuild the inventory (which would mean rebuilding and
+    # republishing everything derived from it), the nightly adopts the inventory
+    # that is currently published and deployed.
+    #
+    # That inventory arrives over the public internet, so it is verified before
+    # use: the Sigstore bundle must check out against the deploy workflow's
+    # pinned identity. Fail closed — an unverifiable inventory is not an
+    # inventory, and binding a signed VDR to one would launder a forgery.
+    - name: Fetch and verify the published canonical inventory
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.json \
+          "${SITE_ORIGIN}/.well-known/ksi-signal.json"
+        curl -sfL --retry 3 --retry-delay 5 -o ksi-signal.bundle \
+          "${SITE_ORIGIN}/.well-known/ksi-signal.bundle"
+        echo "Verifying the published inventory against the deploy workflow's pinned identity..."
+        cosign verify-blob \
+          --bundle ksi-signal.bundle \
+          --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
+          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          ksi-signal.json
+        SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
+        SIGNAL_ID=$(jq -r '.signal_id' ksi-signal.json)
+        # The value is already trusted (the signature above verified it), but it
+        # is about to become a shell variable and an environment-file line, so
+        # constrain it to the only shape it can legitimately have. A value
+        # carrying a newline could otherwise append arbitrary variables to
+        # $GITHUB_ENV.
+        if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+          echo "::error::published inventory carries a malformed commit id"
+          exit 1
+        fi
+        echo "Published inventory ${SIGNAL_ID} was built from commit ${SIGNAL_COMMIT}"
+        echo "SIGNAL_COMMIT=${SIGNAL_COMMIT}" >> "$GITHUB_ENV"
+
+    # The published inventory must descend from main. If it does not, something
+    # is serving evidence this repository did not produce, and the correct
+    # response is to stop rather than to sign a fresh VDR on top of it.
+    - name: Assert the published inventory descends from main
+      run: |
+        set -euo pipefail
+        if ! git cat-file -e "${SIGNAL_COMMIT}^{commit}" 2>/dev/null; then
+          echo "::error::published inventory names commit ${SIGNAL_COMMIT}, which is not in this repository"
+          exit 1
+        fi
+        # Compare against a freshly fetched main rather than a remote-tracking
+        # ref, so the test means the same thing however this run was triggered.
+        git fetch --no-tags --quiet origin main
+        if ! git merge-base --is-ancestor "${SIGNAL_COMMIT}" FETCH_HEAD; then
+          echo "::error::published inventory commit ${SIGNAL_COMMIT} is not an ancestor of main"
+          exit 1
+        fi
+        echo "✅ published inventory commit is on main"
+
+    # -------------------------------------------------------------------------
+    # RESOLVE THE DEPENDENCY TREES THE SCAN INVENTORIES
+    # -------------------------------------------------------------------------
+    # Three trees, exactly the ones the deploy job scans:
+    #   _pkg               Silk Reeling's Python deps (Lambda staging dir)
+    #   _silk_src/frontend Silk Reeling's SPA — manifests live in a separate
+    #                      repo, so Dependabot never sees them and this scan is
+    #                      their only CVE coverage
+    #   lambda             the compliance Lambda's own npm tree
+    # plus ../tools/a11y, catalogued straight from its lockfile.
+    #
+    # DELIBERATE DIVERGENCE FROM THE DEPLOY BUILD: this resolves the dependency
+    # trees but does not run the SPA's `npm run build`, does not stage the
+    # backend sources, and does not produce silk-reeling.zip — none of which the
+    # Syft catalogers read. The scanned component set is identical; the work that
+    # only exists to produce a deployable artifact is skipped, along with the
+    # Cognito lookups that only feed build-time SPA config. If the deploy job's
+    # build step changes what lands in these trees, change this one with it.
+    - name: Install compliance Lambda dependencies
+      working-directory: infrastructure/lambda
+      run: npm ci --omit=dev
+
+    - name: Resolve Silk Reeling dependency trees (scan input only)
+      working-directory: infrastructure
+      env:
+        SILK_REELING_REF: ${{ vars.SILK_REELING_REF || 'main' }}
+        SILK_REELING_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+      run: |
+        set -euo pipefail
+        rm -rf _silk_src _pkg
+        git clone --depth 1 --branch "$SILK_REELING_REF" \
+          "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" _silk_src
+        ( cd _silk_src/frontend && npm ci )
+        mkdir -p _pkg
+        # Same platform pins as the deploy build so the resolved wheel set — and
+        # therefore the CVE match set — is the runtime's, not the runner's.
+        python3 -m pip install --quiet --target _pkg \
+          --platform manylinux2014_x86_64 --python-version 3.13 \
+          --implementation cp --only-binary=:all: \
+          -r _silk_src/backend/requirements-lambda.txt
+
+    # -------------------------------------------------------------------------
+    # THE POINT OF THE NIGHTLY: re-scan against today's vulnerability database
+    # -------------------------------------------------------------------------
+    # Byte-for-byte the deploy job's scan step. Grype pulls a fresh database on
+    # every run, so this catches CVEs newly disclosed against unchanged,
+    # already-deployed dependencies — the detection that has been dark for the
+    # twelve days the deploy could not complete.
+    - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
+      working-directory: infrastructure
+      run: |
+        set +e   # SCA findings must never fail this step; the VDR gate does that
+        curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
+          | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
+        curl -sSfL "https://raw.githubusercontent.com/anchore/grype/${GRYPE_VERSION}/install.sh" \
+          | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
+        syft version && grype version
+        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python     || true
+        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript || true
+        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript || true
+        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript || true
+        grype sbom:sbom-python.json -o json > grype-python.json || true
+        grype sbom:sbom-js.json     -o json > grype-js.json     || true
+        grype sbom:sbom-lambda.json -o json > grype-lambda.json || true
+        grype sbom:sbom-a11y.json   -o json > grype-a11y.json   || true
+        # Any file that is missing/invalid/lacking .matches becomes an empty
+        # match set, so the merge cannot fail and ingest_grype always gets a
+        # valid top-level .matches[] array.
+        for f in grype-python.json grype-js.json grype-lambda.json grype-a11y.json; do
+          jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
+        done
+        jq -s '{matches: (map(.matches) | add)}' \
+          grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json
+        echo "grype.json: $(jq '.matches | length' grype.json) match(es)"
+        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)  a11y: $(jq '.matches | length' grype-a11y.json)"
+
+    # -------------------------------------------------------------------------
+    # THREAT-INTELLIGENCE INPUTS (all public, all non-blocking on fetch failure)
+    # -------------------------------------------------------------------------
+    - name: Fetch previous VDR report (first-detected ledger)
+      working-directory: infrastructure
+      run: |
+        if curl -sfL -o previous-vdr-report.json "${SITE_ORIGIN}/.well-known/vdr-report.json"; then
+          echo "Previous VDR fetched ($(wc -c < previous-vdr-report.json) bytes); using as first-detected ledger."
+        else
+          echo "::warning::Could not fetch previous VDR report; the SLA clock restarts for every finding this run."
+          echo '{"findings":[]}' > previous-vdr-report.json
+        fi
+
+    - name: Fetch Dependabot alerts (SCA / CVE source)
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if gh api -H "Accept: application/vnd.github+json" \
+            "/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
+            > dependabot-alerts.json 2>/dev/null \
+            && jq -e 'type == "array"' dependabot-alerts.json >/dev/null 2>&1; then
+          echo "Dependabot alerts fetched: $(jq 'length' dependabot-alerts.json) open."
+        else
+          echo "::warning::Could not fetch Dependabot alerts; proceeding with an empty SCA set."
+          echo '[]' > dependabot-alerts.json
+        fi
+
+    - name: Fetch CISA KEV catalog
+      working-directory: infrastructure
+      run: |
+        KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+        if curl -sfL --retry 3 --retry-delay 2 -o kev-catalog.json "$KEV_URL" \
+            && jq -e '.vulnerabilities | length > 0' kev-catalog.json >/dev/null 2>&1; then
+          echo "CISA KEV catalog: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length' kev-catalog.json) CVEs."
+        else
+          echo "::warning::Could not fetch a valid CISA KEV catalog; no KEV flagging this run."
+          echo '{"vulnerabilities":[]}' > kev-catalog.json
+        fi
+
+    - name: Fetch FIRST EPSS scores
+      working-directory: infrastructure
+      run: |
+        EPSS_URL="https://epss.cyentia.com/epss_scores-current.csv.gz"
+        if curl -sfL --retry 3 --retry-delay 2 -o epss-scores.csv.gz "$EPSS_URL" \
+            && [ -s epss-scores.csv.gz ]; then
+          echo "EPSS scores fetched ($(stat -c%s epss-scores.csv.gz) bytes gzipped)."
+        else
+          echo "::warning::Could not fetch EPSS scores; LEV falls back to the severity proxy this run."
+          printf 'cve,epss,percentile\n' > epss-scores.csv.gz
+        fi
+
+    # -------------------------------------------------------------------------
+    # GATE INPUTS — built, never signed, never published
+    # -------------------------------------------------------------------------
+    # scripts/reconcile.py loads four artifacts (signal, SSP, POA&M, VDR) and
+    # will not run without all of them. These two are rebuilt from the published
+    # inventory purely so the gate has a coherent set to evaluate. They are not
+    # signed and are not in the publish step below; the published SSP and POA&M
+    # keep whatever the last reviewed deploy put there.
+    #
+    # Rebuilding rather than fetching them is what keeps invariant (g) — OSCAL
+    # POA&M parity with docs/poam.md — meaningful. docs/poam.md moves on `main`
+    # ahead of deploys; comparing today's docs/poam.md against a POA&M generated
+    # from an older commit would fail nightly for a reason that is not a defect.
+    - name: Build reconciliation inputs (OSCAL SSP + POA&M, unpublished)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-oscal-ssp.py
+        python3 ../scripts/build-oscal-poam.py --ksi-signal ksi-signal.json --output oscal-poam.json
+        echo "POA&M items: $(jq '.["plan-of-action-and-milestones"]["poam-items"] | length' oscal-poam.json)"
+
+    # -------------------------------------------------------------------------
+    # BUILD THE VDR
+    # -------------------------------------------------------------------------
+    # --ksi-signal binds the report to the published inventory (invariant e).
+    # --opa is deliberately not passed; see the header. Its absence leaves the
+    # builder's default path pointing at a file that does not exist, which
+    # ingest_opa treats as an empty finding set.
+    - name: Build VDR Report (FedRAMP 20x Class C)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-vdr-report.py \
+          --checkov checkov-results.sarif \
+          --tfsec tfsec-results.json \
+          --checkov-yaml ../.checkov.yaml \
+          --previous-vdr previous-vdr-report.json \
+          --dependabot dependabot-alerts.json \
+          --grype grype.json \
+          --zap ../security/zap/zap-report.json \
+          --kev kev-catalog.json \
+          --epss epss-scores.csv.gz \
+          --ksi-signal ksi-signal.json \
+          --output vdr-report.json
+        jq '{summary, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
+
+    # Unchanged gate, new schedule. Fails the build on any scanner-reported
+    # vulnerability that is not remediated or dispositioned false-positive /
+    # operational-requirement in data/vuln-dispositions.json. When a newly
+    # disclosed CVE lands, THIS is what stops it publishing, and the alert job
+    # is what tells a human to disposition it.
+    - name: Vulnerability gate (fix or categorize every vuln)
+      working-directory: infrastructure
+      run: python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json
+
+    - name: Build VDR vuln trend ledger (RA-5(6))
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        if curl -sfL -o vdr-trend.json "${SITE_ORIGIN}/.well-known/vdr-trend.json"; then
+          echo "Previous trend ledger fetched ($(jq '.points | length' vdr-trend.json) points)."
+        else
+          echo "::warning::No previous VDR trend ledger; starting a fresh one."
+          rm -f vdr-trend.json
+        fi
+        python3 ../scripts/backfill-vdr-trend.py \
+          --points ../data/vdr-trend-backfill.json --trend vdr-trend.json
+        python3 ../scripts/build-vdr-trend.py --report vdr-report.json --trend vdr-trend.json
+
+    # -------------------------------------------------------------------------
+    # THE GATE — unchanged assertions, fail closed
+    # -------------------------------------------------------------------------
+    # --expect-commit is the PUBLISHED inventory's commit, not this run's HEAD.
+    # Invariant (f) asks whether the artifacts under evaluation agree on one
+    # commit; for a refresh that deliberately adopts the deployed inventory, that
+    # commit is the deployed one. HEAD is asserted separately, and more strongly,
+    # by the ancestry check above. Freshness — the thing (f) never measured — is
+    # asserted against the live edge after publish.
+    #
+    # --live enumerates live AWS for invariants (a) completeness and (i)
+    # classification tags. Those are the only AWS reads this workflow's role can
+    # perform, and they are read-only.
+    - name: Reconciliation gate (fail closed on drift)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}"
+
+    # -------------------------------------------------------------------------
+    # SIGN — only the artifacts this workflow publishes
+    # -------------------------------------------------------------------------
+    # Sigstore keyless via the GitHub Actions OIDC provider. Note that these
+    # bundles carry THIS workflow's identity, not the deploy workflow's, so a
+    # verifier must accept both. scripts/verify-published.sh and the README's
+    # verification instructions need the evidence-nightly identity added.
+    - name: Sign VDR report and trend ledger
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        cosign sign-blob --yes --bundle vdr-report.bundle vdr-report.json
+        cosign sign-blob --yes --bundle vdr-trend.bundle vdr-trend.json
+        ls -la vdr-report.bundle vdr-trend.bundle
+
+    # The published VDR carries a SLSA/in-toto provenance attestation, and that
+    # attestation binds to the artifact's sha256. Republishing vdr-report.json
+    # without re-attesting it would leave the served
+    # `vdr-report.json.intoto.jsonl` bound to bytes that are no longer there —
+    # so scripts/verify-published.sh, and any third party following the README,
+    # would get a verification FAILURE on the published evidence between
+    # deploys. Publishing evidence that does not verify is the exact defect this
+    # project exists to argue against, so the attestation is refreshed with the
+    # report rather than left behind.
+    #
+    # The predicate takes its commit from the bound inventory's provenance, not
+    # from this run's GITHUB_SHA, so it names the deployed commit and stays
+    # consistent with everything else in the published set.
+    - name: Attest VDR provenance (SLSA/in-toto)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-provenance.py \
+          --ksi-signal ksi-signal.json --generator ../scripts/build-vdr-report.py \
+          --output vdr-report.json.predicate.json
+        cosign attest-blob --yes --new-bundle-format \
+          --predicate vdr-report.json.predicate.json --type slsaprovenance1 \
+          --bundle vdr-report.json.intoto.jsonl vdr-report.json
+        # 1) signature + identity (trust), against THIS workflow's identity.
+        cosign verify-blob-attestation --new-bundle-format \
+          --bundle vdr-report.json.intoto.jsonl --type slsaprovenance1 \
+          --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
+          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+          vdr-report.json
+        # 2) the dependency-free consumer checks the bindings (subject==artifact,
+        #    inventory sha256, generator, commit) — fail closed.
+        python3 ../scripts/verify-attestation.py \
+          --bundle vdr-report.json.intoto.jsonl --artifact vdr-report.json \
+          --ksi-signal ksi-signal.json
+
+    # -------------------------------------------------------------------------
+    # PUBLISH — five objects, one prefix
+    # -------------------------------------------------------------------------
+    # `s3api put-object` rather than `s3 cp`: a single unambiguous PutObject call
+    # per object, so the role needs exactly s3:PutObject on
+    # `.well-known/vdr-*` and nothing else. The bucket default-encrypts with
+    # SSE-S3 (AES256), so no KMS grant is involved.
+    - name: Publish VDR + trend to /.well-known/
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        put() {
+          aws s3api put-object \
+            --bucket "${SITE_BUCKET}" \
+            --key ".well-known/$1" \
+            --body "$1" \
+            --content-type "$2" \
+            --cache-control "public, max-age=300" \
+            --query 'ETag' --output text > /dev/null
+          echo "published .well-known/$1"
+        }
+        put vdr-report.json  "application/json"
+        put vdr-report.bundle "application/json"
+        put vdr-report.md    "text/markdown; charset=utf-8"
+        put vdr-trend.json   "application/json"
+        put vdr-trend.bundle "application/json"
+        # The refreshed provenance attestation. Its key matches the same
+        # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
+        put vdr-report.json.intoto.jsonl "application/json"
+
+    # Scoped to exactly the paths this workflow wrote. The deploy path
+    # invalidates `/*`; that is a whole-site operation and is not this
+    # workflow's business.
+    - name: Invalidate CloudFront cache (vdr paths only)
+      # The distribution id reaches the shell through the environment rather
+      # than being interpolated into the command line: an interpolated secret
+      # is expanded into the script text before the runner ever executes it, so
+      # it can surface in a trace or an error echo. Actions masks known secrets
+      # in log output, but not putting it there is the stronger habit.
+      env:
+        DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+      run: |
+        set -euo pipefail
+        aws cloudfront create-invalidation \
+          --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "/.well-known/vdr-*" \
+          --query 'Invalidation.Id' --output text
+        echo "invalidation created for /.well-known/vdr-*"
+
+    # -------------------------------------------------------------------------
+    # THE CHECK THAT DID NOT EXIST
+    # -------------------------------------------------------------------------
+    # Everything above verifies the build. This verifies the CLAIM: fetch the
+    # artifact over the public URL exactly as a third party would, assert the
+    # served bytes are the bytes just built, and assert its emitted_at is inside
+    # the 24-hour policy window. Retries ride out CDN propagation.
+    #
+    # Deliberately not `aws cloudfront wait invalidation-completed`: polling the
+    # public edge is a stronger check than asking the CDN's control plane
+    # whether it thinks it is finished, and it keeps cloudfront:GetInvalidation
+    # off the role.
+    #
+    # If this fails, the refresh did not achieve its purpose, the job fails, and
+    # the alert job raises it with a human.
+    - name: Assert published evidence is fresh at the edge
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        BUILT_SHA=$(sha256sum vdr-report.json | awk '{print $1}')
+        python3 ../scripts/check-evidence-freshness.py \
+          --url "${SITE_ORIGIN}/.well-known/vdr-report.json" \
+          --max-age-hours "${MAX_EVIDENCE_AGE_HOURS}" \
+          --expect-sha256 "${BUILT_SHA}" \
+          --retries 12 --retry-delay 20
+
+  # ===========================================================================
+  # JOB 3: ALERT — the job that has to work
+  # ===========================================================================
+  # The deploy workflow's `notify` job reported SUCCESS through twelve
+  # consecutive nightly failures. Its condition to run was right; its only step
+  # was gated on `github.event_name == 'push'`, so on a `schedule` event the step
+  # was skipped, and a job whose only step is skipped concludes successfully.
+  # Nothing was raised, nothing looked wrong, and the published evidence rotted.
+  #
+  # This job takes the opposite defaults:
+  #   - no event gating whatsoever; a failed run alerts on every trigger
+  #   - one issue, reopened and commented, instead of a new issue per failure
+  #     (the deploy path has left 15+ identical open issues, which is the same
+  #     as no alert at all)
+  #   - assigned to the repository owner, so it reaches a person rather than a
+  #     notifications tab
+  #   - states the freshness deadline, so the message carries its own urgency
+  #
+  # RESIDUAL RISK, recorded rather than hidden: this alert rides on the same
+  # scheduled workflow it is alerting about. If GitHub disables the cron — which
+  # it does after 60 days with no repository activity — neither the refresh nor
+  # this alert runs, and the silence looks identical to success. An alert that
+  # cannot detect its own absence needs an out-of-band watchdog; that is a
+  # follow-up, not something this workflow can solve from the inside.
+  # ===========================================================================
+  alert:
+    name: Alert on stale evidence
+    runs-on: ubuntu-latest
+    needs: [sast, refresh]
+    if: always() && (needs.sast.result != 'success' || needs.refresh.result != 'success')
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+    - name: Raise or update the stale-evidence issue
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      # Job results reach the script through the environment rather than by
+      # `${{ }}` interpolation into the script body. These particular values are
+      # a fixed vocabulary and could not carry an injection, but templating
+      # workflow context straight into executable script is the habit that
+      # causes those bugs, so the safe form is the one written down here.
+      env:
+        SAST_RESULT: ${{ needs.sast.result }}
+        REFRESH_RESULT: ${{ needs.refresh.result }}
+      with:
+        script: |
+          const TITLE = 'Evidence nightly failed — published compliance reporting is going stale';
+          const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+          const body = [
+            `The nightly VDR refresh did not complete, so \`/.well-known/vdr-report.json\` is not being updated.`,
+            ``,
+            `Published compliance reporting must be under 24 hours old. Every hour this stays broken is an hour the site is serving evidence that does not meet that policy.`,
+            ``,
+            `| | |`,
+            `|---|---|`,
+            `| Run | [${context.runId}](${runUrl}) |`,
+            `| Trigger | \`${context.eventName}\` |`,
+            `| Commit | ${context.sha} |`,
+            `| SAST job | \`${process.env.SAST_RESULT}\` |`,
+            `| Refresh job | \`${process.env.REFRESH_RESULT}\` |`,
+            ``,
+            `**Most likely cause:** a newly disclosed CVE reached the vulnerability gate and has no disposition yet. That is the gate working as designed — it will keep failing until the finding is fixed or recorded in \`data/vuln-dispositions.json\` with a POA&M reference in \`docs/poam.md\`. Check the "Vulnerability gate" step in the run log first.`,
+            ``,
+            `Other causes worth checking, in order: the reconciliation gate (drift between the published inventory and live AWS), the freshness assertion at the end (published but not served), and the SAST job.`,
+            ``,
+            `This issue is reused rather than duplicated — each failure adds a comment. It will not close itself; close it once a run succeeds.`,
+          ].join('\n');
+
+          // One issue, not one per night. Search by exact title among open issues.
+          const existing = await github.paginate(github.rest.issues.listForRepo, {
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'all',
+            per_page: 100,
+            labels: 'evidence-freshness',
+          });
+          const match = existing.find(i => i.title === TITLE && !i.pull_request);
+
+          if (match) {
+            if (match.state === 'closed') {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, state: 'open',
+              });
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body,
+            });
+            core.notice(`Updated issue #${match.number}`);
+          } else {
+            const created = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: TITLE,
+              body,
+              labels: ['compliance', 'evidence-freshness', 'urgent'],
+              assignees: [context.repo.owner],
+            });
+            core.notice(`Created issue #${created.data.number}`);
+          }
+
+    # Independent of why the run failed, report how stale the published evidence
+    # actually is right now. This is the number the policy is about, and it puts
+    # a measured value in the run summary rather than leaving it to be inferred.
+    - name: Report current published-evidence age
+      if: always()
+      run: |
+        curl -sfL -o /tmp/served-vdr.json "${SITE_ORIGIN}/.well-known/vdr-report.json" || true
+        python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+        import json, datetime as dt, pathlib
+        p = pathlib.Path('/tmp/served-vdr.json')
+        if not p.exists() or not p.stat().st_size:
+            print('## Published evidence\n\nCould not fetch the published VDR.')
+        else:
+            v = json.loads(p.read_text())
+            raw = v.get('emitted_at', '')
+            iso = raw[:-1] + '+00:00' if raw.endswith('Z') else raw
+            age = (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(iso)).total_seconds() / 3600
+            print(f'## Published evidence\n\n`emitted_at` **{raw}** — **{age:.1f}h** old (policy: under 24h).')
+        PY
