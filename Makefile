@@ -179,6 +179,14 @@ figures-check:
 #
 # For Terraform/Rego formatting (which CI DOES enforce via `opa fmt --fail`),
 # use: make -C infrastructure fmt
+
+# The RSS feed is generated from the article index; this fails if the committed
+# feed no longer matches it. Same shape as figures-check: derived artifacts are
+# regenerated, never hand-edited.
+feed-check:
+	@echo "Checking the feed against the article index..."
+	python3 scripts/build-feed.py --check
+
 fmt:
 	@echo "==> fmt (ruff format) — rewrites files under scripts/ and tests/"
 	$(PY) -m ruff format scripts/ tests/
