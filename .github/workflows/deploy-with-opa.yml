@@ -1963,7 +1963,7 @@ jobs:
     # We point it at a directory and locate the SARIF afterwards.
     - name: Run Checkov
       id: checkov
-      uses: bridgecrewio/checkov-action@9b70310bcd306d11740313070b940167d6b23085 # v12.3115.0
+      uses: bridgecrewio/checkov-action@59b9d7edfcad5b87fbe3f473a9a134a721ad03f8 # v12.3119.0
       with:
         directory: .
         framework: terraform
@@ -2009,7 +2009,7 @@ jobs:
 
     # Upload results to GitHub Security tab
     - name: Upload Checkov Results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4
+      uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
       if: always()
       with:
         sarif_file: checkov-results.sarif
