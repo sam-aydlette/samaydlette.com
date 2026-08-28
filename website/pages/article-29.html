@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Co-Signature is Gone - sam_aydlette</title>
+    <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
+    <!-- Apply theme immediately to prevent flash -->
+    <script src="/assets/js/theme-init.js?v=1777894583070"></script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link active">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card">
+            <div class="article-meta">
+                <span class="article-date">August 28, 2026</span>
+                <span class="article-category">compliance_automation</span>
+            </div>
+
+            <h1 class="article-title">The Co-Signature is Gone</h1>
+
+            <div class="article-content">
+                <div class="disclaimer">
+                    The views and opinions expressed in this article are those of the author and do not reflect the views of any organization or employer.
+                </div>
+
+                <p>For a long time federal compliance quietly rewarded imprecision around declaring an inventory. Not dishonesty, just imprecision. Boundaries stayed fuzzy for three structural reasons. Precision starts SLA clocks, and a detection date that&rsquo;s ambiguous is easier to interpret generously. Resolved scope always comes back bigger, and bigger scope costs money. And, most importantly, a complete inventory eventually answers the question nobody wants asked out loud, which is &ldquo;whose team owns this.&rdquo;</p>
+
+                <p>Nobody announced it, but that incentive is now flipping.</p>
+
+                <p><a href="https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk">CISA Binding Operational Directive 26-04</a> sets a three-day window for remediating worst case vulnerabilities. It binds federal agencies, not CSPs: three calendar days to patch anything exposed, known exploited, automatable, and high impact. Which means agencies now own a clock they cannot meet alone, against services they do not patch themselves.</p>
+
+                <p>Concurrently, FedRAMP&rsquo;s <a href="https://www.fedramp.gov/2026/timeline/">Consolidated Rules for 2026</a> take mandatory effect on January 1, 2027, but <a href="https://www.fedramp.gov/notices/0014/">Notice 0014</a> pulled the two vulnerability rules forward to December 7, 2026, citing BOD 26-04 by name. Providers are told to remediate known exploited vulnerabilities on the directive&rsquo;s timelines unless there are valid technical reasons not to, and that monthly scanning is insufficient. Certifications start getting revoked in March for offerings not following them.</p>
+
+                <p>Under those rules, <a href="https://www.fedramp.gov/2026/providers/20x/rules/vulnerability-evaluation-and-reporting/">providers must categorize any vulnerability not fully mitigated within 192 days of evaluation as accepted</a>. That register belongs to the CSP. Agencies are briefed on the higher-impact items, and automated filtering is encouraged. Read that carefully. In the traditional FedRAMP process, the JAB or AO approved or denied deviation requests when a CSP couldn&rsquo;t fix something within the prescribed SLA. That process was painfully slow and fraught with subjective deliberation, but it also distributed accountability for the decision. Now, the co-signature is gone.</p>
+
+                <p>And then there&rsquo;s CMMC. <a href="https://www.war.gov/News/Releases/Release/Article/4542329/forging-the-arsenal-of-freedom-department-of-war-suspends-cmmc-phase-ii-require/">Phase two was suspended in July</a>, four months before the third-party assessments were due to begin. The DFARS obligations didn&rsquo;t move. For a CSP handling CUI under <a href="https://www.acquisition.gov/dfars/252.204-7012-safeguarding-covered-defense-information-and-cyber-incident-reporting">252.204-7012</a>, that leaves what was always there: a self-assessment, signed by the company, with the company liable for it. There is no assessor standing between that representation and a False Claims Act theory, and there never was one. DOJ <a href="https://www.justice.gov/opa/pr/alabama-defense-contractor-agrees-pay-507144-resolve-false-claims-act-liability-relating">settled a case on exactly that footing in June</a>.</p>
+
+                <p>Here&rsquo;s what I think is actually going on. These are not separate problems. It&rsquo;s one question asked four ways. &ldquo;What do you have, where does it run, what&rsquo;s in it, and who owns it.&rdquo; And the SLAs are the least of it. FedRAMP&rsquo;s remediation timeframes are recommendations. What is mandatory is the categorization &mdash; publish what you did not fix, and why. That is a disclosure regime, and you cannot publish a register you cannot enumerate. FedRAMP <a href="https://www.fedramp.gov/2026/reference/20x/b/key-security-indicators/">says so in its own indicators</a>: authoritative sources are used to automatically generate real-time inventories of all information resources when needed.</p>
+
+                <p>And asset inventory isn&rsquo;t enough. Every component should trace to a feature, or to a shared service that delivers one. Once you have that, criticality falls out, blast radius falls out, and the deletion question answers itself. Without it, you can&rsquo;t even tell whether a thing should exist.</p>
+
+                <p>Justified inventory is the first step. Declared means you can enumerate it. But the power move is to build your system to be reproducible and attestable. Reproducibility means you can rebuild every artifact you deploy from source and get the same thing. If you deploy continuously and nothing mutates in place, what runs is what you last deployed, so the gap closes by construction. For SaaS offerings, the managed infrastructure you rent is precisely the part where the answer to &ldquo;who owns it&rdquo; is someone else. That is the inheritance boundary, and it has to be enumerated too, so build on a vendor who lets you easily do that. And attested means you can prove where every piece came from. Most organizations are not on the first step. Attestation without reproducibility isn&rsquo;t nothing but it tells you where a thing was built, not whether it is the thing you specified. Starting with the roof is the wrong choice.</p>
+
+                <p>Here&rsquo;s the test for whether you are actually doing policy as code the right way. Does a human touch the evidence between the observation and the audit artifact? A spreadsheet export, a transcribed finding, a hand-written narrative. If yes, you don&rsquo;t have it.</p>
+
+                <p>But there&rsquo;s an even more compelling reason to invest in policy as code beyond compliance. It is very difficult to measure compliance cost per deployment. The work is smeared across products, shared dependencies, relationships, feature flags. Nobody can produce that number. But there&rsquo;s one you can get: lag. The date a feature lands in prod and is available for consumption in commercial, minus the date that same feature is available and evidenced for federal customers. Date minus date, out of systems you already run. That&rsquo;s how you measure the ROI on your investment. And the features that never make the crossing have unbounded lag, which is the most revealing indicator of all.</p>
+
+                <p>So the argument isn&rsquo;t that CSPs should do this because it&rsquo;s safer. It&rsquo;s that they should do this because it&rsquo;s cheaper. Compliance becomes a build artifact. The hardening arrives as a byproduct.</p>
+
+                <p>It&rsquo;s worth noting that the market hasn&rsquo;t quite caught up to this because the market can&rsquo;t check what it can&rsquo;t observe. There&rsquo;s no disclosure requirement for whether a production environment is rebuildable from source. Which leaves the other check, which unfortunately many organizations are already experiencing: the actors positioned inside critical infrastructure are not waiting for a grace period to expire.</p>
+            </div>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1777894583070"></script>
+</body>
+</html>

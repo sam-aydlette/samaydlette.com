@@ -9,6 +9,14 @@
     <atom:link href="https://samaydlette.com/feed.xml" rel="self" type="application/rss+xml"/>
     <!-- BEGIN generated: feed items. Built by scripts/build-feed.py; do not edit by hand. -->
     <item>
+      <title>The Co-Signature is Gone</title>
+      <link>https://samaydlette.com/pages/article-29.html</link>
+      <guid>https://samaydlette.com/pages/article-29.html</guid>
+      <pubDate>Fri, 28 Aug 2026 00:00:00 +0000</pubDate>
+      <category>compliance_automation</category>
+      <description>BOD 26-04, the FedRAMP Consolidated Rules for 2026, and the CMMC Phase II suspension are not separate problems. They are the same question asked four ways: what do you have, where does it run, what’s in it, and who owns it. The argument for answering it isn’t just that it’s safer. It’s also that it’s cheaper.</description>
+    </item>
+    <item>
       <title>Staying in the Loop</title>
       <link>https://samaydlette.com/research/staying-in-the-loop.html</link>
       <guid>https://samaydlette.com/research/staying-in-the-loop.html</guid>
