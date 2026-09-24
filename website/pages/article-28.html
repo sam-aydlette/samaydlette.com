@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FedRAMP Audit-Ready in a Few Days - One Person, One Tai Chi App - sam_aydlette</title>
+    <title>FedRAMP Audit-Ready in a Few Days - One Person, One Website, One Tai Chi App - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1777894583070">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1777894583070">
     <!-- Apply theme immediately to prevent flash -->
@@ -46,7 +46,7 @@
                 <span class="article-category">FedRAMP 20x</span>
             </div>
 
-            <h1 class="article-title">FedRAMP Audit-Ready in a Few Days - One Person, One Tai Chi App</h1>
+            <h1 class="article-title">FedRAMP Audit-Ready in a Few Days - One Person, One Website, One Tai Chi App</h1>
 
             <div class="article-content">
                 <div class="disclaimer">
@@ -54,15 +54,15 @@
                 </div>
 
                 <div class="article-summary">
-                    <strong>TL;DR</strong> - I spent a few days getting my Tai Chi web app ready for a FedRAMP 20x assessment, and it runs for a few dollars a month. I hardened the obvious things, ran an open-source scanner against my account, worked the findings one at a time, and let the deploy pipeline emit and sign all the paperwork. Every artifact is <a href="/viewer.html">live</a> on the internet right now and you can curl it yourself in about five minutes. For a technical deep dive, see my research paper, <a href="/research/the-plumbing.html">Automated Security Compliance</a>.
+                    <strong>TL;DR</strong> - I spent a few days getting this whole site ready for a FedRAMP 20x assessment - the website you are reading and the Tai Chi web app that runs alongside it - and it runs for a few dollars a month. I hardened the obvious things, ran an open-source scanner against my account, worked the findings one at a time, and let the deploy pipeline emit and sign all the paperwork. Every artifact is <a href="/viewer.html">live</a> on the internet right now and you can curl it yourself in about five minutes. For a technical deep dive, see my research paper, <a href="/research/the-plumbing.html">Automated Security Compliance</a>.
                 </div>
 
-                <p><em>Please note: this is a self-attested proof of concept. The app is not FedRAMP Certified and never will be. There is no agency, no Authorization to Operate, no government data.</em></p>
+                <p><em>Please note: this is a self-attested proof of concept. The site, website and app alike, is not FedRAMP Certified and never will be. There is no agency, no Authorization to Operate, no government data.</em></p>
 
-                <h3>The app, and why it's a fair test case</h3>
-                <p>Along with this website I run a small web app that coaches my Tai Chi practice. I built it for fun, but somewhere along the way it turned into a real SaaS: it logs people in, it stores secrets, it makes outbound calls to an AI service, and it has an API sitting behind a gateway. That is the same architecture as most small SaaS products on the market, and it is also the exact shape that, in federal-land, normally takes time and money to wrap in compliance. I wanted to see how far one person could get in a few days. (Aside: if you do Tai Chi and want to help me beta test the app, reach out!)</p>
+                <h3>The system, and why it's a fair test case</h3>
+                <p>Along with this website I run a small web app that coaches my Tai Chi practice. I built it for fun, but somewhere along the way it turned into a real SaaS: it logs people in, it stores secrets, it makes outbound calls to an AI service, and it has an API sitting behind a gateway. That is the same architecture as most small SaaS products on the market, and it is also the exact shape that, in federal-land, normally takes time and money to wrap in compliance. The compliance boundary covers both. The website you are reading now, with its storage, CDN, and DNS, and the app, with its login, API, and secrets, run in the same AWS account, and the pipeline inventories them together as one system. I wanted to see how far one person could get in a few days. (Aside: if you do Tai Chi and want to help me beta test the app, reach out!)</p>
 
-                <h3>Step 1: Hardening my app</h3>
+                <h3>Step 1: Hardening the site</h3>
                 <p>I knew I needed to uplevel my security if I wanted to be FedRAMP audit-ready. First I dealt with how people get in. The app used to hide behind a single shared password, which is not really authentication. I replaced it with Amazon Cognito and made multi-factor authentication mandatory - required, not optional - with a 14-character password minimum and authenticator-app codes instead of SMS, which is both more secure and free. The whole thing is open source, so the exact Terraform is there to read if you want the details.</p>
                 <p>From there I gated the data behind that login. It is easy to put a login screen in front of an app and still leave the API wide open underneath, so I gave the API gateway a JWT authorizer tied to the Cognito pool and attached it only to the data routes. The gateway now turns away any request to <code>/api/...</code> without a valid token before my Lambda code runs, while the login page stays open so it can load for anyone - 200 on the page, 401 on the data API, as you will see below.</p>
                 <p>I then turned on DNSSEC so the domain validates all the way to the root, which took the only manual step in the whole project: Terraform emits the DS record and I pasted it into my registrar by hand, because that part lives outside the AWS account. And I had the daily drift check sign its own output with a KMS key, publishing the public key at <code>/.well-known/runtime-signing-pubkey.pem</code> so anyone can verify the freshness without taking my word for it. (An aside on the jargon: FedRAMP 20x leans on KSIs, Key Security Indicators - small machine-checkable assertions like "the bucket blocks public access" instead of paragraphs of prose.)</p>
