@@ -25,7 +25,8 @@
 #   inject-figures.py --print         # print the computed figure table and exit
 #
 # Acceptance: altering the SSP's implemented-requirement count changes
-# hub_total / hub_generated / moderate_coverage everywhere they are marked.
+# hub_total / hub_generated everywhere they are marked; dropping a baseline
+# control from the SSP lowers moderate_coverage below N/N.
 # =============================================================================
 
 import argparse
@@ -58,6 +59,10 @@ RUNTIME_SINGLETON_TYPES = {"cdn_distribution"}
 COMPONENT_DEF = REPO / "data" / "component-definitions" / "samaydlette-com-component-definition.json"
 DISPOSITIONS = REPO / "data" / "dispositions" / "beyond-moderate.json"
 CATALOG_171 = REPO / "data" / "catalogs" / "NIST_SP-800-171_rev2_catalog.json"
+
+# The FedRAMP Rev5 Moderate baseline as published, not the hub: the hub adds
+# controls beyond the baseline, so hub_total is not the baseline size.
+MODERATE_PROFILE = REPO / "data" / "profiles" / "FedRAMP_rev5_MODERATE-baseline_profile.json"
 
 PROFILES = {
     "govramp": REPO / "data" / "profiles" / "govramp_moderate_cjis_profile.json",
@@ -97,14 +102,19 @@ def _count_catalog(catalog):
     return n
 
 
-def _profile_selection_count(path):
-    """Count distinct controls a profile selects via include-controls/with-ids."""
+def _profile_selection_ids(path):
+    """Distinct controls a profile selects via include-controls/with-ids."""
     prof = json.loads(path.read_text())["profile"]
     ids = set()
     for imp in prof.get("imports", []) or []:
         for inc in imp.get("include-controls", []) or []:
             ids.update(inc.get("with-ids", []) or [])
-    return len(ids)
+    return ids
+
+
+def _profile_selection_count(path):
+    """Count distinct controls a profile selects via include-controls/with-ids."""
+    return len(_profile_selection_ids(path))
 
 
 def _authored_hub_controls():
@@ -192,6 +202,15 @@ def compute_figures():
     mod_inherited = rs["fully-inherited"] + rs["partially-inherited"]
     mod_na = rs["not-applicable"]
 
+    # Baseline coverage is measured, not assumed: the SSP's control-ids that fall
+    # inside the published baseline, over the baseline's size. A baseline control
+    # missing from the SSP lowers the numerator; the hub's extra controls are
+    # counted separately rather than inflating both sides.
+    baseline_ids = _profile_selection_ids(MODERATE_PROFILE)
+    ssp_ids = {ir["control-id"] for ir in ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]}
+    moderate_baseline = len(baseline_ids)
+    moderate_covered = len(ssp_ids & baseline_ids)
+    moderate_beyond = len(ssp_ids - baseline_ids)
     govramp = _profile_selection_count(PROFILES["govramp"])
     txramp1 = _profile_selection_count(PROFILES["txramp1"])
     txramp2 = _profile_selection_count(PROFILES["txramp2"])
@@ -224,7 +243,9 @@ def compute_figures():
         "hub_handwritten": str(hub_handwritten),
         "hub_generated": str(hub_generated),
         # FedRAMP Moderate
-        "moderate_coverage": f"{hub_total}/{hub_total}",
+        "moderate_coverage": f"{moderate_covered}/{moderate_baseline}",
+        "moderate_baseline": str(moderate_baseline),
+        "moderate_beyond": str(moderate_beyond),
         "moderate_implemented": str(mod_impl),
         "moderate_inherited": str(mod_inherited),
         "moderate_na": str(mod_na),

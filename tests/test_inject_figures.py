@@ -42,6 +42,12 @@ _needs_ssp = pytest.mark.skipif(
 )
 
 
+def test_moderate_baseline_is_the_published_profile_not_the_hub():
+    """The Rev5 Moderate figure counts the vendored FedRAMP baseline profile (323),
+    not the hub, which carries controls beyond the baseline."""
+    assert inj._profile_selection_count(inj.MODERATE_PROFILE) == 323
+
+
 @_needs_ssp
 def test_figures_reproduce_published_numbers():
     f = inj.compute_figures()
@@ -51,7 +57,11 @@ def test_figures_reproduce_published_numbers():
     assert f["hub_total"] == "333"
     # FedRAMP Moderate stack sums to the total
     assert int(f["moderate_implemented"]) + int(f["moderate_inherited"]) + int(f["moderate_na"]) == int(f["hub_total"])
-    assert f["moderate_coverage"] == "333/333"
+    # coverage is measured against the published baseline, not the hub total
+    assert f["moderate_baseline"] == "323"
+    assert f["moderate_coverage"] == "323/323"
+    assert f["moderate_beyond"] == "10"
+    assert int(f["moderate_baseline"]) + int(f["moderate_beyond"]) == int(f["hub_total"])
     # spokes
     assert f["govramp_coverage"] == "339/339"
     assert f["txramp1_coverage"] == "122/122"
@@ -101,7 +111,8 @@ def test_attribute_order_tolerated():
 @_needs_ssp
 def test_altered_ssp_count_flows_to_html(tmp_path, monkeypatch):
     """Acceptance: add one implemented-requirement to the SSP and the stamped
-    hub_total / hub_generated / moderate_coverage all move with it."""
+    hub_total / hub_generated move with it. It is outside the baseline, so it
+    counts as beyond-baseline and leaves baseline coverage alone."""
     ssp = json.loads(inj.SSP.read_text())
     irs = ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]
     baseline = len(irs)
@@ -121,12 +132,29 @@ def test_altered_ssp_count_flows_to_html(tmp_path, monkeypatch):
     assert f["hub_total"] == str(baseline + 1)
     # hand-written count is unchanged (component def untouched), so generated grows
     assert f["hub_generated"] == str(baseline + 1 - int(f["hub_handwritten"]))
-    assert f["moderate_coverage"] == f"{baseline + 1}/{baseline + 1}"
+    assert f["moderate_coverage"] == "323/323"
+    assert f["moderate_beyond"] == "11"
 
     # and that new value actually lands in the marked HTML
-    marked = '<div class="status-value" data-figure="moderate_coverage">331/331</div>'
+    marked = '<span data-figure="hub_total">331</span>'
     out, _, _, _ = inj.stamp(marked, f, "t")
-    assert f">{baseline + 1}/{baseline + 1}<" in out
+    assert f">{baseline + 1}<" in out
+
+
+@_needs_ssp
+def test_a_baseline_control_missing_from_the_ssp_lowers_coverage(tmp_path, monkeypatch):
+    """Coverage is measured, not assumed: drop one baseline control from the SSP
+    and the figure falls below N/N instead of staying green."""
+    ssp = json.loads(inj.SSP.read_text())
+    ci = ssp["system-security-plan"]["control-implementation"]
+    base = inj._profile_selection_ids(inj.MODERATE_PROFILE)
+    victim = next(ir for ir in ci["implemented-requirements"] if ir["control-id"] in base)
+    ci["implemented-requirements"].remove(victim)
+    altered = tmp_path / "altered-ssp.json"
+    altered.write_text(json.dumps(ssp))
+    monkeypatch.setattr(inj, "SSP", altered)
+
+    assert inj.compute_figures()["moderate_coverage"] == "322/323"
 
 
 if __name__ == "__main__":
