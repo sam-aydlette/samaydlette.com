@@ -1,9 +1,9 @@
 // Live compliance line for the homepage hero.
 //
 // Fails closed by construction rather than by error handling. index.html ships the
-// link and no claim; this only ever ADDS facts to it. If the fetch fails, the signal
-// is stale, or the fields are missing, nothing is written and the shipped line
-// stands as an honest link with no numbers. There is no green default to get wrong.
+// dashboard link and no KSI claim; this only ever ADDS the KSI ratio to it. If the
+// fetch fails, the signal is stale, or the fields are missing, nothing is written and
+// the shipped line stands without it. There is no green default to get wrong.
 //
 // Reads the RUNTIME signal only. Both facts then come from one document and stay
 // internally consistent: pairing the deploy-time control count with the runtime
@@ -53,7 +53,8 @@ export class ComplianceStatus {
 
     // The real ratio, whatever it is. A front page that cannot show a dip is not
     // evidence of anything.
-    return `${passing}/${total} controls, re-verified ${relative(age)} → `;
+    // The runtime signal re-validates KSIs, not Rev5 controls; the unit says so.
+    return `${passing}/${total} KSIs passing, re-verified ${relative(age)} · `;
   }
 }
 

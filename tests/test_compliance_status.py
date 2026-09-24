@@ -1,7 +1,8 @@
 """The homepage compliance line must fail closed, not fail green.
 
-index.html ships `// compliance evidence: live dashboard` — a link and no claim.
-ComplianceStatus.js only ever ADDS facts to it, so an unreachable, stale or
+index.html ships the dashboard link and no KSI claim (its one number, the Rev5
+Moderate baseline size, is a stamped single-source figure). ComplianceStatus.js
+only ever ADDS the runtime KSI ratio to it, so an unreachable, stale or
 malformed signal leaves an honest line rather than a wrong one. A compliance site
 asserting a green state it did not verify is worse than one asserting nothing.
 
@@ -11,6 +12,7 @@ test_viewer_divergence.py.
 """
 
 import json
+import re
 import shutil
 import subprocess
 import textwrap
@@ -70,8 +72,8 @@ def sig(*, age_hours=2, compared=46, regressions=0, unassessed=0):
 
 def test_fresh_and_converged_reports_the_full_ratio():
     r = run(sig())
-    assert r["written"].startswith("46/46 controls, re-verified ")
-    assert r["written"].endswith(" → ")
+    assert r["written"].startswith("46/46 KSIs passing, re-verified ")
+    assert r["written"].endswith(" · ")
 
 
 @pytest.mark.parametrize("hours,expected", [(2, "2h ago"), (26, "1d ago")])
@@ -82,11 +84,11 @@ def test_age_is_rendered_from_the_runtime_timestamp(hours, expected):
 # --- the red path: the whole point is that it does not hide ---
 
 def test_a_regression_lowers_the_ratio_rather_than_hiding_it():
-    assert run(sig(regressions=1))["written"].startswith("45/46 controls")
+    assert run(sig(regressions=1))["written"].startswith("45/46 KSIs")
 
 
 def test_unassessed_controls_are_not_counted_as_passing():
-    assert run(sig(regressions=1, unassessed=2))["written"].startswith("43/46 controls")
+    assert run(sig(regressions=1, unassessed=2))["written"].startswith("43/46 KSIs")
 
 
 # --- staying silent ---
@@ -121,7 +123,12 @@ def test_no_fetch_on_pages_without_the_hook():
 def test_index_ships_the_link_and_no_claim():
     html = INDEX.read_text()
     assert "data-compliance-status" in html
-    assert '<a href="/viewer.html">live dashboard</a>' in html
-    # no hardcoded figures: every number must come from the signal at runtime
-    i = html.index("compliance evidence")
-    assert "controls" not in html[i:i + 200]
+    assert '<a href="/viewer.html" class="btn btn-primary">' in html
+    # No hardcoded KSI ratio: that number only ever comes from the runtime signal.
+    i = html.index('class="hero-evidence"')
+    block = html[i:html.index("</div>", i)]
+    assert "KSI" not in block
+    # The one number that ships is a stamped figure, kept honest by inject-figures --check.
+    unmarked = re.sub(r'<span data-figure="[a-z_]+">[^<]*</span>', "", block)
+    # (a standalone number, not the digit in a name like "Rev5")
+    assert not re.search(r"\b\d", re.sub(r"<[^>]+>", "", unmarked))

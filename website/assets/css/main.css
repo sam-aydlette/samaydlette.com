@@ -994,6 +994,23 @@ body.fixed-header main.content {
     line-height: 1.8;
 }
 
+/* Live-evidence call to action under the homepage intro */
+.hero-evidence {
+    margin-top: var(--space-xl);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md) var(--space-lg);
+}
+
+.hero-content .hero-evidence-facts {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
 /* Button styles for CTAs */
 .btn {
     display: inline-block;
