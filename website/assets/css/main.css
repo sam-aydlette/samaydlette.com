@@ -2073,14 +2073,6 @@ a:focus {
     height: 100%;
 }
 
-.iframe-wrapper {
-    margin: 1.5rem 0;
-}
-
-.iframe-wrapper iframe {
-    border: none;
-}
-
 /* Patreon exclusive content styles */
 .patreon-badge {
     background: var(--accent-primary);
@@ -2221,12 +2213,7 @@ a:focus {
 .patreon-link-card {
     display: flex;
     align-items: center;
-    gap: var(--space-lg);
-    padding: var(--space-xl);
-    margin: 1.5rem 0;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    gap: var(--space-md);
     transition: all 0.3s ease;
 }
 
@@ -2236,7 +2223,7 @@ a:focus {
 }
 
 .patreon-icon {
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     flex-shrink: 0;
     opacity: 0.9;
 }
@@ -2244,8 +2231,10 @@ a:focus {
 .patreon-content {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm) var(--space-md);
 }
 
 .patreon-message {
@@ -2307,18 +2296,12 @@ a:focus {
 
 @media (max-width: 768px) {
     .patreon-link-card {
-        flex-direction: column;
-        text-align: center;
-        gap: var(--space-md);
-        padding: var(--space-lg);
-    }
-
-    .patreon-icon {
-        font-size: 2rem;
+        align-items: flex-start;
     }
 
     .patreon-content {
-        align-items: center;
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .patreon-link-button {
@@ -2328,12 +2311,18 @@ a:focus {
 }
 
 /* Audio player styles */
-.audio-player-wrapper {
+/* One frame for every player on the activities page: native audio, the
+   Patreon link card, and the video embed all sit in the same box. */
+.media-frame {
     margin: 1.5rem 0;
     padding: var(--space-md);
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
+}
+
+.media-frame .video-container {
+    margin: 0;
 }
 
 .audio-player-wrapper audio {
@@ -2362,7 +2351,7 @@ a:focus {
 }
 
 @media (max-width: 768px) {
-    .audio-player-wrapper {
+    .media-frame {
         padding: var(--space-sm);
     }
 }
