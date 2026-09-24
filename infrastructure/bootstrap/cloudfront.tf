@@ -62,7 +62,8 @@ resource "aws_cloudfront_origin_access_control" "website" {
 # X-Content-Type-Options, Referrer-Policy, X-XSS-Protection, and an enforcing
 # Content-Security-Policy. The CSP was rolled out report-only first and verified
 # clean (headless, no violations across the dynamic pages) before enforcing; its
-# frame-src allows the YouTube and libsyn (activities.html podcast) embeds.
+# frame-src allows the YouTube embed on activities.html (the only framed player;
+# the podcasts play through the native audio element, below).
 # media-src allows the podcast audio the activities page plays natively:
 # ochelli.com, and libsyn's stable episode URL (traffic.libsyn.com), which
 # redirects to a signed, expiring URL on content.libsyn.com. CSP checks every
@@ -99,7 +100,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
         "img-src 'self' data:",
         "font-src 'self'",
         "media-src 'self' https://ochelli.com https://traffic.libsyn.com https://content.libsyn.com",
-        "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://html5-player.libsyn.com",
+        "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
         "connect-src 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
