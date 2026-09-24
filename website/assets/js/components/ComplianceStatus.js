@@ -1,13 +1,12 @@
-// Live compliance line for the homepage hero.
+// Live freshness stamp for the homepage's dashboard link.
 //
-// Fails closed by construction rather than by error handling. index.html ships the
-// link and no claim; this only ever ADDS facts to it. If the fetch fails, the signal
-// is stale, or the fields are missing, nothing is written and the shipped line
-// stands as an honest link with no numbers. There is no green default to get wrong.
+// The homepage reports nothing itself; the dashboard does the reporting. This only
+// says how recently the runtime check ran, and only from a fresh, well-formed runtime
+// signal. If the fetch fails, the signal is stale, or the fields are missing, nothing
+// is written and the link stands alone. There is no green default to get wrong.
 //
-// Reads the RUNTIME signal only. Both facts then come from one document and stay
-// internally consistent: pairing the deploy-time control count with the runtime
-// timestamp would imply a re-verification that did not happen.
+// Reads the RUNTIME signal only: that is the check that re-verifies daily, so its
+// timestamp is the only honest source for "re-verified".
 //
 // `fetchJSON` and a relative-time formatter also exist in viewer.js, which is not an
 // ES module and cannot be imported from. The few lines here are deliberately
@@ -42,18 +41,16 @@ export class ComplianceStatus {
     const d = signal && signal.divergence;
     if (!d || !Array.isArray(d.regressions) || !Array.isArray(d.unassessed)) return null;
 
+    // Only a completed comparison counts as a re-verification.
     const total = d.ksis_compared;
     if (!Number.isInteger(total) || total <= 0) return null;
-
-    const passing = total - d.regressions.length - d.unassessed.length;
-    if (passing < 0 || passing > total) return null;
+    if (d.regressions.length + d.unassessed.length > total) return null;
 
     const age = Date.now() - Date.parse(signal.emitted_at);
     if (!Number.isFinite(age) || age < 0 || age > MAX_AGE_MS) return null;
 
-    // The real ratio, whatever it is. A front page that cannot show a dip is not
-    // evidence of anything.
-    return `${passing}/${total} controls, re-verified ${relative(age)} → `;
+    // Freshness only. Pass/fail is the dashboard's to report, in full.
+    return `re-verified ${relative(age)}`;
   }
 }
 
