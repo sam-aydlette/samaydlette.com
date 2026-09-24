@@ -218,9 +218,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "website" {
 # removes a third-party supply-chain vector). style-src retains 'unsafe-inline'
 # because KaTeX injects inline style="" attributes at render time for math layout;
 # this is materially lower-risk than inline scripts and is the documented residual.
-# media-src allows the operator's own podcast audio (ochelli.com) and frame-src
-# allows embedded YouTube videos — the only remaining external origins, neither of
-# which can execute script in this origin.
+# media-src allows the operator's podcast audio (ochelli.com, and libsyn's
+# traffic.libsyn.com, which redirects to a signed URL on content.libsyn.com; CSP
+# checks every redirect hop) and frame-src allows embedded YouTube videos — the
+# only remaining external origins, none of which can execute script in this origin.
 # =============================================================================
 resource "aws_cloudfront_response_headers_policy" "website" {
   count = var.create_response_headers_policy ? 1 : 0
@@ -257,7 +258,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "font-src 'self'",
-        "media-src 'self' https://ochelli.com",
+        "media-src 'self' https://ochelli.com https://traffic.libsyn.com https://content.libsyn.com",
         "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
         "connect-src 'self'",
         "frame-ancestors 'none'",
