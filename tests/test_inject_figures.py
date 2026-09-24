@@ -42,12 +42,6 @@ _needs_ssp = pytest.mark.skipif(
 )
 
 
-def test_moderate_baseline_is_the_published_profile_not_the_hub():
-    """The homepage's baseline figure counts the vendored FedRAMP Rev5 Moderate
-    profile (323), not the hub, which carries controls beyond the baseline."""
-    assert inj._profile_selection_count(inj.MODERATE_PROFILE) == 323
-
-
 @_needs_ssp
 def test_figures_reproduce_published_numbers():
     f = inj.compute_figures()

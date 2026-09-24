@@ -59,10 +59,6 @@ COMPONENT_DEF = REPO / "data" / "component-definitions" / "samaydlette-com-compo
 DISPOSITIONS = REPO / "data" / "dispositions" / "beyond-moderate.json"
 CATALOG_171 = REPO / "data" / "catalogs" / "NIST_SP-800-171_rev2_catalog.json"
 
-# The FedRAMP Rev5 Moderate baseline as published, not the hub: the hub adds
-# controls beyond the baseline, so hub_total is not the baseline size.
-MODERATE_PROFILE = REPO / "data" / "profiles" / "FedRAMP_rev5_MODERATE-baseline_profile.json"
-
 PROFILES = {
     "govramp": REPO / "data" / "profiles" / "govramp_moderate_cjis_profile.json",
     "txramp1": REPO / "data" / "profiles" / "txramp_level1_profile.json",
@@ -70,7 +66,6 @@ PROFILES = {
 }
 
 TARGETS = [
-    REPO / "website" / "index.html",
     REPO / "website" / "research" / "the-plumbing.html",
     REPO / "website" / "viewer.html",
     # README carries the headline implemented-requirements figure; GitHub
@@ -197,7 +192,6 @@ def compute_figures():
     mod_inherited = rs["fully-inherited"] + rs["partially-inherited"]
     mod_na = rs["not-applicable"]
 
-    moderate_baseline = _profile_selection_count(MODERATE_PROFILE)
     govramp = _profile_selection_count(PROFILES["govramp"])
     txramp1 = _profile_selection_count(PROFILES["txramp1"])
     txramp2 = _profile_selection_count(PROFILES["txramp2"])
@@ -231,7 +225,6 @@ def compute_figures():
         "hub_generated": str(hub_generated),
         # FedRAMP Moderate
         "moderate_coverage": f"{hub_total}/{hub_total}",
-        "moderate_baseline": str(moderate_baseline),
         "moderate_implemented": str(mod_impl),
         "moderate_inherited": str(mod_inherited),
         "moderate_na": str(mod_na),

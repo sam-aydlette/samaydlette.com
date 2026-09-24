@@ -1,10 +1,9 @@
-"""The homepage compliance line must fail closed, not fail green.
+"""The homepage's freshness stamp must fail closed, not fail green.
 
-index.html ships the dashboard link and no KSI claim (its one number, the Rev5
-Moderate baseline size, is a stamped single-source figure). ComplianceStatus.js
-only ever ADDS the runtime KSI ratio to it, so an unreachable, stale or
-malformed signal leaves an honest line rather than a wrong one. A compliance site
-asserting a green state it did not verify is worse than one asserting nothing.
+index.html ships the dashboard link and no claim; the dashboard does the
+reporting. ComplianceStatus.js only ever ADDS "re-verified <age>" from a fresh,
+well-formed runtime signal, so an unreachable, stale or malformed signal leaves
+the bare link rather than a wrong line. It never states a pass/fail ratio.
 
 These execute the real module in node against fetch and DOM shims, so they exercise
 the shipped code rather than a reimplementation of it, following the approach in
@@ -70,10 +69,8 @@ def sig(*, age_hours=2, compared=46, regressions=0, unassessed=0):
 
 # --- the happy path ---
 
-def test_fresh_and_converged_reports_the_full_ratio():
-    r = run(sig())
-    assert r["written"].startswith("46/46 KSIs passing, re-verified ")
-    assert r["written"].endswith(" · ")
+def test_fresh_signal_writes_only_the_freshness_stamp():
+    assert run(sig(age_hours=2))["written"] == "re-verified 2h ago"
 
 
 @pytest.mark.parametrize("hours,expected", [(2, "2h ago"), (26, "1d ago")])
@@ -81,14 +78,13 @@ def test_age_is_rendered_from_the_runtime_timestamp(hours, expected):
     assert expected in run(sig(age_hours=hours))["written"]
 
 
-# --- the red path: the whole point is that it does not hide ---
+# --- the red path: the homepage never reports pass/fail; the dashboard does ---
 
-def test_a_regression_lowers_the_ratio_rather_than_hiding_it():
-    assert run(sig(regressions=1))["written"].startswith("45/46 KSIs")
-
-
-def test_unassessed_controls_are_not_counted_as_passing():
-    assert run(sig(regressions=1, unassessed=2))["written"].startswith("43/46 KSIs")
+@pytest.mark.parametrize("kwargs", [dict(regressions=1), dict(regressions=1, unassessed=2)])
+def test_a_regression_never_turns_into_a_claim_on_the_homepage(kwargs):
+    written = run(sig(**kwargs))["written"]
+    assert written.startswith("re-verified ")
+    assert "/" not in written and "pass" not in written
 
 
 # --- staying silent ---
@@ -124,11 +120,10 @@ def test_index_ships_the_link_and_no_claim():
     html = INDEX.read_text()
     assert "data-compliance-status" in html
     assert '<a href="/viewer.html" class="btn btn-primary">' in html
-    # No hardcoded KSI ratio: that number only ever comes from the runtime signal.
+    # Nothing reported in the HTML: the stamp ships empty, and no figure or
+    # number appears anywhere in the block. The dashboard does the reporting.
+    assert '<p class="hero-evidence-facts" data-compliance-status></p>' in html
     i = html.index('class="hero-evidence"')
     block = html[i:html.index("</div>", i)]
-    assert "KSI" not in block
-    # The one number that ships is a stamped figure, kept honest by inject-figures --check.
-    unmarked = re.sub(r'<span data-figure="[a-z_]+">[^<]*</span>', "", block)
-    # (a standalone number, not the digit in a name like "Rev5")
-    assert not re.search(r"\b\d", re.sub(r"<[^>]+>", "", unmarked))
+    assert "data-figure" not in block
+    assert not re.search(r"\d", re.sub(r"<[^>]+>", "", block))
