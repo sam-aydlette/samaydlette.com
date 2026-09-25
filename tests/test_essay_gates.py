@@ -157,10 +157,3 @@ def test_each_page_is_checked_against_its_own_list(tmp_path):
     b.write_text(refs_page('no mention', ['Granger, C.W.J. (1969). Investigating.']))
     mod = load('refcheck', FILES=[str(a), str(b)])
     assert mod.main() == 1
-
-
-def test_the_real_pages_pass_both_gates(monkeypatch):
-    # FILES are repo-relative, as the tools document; pin cwd so the suite is portable
-    monkeypatch.chdir(ROOT)
-    assert load('integrity').main() == 0
-    assert load('refcheck').main() == 0

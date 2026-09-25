@@ -214,7 +214,7 @@ reconcile:
 verify-published:
 	cd .. && scripts/verify-published.sh $(VERIFY_BASE)
 
-# Figure freshness gate: every <span data-figure> in the paper and dashboard
+# Figure freshness gate: every data-figure marker on the dashboard
 # must match the value recomputed from the canonical artifacts. Fails if a
 # committed figure has drifted from its source. Runnable without AWS state.
 figures-check:

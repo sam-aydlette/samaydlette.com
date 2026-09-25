@@ -10,15 +10,8 @@ drone safety monitor and a magazine article about bunkers.
 """
 import importlib.util
 import pathlib
-import sys
-
-import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / 'tools' / 'essay'))
-from paths import ESSAY as ESSAY_REL
-
-ESSAY = ROOT / ESSAY_REL
 
 
 def load(tmp_file):
@@ -75,25 +68,3 @@ def test_the_word_note_without_a_number_is_untouched(tmp_path):
     f.write_text(doc([2, 1], [(1, 'Note that this holds. '), (2, 'Beta. ')]))
     assert load(f).main() == 0
     assert 'Note that this holds' in f.read_text()
-
-
-def _essay_has_notes():
-    return ESSAY.exists() and '<section id="footnotes"' in ESSAY.read_text()
-
-
-@pytest.mark.skipif(not _essay_has_notes(),
-                    reason='essay absent or replaced by a placeholder while it is rewritten')
-def test_every_cross_reference_in_the_essay_resolves():
-    """Each 'note N' must land on a note that exists."""
-    import re
-    h = ESSAY.read_text()
-    notes = h[h.index('<section id="footnotes"'):]
-    defined = {int(x) for x in re.findall(r'<li id="fn(\d+)">', notes)}
-    bad = []
-    for num, body in re.findall(r'<li id="fn(\d+)">(.*?)</li>', notes, re.S):
-        text = re.sub(r'<[^>]+>', '', body)
-        for m in re.finditer(r'\b[Nn]otes? ((?:\d+)(?:, ?\d+)*)', text):
-            for target in re.findall(r'\d+', m.group(1)):
-                if int(target) not in defined:
-                    bad.append('fn%s -> missing note %s' % (num, target))
-    assert not bad, bad

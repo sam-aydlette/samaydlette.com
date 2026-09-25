@@ -13,10 +13,8 @@ from (`python3 tools/essay/integrity.py`).
 # The long-form essay these tools exist for.
 ESSAY = 'website/research/staying-in-the-loop.html'
 
-# Other pages the structural gate covers. The paper is long-form too; the
-# homepage is not, but it links across the site and those edges are worth the
-# same anchor check.
-PAPER = 'website/research/the-plumbing.html'
+# The homepage is not long-form, but it links across the site and those edges
+# are worth the same anchor check.
 INDEX = 'website/index.html'
 
 # What a leading-slash href is relative to, as the site is served.

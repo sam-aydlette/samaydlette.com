@@ -1,7 +1,7 @@
 # =============================================================================
 # Task 13 regression: build-time figure injection.
 # Proves (a) figures are computed from canonical artifacts and reproduce the
-# numbers the paper and dashboard publish, (b) stamp() rewrites only marked
+# numbers the dashboard publishes, (b) stamp() rewrites only marked
 # sites, and (c) altering the SSP's implemented-requirement count flows through
 # to the stamped HTML — the acceptance check for the injector.
 # =============================================================================
@@ -96,7 +96,7 @@ def test_attribute_order_tolerated():
 
 # REMOVED: test_published_targets_are_current.
 #
-# It asserted that the committed paper and dashboard already match their sources.
+# It asserted that the committed dashboard already matches its sources.
 # That invariant is real and still enforced — by `inject-figures.py --check` in the
 # deploy job's "Check committed figures against their sources" step, and locally by
 # `make figures-check`. Both run where the sources actually exist.

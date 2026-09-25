@@ -1512,7 +1512,7 @@ def main():
                 "NTC-0009 (machine-readable authorization data, text-based "
                 "equivalents, the five Balance Improvement Releases folding "
                 "into default requirements). See "
-                "https://samaydlette.com/research/the-plumbing.html for "
+                "https://samaydlette.com/viewer.html for "
                 "context and limitations."
             ),
             "related_artifacts": {
@@ -1522,7 +1522,6 @@ def main():
                 "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
                 "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",
                 "boundary_diagram": "https://samaydlette.com/research/authorization-boundary.html",
-                "research_paper": "https://samaydlette.com/research/the-plumbing.html",
             },
         },
     }

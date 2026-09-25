@@ -11,7 +11,7 @@
   "logo_url": "https://samaydlette.com/favicon.ico",
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
   "secure_configuration_guidance_url": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
-  "documentation_overview_url": "https://samaydlette.com/research/the-plumbing.html",
+  "documentation_overview_url": "https://samaydlette.com/viewer.html",
   "current_independent_assessment_service": "None — self-attested; no FedRAMP-Recognized independent assessment service engaged (IVV is N/A for this unsponsored proof of concept).",
   "accountable_official": {
     "name": "Sam Aydlette",
