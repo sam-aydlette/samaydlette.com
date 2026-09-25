@@ -119,7 +119,9 @@ def test_no_fetch_on_pages_without_the_hook():
 def test_index_ships_the_link_and_no_claim():
     html = INDEX.read_text()
     assert "data-compliance-status" in html
-    assert '<a href="/viewer.html" class="btn btn-primary">' in html
+    # The dashboard is reached from the "Trust (Live)" nav tab on every page,
+    # which replaced the homepage's hero button.
+    assert '<a href="/viewer.html" class="nav-link nav-trust">' in html
     # Nothing reported in the HTML: the stamp ships empty, and no figure or
     # number appears anywhere in the block. The dashboard does the reporting.
     assert '<p class="hero-evidence-facts" data-compliance-status></p>' in html
