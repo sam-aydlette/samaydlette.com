@@ -25,6 +25,7 @@ Active detection sources:
 - **GitHub:** Dependabot vulnerability alerts, secret scanning push protection, security advisories — all auto-emailed to the repository owner
 - **AWS:** root-account email for billing anomalies, AWS Health Dashboard, CloudTrail (account-wide)
 - **The runtime KSI emitter:** publishes `/.well-known/ksi-signal-runtime.json` daily; drift against the deploy-time signal is the strongest single drift indicator the system produces
+- **The evidence SLA watchdog:** CloudWatch alarms email the operator through SNS when the published VDR passes 24 hours old, the runtime signal passes 26 hours, or the evidence nightly fails or stops reporting. Response steps: [`docs/runbooks/evidence-sla-alarm.md`](runbooks/evidence-sla-alarm.md)
 - **External report:** the mailbox listed in [`/.well-known/security.txt`](../website/.well-known/security.txt)
 - **Personal vigilance:** reading the actual site
 

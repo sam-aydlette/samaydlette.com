@@ -20,6 +20,8 @@ def _state():
          "values": {"function_name": "silk-reeling", "arn": "arn:aws:lambda:us-east-2:1:function:silk-reeling"}},
         {"type": "aws_lambda_function", "name": "opa_compliance",
          "values": {"function_name": "opa", "arn": "arn:aws:lambda:us-east-2:1:function:opa"}},
+        {"type": "aws_lambda_function", "name": "evidence_watchdog",
+         "values": {"function_name": "watchdog", "arn": "arn:aws:lambda:us-east-2:1:function:watchdog"}},
         {"type": "aws_s3_bucket", "name": "logs", "values": {"bucket": "samaydlette-com-logs"}},
         {"type": "aws_s3_bucket", "name": "website", "values": {"bucket": "samaydlette.com"}},
         {"type": "aws_cloudfront_distribution", "name": "website",
@@ -51,6 +53,24 @@ def test_two_lambdas_get_distinct_reachability():
     assert cls[("function", "silk_reeling")]["internet_reachable"] is True
     assert cls[("function", "opa_compliance")]["internet_reachable"] is False
     assert cls[("function", "opa_compliance")]["archetype"] == "security-tooling"
+
+
+def test_evidence_watchdog_classification_matches_its_terraform_tags():
+    """watchdog.tf tags the function with local.cls.security_tooling. Reconcile
+    invariant (i) compares live tags to the derived classification, so the two
+    must agree, or the first deploy that creates the watchdog fails the gate."""
+    import re
+    tf = (REPO / "infrastructure" / "watchdog.tf").read_text()
+    fn = tf[tf.index('resource "aws_lambda_function" "evidence_watchdog"'):]
+    assert "tags = merge(local.cls.security_tooling," in fn[:fn.index("\n}\n")]
+    main = (REPO / "infrastructure" / "main.tf").read_text()
+    profile = re.search(r"security_tooling = \{([^}]*)\}", main).group(1)
+    expected = dict(re.findall(r'(\w+) = "([^"]*)"', profile))
+    cls = _by_tf_name()[("function", "evidence_watchdog")]
+    assert cls["internet_reachable"] is (expected["InternetReachable"] == "true")
+    assert cls["archetype"] == expected["Archetype"]
+    assert cls["data_sensitivity"] == expected["DataSensitivity"]
+    assert cls["mission_criticality"] == expected["MissionCriticality"]
 
 
 def test_resource_override_does_not_bleed_onto_same_named_siblings():

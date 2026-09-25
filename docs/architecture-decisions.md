@@ -59,7 +59,7 @@ after-the-fact tampering detectable; and the deploy role deliberately holds no
 `cloudtrail:StopLogging` / `cloudtrail:DeleteTrail`, so the automated pipeline
 cannot silence the audit record.
 
-If the system grew to require true SIEM features (correlation rules, alerting, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
+Alerting today is scoped to evidence freshness: the evidence SLA watchdog (`infrastructure/watchdog.tf`) pages the operator by email when published reporting goes stale or the nightly refresh fails. If the system grew to require true SIEM features (correlation rules, alerting on control-plane events, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
 
 ## Audit log review cadence (KSI-MLA-RVL)
 

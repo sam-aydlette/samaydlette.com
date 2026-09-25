@@ -174,6 +174,15 @@ variable "create_lambda_compliance" {
   default     = true
 }
 
+# Whether to create the evidence SLA watchdog (hourly freshness check, alarms,
+# and the email-alert SNS topic). See watchdog.tf. Requires the compliance
+# Lambda's DLQ, so it is also off when create_lambda_compliance is false.
+variable "create_evidence_watchdog" {
+  description = "Whether to create the evidence SLA watchdog and its alarms"
+  type        = bool
+  default     = true
+}
+
 # Whether to create automatic schedules for compliance monitoring
 variable "create_eventbridge_rules" {
   description = "Whether to create EventBridge rules for compliance monitoring"

@@ -528,6 +528,9 @@ CLASSIFICATION_OVERRIDES = {
     # "function" type default by accident.
     ("function", "silk_reeling"):  {"internet_reachable": True},
     ("function", "opa_compliance"): {"internet_reachable": False, "archetype": "security-tooling"},
+    # The evidence SLA watchdog is EventBridge-only security tooling, like
+    # opa_compliance; it reads the site bucket over the AWS API, not the web.
+    ("function", "evidence_watchdog"): {"internet_reachable": False, "archetype": "security-tooling"},
     # The log and CloudTrail-delivery buckets are security-tooling by role,
     # unlike the site bucket which serves public content under the
     # object_store default.

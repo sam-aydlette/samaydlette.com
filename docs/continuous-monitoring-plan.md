@@ -12,7 +12,7 @@ The Silk Reeling Mirror app is **active in production** (`create_silk_reeling = 
 
 ## Monitoring Mechanisms
 
-Four mechanisms operate concurrently:
+Five mechanisms operate concurrently:
 
 **1. Deploy-time policy gate (per pull request).** Every PR triggers the OPA compliance gate (the `infrastructure/policy/` packages evaluated by `scripts/terraform-plan.sh`). The gate evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego rules. PR cannot merge if the gate fails. Frequency: per PR.
 
@@ -20,7 +20,9 @@ Four mechanisms operate concurrently:
 
 **3. Runtime configuration revalidation (daily).** An AWS Lambda (`infrastructure/lambda/index.js`) runs daily on an EventBridge schedule. It loads the same `policy.wasm` compiled at deploy time (so deploy-time and runtime evaluate identical compiled bytes), queries the live AWS configuration of every cloud component named in the canonical inventory, and re-evaluates each policy. Results are published as `/.well-known/ksi-signal-runtime.json`. Drift between the deploy-time signal and the runtime signal is the externally-visible drift detector. Frequency: daily.
 
-**4. Annual structural review.** Documented in [`docs/security-review.md`](security-review.md). The review re-examines (a) cost/benefit of risk-accepted items, (b) whether the threat model still holds, (c) whether the conscious trade-offs in the README still apply. Frequency: annual, plus after any Transformative significant change per SCN.
+**4. Evidence freshness alerting (hourly).** Published reporting must be under 24 hours old, and an alert that only lands in a GitHub notifications tab is not an alert: from 2026-09-09 to 2026-09-24 the nightly VDR refresh failed every night without reaching the operator. The evidence SLA watchdog ([`infrastructure/watchdog.tf`](../infrastructure/watchdog.tf)) runs hourly on AWS's clock, reads `vdr-report.json`, `ksi-signal-runtime.json` and the nightly's status beacon `vdr-status.json` from the site bucket, and publishes their ages and the nightly's last result as CloudWatch metrics. Three alarms page the operator by email through a CMK-encrypted SNS topic, with a recovery email when each clears: the VDR older than 24 hours, the runtime signal older than 26 hours, and the nightly failed or silent for 26 hours. Missing data counts as a breach, so a dead watchdog pages too. The nightly runs twice a day, which keeps the VDR well inside the 24-hour policy so the alarm fires on real misses, not on GitHub's late crons. Response: [`docs/runbooks/evidence-sla-alarm.md`](runbooks/evidence-sla-alarm.md). Frequency: hourly.
+
+**5. Annual structural review.** Documented in [`docs/security-review.md`](security-review.md). The review re-examines (a) cost/benefit of risk-accepted items, (b) whether the threat model still holds, (c) whether the conscious trade-offs in the README still apply. Frequency: annual, plus after any Transformative significant change per SCN.
 
 ## Reporting
 
@@ -37,7 +39,7 @@ These artifacts are published continuously at `/.well-known/`:
 
 All artifacts carry FedRAMP-namespaced provenance (deploy chain identity, system-id, ownership block). The deploy-time signal is signed via Sigstore keyless with verification anchored in the public Rekor transparency log; an external consumer can verify integrity via `cosign verify-blob` without trusting this site.
 
-**Quarterly Ongoing Certification Report.** CR26 CCM is a quarterly cycle, not a stream. `ongoing-certification-report.json` (CCM-OCR-AVL) is regenerated on every deploy from the system's own artifacts and carries the eight required summaries — changes to certification data (from the SCN register), planned changes (open POA&M items), accepted vulnerabilities (from the VDR), transformative changes, updated recommendations, agencies using the product (none), a FedRAMP-Reportable-Incident attestation (none — no federal data), and lessons learned (none) — plus the next-report and next-review target dates. The four monitoring mechanisms above feed it; per-deploy emission keeps it current and overshoots the 3-month floor.
+**Quarterly Ongoing Certification Report.** CR26 CCM is a quarterly cycle, not a stream. `ongoing-certification-report.json` (CCM-OCR-AVL) is regenerated on every deploy from the system's own artifacts and carries the eight required summaries — changes to certification data (from the SCN register), planned changes (open POA&M items), accepted vulnerabilities (from the VDR), transformative changes, updated recommendations, agencies using the product (none), a FedRAMP-Reportable-Incident attestation (none — no federal data), and lessons learned (none) — plus the next-report and next-review target dates. The five monitoring mechanisms above feed it; per-deploy emission keeps it current and overshoots the 3-month floor.
 
 This implements the **publication half** of FedRAMP 20x Collaborative Continuous Monitoring (CCM): every monitoring artifact is publicly retrievable and signature-verifiable, and the quarterly Ongoing Certification Report is produced as a distinct deliverable, so any reviewer can fetch and verify the current posture without trusting this site. The relationship-dependent rules — the synchronous Quarterly Review (CCM-QTR-MTG), the feedback channel (CCM-OCR-FBM), and the anonymized feedback summary (CCM-OCR-AFS) — are N/A absent a consuming agency, as the scope note below explains.
 
@@ -95,4 +97,5 @@ Annual structural review per [`docs/security-review.md`](security-review.md).
 - NIST CA-7.4 (Risk Monitoring) — covered by VDR cadence
 - NIST CM-3 (Configuration Change Control) — covered by SCN
 - NIST RA-5 (Vulnerability Monitoring and Scanning) — covered by mechanism 2
-- NIST SI-4 (System Monitoring) — covered by mechanisms 1-3
+- NIST SI-4 (System Monitoring) — covered by mechanisms 1-4
+- NIST IR-6 (Incident Reporting) — the operator is paged on evidence-freshness breaches by mechanism 4

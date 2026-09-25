@@ -558,13 +558,30 @@ resource "aws_kms_key" "at_rest" {
         Resource  = "*"
         Condition = {
           ArnLike = {
-            # Scope the logs-service grant to exactly the two CMK-encrypted log
-            # groups that use this key (compliance Lambda + route53 query logs).
+            # Scope the logs-service grant to exactly the CMK-encrypted log
+            # groups that use this key (compliance Lambda, evidence watchdog,
+            # route53 query logs).
             "kms:EncryptionContext:aws:logs:arn" = [
               "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance",
+              "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-evidence-watchdog",
               "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}",
             ]
           }
+        }
+      },
+      {
+        # The evidence-alert SNS topic is encrypted with this key, and CloudWatch
+        # alarms can only publish to it if they may use the key. Scoped to this
+        # account's evidence alarms (watchdog.tf), per the CloudWatch
+        # confused-deputy guidance.
+        Sid       = "AllowEvidenceAlarmsToPublishEncrypted"
+        Effect    = "Allow"
+        Principal = { Service = "cloudwatch.amazonaws.com" }
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
+        Resource  = "*"
+        Condition = {
+          ArnLike      = { "aws:SourceArn" = "arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${replace(var.domain_name, ".", "-")}-evidence-watchdog-*" }
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }
       },
     ]
