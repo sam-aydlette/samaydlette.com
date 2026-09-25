@@ -19,7 +19,21 @@
         ksiRuntime: '/.well-known/ksi-signal-runtime.json',
         oscal: '/.well-known/oscal-ssp.json',
         schema: '/.well-known/ksi-signal.schema.json',
+        vdr: '/.well-known/vdr-report.json',
     };
+
+    // Freshness windows, in hours. Published reporting must be under 24 hours
+    // old (the same policy scripts/check-evidence-freshness.py enforces on the
+    // VDR). The runtime check runs daily, so it gets two hours of scheduling
+    // slack before it reads as stale. A deploy has no window: deploys happen
+    // when there is a reviewed change to ship, not on a clock.
+    var VDR_MAX_AGE_HOURS = 24;
+    var RUNTIME_MAX_AGE_HOURS = 26;
+
+    function ageHours(iso) {
+        var t = Date.parse(iso);
+        return isNaN(t) ? null : (Date.now() - t) / 3600000;
+    }
 
     function escape(s) {
         return String(s == null ? '' : s)
@@ -50,7 +64,8 @@
 
     // ---- Trust status overview -------------------------------------------
 
-    function renderStatus(ksi, runtime, oscal) {
+    function renderStatus(ksi, runtime, oscal, vdr) {
+        var breaches = [];
         // Card 1: signed?
         var signed = ksi && ksi.provenance && ksi.provenance.attestation;
         var signedCard = el('status-signed');
@@ -81,13 +96,58 @@
         var runtimeCard = el('status-runtime');
         if (runtimeCard) {
             if (runtime && runtime.emitted_at) {
-                runtimeCard.className = 'status-card is-good';
-                runtimeCard.querySelector('.status-value').textContent = formatRelative(runtime.emitted_at);
-                runtimeCard.querySelector('.status-detail').textContent = runtime.emitted_at;
+                var runtimeAge = ageHours(runtime.emitted_at);
+                var runtimeStale = runtimeAge === null || runtimeAge > RUNTIME_MAX_AGE_HOURS;
+                runtimeCard.className = 'status-card ' + (runtimeStale ? 'is-bad' : 'is-good');
+                runtimeCard.querySelector('.status-value').textContent =
+                    (runtimeStale ? 'stale · ' : '') + formatRelative(runtime.emitted_at);
+                runtimeCard.querySelector('.status-detail').textContent = runtimeStale
+                    ? 'The daily runtime check has not reported since ' + runtime.emitted_at + '.'
+                    : runtime.emitted_at;
+                if (runtimeStale) breaches.push('the runtime check last reported ' + formatRelative(runtime.emitted_at) + ' (it runs daily)');
             } else {
                 runtimeCard.className = 'status-card is-warn';
                 runtimeCard.querySelector('.status-value').textContent = '—';
                 runtimeCard.querySelector('.status-detail').textContent = 'runtime signal not yet emitted';
+            }
+        }
+
+        // Card: vulnerability report freshness. This is the artifact the
+        // 24-hour reporting policy is written against.
+        var vdrCard = el('status-vdr');
+        if (vdrCard) {
+            var vdrAge = vdr && vdr.emitted_at ? ageHours(vdr.emitted_at) : null;
+            if (vdrAge === null) {
+                vdrCard.className = 'status-card is-bad';
+                vdrCard.querySelector('.status-value').textContent = 'unknown';
+                vdrCard.querySelector('.status-detail').textContent = 'vulnerability report not reachable';
+                breaches.push('the vulnerability report is not reachable');
+            } else if (vdrAge > VDR_MAX_AGE_HOURS) {
+                vdrCard.className = 'status-card is-bad';
+                vdrCard.querySelector('.status-value').textContent = 'stale · ' + formatRelative(vdr.emitted_at);
+                vdrCard.querySelector('.status-detail').textContent =
+                    'Past the ' + VDR_MAX_AGE_HOURS + 'h reporting policy. Emitted ' + vdr.emitted_at + '.';
+                breaches.push('the vulnerability report is ' + formatRelative(vdr.emitted_at).replace(' ago', '') +
+                              ' old (policy: under ' + VDR_MAX_AGE_HOURS + 'h)');
+            } else {
+                vdrCard.className = 'status-card is-good';
+                vdrCard.querySelector('.status-value').textContent = formatRelative(vdr.emitted_at);
+                vdrCard.querySelector('.status-detail').textContent =
+                    vdr.emitted_at + ' · policy: under ' + VDR_MAX_AGE_HOURS + 'h';
+            }
+        }
+
+        // Banner: any freshness breach is stated once, above the cards, in
+        // words, so it cannot be missed in a grid of small labels.
+        var banner = el('sla-banner');
+        if (banner) {
+            if (breaches.length) {
+                banner.hidden = false;
+                banner.textContent = 'Published evidence is past its freshness window: ' +
+                    breaches.join('; ') + '.';
+            } else {
+                banner.hidden = true;
+                banner.textContent = '';
             }
         }
 
@@ -566,10 +626,11 @@
             showError('oscal-meta', 'Could not fetch ' + ARTIFACTS.oscal + ' (' + err.message + ').');
             return null;
         });
+        var vdrP = fetchJSON(ARTIFACTS.vdr).catch(function () { return null; });
 
-        Promise.all([ksiP, runtimeP, oscalP]).then(function (results) {
-            var ksi = results[0], runtime = results[1], oscal = results[2];
-            renderStatus(ksi, runtime, oscal);
+        Promise.all([ksiP, runtimeP, oscalP, vdrP]).then(function (results) {
+            var ksi = results[0], runtime = results[1], oscal = results[2], vdr = results[3];
+            renderStatus(ksi, runtime, oscal, vdr);
             renderDivergencePanel(runtime);
             if (ksi) renderKsiPanel(ksi);
             if (oscal) renderOscalPanel(oscal);

@@ -59,6 +59,23 @@
 .status-card.is-warn .status-value { color: #b07d00; }
 .status-card.is-bad  .status-value { color: #b22222; }
 
+/* Stated once, in words, above the cards when any published evidence is past
+   its freshness window. The red matches .is-bad; the tinted fill uses the
+   theme's tertiary background so it reads in both themes. */
+.sla-banner {
+    margin-bottom: var(--space-lg);
+    padding: var(--space-md) var(--space-lg);
+    border-left: 4px solid #b22222;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.sla-banner[hidden] {
+    display: none;
+}
+
 /* ----- Verification callout ----------------------------------------------- */
 
 .verify-callout {

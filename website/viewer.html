@@ -6,7 +6,7 @@
     <title>Live Trust Dashboard - sam_aydlette</title>
     <link rel="stylesheet" href="/assets/css/main.css?v=1790333952089">
     <link rel="stylesheet" href="/assets/css/articles.css?v=1790333952089">
-    <link rel="stylesheet" href="/assets/css/viewer.css?v=1790333952089">
+    <link rel="stylesheet" href="/assets/css/viewer.css?v=1790337841733">
     <!-- Apply theme immediately to prevent flash -->
     <script src="/assets/js/theme-init.js?v=1790333952089"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
@@ -52,6 +52,7 @@
             </div>
 
             <h2 id="trust-status">Trust Status</h2>
+            <div class="sla-banner" id="sla-banner" role="alert" hidden></div>
             <div class="status-grid">
                 <div class="status-card" id="status-signed">
                     <h3>Deploy-time signal</h3>
@@ -65,6 +66,11 @@
                 </div>
                 <div class="status-card" id="status-runtime">
                     <h3>Last runtime check</h3>
+                    <div class="status-value">—</div>
+                    <div class="status-detail"></div>
+                </div>
+                <div class="status-card" id="status-vdr">
+                    <h3>Vulnerability report</h3>
                     <div class="status-value">—</div>
                     <div class="status-detail"></div>
                 </div>
@@ -248,6 +254,6 @@ cosign verify-blob \
     </footer>
 
     <script type="module" src="/assets/js/main.js?v=1790333952089"></script>
-    <script src="/assets/js/viewer.js?v=1790333952089"></script>
+    <script src="/assets/js/viewer.js?v=1790337841733"></script>
 </body>
 </html>
