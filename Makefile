@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile figures-check require-tools require-artifacts
+        reconcile figures-check essay-check require-tools require-artifacts
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -64,6 +64,7 @@ help:
 	@echo "  make lint        - ruff check scripts/ tests/"
 	@echo "  make typecheck   - mypy scripts/"
 	@echo "  make fmt         - ruff format scripts/ tests/ (opt-in, rewrites files)"
+	@echo "  make essay-check - essay + homepage structure and citations (local only)"
 	@echo "  make dev-setup   - create .venv and install requirements-dev.txt"
 	@echo ""
 	@echo "Resolved Python: $(PY)"
@@ -179,6 +180,13 @@ figures-check:
 #
 # For Terraform/Rego formatting (which CI DOES enforce via `opa fmt --fail`),
 # use: make -C infrastructure fmt
+
+# Structural and citation checks on the real essay and homepage. Local only,
+# and deliberately not part of check, check-full or CI: the pipeline proves
+# compliance, not article content. The tools' unit tests stay in tests/.
+essay-check:
+	@echo "Checking essay structure and citations..."
+	$(VENV_PY) -m pytest -q tools/essay
 
 # The RSS feed is generated from the article index; this fails if the committed
 # feed no longer matches it. Same shape as figures-check: derived artifacts are

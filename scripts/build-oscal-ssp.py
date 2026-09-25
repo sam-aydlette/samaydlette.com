@@ -916,7 +916,7 @@ def build_metadata(signal):
             "implementation statements as the operator's self-attestation. Companion "
             "artifacts: ksi-signal.json, oscal-poam.json, vdr-report.json, iiw.csv at "
             "https://samaydlette.com/.well-known/. See "
-            "https://samaydlette.com/research/the-plumbing.html for context."
+            "https://samaydlette.com/viewer.html for context."
         ),
         "parties": [
             {

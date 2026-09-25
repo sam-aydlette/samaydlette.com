@@ -70,11 +70,6 @@ concurrency:
 # =============================================================================
 env:
   AWS_REGION: us-east-2
-  # Gate for publishing the research paper "Shift Left on Reciprocity"
-  # (/research/the-plumbing.html + its Sigstore bundle). When "true" the deploy
-  # syncs, signs, and serves the paper. Set "false" to hold it back during a
-  # revision (the draft stays in the repo either way).
-  PUBLISH_PLUMBING_PAPER: "false"
   # The per-deploy stack now persists state in S3 (Task 16), so resources no
   # longer need re-importing every run. The import steps are skipped by default
   # and kept only as a disaster-recovery path: set REBUILD_STATE=true to
@@ -1185,8 +1180,7 @@ jobs:
     # The signal joins terraform state, the Lambda's package-lock, the website
     # HTML hashes, the CI provenance from GITHUB_* env vars, and the OPA
     # validations from the compliance-check job into a single signed JSON
-    # document at /.well-known/ksi-signal.json. See the research paper at
-    # /research/cato-without-the-ato.html for the full rationale.
+    # document at /.well-known/ksi-signal.json.
     # -------------------------------------------------------------------------
     - name: Build deploy-time KSI signal
       working-directory: infrastructure
@@ -1285,9 +1279,9 @@ jobs:
     # checkout, so the repository keeps whatever was last committed. That gap ran
     # unnoticed: `test_published_targets_are_current` asserts exactly this
     # invariant, but it needs oscal-ssp.json, which is built in THIS job and does
-    # not exist in the test job, so it skipped in CI and never fired. Four figures
-    # in the paper, the dashboard and the README were stale against a live site
-    # that had been serving the correct values for weeks.
+    # not exist in the test job, so it skipped in CI and never fired. Figures
+    # on the dashboard were once stale against a live site that had been serving
+    # the correct values for weeks.
     #
     # This is the one point in the pipeline where the sources exist, so the check
     # belongs here. It fails closed for the same reason the reconciliation gate
@@ -1303,9 +1297,11 @@ jobs:
           exit 1
         fi
 
-    # Stamp the paper + dashboard figures from the just-built SSP (modifies the
-    # local HTML only; the re-upload happens in the publish block after the gate).
-    - name: Stamp single-source figures (paper + dashboard)
+    # Stamp the dashboard's framework-coverage figures from the just-built SSP
+    # (modifies the local HTML only; the re-upload happens in the publish block
+    # after the gate). The stamper targets the dashboard alone: it exists to keep
+    # the compliance representation honest, not to check article or research prose.
+    - name: Stamp dashboard figures from the built artifacts
       working-directory: infrastructure
       run: |
         python3 ../scripts/inject-figures.py
@@ -1652,14 +1648,7 @@ jobs:
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
-        # Stamped paper + dashboard HTML (figures were stamped pre-gate). The
-        # paper is only republished while PUBLISH_PLUMBING_PAPER is "true"; it is
-        # held back during revision.
-        if [ "${PUBLISH_PLUMBING_PAPER:-false}" = "true" ]; then
-          aws s3 cp ../website/research/the-plumbing.html "s3://$BUCKET_NAME/research/the-plumbing.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
-        else
-          echo "⏸  PUBLISH_PLUMBING_PAPER!=true — skipping research/the-plumbing.html publish (paper under revision)"
-        fi
+        # Stamped dashboard HTML (figures were stamped pre-gate).
         aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
@@ -1713,22 +1702,6 @@ jobs:
         attest vdr-report.json scripts/build-vdr-report.py
         attest iiw.csv         scripts/build-iiw.py
         echo "✅ SLSA/in-toto provenance attestations published for the core compliance artifacts"
-
-    # Sign the research paper itself (a paper whose thesis is verifiability should
-    # be verifiable). The signed bytes are the served bytes of
-    # /research/the-plumbing.html; the bundle is published at a stable
-    # /.well-known/ URL and verifies under the same pinned identity as every
-    # other artifact (external review Task 24).
-    - name: Sign and publish the research paper
-      if: ${{ env.PUBLISH_PLUMBING_PAPER == 'true' }}
-      working-directory: infrastructure
-      run: |
-        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        cosign sign-blob --yes --bundle paper.bundle ../website/research/the-plumbing.html
-        aws s3 cp paper.bundle "s3://$BUCKET_NAME/.well-known/the-plumbing.html.bundle" \
-          --content-type application/json \
-          --cache-control "public, max-age=300"
-        echo "✅ Research paper Sigstore bundle published at /.well-known/the-plumbing.html.bundle"
 
     # Post-publish round-trip (Task 1.5 / reconciliation invariant f, live half):
     # read each artifact back from the S3 origin and confirm the served bytes

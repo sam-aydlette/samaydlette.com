@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # =============================================================================
-# FIGURE INJECTOR  (Phase 2 — single-source figures for paper + dashboard)
+# FIGURE INJECTOR  (single-source framework-coverage figures for the dashboard)
 # =============================================================================
-# Every load-bearing number in the research paper and the dashboard is derived
-# from a generated artifact, not typed by hand. This script computes those
+# Every framework-coverage number on the dashboard is derived from a generated
+# artifact, not typed by hand. This script computes those
 # figures from the canonical artifacts (the OSCAL SSP, the component definition,
 # the spoke profiles, the dispositions, and the CMMC projector's own output) and
 # stamps them into HTML at marked sites:
@@ -15,10 +15,11 @@
 # key is unknown is an error (the HTML references a figure the build cannot
 # produce); a computed key that no marker uses is reported but tolerated.
 #
-# This is the mechanism that keeps the prose honest: change the SSP and the
-# number in the paper changes on the next deploy, because the deploy runs this
-# with --check (CI fails if any stamped figure has drifted from its source) and
-# then in write mode.
+# This keeps the compliance representation honest: change the SSP and the
+# number on the dashboard changes on the next deploy, because the deploy runs
+# this with --check (CI fails if any stamped figure has drifted from its source)
+# and then in write mode. It targets the dashboard only. Article and research
+# prose are not stamped or checked by the pipeline.
 #
 #   inject-figures.py                 # stamp all targets in place
 #   inject-figures.py --check         # exit 1 if any marker is stale (CI gate)
@@ -40,22 +41,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SSP = REPO / "infrastructure" / "oscal-ssp.json"
-KSI_SIGNAL = REPO / "infrastructure" / "ksi-signal.json"
 
-# Components covered by a mechanism other than runtime OPA re-validation, and so
-# not part of its denominator. Dependencies are scanned by Grype and Dependabot on
-# every build; content is sha256-reconciled against the inventory on every deploy.
-# Counting them against runtime coverage understates the system by measuring one
-# layer with another layer's denominator.
-NON_RUNTIME_TYPES = {"npm_package", "pypi_package", "html_artifact"}
-
-# Component types the runtime Lambda re-validates daily. Derived from the
-# enumeration in infrastructure/lambda/index.js: object_store and secrets_manager
-# are looped in full, cdn_distribution is resolved as a single component.
-# test_runtime_coverage_figure.py asserts this stays in step with that file, so a
-# new type added there fails the build instead of silently staling the figure.
-RUNTIME_ENUMERATED_TYPES = {"object_store", "secrets_manager"}
-RUNTIME_SINGLETON_TYPES = {"cdn_distribution"}
 COMPONENT_DEF = REPO / "data" / "component-definitions" / "samaydlette-com-component-definition.json"
 DISPOSITIONS = REPO / "data" / "dispositions" / "beyond-moderate.json"
 CATALOG_171 = REPO / "data" / "catalogs" / "NIST_SP-800-171_rev2_catalog.json"
@@ -71,11 +57,7 @@ PROFILES = {
 }
 
 TARGETS = [
-    REPO / "website" / "research" / "the-plumbing.html",
     REPO / "website" / "viewer.html",
-    # README carries the headline implemented-requirements figure; GitHub
-    # renders inline HTML spans, so the same data-figure markers work there.
-    REPO / "README.md",
 ]
 
 
@@ -144,49 +126,6 @@ def _cmmc_figures():
     return cov, srm
 
 
-def _coverage_layers(components):
-    """How many components each continuous mechanism covers.
-
-    The daily runtime verdict does not speak for the whole inventory, and saying
-    so requires the right denominator. Returns counts for the three layers plus
-    the runtime-covered subset and the resource types it never reaches.
-    """
-    by_type = {}
-    for c in components:
-        by_type.setdefault(c.get("type", "unknown"), []).append(c)
-
-    # deps_scanned counts what ships. Build-time packages are inventoried but
-    # are not part of the deployed dependency set, and folding them in would
-    # move a published figure without the thing it measures having changed.
-    dep_types = {"npm_package", "pypi_package"}
-    deps = sum(1 for c in components
-               if c.get("type") in dep_types
-               and c.get("attributes", {}).get("lifecycle", "runtime") != "build-time")
-    build_deps = sum(1 for c in components
-                     if c.get("type") in dep_types
-                     and c.get("attributes", {}).get("lifecycle") == "build-time")
-    content = len(by_type.get("html_artifact", []))
-    cloud_types = {t: v for t, v in by_type.items() if t not in NON_RUNTIME_TYPES}
-    cloud = sum(len(v) for v in cloud_types.values())
-
-    covered = sum(len(v) for t, v in cloud_types.items() if t in RUNTIME_ENUMERATED_TYPES)
-    covered += sum(1 for t in cloud_types if t in RUNTIME_SINGLETON_TYPES)
-    covered_types = RUNTIME_ENUMERATED_TYPES | RUNTIME_SINGLETON_TYPES
-    uncovered_types = sorted(t for t in cloud_types if t not in covered_types)
-
-    return {
-        "total": len(components),
-        "deps": deps,
-        "build_deps": build_deps,
-        "content": content,
-        "cloud": cloud,
-        "cloud_types": len(cloud_types),
-        "runtime_covered": covered,
-        "runtime_covered_types": len(covered_types & set(cloud_types)),
-        "uncovered_types": uncovered_types,
-    }
-
-
 def compute_figures():
     """Compute every stamped figure from canonical artifacts. Returns
     {figure_key: string_value}. This is the single source of truth."""
@@ -222,22 +161,7 @@ def compute_figures():
     osc_resp = srm["osc-responsibility"]
     osc_inherits = osc_fully + osc_shared
 
-    # Adequacy: what the daily verdict covers. Derived from the canonical
-    # inventory alone, because the runtime signal is emitted by the AWS schedule
-    # and does not exist at build time.
-    lay = _coverage_layers(json.loads(KSI_SIGNAL.read_text())["components"])
-
     return {
-        # adequacy of the continuous checks
-        "inventory_total": str(lay["total"]),
-        "deps_scanned": str(lay["deps"]),
-        "build_deps_scanned": str(lay["build_deps"]),
-        "content_hashed": str(lay["content"]),
-        "cloud_components": str(lay["cloud"]),
-        "cloud_types": str(lay["cloud_types"]),
-        "runtime_covered": str(lay["runtime_covered"]),
-        "runtime_coverage": f"{lay['runtime_covered']}/{lay['cloud']}",
-        "runtime_type_coverage": f"{lay['runtime_covered_types']}/{lay['cloud_types']}",
         # hub
         "hub_total": str(hub_total),
         "hub_handwritten": str(hub_handwritten),
@@ -305,7 +229,7 @@ def main():
     ap.add_argument("--print", dest="print_only", action="store_true",
                     help="print the computed figure table and exit")
     ap.add_argument("--targets", nargs="*", default=None,
-                    help="override target HTML files (default: paper + dashboard)")
+                    help="override target HTML files (default: the dashboard)")
     args = ap.parse_args()
 
     figures = compute_figures()
