@@ -193,6 +193,7 @@ data "aws_iam_policy_document" "compliance_logs" {
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-silk-reeling*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/${local.domain_dashed}-silk-reeling*",
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-evidence-watchdog*",
     ]
   }
   statement {
@@ -440,6 +441,72 @@ resource "aws_iam_role_policy" "cloudtrail_management" {
   name   = "cloudtrail-management"
   role   = aws_iam_role.deploy.id
   policy = data.aws_iam_policy_document.cloudtrail_management.json
+}
+
+# Evidence SLA watchdog (infrastructure/watchdog.tf; CA-7, SI-4, IR-6): what the
+# deploy role needs to create and maintain the watchdog's role, hourly schedule,
+# alert topic and alarms. Every statement is scoped to those resources by name.
+# The Lambda function itself is already covered by the existing function grants
+# on samaydlette-com-*, and its log group by compliance-logs-management above.
+# Nothing here can publish to the topic or subscribe to it: the email
+# subscription is created out of band so no address enters Terraform state.
+data "aws_iam_policy_document" "evidence_watchdog_management" {
+  statement {
+    sid    = "ManageWatchdogRole"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole", "iam:GetRole", "iam:DeleteRole", "iam:UpdateRole",
+      "iam:UpdateAssumeRolePolicy", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags",
+      "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy", "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.domain_dashed}-evidence-watchdog-role"]
+  }
+  statement {
+    sid       = "PassWatchdogRoleToLambdaOnly"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.domain_dashed}-evidence-watchdog-role"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["lambda.amazonaws.com"]
+    }
+  }
+  statement {
+    sid    = "ManageWatchdogSchedule"
+    effect = "Allow"
+    actions = [
+      "events:PutRule", "events:DescribeRule", "events:DeleteRule", "events:EnableRule",
+      "events:DisableRule", "events:PutTargets", "events:RemoveTargets", "events:ListTargetsByRule",
+      "events:TagResource", "events:UntagResource", "events:ListTagsForResource",
+    ]
+    resources = ["arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:rule/${local.domain_dashed}-evidence-watchdog"]
+  }
+  statement {
+    sid    = "ManageEvidenceAlertTopic"
+    effect = "Allow"
+    actions = [
+      "sns:CreateTopic", "sns:DeleteTopic", "sns:GetTopicAttributes", "sns:SetTopicAttributes",
+      "sns:ListSubscriptionsByTopic", "sns:TagResource", "sns:UntagResource", "sns:ListTagsForResource",
+    ]
+    resources = ["arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${local.domain_dashed}-evidence-alerts"]
+  }
+  statement {
+    sid    = "ManageEvidenceAlarms"
+    effect = "Allow"
+    actions = [
+      "cloudwatch:PutMetricAlarm", "cloudwatch:DescribeAlarms", "cloudwatch:DeleteAlarms",
+      "cloudwatch:TagResource", "cloudwatch:UntagResource", "cloudwatch:ListTagsForResource",
+    ]
+    resources = ["arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.domain_dashed}-evidence-watchdog-*"]
+  }
+}
+
+resource "aws_iam_role_policy" "evidence_watchdog_management" {
+  name   = "evidence-watchdog-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.evidence_watchdog_management.json
 }
 
 output "github_actions_role_arn" {

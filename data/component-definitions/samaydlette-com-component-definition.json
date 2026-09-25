@@ -1598,7 +1598,7 @@
               {
                 "uuid": "17ef91c6-6916-57ed-a1cc-72d910b6bf71",
                 "control-id": "si-4",
-                "description": "System monitoring is performed by the runtime KSI emitter (`infrastructure/lambda/index.js`). It queries the live AWS configuration of every cloud component named in the deploy-time signal and publishes a runtime signal at /.well-known/ksi-signal-runtime.json with current pass/fail validations. Drift between the deploy-time and runtime signals is the primary tamper signal the system produces and is detectable from outside the boundary.",
+                "description": "System monitoring is performed by the runtime KSI emitter (`infrastructure/lambda/index.js`). It queries the live AWS configuration of every cloud component named in the deploy-time signal and publishes a runtime signal at /.well-known/ksi-signal-runtime.json with current pass/fail validations. Drift between the deploy-time and runtime signals is the primary tamper signal the system produces and is detectable from outside the boundary. Staleness is monitored separately: an hourly evidence SLA watchdog (`infrastructure/watchdog.tf`) reads the published VDR, the runtime signal and the evidence nightly's status beacon from the site bucket and publishes their ages as CloudWatch metrics; alarms email the operator through a CMK-encrypted SNS topic when the VDR passes 24 hours old, the runtime signal passes 26 hours, or the nightly fails or stops reporting.",
                 "props": [
                   {
                     "name": "implementation-status",

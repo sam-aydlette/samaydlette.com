@@ -16,7 +16,9 @@
 # freshly-pulled Grype database, rebuild the VDR and its trend ledger, put them
 # through the same vulnerability and reconciliation gates, and republish exactly
 # those five objects. No Terraform apply. No website sync. No write outside
-# `.well-known/vdr-*`.
+# `.well-known/vdr-*`. One more object in that prefix, vdr-status.json, is a
+# status beacon written on every run, pass or fail, for the evidence SLA
+# watchdog (infrastructure/watchdog.tf). It carries outcomes, not evidence.
 #
 # THE TRADE, STATED PLAINLY: this replaces an unattended Terraform apply over
 # the whole stack with an unattended write to one S3 prefix. Narrower, but still
@@ -57,8 +59,15 @@ on:
   # The cadence the deploy workflow used to carry. Moved here so the only thing
   # that runs unattended is this narrow refresh, and every path that can reach
   # Terraform apply stays behind the `prod` reviewer gate.
+  #
+  # Twice a day, not once. GitHub fires scheduled runs late and irregularly (the
+  # 07:17 run has started as late as ~12:40), so with one run a day the VDR
+  # sits right at 24 hours old before the next one, and the watchdog's 24-hour
+  # alarm would page on a late cron rather than a real miss. Two runs keep the
+  # VDR well inside the policy, so the alarm fires only when runs actually fail.
   schedule:
     - cron: '17 7 * * *'
+    - cron: '17 19 * * *'
   workflow_dispatch:
 
 # Never let two refreshes race for the same five objects.
@@ -227,6 +236,7 @@ jobs:
         path: infrastructure/
 
     - name: Configure AWS credentials
+      id: awscreds
       uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
       # The OIDC AssumeRoleWithWebIdentity call to regional STS intermittently
       # times out from GitHub runners; cap it and retry rather than hanging.
@@ -599,6 +609,7 @@ jobs:
     # `.well-known/vdr-*` and nothing else. The bucket default-encrypts with
     # SSE-S3 (AES256), so no KMS grant is involved.
     - name: Publish VDR + trend to /.well-known/
+      id: publish
       working-directory: infrastructure
       run: |
         set -euo pipefail
@@ -665,6 +676,44 @@ jobs:
           --max-age-hours "${MAX_EVIDENCE_AGE_HOURS}" \
           --expect-sha256 "${BUILT_SHA}" \
           --retries 12 --retry-delay 20
+
+    # -------------------------------------------------------------------------
+    # STATUS BEACON — written on every run, pass or fail
+    # -------------------------------------------------------------------------
+    # The evidence SLA watchdog (infrastructure/watchdog.tf) reads this hourly
+    # from the bucket and pages the operator when the last run failed, or when
+    # no run has reported in 26 hours (a disabled or stuck cron). It records
+    # outcomes only: no finding ids, no scanner output. It is not evidence and
+    # is neither signed nor attested; nothing but the watchdog consumes it.
+    #
+    # Written under .well-known/vdr-*, inside the scope this workflow's role
+    # already has, so the beacon needs no new permission. If credentials were
+    # never obtained there is nothing to write with, and the watchdog pages on
+    # the beacon's age instead.
+    - name: Write status beacon for the evidence watchdog
+      if: ${{ always() && steps.awscreds.outcome == 'success' }}
+      working-directory: infrastructure
+      env:
+        RUN_RESULT: ${{ job.status }}
+        VULN_GATE: ${{ steps.vulngate.outcome }}
+        RECONCILE: ${{ steps.reconcile.outcome }}
+        PUBLISHED: ${{ steps.publish.outcome }}
+      run: |
+        set -euo pipefail
+        jq -n \
+          --arg result "${RUN_RESULT}" \
+          --arg vuln_gate "${VULN_GATE:-not reached}" \
+          --arg reconcile "${RECONCILE:-not reached}" \
+          --arg published "${PUBLISHED:-not reached}" \
+          --arg finished_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+          --arg commit "${SIGNAL_COMMIT:-unknown}" \
+          '{schema: "vdr-status/1", result: $result, finished_at: $finished_at,
+            vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
+            inventory_commit: $commit, run_url: $run_url}' > vdr-status.json
+        cat vdr-status.json
+        aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
+          --content-type application/json --cache-control "no-cache"
 
   # ===========================================================================
   # JOB 3: ALERT — the job that has to work
