@@ -187,6 +187,7 @@ jobs:
     # documentation. The alert has to be able to say which.
     outputs:
       vuln_gate: ${{ steps.vulngate.outcome }}
+      vuln_findings: ${{ steps.vulngate.outputs.findings }}
       reconcile: ${{ steps.reconcile.outcome }}
     permissions:
       contents: read
@@ -478,10 +479,23 @@ jobs:
     # operational-requirement in data/vuln-dispositions.json. When a newly
     # disclosed CVE lands, THIS is what stops it publishing, and the alert job
     # is what tells a human to disposition it.
+    #
+    # The ids the gate names are exported as a JSON list so the alert can put
+    # each one in front of a person with its advisory and any open Dependabot
+    # PR. The gate's own exit status is what fails the step; capturing its
+    # output changes nothing about what passes.
     - name: Vulnerability gate (fix or categorize every vuln)
       id: vulngate
       working-directory: infrastructure
-      run: python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json
+      run: |
+        set +e
+        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json > vuln-gate.out 2>&1
+        rc=$?
+        set -e
+        cat vuln-gate.out
+        findings=$(sed -n 's/^  ✗ \([^ ]*\) .*/\1/p' vuln-gate.out | jq -Rsc 'split("\n") | map(select(length > 0))')
+        echo "findings=${findings}" >> "$GITHUB_OUTPUT"
+        exit "$rc"
 
     - name: Build VDR vuln trend ledger (RA-5(6))
       working-directory: infrastructure
@@ -685,6 +699,8 @@ jobs:
     permissions:
       contents: read
       issues: write
+      # Read-only: find open Dependabot PRs for the packages the gate named.
+      pull-requests: read
 
     steps:
     - name: Raise or update the stale-evidence issue
@@ -698,6 +714,7 @@ jobs:
         SAST_RESULT: ${{ needs.sast.result }}
         REFRESH_RESULT: ${{ needs.refresh.result }}
         VULN_GATE: ${{ needs.refresh.outputs.vuln_gate }}
+        VULN_FINDINGS: ${{ needs.refresh.outputs.vuln_findings }}
         RECONCILE: ${{ needs.refresh.outputs.reconcile }}
       with:
         script: |
@@ -714,7 +731,29 @@ jobs:
             causes.push(`**The live reconciliation did not run (\`${reconcile}\`).** Nothing compared the live site against its published documentation in this run. That is a separate problem from stale evidence: treat drift as unchecked until a run shows this gate passing.`);
           }
           if (vulnGate === 'failure') {
-            causes.push(`**The vulnerability gate failed.** A scanner-reported vulnerability has no disposition. It keeps failing until the finding is fixed or recorded in \`data/vuln-dispositions.json\` with a POA&M reference in \`docs/poam.md\`. The "Vulnerability gate" step names each finding.`);
+            const runbook = `${context.payload.repository.html_url}/blob/main/docs/runbooks/vuln-gate-failure.md`;
+            let findings = [];
+            try { findings = JSON.parse(process.env.VULN_FINDINGS || '[]'); } catch (e) { findings = []; }
+            // Open Dependabot PRs, matched to each finding by package name.
+            const openPRs = (await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100,
+            })).filter(p => p.head.ref.startsWith('dependabot/'));
+            const lines = findings.map(id => {
+              const ghsa = (id.match(/GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}/) || [])[0];
+              const pkg = (id.match(/pkg:[^/]+\/(.+)@[^@]+$/) || [])[1];
+              const pr = pkg && openPRs.find(p => p.title.includes(` ${pkg} `));
+              const parts = [`- \`${id}\``];
+              if (ghsa) parts.push(`[advisory](https://github.com/advisories/${ghsa})`);
+              parts.push(pr ? `open Dependabot PR: #${pr.number}` : 'no open Dependabot PR');
+              return parts.join(' — ');
+            });
+            causes.push([
+              `**The vulnerability gate failed** on ${findings.length || 'one or more'} finding(s) with no fix and no disposition:`,
+              ``,
+              ...(lines.length ? lines : ['- (the run log\'s "Vulnerability gate" step names them)']),
+              ``,
+              `Fix each (a Dependabot PR plus a deploy clears it: the nightly scans the *published* commit), or disposition it with a POA&M entry. Remediation clocks run from first detection. Runbook: ${runbook}`,
+            ].join('\n'));
           }
           if (causes.length === 0) {
             causes.push(`**Both gates passed or were not reached.** Check, in order: the freshness assertion at the end (published but not served), the setup steps before the gates, and the SAST job.`);
