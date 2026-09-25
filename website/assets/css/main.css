@@ -1054,41 +1054,13 @@ body.fixed-header main.content {
     line-height: 1.8;
 }
 
-/* Live-evidence call to action under the homepage intro */
+/* Live-evidence status line under the homepage intro */
 .hero-evidence {
     margin-top: var(--space-xl);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-md) var(--space-lg);
-}
-
-/* Filled dashboard button. The content-link rule (.content a:not(...)) outranks a
-   bare .btn-primary and recolours its text to the accent green, the same as the
-   fill, so this is scoped to win in every link state. Contrast is WCAG AA in both
-   themes: white on green-700 (5.5:1), near-black on green-400 in dark (11:1). */
-.content .hero-evidence a.btn.btn-primary,
-.content .hero-evidence a.btn.btn-primary:visited,
-.content .hero-evidence a.btn.btn-primary:hover,
-.content .hero-evidence a.btn.btn-primary:active {
-    background: var(--color-green-700);
-    border-color: var(--color-green-700);
-    color: #ffffff;
-    text-decoration: none;
-}
-
-[data-theme="dark"] .content .hero-evidence a.btn.btn-primary,
-[data-theme="dark"] .content .hero-evidence a.btn.btn-primary:visited,
-[data-theme="dark"] .content .hero-evidence a.btn.btn-primary:hover,
-[data-theme="dark"] .content .hero-evidence a.btn.btn-primary:active {
-    background: var(--color-green-400);
-    border-color: var(--color-green-400);
-    color: var(--bg-primary);
-}
-
-.content .hero-evidence a.btn.btn-primary:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 3px;
 }
 
 .hero-content .hero-evidence-facts {
