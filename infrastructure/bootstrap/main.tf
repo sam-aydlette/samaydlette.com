@@ -599,6 +599,40 @@ resource "aws_iam_group_policy" "operators_assessment_readonly" {
   })
 }
 
+# Operators manage their own paging for the evidence SLA watchdog
+# (infrastructure/watchdog.tf; docs/runbooks/evidence-sla-alarm.md): subscribe
+# an address to the alert topic, confirm it works by forcing an alarm, and
+# silence alarm actions during planned work. Scoped to that one topic and those
+# alarms. No sns:Publish (only the alarms page) and no alarm create/delete (that
+# is the deploy role's job, through Terraform).
+resource "aws_iam_group_policy" "operators_evidence_alerts" {
+  name  = "evidence-alerts-operator"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ManageOwnAlertSubscription"
+        Effect = "Allow"
+        Action = [
+          "sns:Subscribe", "sns:Unsubscribe", "sns:GetTopicAttributes",
+          "sns:ListSubscriptionsByTopic", "sns:GetSubscriptionAttributes",
+        ]
+        Resource = "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${local.domain_dashed}-evidence-alerts"
+      },
+      {
+        Sid    = "TestAndSilenceEvidenceAlarms"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:SetAlarmState", "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions", "cloudwatch:DescribeAlarms",
+        ]
+        Resource = "arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.domain_dashed}-evidence-watchdog-*"
+      },
+    ]
+  })
+}
+
 resource "aws_iam_group_policy" "operators_s3_bucket" {
   # checkov:skip=CKV_AWS_355:The ListAllMyBuckets/GetBucketLocation statement requires
   # Resource:* by AWS design; the s3:* grant is scoped to the single site bucket. Risk-accepted.
