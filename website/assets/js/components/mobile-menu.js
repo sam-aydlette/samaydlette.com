@@ -1,4 +1,8 @@
 // Updated mobile-menu.js for Option 1 Design
+// Width at or below which the nav collapses into the hamburger menu. Keep in
+// step with the max-width media query on .main-nav in assets/css/main.css.
+const NAV_COLLAPSE_PX = 1360;
+
 export class MobileMenu {
     constructor() {
         this.init();
@@ -56,7 +60,7 @@ export class MobileMenu {
 
             // Close menu when resizing to desktop view
             window.addEventListener('resize', () => {
-                if (window.innerWidth > 768 && isMenuOpen) {
+                if (window.innerWidth > NAV_COLLAPSE_PX && isMenuOpen) {
                     isMenuOpen = false;
                     menuToggle.classList.remove('active');
                     navbar.classList.remove('active');
@@ -68,7 +72,7 @@ export class MobileMenu {
             const navLinks = navbar.querySelectorAll('.nav-link, .nav-button');
             navLinks.forEach(link => {
                 link.addEventListener('click', () => {
-                    if (window.innerWidth <= 768 && isMenuOpen) {
+                    if (window.innerWidth <= NAV_COLLAPSE_PX && isMenuOpen) {
                         isMenuOpen = false;
                         menuToggle.classList.remove('active');
                         navbar.classList.remove('active');
