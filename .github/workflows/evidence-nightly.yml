@@ -181,6 +181,13 @@ jobs:
     # environment's OIDC subject can assume cannot apply Terraform, cannot sync
     # the website, and cannot write outside `.well-known/vdr-*`.
     environment: evidence-nightly
+    # Which gate stopped the run, handed to the alert job. A failed vulnerability
+    # gate and a skipped reconciliation are different problems: the first means
+    # stale evidence, the second means nothing compared the live site against its
+    # documentation. The alert has to be able to say which.
+    outputs:
+      vuln_gate: ${{ steps.vulngate.outcome }}
+      reconcile: ${{ steps.reconcile.outcome }}
     permissions:
       contents: read
       # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
@@ -448,6 +455,7 @@ jobs:
     # builder's default path pointing at a file that does not exist, which
     # ingest_opa treats as an empty finding set.
     - name: Build VDR Report (FedRAMP 20x Class C)
+      id: vdr
       working-directory: infrastructure
       run: |
         set -euo pipefail
@@ -471,6 +479,7 @@ jobs:
     # disclosed CVE lands, THIS is what stops it publishing, and the alert job
     # is what tells a human to disposition it.
     - name: Vulnerability gate (fix or categorize every vuln)
+      id: vulngate
       working-directory: infrastructure
       run: python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json
 
@@ -501,7 +510,19 @@ jobs:
     # --live enumerates live AWS for invariants (a) completeness and (i)
     # classification tags. Those are the only AWS reads this workflow's role can
     # perform, and they are read-only.
+    #
+    # Runs even when the vulnerability gate above has failed. The two gates
+    # answer different questions, and this one used to sit behind the other: from
+    # 2026-09-09 to 2026-09-24 an undispositioned CVE failed the vulnerability
+    # gate every night, so the live drift check never ran and nothing said so.
+    # Running it anyway does not weaken either gate. The job still fails, and
+    # every sign and publish step below keeps its default success() condition, so
+    # nothing is published unless BOTH gates pass. It only needs its inputs: the
+    # VDR and the rebuilt SSP and POA&M, which exist whenever the VDR step
+    # succeeded.
     - name: Reconciliation gate (fail closed on drift)
+      id: reconcile
+      if: ${{ !cancelled() && steps.vdr.outcome == 'success' }}
       working-directory: infrastructure
       run: |
         python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}"
@@ -676,10 +697,28 @@ jobs:
       env:
         SAST_RESULT: ${{ needs.sast.result }}
         REFRESH_RESULT: ${{ needs.refresh.result }}
+        VULN_GATE: ${{ needs.refresh.outputs.vuln_gate }}
+        RECONCILE: ${{ needs.refresh.outputs.reconcile }}
       with:
         script: |
           const TITLE = 'Evidence nightly failed — published compliance reporting is going stale';
           const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+          // Step outcomes: success | failure | cancelled | skipped, or empty when
+          // the job never reached the step.
+          const vulnGate = process.env.VULN_GATE || 'not reached';
+          const reconcile = process.env.RECONCILE || 'not reached';
+          const causes = [];
+          if (reconcile === 'failure') {
+            causes.push(`**The live reconciliation found drift.** The live site and its published documentation disagree. The "Reconciliation gate" step names the failing invariant.`);
+          } else if (reconcile !== 'success') {
+            causes.push(`**The live reconciliation did not run (\`${reconcile}\`).** Nothing compared the live site against its published documentation in this run. That is a separate problem from stale evidence: treat drift as unchecked until a run shows this gate passing.`);
+          }
+          if (vulnGate === 'failure') {
+            causes.push(`**The vulnerability gate failed.** A scanner-reported vulnerability has no disposition. It keeps failing until the finding is fixed or recorded in \`data/vuln-dispositions.json\` with a POA&M reference in \`docs/poam.md\`. The "Vulnerability gate" step names each finding.`);
+          }
+          if (causes.length === 0) {
+            causes.push(`**Both gates passed or were not reached.** Check, in order: the freshness assertion at the end (published but not served), the setup steps before the gates, and the SAST job.`);
+          }
           const body = [
             `The nightly VDR refresh did not complete, so \`/.well-known/vdr-report.json\` is not being updated.`,
             ``,
@@ -692,11 +731,10 @@ jobs:
             `| Commit | ${context.sha} |`,
             `| SAST job | \`${process.env.SAST_RESULT}\` |`,
             `| Refresh job | \`${process.env.REFRESH_RESULT}\` |`,
+            `| Vulnerability gate | \`${vulnGate}\` |`,
+            `| Reconciliation gate (live drift check) | \`${reconcile}\` |`,
             ``,
-            `**Most likely cause:** a newly disclosed CVE reached the vulnerability gate and has no disposition yet. That is the gate working as designed — it will keep failing until the finding is fixed or recorded in \`data/vuln-dispositions.json\` with a POA&M reference in \`docs/poam.md\`. Check the "Vulnerability gate" step in the run log first.`,
-            ``,
-            `Other causes worth checking, in order: the reconciliation gate (drift between the published inventory and live AWS), the freshness assertion at the end (published but not served), and the SAST job.`,
-            ``,
+            ...causes.flatMap(c => [c, ``]),
             `This issue is reused rather than duplicated — each failure adds a comment. It will not close itself; close it once a run succeeds.`,
           ].join('\n');
 
@@ -708,7 +746,14 @@ jobs:
             per_page: 100,
             labels: 'evidence-freshness',
           });
-          const match = existing.find(i => i.title === TITLE && !i.pull_request);
+          // Prefer an open issue, then the oldest. The lookup once created a
+          // second issue while an identical open one existed (#330, #336) for a
+          // reason the logs did not show, so record what it matched.
+          const matches = existing
+            .filter(i => i.title === TITLE && !i.pull_request)
+            .sort((a, b) => (a.state === b.state ? a.number - b.number : a.state === 'open' ? -1 : 1));
+          core.info(`Issue lookup: ${existing.length} labelled, ${matches.length} matching [${matches.map(i => `#${i.number}:${i.state}`).join(', ')}]`);
+          const match = matches[0];
 
           if (match) {
             if (match.state === 'closed') {
