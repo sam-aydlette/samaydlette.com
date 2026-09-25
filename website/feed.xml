@@ -9,6 +9,14 @@
     <atom:link href="https://samaydlette.com/feed.xml" rel="self" type="application/rss+xml"/>
     <!-- BEGIN generated: feed items. Built by scripts/build-feed.py; do not edit by hand. -->
     <item>
+      <title>The Knot at the Center: Orientation, Judgment, and FedRAMP 20x</title>
+      <link>https://samaydlette.com/pages/article-29.html</link>
+      <guid>https://samaydlette.com/pages/article-29.html</guid>
+      <pubDate>Fri, 25 Sep 2026 00:00:00 +0000</pubDate>
+      <category>FedRAMP 20x</category>
+      <description>FedRAMP 20x is handing a lot of compliance work to machines. So what’s left for the people? Using John Boyd’s OODA loop, I argue that observing and acting are becoming machine work, while judgment, built from experience, is where we humans sit. Good governance applies that wisdom at scale.</description>
+    </item>
+    <item>
       <title>Staying in the Loop</title>
       <link>https://samaydlette.com/research/staying-in-the-loop.html</link>
       <guid>https://samaydlette.com/research/staying-in-the-loop.html</guid>
