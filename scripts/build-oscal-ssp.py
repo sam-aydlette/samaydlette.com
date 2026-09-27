@@ -361,7 +361,9 @@ FAMILY_DEFAULTS = {
             "runtime KSI emitter at runtime; both produce structured "
             "validation records embedded in the KSI signal. System-level "
             "continuous monitoring is implemented via the runtime emitter "
-            "(KSI-CNA-EIS). Authorization sub-controls in the FedRAMP sense "
+            "(KSI-CNA-EIS), and the freshness of the published evidence is "
+            "watched hourly by the evidence SLA watchdog, whose alarms email "
+            "the operator. Authorization sub-controls in the FedRAMP sense "
             "(CA-2, CA-6) are tracked as separate not-applicable entries; "
             "no agency authorization is in scope."
         ),
@@ -1081,13 +1083,23 @@ def build_system_characteristics(signal):
         "status": {"state": "operational"},
         "authorization-boundary": {
             "description": (
-                "AWS account containing one S3 bucket (origin), one CloudFront "
-                "distribution (CDN), one Lambda function (runtime KSI emitter), "
-                "the IAM role and policy supporting the Lambda, an EventBridge "
-                "rule scheduling the Lambda, and a Route 53 hosted zone for DNS. "
-                "GitHub repository and GitHub Actions runners are part of the "
-                "build chain and produce signed attestations recorded in Rekor; "
-                "they are inside the boundary for provenance purposes."
+                "AWS account containing the site's S3 buckets (origin, access "
+                "logs, CloudTrail delivery), a CloudFront distribution (CDN), a "
+                "Route 53 hosted zone for DNS, three Lambda functions (the "
+                "runtime KSI emitter, the Silk Reeling app behind an HTTP API "
+                "Gateway and a Cognito user pool, and the evidence SLA "
+                "watchdog), their IAM roles and policies, EventBridge schedules, "
+                "customer-managed KMS keys, Secrets Manager, CloudWatch log "
+                "groups, a CloudTrail management-event trail, an SQS "
+                "dead-letter queue, and the evidence-alert path (CloudWatch "
+                "alarms and a CMK-encrypted SNS topic). The canonical inventory "
+                "in ksi-signal.json enumerates every component. GitHub "
+                "repository and GitHub Actions runners are part of the build "
+                "chain and produce signed attestations recorded in Rekor; they "
+                "are inside the boundary for provenance purposes. Alarm "
+                "notifications leave the boundary by email to the operator "
+                "email, which is outside the boundary (Rule of Thumb "
+                "#3); they carry alarm metadata only."
             )
         },
         # Base network architecture (always emitted). No public inbound compute
@@ -1216,7 +1228,7 @@ def build_system_implementation(signal):
         components.append({
             "uuid": comp_uuid,
             "type": "service",
-            "title": _component_title(ctype),
+            "title": _component_title(ctype, attrs.get("tf_name")),
             "description": _component_description(ctype, c),
             "props": props,
             "status": {"state": "operational"},
@@ -1348,7 +1360,34 @@ def build_system_implementation(signal):
     }
 
 
-def _component_title(ctype):
+# Per-resource titles and descriptions, keyed by (component type, Terraform
+# resource name). Each type used to get one title, so all three Lambdas read as
+# the "runtime KSI emitter" and all three buckets as the "website origin".
+_COMPONENT_TEXT = {
+    ("object_store", "logs"): (
+        "S3 bucket (access logs)",
+        "Access-log bucket for the site bucket and CDN. Public access fully "
+        "blocked; not an origin."),
+    ("object_store", "cloudtrail"): (
+        "S3 bucket (CloudTrail delivery)",
+        "Delivery bucket for the account's CloudTrail management-event trail. "
+        "Public access fully blocked; not an origin."),
+    ("function", "silk_reeling"): (
+        "Lambda function (Silk Reeling app)",
+        "Backend of the Silk Reeling Mirror application, invoked through the "
+        "API Gateway behind Cognito authentication."),
+    ("function", "evidence_watchdog"): (
+        "Lambda function (evidence SLA watchdog)",
+        "Hourly evidence SLA watchdog. Reads the published VDR, the runtime "
+        "signal and the evidence nightly's status beacon from the site bucket "
+        "over the AWS API and publishes their ages as CloudWatch metrics; "
+        "three alarms email the operator through a CMK-encrypted SNS topic."),
+}
+
+
+def _component_title(ctype, tf_name=None):
+    if (ctype, tf_name) in _COMPONENT_TEXT:
+        return _COMPONENT_TEXT[(ctype, tf_name)][0]
     return {
         "object_store": "S3 bucket (website origin)",
         "cdn_distribution": "CloudFront distribution",
@@ -1357,6 +1396,12 @@ def _component_title(ctype):
 
 
 def _component_description(ctype, c):
+    key = (ctype, (c.get("attributes") or {}).get("tf_name"))
+    if key in _COMPONENT_TEXT:
+        base = _COMPONENT_TEXT[key][1]
+        if c.get("native_id"):
+            base += f" Native ID: {c['native_id']}."
+        return base
     base = {
         "object_store": "Object store hosting site content. Versioning and "
                         "encryption enabled; public access fully blocked; "

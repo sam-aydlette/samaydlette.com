@@ -53,7 +53,7 @@ def test_figures_reproduce_published_numbers():
     f = inj.compute_figures()
     # hub split: hand-written + family-default = total
     assert int(f["hub_handwritten"]) + int(f["hub_generated"]) == int(f["hub_total"])
-    assert f["hub_handwritten"] == "115"
+    assert f["hub_handwritten"] == "116"
     assert f["hub_total"] == "333"
     # FedRAMP Moderate stack sums to the total
     assert int(f["moderate_implemented"]) + int(f["moderate_inherited"]) + int(f["moderate_na"]) == int(f["hub_total"])

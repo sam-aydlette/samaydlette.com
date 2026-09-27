@@ -786,9 +786,24 @@
                 ]
               },
               {
+                "uuid": "18388b1f-80d0-5a92-919c-6e6a304c1e0e",
+                "control-id": "ca-7",
+                "description": "Continuous monitoring runs at six cadences, from every pull request to an annual review, described in docs/continuous-monitoring-plan.md. Per pull request, the OPA gate evaluates the Terraform plan and site content. Per deploy, the VDR aggregator classifies every scanner finding and the reconciliation gate checks the published artifacts against each other and against live AWS, failing closed. Daily, the runtime KSI emitter re-validates the live configuration of the inventoried cloud components and publishes a signed runtime signal. Twice daily, the evidence nightly re-scans dependencies against a fresh vulnerability database and republishes the VDR behind the same vulnerability and reconciliation gates. Hourly, the evidence SLA watchdog measures the age of the published VDR and runtime signal and the nightly's last result, and its alarms email the operator when evidence breaches the 24-hour reporting policy or a run fails. Annually, a structural review re-examines risk acceptances, the threat model and the conscious trade-offs. Everything is published under /.well-known/ and verifiable by anyone; the collaborative, agency-side half of continuous monitoring is not applicable because no agency consumes this system.",
+                "props": [
+                  {
+                    "name": "implementation-status",
+                    "value": "implemented"
+                  },
+                  {
+                    "name": "control-origination",
+                    "value": "sp-system"
+                  }
+                ]
+              },
+              {
                 "uuid": "ce56b3ad-3ab1-5076-831c-85795986eef1",
                 "control-id": "ca-7.1",
-                "description": "Independent continuous-monitoring assessment is not in scope. Continuous monitoring itself is performed by the runtime KSI emitter; the verification chain is public Sigstore signing, which is independently auditable by any reader without a designated independent assessor.",
+                "description": "Independent continuous-monitoring assessment is not in scope. Continuous monitoring itself is performed by the runtime KSI emitter, the twice-daily evidence nightly and the hourly evidence SLA watchdog; the verification chain is public Sigstore signing, which is independently auditable by any reader without a designated independent assessor.",
                 "props": [
                   {
                     "name": "implementation-status",
@@ -1178,7 +1193,7 @@
               {
                 "uuid": "59fa414c-23c1-5642-964a-14dbda129f56",
                 "control-id": "ir-6",
-                "description": "Incident reporting external interface is the security.txt mailbox per RFC 9116 at /.well-known/security.txt. It names the contact, the canonical URL, the policy URL (docs/incident-response.md), and the expiration. There is no FedRAMP-process reporting (FSI/ICP) because no FedRAMP authorization is in scope.",
+                "description": "Incident reporting has two interfaces. External: the security.txt mailbox per RFC 9116 at /.well-known/security.txt, which names the contact, the canonical URL, the policy URL (docs/incident-response.md), and the expiration. Internal: the evidence SLA watchdog's CloudWatch alarms report compliance-monitoring failures to the operator by email through a CMK-encrypted SNS topic, so a stale VDR, a stale runtime signal, or a failed or silent evidence nightly reaches a person rather than a notifications tab; docs/runbooks/evidence-sla-alarm.md is the response procedure. There is no FedRAMP-process reporting (FSI/ICP) because no FedRAMP authorization is in scope.",
                 "props": [
                   {
                     "name": "implementation-status",
