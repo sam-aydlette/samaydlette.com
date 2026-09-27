@@ -45,6 +45,18 @@ cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \
   --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" oscal-ssp.json
 ```
 
+**Bundle format.** Every `.bundle` is a standard Sigstore bundle
+(`application/vnd.dev.sigstore.bundle.v0.3+json`), not cosign's older
+`base64Signature`/`cert`/`rekorBundle` layout, so any Sigstore verifier can
+check it, not only cosign. cosign 2.4 or newer reads it with the command above;
+older releases cannot. With sigstore-python instead:
+
+```
+python -m pip install sigstore
+sigstore verify identity --bundle ksi-signal.bundle \
+  --cert-identity "$IDENTITY" --cert-oidc-issuer "$ISSUER" ksi-signal.json
+```
+
 **Two publisher identities, and why.** Everything above is signed by the deploy
 workflow. The **VDR is the exception**: `vdr-report.json`, its Sigstore bundle,
 its in-toto attestation, and the `vdr-trend.json` ledger are refreshed nightly

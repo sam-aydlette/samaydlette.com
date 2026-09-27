@@ -562,8 +562,8 @@ jobs:
       working-directory: infrastructure
       run: |
         set -euo pipefail
-        cosign sign-blob --yes --bundle vdr-report.bundle vdr-report.json
-        cosign sign-blob --yes --bundle vdr-trend.bundle vdr-trend.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-report.bundle vdr-report.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-trend.bundle vdr-trend.json
         ls -la vdr-report.bundle vdr-trend.bundle
 
     # The published VDR carries a SLSA/in-toto provenance attestation, and that

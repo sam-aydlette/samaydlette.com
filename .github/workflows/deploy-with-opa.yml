@@ -1223,7 +1223,7 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing ksi-signal.json with cosign keyless..."
-        cosign sign-blob --yes --bundle ksi-signal.bundle ksi-signal.json
+        cosign sign-blob --yes --new-bundle-format --bundle ksi-signal.bundle ksi-signal.json
         echo "Bundle written:"
         ls -la ksi-signal.bundle
 
@@ -1243,7 +1243,7 @@ jobs:
       run: |
         cp /tmp/opa-bundle.tar.gz opa-policy-bundle.tar.gz
         echo "Signing the compiled OPA policy bundle with cosign keyless..."
-        cosign sign-blob --yes --bundle opa-policy-bundle.tar.gz.bundle opa-policy-bundle.tar.gz
+        cosign sign-blob --yes --new-bundle-format --bundle opa-policy-bundle.tar.gz.bundle opa-policy-bundle.tar.gz
         echo "Verifying the signature against the pinned workflow identity (fail closed)..."
         cosign verify-blob \
           --bundle opa-policy-bundle.tar.gz.bundle \
@@ -1311,7 +1311,7 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing oscal-ssp.json with cosign keyless..."
-        cosign sign-blob --yes --bundle oscal-ssp.bundle oscal-ssp.json
+        cosign sign-blob --yes --new-bundle-format --bundle oscal-ssp.bundle oscal-ssp.json
 
     # -------------------------------------------------------------------------
     # BUILD THE VDR REPORT  (published after the reconciliation gate) (FedRAMP 20x VDR-RPT-PER, VDR-TFR-MHR)
@@ -1448,13 +1448,13 @@ jobs:
         python3 ../scripts/backfill-vdr-trend.py \
           --points ../data/vdr-trend-backfill.json --trend vdr-trend.json
         python3 ../scripts/build-vdr-trend.py --report vdr-report.json --trend vdr-trend.json
-        cosign sign-blob --yes --bundle vdr-trend.bundle vdr-trend.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-trend.bundle vdr-trend.json
 
     - name: Sign VDR Report
       working-directory: infrastructure
       run: |
         echo "Signing vdr-report.json with cosign keyless..."
-        cosign sign-blob --yes --bundle vdr-report.bundle vdr-report.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-report.bundle vdr-report.json
 
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
@@ -1477,7 +1477,7 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing iiw.csv with cosign keyless..."
-        cosign sign-blob --yes --bundle iiw.bundle iiw.csv
+        cosign sign-blob --yes --new-bundle-format --bundle iiw.bundle iiw.csv
 
     # -------------------------------------------------------------------------
     # BUILD THE SCuBA BUNDLE  (the executable CRM — customer-run assessment)
@@ -1503,7 +1503,7 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing scuba-bundle.json with cosign keyless..."
-        cosign sign-blob --yes --bundle scuba-bundle.bundle scuba-bundle.json
+        cosign sign-blob --yes --new-bundle-format --bundle scuba-bundle.bundle scuba-bundle.json
 
     # -------------------------------------------------------------------------
     # BUILD THE OSCAL POA&M  (published after the reconciliation gate)
@@ -1587,23 +1587,23 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing oscal-poam.json with cosign keyless..."
-        cosign sign-blob --yes --bundle oscal-poam.bundle oscal-poam.json
+        cosign sign-blob --yes --new-bundle-format --bundle oscal-poam.bundle oscal-poam.json
 
     - name: Sign Ongoing Certification Report
       working-directory: infrastructure
       run: |
         echo "Signing ongoing-certification-report.json with cosign keyless..."
-        cosign sign-blob --yes --bundle ongoing-certification-report.bundle ongoing-certification-report.json
+        cosign sign-blob --yes --new-bundle-format --bundle ongoing-certification-report.bundle ongoing-certification-report.json
 
     - name: Sign CDS certification-data artifacts
       working-directory: infrastructure
       run: |
         echo "Signing CDS artifacts with cosign keyless..."
-        cosign sign-blob --yes --bundle certification-overview-package.bundle certification-overview-package.json
-        cosign sign-blob --yes --bundle availability.bundle availability.json
-        cosign sign-blob --yes --bundle policy-index.bundle policy-index.json
-        cosign sign-blob --yes --bundle security-decision-record.bundle security-decision-record.json
-        cosign sign-blob --yes --bundle certification-package-overview.bundle certification-package-overview.json
+        cosign sign-blob --yes --new-bundle-format --bundle certification-overview-package.bundle certification-overview-package.json
+        cosign sign-blob --yes --new-bundle-format --bundle availability.bundle availability.json
+        cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
+        cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
+        cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
 
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always
