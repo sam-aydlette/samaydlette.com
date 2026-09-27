@@ -1098,7 +1098,8 @@ def build_system_characteristics(signal):
                 "chain and produce signed attestations recorded in Rekor; they "
                 "are inside the boundary for provenance purposes. Alarm "
                 "notifications leave the boundary by email to the operator's "
-                "mailbox, an external service."
+                "personal email, which is outside the boundary (Rule of Thumb "
+                "#3); they carry alarm metadata only."
             )
         },
         # Base network architecture (always emitted). No public inbound compute

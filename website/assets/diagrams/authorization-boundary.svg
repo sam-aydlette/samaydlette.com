@@ -187,15 +187,10 @@
     <text x="105" y="1207" class="small">CIA impact: app egress &#183; interconnection tracked as POAM-020 (Bedrock migration planned)</text>
 
     <!-- FIPS-validated cryptographic modules callout -->
-    <rect x="495" y="1150" width="395" height="76" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
+    <rect x="495" y="1150" width="815" height="76" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
     <text x="510" y="1171" class="box-h">No federal data in this PoC</text>
-    <text x="510" y="1189" class="box-d">Anthropic carries app prompts only; alarm email</text>
-    <text x="510" y="1207" class="small">carries metadata only. Federal data would trigger reassessment.</text>
-
-    <rect x="900" y="1150" width="410" height="76" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
-    <text x="915" y="1171" class="box-h">Operator alert mailbox (email)</text>
-    <text x="915" y="1189" class="box-d">Receives evidence-alarm emails (flow I)</text>
-    <text x="915" y="1207" class="small">CIA impact: alert delivery &#183; address not published</text>
+    <text x="510" y="1189" class="box-d">The Anthropic interconnection carries only app feedback prompts today; no federal information is in scope.</text>
+    <text x="510" y="1207" class="small">If federal data ever enters the system, the Anthropic egress is reassessed before any such data could flow.</text>
 
     <rect x="90" y="1236" width="1220" height="232" rx="5" ry="5" fill="#ffffff" stroke="#d68910" stroke-width="1.5"/>
     <text x="105" y="1257" class="box-h">FIPS 140-2/3 validated cryptographic modules in scope</text>
@@ -229,8 +224,8 @@
     <rect x="380" y="1542" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
     <text x="395" y="1564" class="box-h">Operator&#8217;s personal email + SaaS</text>
     <text x="395" y="1582" class="box-d">Personal accounts (email, calendar,</text>
-    <text x="395" y="1599" class="box-d">banking, etc.). No CIA-impacting data.</text>
-    <text x="395" y="1622" class="small">Out per RoT #3. Exception: the alert mailbox (flow I) is in scope.</text>
+    <text x="395" y="1599" class="box-d">banking, etc.). Receives alarm email (flow I).</text>
+    <text x="395" y="1622" class="small">Out per RoT #3; alarm email is metadata only.</text>
 
     <rect x="720" y="1542" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
     <text x="735" y="1564" class="box-h">Public Internet (readers + app users)</text>
@@ -263,9 +258,10 @@
         <!-- H: API Gateway -> app Lambda (request); app Lambda -> Anthropic (egress, right margin + band gap) -->
         <path d="M 890 754 H 898" marker-end="url(#arrow)"/>
         <path d="M 1310 758 H 1345 V 1231 H 287 V 1226" marker-end="url(#arrow)"/>
-        <!-- I: SNS topic -> operator alert mailbox (egress, inner right lane). The alarms -> topic leg is
-             adjacent in the same row and left undrawn: an arrow there would sit on flow D's gutter lane. -->
-        <path d="M 1310 640 H 1322 V 1180 H 1312" marker-end="url(#arrow)"/>
+        <!-- I: SNS topic -> operator's personal email, out of boundary (egress, inner right lane, then just
+             under the boundary line). The alarms -> topic leg is adjacent in the same row and left undrawn:
+             an arrow there would sit on flow D's gutter lane. -->
+        <path d="M 1310 640 H 1322 V 1508 H 540 V 1540" marker-end="url(#arrow)"/>
     </g>
 
     <!-- ======== ARROW LETTER LABELS ======== -->
@@ -402,7 +398,7 @@
         <!-- Row I -->
         <circle cx="15" cy="230" r="10" fill="#1a1a1a"/>
         <text x="15" y="234" text-anchor="middle" class="flow-letter">I</text>
-        <text x="40" y="234" class="legend-row">Alarms &#8594; SNS topic &#8594; operator alert mailbox</text>
+        <text x="40" y="234" class="legend-row">Alarms &#8594; SNS topic &#8594; operator email (out)</text>
         <text x="400" y="234" class="legend-row">AWS-internal; then email (SMTP)</text>
         <text x="615" y="234" class="legend-row">Topic policy: evidence alarms only</text>
         <text x="910" y="234" class="legend-row">At rest: CMK &#183; email not E2E</text>

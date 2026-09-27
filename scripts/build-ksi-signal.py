@@ -250,7 +250,7 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [
             {"direction": "inbound", "counterparty": "metric_alarm", "channel": "aws-internal-tls", "data_class": "alarm-state"},
-            {"direction": "outbound", "counterparty": "operator-mailbox", "channel": "smtp", "data_class": "alarm-state"},
+            {"direction": "outbound", "counterparty": "operator-email-out-of-boundary", "channel": "smtp", "data_class": "alarm-state"},
         ],
     },
     "metric_alarm": {
@@ -1181,19 +1181,6 @@ def build_external_components():
             "cia_impact": "privileged-account authentication",
             "verification": "Operator-side configuration; tenant identifier intentionally not published in this inventory.",
             "fedramp_status": "external; no separate FedRAMP authorization",
-        },
-        {
-            # Where the evidence SLA watchdog's alarms go (infrastructure/watchdog.tf):
-            # the SNS topic emails the operator. This is the one flow that carries
-            # system information out of the boundary to a destination the system
-            # does not control, so it is declared rather than implied.
-            "id": "ext::operator-alert-mailbox",
-            "native_id": "email:operator-alert-mailbox",
-            "name": "Operator alert mailbox (email)",
-            "purpose": "Receives evidence SLA alarm notifications (ALARM and OK) from the evidence-alert SNS topic",
-            "cia_impact": "alert delivery; notifications carry alarm metadata only (alarm name, state, reason, threshold, account and alarm identifiers)",
-            "verification": "Operator-side mailbox; address intentionally not published in this inventory or in Terraform state. SNS delivery is by email and is not end-to-end encrypted.",
-            "fedramp_status": "external; operator's email provider, not assessed",
         },
         {
             "id": "ext::github-advisory-db",
