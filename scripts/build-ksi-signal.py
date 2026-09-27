@@ -89,6 +89,13 @@ TYPE_BY_TF_TYPE = {
     # Reeling app (replaced the shared Basic-Auth secret). Its app client and
     # Hosted-UI domain fold into it as attributes (ATTRIBUTE_PARENTS below).
     "aws_cognito_user_pool": "identity_provider",
+    # The evidence-alerting path (infrastructure/watchdog.tf) and the compliance
+    # Lambda's dead-letter queue. These were silently skipped, so the SSP, IIW
+    # and VDR did not show the topic that pages the operator, the alarms that
+    # drive it, or the queue that holds failed runs.
+    "aws_sns_topic": "notification_topic",
+    "aws_cloudwatch_metric_alarm": "metric_alarm",
+    "aws_sqs_queue": "message_queue",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -115,6 +122,9 @@ CFN_TYPE_BY_NORMALIZED = {
     "secrets_manager": "AWS::SecretsManager::Secret",
     "kms_key": "AWS::KMS::Key",
     "identity_provider": "AWS::Cognito::UserPool",
+    "notification_topic": "AWS::SNS::Topic",
+    "metric_alarm": "AWS::CloudWatch::Alarm",
+    "message_queue": "AWS::SQS::Queue",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -136,6 +146,8 @@ ATTRIBUTE_PARENTS = {
     # The app client and Hosted-UI domain are facets of the identity provider.
     "aws_cognito_user_pool_client": "identity_provider",
     "aws_cognito_user_pool_domain": "identity_provider",
+    # The topic's access policy is a facet of the topic.
+    "aws_sns_topic_policy": "notification_topic",
 }
 
 # =============================================================================
@@ -229,6 +241,29 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [
             {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "logs"},
+        ],
+    },
+    # Alarm notifications carry alarm metadata only (name, state, threshold,
+    # reason). Integrity is moderate: a suppressed or forged page hides a
+    # compliance breach.
+    "notification_topic": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "metric_alarm", "channel": "aws-internal-tls", "data_class": "alarm-state"},
+            {"direction": "outbound", "counterparty": "operator-mailbox", "channel": "smtp", "data_class": "alarm-state"},
+        ],
+    },
+    "metric_alarm": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "outbound", "counterparty": "notification_topic", "channel": "aws-internal-tls", "data_class": "alarm-state"},
+        ],
+    },
+    # Failed async invocation records, which can carry the triggering event.
+    "message_queue": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "failed-invocation-events"},
         ],
     },
     "external_service": {
@@ -369,6 +404,27 @@ IIW_DEFAULTS = {
         "baseline_configuration": "AWS CloudWatch; 365-day retention (AU-11; POAM-017); customer-CMK encryption at rest (POAM-018)",
         "iiw_asset_type": "Log Group (CloudWatch)",
     },
+    "notification_topic": {
+        "function": "Evidence-alert topic: delivers CloudWatch alarm state changes to the operator by email",
+        "diagram_label": "SNS evidence-alert topic",
+        "public": False,
+        "baseline_configuration": "AWS SNS; customer-CMK encryption at rest; publish limited to this account's evidence alarms (aws:SourceArn + aws:SourceAccount); email subscription created out of band",
+        "iiw_asset_type": "Notification Topic (SNS)",
+    },
+    "metric_alarm": {
+        "function": "Evidence SLA alarm on a watchdog metric (VDR age, runtime-signal age, nightly result)",
+        "diagram_label": "CloudWatch alarm",
+        "public": False,
+        "baseline_configuration": "AWS CloudWatch; 2-of-3 hourly datapoints; missing data treated as breaching; ALARM and OK actions to the evidence-alert topic",
+        "iiw_asset_type": "Metric Alarm (CloudWatch)",
+    },
+    "message_queue": {
+        "function": "Dead-letter queue for failed asynchronous invocations of the compliance and watchdog Lambdas",
+        "diagram_label": "SQS dead-letter queue",
+        "public": False,
+        "baseline_configuration": "AWS SQS; SSE-SQS managed encryption; 14-day retention",
+        "iiw_asset_type": "Message Queue (SQS)",
+    },
     "external_service": {
         "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
         "diagram_label": "External service",
@@ -421,6 +477,42 @@ IIW_DEFAULTS = {
 }
 
 
+# Per-RESOURCE IIW text, keyed by (component type, Terraform resource name). The
+# type defaults above describe the first resource of each type; where a type
+# now has several resources doing different jobs, the per-type text mislabeled
+# them (the Silk Reeling app and the evidence watchdog both read as the "runtime
+# KSI emitter", and the log and CloudTrail buckets as site-content origins).
+# Anything not listed here keeps the type default.
+IIW_OVERRIDES = {
+    ("function", "silk_reeling"): {
+        "function": "Silk Reeling Mirror application backend (Cognito-gated Tai Chi coaching API)",
+        "diagram_label": "Lambda — Silk Reeling app",
+    },
+    ("function", "evidence_watchdog"): {
+        "function": "Hourly evidence SLA watchdog; publishes evidence-age and nightly-result metrics for the alarms",
+        "diagram_label": "Lambda — evidence SLA watchdog",
+    },
+    ("event_schedule", "evidence_watchdog"): {
+        "function": "Hourly trigger for the evidence SLA watchdog Lambda",
+    },
+    ("iam_role", "silk_reeling"): {
+        "function": "IAM role assumed by the Silk Reeling app Lambda",
+    },
+    ("iam_role", "evidence_watchdog"): {
+        "function": "IAM role assumed by the evidence SLA watchdog Lambda",
+    },
+    ("object_store", "logs"): {
+        "function": "Access-log bucket for the site bucket and CDN",
+    },
+    ("object_store", "cloudtrail"): {
+        "function": "Delivery bucket for the account's CloudTrail management-event trail",
+    },
+    ("log_group", "silk_apigw"): {
+        "function": "CloudWatch log group for the Silk Reeling API Gateway access logs",
+    },
+}
+
+
 def apply_iiw_defaults(component):
     """Stamp IIW-mapped attribute keys onto a component per its type.
 
@@ -434,7 +526,8 @@ def apply_iiw_defaults(component):
     if defaults is None:
         return
     component.setdefault("attributes", {})
-    for key, value in defaults.items():
+    override = IIW_OVERRIDES.get((component["type"], component["attributes"].get("tf_name")), {})
+    for key, value in {**defaults, **override}.items():
         component["attributes"].setdefault(key, value)
 
 
@@ -511,6 +604,9 @@ CLASSIFICATION_DEFAULTS = {
     "secrets_manager":     (False,              "identity-secrets"),
     "kms_key":             (False,              "identity-secrets"),
     "identity_provider":   (True,               "identity-secrets"),
+    "notification_topic":  (False,              "security-tooling"),
+    "metric_alarm":        (False,              "security-tooling"),
+    "message_queue":       (False,              "security-tooling"),
 }
 
 # Per-RESOURCE overrides keyed by (component type, Terraform resource name).
@@ -681,7 +777,12 @@ def build_cloud_components(tf_state, tf_outputs):
         if tf_type not in TYPE_BY_TF_TYPE:
             continue
         normalized = TYPE_BY_TF_TYPE[tf_type]
-        cid = component_id_for_cloud(tf_name, normalized)
+        # A for_each resource (string index) is several resources under one
+        # name; the key keeps their ids distinct. count indexes (int) stay out
+        # of the id so existing component ids do not change.
+        tf_index = r.get("index")
+        id_name = f"{tf_name}[{tf_index}]" if isinstance(tf_index, str) else tf_name
+        cid = component_id_for_cloud(id_name, normalized)
         values = r.get("values", {}) or {}
 
         attrs = {
@@ -689,6 +790,8 @@ def build_cloud_components(tf_state, tf_outputs):
             "tf_type": tf_type,
             "tf_name": tf_name,
         }
+        if isinstance(tf_index, str):
+            attrs["tf_index"] = tf_index
         # Pull a few common, non-sensitive identifying attributes if present.
         for key in ("region", "runtime", "function_name", "id", "domain_name"):
             if key in values and values[key] is not None:
@@ -1080,6 +1183,19 @@ def build_external_components():
             "fedramp_status": "external; no separate FedRAMP authorization",
         },
         {
+            # Where the evidence SLA watchdog's alarms go (infrastructure/watchdog.tf):
+            # the SNS topic emails the operator. This is the one flow that carries
+            # system information out of the boundary to a destination the system
+            # does not control, so it is declared rather than implied.
+            "id": "ext::operator-alert-mailbox",
+            "native_id": "email:operator-alert-mailbox",
+            "name": "Operator alert mailbox (email)",
+            "purpose": "Receives evidence SLA alarm notifications (ALARM and OK) from the evidence-alert SNS topic",
+            "cia_impact": "alert delivery; notifications carry alarm metadata only (alarm name, state, reason, threshold, account and alarm identifiers)",
+            "verification": "Operator-side mailbox; address intentionally not published in this inventory or in Terraform state. SNS delivery is by email and is not end-to-end encrypted.",
+            "fedramp_status": "external; operator's email provider, not assessed",
+        },
+        {
             "id": "ext::github-advisory-db",
             "native_id": "https://github.com/advisories",
             "name": "GitHub Advisory Database",
@@ -1249,8 +1365,8 @@ KSI_FAMILY_EVIDENCE_TYPES = {
     "CNA": {"object_store", "cdn_distribution", "function", "api_gateway",
             "dns_zone", "tls_certificate", "secrets_manager", "identity_provider", "kms_key"},
     "IAM": {"iam_role", "iam_policy", "iam_group", "oidc_provider", "identity_provider", "secrets_manager"},
-    "INR": {"log_group", "function"},
-    "MLA": {"log_group", "function", "cdn_distribution"},
+    "INR": {"log_group", "function", "notification_topic", "metric_alarm"},
+    "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue"},
     "PIY": None,  # policy & inventory — whole inventory is the evidence
     "RPL": {"object_store"},
     "SCR": {"npm_package", "pypi_package", "external_service"},

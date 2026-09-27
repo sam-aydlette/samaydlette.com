@@ -267,7 +267,10 @@
             "api_gateway",
             "secrets_manager",
             "kms_key",
-            "identity_provider"
+            "identity_provider",
+            "notification_topic",
+            "metric_alarm",
+            "message_queue"
           ]
         },
         "resource_type": {
