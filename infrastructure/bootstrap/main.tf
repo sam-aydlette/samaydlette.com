@@ -27,6 +27,33 @@ provider "aws" {
   region = "us-east-1"
 }
 
+# Classification tags for the bootstrap stack's resources, per
+# docs/policies/resource-tagging-standard.md and the keys the OPA gate requires
+# (infrastructure/policy/config/data.json). The main stack gets the constant axes
+# from provider default_tags; here they are merged per resource instead, so tagging
+# never touches the CloudFront distribution or the other bootstrap resources in the
+# same plan. Operational values match infrastructure/variables.tf.
+locals {
+  bootstrap_tags = {
+    Environment = "prod"
+    CostCenter  = "website-ops"
+    Owner       = "sam-aydlette"
+    AgencyScope = "single"
+    OwnerRole   = "platform-operator"
+  }
+
+  bootstrap_cls = {
+    # The OIDC provider and the CI roles: IAM authorization material, like the
+    # main stack's identity_secrets_internal profile.
+    identity_secrets_internal = { DataClassification = "Internal", DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "identity-secrets" }
+    # The Terraform state bucket: actuates the whole stack's configuration and holds
+    # IAM policy material, so internal rather than public.
+    state_backend = { DataClassification = "Internal", DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "platform-foundation" }
+    # The state lock table: lock metadata only, no secrets.
+    state_lock = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "platform-foundation" }
+  }
+}
+
 variable "aws_region" {
   type    = string
   default = "us-east-2"
@@ -74,6 +101,8 @@ resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.identity_secrets_internal, { Name = "github-actions-oidc" })
 }
 
 # Trust policy: only this repo's main-branch pushes and pull requests may assume
@@ -116,6 +145,8 @@ resource "aws_iam_role" "deploy" {
   description          = "CI deploy role assumed via GitHub OIDC (POAM-001). Trust restricted to this repo's main + PRs."
   assume_role_policy   = data.aws_iam_policy_document.trust.json
   max_session_duration = 3600
+
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.identity_secrets_internal, { Name = "github-actions-deploy-oidc" })
 }
 
 # Reattach the legacy user's managed policies to the role (same scope).

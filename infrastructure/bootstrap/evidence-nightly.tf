@@ -66,6 +66,8 @@ resource "aws_iam_role" "evidence_nightly" {
   description          = "Unattended nightly VDR refresh. PutObject under .well-known/vdr-* plus read-only reconciliation reads. No Terraform, no website sync."
   assume_role_policy   = data.aws_iam_policy_document.evidence_nightly_trust.json
   max_session_duration = 3600
+
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.identity_secrets_internal, { Name = "github-actions-evidence-nightly-oidc" })
 }
 
 # -----------------------------------------------------------------------------
