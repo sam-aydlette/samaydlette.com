@@ -1097,8 +1097,8 @@ def build_system_characteristics(signal):
                 "repository and GitHub Actions runners are part of the build "
                 "chain and produce signed attestations recorded in Rekor; they "
                 "are inside the boundary for provenance purposes. Alarm "
-                "notifications leave the boundary by email to the operator's "
-                "personal email, which is outside the boundary (Rule of Thumb "
+                "notifications leave the boundary by email to the operator "
+                "email, which is outside the boundary (Rule of Thumb "
                 "#3); they carry alarm metadata only."
             )
         },

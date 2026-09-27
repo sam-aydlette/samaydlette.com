@@ -15,9 +15,9 @@
 
 ## 1. Categorization (SCN-CSO-EVA)
 
-Adds net-new service components inside the boundary: an hourly watchdog Lambda, three CloudWatch alarms, and a CMK-encrypted SNS topic. It also adds **one new outbound flow**: alarm notifications by email to the operator's personal email, which is outside the boundary per Rule of Thumb #3 (flow I on the authorization-boundary page). A new egress flow is not routine-recurring maintenance, and it is why this change sits above the lower edge of Adaptive, where SCN-2026-003 sat.
+Adds net-new service components inside the boundary: an hourly watchdog Lambda, three CloudWatch alarms, and a CMK-encrypted SNS topic. It also adds **one new outbound flow**: alarm notifications by email to the operator email, which is outside the boundary per Rule of Thumb #3 (flow I on the authorization-boundary page). A new egress flow is not routine-recurring maintenance, and it is why this change sits above the lower edge of Adaptive, where SCN-2026-003 sat.
 
-It is not Transformative. The `SCN-TRF-TPR` examples involve a critical third party handling a significant portion of information, or a change touching federal customer data. The new flow carries alarm metadata only, to the operator's own email, and the system holds no federal data. There is no authentication change, no customer-responsibility change, and no class change. The same reasoning applies as in SCN-2026-001, which records what would flip a change like this to Transformative.
+It is not Transformative. The `SCN-TRF-TPR` examples involve a critical third party handling a significant portion of information, or a change touching federal customer data. The new flow carries alarm metadata only, to the operator email, and the system holds no federal data. There is no authentication change, no customer-responsibility change, and no class change. The same reasoning applies as in SCN-2026-001, which records what would flip a change like this to Transformative.
 
 ## 2. Required information (SCN-CSO-INF)
 
@@ -30,7 +30,7 @@ It is not Transformative. The `SCN-TRF-TPR` examples involve a critical third pa
   - `aws_sns_topic.evidence_alerts` with a topic policy scoped by `aws:SourceArn` / `aws:SourceAccount`;
   - an at-rest KMS key-policy grant to `cloudwatch.amazonaws.com`, scoped the same way;
   - in the bootstrap layer: the deploy role's `evidence-watchdog-management` grant and the operators group's `evidence-alerts-operator` grant, both name-scoped.
-- **No new in-boundary external service.** The notification destination is the operator's personal email, which stays out of scope under Rule of Thumb #3: it receives alarm metadata only, while the alerting controls themselves (the alarms and the encrypted topic) are inside the boundary. The email subscription is created out of band, and no address is recorded in the repository, Terraform state or the published inventory.
+- **No new in-boundary external service.** The notification destination is the operator email, which stays out of scope under Rule of Thumb #3: it receives alarm metadata only, while the alerting controls themselves (the alarms and the encrypted topic) are inside the boundary. The email subscription is created out of band, and no address is recorded in the repository, Terraform state or the published inventory.
 
 ## 3. Security impact analysis
 

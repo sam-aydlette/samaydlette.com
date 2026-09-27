@@ -222,7 +222,7 @@
     <text x="55" y="1622" class="small">Out per Rule of Thumb #4 (dev environment without federal info).</text>
 
     <rect x="380" y="1542" width="320" height="100" rx="6" ry="6" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.5"/>
-    <text x="395" y="1564" class="box-h">Operator&#8217;s personal email + SaaS</text>
+    <text x="395" y="1564" class="box-h">Operator email + SaaS</text>
     <text x="395" y="1582" class="box-d">Personal accounts (email, calendar,</text>
     <text x="395" y="1599" class="box-d">banking, etc.). Receives alarm email (flow I).</text>
     <text x="395" y="1622" class="small">Out per RoT #3; alarm email is metadata only.</text>
@@ -258,7 +258,7 @@
         <!-- H: API Gateway -> app Lambda (request); app Lambda -> Anthropic (egress, right margin + band gap) -->
         <path d="M 890 754 H 898" marker-end="url(#arrow)"/>
         <path d="M 1310 758 H 1345 V 1231 H 287 V 1226" marker-end="url(#arrow)"/>
-        <!-- I: SNS topic -> operator's personal email, out of boundary (egress, inner right lane, then just
+        <!-- I: SNS topic -> operator email, out of boundary (egress, inner right lane, then just
              under the boundary line). The alarms -> topic leg is adjacent in the same row and left undrawn:
              an arrow there would sit on flow D's gutter lane. -->
         <path d="M 1310 640 H 1322 V 1508 H 540 V 1540" marker-end="url(#arrow)"/>
