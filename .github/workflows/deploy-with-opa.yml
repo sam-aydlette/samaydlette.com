@@ -102,7 +102,7 @@ permissions:
   issues: write
   pull-requests: write
   security-events: write
-  id-token: write   # assume the deploy role via GitHub OIDC (POAM-001)
+  id-token: write   # assume the plan (compliance-check) and deploy roles via GitHub OIDC (POAM-001)
 
 jobs:
   # ===========================================================================
@@ -297,8 +297,12 @@ jobs:
       timeout-minutes: 6
       with:
         # GitHub OIDC role assumption — no long-lived access key (POAM-001).
-        # Role ARN is a repo variable so the account ID stays out of the YAML.
-        role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+        # This job only plans, so it assumes the plan-only role
+        # (infrastructure/bootstrap/plan-role.tf): read-only account access plus
+        # the state lock. Deploy credentials exist only in the deploy job, behind
+        # the prod environment approval. Role ARN is a repo variable so the
+        # account ID stays out of the YAML.
+        role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
         retry-max-attempts: 5
 
