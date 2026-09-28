@@ -73,12 +73,12 @@
 
                 <h3 id="live-map">The Live Map</h3>
 
-                <p>The map below is generated, not drawn. <a href="https://github.com/unified-systems-com/tap" rel="noopener">TAP &mdash; The Analogy Platform</a>, running as RAMPART (the <a href="https://github.com/unified-systems-com/tap-plugin-samsite" rel="noopener">samsite plugin</a>), collects the running system: the AWS account, the GitHub repository and workflows that deploy it, and the Sigstore log entries that sign its evidence. A classification I maintain says what each collected resource means: which zone and group it belongs to, what exists but is not collected, and the data flows between them. TAP lays the boundary out from both, and the snapshot published here is exactly what it drew.</p>
+                <p>The map below is generated, not drawn. Every deploy builds it from the signed canonical inventory: each component is placed by a classification I maintain (which zone and group it belongs to, what exists but is not inventoried, and the data flows between them), and connected to the components its configuration references, from Terraform state. The deploy signs it, and the reconciliation gate refuses to publish it unless it describes exactly that build's inventory. I prototyped the approach with RAMPART on <a href="https://github.com/unified-systems-com/tap" rel="noopener">TAP &mdash; The Analogy Platform</a>.</p>
 
-                <p>That is the point of generating it. A resource no classification rule places shows up as <em>unclassified</em>. An AWS resource with no classification tags is flagged. A data flow whose endpoint no longer exists is reported, and so is a real flow the reference diagram&rsquo;s flow table has never listed. Select a flow to trace it, or any component for its classification and the flows through it. The snapshot is collected on my machine and republished with the site, so its age is shown with it.</p>
+                <p>That is the point of generating it. A component no classification rule places fails the deploy until it is classified. An AWS resource missing its classification tags is flagged. A data flow whose endpoint is not in the inventory is reported, and so is a real flow the reference diagram&rsquo;s flow table has never listed. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
 
-                <div class="boundary-map" data-boundary-map="/assets/boundary-map/boundary-map.json">
-                    <noscript><p>The live map needs JavaScript. Its data is published at <a href="/assets/boundary-map/boundary-map.json"><code>/assets/boundary-map/boundary-map.json</code></a>, and the reference diagram below covers the same boundary.</p></noscript>
+                <div class="boundary-map" data-boundary-map="/.well-known/boundary-map.json">
+                    <noscript><p>The live map needs JavaScript. Its data is published, signed, at <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>, and the reference diagram below covers the same boundary.</p></noscript>
                 </div>
 
                 <details class="bm-text-view">
@@ -88,7 +88,7 @@
 
                 <h3 id="diagram">The Diagram</h3>
 
-                <p>The reference diagram is hand-maintained. It carries what a collector cannot: the leveraged AWS package, the FIPS module list, and the conventions FedRAMP reviewers expect on a single printable page.</p>
+                <p>The reference diagram is hand-maintained and is being retired: the live map above now carries the leveraged AWS package and the FIPS module list as data, and its text view lists both.</p>
 
                 <div class="boundary-svg-wrap">
                     <object data="/assets/diagrams/authorization-boundary.svg" type="image/svg+xml" aria-label="samaydlette.com FedRAMP authorization boundary with data flows and FIPS modules">

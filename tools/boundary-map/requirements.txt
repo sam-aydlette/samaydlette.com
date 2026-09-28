@@ -1,3 +1,0 @@
-# Local-only: the boundary-map exporter drives a headless browser against a local TAP
-# instance. Not part of requirements-dev.txt; CI never runs the exporter.
-playwright==1.63.0

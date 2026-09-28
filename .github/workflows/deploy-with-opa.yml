@@ -1186,6 +1186,22 @@ jobs:
     # validations from the compliance-check job into a single signed JSON
     # document at /.well-known/ksi-signal.json.
     # -------------------------------------------------------------------------
+    # The canonical inventory includes the CI/CD trust root (the bootstrap
+    # stack's OIDC provider, CI roles and state backend) by reading that stack's
+    # state. It is operator-applied and its state is remote and read-only to this
+    # role, so initialize it here. Best-effort, as build_bootstrap_components()
+    # always has been: when the state is not readable the builder omits those
+    # components and says so, rather than failing the deploy.
+    - name: Read the trust-root state (bootstrap stack, read-only)
+      working-directory: infrastructure/bootstrap
+      continue-on-error: true
+      run: |
+        if terraform init -input=false > /dev/null 2>&1 && terraform state list > /dev/null 2>&1; then
+          echo "Trust-root state readable: the inventory will include the bootstrap identities."
+        else
+          echo "::warning::Trust-root state not readable; the bootstrap identities are omitted from this inventory."
+        fi
+
     - name: Build deploy-time KSI signal
       working-directory: infrastructure
       env:
@@ -1571,6 +1587,31 @@ jobs:
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --overview certification-overview-package.json --ksi-signal ksi-signal.json
 
+    # The authorization-boundary map the trust center draws: the inventory's
+    # components placed by docs/boundary/boundary-classification.json, connected
+    # by what Terraform state says references what, with the data-flow table
+    # resolved against real nodes. Generated, never drawn. Terraform state holds
+    # secret values, so it is written owner-only and deleted on exit, whatever
+    # happens; the map itself carries no ARN, account ID or email address (the
+    # builder and invariant (l) both fail closed on one).
+    - name: Build the boundary map
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        umask 077
+        trap 'rm -f tfstate-main.json tfstate-bootstrap.json' EXIT
+        terraform show -json > tfstate-main.json
+        states=(--state tfstate-main.json)
+        if terraform -chdir=bootstrap show -json > tfstate-bootstrap.json 2>/dev/null && [ -s tfstate-bootstrap.json ]; then
+          states+=(--state tfstate-bootstrap.json)
+        fi
+        python3 ../scripts/build-boundary-graph.py \
+          --ksi-signal ksi-signal.json --classification ../docs/boundary/boundary-classification.json \
+          "${states[@]}" --offering ../data/cds/offering.json --vdr vdr-report.json \
+          --trust-root-plan trust-root-plan.json --commit "$GITHUB_SHA" --output boundary-map.json
+
     # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
     # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
     # SSP/POA&M references resolve to inventory, every Checkov suppression is
@@ -1585,7 +1626,8 @@ jobs:
         GITHUB_SHA: ${{ github.sha }}
       run: |
         echo "Running cross-artifact reconciliation gate..."
-        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "$GITHUB_SHA"
+        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "$GITHUB_SHA" \
+          --report reconcile-report.json
 
     - name: Sign OSCAL POA&M
       working-directory: infrastructure
@@ -1608,6 +1650,12 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
+
+    - name: Sign trust-center artifacts (boundary map, gate report)
+      working-directory: infrastructure
+      run: |
+        cosign sign-blob --yes --new-bundle-format --bundle boundary-map.bundle boundary-map.json
+        cosign sign-blob --yes --new-bundle-format --bundle reconcile-report.bundle reconcile-report.json
 
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always
@@ -1651,6 +1699,12 @@ jobs:
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        # Trust center: the generated boundary map and the gate's own report (the
+        # report exists only because the gate above passed).
+        for a in boundary-map reconcile-report; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
         # Stamped dashboard HTML (figures were stamped pre-gate).
         aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
@@ -1739,6 +1793,8 @@ jobs:
         check scuba-bundle.json .well-known/scuba-bundle.json
         check certification-package-overview.json .well-known/certification-package-overview.json
         check iiw.csv .well-known/iiw.csv
+        check boundary-map.json .well-known/boundary-map.json
+        check reconcile-report.json .well-known/reconcile-report.json
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
         for a in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"

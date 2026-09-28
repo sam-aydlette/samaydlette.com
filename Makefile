@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile figures-check essay-check boundary-map require-tools require-artifacts
+        reconcile figures-check essay-check require-tools require-artifacts
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -65,7 +65,6 @@ help:
 	@echo "  make typecheck   - mypy scripts/"
 	@echo "  make fmt         - ruff format scripts/ tests/ (opt-in, rewrites files)"
 	@echo "  make essay-check - essay + homepage structure and citations (local only)"
-	@echo "  make boundary-map - re-export the live boundary map from local TAP (local only)"
 	@echo "  make dev-setup   - create .venv and install requirements-dev.txt"
 	@echo ""
 	@echo "Resolved Python: $(PY)"
@@ -188,13 +187,6 @@ figures-check:
 essay-check:
 	@echo "Checking essay structure and citations..."
 	$(VENV_PY) -m pytest -q tools/essay
-
-# Re-export the live boundary map from a local RAMPART (TAP) instance. Local only,
-# like essay-check: CI cannot run TAP, so the pipeline publishes the committed
-# snapshot. See tools/boundary-map/README.md.
-boundary-map:
-	@echo "Exporting the boundary map from local TAP..."
-	python3 tools/boundary-map/export.py
 
 # The RSS feed is generated from the article index; this fails if the committed
 # feed no longer matches it. Same shape as figures-check: derived artifacts are

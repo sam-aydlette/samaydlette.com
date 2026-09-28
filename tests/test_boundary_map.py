@@ -1,138 +1,78 @@
-"""The committed live-boundary-map snapshot is well formed, attributable and public-safe.
+"""The live boundary map page draws the signed, generated map and nothing hand-made.
 
-The snapshot is generated on the operator's machine by tools/boundary-map/export.py from
-a local RAMPART (TAP) instance; CI cannot regenerate it. These hermetic checks are what
-CI can hold it to: it matches the committed classification, every reference in it
-resolves, it credits the platform that produced it, and it carries nothing the exporter
-promises to strip.
+The map's data is built on every deploy (scripts/build-boundary-graph.py; tested in
+test_build_boundary_graph.py) and bound to the build by reconciliation invariant (l).
+These checks cover what the site commits: the page wiring, the classification that
+drives the build, and the icons served from this origin.
 """
 
 from __future__ import annotations
 
-import datetime as dt
-import hashlib
+import fnmatch
 import json
 import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-MAP_DIR = REPO / "website" / "assets" / "boundary-map"
-SNAPSHOT = MAP_DIR / "boundary-map.json"
+ICONS = REPO / "website" / "assets" / "boundary-map" / "icons"
 CLASSIFICATION = REPO / "docs" / "boundary" / "boundary-classification.json"
 PAGE = REPO / "website" / "research" / "authorization-boundary.html"
-
-PUBLIC_TAGS = {
-    "Archetype",
-    "DataClassification",
-    "DataSensitivity",
-    "InternetReachable",
-    "MissionCriticality",
-    "Environment",
-}
-
-
-def snapshot() -> dict:
-    return json.loads(SNAPSHOT.read_text())
 
 
 def classification() -> dict:
     return json.loads(CLASSIFICATION.read_text())
 
 
-def test_schema_and_attribution():
-    s = snapshot()
-    assert s["schema"] == "rampart-boundary-map/1"
-    assert "RAMPART" in s["attribution"]["text"] and "TAP" in s["attribution"]["text"]
-    assert s["attribution"]["tap_url"].startswith(
-        "https://github.com/unified-systems-com/"
-    )
-    dt.datetime.fromisoformat(s["collected_at"])
-
-
-def test_exported_from_the_committed_classification():
-    # Editing the classification without re-exporting would publish a map that no
-    # longer says what the classification says.
-    committed = hashlib.sha256(CLASSIFICATION.read_bytes()).hexdigest()
-    assert snapshot()["source"]["classification_sha256"] == committed, (
-        "docs/boundary/boundary-classification.json changed since the last export; run `make boundary-map`"
-    )
-
-
-def test_carries_no_arn_account_id_or_email():
-    text = SNAPSHOT.read_text()
-    assert not re.search(r"arn:aws[a-z-]*:", text)
-    assert not re.search(r"(?<![0-9A-Za-z])[0-9]{12}(?![0-9A-Za-z])", text)
-    assert not re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
-
-
-def test_only_public_classification_tags():
-    for n in snapshot()["nodes"]:
-        assert set(n.get("tags", {})) <= PUBLIC_TAGS, n["name"]
-
-
-def test_every_reference_resolves():
-    s = snapshot()
-    ids = [n["id"] for n in s["nodes"]]
-    assert len(ids) == len(set(ids))
-    groups = {g["key"] for g in s["groups"]}
-    zones = {z["key"] for z in s["zones"]}
-    for n in s["nodes"]:
-        assert n["group"] in groups and n["zone"] in zones, n["name"]
-        if "icon" in n:
-            assert (MAP_DIR / n["icon"]).is_file(), n["icon"]
-    known = set(ids)
-    for e in s["edges"]:
-        assert e["source"] in known and e["target"] in known
-    for f in s["flows"]:
-        assert f["hops"], f"flow {f['id']} has no hop"
-        assert all(a in known and b in known for a, b in f["hops"]), f["id"]
-
-
-def test_flows_are_the_classifications_flows():
-    assert [f["id"] for f in snapshot()["flows"]] == [
-        f["id"] for f in classification()["flows"]
-    ]
-
-
-def test_health_matches_the_nodes():
-    s = snapshot()
-    flags = [f for n in s["nodes"] for f in n.get("flags", [])]
-    h = s["health"]
-    assert h["unclassified"] == sum(
-        1 for n in s["nodes"] if n["group"] == "unclassified"
-    )
-    assert h["untagged"] == flags.count("untagged")
-    assert h["declared_not_collected"] == sum(
-        1 for n in s["nodes"] if n["kind"] == "not_collected"
-    )
-    assert h["flows_with_unmatched_endpoint"] == sum(
-        1 for f in s["flows"] if f["unmatched_endpoints"]
-    )
-
-
-def test_page_hosts_the_map_and_credits_tap():
+def test_page_draws_the_signed_generated_map():
     html = PAGE.read_text()
-    assert 'data-boundary-map="/assets/boundary-map/boundary-map.json"' in html
+    assert 'data-boundary-map="/.well-known/boundary-map.json"' in html
     assert "data-boundary-map-text" in html
     assert 'src="/assets/js/boundary-map.js' in html
-    assert "https://github.com/unified-systems-com/tap" in html
+    assert "/assets/boundary-map/boundary-map.json" not in html  # the retired hand-exported snapshot
+
+
+def test_classification_is_well_formed():
+    c = classification()
+    zones = {z["key"] for z in c["zones"]}
+    for g in c["groups"]:
+        assert g["zone"] in zones and g["match"], g["key"]
+    declared = {d["key"] for d in c["declared"]}
+    for d in c["declared"]:
+        assert d["zone"] in zones and d["kind"] in {"actor", "not_inventoried"}, d["key"]
+    for f in c["flows"]:
+        assert len(f["path"]) >= 2, f["id"]
+        for ref in f["path"]:
+            assert ("component" in ref) != ("declared" in ref), f["id"]
+            if "declared" in ref:
+                assert ref["declared"] in declared, (f["id"], ref)
+    assert [f["id"] for f in c["flows"]] == sorted(f["id"] for f in c["flows"])
+
+
+def test_every_flow_endpoint_pattern_is_placed_by_some_group():
+    # A component a flow names must also be classified, or the flow would point at
+    # something the map cannot place.
+    c = classification()
+    patterns = [p for g in c["groups"] for p in g["match"]]
+    for f in c["flows"]:
+        for ref in f["path"]:
+            comp = ref.get("component")
+            # A wildcard endpoint ("every function") spans groups by design.
+            if comp and "*" not in comp:
+                assert any(fnmatch.fnmatchcase(comp, p) for p in patterns), (f["id"], comp)
 
 
 def test_icons_cannot_run_script():
     # Icons are served from the site's own origin; opened directly, an SVG is a document.
-    unsafe = re.compile(
-        rb"<script|\son[a-z]+\s*=|javascript:|<foreignObject|<iframe|<embed|<object",
-        re.IGNORECASE,
-    )
-    for icon in (MAP_DIR / "icons").glob("*"):
+    unsafe = re.compile(rb"<script|\son[a-z]+\s*=|javascript:|<foreignObject|<iframe|<embed|<object", re.IGNORECASE)
+    for icon in ICONS.glob("*"):
         assert re.fullmatch(r"[a-z0-9-]+\.svg", icon.name), icon.name
         assert not unsafe.search(icon.read_bytes()), icon.name
 
 
-def test_links_are_same_origin_or_https():
-    for n in snapshot()["nodes"]:
-        link = n.get("link")
-        if link:
-            assert (
-                link.startswith("/") and not link.startswith("//")
-            ) or link.startswith("https://"), link
+def test_every_icon_the_viewer_names_exists():
+    js = (REPO / "website" / "assets" / "js" / "boundary-map.js").read_text()
+    maps = js[js.index("const ICON_BY_TYPE"):js.index("const CLASSIFICATION_LABELS")]
+    names = set(re.findall(r":\s*'([a-z0-9-]+)'", maps))
+    assert names, "the viewer names no icons"
+    for name in names:
+        assert (ICONS / f"{name}.svg").is_file(), name
