@@ -91,7 +91,9 @@ for f in ksi-signal.json ksi-signal.bundle \
          oscal-ssp.json oscal-ssp.json.intoto.jsonl \
          oscal-poam.json \
          scuba-bundle.json scuba-bundle.bundle \
-         vdr-report.json vdr-report.json.intoto.jsonl; do
+         vdr-report.json vdr-report.json.intoto.jsonl \
+         boundary-map.json boundary-map.bundle \
+         reconcile-report.json reconcile-report.bundle; do
   if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f"; then
     echo "  got  $f ($(wc -c < "$work/$f") bytes)"
   else
@@ -118,6 +120,20 @@ if verify_attestation_any_identity "$work/oscal-ssp.json.intoto.jsonl" "$work/os
 else
   bad "oscal-ssp.json attestation signature"
 fi
+
+# The trust center's own data: the generated boundary map and the gate's report.
+for art in boundary-map reconcile-report; do
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY"; then
+    ok "$art.json signed by the pinned workflow on main"
+  else
+    bad "$art.json signature"
+  fi
+  if [ "$(jq -r .ksi_signal_id "$work/$art.json")" = "$(jq -r .signal_id "$work/ksi-signal.json")" ]; then
+    ok "$art.json is bound to the published inventory"
+  else
+    bad "$art.json names a different inventory than ksi-signal.json"
+  fi
+done
 
 # The VDR is refreshed nightly, so either publisher identity is accepted here.
 if verify_attestation_any_identity "$work/vdr-report.json.intoto.jsonl" "$work/vdr-report.json" \

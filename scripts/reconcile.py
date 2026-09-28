@@ -38,6 +38,11 @@
 #                        and its policy set equals the SSP's control set
 #                        (the executable CRM cannot drift from the SSP it
 #                        derives from)
+#   (l) boundary map    — when the published boundary map is present it binds
+#                        to the same inventory signal_id and commit, places
+#                        every boundary component of the inventory (no more, no
+#                        fewer), leaves none unclassified, and carries no ARN,
+#                        account ID or email address
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -54,6 +59,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -582,9 +588,49 @@ def check_g_poam_parity(poam, poam_md_text):
 # ----------------------------------------------------------------------------
 # runner
 # ----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+# (l) boundary map binding and completeness
+# ----------------------------------------------------------------------------
+BOUNDARY_NON_COMPONENT_TYPES = {"npm_package", "pypi_package", "html_artifact"}
+_MAP_REDACTION = (
+    ("an ARN", re.compile(r"arn:aws[a-z-]*:")),
+    ("an AWS account ID", re.compile(r"(?<![0-9A-Za-z])[0-9]{12}(?![0-9A-Za-z])")),
+    ("an email address", re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")),
+)
+
+
+def check_l_boundary_map(signal, boundary_map, expected_commit=None):
+    """The published map is a claim about the whole boundary: it must describe
+    this build's inventory exactly, classify all of it, and publish nothing that
+    identifies an account."""
+    if boundary_map is None:
+        return []
+    violations = []
+    sid = signal.get("signal_id")
+    if boundary_map.get("ksi_signal_id") != sid:
+        violations.append(f"(l) boundary map signal_id {boundary_map.get('ksi_signal_id')!r} != inventory signal_id {sid!r}")
+    if expected_commit and boundary_map.get("commit") != expected_commit:
+        violations.append(f"(l) boundary map commit {boundary_map.get('commit')!r} != {expected_commit!r}")
+    inventory = {c["component_id"] for c in signal.get("components", [])
+                 if c.get("type") not in BOUNDARY_NON_COMPONENT_TYPES}
+    on_map = {n["id"] for n in boundary_map.get("nodes", []) if n.get("kind") == "collected"}
+    for cid in sorted(inventory - on_map):
+        violations.append(f"(l) inventory component {cid} is missing from the boundary map")
+    for cid in sorted(on_map - inventory):
+        violations.append(f"(l) boundary map node {cid} is not in the inventory")
+    for cid in boundary_map.get("unclassified", []):
+        violations.append(f"(l) {cid} is unclassified: add a rule for it to docs/boundary/boundary-classification.json")
+    text = json.dumps(boundary_map)
+    for label, pattern in _MAP_REDACTION:
+        if pattern.search(text):
+            violations.append(f"(l) boundary map contains {label}")
+    return violations
+
+
 def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
             ckv_to_poam, poam_md_text, false_positive_ckvs,
-            live_arns=None, expected_commit=None, live_tags=None, scuba=None):
+            live_arns=None, expected_commit=None, live_tags=None, scuba=None,
+            boundary_map=None):
     violations = []
     violations += check_d_impact(signal, ssp, poam, vdr, dashboard_html)
     violations += check_e_binding(signal, ssp, poam, vdr)
@@ -597,6 +643,7 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     violations += check_h_finding_coverage(vdr, poam)
     violations += check_j_poam_ref_validity(signal, ssp, poam, vdr)
     violations += check_k_scuba_binding(signal, ssp, scuba)
+    violations += check_l_boundary_map(signal, boundary_map, expected_commit)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     if live_tags is not None:
@@ -644,6 +691,8 @@ def main():
     ap.add_argument("--expect-commit", default=os.environ.get("GITHUB_SHA"),
                     help="commit the staged artifacts must carry (invariant f)")
     ap.add_argument("--dashboard", default=str(REPO / "website" / "viewer.html"))
+    ap.add_argument("--report", default=None,
+                    help="on success, write the invariants that held (and any deferred) as JSON for the trust center")
     ap.add_argument("--checkov", default=str(REPO / ".checkov.yaml"),
                     help="path to .checkov.yaml (overridable for hermetic tests)")
     ap.add_argument("--poam-md", default=str(REPO / "docs" / "poam.md"),
@@ -665,6 +714,9 @@ def main():
     # reconcile; in CI the bundle is built before this gate runs.
     scuba_path = d / "scuba-bundle.json"
     scuba = load_json(scuba_path) if scuba_path.exists() else None
+    # Optional artifact: the boundary map (invariant l), presence-gated the same way.
+    map_path = d / "boundary-map.json"
+    boundary_map = load_json(map_path) if map_path.exists() else None
 
     dashboard_html = Path(args.dashboard).read_text() if Path(args.dashboard).exists() else None
     checkov_text = Path(args.checkov).read_text()
@@ -700,7 +752,7 @@ def main():
         signal, ssp, poam, vdr, dashboard_html, checkov_text,
         _load_ckv_to_poam(), poam_md_text, _load_false_positives(poam_md_text),
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
-        scuba=scuba,
+        scuba=scuba, boundary_map=boundary_map,
     )
 
     if violations:
@@ -708,14 +760,52 @@ def main():
         for v in violations:
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
+    optional = (",k" if scuba is not None else "") + (",l" if boundary_map is not None else "")
     if live_arns is not None and live_tags is not None:
-        checks = "a-j" + (",k" if scuba is not None else "")
+        checks = "a-j" + optional
     elif live_arns is not None:
-        checks = "a-h,j" + (",k" if scuba is not None else "") + " (i deferred: no live tags)"
+        checks = "a-h,j" + optional + " (i deferred: no live tags)"
     else:
-        checks = "b-h,j" + (",k" if scuba is not None else "") + " (a,i deferred: no --live)"
+        checks = "b-h,j" + optional + " (a,i deferred: no --live)"
     print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
+    if args.report:
+        Path(args.report).write_text(json.dumps(build_report(
+            signal, args.expect_commit,
+            deferred={"a": live_arns is None, "i": live_tags is None,
+                      "k": scuba is None, "l": boundary_map is None}), indent=2) + "\n")
     return 0
+
+
+INVARIANT_TITLES = {
+    "a": "Every live in-boundary resource is in the inventory",
+    "b": "Every SSP component and POA&M asset resolves to an inventory entry",
+    "c": "Every suppressed scanner finding is categorized consistently",
+    "d": "One identical impact level everywhere",
+    "e": "Every artifact is built from one inventory",
+    "f": "Staged artifacts carry this build's commit",
+    "g": "The OSCAL POA&M matches the human POA&M",
+    "h": "Every VDR finding resolves to a POA&M item",
+    "i": "Live resource tags match the inventory's classification",
+    "j": "Every POA&M reference resolves",
+    "k": "The SCuBA bundle binds to the inventory and the SSP",
+    "l": "The boundary map describes exactly this build's inventory",
+}
+
+
+def build_report(signal, commit, deferred):
+    """Written only when the gate passes; nothing is published otherwise, so a
+    published report is itself evidence that every listed invariant held."""
+    return {
+        "schema": "reconcile-report/1",
+        "result": "pass",
+        "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "commit": commit,
+        "ksi_signal_id": signal.get("signal_id"),
+        "invariants": [
+            {"id": k, "title": t, "status": "deferred" if deferred.get(k) else "held"}
+            for k, t in INVARIANT_TITLES.items()
+        ],
+    }
 
 
 if __name__ == "__main__":

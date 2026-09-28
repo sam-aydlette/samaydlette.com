@@ -1,14 +1,14 @@
 /**
- * Live boundary map — a static, interactive rendering of the RAMPART (TAP) export.
+ * Live boundary map: an interactive rendering of /.well-known/boundary-map.json.
  *
- * The snapshot (/assets/boundary-map/boundary-map.json) is produced on the operator's
- * machine by tools/boundary-map/export.py: a local TAP instance collects the system,
- * lays the boundary out using docs/boundary/boundary-classification.json, and the
- * exporter reads back exactly what TAP drew. This module only redraws that snapshot at
- * TAP's positions; it computes no layout and fetches nothing but same-origin files.
+ * The map is generated on every deploy by scripts/build-boundary-graph.py from the
+ * signed canonical inventory, Terraform state and the operator's classification
+ * (docs/boundary/boundary-classification.json), signed, and bound to the build by the
+ * reconciliation gate (invariant l). This module lays it out and draws it; it adds
+ * nothing to it, and fetches nothing but same-origin files.
  *
  * Interaction: pan/zoom, a health summary, click-to-trace data flows, a detail card for
- * any node or flow, and a text view of the same data for screen readers and for
+ * any component or flow, and a text view of the same data for screen readers and for
  * readers who would rather scan a table than a graph.
  */
 
@@ -16,12 +16,44 @@ import cytoscape from '/assets/vendor/cytoscape/cytoscape.esm.min.js';
 
 const ROOT = document.querySelector('[data-boundary-map]');
 
-const FLOW_COLOR = { inTable: '#2563eb', notInTable: '#d97706' };
+const FLOW_COLOR = '#2563eb';
 const FLAG_COLOR = '#dc2626';
-const NOT_COLLECTED_KINDS = new Set(['not_collected']);
-const TAG_LABELS = {
-    Archetype: 'Archetype', DataClassification: 'Data classification', DataSensitivity: 'Data sensitivity',
-    InternetReachable: 'Internet reachable', MissionCriticality: 'Mission criticality', Environment: 'Environment',
+
+// Layout, in canvas units. Zones run left to right; inside a zone, groups are stacked
+// in columns; inside a group, components sit on a grid.
+const CELL_W = 190;
+const CELL_H = 120;
+const GROUP_COLS = 3;
+const GROUP_GAP = 90;
+const COLUMN_GAP = 150;
+const ZONE_GAP = 230;
+const GROUP_PAD = 26;
+const ZONE_PAD = 48;
+const ZONE_ORDER = ['outside', 'system', 'external', 'unclassified'];
+const ZONE_COLUMNS = {
+    system: [['website', 'compliance', 'watchdog'], ['app', 'audit', 'trust-root']],
+    external: [['github', 'sigstore', 'operator-mfa', 'vuln-feeds', 'declared-external']],
+};
+
+// Icons are committed with provenance (assets/boundary-map/PROVENANCE.md).
+const ICON_BY_TYPE = {
+    function: 'aws-lambda', object_store: 'aws-s3', cdn_distribution: 'aws-cloudfront', dns_zone: 'aws-route53',
+    tls_certificate: 'aws-acm', event_schedule: 'aws-eventbridge', log_group: 'aws-cloudwatch',
+    metric_alarm: 'aws-cloudwatch', identity_provider: 'aws-cognito', iam_role: 'aws-iam', iam_policy: 'aws-iam',
+    iam_group: 'aws-iam', oidc_provider: 'aws-iam', kms_key: 'aws-kms', secrets_manager: 'aws-secrets-manager',
+    message_queue: 'aws-sqs', api_gateway: 'aws-apigateway', audit_log_trail: 'aws-cloudtrail',
+};
+const ICON_BY_ID = {
+    'ext::github-repo': 'github-repository', 'ext::github-oidc': 'github-platform',
+    'ext::sigstore-fulcio': 'sigstore-ca', 'ext::sigstore-rekor': 'rekor-log-entry',
+};
+
+const CLASSIFICATION_LABELS = {
+    archetype: 'Archetype', data_sensitivity: 'Data sensitivity',
+    mission_criticality: 'Mission criticality', internet_reachable: 'Internet reachable',
+};
+const KIND_LABELS = {
+    actor: 'Actor outside the boundary', not_inventoried: 'Declared, not in the inventory',
 };
 
 function el(tag, attrs = {}, ...children) {
@@ -54,17 +86,66 @@ function palette() {
         text: cssVar('--text-primary', '#0f172a'),
         muted: cssVar('--text-muted', '#64748b'),
         border: cssVar('--border-color', '#cbd5e1'),
-        card: cssVar('--bg-secondary', '#ffffff'),
         page: cssVar('--bg-primary', '#f8f9fa'),
     };
+}
+
+function iconFor(node) {
+    const name = ICON_BY_ID[node.id] || ICON_BY_TYPE[node.type];
+    return name ? `/assets/boundary-map/icons/${name}.svg` : undefined;
+}
+
+// ---------------------------------------------------------------------------------
+// Layout: positions for every node, and boxes for every group and zone.
+// ---------------------------------------------------------------------------------
+function layout(snap) {
+    const byGroup = new Map();
+    snap.nodes.forEach((n) => { if (!byGroup.has(n.group)) byGroup.set(n.group, []); byGroup.get(n.group).push(n); });
+    const positions = new Map();
+    const boxes = [];
+    let zoneX = 0;
+    const zones = [...snap.zones].filter((z) => z.key !== 'leveraged')
+        .sort((a, b) => ZONE_ORDER.indexOf(a.key) - ZONE_ORDER.indexOf(b.key));
+    for (const zone of zones) {
+        const groups = snap.groups.filter((g) => g.zone === zone.key && byGroup.has(g.key));
+        if (!groups.length) continue;
+        const columns = (ZONE_COLUMNS[zone.key] || [[]]).map((col) => col.filter((k) => groups.some((g) => g.key === k)));
+        groups.filter((g) => !columns.flat().includes(g.key)).forEach((g) => columns[columns.length - 1].push(g.key));
+        let columnX = zoneX;
+        let zoneRight = zoneX;
+        let zoneBottom = 0;
+        for (const col of columns.filter((c) => c.length)) {
+            let y = 0;
+            let colWidth = 0;
+            for (const key of col) {
+                const members = byGroup.get(key);
+                members.forEach((n, i) => positions.set(n.id, {
+                    x: columnX + (i % GROUP_COLS) * CELL_W, y: y + Math.floor(i / GROUP_COLS) * CELL_H,
+                }));
+                const width = (Math.min(members.length, GROUP_COLS) - 1) * CELL_W;
+                const height = (Math.ceil(members.length / GROUP_COLS) - 1) * CELL_H;
+                const g = snap.groups.find((x) => x.key === key);
+                boxes.push({ id: `group:${key}`, label: g.label, cls: 'group', x1: columnX - GROUP_PAD - 22, y1: y - GROUP_PAD - 22,
+                    x2: columnX + width + GROUP_PAD + 22, y2: y + height + GROUP_PAD + 40 });
+                y += height + CELL_H + GROUP_GAP;
+                colWidth = Math.max(colWidth, width);
+            }
+            zoneBottom = Math.max(zoneBottom, y - CELL_H - GROUP_GAP + 40);
+            zoneRight = columnX + colWidth;
+            columnX = zoneRight + CELL_W + COLUMN_GAP;
+        }
+        boxes.push({ id: `zone:${zone.key}`, label: zone.label, cls: `zone${zone.boundary ? ' boundary' : ''}`,
+            x1: zoneX - ZONE_PAD - 22, y1: -ZONE_PAD - 40, x2: zoneRight + ZONE_PAD + 22, y2: zoneBottom + ZONE_PAD + GROUP_PAD });
+        zoneX = zoneRight + CELL_W + ZONE_GAP;
+    }
+    return { positions, boxes };
 }
 
 function stylesheet(p) {
     return [
         { selector: 'node.resource', style: {
-            'shape': 'round-rectangle', 'width': 44, 'height': 44,
-            // Icons are dark line art or AWS colour tiles drawn for a light ground, so the
-            // tile stays white in both themes; only its border follows the theme.
+            'shape': 'round-rectangle', 'width': 44, 'height': 44, 'z-index': 10,
+            // Icons are drawn for a light ground, so the tile stays white in both themes.
             'background-color': '#ffffff', 'border-width': 1, 'border-color': p.border,
             'background-image': 'data(icon)', 'background-fit': 'contain', 'background-width': '70%', 'background-height': '70%',
             'label': 'data(label)', 'font-size': 10, 'color': p.text, 'text-valign': 'bottom', 'text-margin-y': 4,
@@ -72,59 +153,48 @@ function stylesheet(p) {
             'text-background-padding': 1,
         } },
         { selector: 'node.resource[!icon]', style: { 'background-image': 'none' } },
-        // Resources and their labels draw above the zone and group outlines.
-        { selector: 'node.resource', style: { 'z-index': 10 } },
         { selector: 'node.declared', style: { 'border-style': 'dotted', 'border-width': 2, 'background-opacity': 0.3 } },
         { selector: 'node.flagged', style: { 'border-color': FLAG_COLOR, 'border-width': 3, 'border-style': 'dashed' } },
         { selector: 'node.box', style: {
             'shape': 'rectangle', 'width': 'data(w)', 'height': 'data(h)', 'background-opacity': 0,
             'border-width': 1, 'border-style': 'dashed', 'border-color': p.border,
             'label': 'data(label)', 'font-size': 11, 'color': p.muted, 'text-valign': 'top', 'text-halign': 'center',
-            'text-margin-y': -4, 'events': 'no', 'z-compound-depth': 'bottom', 'z-index': 0,
+            'text-margin-y': -4, 'events': 'no', 'z-index': 0,
         } },
         { selector: 'node.zone', style: { 'border-width': 2, 'font-size': 13, 'font-weight': 'bold' } },
         { selector: 'node.zone.boundary', style: { 'border-color': FLAG_COLOR, 'color': FLAG_COLOR } },
-        { selector: 'edge.grid', style: {
+        { selector: 'edge.ref', style: {
             'width': 1, 'line-color': p.border, 'target-arrow-color': p.border, 'target-arrow-shape': 'triangle',
-            'arrow-scale': 0.6, 'curve-style': 'bezier', 'opacity': 0.7,
+            'arrow-scale': 0.6, 'curve-style': 'bezier', 'opacity': 0.6,
         } },
         { selector: 'edge.flow', style: {
-            'width': 2.5, 'line-color': 'data(color)', 'target-arrow-color': 'data(color)', 'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier', 'label': 'data(label)', 'font-size': 14, 'font-weight': 'bold', 'color': 'data(color)',
+            'width': 2.5, 'line-color': FLOW_COLOR, 'target-arrow-color': FLOW_COLOR, 'target-arrow-shape': 'triangle',
+            'curve-style': 'bezier', 'label': 'data(label)', 'font-size': 14, 'font-weight': 'bold', 'color': FLOW_COLOR,
             'text-background-color': p.page, 'text-background-opacity': 1, 'text-background-padding': 2,
         } },
         { selector: '.faded', style: { 'opacity': 0.1 } },
-        { selector: 'node.resource:selected', style: { 'border-color': FLOW_COLOR.inTable, 'border-width': 3 } },
+        { selector: 'node.resource:selected', style: { 'border-color': FLOW_COLOR, 'border-width': 3 } },
     ];
 }
 
-function elements(snap) {
-    const els = [];
-    snap.zones.forEach((z) => els.push({ group: 'nodes', classes: `box zone${z.boundary ? ' boundary' : ''}`, selectable: false, grabbable: false,
-        data: { id: `zone:${z.key}`, label: z.label, w: z.box.w, h: z.box.h }, position: { x: z.box.x + z.box.w / 2, y: z.box.y + z.box.h / 2 } }));
-    snap.groups.forEach((g) => els.push({ group: 'nodes', classes: 'box group', selectable: false, grabbable: false,
-        data: { id: `group:${g.key}`, label: g.label, w: g.box.w, h: g.box.h }, position: { x: g.box.x + g.box.w / 2, y: g.box.y + g.box.h / 2 } }));
+function elements(snap, positions, boxes) {
+    const els = boxes.map((b) => ({
+        group: 'nodes', classes: `box ${b.cls}`, selectable: false, grabbable: false,
+        data: { id: b.id, label: b.label, w: b.x2 - b.x1, h: b.y2 - b.y1 },
+        position: { x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2 },
+    }));
     snap.nodes.forEach((n) => {
         const classes = ['resource'];
         if (n.kind !== 'collected') classes.push('declared');
         if (n.flags && n.flags.length) classes.push('flagged');
         const label = n.flags && n.flags.length ? `${n.name}\n⚠ ${n.flags.join(', ')}` : n.name;
         els.push({ group: 'nodes', classes: classes.join(' '), grabbable: false,
-            data: { id: n.id, label, icon: /^icons\/[a-z0-9-]+\.svg$/.test(n.icon || '') ? `/assets/boundary-map/${n.icon}` : undefined }, position: { x: n.x, y: n.y } });
+            data: { id: n.id, label, icon: iconFor(n) }, position: positions.get(n.id) });
     });
-    snap.edges.forEach((e, i) => els.push({ group: 'edges', classes: 'grid', data: { id: `e${i}`, source: e.source, target: e.target } }));
+    snap.edges.forEach((e, i) => els.push({ group: 'edges', classes: 'ref', data: { id: `e${i}`, source: e.source, target: e.target } }));
     snap.flows.forEach((f) => f.hops.forEach(([a, b], i) => els.push({ group: 'edges', classes: 'flow',
-        data: { id: `flow:${f.id}:${i}:${a}:${b}`, source: a, target: b, flow: f.id, label: i === 0 ? f.id : '',
-            color: f.in_svg ? FLOW_COLOR.inTable : FLOW_COLOR.notInTable } })));
+        data: { id: `flow:${f.id}:${i}:${a}:${b}`, source: a, target: b, flow: f.id, label: i === 0 ? f.id : '' } })));
     return els;
-}
-
-// Only same-origin paths and https links from the snapshot become hrefs, so a tampered
-// snapshot cannot smuggle in a javascript: or data: URL.
-function safeHref(link) {
-    if (typeof link !== 'string') return null;
-    if (link.startsWith('/') && !link.startsWith('//')) return link;
-    try { return new URL(link).protocol === 'https:' ? link : null; } catch { return null; }
 }
 
 function kv(dl, key, value) {
@@ -137,14 +207,19 @@ function init(snap) {
     const groupLabel = new Map(snap.groups.map((g) => [g.key, g.label]));
     const zoneLabel = new Map(snap.zones.map((z) => [z.key, z.label]));
     const flowsThrough = (id) => snap.flows.filter((f) => f.hops.some(([a, b]) => a === id || b === id));
+    const { positions, boxes } = layout(snap);
 
-    // --- Chrome: attribution, snapshot age, controls --------------------------------
-    const collected = snap.collected_at;
+    // --- Chrome: provenance and age ------------------------------------------------
+    const generated = snap.generated_at;
     const header = el('div', { class: 'bm-header' },
         el('p', { class: 'bm-attribution' },
-            'Mapped by ', el('strong', { text: 'RAMPART' }), ' on ',
-            el('a', { href: snap.attribution.tap_url, rel: 'noopener', text: 'TAP — The Analogy Platform' }),
-            `. Snapshot collected ${relativeAge(collected)} `, el('time', { datetime: collected, text: `(${collected.replace('+00:00', 'Z')})` }), '.'),
+            'Generated at deploy from the signed ',
+            el('a', { href: '/.well-known/ksi-signal.json', text: 'canonical inventory' }),
+            ' and Terraform state; bound to that build and ',
+            el('a', { href: '/.well-known/boundary-map.bundle', text: 'signed' }),
+            `. Built ${relativeAge(generated)} `, el('time', { datetime: generated, text: `(${generated.replace('+00:00', 'Z')})` }),
+            '. The approach was prototyped with RAMPART on ',
+            el('a', { href: 'https://github.com/unified-systems-com/tap', rel: 'noopener', text: 'TAP — The Analogy Platform' }), '.'),
     );
     const canvas = el('div', { class: 'bm-canvas', role: 'img',
         'aria-label': 'Interactive authorization boundary map. A text view of the same components and data flows follows the map.' });
@@ -154,43 +229,31 @@ function init(snap) {
     ROOT.replaceChildren(header, stage);
 
     const cy = cytoscape({
-        container: canvas, elements: elements(snap), style: stylesheet(palette()), layout: { name: 'preset' },
+        container: canvas, elements: elements(snap, positions, boxes), style: stylesheet(palette()), layout: { name: 'preset' },
         minZoom: 0.05, maxZoom: 3, boxSelectionEnabled: false, autoungrabify: true,
     });
-    // Fit into the area beside the legend panel while it is open, so it never
-    // covers the actors outside the boundary on the left.
-    const fit = () => {
-        const pad = 24;
-        const left = body.hidden ? pad : legend.offsetLeft + legend.offsetWidth + pad;
-        const bb = cy.nodes('.zone').boundingBox();
-        const w = cy.width() - left - pad;
-        const h = cy.height() - 2 * pad;
-        if (w <= 0 || h <= 0 || !bb.w) { cy.fit(cy.nodes('.zone'), pad); return; }
-        const z = Math.min(w / bb.w, h / bb.h);
-        cy.zoom(z);
-        cy.pan({ x: left - bb.x1 * z + (w - bb.w * z) / 2, y: pad - bb.y1 * z + (h - bb.h * z) / 2 });
-    };
 
-    // --- Legend: health + flows ------------------------------------------------------
+    // --- Legend: health + flows ---------------------------------------------------
     const h = snap.health;
-    const health = [
-        [h.unclassified, 'unclassified', 'Collected, but no classification rule places it'],
-        [h.untagged, 'untagged', 'AWS resources carrying no classification tags'],
-        [h.certificates_not_issued, 'certificate(s) not issued', 'TLS certificates expired or otherwise not usable'],
-        [h.flows_with_unmatched_endpoint, 'flow(s) with an unmatched endpoint', 'A data flow whose endpoint matches no collected node'],
-    ];
     const toggle = el('button', { type: 'button', class: 'bm-toggle', 'aria-expanded': 'true', text: 'Hide' });
     const body = el('div', { class: 'bm-legend-body' });
     legend.append(el('div', { class: 'bm-legend-head' }, el('h4', { text: 'Boundary health' }), toggle), body);
     const healthList = el('ul', { class: 'bm-health' });
-    health.forEach(([count, label, title]) => healthList.append(
+    [
+        [h.unclassified, 'unclassified', 'Inventory components no classification rule places (fails the deploy)'],
+        [h.untagged, 'untagged', 'AWS resources carrying no tags at all'],
+        [h.classification_tags_incomplete, 'with incomplete classification tags', 'Tagged, but missing some of the six governed classification axes'],
+        [h.pending_trust_root_changes, 'trust-root change(s) pending apply', 'Merged changes to the operator-applied bootstrap stack that are not applied yet'],
+        [h.flows_with_unmatched_endpoint, 'flow(s) with an unmatched endpoint', 'A data flow whose endpoint matches nothing in this inventory'],
+    ].forEach(([count, label, title]) => healthList.append(
         el('li', { class: count ? 'bm-bad' : 'bm-ok', title }, `${count ? '⚠' : '✓'} ${count} ${label}`)));
-    healthList.append(el('li', { class: 'bm-info', title: 'Declared in the classification; TAP has no collector for them' },
-        `• ${h.declared_not_collected} declared, not collected`));
+    healthList.append(el('li', { class: 'bm-info', title: 'Declared in the classification; the inventory has no component for them yet' },
+        `• ${h.declared_not_inventoried} declared, not inventoried`));
     body.append(healthList);
-    if (snap.not_seen_in_latest_collection && snap.not_seen_in_latest_collection.length) {
+    const unmatched = snap.flows.filter((f) => f.unmatched_endpoints.length);
+    if (unmatched.length) {
         body.append(el('p', { class: 'bm-note', text:
-            `Left off the map: ${snap.not_seen_in_latest_collection.map((g) => `${g.name} (${g.type})`).join(', ')} — no longer present in the latest collection.` }));
+            `Unmatched: ${unmatched.map((f) => `${f.id} (${f.unmatched_endpoints.join(', ')})`).join('; ')}.` }));
     }
 
     body.append(el('h4', { text: 'Data flows' }), el('p', { class: 'bm-hint', text: 'Select a flow to trace it.' }));
@@ -206,19 +269,32 @@ function init(snap) {
         clearTrace();
         const path = cy.edges(`[flow = "${flowId}"]`);
         cy.elements().not(path).not(path.connectedNodes()).not('.box').addClass('faded');
-        button.setAttribute('aria-pressed', 'true');
+        if (button) button.setAttribute('aria-pressed', 'true');
         traced = flowId;
     };
     snap.flows.forEach((f) => {
         const b = el('button', { type: 'button', 'aria-pressed': 'false', onclick: () => { trace(f.id, b); showFlow(f); } },
-            el('span', { class: `bm-flow-id ${f.in_svg ? 'bm-in-table' : 'bm-not-in-table'}`, text: f.id }),
-            el('span', { text: f.label + (f.in_svg ? '' : ' (not in the diagram’s flow table)') }));
+            el('span', { class: 'bm-flow-id bm-in-table', text: f.id }),
+            el('span', { text: f.label + (f.unmatched_endpoints.length ? ' (endpoint not in this inventory)' : '') }));
         flowList.append(el('li', {}, b));
     });
     body.append(flowList);
-    const actions = el('p', { class: 'bm-actions' },
-        el('button', { type: 'button', onclick: () => { clearTrace(); fit(); }, text: 'Reset view' }));
-    body.append(actions);
+
+    // Fit into the area beside the legend while it is open, so it never covers the
+    // actors outside the boundary on the left.
+    const fit = () => {
+        const pad = 24;
+        const left = body.hidden ? pad : legend.offsetLeft + legend.offsetWidth + pad;
+        const bb = cy.nodes('.zone').boundingBox();
+        const w = cy.width() - left - pad;
+        const hgt = cy.height() - 2 * pad;
+        if (w <= 0 || hgt <= 0 || !bb.w) { cy.fit(cy.nodes('.zone'), pad); return; }
+        const z = Math.min(w / bb.w, hgt / bb.h);
+        cy.zoom(z);
+        cy.pan({ x: left - bb.x1 * z + (w - bb.w * z) / 2, y: pad - bb.y1 * z + (hgt - bb.h * z) / 2 });
+    };
+    body.append(el('p', { class: 'bm-actions' },
+        el('button', { type: 'button', onclick: () => { clearTrace(); fit(); }, text: 'Reset view' })));
     toggle.addEventListener('click', () => {
         const open = toggle.getAttribute('aria-expanded') === 'true';
         body.hidden = open;
@@ -229,7 +305,7 @@ function init(snap) {
     if (window.matchMedia('(max-width: 768px)').matches) toggle.click();
     fit();
 
-    // --- Detail card -----------------------------------------------------------------
+    // --- Detail card ---------------------------------------------------------------
     const openDetail = (title, fill) => {
         const dl = el('dl');
         fill(dl);
@@ -239,19 +315,19 @@ function init(snap) {
         detail.hidden = false;
     };
     const showNode = (n) => openDetail(n.name, (dl) => {
-        kv(dl, 'Type', n.kind === 'actor' ? 'Actor (declared)' : NOT_COLLECTED_KINDS.has(n.kind) ? 'Declared — not collected by TAP' : n.type.replace(/_/g, ' '));
+        kv(dl, 'Kind', KIND_LABELS[n.kind] || (n.type || '').replace(/_/g, ' '));
+        kv(dl, 'Inventory id', n.kind === 'collected' ? n.id : undefined);
         kv(dl, 'Group', groupLabel.get(n.group));
         kv(dl, 'Zone', zoneLabel.get(n.zone));
-        if (n.flags) kv(dl, '⚠ Flags', n.flags.join(', '));
+        kv(dl, 'Function', n.function);
         kv(dl, 'Why', n.why);
-        Object.entries(n.tags || {}).forEach(([k, v]) => kv(dl, TAG_LABELS[k] || k, v));
+        if (n.flags) kv(dl, '⚠ Flags', n.flags.join(', '));
+        Object.entries(n.classification || {}).forEach(([k, v]) => kv(dl, CLASSIFICATION_LABELS[k] || k, v));
         kv(dl, 'Region', n.region);
+        kv(dl, 'Managed by', n.managed_by);
+        if (n.findings) kv(dl, 'Findings', `${n.findings.total} (${n.findings.open} open, ${n.findings.blocking} blocking, ${n.findings.kev} KEV)`);
         const flows = flowsThrough(n.id);
         if (flows.length) kv(dl, 'Data flows', flows.map((f) => `${f.id} — ${f.label}`).join('; '));
-        const href = safeHref(n.link);
-        if (href) {
-            dl.append(el('dt', { text: 'Open' }), el('dd', {}, el('a', { href, rel: 'noopener', text: href.startsWith('/') ? href : `${new URL(href).host} ↗` })));
-        }
     });
     const showFlow = (f) => openDetail(`Flow ${f.id}: ${f.label}`, (dl) => {
         kv(dl, 'Protocol / port', f.protocol);
@@ -259,6 +335,7 @@ function init(snap) {
         kv(dl, 'Encryption', f.encryption);
         kv(dl, 'Data', f.data);
         kv(dl, 'Note', f.note);
+        if (f.unmatched_endpoints.length) kv(dl, 'Not in this inventory', f.unmatched_endpoints.join(', '));
     });
     cy.on('tap', 'node.resource', (evt) => showNode(byId.get(evt.target.id())));
     cy.on('tap', 'edge.flow', (evt) => {
@@ -269,28 +346,33 @@ function init(snap) {
     });
     cy.on('tap', (evt) => { if (evt.target === cy) { clearTrace(); detail.hidden = true; } });
 
-    // --- Follow the site theme -------------------------------------------------------
     new MutationObserver(() => cy.style(stylesheet(palette())))
         .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
-    renderTextView(snap, groupLabel, zoneLabel, byId);
+    renderTextView(snap, byId);
 }
 
 // The same data as a document: every component by zone and group, then the flow table.
-function renderTextView(snap, groupLabel, zoneLabel, byId) {
+function renderTextView(snap, byId) {
     const host = document.querySelector('[data-boundary-map-text]');
     if (!host) return;
     const parts = [];
-    snap.zones.forEach((z) => {
+    snap.zones.filter((z) => z.key !== 'leveraged').forEach((z) => {
+        const groups = snap.groups.filter((g) => g.zone === z.key);
+        if (!groups.length) return;
         parts.push(el('h5', { text: z.label }));
         const ul = el('ul');
-        snap.groups.filter((g) => g.zone === z.key).forEach((g) => {
+        groups.forEach((g) => {
             const names = snap.nodes.filter((n) => n.group === g.key)
-                .map((n) => n.name + (n.flags ? ` (⚠ ${n.flags.join(', ')})` : '') + (n.kind === 'not_collected' ? ' (not collected)' : ''));
+                .map((n) => n.name + (n.flags ? ` (⚠ ${n.flags.join(', ')})` : ''));
             ul.append(el('li', {}, el('strong', { text: `${g.label}: ` }), names.join(', ')));
         });
         parts.push(ul);
     });
+    if (snap.leveraged) {
+        parts.push(el('h5', { text: `Leveraged: ${snap.leveraged.name} (${snap.leveraged.package_id}, ${snap.leveraged.status})` }),
+            el('p', { text: `${snap.leveraged.services.join(', ')}. ${snap.leveraged.why || ''}` }));
+    }
     const table = el('table', { class: 'bm-flow-table' },
         el('caption', { text: 'Data flows' }),
         el('thead', {}, el('tr', {}, ...['ID', 'Path', 'Protocol / port', 'Authentication', 'Encryption', 'Data'].map((t) => el('th', { scope: 'col', text: t })))));
@@ -298,11 +380,22 @@ function renderTextView(snap, groupLabel, zoneLabel, byId) {
     snap.flows.forEach((f) => {
         const path = [f.hops[0] && byId.get(f.hops[0][0]), ...f.hops.map(([, b]) => byId.get(b))]
             .filter(Boolean).map((n) => n.name).filter((name, i, arr) => arr.indexOf(name) === i).join(' → ');
-        tbody.append(el('tr', {}, el('th', { scope: 'row', text: f.id }), el('td', { text: path }),
+        tbody.append(el('tr', {}, el('th', { scope: 'row', text: f.id }), el('td', { text: path || `(${f.unmatched_endpoints.join(', ')} not in this inventory)` }),
             el('td', { text: f.protocol || '' }), el('td', { text: f.auth || '' }), el('td', { text: f.encryption || '' }), el('td', { text: f.data || '' })));
     });
     table.append(tbody);
-    host.replaceChildren(...parts, table);
+    parts.push(table);
+    if (snap.fips_modules && snap.fips_modules.length) {
+        const fips = el('table', { class: 'bm-flow-table' },
+            el('caption', { text: 'Cryptographic modules' }),
+            el('thead', {}, el('tr', {}, ...['Module', 'Validation', 'Role', 'Inherited'].map((t) => el('th', { scope: 'col', text: t })))));
+        const fb = el('tbody');
+        snap.fips_modules.forEach((m) => fb.append(el('tr', {}, el('th', { scope: 'row', text: m.module }),
+            el('td', { text: m.validation || '' }), el('td', { text: m.role || '' }), el('td', { text: m.inherited ? 'yes' : 'no' }))));
+        fips.append(fb);
+        parts.push(fips);
+    }
+    host.replaceChildren(...parts);
 }
 
 if (ROOT) {
@@ -310,6 +403,6 @@ if (ROOT) {
         .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
         .then(init)
         .catch((err) => {
-            ROOT.replaceChildren(el('p', { class: 'bm-error', text: `The live map could not be loaded (${err.message}). The reference diagram below is unaffected.` }));
+            ROOT.replaceChildren(el('p', { class: 'bm-error', text: `The live map could not be loaded (${err.message}).` }));
         });
 }

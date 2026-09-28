@@ -884,7 +884,7 @@ def build_cloud_components(tf_state, tf_outputs):
     return list(components_by_id.values())
 
 
-def build_bootstrap_components(bootstrap_dir="bootstrap"):
+def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
     """Inventory the CI/CD identity plane defined in infrastructure/bootstrap.
 
     The bootstrap module (GitHub OIDC provider, deploy + assessment roles, the
@@ -904,11 +904,24 @@ def build_bootstrap_components(bootstrap_dir="bootstrap"):
               f"components not added this run", file=sys.stderr)
         return []
     comps = build_cloud_components(state, {})
+    # A resource both stacks know about (the CloudFront distribution: managed
+    # here, read by the application module as a data source) must appear once,
+    # or the inventory gate's native_id-uniqueness check fails. Keep the entry
+    # already built and record which stack manages it.
+    by_native = {c.get("native_id"): c for c in existing if c.get("native_id")}
+    by_cid = {c.get("component_id"): c for c in existing}
+    fresh = []
     for c in comps:
+        seen = by_native.get(c.get("native_id")) or by_cid.get(c.get("component_id"))
+        if seen is not None:
+            seen.setdefault("attributes", {})["managed_by"] = "bootstrap"
+            continue
         c.setdefault("attributes", {})["tf_module"] = "bootstrap"
-    print(f"info: inventoried {len(comps)} bootstrap (CI/CD identity plane) components",
+        fresh.append(c)
+    print(f"info: inventoried {len(fresh)} bootstrap (CI/CD identity plane) components "
+          f"({len(comps) - len(fresh)} already present from the application module)",
           file=sys.stderr)
-    return comps
+    return fresh
 
 
 # System name prefix: in-boundary AWS resources are named with it. Keep in sync
@@ -1523,7 +1536,7 @@ def main():
     # govern the production system and are inventoried, not excused (their
     # weaknesses are tracked as POAM-026/027). Best-effort: no-ops if the
     # bootstrap state isn't reachable from this run (CI has it).
-    components.extend(build_bootstrap_components())
+    components.extend(build_bootstrap_components(components))
     # Supplement the Terraform-state walk with live-only in-boundary resources
     # (Lambda auto-creates execution log groups outside Terraform state). The
     # reconciliation gate's live completeness check enforces nothing else is

@@ -1,589 +1,76 @@
 {
-  "version": 0,
+  "version": 2,
   "system": "samaydlette.com",
-  "about": "The operator-owned semantic layer of the authorization boundary: which zone and group every collected resource belongs to, what exists but is not collected, and the data-flow table. RAMPART (TAP) collects what exists; this file says what it means. tools/boundary-map/export.py feeds it to the local TAP instance, which places every collected node by these rules and draws the flows between the nodes the rules match. Rules match on entity_type plus an exact name or a name_re (JavaScript regex); the first matching group wins. A collected node no rule places lands in Unclassified, so drift is visible rather than silent. Hand-maintained; review it when the boundary changes, alongside website/assets/diagrams/authorization-boundary.svg.",
+  "about": "The operator-owned meaning of the authorization boundary. The canonical inventory says what exists; this file says where each component belongs, what exists but is not inventoried, which services are leveraged from an existing authorization, and the data-flow table. scripts/build-boundary-graph.py applies it on every deploy to produce the signed /.well-known/boundary-map.json. Rules match inventory component_ids with shell-style globs (fnmatch); the first matching group wins. An inventory component no rule places is reported as unclassified, and the reconciliation gate fails the deploy on it: classify a new resource in the same change that adds it.",
   "zones": [
-    {
-      "key": "system",
-      "label": "Authorization boundary — Cloud Service Offering, internal components (sp-system)",
-      "boundary": true
-    },
-    {
-      "key": "external",
-      "label": "In boundary — external services without FedRAMP authorization (Rule of Thumb #2)",
-      "boundary": true
-    },
-    {
-      "key": "outside",
-      "label": "Outside the boundary (Rules of Thumb #3/#4)"
-    },
-    {
-      "key": "unclassified",
-      "label": "Unclassified — collected, but no rule places it"
-    }
+    {"key": "outside", "label": "Outside the boundary (Rules of Thumb #3 and #4)"},
+    {"key": "system", "label": "Authorization boundary: Cloud Service Offering, internal components (sp-system)", "boundary": true},
+    {"key": "external", "label": "In boundary: external services without FedRAMP authorization (Rule of Thumb #2)", "boundary": true},
+    {"key": "leveraged", "label": "Leveraged: services inherited from an existing FedRAMP authorization (sp-inherited)"}
   ],
   "groups": [
-    {
-      "key": "website",
-      "zone": "system",
-      "label": "Website serving",
-      "match": [
-        {
-          "type": "aws_core__aws_route53_zone"
-        },
-        {
-          "type": "aws_core__aws_acm_certificate"
-        },
-        {
-          "type": "aws_core__aws_cloudfront_distribution"
-        },
-        {
-          "type": "aws_core__aws_s3_bucket",
-          "name": "samaydlette.com"
-        },
-        {
-          "type": "aws_core__aws_s3_bucket",
-          "name": "samaydlette-com-logs"
-        },
-        {
-          "type": "aws_core__aws_kms_key",
-          "name": "samaydlette-com-dnssec-ksk"
-        }
-      ]
-    },
-    {
-      "key": "compliance",
-      "zone": "system",
-      "label": "Runtime KSI emitter (daily)",
-      "match": [
-        {
-          "type": "aws_core__aws_eventbridge_rule",
-          "name": "samaydlette-com-opa-compliance"
-        },
-        {
-          "type": "aws_core__aws_lambda",
-          "name": "samaydlette-com-opa-compliance"
-        },
-        {
-          "type": "aws_core__aws_cloudwatch_log_group",
-          "name": "/aws/lambda/samaydlette-com-opa-compliance"
-        },
-        {
-          "type": "aws_core__aws_iam_role",
-          "name": "samaydlette-com-lambda-opa-role"
-        },
-        {
-          "type": "aws_core__aws_sqs_queue",
-          "name": "samaydlette-com-opa-compliance-dlq"
-        },
-        {
-          "type": "aws_core__aws_kms_key",
-          "name": "samaydlette-com-runtime-signing"
-        }
-      ]
-    },
-    {
-      "key": "watchdog",
-      "zone": "system",
-      "label": "Evidence-freshness watchdog",
-      "match": [
-        {
-          "type": "aws_core__aws_eventbridge_rule",
-          "name": "samaydlette-com-evidence-watchdog"
-        },
-        {
-          "type": "aws_core__aws_lambda",
-          "name": "samaydlette-com-evidence-watchdog"
-        },
-        {
-          "type": "aws_core__aws_cloudwatch_log_group",
-          "name": "/aws/lambda/samaydlette-com-evidence-watchdog"
-        },
-        {
-          "type": "aws_core__aws_iam_role",
-          "name": "samaydlette-com-evidence-watchdog-role"
-        }
-      ]
-    },
-    {
-      "key": "app",
-      "zone": "system",
-      "label": "Application sub-system (Silk Reeling)",
-      "match": [
-        {
-          "type": "aws_core__aws_cognito_user_pool"
-        },
-        {
-          "type": "aws_core__aws_apigateway_http_api"
-        },
-        {
-          "type": "aws_core__aws_lambda",
-          "name": "samaydlette-com-silk-reeling"
-        },
-        {
-          "type": "aws_core__aws_iam_role",
-          "name": "samaydlette-com-silk-reeling-role"
-        },
-        {
-          "type": "aws_core__aws_cloudwatch_log_group",
-          "name_re": "silk-reeling$"
-        },
-        {
-          "type": "aws_core__aws_secrets_manager_secret"
-        },
-        {
-          "type": "aws_core__aws_kms_key",
-          "name": "samaydlette-com-silk-reeling"
-        }
-      ]
-    },
-    {
-      "key": "audit",
-      "zone": "system",
-      "label": "Audit + shared keys",
-      "match": [
-        {
-          "type": "aws_core__aws_cloudtrail_trail"
-        },
-        {
-          "type": "aws_core__aws_s3_bucket",
-          "name": "samaydlette-com-cloudtrail"
-        },
-        {
-          "type": "aws_core__aws_kms_key",
-          "name": "samaydlette-com-at-rest"
-        }
-      ]
-    },
-    {
-      "key": "bootstrap",
-      "zone": "system",
-      "label": "Deploy + bootstrap (operator-applied)",
-      "match": [
-        {
-          "type": "aws_core__aws_s3_bucket",
-          "name": "samaydlette-com-tfstate"
-        },
-        {
-          "type": "aws_core__aws_dynamodb_table",
-          "name": "samaydlette-com-tflock"
-        },
-        {
-          "type": "aws_core__aws_iam_role",
-          "name_re": "^github-actions-.*-oidc$"
-        },
-        {
-          "type": "aws_core__aws_iam_oidc_provider"
-        }
-      ]
-    },
-    {
-      "key": "artifacts",
-      "zone": "system",
-      "label": "Published trust artifacts (/.well-known/, Sigstore-signed)",
-      "match": [
-        {
-          "type": "fedramp_20x_ksi__ksi_signal"
-        },
-        {
-          "type": "fedramp_20x_ksi__vdr_report"
-        },
-        {
-          "type": "compliance_core__compliance_artifact"
-        }
-      ]
-    },
-    {
-      "key": "github",
-      "zone": "external",
-      "label": "GitHub repository + Actions",
-      "match": [
-        {
-          "type": "github_core__github_platform"
-        },
-        {
-          "type": "github_core__github_account"
-        },
-        {
-          "type": "github_core__github_repository"
-        },
-        {
-          "type": "github_core__github_workflow"
-        },
-        {
-          "type": "github_core__github_app"
-        }
-      ]
-    },
-    {
-      "key": "identity",
-      "zone": "external",
-      "label": "GitHub OIDC token issuer",
-      "match": [
-        {
-          "type": "identity_core__oidc_issuer"
-        }
-      ]
-    },
-    {
-      "key": "sigstore",
-      "zone": "external",
-      "label": "Sigstore (Fulcio CA + Rekor log)",
-      "match": [
-        {
-          "type": "sigstore_core__sigstore_ca"
-        },
-        {
-          "type": "sigstore_core__rekor_log_entry"
-        }
-      ]
-    }
-  ],
-  "ignore": [
-    {
-      "type": "aws_core__aws_account",
-      "why": "drawn as the boundary itself, not as a node"
-    },
-    {
-      "type": "compliance_core__compliance_boundary",
-      "why": "drawn as the boundary itself, not as a node"
-    },
-    {
-      "type": "aws_core__aws_iam_role",
-      "name_re": "^AWSServiceRoleFor",
-      "why": "AWS service-linked roles: inherited (sp-inherited), AWS-managed"
-    },
-    {
-      "type": "aws_core__aws_kms_key",
-      "name_re": "^aws/",
-      "why": "AWS-managed keys: inherited (sp-inherited)"
-    },
-    {
-      "type": "github_core__github_workflow",
-      "name": "pages-build-deployment",
-      "why": "retired: GitHub Pages is not enabled; last Pages build 2025-08-13"
-    }
+    {"key": "website", "zone": "system", "label": "Website serving",
+     "match": ["aws::cdn_distribution::*", "aws::dns_zone::*", "aws::tls_certificate::*", "aws::object_store::website", "aws::object_store::logs", "aws::kms_key::dnssec_ksk"]},
+    {"key": "compliance", "zone": "system", "label": "Runtime KSI emitter (daily)",
+     "match": ["aws::event_schedule::opa_compliance", "aws::function::opa_compliance", "aws::log_group::opa_compliance", "aws::iam_role::lambda_opa", "aws::iam_policy::lambda_opa", "aws::message_queue::compliance_dlq", "aws::kms_key::runtime_signing"]},
+    {"key": "watchdog", "zone": "system", "label": "Evidence-freshness watchdog and alerting",
+     "match": ["aws::*::evidence_watchdog", "aws::metric_alarm::evidence*", "aws::notification_topic::evidence_alerts"]},
+    {"key": "app", "zone": "system", "label": "Application sub-system (Silk Reeling)",
+     "match": ["aws::api_gateway::silk_reeling", "aws::identity_provider::silk_reeling", "aws::function::silk_reeling", "aws::iam_role::silk_reeling", "aws::iam_policy::silk_reeling", "aws::log_group::silk_*", "aws::secrets_manager::silk_*", "aws::kms_key::silk_reeling"]},
+    {"key": "audit", "zone": "system", "label": "Audit and shared keys",
+     "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
+    {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
+     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate"]},
+    {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
+     "match": ["ext::github-repo", "ext::github-oidc"]},
+    {"key": "sigstore", "zone": "external", "label": "Sigstore (Fulcio CA and Rekor log)",
+     "match": ["ext::sigstore-*"]},
+    {"key": "operator-mfa", "zone": "external", "label": "Operator MFA",
+     "match": ["ext::duo-mfa"]},
+    {"key": "vuln-feeds", "zone": "external", "label": "Vulnerability metadata sources",
+     "match": ["ext::github-advisory-db", "ext::cisa-kev"]}
   ],
   "declared": [
-    {
-      "key": "operator",
-      "label": "Operator (dev machine)",
-      "zone": "outside",
-      "kind": "actor",
-      "why": "Out per Rule of Thumb #4: dev environment, no federal information"
-    },
-    {
-      "key": "operator-email",
-      "label": "Operator email + SaaS",
-      "zone": "outside",
-      "kind": "actor",
-      "why": "Out per Rule of Thumb #3; receives the evidence-alarm email (flow I), which carries alarm metadata only."
-    },
-    {
-      "key": "public",
-      "label": "Public Internet (readers, verifiers)",
-      "zone": "outside",
-      "kind": "actor",
-      "why": "Anonymous consumers of the site and /.well-known/ artifacts"
-    },
-    {
-      "key": "app-users",
-      "label": "App users (Silk Reeling)",
-      "zone": "outside",
-      "kind": "actor",
-      "why": "Authenticated end users via Cognito"
-    },
-    {
-      "key": "duo",
-      "label": "Duo (virtual TOTP MFA)",
-      "zone": "external",
-      "kind": "not_collected",
-      "why": "duo-tap is vocabulary-only (v0)"
-    },
-    {
-      "key": "anthropic",
-      "label": "Anthropic API",
-      "zone": "external",
-      "kind": "not_collected",
-      "why": "No collector; app egress (POAM-020)"
-    },
-    {
-      "key": "vuln-feeds",
-      "label": "GitHub Advisory DB / CISA KEV",
-      "zone": "external",
-      "kind": "not_collected",
-      "why": "KEV lands only when a CVE finding exists"
-    },
-    {
-      "key": "sns",
-      "label": "SNS evidence-alert topic + CloudWatch alarms",
-      "zone": "system",
-      "kind": "not_collected",
-      "why": "aws_core has no SNS topic or metric-alarm model"
-    }
+    {"key": "operator", "label": "Operator (dev machine)", "zone": "outside", "kind": "actor",
+     "why": "Out per Rule of Thumb #4: development environment, no federal information."},
+    {"key": "operator-email", "label": "Operator email and SaaS", "zone": "outside", "kind": "actor",
+     "why": "Out per Rule of Thumb #3; receives the evidence-alarm email (flow I), which carries alarm metadata only."},
+    {"key": "public", "label": "Public Internet (readers, verifiers)", "zone": "outside", "kind": "actor",
+     "why": "Anonymous consumers of the site and the /.well-known/ evidence."},
+    {"key": "app-users", "label": "App users (Silk Reeling)", "zone": "outside", "kind": "actor",
+     "why": "Authenticated end users, via Cognito with mandatory TOTP MFA."},
+    {"key": "anthropic", "label": "Anthropic API", "zone": "external", "kind": "not_inventoried",
+     "why": "The Silk Reeling Lambda calls it (POAM-020), but the canonical inventory has no component for it yet."}
   ],
+  "leveraged": {
+    "package_id": "AGENCYAMAZONEW",
+    "name": "AWS East/West",
+    "status": "FedRAMP Certified Class C",
+    "services": ["VPC networking", "KMS HSM", "IAM control plane", "S3", "CloudFront edge", "Lambda", "API Gateway", "Cognito", "Secrets Manager", "EventBridge", "ACM", "CloudTrail", "CloudWatch", "SNS", "SQS", "Route 53"],
+    "why": "Per Key Concept #6: the underlying infrastructure is inherited from the AWS package under the customer responsibility matrix."
+  },
   "flows": [
-    {
-      "id": "A",
-      "label": "Operator → GitHub repo + Actions",
-      "path": [
-        {
-          "declared": "operator"
-        },
-        {
-          "rule": {
-            "type": "github_core__github_repository"
-          }
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+)",
-      "auth": "Password + Duo TOTP MFA (privileged)",
-      "encryption": "In transit: TLS",
-      "data": "Source code, IaC config, content",
-      "in_svg": true
-    },
-    {
-      "id": "B",
-      "label": "GitHub Actions → AWS APIs",
-      "path": [
-        {
-          "rule": {
-            "type": "github_core__github_workflow",
-            "name": "Deploy Website with OPA Compliance"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_iam_role",
-            "name": "github-actions-deploy-oidc"
-          }
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+, SigV4)",
-      "auth": "GitHub OIDC → STS role; no static keys (privileged)",
-      "encryption": "In transit: TLS",
-      "data": "Terraform plan/apply, AWS API calls",
-      "in_svg": true
-    },
-    {
-      "id": "C",
-      "label": "Deploy → S3 (site + /.well-known/)",
-      "path": [
-        {
-          "rule": {
-            "type": "aws_core__aws_iam_role",
-            "name": "github-actions-deploy-oidc"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_s3_bucket",
-            "name": "samaydlette.com"
-          }
-        }
-      ],
-      "protocol": "AWS-internal HTTPS/TLS",
-      "auth": "IAM role (privileged write to S3)",
-      "encryption": "In transit TLS; at rest SSE-S3",
-      "data": "Site content + /.well-known/ artifacts",
-      "in_svg": true
-    },
-    {
-      "id": "D",
-      "label": "Deploy → Lambdas (code)",
-      "path": [
-        {
-          "rule": {
-            "type": "aws_core__aws_iam_role",
-            "name": "github-actions-deploy-oidc"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_lambda"
-          }
-        }
-      ],
-      "protocol": "AWS-internal HTTPS/TLS",
-      "auth": "IAM role (privileged update on Lambda)",
-      "encryption": "In transit: TLS",
-      "data": "Lambda deployment packages",
-      "in_svg": true
-    },
-    {
-      "id": "E",
-      "label": "GitHub Actions → Sigstore Fulcio + Rekor",
-      "path": [
-        {
-          "rule": {
-            "type": "github_core__github_workflow",
-            "name": "Deploy Website with OPA Compliance"
-          }
-        },
-        {
-          "rule": {
-            "type": "sigstore_core__sigstore_ca"
-          }
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+)",
-      "auth": "GitHub Actions OIDC token (workload identity)",
-      "encryption": "In transit: TLS",
-      "data": "CSR, ECDSA P-256 signature, log entry",
-      "in_svg": true
-    },
-    {
-      "id": "F",
-      "label": "EventBridge → KSI emitter → S3 (daily)",
-      "path": [
-        {
-          "rule": {
-            "type": "aws_core__aws_eventbridge_rule",
-            "name": "samaydlette-com-opa-compliance"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_lambda",
-            "name": "samaydlette-com-opa-compliance"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_s3_bucket",
-            "name": "samaydlette.com"
-          }
-        }
-      ],
-      "protocol": "AWS-internal (no public network)",
-      "auth": "Lambda role (non-privileged; DescribeSecret, KMS Sign)",
-      "encryption": "Signal signed: KMS ECDSA P-256",
-      "data": "Runtime KSI signal (signed) write",
-      "in_svg": true
-    },
-    {
-      "id": "G",
-      "label": "CloudFront → Public Internet",
-      "path": [
-        {
-          "rule": {
-            "type": "aws_core__aws_cloudfront_distribution"
-          }
-        },
-        {
-          "declared": "public"
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+)",
-      "auth": "Anonymous (public read)",
-      "encryption": "In transit: TLS",
-      "data": "Public site content + /.well-known/ artifacts",
-      "in_svg": true
-    },
-    {
-      "id": "H",
-      "label": "App user → API Gateway → app Lambda → Anthropic",
-      "path": [
-        {
-          "declared": "app-users"
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_apigateway_http_api"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_lambda",
-            "name": "samaydlette-com-silk-reeling"
-          }
-        },
-        {
-          "declared": "anthropic"
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+); throttled 20 rps / 10 burst",
-      "auth": "Cognito JWT (end user); Lambda holds the API key",
-      "encryption": "In transit: TLS",
-      "data": "App requests; outbound AI prompt (POAM-020)",
-      "in_svg": true
-    },
-    {
-      "id": "I",
-      "label": "Alarms → SNS topic → operator email (out)",
-      "path": [
-        {
-          "declared": "sns"
-        },
-        {
-          "declared": "operator-email"
-        }
-      ],
-      "protocol": "AWS-internal; then email (SMTP)",
-      "auth": "Topic policy: evidence alarms only",
-      "encryption": "At rest: CMK · email not end-to-end encrypted",
-      "data": "Alarm metadata only (name, state, reason)",
-      "in_svg": true
-    },
-    {
-      "id": "J",
-      "label": "Evidence Nightly → S3 (.well-known/vdr-*)",
-      "path": [
-        {
-          "rule": {
-            "type": "github_core__github_workflow",
-            "name": "Evidence Nightly (VDR refresh)"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_iam_role",
-            "name": "github-actions-evidence-nightly-oidc"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_s3_bucket",
-            "name": "samaydlette.com"
-          }
-        }
-      ],
-      "protocol": "HTTPS 443 (TLS 1.2+, SigV4)",
-      "auth": "GitHub OIDC → STS; role can write only .well-known/vdr-* (unattended)",
-      "encryption": "In transit TLS; at rest SSE-S3",
-      "data": "Refreshed VDR + trend (Sigstore-signed)",
-      "in_svg": false,
-      "note": "Real and unattended; the hand-drawn diagram's flow table has no row for it."
-    },
-    {
-      "id": "K",
-      "label": "Watchdog → S3 (evidence freshness read)",
-      "path": [
-        {
-          "rule": {
-            "type": "aws_core__aws_eventbridge_rule",
-            "name": "samaydlette-com-evidence-watchdog"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_lambda",
-            "name": "samaydlette-com-evidence-watchdog"
-          }
-        },
-        {
-          "rule": {
-            "type": "aws_core__aws_s3_bucket",
-            "name": "samaydlette.com"
-          }
-        }
-      ],
-      "protocol": "AWS-internal",
-      "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only",
-      "encryption": "In transit: TLS",
-      "data": "Published evidence timestamps; results go out as CloudWatch metrics, which drive flow I's alarms",
-      "in_svg": false,
-      "note": "The hand-drawn diagram shows the watchdog as a component (hourly) but its flow table has no row for this read."
-    }
+    {"id": "A", "label": "Operator → GitHub repository and Actions", "path": [{"declared": "operator"}, {"component": "ext::github-repo"}],
+     "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "Password + Duo TOTP MFA (privileged)", "encryption": "In transit: TLS", "data": "Source code, IaC configuration, content"},
+    {"id": "B", "label": "GitHub Actions → AWS APIs (deploy role)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::deploy"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS role; no static keys (privileged)", "encryption": "In transit: TLS", "data": "Terraform plan and apply, AWS API calls"},
+    {"id": "C", "label": "Deploy → S3 (site and /.well-known/)", "path": [{"component": "aws::iam_role::deploy"}, {"component": "aws::object_store::website"}],
+     "protocol": "AWS-internal HTTPS/TLS", "auth": "IAM role (privileged write to S3)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Site content and /.well-known/ evidence"},
+    {"id": "D", "label": "Deploy → Lambda functions (code)", "path": [{"component": "aws::iam_role::deploy"}, {"component": "aws::function::*"}],
+     "protocol": "AWS-internal HTTPS/TLS", "auth": "IAM role (privileged update on Lambda)", "encryption": "In transit: TLS", "data": "Lambda deployment packages"},
+    {"id": "E", "label": "GitHub Actions → Sigstore Fulcio and Rekor", "path": [{"component": "ext::github-oidc"}, {"component": "ext::sigstore-*"}],
+     "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "GitHub Actions OIDC token (workload identity)", "encryption": "In transit: TLS", "data": "CSR, ECDSA P-256 signature, transparency-log entry"},
+    {"id": "F", "label": "EventBridge → KSI emitter → S3 (daily)", "path": [{"component": "aws::event_schedule::opa_compliance"}, {"component": "aws::function::opa_compliance"}, {"component": "aws::object_store::website"}],
+     "protocol": "AWS-internal (no public network)", "auth": "Lambda role (non-privileged; DescribeSecret, KMS Sign)", "encryption": "Signal signed: KMS ECDSA P-256", "data": "Runtime KSI signal (signed) write"},
+    {"id": "G", "label": "CloudFront → Public Internet", "path": [{"component": "aws::cdn_distribution::website"}, {"declared": "public"}],
+     "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "Anonymous (public read)", "encryption": "In transit: TLS", "data": "Public site content and /.well-known/ evidence"},
+    {"id": "H", "label": "App user → API Gateway → app Lambda → Anthropic", "path": [{"declared": "app-users"}, {"component": "aws::api_gateway::silk_reeling"}, {"component": "aws::function::silk_reeling"}, {"declared": "anthropic"}],
+     "protocol": "HTTPS 443 (TLS 1.2+); throttled 20 rps / 10 burst", "auth": "Cognito JWT (end user); the Lambda holds the API key", "encryption": "In transit: TLS", "data": "App requests; outbound AI prompt (POAM-020)"},
+    {"id": "I", "label": "Alarms → SNS topic → operator email (out)", "path": [{"component": "aws::metric_alarm::evidence*"}, {"component": "aws::notification_topic::evidence_alerts"}, {"declared": "operator-email"}],
+     "protocol": "AWS-internal; then email (SMTP)", "auth": "Topic policy: evidence alarms only", "encryption": "At rest: CMK · email not end-to-end encrypted", "data": "Alarm metadata only (name, state, reason)"},
+    {"id": "J", "label": "Evidence Nightly → S3 (.well-known/vdr-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::evidence_nightly"}, {"component": "aws::object_store::website"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/vdr-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Refreshed VDR and trend (Sigstore-signed)"},
+    {"id": "K", "label": "Watchdog → S3 (evidence freshness read)", "path": [{"component": "aws::event_schedule::evidence_watchdog"}, {"component": "aws::function::evidence_watchdog"}, {"component": "aws::object_store::website"}],
+     "protocol": "AWS-internal", "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only", "encryption": "In transit: TLS", "data": "Published evidence timestamps; results go out as CloudWatch metrics that drive flow I's alarms"}
   ]
 }

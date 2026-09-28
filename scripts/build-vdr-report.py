@@ -996,6 +996,89 @@ def build_classification_index(ksi_signal_path):
     return index
 
 
+def build_component_index(ksi_signal_path):
+    """The same identifier keys as build_classification_index, mapped to the
+    component_id instead of its classification, so each published finding can
+    name the inventory component it affects (the trust center's boundary map
+    places findings on components). Empty dict if the signal is absent."""
+    index = {}
+    p = Path(ksi_signal_path)
+    if not p.exists():
+        return index
+    try:
+        sig = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return index
+    for comp in sig.get("components") or []:
+        cid = comp.get("component_id")
+        if not cid:
+            continue
+        attrs = comp.get("attributes") or {}
+        keys = {cid, cid.split("::")[-1]}
+        for k in ("native_id", "global_id"):
+            v = comp.get(k)
+            if isinstance(v, str):
+                keys.add(v)
+            elif isinstance(v, dict):
+                keys.update(x for x in v.values() if isinstance(x, str))
+        for k in ("tf_name", "name", "purl", "tf_address"):
+            if isinstance(attrs.get(k), str):
+                keys.add(attrs[k])
+        if attrs.get("tf_name") and comp.get("resource_type"):
+            keys.add(f"{comp['resource_type']}.{attrs['tf_name']}")
+        for key in keys:
+            index.setdefault(str(key), cid)
+    return index
+
+
+_TF_ADDRESS = re.compile(r"^(?:module\.[\w-]+\.)*(aws_[a-z0-9_]+)\.([\w-]+)")
+
+
+def resolve_component(finding, index, tf_components=()):
+    """The component a finding affects, or None. Stricter than
+    resolve_classification, because a map is read as a claim about a specific
+    resource: an exact identifier; else a Terraform address, matched by name to
+    the one component whose resource type prefixes the finding's (so
+    aws_s3_bucket_server_side_encryption_configuration.logs lands on the logs
+    bucket); else, for package-style resources only, the longest containment
+    match. A file-level finding (".checkov.yaml", "infrastructure/x.tf") is left
+    unattributed rather than pinned to whatever component shares a substring."""
+    for c in (finding.get("resource"), finding.get("tool_id"), finding.get("cve")):
+        if c and str(c) in index:
+            return index[str(c)]
+    res = str(finding.get("resource") or "")
+    m = _TF_ADDRESS.match(res)
+    if m:
+        rtype, rname = m.group(1), m.group(2)
+        hits = {cid for cid, tf_type, tf_name in tf_components
+                if tf_name == rname and tf_type and rtype.startswith(tf_type)}
+        return hits.pop() if len(hits) == 1 else None
+    if ":" in res and "/" not in res.split(":", 1)[0]:
+        matches = [(key, cid) for key, cid in index.items()
+                   if len(key) >= 4 and (key in res or res in key)]
+        if matches:
+            matches.sort(key=lambda kc: len(kc[0]), reverse=True)
+            return matches[0][1]
+    return None
+
+
+def tf_components_of(ksi_signal_path):
+    """(component_id, tf_type, tf_name) for every Terraform-backed component."""
+    p = Path(ksi_signal_path)
+    if not p.exists():
+        return []
+    try:
+        sig = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        return []
+    out = []
+    for comp in sig.get("components") or []:
+        attrs = comp.get("attributes") or {}
+        if attrs.get("tf_name"):
+            out.append((comp.get("component_id"), attrs.get("tf_type"), attrs.get("tf_name")))
+    return out
+
+
 def resolve_classification(finding, index):
     """Resolve a finding's affected asset to its classification tags. Tries the
     finding's resource / tool_id / cve as exact index keys first, then a
@@ -1483,6 +1566,16 @@ def main():
                                     disposition_register=disposition_register)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
+    # Name the inventory component each finding affects, so the trust center can
+    # place findings on the boundary map. Resolution only; scoring is unchanged.
+    component_index = build_component_index(args.ksi_signal)
+    tf_components = tf_components_of(args.ksi_signal)
+    for section in ("findings", "risk_accepted", "false_positives"):
+        for f in report.get(section) or []:
+            if isinstance(f, dict):
+                cid = resolve_component(f, component_index, tf_components)
+                if cid:
+                    f["component_id"] = cid
     # Provenance for the PAIN derivation: which classifier produced these N-levels
     # and which governed config calibrated it. CVE findings with a CVSS vector are
     # scored by the CVSS-Environmental method; vectorless IaC/config/DAST findings

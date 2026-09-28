@@ -85,3 +85,22 @@ def test_bootstrap_components_evidence_iam_ksis():
 if __name__ == "__main__":
     import pytest
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_a_resource_both_stacks_know_appears_once(monkeypatch):
+    # The CloudFront distribution is managed by the bootstrap stack and read by the
+    # application module as a data source; once CI can read the bootstrap state,
+    # both walks produce it. Two components with one native_id fail the inventory
+    # gate, so the bootstrap walk must keep the existing one and mark who manages it.
+    dist_arn = f"arn:aws:cloudfront::{ACCOUNT}:distribution/EXAMPLE"
+    cf = {"type": "aws_cloudfront_distribution", "name": "website", "address": "aws_cloudfront_distribution.website",
+          "values": {"arn": dist_arn, "id": "EXAMPLE", "domain_name": "d1.cloudfront.net"}}
+    state = {"values": {"root_module": {"resources": BOOTSTRAP_STATE["values"]["root_module"]["resources"] + [cf]}}}
+    existing = bks.build_cloud_components({"values": {"root_module": {"resources": [dict(cf, address="data.aws_cloudfront_distribution.website", mode="data")]}}}, {})
+    assert [c["native_id"] for c in existing] == [dist_arn]
+    monkeypatch.setattr(bks, "run_terraform", lambda _args: state)
+    fresh = bks.build_bootstrap_components(existing)
+    native_ids = [c["native_id"] for c in existing + fresh]
+    assert len(native_ids) == len(set(native_ids))
+    assert existing[0]["attributes"]["managed_by"] == "bootstrap"
+    assert {c["type"] for c in fresh} >= {"oidc_provider", "iam_role", "iam_group"}
