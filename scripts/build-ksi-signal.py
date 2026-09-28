@@ -471,7 +471,7 @@ IIW_DEFAULTS = {
         "function": "GitHub Actions OIDC identity provider trusted by the CI/CD deploy role (workload identity; replaced long-lived keys per POAM-001)",
         "diagram_label": "IAM — GitHub OIDC provider",
         "public": False,
-        "baseline_configuration": "Bootstrap module; trusts token.actions.githubusercontent.com; deploy role trust policy restricts sub to the repo. Read-only assessment IAM tracked as POAM-027.",
+        "baseline_configuration": "Bootstrap module; trusts token.actions.githubusercontent.com; deploy role trust policy restricts sub to this repo's reviewer-gated prod environment; pull-request and main-branch checks use a separate read-only plan role. Read-only assessment IAM tracked as POAM-027.",
         "iiw_asset_type": "OIDC Identity Provider (IAM)",
     },
 }

@@ -105,9 +105,15 @@ resource "aws_iam_openid_connect_provider" "github" {
   tags = merge(local.bootstrap_tags, local.bootstrap_cls.identity_secrets_internal, { Name = "github-actions-oidc" })
 }
 
-# Trust policy: only this repo's main-branch pushes and pull requests may assume
-# the role — NOT a wildcard. PRs are included because the compliance-check job
-# (terraform plan + OPA) runs on pull_request and also needs AWS read access.
+# Trust policy: ONLY the Deploy Infrastructure job, running in this repo's `prod`
+# GitHub Environment, may assume the role. That environment requires a human
+# reviewer, so deploy credentials exist only after an approved deploy starts.
+#
+# Pull requests and main-branch pushes used to be trusted too, because the
+# compliance-check job planned with this role. That gave every PR run the full
+# deploy permission set without the approval gate. compliance-check now assumes
+# the read-only plan role (plan-role.tf), so nothing outside the approved deploy
+# needs these permissions (SCN-2026-005).
 data "aws_iam_policy_document" "trust" {
   statement {
     effect  = "Allow"
@@ -128,12 +134,8 @@ data "aws_iam_policy_document" "trust" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        # main-branch pushes / schedule (compliance-check job; no environment),
-        "repo:${var.github_repo}:ref:refs/heads/main",
-        # pull requests (compliance-check job on PRs),
-        "repo:${var.github_repo}:pull_request",
-        # the Deploy Infrastructure job runs in a GitHub Environment, so its
-        # OIDC sub is environment-scoped rather than ref-scoped.
+        # The Deploy Infrastructure job runs in a GitHub Environment, so its OIDC
+        # sub is environment-scoped rather than ref-scoped.
         "repo:${var.github_repo}:environment:${var.deploy_environment}",
       ]
     }
@@ -142,7 +144,7 @@ data "aws_iam_policy_document" "trust" {
 
 resource "aws_iam_role" "deploy" {
   name                 = "github-actions-deploy-oidc"
-  description          = "CI deploy role assumed via GitHub OIDC (POAM-001). Trust restricted to this repo's main + PRs."
+  description          = "CI deploy role assumed via GitHub OIDC (POAM-001). Trust restricted to this repo's prod environment (reviewer-gated)."
   assume_role_policy   = data.aws_iam_policy_document.trust.json
   max_session_duration = 3600
 
