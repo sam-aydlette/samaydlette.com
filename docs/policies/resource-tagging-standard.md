@@ -66,10 +66,10 @@ catalog is deliberately not imported.
 |-----------|------|--------------|
 | `public-edge`         | data    | CloudFront, the public API Gateway, public HTML, public DNS, ACM |
 | `app-tier`            | data    | the Silk Reeling app Lambda, its software dependencies |
-| `identity-secrets`    | control | Cognito user pool, Secrets Manager, KMS keys, IAM roles/policies |
+| `identity-secrets`    | control | Cognito user pool, Secrets Manager, KMS keys, IAM roles/policies, the GitHub OIDC provider, the operators group |
 | `security-tooling`    | control | the internal compliance Lambda, audit/log stores |
 | `internal-tooling`    | data    | private object storage, the EventBridge schedule, read-only external services |
-| `platform-foundation` | control | DNS, TLS certificates (reachability/foundation, metadata only) |
+| `platform-foundation` | control | DNS, TLS certificates (reachability/foundation, metadata only), the Terraform state bucket and lock table |
 
 ## Source of truth and enforcement
 

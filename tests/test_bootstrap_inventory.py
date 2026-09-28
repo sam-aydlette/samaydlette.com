@@ -104,3 +104,59 @@ def test_a_resource_both_stacks_know_appears_once(monkeypatch):
     assert len(native_ids) == len(set(native_ids))
     assert existing[0]["attributes"]["managed_by"] == "bootstrap"
     assert {c["type"] for c in fresh} >= {"oidc_provider", "iam_role", "iam_group"}
+
+
+# -----------------------------------------------------------------------------
+# The inventory's classification of each bootstrap resource must equal the tags
+# the bootstrap stack applies to it. Reconciliation invariant (i) compares the
+# two on every deploy and fails closed on a mismatch, so drift between
+# local.bootstrap_cls (infrastructure/bootstrap/main.tf) and the generator's
+# tables blocks deploys. This test catches it at PR time instead.
+# -----------------------------------------------------------------------------
+import re  # noqa: E402
+
+BOOTSTRAP_DIR = REPO / "infrastructure" / "bootstrap"
+TAG_TO_CLS = {"DataSensitivity": "data_sensitivity", "MissionCriticality": "mission_criticality",
+              "InternetReachable": "internet_reachable", "Archetype": "archetype"}
+
+
+def _bootstrap_cls():
+    """Parse the local.bootstrap_cls map: {key: {TagKey: value}}."""
+    text = (BOOTSTRAP_DIR / "main.tf").read_text()
+    body = re.search(r"bootstrap_cls\s*=\s*\{(.*?)\n  \}", text, re.S).group(1)
+    return {m.group(1): dict(re.findall(r'(\w+)\s*=\s*"([^"]*)"', m.group(2)))
+            for m in re.finditer(r"(\w+)\s*=\s*\{([^}]*)\}", body)}
+
+
+def _tagged_resources():
+    """(resource type, name, bootstrap_cls key) for every resource tagged from it."""
+    out = []
+    for tf in sorted(BOOTSTRAP_DIR.glob("*.tf")):
+        text = tf.read_text()
+        for m in re.finditer(r'^resource "(\w+)" "(\w+)" \{(.*?)^\}', text, re.S | re.M):
+            cls = re.search(r"local\.bootstrap_cls\.(\w+)", m.group(3))
+            if cls:
+                out.append((m.group(1), m.group(2), cls.group(1)))
+    return out
+
+
+def test_inventory_classification_matches_bootstrap_tags():
+    cls = _bootstrap_cls()
+    tagged = _tagged_resources()
+    assert tagged, "no bootstrap resource is tagged from local.bootstrap_cls"
+    checked = 0
+    for tf_type, name, key in tagged:
+        state = {"values": {"root_module": {"resources": [
+            {"type": tf_type, "name": name, "address": f"{tf_type}.{name}", "mode": "managed",
+             "values": {"arn": f"arn:aws:x::{ACCOUNT}:{name}", "name": name, "bucket": name}}]}}}
+        comps = [c for c in bks.build_cloud_components(state, {})
+                 if c.get("attributes", {}).get("tf_name") == name]
+        if not comps:
+            continue  # a type the inventory does not model (e.g. the lock table)
+        got = comps[0]["attributes"]["classification"]
+        for tag, inv_key in TAG_TO_CLS.items():
+            want = cls[key][tag]
+            have = str(got[inv_key]).lower()
+            assert have == want, f"{tf_type}.{name}: inventory {inv_key}={have!r}, tag {tag}={want!r}"
+        checked += 1
+    assert checked >= 5  # the OIDC provider, three CI roles and the state bucket
