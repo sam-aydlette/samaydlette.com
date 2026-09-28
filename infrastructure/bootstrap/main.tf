@@ -688,6 +688,51 @@ resource "aws_iam_group_policy" "operators_s3_bucket" {
   })
 }
 
+# State backend access for the operator: the third former user-inline policy
+# (tfstate-bootstrap), relocated to the group like the two above, and scoped down.
+# The hand-made original granted s3:* on the whole state bucket and the lock
+# table's management actions, but none of the lock-ITEM actions, which only
+# mattered once this stack's own state moved to the backend (backend.tf).
+resource "aws_iam_group_policy" "operators_state_backend" {
+  name  = "state-backend"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        # Managing the state bucket itself (versioning, encryption, public-access
+        # block, lifecycle, policy, tags) when this stack is applied.
+        Sid      = "StateBucketManagement"
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket", "s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration", "s3:PutBucket*", "s3:PutEncryptionConfiguration", "s3:PutLifecycleConfiguration"]
+        Resource = aws_s3_bucket.tfstate.arn
+      },
+      {
+        # Both stacks' state objects: this stack's, and the per-deploy stack's for
+        # the operator's local plans.
+        Sid    = "StateObjects"
+        Effect = "Allow"
+        Action = ["s3:GetObject", "s3:PutObject"]
+        Resource = [
+          "${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}",
+          "${aws_s3_bucket.tfstate.arn}/${local.bootstrap_tfstate_key}",
+        ]
+      },
+      {
+        # Taking and releasing the state lock, and managing the lock table.
+        Sid    = "StateLock"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem",
+          "dynamodb:DescribeTable", "dynamodb:DescribeContinuousBackups", "dynamodb:UpdateContinuousBackups",
+          "dynamodb:DescribeTimeToLive", "dynamodb:ListTagsOfResource", "dynamodb:TagResource", "dynamodb:UntagResource",
+        ]
+        Resource = aws_dynamodb_table.tflock.arn
+      },
+    ]
+  })
+}
+
 variable "operator_user_name" {
   type        = string
   default     = "saydlette-dev"
