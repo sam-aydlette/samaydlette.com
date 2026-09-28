@@ -145,7 +145,7 @@ resource "aws_cloudfront_distribution" "website" {
   # Silk Reeling API Gateway origin (the app behind /silk-reeling/*).
   origin {
     origin_id           = "apigw-silk-reeling"
-    domain_name         = var.silk_reeling_api_origin_domain
+    domain_name         = local.silk_reeling_api_origin_domain
     connection_attempts = 3
     connection_timeout  = 10
     custom_origin_config {
@@ -164,12 +164,12 @@ resource "aws_cloudfront_distribution" "website" {
     target_origin_id           = "S3-${var.domain_name}"
     response_headers_policy_id = aws_cloudfront_response_headers_policy.website.id
     viewer_protocol_policy     = "redirect-to-https"
-    allowed_methods        = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
-    cached_methods         = ["HEAD", "GET"]
-    compress               = true
-    min_ttl                = 0
-    default_ttl            = 3600
-    max_ttl                = 86400
+    allowed_methods            = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods             = ["HEAD", "GET"]
+    compress                   = true
+    min_ttl                    = 0
+    default_ttl                = 3600
+    max_ttl                    = 86400
     forwarded_values {
       query_string = false
       cookies {
@@ -226,7 +226,7 @@ resource "aws_cloudfront_distribution" "website" {
   tags = {
     Name               = "${var.domain_name}-cdn"
     Environment        = var.deploy_environment
-    Owner              = var.owner_email
+    Owner              = local.bootstrap_tags.Owner
     CostCenter         = "website-ops"
     DataClassification = "Public"
     ComplianceScope    = "Section508"
@@ -239,12 +239,19 @@ resource "aws_cloudfront_distribution" "website" {
   }
 }
 
-variable "silk_reeling_api_origin_domain" {
-  type        = string
-  description = "Hostname of the Silk Reeling API Gateway origin behind the /silk-reeling/* behavior, e.g. <api-id>.execute-api.<region>.amazonaws.com. Supplied at apply time; not a secret, but kept out of committed code so the stack stays portable."
+# The Silk Reeling API origin is looked up by name rather than supplied at apply
+# time, so the stack needs no local tfvars and CI can plan it (the hostname is
+# already public: it is in the published inventory). The API itself belongs to
+# the per-deploy stack in infrastructure/.
+data "aws_apigatewayv2_apis" "silk_reeling" {
+  name          = "${local.domain_dashed}-silk-reeling"
+  protocol_type = "HTTP"
 }
 
-variable "owner_email" {
-  type        = string
-  description = "Value for the distribution's Owner tag. Supplied at apply time so a personal address is not committed to the public repo."
+data "aws_apigatewayv2_api" "silk_reeling" {
+  api_id = one(data.aws_apigatewayv2_apis.silk_reeling.ids)
+}
+
+locals {
+  silk_reeling_api_origin_domain = trimprefix(data.aws_apigatewayv2_api.silk_reeling.api_endpoint, "https://")
 }

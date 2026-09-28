@@ -18,7 +18,11 @@
 locals {
   tfstate_bucket = "${local.domain_dashed}-tfstate"
   tfstate_key    = "infrastructure/terraform.tfstate"
-  tflock_table   = "${local.domain_dashed}-tflock"
+  # This stack's own state (backend.tf). CI reads it, never writes it: the plan
+  # role plans the trust root on every build, and the deploy role reads it so the
+  # canonical inventory includes the bootstrap identities.
+  bootstrap_tfstate_key = "bootstrap/terraform.tfstate"
+  tflock_table          = "${local.domain_dashed}-tflock"
 }
 
 resource "aws_s3_bucket" "tfstate" {
@@ -149,6 +153,14 @@ resource "aws_iam_role_policy" "tfstate_backend" {
         Effect   = "Allow"
         Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
         Resource = "${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}"
+      },
+      {
+        # Read-only: the canonical inventory includes the bootstrap stack's
+        # identities (OIDC provider, CI roles, state backend).
+        Sid      = "BootstrapStateRead"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${aws_s3_bucket.tfstate.arn}/${local.bootstrap_tfstate_key}"
       },
       {
         Sid      = "StateLock"

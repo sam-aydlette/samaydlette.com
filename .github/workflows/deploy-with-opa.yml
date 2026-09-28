@@ -447,6 +447,39 @@ jobs:
       run: terraform plan -lock-timeout=300s -out=tfplan
 
     # -------------------------------------------------------------------------
+    # PLAN THE TRUST ROOT (read-only; reported, never applied)
+    # -------------------------------------------------------------------------
+    # infrastructure/bootstrap/ holds the IAM trust root: the OIDC provider, the
+    # roles CI assumes, the state backend, CloudFront. CI must never apply it
+    # (it would be rewriting its own permissions), so the operator applies it.
+    # What CI can do is make it observable: plan it on every build with this
+    # job's read-only credentials and publish the result, so a pending change
+    # shows up in the trust center as a decision waiting on a person rather than
+    # drifting unseen. -lock=false: a read-only plan never contends with an
+    # operator apply. The summary carries resource addresses and actions only.
+    # Never fails the job: reporting drift is the point, not blocking on it.
+    - name: Plan the trust root (bootstrap stack)
+      working-directory: infrastructure/bootstrap
+      run: |
+        set -uo pipefail
+        rc=1; empty=""
+        if terraform init -input=false > trust-root-init.log 2>&1; then
+          # An empty remote state means the one-time migration has not happened
+          # yet; a plan would claim every resource needs creating. Say so instead.
+          if [ -z "$(terraform state list 2>/dev/null | head -1)" ]; then
+            empty="--state-empty"
+          else
+            terraform plan -input=false -lock=false -detailed-exitcode -out=trust-root.tfplan > trust-root-plan.log 2>&1
+            rc=$?
+            if [ "$rc" != 1 ]; then terraform show -json trust-root.tfplan > trust-root-plan-full.json; fi
+          fi
+        fi
+        python3 ../../scripts/summarize-trust-root-plan.py --exit-code "$rc" $empty \
+          --plan-json trust-root-plan-full.json --commit "$GITHUB_SHA" > ../trust-root-plan.json
+        rm -f trust-root-plan-full.json trust-root.tfplan
+        echo "Trust root: $(python3 -c 'import json;print(json.load(open("../trust-root-plan.json"))["status"])')"
+
+    # -------------------------------------------------------------------------
     # THE ACTUAL SECURITY CHECK
     # The accessibility scanner (pa11y) renders pages in the runner's system
     # Chrome; PUPPETEER_SKIP_DOWNLOAD avoids fetching a duplicate browser.
@@ -491,6 +524,7 @@ jobs:
           infrastructure/tfplan
           infrastructure/tfplan.json
           infrastructure/validations.json
+          infrastructure/trust-root-plan.json
         retention-days: 5
 
   # ===========================================================================
