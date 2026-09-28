@@ -77,10 +77,15 @@ data "aws_iam_policy_document" "plan_access" {
   }
 
   statement {
-    sid       = "StateObjectRead"
-    effect    = "Allow"
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}"]
+    sid    = "StateObjectRead"
+    effect = "Allow"
+    # The per-deploy stack's state (plan) and the bootstrap stack's own state
+    # (the trust-root plan every build runs; read only, never written from CI).
+    actions = ["s3:GetObject"]
+    resources = [
+      "${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}",
+      "${aws_s3_bucket.tfstate.arn}/${local.bootstrap_tfstate_key}",
+    ]
   }
 
   statement {
@@ -92,10 +97,13 @@ data "aws_iam_policy_document" "plan_access" {
 
   # Planning never needs object contents other than the state file.
   statement {
-    sid           = "DenyObjectReadsOutsideState"
-    effect        = "Deny"
-    actions       = ["s3:GetObject", "s3:GetObjectVersion"]
-    not_resources = ["${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}"]
+    sid     = "DenyObjectReadsOutsideState"
+    effect  = "Deny"
+    actions = ["s3:GetObject", "s3:GetObjectVersion"]
+    not_resources = [
+      "${aws_s3_bucket.tfstate.arn}/${local.tfstate_key}",
+      "${aws_s3_bucket.tfstate.arn}/${local.bootstrap_tfstate_key}",
+    ]
   }
 
   # Planning never needs table contents other than the lock item.

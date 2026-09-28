@@ -2,8 +2,15 @@
 
 This module is **applied by an operator, not by CI** — it creates the IAM role the
 CI pipeline assumes, so it cannot be created by the pipeline it enables
-(chicken-and-egg). It has its own local state, separate from the main
-`infrastructure/` stack.
+(chicken-and-egg). Its state lives in the same S3 bucket and lock table as the
+main `infrastructure/` stack's, under its own key (`bootstrap/terraform.tfstate`;
+see `backend.tf`).
+
+**CI observes it, the operator applies it.** Every build plans this stack
+read-only with the plan role and publishes the result (`trust-root-plan.json`),
+so a change that is merged but not applied appears in the trust center as a
+decision waiting on the operator. CI never applies it: that would mean CI
+rewriting its own permissions.
 
 What it creates (assessment POAM-001, Task 2):
 
@@ -31,12 +38,10 @@ deploy. The per-deploy `infrastructure/` stack keeps reading it through a
 The config (origins, behaviors, the 403/404 → `/404.html` error responses, TLS,
 OAC) was reconciled byte-for-byte against the live distribution before commit.
 
-Two inputs are not committed (kept in a local, git-ignored `terraform.tfvars`):
-
-- `silk_reeling_api_origin_domain` — the API Gateway origin host for the
-  `/silk-reeling/*` behavior (`<api-id>.execute-api.<region>.amazonaws.com`).
-- `owner_email` — the value of the distribution's `Owner` tag (kept out of the
-  public repo).
+The stack needs no local inputs, so CI can plan it: the Silk Reeling API origin
+is looked up by name (`data "aws_apigatewayv2_apis"`), and the distribution's
+`Owner` tag uses the same role-style handle as every other resource (the tagging
+standard never puts a personal identifier in `Owner`).
 
 On a fresh state, import the two resources before the first plan:
 
@@ -51,10 +56,12 @@ destroy it; changes are made in place and reviewed.
 
 ## Apply
 
+From a checkout synced to `origin/main` (never a branch):
+
 ```
 cd infrastructure/bootstrap
-terraform init
-terraform plan
+terraform init                 # first time after backend.tf lands: terraform init -migrate-state
+terraform plan                 # must show only the merged change you are applying
 terraform apply
 terraform output github_actions_role_arn   # set as the workflow's role-to-assume
 ```
