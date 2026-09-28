@@ -458,6 +458,9 @@ jobs:
     # drifting unseen. -lock=false: a read-only plan never contends with an
     # operator apply. The summary carries resource addresses and actions only.
     # Never fails the job: reporting drift is the point, not blocking on it.
+    # GitHub runs this script with `bash -e`, and plan -detailed-exitcode exits 2
+    # when changes are pending, so every exit code is captured with `|| rc=$?`
+    # rather than left to kill the step (tests/test_trust_root_plan_step.py).
     - name: Plan the trust root (bootstrap stack)
       working-directory: infrastructure/bootstrap
       run: |
@@ -469,9 +472,9 @@ jobs:
           if [ -z "$(terraform state list 2>/dev/null | head -1)" ]; then
             empty="--state-empty"
           else
-            terraform plan -input=false -lock=false -detailed-exitcode -out=trust-root.tfplan > trust-root-plan.log 2>&1
-            rc=$?
-            if [ "$rc" != 1 ]; then terraform show -json trust-root.tfplan > trust-root-plan-full.json; fi
+            rc=0
+            terraform plan -input=false -lock=false -detailed-exitcode -out=trust-root.tfplan > trust-root-plan.log 2>&1 || rc=$?
+            if [ "$rc" != 1 ]; then terraform show -json trust-root.tfplan > trust-root-plan-full.json || rc=1; fi
           fi
         fi
         python3 ../../scripts/summarize-trust-root-plan.py --exit-code "$rc" $empty \
