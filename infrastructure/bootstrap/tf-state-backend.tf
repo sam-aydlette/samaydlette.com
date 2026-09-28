@@ -36,6 +36,8 @@ resource "aws_s3_bucket" "tfstate" {
   # checkov:skip=CKV_AWS_18:Internal state bucket; deploy-role access is captured by account CloudTrail, no separate S3 access-log target (POAM-028).
   # checkov:skip=CKV2_AWS_62:S3 event notifications are an integration feature, not an audit control; none is configured (POAM-004).
 
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.state_backend, { Name = local.tfstate_bucket })
+
   # The state bucket must never be destroyed by a plan — losing it means losing
   # the ability to manage the stack in place.
   lifecycle {
@@ -124,6 +126,8 @@ resource "aws_dynamodb_table" "tflock" {
   point_in_time_recovery {
     enabled = true
   }
+
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.state_lock, { Name = local.tflock_table })
 }
 
 # Least-privilege access for the deploy role: read/write its own state object and
