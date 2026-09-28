@@ -198,6 +198,19 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "not-applicable", "integrity": "moderate", "availability": "not-applicable"},
         "information_flow": [],
     },
+    # The CI/CD trust root (infrastructure/bootstrap). Categorized like the IAM
+    # roles it governs: its compromise would grant deploy authority, so
+    # confidentiality and integrity are MODERATE.
+    "oidc_provider": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "github-actions", "channel": "tls-1.2", "data_class": "configuration"},
+        ],
+    },
+    "iam_group": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [],
+    },
     "html_artifact": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [
@@ -531,6 +544,23 @@ def apply_iiw_defaults(component):
         component["attributes"].setdefault(key, value)
 
 
+# Per-RESOURCE categorization, keyed like CLASSIFICATION_OVERRIDES, for a
+# resource whose job differs from the rest of its type. The Terraform state
+# bucket is an object_store, but it holds resource attributes (some sensitive)
+# for both stacks rather than public site content, so its confidentiality is
+# MODERATE and it talks to CI and the operator, not the CDN.
+MAS_OVERRIDES = {
+    ("object_store", "tfstate"): {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "github-actions", "channel": "tls-1.2", "data_class": "configuration"},
+            {"direction": "outbound", "counterparty": "github-actions", "channel": "tls-1.2", "data_class": "configuration"},
+            {"direction": "inbound", "counterparty": "operator", "channel": "tls-1.2", "data_class": "configuration"},
+        ],
+    },
+}
+
+
 def apply_mas_defaults(component):
     """Stamp security_category and information_flow onto a component per its type.
 
@@ -550,8 +580,11 @@ def apply_mas_defaults(component):
         }
         component["information_flow"] = []
         return
-    component["security_category"] = dict(defaults["security_category"])
-    component["information_flow"] = [dict(f) for f in defaults["information_flow"]]
+    override = MAS_OVERRIDES.get(
+        (component["type"], component.get("attributes", {}).get("tf_name")), {})
+    merged = {**defaults, **override}
+    component["security_category"] = dict(merged["security_category"])
+    component["information_flow"] = [dict(f) for f in merged["information_flow"]]
 
 
 # =============================================================================
@@ -607,6 +640,8 @@ CLASSIFICATION_DEFAULTS = {
     "notification_topic":  (False,              "security-tooling"),
     "metric_alarm":        (False,              "security-tooling"),
     "message_queue":       (False,              "security-tooling"),
+    "oidc_provider":       (False,              "identity-secrets"),
+    "iam_group":           (False,              "identity-secrets"),
 }
 
 # Per-RESOURCE overrides keyed by (component type, Terraform resource name).
@@ -632,6 +667,8 @@ CLASSIFICATION_OVERRIDES = {
     # object_store default.
     ("object_store", "logs"): {"archetype": "security-tooling"},
     ("object_store", "cloudtrail"): {"archetype": "security-tooling"},
+    # The Terraform state bucket is part of the platform the rest is built on.
+    ("object_store", "tfstate"): {"archetype": "platform-foundation"},
 }
 
 # Conservative fail-safe for an untagged/unknown-type resource: assume the worst
