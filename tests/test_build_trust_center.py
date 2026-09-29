@@ -184,3 +184,16 @@ def test_malformed_history_from_the_live_site_is_dropped():
     history = build(previous=prev)["escalation_rate"]["history"]
     assert history[0] == {"date": "2026-09-27", "resolved_by_precedent": 1, "escalated": 0}
     assert [h["date"] for h in history] == ["2026-09-27", "2026-09-29"]
+
+
+def test_hand_applied_settings_are_reported_as_observed():
+    manual = {"checked_at": "2026-09-29T11:00:00+00:00", "checks": [
+        {"id": "github_settings", "status": "ok", "detail": "fine"},
+        {"id": "sns_subscription", "status": "attention", "detail": "No confirmed subscription."},
+    ]}
+    doc = build(manual_settings=manual)
+    p = picture(doc)
+    assert p["github_settings"] == "ok" and p["sns_subscription"] == "attention"
+    assert p["dnssec"] == "not_observed"  # a check that did not run is never assumed ok
+    assert ("manual_setting", "sns_subscription") in kinds(doc)
+    assert ("manual_setting", "github_settings") not in kinds(doc)
