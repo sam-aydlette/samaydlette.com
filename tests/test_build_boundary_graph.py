@@ -151,3 +151,18 @@ def test_shared_names_are_not_evidence_of_a_reference():
     ]}}}
     g = build(signal=signal, states=[state], vdr=None, trust_root_plan=None)
     assert not any(e["source"] == "aws::tls_certificate::c" for e in g["edges"])
+
+
+def test_every_pending_trust_root_change_counts_even_off_the_map():
+    # A group's inline policy is not an inventory component, so no node carries
+    # its flag; it is still a pending trust-root change and must be counted.
+    plan = {"status": "changes_pending", "changes": [
+        {"address": "aws_iam_role.app", "actions": ["update"]},
+        {"address": "aws_iam_group_policy.operators", "actions": ["create"]},
+    ]}
+    g = build(trust_root_plan=plan)
+    assert g["health"]["pending_trust_root_changes"] == 2
+    assert g["trust_root_changes"] == [
+        {"address": "aws_iam_group_policy.operators", "actions": ["create"], "component": None},
+        {"address": "aws_iam_role.app", "actions": ["update"], "component": "aws::iam_role::app"},
+    ]

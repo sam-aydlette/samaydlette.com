@@ -364,7 +364,10 @@ def build(
         "unclassified": len(unclassified),
         "untagged": all_flags.count("untagged"),
         "classification_tags_incomplete": all_flags.count("classification tags incomplete"),
-        "pending_trust_root_changes": all_flags.count("change pending apply"),
+        # Every pending change counts, not only those that land on a node: a
+        # resource the inventory does not model (a group's inline policy) is
+        # still a trust-root change awaiting the operator's apply.
+        "pending_trust_root_changes": len(pending_addresses),
         "declared_not_inventoried": sum(1 for n in nodes if n["kind"] == "not_inventoried"),
         "flows_with_unmatched_endpoint": sum(1 for f in flows if f["unmatched_endpoints"]),
     }
@@ -381,6 +384,11 @@ def build(
             "trust_root_plan": (trust_root_plan or {}).get("status", "not provided"),
         },
         "health": health,
+        "trust_root_changes": [
+            {"address": c["address"], "actions": c.get("actions", []),
+             "component": resource_component.get(c["address"])}
+            for c in sorted((trust_root_plan or {}).get("changes", []), key=lambda c: c["address"])
+        ],
         "unclassified": unclassified,
         "zones": zone_list,
         "groups": group_list,
