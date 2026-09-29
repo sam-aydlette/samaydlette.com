@@ -93,7 +93,8 @@ for f in ksi-signal.json ksi-signal.bundle \
          scuba-bundle.json scuba-bundle.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
          boundary-map.json boundary-map.bundle \
-         reconcile-report.json reconcile-report.bundle; do
+         reconcile-report.json reconcile-report.bundle \
+         trust-center.json trust-center.bundle; do
   if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f"; then
     echo "  got  $f ($(wc -c < "$work/$f") bytes)"
   else
@@ -121,8 +122,9 @@ else
   bad "oscal-ssp.json attestation signature"
 fi
 
-# The trust center's own data: the generated boundary map and the gate's report.
-for art in boundary-map reconcile-report; do
+# The trust center's own data: the generated boundary map, the gate's report and
+# the trust center itself.
+for art in boundary-map reconcile-report trust-center; do
   if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY"; then
     ok "$art.json signed by the pinned workflow on main"
   else

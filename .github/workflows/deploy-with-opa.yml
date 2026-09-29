@@ -1666,6 +1666,28 @@ jobs:
         python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "$GITHUB_SHA" \
           --report reconcile-report.json
 
+    # The trust center's data (the Authorizing Official's entry point): what needs
+    # a decision, how decisions are made, and the record of those made. Built
+    # after the gate so it summarizes the artifacts about to be published; it
+    # fails closed if they are not bound to this build's inventory. The runtime
+    # signal, the nightly beacon and the previous trust center are read from the
+    # live site (the last carries the escalation-rate history forward); any that
+    # cannot be read is reported as not observed, never assumed.
+    - name: Build the trust center
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+        SITE: https://${{ vars.DOMAIN_NAME || 'samaydlette.com' }}/.well-known
+      run: |
+        set -euo pipefail
+        fetch() { curl -fsS --max-time 20 -o "$2" "$SITE/$1" || { rm -f "$2"; echo "note: could not read $1"; }; }
+        fetch ksi-signal-runtime.json runtime-observed.json
+        fetch vdr-status.json vdr-status-observed.json
+        fetch trust-center.json trust-center-previous.json
+        python3 ../scripts/build-trust-center.py \
+          --runtime runtime-observed.json --vdr-status vdr-status-observed.json \
+          --previous trust-center-previous.json --commit "$GITHUB_SHA" --output trust-center.json
+
     - name: Sign OSCAL POA&M
       working-directory: infrastructure
       run: |
@@ -1688,11 +1710,12 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
 
-    - name: Sign trust-center artifacts (boundary map, gate report)
+    - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure
       run: |
         cosign sign-blob --yes --new-bundle-format --bundle boundary-map.bundle boundary-map.json
         cosign sign-blob --yes --new-bundle-format --bundle reconcile-report.bundle reconcile-report.json
+        cosign sign-blob --yes --new-bundle-format --bundle trust-center.bundle trust-center.json
 
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always
@@ -1737,9 +1760,9 @@ jobs:
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
-        # Trust center: the generated boundary map and the gate's own report (the
-        # report exists only because the gate above passed).
-        for a in boundary-map reconcile-report; do
+        # Trust center: the generated boundary map, the gate's own report (it exists
+        # only because the gate above passed) and the trust center's data.
+        for a in boundary-map reconcile-report trust-center; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
@@ -1832,6 +1855,7 @@ jobs:
         check iiw.csv .well-known/iiw.csv
         check boundary-map.json .well-known/boundary-map.json
         check reconcile-report.json .well-known/reconcile-report.json
+        check trust-center.json .well-known/trust-center.json
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
         for a in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
