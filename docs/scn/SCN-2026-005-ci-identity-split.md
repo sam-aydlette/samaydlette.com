@@ -6,7 +6,7 @@
 | **SCN ID** | SCN-2026-005 |
 | **System** | samaydlette.com (FedRAMP 20x KSI Certification + OSCAL Rev 5 Moderate SSP) |
 | **SCN type** | **Adaptive** (`SCN-ADP`) |
-| **Status** | Steps 1 and 2 implemented 2026-09-28 (#374 applied; #375 merged, its plan-role run verified). Step 3 (this record's PR) pending merge and operator apply; verification plan below. |
+| **Status** | **Implemented and verified 2026-09-28.** All three steps applied (#374, #375, #378); post-implementation verification complete (below). |
 | **Date initiated** | 2026-09-28 |
 | **Approver** | Sam Aydlette — System Owner / Authorizing Operator |
 | **Authoritative source** | CR26 corpus (`final_consolidated_rules_2026/2026-markdown`) |
@@ -51,8 +51,8 @@ It is not Transformative:
 ### Verification plan (post-implementation)
 
 1. **Step 2 (done 2026-09-28).** `compliance-check` on #375 (run 36418382358, re-run after the role existed) assumed `github-actions-plan-oidc`. `terraform init`, `validate` and `plan` succeeded, with no access-denied errors.
-2. **After the step-3 apply:**
-   - The live trust policy of `github-actions-deploy-oidc` reads back with the single `environment:prod` subject.
-   - The next approved deploy on `main` assumes the deploy role and completes, including the reconciliation gate.
-   - A pull request's `compliance-check` still assumes the plan role and passes.
-   - A push to `main` runs `compliance-check` under the plan role (the `ref:refs/heads/main` subject).
+2. **After the step-3 apply (done 2026-09-28):**
+   - The live trust policy of `github-actions-deploy-oidc` reads back with the single subject `repo:sam-aydlette/samaydlette.com:environment:prod`.
+   - The first approved deploy on `main` under the narrowed trust (run 36434974425) assumed the deploy role and completed, including the reconciliation gate.
+   - A pull request's `compliance-check` (run 36451980170) assumed the plan role and passed.
+   - A push to `main` (run 36483804056, the #379 merge) ran `compliance-check` under the plan role and passed, exercising the `ref:refs/heads/main` subject.
