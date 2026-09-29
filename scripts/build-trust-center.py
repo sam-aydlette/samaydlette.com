@@ -61,7 +61,16 @@ WHY_YOURS = {
     "boundary_untagged": "Resources lack the classification tags that drive risk scoring.",
     "boundary_not_inventoried": "Something the system depends on is not in the canonical inventory.",
     "scn_unverified": "A significant change was approved but its post-implementation verification is not recorded as complete.",
+    "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the AO's call.",
+}
+
+
+# Settings a person applies by hand; scripts/check-manual-settings.py observes them.
+MANUAL_SETTINGS = {
+    "github_settings": "GitHub environments and branch protection",
+    "dnssec": "DNSSEC chain of trust",
+    "sns_subscription": "Evidence-alarm email subscription",
 }
 
 
@@ -202,10 +211,15 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
             + (f", {age}h ago (window {VDR_MAX_AGE_HOURS}h)." if age is not None else "."),
             nightly.get("finished_at"), "/.well-known/vdr-status.json")
 
-    for id_, label in (("github_settings", "GitHub environments and branch protection"),
-                       ("dnssec", "DNSSEC chain of trust"),
-                       ("sns_subscription", "Evidence-alarm email subscription")):
-        add(id_, label, "not_observed", "Configured by hand and not yet checked automatically.")
+    manual = inp.get("manual_settings") or {}
+    observed = {c.get("id"): c for c in manual.get("checks", [])}
+    for id_, label in MANUAL_SETTINGS.items():
+        c = observed.get(id_)
+        if c is None:
+            add(id_, label, "not_observed", "Configured by hand; this build could not check it.")
+        else:
+            add(id_, label, c.get("status", "not_observed"), c.get("detail", ""), manual.get("checked_at"),
+                "scripts/check-manual-settings.py")
     return picture
 
 
@@ -275,6 +289,11 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log_gaps: dict[s
             out.append(_decision("boundary_untagged", n["id"], f"{n.get('name', n['id'])} lacks classification tags", refs=[n["id"]]))
         if n.get("kind") == "not_inventoried":
             out.append(_decision("boundary_not_inventoried", n["id"], f"{n.get('name', n['id'])} is used but not inventoried", refs=[n["id"]]))
+
+    for c in (inp.get("manual_settings") or {}).get("checks", []):
+        if c.get("status") == "attention" and c.get("id") in MANUAL_SETTINGS:
+            out.append(_decision("manual_setting", c["id"], f"{MANUAL_SETTINGS[c['id']]}: {c.get('detail', '')}",
+                                 since=(inp.get("manual_settings") or {}).get("checked_at")))
 
     for row in inp["scn_register"]:
         if not SCN_VERIFIED.search(row.get("status", "")):
@@ -457,6 +476,7 @@ def main() -> None:
     ap.add_argument("--trust-root-plan", default="trust-root-plan.json")
     ap.add_argument("--runtime", default="ksi-signal-runtime.json", help="the published runtime signal (optional)")
     ap.add_argument("--vdr-status", default="vdr-status.json", help="the nightly status beacon (optional)")
+    ap.add_argument("--manual-settings", default="manual-settings.json", help="scripts/check-manual-settings.py output (optional)")
     ap.add_argument("--previous", default="trust-center-previous.json", help="the last published trust center (optional)")
     ap.add_argument("--dispositions", default=str(REPO / "data" / "vuln-dispositions.json"))
     ap.add_argument("--exceptions", default=str(REPO / "infrastructure" / "policy" / "exceptions" / "data.json"))
@@ -493,6 +513,7 @@ def main() -> None:
         "trust_root_plan": load(a.trust_root_plan, required=False),
         "runtime": load(a.runtime, required=False), "vdr_status": load(a.vdr_status, required=False),
         "previous": load(a.previous, required=False),
+        "manual_settings": load(a.manual_settings, required=False),
         "dispositions": (load(a.dispositions) or {}).get("dispositions", {}),
         "exceptions": load(a.exceptions) or [],
         "policy_config": load(a.policy_config) or {},

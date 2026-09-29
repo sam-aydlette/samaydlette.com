@@ -1672,21 +1672,28 @@ jobs:
     # fails closed if they are not bound to this build's inventory. The runtime
     # signal, the nightly beacon and the previous trust center are read from the
     # live site (the last carries the escalation-rate history forward); any that
-    # cannot be read is reported as not observed, never assumed.
+    # cannot be read is reported as not observed, never assumed. The hand-applied
+    # settings are checked live, here, with the deploy role and GITHUB_TOKEN.
     - name: Build the trust center
       working-directory: infrastructure
       env:
         GITHUB_SHA: ${{ github.sha }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DOMAIN_NAME: ${{ vars.DOMAIN_NAME || 'samaydlette.com' }}
         SITE: https://${{ vars.DOMAIN_NAME || 'samaydlette.com' }}/.well-known
       run: |
         set -euo pipefail
+        # The hand-applied settings (GitHub, DNSSEC, the alarm subscription),
+        # observed and compared with their expected values. Never fails the build.
+        python3 ../scripts/check-manual-settings.py --output manual-settings.json
         fetch() { curl -fsS --max-time 20 -o "$2" "$SITE/$1" || { rm -f "$2"; echo "note: could not read $1"; }; }
         fetch ksi-signal-runtime.json runtime-observed.json
         fetch vdr-status.json vdr-status-observed.json
         fetch trust-center.json trust-center-previous.json
         python3 ../scripts/build-trust-center.py \
           --runtime runtime-observed.json --vdr-status vdr-status-observed.json \
-          --previous trust-center-previous.json --commit "$GITHUB_SHA" --output trust-center.json
+          --previous trust-center-previous.json --manual-settings manual-settings.json \
+          --commit "$GITHUB_SHA" --output trust-center.json
 
     - name: Sign OSCAL POA&M
       working-directory: infrastructure
