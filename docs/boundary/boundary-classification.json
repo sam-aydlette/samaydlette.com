@@ -28,7 +28,9 @@
     {"key": "operator-mfa", "zone": "external", "label": "Operator MFA",
      "match": ["ext::duo-mfa"]},
     {"key": "vuln-feeds", "zone": "external", "label": "Vulnerability metadata sources",
-     "match": ["ext::github-advisory-db", "ext::cisa-kev"]}
+     "match": ["ext::github-advisory-db", "ext::cisa-kev"]},
+    {"key": "ai-provider", "zone": "external", "label": "AI provider (Silk Reeling feedback; POAM-020)",
+     "match": ["ext::anthropic-api"]}
   ],
   "declared": [
     {"key": "operator", "label": "Operator (dev machine)", "zone": "outside", "kind": "actor",
@@ -38,9 +40,7 @@
     {"key": "public", "label": "Public Internet (readers, verifiers)", "zone": "outside", "kind": "actor",
      "why": "Anonymous consumers of the site and the /.well-known/ evidence."},
     {"key": "app-users", "label": "App users (Silk Reeling)", "zone": "outside", "kind": "actor",
-     "why": "Authenticated end users, via Cognito with mandatory TOTP MFA."},
-    {"key": "anthropic", "label": "Anthropic API", "zone": "external", "kind": "not_inventoried",
-     "why": "The Silk Reeling Lambda calls it (POAM-020), but the canonical inventory has no component for it yet."}
+     "why": "Authenticated end users, via Cognito with mandatory TOTP MFA."}
   ],
   "leveraged": {
     "package_id": "AGENCYAMAZONEW",
@@ -64,7 +64,7 @@
      "protocol": "AWS-internal (no public network)", "auth": "Lambda role (non-privileged; DescribeSecret, KMS Sign)", "encryption": "Signal signed: KMS ECDSA P-256", "data": "Runtime KSI signal (signed) write"},
     {"id": "G", "label": "CloudFront → Public Internet", "path": [{"component": "aws::cdn_distribution::website"}, {"declared": "public"}],
      "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "Anonymous (public read)", "encryption": "In transit: TLS", "data": "Public site content and /.well-known/ evidence"},
-    {"id": "H", "label": "App user → API Gateway → app Lambda → Anthropic", "path": [{"declared": "app-users"}, {"component": "aws::api_gateway::silk_reeling"}, {"component": "aws::function::silk_reeling"}, {"declared": "anthropic"}],
+    {"id": "H", "label": "App user → API Gateway → app Lambda → Anthropic", "path": [{"declared": "app-users"}, {"component": "aws::api_gateway::silk_reeling"}, {"component": "aws::function::silk_reeling"}, {"component": "ext::anthropic-api"}],
      "protocol": "HTTPS 443 (TLS 1.2+); throttled 20 rps / 10 burst", "auth": "Cognito JWT (end user); the Lambda holds the API key", "encryption": "In transit: TLS", "data": "App requests; outbound AI prompt (POAM-020)"},
     {"id": "I", "label": "Alarms → SNS topic → operator email (out)", "path": [{"component": "aws::metric_alarm::evidence*"}, {"component": "aws::notification_topic::evidence_alerts"}, {"declared": "operator-email"}],
      "protocol": "AWS-internal; then email (SMTP)", "auth": "Topic policy: evidence alarms only", "encryption": "At rest: CMK · email not end-to-end encrypted", "data": "Alarm metadata only (name, state, reason)"},
