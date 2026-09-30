@@ -144,7 +144,11 @@ def read_checkov_skips(path: Path) -> list[str]:
 
 def _brief(text: str, limit: int = 400) -> str:
     text = " ".join(str(text or "").split())
-    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+    if len(text) <= limit:
+        return text
+    # Cut at a word boundary, never mid-word.
+    cut = text[: limit - 1].rsplit(" ", 1)[0].rstrip(",;:—-(")
+    return cut + "…"
 
 
 # ---------------------------------------------------------------------------
@@ -197,7 +201,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         age = _age_hours(runtime.get("emitted_at"), now)
         stale = age is None or age > RUNTIME_MAX_AGE_HOURS
         detail = f"{div.get('status', 'unknown')}: {div.get('ksis_compared', 0)} KSIs compared, {len(div.get('regressions', []))} regressed, {len(div.get('unassessed', []))} not assessed"
-        detail += f"; {age}h old (window {RUNTIME_MAX_AGE_HOURS}h)." if age is not None else "."
+        detail += f"; {age} h old (window {RUNTIME_MAX_AGE_HOURS} h)." if age is not None else "."
         add("runtime", "Runtime evidence (daily emitter)",
             "ok" if div.get("status") == "converged" and not stale else "attention",
             detail, runtime.get("emitted_at"), "/.well-known/ksi-signal-runtime.json")
@@ -211,7 +215,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         add("vulnerability_scan", "Nightly vulnerability evidence",
             "ok" if nightly.get("result") == "success" and fresh else "attention",
             f"Last nightly run: {nightly.get('result', 'unknown')}"
-            + (f", {age}h ago (window {VDR_MAX_AGE_HOURS}h)." if age is not None else "."),
+            + (f", {age} h ago (window {VDR_MAX_AGE_HOURS} h)." if age is not None else "."),
             nightly.get("finished_at"), "/.well-known/vdr-status.json")
 
     manual = inp.get("manual_settings") or {}

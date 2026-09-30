@@ -27,7 +27,7 @@ const ARTIFACTS = [
     ['oscal-ssp.json', 'System Security Plan (NIST OSCAL)'],
     ['oscal-poam.json', 'Plan of Action and Milestones (NIST OSCAL)'],
     ['vdr-report.json', 'Vulnerability Detection and Response report'],
-    ['ksi-signal-runtime.json', 'The daily runtime re-validation (signed with a KMS key; its public key is runtime-signing-pubkey.pem)'],
+    ['ksi-signal-runtime.json', 'The daily runtime re-validation (KMS-signed; key in runtime-signing-pubkey.pem)'],
 ];
 
 const FRAMEWORKS = [
@@ -119,6 +119,12 @@ function link(href, text) {
     return el('a', { href }, text);
 }
 
+// A published artifact becomes a link; a script is named by its file only.
+function sourceRef(src) {
+    if (src.startsWith('/')) return link(src, src.replace('/.well-known/', ''));
+    return el('a', { href: `${REPO}/blob/main/${src}` }, src.split('/').pop());
+}
+
 function statusChip(status) {
     const s = STATUS[status] || STATUS.not_observed;
     return el('span', { class: `tc-chip tc-${status in STATUS ? status : 'not_observed'}` },
@@ -130,11 +136,12 @@ function statusChip(status) {
 function renderFacts(doc) {
     const dl = slot('facts');
     const add = (k, v) => dl.append(el('div', {}, el('dt', { text: k }), el('dd', {}, v)));
-    add('Program', 'FedRAMP 20x Class C Certification (adheres to; not certified)');
+    add('Program', el('span', {}, 'FedRAMP 20x Class C', el('span', { class: 'tc-fact-note', text: 'Adheres to; not certified' })));
     add('Impact level', (doc.system?.impact_level || 'unknown').replace(/^./, (c) => c.toUpperCase()));
     add('Published', when(doc.generated_at) || 'unknown');
     add('Build', doc.commit ? el('a', { href: `${REPO}/commit/${doc.commit}` }, el('code', { text: doc.commit.slice(0, 7) })) : 'unknown');
-    add('Inventory', el('code', { text: doc.ksi_signal_id || 'unknown' }));
+    const sid = doc.ksi_signal_id || 'unknown';
+    add('Inventory', el('code', { text: sid.length > 8 ? `${sid.slice(0, 8)}…` : sid, title: sid }));
 }
 
 function pictureItem(p) {
@@ -146,7 +153,7 @@ function pictureItem(p) {
                 (p.as_of || p.source) ? el('p', { class: 'tc-check-meta' },
                     p.as_of ? el('span', {}, 'As of ', when(p.as_of)) : null,
                     p.as_of && p.source ? ' · ' : null,
-                    p.source ? (p.source.startsWith('/') ? link(p.source, p.source.replace('/.well-known/', '')) : el('code', { text: p.source })) : null,
+                    p.source ? sourceRef(p.source) : null,
                 ) : null,
                 p.live ? el('p', { class: 'tc-check-meta tc-live', text: 'Re-checked live in your browser just now.' }) : null,
             ));
@@ -221,14 +228,14 @@ function renderEscalation(doc) {
     const host = slot('escalation');
     const pct = `${Math.round((r.rate || 0) * 1000) / 10}%`;
     // el() drops null children; a bare append() would print "null".
+    const days = (r.history || []).length;
     host.append(el('div', {},
-        el('h3', { text: 'Escalation rate' }),
-        el('p', { text: r.about }),
         el('p', { class: 'tc-rate' },
-            el('span', { class: 'tc-rate-num', text: String(r.resolved_by_precedent) }), ' settled by recorded precedent · ',
+            el('span', { class: 'tc-rate-label', text: 'Escalation rate' }),
+            el('span', { class: 'tc-rate-num', text: String(r.resolved_by_precedent) }), ' settled by precedent · ',
             el('span', { class: 'tc-rate-num', text: String(r.escalated) }), ` brought to a person (${pct})`),
-        sparkline(r.history || []),
-        (r.history || []).length < 2 ? el('p', { class: 'tc-check-meta', text: 'The daily trend appears once there are two days of history.' }) : null,
+        days >= 7 ? sparkline(r.history) : null,
+        el('p', { class: 'tc-check-meta', text: days >= 7 ? r.about : `${r.about} A daily trend appears after a week of history (${days} day${days === 1 ? '' : 's'} so far).` }),
     ));
 }
 
@@ -236,7 +243,7 @@ function renderPolicy(doc) {
     const c = doc.policy_catalog || {};
     const host = slot('policy');
     const card = (title, about, count, body) => el('details', { class: 'tc-policy-card' },
-        el('summary', {}, el('span', { class: 'tc-policy-title', text: title }), el('span', { class: 'tc-policy-count', text: count }), el('span', { class: 'tc-policy-about', text: about })),
+        el('summary', {}, el('span', { class: 'tc-policy-title' }, el('span', { class: 'tc-caret', 'aria-hidden': 'true' }), title), el('span', { class: 'tc-policy-count', text: count }), el('span', { class: 'tc-policy-about', text: about })),
         body);
 
     const rules = c.immutable?.rules || [];
@@ -248,12 +255,23 @@ function renderPolicy(doc) {
         el('dl', { class: 'tc-kv' }, ...th.map((t) => el('div', {}, el('dt', { text: t.name }), el('dd', {}, t.value, ' ', el('span', { class: 'tc-muted' }, '(', el('code', { text: t.source }), ')')))))));
 
     const regs = c.precedent?.registers || [];
-    host.append(card('Precedent', c.precedent?.about, `${regs.reduce((n, r) => n + (r.entries || 0), 0)} recorded decisions`,
+    host.append(card('Precedent', c.precedent?.about, `${regs.reduce((n, r) => n + (r.entries || 0), 0)} register entries`,
         el('ul', {}, ...regs.map((r) => el('li', {}, `${r.name}: ${r.entries} `, el('span', { class: 'tc-muted' }, '(', el('code', { text: r.source }), ')'))))));
 
     const gates = c.escalation?.gates || [];
     host.append(card('Escalation points', c.escalation?.about, `${gates.length} gates`,
         el('ul', {}, ...gates.map((g) => el('li', {}, el('strong', { text: g.name }), `: stops ${g.stops}; decided by ${g.decided_by}.`)))));
+}
+
+// The register key of a vulnerability disposition or exception is long; show
+// the advisory or rule it concerns (the full key is in the title and subject).
+function shortId(e) {
+    if (e.kind === 'vulnerability_disposition') {
+        const m = e.id.match(/(CVE-\d{4}-\d+|GHSA(?:-[a-z0-9]{4}){3})/i);
+        if (m) return m[1];
+    }
+    if (e.kind === 'policy_exception') return e.id.split(':')[0];
+    return e.id;
 }
 
 function renderRecord(doc) {
@@ -277,7 +295,7 @@ function renderRecord(doc) {
         const reasoning = el('details', { class: 'tc-reason' }, el('summary', { text: e.subject }), el('p', { text: e.reasoning }),
             el('p', { class: 'tc-check-meta' }, 'Source: ', e.source.startsWith('/') ? link(e.source, e.source.replace('/.well-known/', '')) : el('code', { text: e.source })));
         const tr = el('tr', { 'data-kind': e.kind },
-            el('th', { scope: 'row' }, el('code', { text: e.id.length > 28 ? `${e.id.slice(0, 27)}…` : e.id, title: e.id })),
+            el('th', { scope: 'row' }, el('code', { text: shortId(e), title: e.id })),
             el('td', {}, el('span', { class: 'tc-muted', text: KIND_LABELS[e.kind] || e.kind }), reasoning),
             el('td', { text: e.decision }),
             cell(e.decided_by), cell(e.decided_on),

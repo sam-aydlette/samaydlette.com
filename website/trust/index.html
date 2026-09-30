@@ -52,13 +52,13 @@
                 <p class="tc-lede">The page is written from the seat of an <strong>Authorizing Official</strong>: the person at an agency who would decide whether to rely on a system like this one. You are probably not one, and no agency has been asked to rely on this system; if you are an AO, welcome. Either way, the sections below walk through the questions an AO would ask, in the order they would ask them, so you can judge the answers for yourself.</p>
                 <dl class="tc-facts" data-tc="facts"></dl>
                 <nav class="tc-toc" aria-label="On this page">
-                    <a href="#picture">Is this picture true?</a>
-                    <a href="#decisions">What needs my decision?</a>
-                    <a href="#boundary">Where am I exposed?</a>
-                    <a href="#policy">How are decisions made?</a>
-                    <a href="#record">What was decided?</a>
-                    <a href="#posture">Posture</a>
-                    <a href="#verify">Verify it yourself</a>
+                    <a href="#picture"><span class="tc-toc-n">1</span>Picture</a>
+                    <a href="#decisions"><span class="tc-toc-n">2</span>Decisions</a>
+                    <a href="#boundary"><span class="tc-toc-n">3</span>Exposure</a>
+                    <a href="#policy"><span class="tc-toc-n">4</span>Policy</a>
+                    <a href="#record"><span class="tc-toc-n">5</span>Record</a>
+                    <a href="#posture"><span class="tc-toc-n">6</span>Posture</a>
+                    <a href="#verify"><span class="tc-toc-n">7</span>Verify</a>
                 </nav>
             </header>
 
@@ -80,7 +80,7 @@
 
             <section id="boundary" class="tc-section" aria-labelledby="boundary-h">
                 <h2 id="boundary-h"><span class="tc-num">3</span> Where am I exposed?</h2>
-                <p class="tc-intro">The authorization boundary, generated on every deploy from the signed inventory and Terraform state; nothing on it is drawn by hand. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
+                <p class="tc-intro">Nothing on the map is drawn by hand. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
                 <div class="boundary-map" data-boundary-map="/.well-known/boundary-map.json">
                     <noscript><p>The map&rsquo;s data is published, signed, at <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>.</p></noscript>
                 </div>
@@ -111,12 +111,13 @@
             <section id="verify" class="tc-section" aria-labelledby="verify-h">
                 <h2 id="verify-h"><span class="tc-num">7</span> Verify it yourself</h2>
                 <p class="tc-intro">Nothing on this page asks to be trusted. Each document it renders is signed by the deploy workflow through Sigstore; check any of them with <a href="https://docs.sigstore.dev/cosign/" rel="noopener">cosign</a>:</p>
-                <pre class="tc-code"><code>curl -sO https://samaydlette.com/.well-known/trust-center.json
-curl -sO https://samaydlette.com/.well-known/trust-center.bundle
+                <pre class="tc-code"><code>BASE=https://samaydlette.com/.well-known
+curl -sO $BASE/trust-center.json -sO $BASE/trust-center.bundle
 cosign verify-blob trust-center.json --bundle trust-center.bundle \
-  --certificate-identity https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com</code></pre>
-                <p>The same works for every artifact below; each JSON document has a <code>.bundle</code> beside it. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/scripts/verify-published.sh" rel="noopener"><code>scripts/verify-published.sh</code></a> checks them all, including that each is bound to the same inventory.</p>
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity \
+  https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main</code></pre>
+                <p>The same command verifies every JSON artifact below except the runtime signal, each from the <code>.bundle</code> beside it. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/scripts/verify-published.sh" rel="noopener"><code>verify-published.sh</code></a> checks them all, including that each is bound to the same inventory.</p>
                 <ul class="tc-artifacts" data-tc="artifacts"></ul>
             </section>
         </article>
