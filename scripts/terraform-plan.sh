@@ -164,41 +164,61 @@ else
     A11Y_CHROME="${A11Y_CHROME:-$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)}"
     export A11Y_CHROME
     echo "Scanning $WEBSITE_DIR with pa11y (browser: ${A11Y_CHROME:-puppeteer-bundled})..."
-    node "$A11Y_TOOL_DIR/scan.js" "$WEBSITE_DIR" --out a11y-scan.json 2> /dev/null
+    # The scanner drives a real browser, which occasionally fails to start or
+    # crashes. Its errors are kept (not discarded) and it gets one retry; if it
+    # still cannot run, the gate fails closed with a message that says so, so a
+    # broken scanner is never mistaken for an accessibility finding.
+    A11Y_SCAN_OK=0
+    for attempt in 1 2; do
+        rm -f a11y-scan.json
+        if node "$A11Y_TOOL_DIR/scan.js" "$WEBSITE_DIR" --out a11y-scan.json 2> a11y-scan.stderr \
+            && [ -s a11y-scan.json ]; then
+            A11Y_SCAN_OK=1
+            break
+        fi
+        echo "⚠️  Accessibility scanner failed to run (attempt $attempt of 2):"
+        tail -n 20 a11y-scan.stderr | sed 's/^/     /'
+    done
 
-    opa eval --strict-builtin-errors \
-        -d policy/ \
-        -d eval-context.json \
-        -i a11y-scan.json \
-        "data.terraform.compliance.compliance_report" > a11y-report.json
-
-    opa eval --strict-builtin-errors \
-        -d policy/ \
-        -d eval-context.json \
-        -i a11y-scan.json \
-        "data.terraform.compliance.page_reports" > a11y-pages.json
-
-    A11Y_COMPLIANT=$(jq -r '.result[0].expressions[0].value.compliant' a11y-report.json)
-
-    # Per-page results join the same validations stream as the infrastructure
-    # results (kind: accessibility), keeping the KSI signal contract intact.
-    jq -c '.result[0].expressions[0].value[]' a11y-pages.json >> validations.ndjson
-
-    jq -r '.result[0].expressions[0].value[] |
-        if .compliant then "✅ \(.file_name) is accessible"
-        else "❌ ACCESSIBILITY VIOLATION in \(.file_name):\n" +
-             ([.violations[] | "  - \(.code // .type): \(.message) (Severity: \(.severity))"] | join("\n"))
-        end' a11y-pages.json
-
-    EXCEPTED_COUNT=$(jq -r '.result[0].expressions[0].value.excepted | length' a11y-report.json)
-    if [ "$EXCEPTED_COUNT" != "0" ]; then
-        echo "ℹ️  $EXCEPTED_COUNT accessibility finding(s) suppressed by the exceptions register (still visible in the report):"
-        jq -r '.result[0].expressions[0].value.excepted[] | "  - \(.violation.resource) \(.violation.code // .violation.id): \(.exception.justification) (expires \(.exception.expiry), \(.exception.ticket))"' a11y-report.json
-    fi
-
-    if [ "$A11Y_COMPLIANT" != "true" ]; then
+    if [ "$A11Y_SCAN_OK" != "1" ]; then
         VIOLATIONS_FOUND=true
-        echo "❌ Overall accessibility verdict: non-compliant"
+        echo "❌ Accessibility scanner could not run. This is a scanner failure, not an accessibility finding; re-run the job."
+    else
+
+        opa eval --strict-builtin-errors \
+            -d policy/ \
+            -d eval-context.json \
+            -i a11y-scan.json \
+            "data.terraform.compliance.compliance_report" > a11y-report.json
+
+        opa eval --strict-builtin-errors \
+            -d policy/ \
+            -d eval-context.json \
+            -i a11y-scan.json \
+            "data.terraform.compliance.page_reports" > a11y-pages.json
+
+        A11Y_COMPLIANT=$(jq -r '.result[0].expressions[0].value.compliant' a11y-report.json)
+
+        # Per-page results join the same validations stream as the infrastructure
+        # results (kind: accessibility), keeping the KSI signal contract intact.
+        jq -c '.result[0].expressions[0].value[]' a11y-pages.json >> validations.ndjson
+
+        jq -r '.result[0].expressions[0].value[] |
+            if .compliant then "✅ \(.file_name) is accessible"
+            else "❌ ACCESSIBILITY VIOLATION in \(.file_name):\n" +
+                 ([.violations[] | "  - \(.code // .type): \(.message) (Severity: \(.severity))"] | join("\n"))
+            end' a11y-pages.json
+
+        EXCEPTED_COUNT=$(jq -r '.result[0].expressions[0].value.excepted | length' a11y-report.json)
+        if [ "$EXCEPTED_COUNT" != "0" ]; then
+            echo "ℹ️  $EXCEPTED_COUNT accessibility finding(s) suppressed by the exceptions register (still visible in the report):"
+            jq -r '.result[0].expressions[0].value.excepted[] | "  - \(.violation.resource) \(.violation.code // .violation.id): \(.exception.justification) (expires \(.exception.expiry), \(.exception.ticket))"' a11y-report.json
+        fi
+
+        if [ "$A11Y_COMPLIANT" != "true" ]; then
+            VIOLATIONS_FOUND=true
+            echo "❌ Overall accessibility verdict: non-compliant"
+        fi
     fi
 fi
 
