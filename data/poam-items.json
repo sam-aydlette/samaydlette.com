@@ -527,16 +527,16 @@
       "resources_required": "A FIDO2/WebAuthn hardware security key (~$25-50); operator time to enroll.",
       "remediation_plan": "Enroll a hardware security key (FIDO2/WebAuthn) as the MFA device for the root account and the operator IAM user, satisfying the phishing-resistant objective (IA-2(8)).",
       "original_detection_date": "2026-06-22",
-      "scheduled_completion_date": "TBD (pending hardware authenticator procurement)",
-      "status_date": "2026-06-22",
+      "scheduled_completion_date": "2026-10-30",
+      "status_date": "2026-09-30",
       "original_risk_rating": "moderate",
       "adjusted_risk_rating": "low",
       "risk_adjustment": true,
       "status": "open",
       "category": "operational-requirement",
       "decided_by": "Sam Aydlette",
-      "decided_on": "2026-06-26",
-      "review_by": "2027-06-26"
+      "decided_on": "2026-09-30",
+      "review_by": "2027-09-30"
     },
     {
       "id": "POAM-026",

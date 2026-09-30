@@ -178,8 +178,9 @@ CM-6 + the adopted baseline) and **not** a risk-adjustment (the gap is real) —
 is an **operational requirement** the operator accepts on interim grounds: a
 hardware token is not yet on hand. **Compensating control:** virtual MFA is enabled
 on both principals now. **Remediation:** enroll a hardware MFA token (or FIDO2
-passkey — phishing-resistant and free) on root and on `saydlette-dev`; milestone
-deferred pending token acquisition. The finding is kept live (not suppressed) so it
+passkey — phishing-resistant and free) on root and on `saydlette-dev`. On
+2026-09-30 the AO extended this operational requirement with a completion date of
+**2026-10-30**; if it passes unremediated, the trust center queues it for decision. The finding is kept live (not suppressed) so it
 reports until remediated. The same scan's other findings were remediated live
 (deleted the unused `*:*` `CLI_admin` role and the dormant `steampipe-user`; applied
 the AWS FSBP account password policy; relocated the operator's policies to an
