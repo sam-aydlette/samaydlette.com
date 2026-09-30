@@ -148,8 +148,18 @@ def test_escalation_history_keeps_one_entry_per_day():
                                             {"date": "2026-09-29", "resolved_by_precedent": 0, "escalated": 0}]}}
     rate = build(previous=prev)["escalation_rate"]
     assert [h["date"] for h in rate["history"]] == ["2026-09-28", "2026-09-29"]
-    assert rate["history"][-1]["resolved_by_precedent"] == 9
-    assert rate["rate"] == round(rate["escalated"] / (9 + rate["escalated"]), 3)
+    assert rate["history"][-1]["resolved_by_precedent"] == rate["resolved_by_precedent"]
+
+
+def test_escalation_rate_counts_one_population():
+    # Settled: the dispositioned finding (f-done) and the exception not near
+    # expiry. Escalated: only the queue items precedent failed to settle (the
+    # blocking and undispositioned findings, the overdue POA&M item, the
+    # expiring exception), not the trust-root change, runtime or boundary items.
+    rate = build()["escalation_rate"]
+    assert rate["resolved_by_precedent"] == 2
+    assert rate["escalated"] == 4
+    assert rate["rate"] == round(4 / 6, 3)
 
 
 def test_catalog_and_posture_come_from_their_sources():
@@ -212,3 +222,10 @@ def test_poam_decision_props_fill_the_record_and_due_reviews_are_queued():
     assert ("decision_review_due", "POAM-010") in kinds(doc)
     assert ("decision_review_due", "POAM-011") not in kinds(doc)
     assert ("decision_review_due", "CVE-1") not in kinds(doc)  # no review date recorded: a gap, not due
+
+
+def test_live_queue_carries_its_inputs():
+    live = build()["live_queue"]
+    assert live["exception_warning_days"] == 30
+    assert live["poam_due"] == [{"id": "POAM-001", "title": "POAM-001 title", "due": "2026-09-01"}]
+    assert "decision_review_due" in live["why_yours"] and "vulnerability_evidence_stale" in live["why_yours"]

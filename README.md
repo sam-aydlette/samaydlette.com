@@ -70,7 +70,7 @@ The signal joins five sources into one document:
 - **Provenance** from GitHub Actions environment variables (repository, commit SHA, workflow run ID).
 - **Validations** from the OPA gate, each one carrying a `component_refs[]` array naming the specific inventory components it evaluated.
 
-For a browser-friendly view of the live signal and SSP, see the [Live Trust Dashboard](https://samaydlette.com/viewer.html). For programmatic access:
+For a browser-friendly view of the live signal and SSP, see the [Trust Center](https://samaydlette.com/trust/). For programmatic access:
 
 ```bash
 # The signal is published live; anyone can fetch it.
@@ -241,7 +241,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── verify-published.sh         # verify the LIVE evidence, no AWS needed
 │   └── staged/                     # NOT wired into the pipeline — see its README
 ├── website/                        # static site; every *.html is hashed into the inventory
-│   ├── index.html viewer.html pages/ assets/
+│   ├── index.html trust/ pages/ assets/
 │   ├── research/                   # methodology + scope docs; read these for the "why"
 │   └── .well-known/security.txt    # RFC 9116 (generated artifacts are NOT committed)
 ├── data/                           # vendored NIST/FedRAMP source data + PROVENANCE.md

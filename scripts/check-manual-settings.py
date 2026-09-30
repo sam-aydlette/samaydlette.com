@@ -156,7 +156,7 @@ def evaluate_sns(attributes: dict[str, str]) -> dict[str, Any]:
     pending = int(attributes.get("SubscriptionsPending", "0"))
     facts = {"confirmed": confirmed, "pending": pending}
     if confirmed >= 1 and pending == 0:
-        return _result("sns_subscription", "ok", f"{confirmed} confirmed subscription(s) receive the evidence alarms.", facts)
+        return _result("sns_subscription", "ok", f"{confirmed} confirmed subscription{'' if confirmed == 1 else 's'} {'receives' if confirmed == 1 else 'receive'} the evidence alarms.", facts)
     if confirmed == 0:
         return _result("sns_subscription", "attention",
                        "No confirmed subscription: evidence alarms reach no one." + (f" {pending} awaiting confirmation." if pending else ""), facts)

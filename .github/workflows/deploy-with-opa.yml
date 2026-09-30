@@ -1330,39 +1330,10 @@ jobs:
           ksi_signal_id: ."system-security-plan".metadata.props[0].value
         }' oscal-ssp.json
 
-    # Fail if the COMMITTED figures have drifted from the just-built sources.
-    #
-    # Stamping below fixes the published page but writes only to the runner's
-    # checkout, so the repository keeps whatever was last committed. That gap ran
-    # unnoticed: `test_published_targets_are_current` asserts exactly this
-    # invariant, but it needs oscal-ssp.json, which is built in THIS job and does
-    # not exist in the test job, so it skipped in CI and never fired. Figures
-    # on the dashboard were once stale against a live site that had been serving
-    # the correct values for weeks.
-    #
-    # This is the one point in the pipeline where the sources exist, so the check
-    # belongs here. It fails closed for the same reason the reconciliation gate
-    # does: a compliance document carrying numbers that disagree with the system
-    # is the defect this project exists to argue against. The output names each
-    # stale figure and its correct value, so the fix is committing those values.
-    - name: Check committed figures against their sources
-      working-directory: infrastructure
-      run: |
-        if ! python3 ../scripts/inject-figures.py --check; then
-          echo "::error::Committed figures are stale. Update the data-figure spans"
-          echo "::error::to the values listed above and commit them."
-          exit 1
-        fi
-
-    # Stamp the dashboard's framework-coverage figures from the just-built SSP
-    # (modifies the local HTML only; the re-upload happens in the publish block
-    # after the gate). The stamper targets the dashboard alone: it exists to keep
-    # the compliance representation honest, not to check article or research prose.
-    - name: Stamp dashboard figures from the built artifacts
-      working-directory: infrastructure
-      run: |
-        python3 ../scripts/inject-figures.py
-        echo "✅ Figures stamped from live artifacts (upload deferred to publish phase)"
+    # Framework-coverage figures are no longer stamped into committed HTML: the
+    # trust center renders them from trust-center.json, which
+    # build-trust-center.py computes from the just-built SSP on every deploy
+    # (inject-figures.compute_figures), so there is nothing committed to drift.
 
     - name: Sign OSCAL SSP
       working-directory: infrastructure
@@ -1773,8 +1744,6 @@ jobs:
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
-        # Stamped dashboard HTML (figures were stamped pre-gate).
-        aws s3 cp ../website/viewer.html "s3://$BUCKET_NAME/viewer.html" --content-type "text/html; charset=utf-8" --cache-control "public, max-age=300"
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # -------------------------------------------------------------------------
