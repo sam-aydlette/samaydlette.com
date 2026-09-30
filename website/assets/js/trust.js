@@ -306,7 +306,10 @@ function renderRecord(doc) {
         el('caption', { class: 'visually-hidden', text: 'Recorded human decisions' }),
         el('thead', {}, el('tr', {}, ...['Decision', 'What', 'Outcome', 'Decided by', 'On', 'Review by'].map((h) => el('th', { scope: 'col', text: h })))),
         tbody);
-    host.append(el('div', { class: 'tc-table-wrap' }, table));
+    // About five rows show at once; the rest scroll inside the box. Focusable,
+    // so the region scrolls from the keyboard too.
+    host.append(el('div', { class: 'tc-table-wrap', tabindex: '0', role: 'region', 'aria-label': 'Recorded decisions (scrolls)' }, table),
+        el('p', { class: 'tc-check-meta', text: 'Scroll inside the table for the rest; filter above by kind.' }));
     select.addEventListener('change', () => {
         for (const tr of tbody.rows) tr.hidden = !!select.value && tr.dataset.kind !== select.value;
     });

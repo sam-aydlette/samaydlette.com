@@ -454,7 +454,9 @@
 }
 
 .tc-table-wrap {
-    overflow-x: auto;
+    max-height: 31rem;
+    overflow: auto;
+    overscroll-behavior: contain;
     border: 1px solid var(--border-color);
     border-radius: 8px;
 }
