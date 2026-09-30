@@ -3,7 +3,7 @@
 
 The trust center answers five questions, in order:
   1. Is this picture true?            -> picture
-  2. What needs my decision?          -> decisions_pending
+  2. What is waiting on a decision?   -> decisions_pending
   3. Where am I exposed?              -> the boundary map (/.well-known/boundary-map.json)
   4. How are decisions made here?     -> policy_catalog, escalation_rate
   5. What was decided, by whom, why?  -> decision_log
@@ -51,7 +51,7 @@ POAM_DECISIONS = {"risk-accepted", "false-positive", "operational-requirement"}
 WHY_YOURS = {
     "vdr_blocking": "The vulnerability gate stops deploys on this finding. Fixing, dispositioning or accepting it is a person's call.",
     "vdr_undispositioned": "No recorded precedent covers this finding, so the pipeline cannot resolve it on its own.",
-    "poam_overdue": "The committed completion date has passed. Extending it, accepting the risk or stopping is the AO's decision.",
+    "poam_overdue": "The committed completion date has passed. Extending it, accepting the risk or stopping is the Authorizing Official's decision.",
     "exception_expiring": "An accepted policy exception expires soon. Renewing it is a new decision, not a formality.",
     "runtime_diverged": "The running system no longer matches what was deployed and approved.",
     "runtime_unassessed": "The runtime emitter could not assess some KSIs, so they rest on deploy-time evidence alone. Whether that is enough is a judgment.",
@@ -62,9 +62,9 @@ WHY_YOURS = {
     "boundary_not_inventoried": "Something the system depends on is not in the canonical inventory.",
     "scn_unverified": "A significant change was approved but its post-implementation verification is not recorded as complete.",
     "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
-    "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the AO's call.",
+    "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the Authorizing Official's call.",
     "vulnerability_evidence_stale": "The published vulnerability evidence is older than its freshness window, so current exposure is not known. Whether to rely on the system meanwhile is a judgment.",
-    "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the AO's call.",
+    "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the Authorizing Official's call.",
 }
 
 
@@ -232,7 +232,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# 2. What needs my decision?
+# 2. What is waiting on a decision?
 # ---------------------------------------------------------------------------
 
 def _decision(kind: str, id_: str, title: str, *, since: Any = None, due: Any = None,

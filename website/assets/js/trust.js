@@ -259,8 +259,8 @@ function renderQueue(items, live = false) {
     const note = live ? el('p', { class: 'tc-check-meta tc-live', text: 'Re-checked live in your browser just now: review dates, expiries, due dates, and runtime and vulnerability-evidence freshness.' }) : null;
     if (!items.length) {
         host.append(el('div', { class: 'tc-empty' },
-            el('p', { class: 'tc-empty-title', text: 'Nothing needs your decision right now.' }),
-            el('p', { text: 'Every finding and exception is covered by a recorded decision that is not due for review, and nothing else that would need a person has come up. When that changes, it appears here with the reason it is yours.' })), note);
+            el('p', { class: 'tc-empty-title', text: 'Nothing is waiting on a decision right now.' }),
+            el('p', { text: 'Every finding and exception is covered by a recorded decision that is not due for review, and nothing else that would need a person has come up. When that changes, it appears here with the reason it needs a person.' })), note);
         return;
     }
     const ol = el('ol', { class: 'tc-queue' });
@@ -270,7 +270,7 @@ function renderQueue(items, live = false) {
         if (d.due) meta.push(el('span', {}, `Due ${d.due}`));
         ol.append(el('li', { class: 'tc-queue-item' },
             el('h3', { text: d.title }),
-            el('p', { class: 'tc-why' }, el('strong', { text: 'Why it is yours: ' }), d.why_yours),
+            el('p', { class: 'tc-why' }, el('strong', { text: 'Why it needs a person: ' }), d.why_yours),
             meta.length ? el('p', { class: 'tc-check-meta' }, ...meta.flatMap((m, i) => (i ? [' \u00b7 ', m] : [m]))) : null,
             (d.refs || []).length ? el('p', { class: 'tc-check-meta' }, 'See: ',
                 ...d.refs.flatMap((r, i) => [i ? ', ' : null, r.startsWith('/') ? link(r, r.replace('/.well-known/', '')) : el('code', { text: r })])) : null,
