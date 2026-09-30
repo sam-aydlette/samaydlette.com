@@ -56,9 +56,11 @@ PROFILES = {
     "txramp2": REPO / "data" / "profiles" / "txramp_level2_profile.json",
 }
 
-TARGETS = [
-    REPO / "website" / "viewer.html",
-]
+# No committed page carries stamped figures any more: the trust center renders
+# them from /.well-known/trust-center.json, which build-trust-center.py fills
+# from compute_figures() on every deploy. Stamping remains available for an
+# explicit --targets list.
+TARGETS: list = []
 
 
 def _load_module(name, path):
@@ -241,6 +243,9 @@ def main():
         return 0
 
     targets = [Path(t) for t in args.targets] if args.targets else TARGETS
+    if not targets:
+        print("inject-figures: no stamp targets; the trust center renders these figures from trust-center.json")
+        return 0
 
     all_changes = []
     all_unknown = []

@@ -455,6 +455,9 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
         "picture": build_picture(inp, now),
+        # The page re-checks the two evidence streams that change between
+        # deploys (runtime signal, nightly beacon) live, against these windows.
+        "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS},
         "decisions_pending": pending,
         "policy_catalog": build_policy_catalog(inp),
         "escalation_rate": build_escalation_rate(inp, pending, now),

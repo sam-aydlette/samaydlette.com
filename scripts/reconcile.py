@@ -390,11 +390,12 @@ def extract_impacts(signal, ssp, poam, vdr, dashboard_html):
     impacts["poam"] = normalize_impact(poam_props.get("impact-level"))
     impacts["vdr"] = normalize_impact(vdr.get("impact_level") or
                                       ("class " + vdr.get("class", "")).strip())
-    # dashboard: look for an explicit Moderate / Low label
+    # dashboard (the trust center page, website/trust/index.html): its static
+    # text states the impact level; the rest of the page renders from JSON.
     if dashboard_html is not None:
-        if re.search(r"FedRAMP Rev 5 Moderate", dashboard_html):
+        if re.search(r"FedRAMP Rev 5 Moderate|Moderate impact level", dashboard_html):
             impacts["dashboard"] = "moderate"
-        elif re.search(r"FIPS-199 Low|FedRAMP Rev 5 Low", dashboard_html):
+        elif re.search(r"FIPS-199 Low|FedRAMP Rev 5 Low|Low impact level", dashboard_html):
             impacts["dashboard"] = "low"
     return impacts
 
@@ -690,7 +691,8 @@ def main():
     ap.add_argument("--live-tags-fixture", default=None, help="JSON object {arn: {tag: value}} of live resource tags (tests)")
     ap.add_argument("--expect-commit", default=os.environ.get("GITHUB_SHA"),
                     help="commit the staged artifacts must carry (invariant f)")
-    ap.add_argument("--dashboard", default=str(REPO / "website" / "viewer.html"))
+    ap.add_argument("--dashboard", default=str(REPO / "website" / "trust" / "index.html"),
+                    help="the trust center page, whose static text states the impact level")
     ap.add_argument("--report", default=None,
                     help="on success, write the invariants that held (and any deferred) as JSON for the trust center")
     ap.add_argument("--checkov", default=str(REPO / ".checkov.yaml"),

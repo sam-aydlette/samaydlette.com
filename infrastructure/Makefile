@@ -13,7 +13,7 @@
 # did precisely that, and worse: they synced `.` (this directory) rather than
 # `website/`, with --delete and no .well-known/ exclusion.
 
-.PHONY: a11y help init plan apply-infra deploy destroy check-compliance build-ksi-signal build-oscal-ssp clean gate python-test figures-check reconcile verify-published test-policies fmt security-scan validate outputs status dev-setup pipeline create-cert
+.PHONY: a11y help init plan apply-infra deploy destroy check-compliance build-ksi-signal build-oscal-ssp clean gate python-test reconcile verify-published test-policies fmt security-scan validate outputs status dev-setup pipeline create-cert
 
 # Default target
 help:
@@ -25,7 +25,7 @@ help:
 	@echo "  check-compliance - Invoke the compliance Lambda (read-only)"
 	@echo "  reconcile        - Cross-artifact reconciliation gate (RECONCILE_FLAGS=--live)"
 	@echo "  verify-published - Fetch and verify the LIVE published evidence"
-	@echo "  gate / python-test / test-policies / a11y / figures-check - offline gates"
+	@echo "  gate / python-test / test-policies / a11y - offline gates"
 	@echo "  destroy          - Destroy all infrastructure"
 	@echo "  clean            - Clean temporary files"
 	@echo ""
@@ -213,13 +213,6 @@ reconcile:
 # with VERIFY_BASE=https://host/.well-known.
 verify-published:
 	cd .. && scripts/verify-published.sh $(VERIFY_BASE)
-
-# Figure freshness gate: every data-figure marker on the dashboard
-# must match the value recomputed from the canonical artifacts. Fails if a
-# committed figure has drifted from its source. Runnable without AWS state.
-figures-check:
-	@echo "Checking single-source figures..."
-	cd .. && python3 scripts/inject-figures.py --check
 
 # Test OPA policies locally (unit tests + coverage floor + one live example)
 test-policies:

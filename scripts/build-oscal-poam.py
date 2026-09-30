@@ -214,7 +214,7 @@ def build_metadata(now_iso, system_uuid, ksi_signal):
             "to demonstrate an architectural pattern (canonical-inventory-derived OSCAL artifacts) "
             "aligned with FedRAMP NTC-0009. Treat all entries as the operator's self-attestation. "
             "Companion artifacts: ksi-signal.json, oscal-ssp.json, vdr-report.json, iiw.csv at "
-            "https://samaydlette.com/.well-known/. See https://samaydlette.com/viewer.html "
+            "https://samaydlette.com/.well-known/. See https://samaydlette.com/trust/ "
             "for context."
         ),
     }

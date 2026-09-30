@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trust Center - sam_aydlette</title>
+    <meta name="description" content="The Authorizing Official's view of samaydlette.com: whether the evidence is true, what needs a decision, where the system is exposed, how decisions are made, and the record of those made. Generated on every deploy.">
+    <link rel="stylesheet" href="/assets/css/main.css?v=1790595453206">
+    <link rel="stylesheet" href="/assets/css/articles.css?v=1790595453206">
+    <link rel="stylesheet" href="/assets/css/boundary-map.css?v=1790595453206">
+    <link rel="stylesheet" href="/assets/css/trust.css?v=1790595453206">
+    <!-- Apply theme immediately to prevent flash -->
+    <script src="/assets/js/theme-init.js?v=1790595453206"></script>
+    <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
+</head>
+<body class="fixed-header">
+    <a href="#main-content" class="skip-links">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="header-container">
+            <a href="/index.html" class="site-logo">sam_aydlette</a>
+            <nav class="main-nav" aria-label="Main navigation">
+                <a href="/index.html" class="nav-link">Home</a>
+                <a href="/trust/" class="nav-link nav-trust active" aria-current="page"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
+                <a href="/pages/books.html" class="nav-link">Books</a>
+                <a href="/pages/articles.html" class="nav-link">Articles</a>
+                <a href="/pages/projects.html" class="nav-link">Projects</a>
+                <a href="/pages/activities.html" class="nav-link">Activities</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
+                <a href="/pages/contact.html" class="nav-link">Contact</a>
+                <a href="/pages/support.html" class="nav-link">Support</a>
+                <a href="/feed.xml" class="nav-link rss-link" aria-label="RSS Feed" title="RSS Feed">RSS</a>
+                <button class="theme-toggle" aria-label="Toggle dark mode">
+                    <span class="theme-toggle-icon">&#9684;</span>
+                    <span class="theme-toggle-text">theme</span>
+                </button>
+            </nav>
+            <button class="menu-toggle" aria-label="Toggle navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="content">
+        <article class="article-card trust" data-trust-center="/.well-known/trust-center.json">
+            <header class="tc-head">
+                <p class="tc-kicker">Trust Center</p>
+                <h1 class="article-title">samaydlette.com</h1>
+                <p class="tc-lede">This system is built to adhere to the <strong>FedRAMP 20x Class C Certification</strong> requirements at the Moderate impact level. It is a self-attested proof of concept: it is <strong>not FedRAMP Certified</strong>, has no agency sponsor, and has not been assessed by a third party.</p>
+                <p class="tc-lede">The page is written from the seat of an <strong>Authorizing Official</strong>: the person at an agency who would decide whether to rely on a system like this one. You are probably not one, and no agency has been asked to rely on this system; if you are an AO, welcome. Either way, the sections below walk through the questions an AO would ask, in the order they would ask them, so you can judge the answers for yourself.</p>
+                <dl class="tc-facts" data-tc="facts"></dl>
+                <nav class="tc-toc" aria-label="On this page">
+                    <a href="#picture">Is this picture true?</a>
+                    <a href="#decisions">What needs my decision?</a>
+                    <a href="#boundary">Where am I exposed?</a>
+                    <a href="#policy">How are decisions made?</a>
+                    <a href="#record">What was decided?</a>
+                    <a href="#posture">Posture</a>
+                    <a href="#verify">Verify it yourself</a>
+                </nav>
+            </header>
+
+            <p class="tc-status" data-tc="status" role="status">Loading the trust center&hellip;</p>
+            <noscript><p class="tc-status">This page renders the signed data at <a href="/.well-known/trust-center.json"><code>/.well-known/trust-center.json</code></a> and <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>, which need JavaScript to display. The JSON documents are the source of truth and can be read directly.</p></noscript>
+
+            <section id="picture" class="tc-section" aria-labelledby="picture-h">
+                <h2 id="picture-h"><span class="tc-num">1</span> Is this picture true?</h2>
+                <p class="tc-intro">Every check below ran during the deploy that published this page, against the artifacts it published. A check that could not run says so; it is never shown as passing.</p>
+                <ul class="tc-picture" data-tc="picture"></ul>
+            </section>
+
+            <section id="decisions" class="tc-section" aria-labelledby="decisions-h">
+                <h2 id="decisions-h"><span class="tc-num">2</span> What needs my decision?</h2>
+                <p class="tc-intro">The automation settles what recorded policy already covers. Only what it cannot settle comes here, each with the reason it is a person&rsquo;s call.</p>
+                <div data-tc="queue"></div>
+                <div class="tc-escalation" data-tc="escalation"></div>
+            </section>
+
+            <section id="boundary" class="tc-section" aria-labelledby="boundary-h">
+                <h2 id="boundary-h"><span class="tc-num">3</span> Where am I exposed?</h2>
+                <p class="tc-intro">The authorization boundary, generated on every deploy from the signed inventory and Terraform state; nothing on it is drawn by hand. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
+                <div class="boundary-map" data-boundary-map="/.well-known/boundary-map.json">
+                    <noscript><p>The map&rsquo;s data is published, signed, at <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>.</p></noscript>
+                </div>
+                <details class="bm-text-view">
+                    <summary>Text view of the map: components, data flows, leveraged services and FIPS modules</summary>
+                    <div data-boundary-map-text></div>
+                </details>
+                <p class="tc-more">The reasoning behind the boundary (what is in, what is out, and why) is on the <a href="/research/authorization-boundary.html">authorization boundary page</a>.</p>
+            </section>
+
+            <section id="policy" class="tc-section" aria-labelledby="policy-h">
+                <h2 id="policy-h"><span class="tc-num">4</span> How are decisions made here?</h2>
+                <p class="tc-intro">Every automated decision falls under one of four kinds of policy. Knowing which is which tells you what a person can change, and how.</p>
+                <div class="tc-policy" data-tc="policy"></div>
+            </section>
+
+            <section id="record" class="tc-section" aria-labelledby="record-h">
+                <h2 id="record-h"><span class="tc-num">5</span> What was decided, by whom, and why?</h2>
+                <p class="tc-intro">Every human decision the automation now applies as precedent. Each records who made it, when, why, and when it is next reviewed; a field that was not recorded is shown as a gap, never filled in.</p>
+                <div data-tc="record"></div>
+            </section>
+
+            <section id="posture" class="tc-section" aria-labelledby="posture-h">
+                <h2 id="posture-h"><span class="tc-num">6</span> Posture</h2>
+                <div data-tc="posture"></div>
+            </section>
+
+            <section id="verify" class="tc-section" aria-labelledby="verify-h">
+                <h2 id="verify-h"><span class="tc-num">7</span> Verify it yourself</h2>
+                <p class="tc-intro">Nothing on this page asks to be trusted. Each document it renders is signed by the deploy workflow through Sigstore; check any of them with <a href="https://docs.sigstore.dev/cosign/" rel="noopener">cosign</a>:</p>
+                <pre class="tc-code"><code>curl -sO https://samaydlette.com/.well-known/trust-center.json
+curl -sO https://samaydlette.com/.well-known/trust-center.bundle
+cosign verify-blob trust-center.json --bundle trust-center.bundle \
+  --certificate-identity https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com</code></pre>
+                <p>The same works for every artifact below; each JSON document has a <code>.bundle</code> beside it. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/scripts/verify-published.sh" rel="noopener"><code>scripts/verify-published.sh</code></a> checks them all, including that each is bound to the same inventory.</p>
+                <ul class="tc-artifacts" data-tc="artifacts"></ul>
+            </section>
+        </article>
+    </main>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <h3>sam_aydlette</h3>
+                    <p>Cybersecurity practitioner and author sharing insights on security, compliance automation, and philosophy.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Navigation</h4>
+                    <ul class="footer-links">
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/pages/articles.html">Articles</a></li>
+                        <li><a href="/pages/books.html">Books</a></li>
+                        <li><a href="/pages/about.html">About</a></li>
+                        <li><a href="/pages/contact.html">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Connect</h4>
+                    <ul class="footer-links">
+                        <li><a href="https://www.linkedin.com/in/sa2/">LinkedIn</a></li>
+                        <li><a href="/pages/support.html">Support</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Samuel Aydlette. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="https://www.linkedin.com/in/sa2/" aria-label="LinkedIn">LinkedIn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/assets/js/main.js?v=1790595453206"></script>
+    <script type="module" src="/assets/js/boundary-map.js?v=1790595453206"></script>
+    <script type="module" src="/assets/js/trust.js?v=1790595453206"></script>
+</body>
+</html>

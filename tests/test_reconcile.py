@@ -136,6 +136,12 @@ def test_d_impact_catches_low_ssp():
     assert any("ssp" in x and "low" in x for x in v)
 
 
+def test_d_impact_reads_the_trust_center_page():
+    s = clean_set()
+    s["dashboard_html"] = (REPO / "website" / "trust" / "index.html").read_text()
+    assert rc.check_d_impact(s["signal"], s["ssp"], s["poam"], s["vdr"], s["dashboard_html"]) == []
+
+
 def test_d_impact_catches_low_dashboard():
     s = clean_set()
     s["dashboard_html"] = "<h3>FIPS-199 Low</h3>"

@@ -23,16 +23,16 @@
 # `dev-setup validate plan deploy` — it DEPLOYS TO PRODUCTION. It is not a
 # verification step and must never be reachable from `check`.
 #
-# `reconcile` and `figures-check` are also excluded, for a different reason:
-# they consume generated artifacts (ksi-signal.json, oscal-ssp.json, ...) which
-# are built by scripts/build-ksi-signal.py from `terraform output -json` /
-# `terraform show -json`, i.e. they need AWS credentials and remote state. They
-# cannot run in a fresh clone. They are CI-enforced on every deploy, and are
-# available here as `make check-full` for when the artifacts are present.
+# `reconcile` is also excluded, for a different reason: it consumes generated
+# artifacts (ksi-signal.json, oscal-ssp.json, ...) which are built by
+# scripts/build-ksi-signal.py from `terraform output -json` / `terraform show
+# -json`, i.e. they need AWS credentials and remote state. It cannot run in a
+# fresh clone. It is CI-enforced on every deploy, and is available here as
+# `make check-full` for when the artifacts are present.
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile figures-check essay-check require-tools require-artifacts
+        reconcile essay-check require-tools require-artifacts
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -58,7 +58,7 @@ help:
 	@echo "Verification interface:"
 	@echo "  make check       - THE GATE: lint + typecheck + test + test-policies"
 	@echo "                     hermetic (no AWS/network/artifacts). exit 0 = shippable."
-	@echo "  make check-full  - check + reconcile + figures-check"
+	@echo "  make check-full  - check + reconcile"
 	@echo "                     needs generated artifacts (see 'make check-full')"
 	@echo "  make test        - Python unit/integration suite (tests/)"
 	@echo "  make lint        - ruff check scripts/ tests/"
@@ -119,7 +119,6 @@ check: require-tools
 # is how stale artifacts go unnoticed.
 check-full: check require-artifacts
 	@$(MAKE) --no-print-directory reconcile
-	@$(MAKE) --no-print-directory figures-check
 	@echo "✅ check-full: PASS"
 
 require-artifacts:
@@ -165,10 +164,6 @@ reconcile:
 	@echo "==> reconcile"
 	@$(MAKE) --no-print-directory -C infrastructure reconcile
 
-figures-check:
-	@echo "==> figures-check"
-	@$(MAKE) --no-print-directory -C infrastructure figures-check
-
 # ---------------------------------------------------------------------------
 # fmt — opt-in, and deliberately NOT wired into check.
 # ---------------------------------------------------------------------------
@@ -189,7 +184,7 @@ essay-check:
 	$(VENV_PY) -m pytest -q tools/essay
 
 # The RSS feed is generated from the article index; this fails if the committed
-# feed no longer matches it. Same shape as figures-check: derived artifacts are
+# feed no longer matches it. Derived artifacts are
 # regenerated, never hand-edited.
 feed-check:
 	@echo "Checking the feed against the article index..."

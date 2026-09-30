@@ -1,0 +1,436 @@
+/* Trust Center (/trust/). Colours come from the site theme variables, plus three
+   status tokens chosen for 4.5:1 text contrast in both themes. Status is always
+   carried by text and a mark as well as colour. */
+
+.trust {
+    --tc-ok: #1d6b35;
+    --tc-ok-bg: #e6f4ea;
+    --tc-attn: #8a4b00;
+    --tc-attn-bg: #fff4e0;
+    --tc-unk: #4b5563;
+    --tc-unk-bg: #eef0f3;
+    /* The site's link green (#059669) is 3.77:1 on white; this page uses a
+       darker green that clears 4.5:1 on both card and page backgrounds. */
+    --tc-link: #047857;
+}
+
+[data-theme="dark"] .trust {
+    --tc-ok: #7ddc9a;
+    --tc-ok-bg: #12301d;
+    --tc-attn: #ffc56b;
+    --tc-attn-bg: #3a2a0d;
+    --tc-unk: #c3c8d0;
+    --tc-unk-bg: #2a2f37;
+    --tc-link: #34d399;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Beats main.css's `.content a:not(.nav-button):not(.read-more)` (0,3,1). */
+.content .trust a:not(.nav-button):not(.read-more),
+.content .trust a:not(.nav-button):not(.read-more):visited {
+    color: var(--tc-link);
+}
+
+.trust a code {
+    color: inherit;
+}
+
+/* ---------- head ---------- */
+
+.tc-kicker {
+    margin: 0 0 0.25rem;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.tc-lede {
+    max-width: 70ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+.tc-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.75rem 1.5rem;
+    margin: 1.25rem 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+}
+
+.tc-facts dt {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+}
+
+.tc-facts dd {
+    margin: 0.15rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.tc-toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    margin: 0 0 0.5rem;
+    font-size: var(--font-size-sm);
+}
+
+.tc-status {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: var(--bg-primary);
+}
+
+.tc-status.tc-error {
+    color: var(--tc-attn);
+    background: var(--tc-attn-bg);
+}
+
+/* ---------- sections ---------- */
+
+.tc-section {
+    margin-top: 2.75rem;
+    scroll-margin-top: 90px;
+}
+
+.tc-section h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+}
+
+.tc-num {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--bg-secondary);
+    background: var(--text-primary);
+}
+
+.tc-intro {
+    max-width: 72ch;
+    color: var(--text-secondary);
+}
+
+.tc-muted {
+    color: var(--text-secondary);
+}
+
+.tc-check-meta {
+    margin: 0.35rem 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.tc-count {
+    font-weight: 600;
+}
+
+.tc-more {
+    font-size: var(--font-size-sm);
+}
+
+/* ---------- 1. picture ---------- */
+
+.tc-picture {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 0.9rem;
+    margin: 1rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.tc-check {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border-color);
+    border-left-width: 4px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+.tc-check-ok { border-left-color: var(--tc-ok); }
+.tc-check-attention { border-left-color: var(--tc-attn); }
+.tc-check-not_observed { border-left-color: var(--tc-unk); }
+
+.trust .tc-check h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.trust .tc-check p {
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.tc-chip {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0.6rem 0.15rem 0.35rem;
+    border-radius: 999px;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+}
+
+.tc-chip-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    color: var(--bg-secondary);
+}
+
+.tc-ok { color: var(--tc-ok); background: var(--tc-ok-bg); }
+.tc-ok .tc-chip-mark { background: var(--tc-ok); }
+.tc-attention { color: var(--tc-attn); background: var(--tc-attn-bg); }
+.tc-attention .tc-chip-mark { background: var(--tc-attn); }
+.tc-not_observed { color: var(--tc-unk); background: var(--tc-unk-bg); }
+.tc-not_observed .tc-chip-mark { background: var(--tc-unk); }
+
+/* ---------- 2. decisions ---------- */
+
+.tc-empty {
+    padding: 1.25rem 1.4rem;
+    border: 1px dashed var(--tc-ok);
+    border-radius: 8px;
+    background: var(--tc-ok-bg);
+}
+
+.trust .tc-empty p {
+    margin: 0.2rem 0;
+}
+
+.tc-empty-title {
+    font-weight: 600;
+    color: var(--tc-ok);
+}
+
+.tc-queue {
+    padding-left: 1.25rem;
+}
+
+.tc-queue-item {
+    margin-bottom: 1rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--tc-attn);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+.trust .tc-queue-item h3 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.tc-why {
+    margin: 0;
+}
+
+.tc-escalation {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.trust .tc-escalation h3 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+}
+
+.tc-rate-num {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.tc-spark {
+    display: block;
+    width: 240px;
+    max-width: 100%;
+    height: 40px;
+    margin-top: 0.5rem;
+}
+
+.tc-spark polyline {
+    fill: none;
+    stroke: var(--accent-tertiary);
+    stroke-width: 2;
+}
+
+/* ---------- 4. policy ---------- */
+
+.tc-policy {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.tc-policy-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+}
+
+.tc-policy-card > summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1rem;
+    padding: 0.9rem 1.1rem;
+    cursor: pointer;
+}
+
+.tc-policy-title {
+    font-weight: 600;
+}
+
+.tc-policy-count {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.tc-policy-about {
+    grid-column: 1 / -1;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+.tc-policy-card > :not(summary) {
+    margin: 0 1.1rem 1rem;
+}
+
+.tc-kv > div {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) 2fr;
+    gap: 1rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tc-kv dt {
+    font-weight: 600;
+}
+
+.tc-kv dd {
+    margin: 0;
+}
+
+/* ---------- 5. record ---------- */
+
+.tc-filter select {
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+
+.tc-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.tc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.tc-table th,
+.tc-table td {
+    padding: 0.55rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.tc-table thead th {
+    position: sticky;
+    top: 0;
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+}
+
+.tc-table tbody th {
+    white-space: nowrap;
+    font-weight: normal;
+}
+
+.tc-table td:nth-child(n + 4) {
+    white-space: nowrap;
+}
+
+.tc-reason summary {
+    cursor: pointer;
+}
+
+.trust .tc-reason p {
+    max-width: 70ch;
+    margin: 0.4rem 0 0;
+}
+
+.tc-gap {
+    color: var(--tc-attn);
+    font-style: italic;
+}
+
+/* ---------- 7. verify ---------- */
+
+.tc-code {
+    overflow-x: auto;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-code);
+    background: var(--bg-code);
+}
+
+.tc-artifacts li {
+    margin: 0.3rem 0;
+}
+
+@media (max-width: 640px) {
+    .tc-kv > div {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+
+    .tc-picture {
+        grid-template-columns: 1fr;
+    }
+}

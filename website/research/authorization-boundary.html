@@ -9,24 +9,6 @@
     <link rel="stylesheet" href="/assets/css/boundary-map.css?v=1790595453206">
     <script src="/assets/js/theme-init.js?v=1790595453206"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
-    <style>
-        .boundary-svg-wrap {
-            margin: var(--space-lg) 0;
-            padding: var(--space-md);
-            background: #ffffff;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            overflow-x: auto;
-        }
-        .boundary-svg-wrap object,
-        .boundary-svg-wrap img {
-            display: block;
-            width: 100%;
-            height: auto;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-    </style>
 </head>
 <body class="fixed-header">
     <a href="#main-content" class="skip-links">Skip to main content</a>
@@ -36,7 +18,7 @@
             <a href="/index.html" class="site-logo">sam_aydlette</a>
             <nav class="main-nav" aria-label="Main navigation">
                 <a href="/index.html" class="nav-link">Home</a>
-                <a href="/viewer.html" class="nav-link nav-trust"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
+                <a href="/trust/" class="nav-link nav-trust"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
                 <a href="/pages/books.html" class="nav-link">Books</a>
                 <a href="/pages/articles.html" class="nav-link">Articles</a>
                 <a href="/pages/projects.html" class="nav-link active">Projects</a>
@@ -75,30 +57,16 @@
 
                 <p>The map below is generated, not drawn. Every deploy builds it from the signed canonical inventory: each component is placed by a classification I maintain (which zone and group it belongs to, what exists but is not inventoried, and the data flows between them), and connected to the components its configuration references, from Terraform state. The deploy signs it, and the reconciliation gate refuses to publish it unless it describes exactly that build's inventory. I prototyped the approach with RAMPART on <a href="https://github.com/unified-systems-com/tap" rel="noopener">TAP &mdash; The Analogy Platform</a>.</p>
 
-                <p>That is the point of generating it. A component no classification rule places fails the deploy until it is classified. An AWS resource missing its classification tags is flagged. A data flow whose endpoint is not in the inventory is reported, and so is a real flow the reference diagram&rsquo;s flow table has never listed. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
+                <p>That is the point of generating it. A component no classification rule places fails the deploy until it is classified. An AWS resource missing its classification tags is flagged. A data flow whose endpoint is not in the inventory is reported, and so is a data flow the classification lists whose endpoints do not match a real component. Select a flow to trace it, or any component for its classification, findings and the flows through it.</p>
 
                 <div class="boundary-map" data-boundary-map="/.well-known/boundary-map.json">
-                    <noscript><p>The live map needs JavaScript. Its data is published, signed, at <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>, and the reference diagram below covers the same boundary.</p></noscript>
+                    <noscript><p>The live map needs JavaScript. Its data is published, signed, at <a href="/.well-known/boundary-map.json"><code>/.well-known/boundary-map.json</code></a>, and the prose below describes the same boundary.</p></noscript>
                 </div>
 
                 <details class="bm-text-view">
                     <summary>Text view of the live map: components and data flows</summary>
                     <div data-boundary-map-text></div>
                 </details>
-
-                <h3 id="diagram">The Diagram</h3>
-
-                <p>The reference diagram is hand-maintained and is being retired: the live map above now carries the leveraged AWS package and the FIPS module list as data, and its text view lists both.</p>
-
-                <div class="boundary-svg-wrap">
-                    <object data="/assets/diagrams/authorization-boundary.svg" type="image/svg+xml" aria-label="samaydlette.com FedRAMP authorization boundary with data flows and FIPS modules">
-                        <img src="/assets/diagrams/authorization-boundary.svg" alt="samaydlette.com FedRAMP authorization boundary with data flows and FIPS modules"/>
-                    </object>
-                </div>
-
-                <p>The diagram is a single SVG, rendered above and also published at <a href="/assets/diagrams/authorization-boundary.svg"><code>/assets/diagrams/authorization-boundary.svg</code></a>. GitHub renders it natively when linked from any Markdown source; FedRAMP reviewers can download or print it as a single self-contained image with embedded legend and data flow table.</p>
-
-                <p>The conventions follow both the FedRAMP <em>A FedRAMP Authorization Boundary</em> living document and the standard ABD/DFD elements that FedRAMP reviewers expect: red dashed boundary outline, comprehensive legend, FIPS 140-2/3 validated cryptographic modules in list view, ports/protocols/authentication on every flow, distinguishing privileged from non-privileged access, and clear visual differentiation between FedRAMP-authorized and non-authorized external services.</p>
 
                 <h3 id="rules-of-thumb">The Four Rules of Thumb, Applied</h3>
                 <p>The FedRAMP authorization-boundary guidance gives four Rules of Thumb (ROTs) for what is in versus out of scope. Applied to this system:</p>
@@ -117,7 +85,7 @@
                 <p><strong>External without ATO (amber band).</strong> The Sigstore stack, the GitHub identity and CI/CD layer, Duo, the vulnerability-data sources, and the Anthropic API the application calls have no separate FedRAMP authorization. They are inside the boundary because each affects CIA, but the CSP owns the responsibility for any control not provided by the underlying service. Compensating controls per service are documented in the relevant family policies (Sigstore in <code>docs/policies/sc-policy.md</code>; GitHub identity in <code>docs/policies/ia-policy.md</code>; Duo in <code>docs/policies/ac-policy.md</code> and the Secure Configuration Guide; vulnerability sources in <code>docs/policies/ra-policy.md</code>). The Anthropic interconnection is tracked as POAM-020, with a planned migration to Amazon Bedrock that would bring the model call inside the AWS authorization.</p>
 
                 <h3 id="fips">FIPS-Validated Cryptographic Modules</h3>
-                <p>The diagram lists every FIPS 140-2/3 validated module in scope, per the FedRAMP ABD convention. This section is also the system's CR26 <strong>Cryptographic Module Use</strong> record: it documents each module and whether it is validated under the NIST Cryptographic Module Validation Program (<code>CMU-CSO-CMD</code>). For Class C, validated modules are used for the sensitive cryptography &mdash; at-rest encryption and signing run on the FIPS 140-3 AWS KMS HSM (<code>CMU-CSO-UVM</code>, a SHOULD) &mdash; with the non-validated Sigstore implementations carried as a documented residual. <code>CMU-CSO-CAT</code> (defaulting agency tenants to validated modules) is N/A: the offering has no agency tenants. The machine-readable module list is also rolled up in the Certification Package Overview at <code>/.well-known/certification-package-overview.json</code>.</p>
+                <p>The map's text view lists every FIPS 140-2/3 validated module in scope, per the FedRAMP ABD convention. This section is also the system's CR26 <strong>Cryptographic Module Use</strong> record: it documents each module and whether it is validated under the NIST Cryptographic Module Validation Program (<code>CMU-CSO-CMD</code>). For Class C, validated modules are used for the sensitive cryptography &mdash; at-rest encryption and signing run on the FIPS 140-3 AWS KMS HSM (<code>CMU-CSO-UVM</code>, a SHOULD) &mdash; with the non-validated Sigstore implementations carried as a documented residual. <code>CMU-CSO-CAT</code> (defaulting agency tenants to validated modules) is N/A: the offering has no agency tenants. The machine-readable module list is also rolled up in the Certification Package Overview at <code>/.well-known/certification-package-overview.json</code>.</p>
 
                 <p><strong>Inherited from AGENCYAMAZONEW.</strong> AWS KMS is FIPS 140-3 (HSM-backed) and is the validated module behind every customer-managed key in the system. Four customer-managed CMKs run on it: one encrypts CloudWatch Logs and the compliance Lambda's environment, one encrypts the application secret (the Anthropic API key) in Secrets Manager, one is the ECDSA P-256 key that signs the daily runtime signal, and one is the ECDSA P-256 DNSSEC key-signing key. The public website and access-log buckets — which hold only public or public-derived content — use S3 server-side encryption with AES-256 (SSE-S3, AWS-managed keys), the appropriate at-rest control for public data; the application persists no user pose/movement data, because pose extraction runs client-side in the browser and nothing is stored. (There is no EBS in this serverless architecture.) ACM TLS termination on CloudFront uses FIPS-validated cipher suites with TLS 1.2+ enforced.</p>
 
@@ -126,13 +94,13 @@
                 <p><strong>Cross-cutting.</strong> AES-256-GCM for data at rest. ECDSA P-256 for Sigstore signatures and for the runtime-signal and DNSSEC signing keys. SHA-256 for content hashing across the canonical inventory. TLS 1.2+ on every public endpoint (CloudFront, API Gateway, AWS APIs, GitHub, Sigstore, Duo, Anthropic).</p>
 
                 <h3 id="data-flows">Data Flows (A&ndash;I)</h3>
-                <p>The diagram lettered arrows match the data flow table in the SVG legend. A few flow-level notes that won't fit on the table:</p>
+                <p>The lettered flows on the map match its data flow table. A few flow-level notes that won't fit on the table:</p>
 
                 <p><strong>Ingress.</strong> Two externally-initiated ingresses cross the boundary: flow A, the operator pushing source code to the GitHub repository, authenticated by username and password plus Duo TOTP MFA; and flow H, an application end-user calling the API, authenticated by a Cognito-issued JWT that API Gateway validates at the edge before any application code runs. There is still no agency-customer ingress, because there is no federal-customer surface.</p>
 
                 <p><strong>Egress.</strong> Three flows leave the boundary: flow G, CloudFront serving public site content and <code>/.well-known/</code> artifacts to anonymous readers over TLS 1.2+; and the outbound leg of flow H, the application Lambda calling the Anthropic API for feedback generation (tracked as POAM-020); and flow I, the evidence SLA alarms emailing the operator email, which is outside the boundary (ROT #3), through the SNS topic. Flow I carries alarm metadata only (alarm name, state, reason, threshold, account and alarm identifiers), and SNS email is not end-to-end encrypted. The daily runtime cycle (flow F) and the hourly watchdog read of the site bucket are internal.</p>
 
-                <p><strong>Privileged versus non-privileged access.</strong> The diagram and table mark each authentication context. Privileged: operator (root + admin), GitHub Actions deployer (Terraform apply, S3 sync, Lambda update), now via GitHub OIDC role assumption rather than a static key. Non-privileged: the runtime emitter Lambda's IAM role (read-only on three S3 config APIs and one CloudFront distribution, <code>secretsmanager:DescribeSecret</code> on the one application secret, and <code>kms:Sign</code> on the runtime-signing key; write to one S3 key), and the evidence watchdog Lambda's IAM role (read three named <code>/.well-known/</code> objects; publish metrics to one CloudWatch namespace; no write to evidence and no publish to the alert topic). Cognito-authenticated: application end-users (flow H). Anonymous: public Internet readers. The privileged-versus-non-privileged distinction is the FedRAMP DFD convention; it makes scope-creep on the runtime principal mechanically visible.</p>
+                <p><strong>Privileged versus non-privileged access.</strong> The flow table marks each authentication context. Privileged: operator (root + admin), GitHub Actions deployer (Terraform apply, S3 sync, Lambda update), now via GitHub OIDC role assumption rather than a static key. Non-privileged: the runtime emitter Lambda's IAM role (read-only on three S3 config APIs and one CloudFront distribution, <code>secretsmanager:DescribeSecret</code> on the one application secret, and <code>kms:Sign</code> on the runtime-signing key; write to one S3 key), and the evidence watchdog Lambda's IAM role (read three named <code>/.well-known/</code> objects; publish metrics to one CloudWatch namespace; no write to evidence and no publish to the alert topic). Cognito-authenticated: application end-users (flow H). Anonymous: public Internet readers. The privileged-versus-non-privileged distinction is the FedRAMP DFD convention; it makes scope-creep on the runtime principal mechanically visible.</p>
 
                 <p><strong>POA&amp;M cross-references.</strong> Flow B (GitHub Actions &rarr; AWS APIs) now uses GitHub OIDC role assumption with no long-lived AWS access keys; POAM-001 is closed. The outbound application interconnection to Anthropic (flow H) is tracked as POAM-020, with a planned migration to Amazon Bedrock that would bring the model call inside the AWS authorization.</p>
 
@@ -141,9 +109,9 @@
 
                 <ul>
                     <li><strong>Federal customer user authentication logical data flow:</strong> no federal customer accounts exist. The system does implement an application end-user authentication surface (Amazon Cognito with mandatory MFA), shown as flow H and the Cognito component, but it serves the operator&rsquo;s own application users, not federal customers.</li>
-                    <li><strong>Administrative and support personnel authentication logical data flow:</strong> covered by flows A and B in the diagram above.</li>
-                    <li><strong>System application data flow within the proposed cloud authorization boundary:</strong> covered by flows C, D, F, H, and the internal leg of I in the diagram above.</li>
-                    <li><strong>System application data flow to all leveraged and interconnected systems:</strong> covered by flows B, E, H, and I in the diagram above (AWS leveraged path; Sigstore signing chain; Anthropic interconnection; alarm email to the operator, out of boundary).</li>
+                    <li><strong>Administrative and support personnel authentication logical data flow:</strong> covered by flows A and B on the map above.</li>
+                    <li><strong>System application data flow within the proposed cloud authorization boundary:</strong> covered by flows C, D, F, H, and the internal leg of I on the map above.</li>
+                    <li><strong>System application data flow to all leveraged and interconnected systems:</strong> covered by flows B, E, H, and I on the map above (AWS leveraged path; Sigstore signing chain; Anthropic interconnection; alarm email to the operator, out of boundary).</li>
                 </ul>
 
                 <p>A separate <strong>network diagram</strong> in the InfusionPoints sense (subnets, network devices, DNS server locations) is minimally relevant for this system: there are no VPC subnets to depict (Lambda runs outside any VPC; S3 and CloudFront are managed services), there are no operator-controlled network devices, and DNS authority is the Route 53 hosted zone (now DNSSEC-signed) shown in the CSO band of the diagram above. If the system ever moves into a VPC or adds private network components, a separate network diagram is added then.</p>

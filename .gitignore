@@ -27,7 +27,10 @@ scripts/validate-locally.sh
 
 # Locally-generated dashboard artifacts. The CI workflow publishes these
 # directly to S3 at /.well-known/, not via the website/ tree, so they are
-# never committed. Generated for local viewer.html testing only.
+# never committed. Generated for local trust-center testing only.
+website/.well-known/trust-center.json
+website/.well-known/boundary-map.json
+website/.well-known/reconcile-report.json
 website/.well-known/ksi-signal.json
 website/.well-known/ksi-signal-runtime.json
 website/.well-known/ksi-signal.schema.json
