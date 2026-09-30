@@ -62,6 +62,7 @@ WHY_YOURS = {
     "boundary_not_inventoried": "Something the system depends on is not in the canonical inventory.",
     "scn_unverified": "A significant change was approved but its post-implementation verification is not recorded as complete.",
     "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
+    "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the AO's call.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the AO's call.",
 }
 
@@ -116,6 +117,8 @@ def poam_items(poam: dict[str, Any]) -> list[dict[str, Any]]:
             "status": pr.get("status"), "disposition": pr.get("disposition"),
             "scheduled_completion": pr.get("scheduled-completion-date"),
             "point_of_contact": pr.get("point-of-contact"), "status_date": pr.get("status-date"),
+            # The human decision behind an open item (data/poam-items.json).
+            "decided_by": pr.get("decided-by"), "decided_on": pr.get("decided-on"), "review_by": pr.get("review-by"),
         })
     return out
 
@@ -233,7 +236,8 @@ def _decision(kind: str, id_: str, title: str, *, since: Any = None, due: Any = 
             "since": since, "due": due, "refs": refs or []}
 
 
-def build_decisions_pending(inp: dict[str, Any], now: datetime, log_gaps: dict[str, int]) -> list[dict[str, Any]]:
+def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
+                            log_gaps: dict[str, int]) -> list[dict[str, Any]]:
     today = now.date()
     out: list[dict[str, Any]] = []
 
@@ -299,6 +303,13 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log_gaps: dict[s
         if not SCN_VERIFIED.search(row.get("status", "")):
             out.append(_decision("scn_unverified", row.get("scn_id", ""), _brief(row.get("short_description", ""), 160),
                                  since=row.get("date_initiated") or None, refs=["docs/scn/"]))
+
+    for e in log:
+        review = _parse_date(e.get("review_by"))
+        # A policy exception's review date is its expiry, queued above.
+        if review and review <= today and e["kind"] != "policy_exception":
+            out.append(_decision("decision_review_due", e["id"], f"Review due: {e['subject']}", due=review.isoformat(),
+                                 refs=[e["source"]]))
 
     if any(log_gaps.values()):
         parts = [f"{v} lack {k.replace('_', ' ')}" for k, v in sorted(log_gaps.items()) if v]
@@ -383,10 +394,12 @@ def build_decision_log(inp: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[
     for p in poam_items(inp["poam"]):
         if p["status"] != "open" or p["disposition"] not in POAM_DECISIONS:
             continue
-        # The POA&M records a point of contact and a status date, not who made the
-        # risk decision or when. Those are reported as gaps, not inferred.
-        add("poam_risk_decision", p["id"], p["title"], p["disposition"], decided_by=None, decided_on=None,
-            reasoning=p["description"], review_by=None, source="/.well-known/oscal-poam.json",
+        # Who decided, when, and the review date come from the POA&M's own
+        # decision props. The point of contact is never taken as the decider;
+        # an item without the props is reported as a gap.
+        add("poam_risk_decision", p["id"], p["title"], p["disposition"], decided_by=p["decided_by"],
+            decided_on=p["decided_on"], reasoning=p["description"], review_by=p["review_by"],
+            source="/.well-known/oscal-poam.json",
             point_of_contact=p["point_of_contact"], status_date=p["status_date"])
     for row in inp["scn_register"]:
         m = SCN_VERIFIED.search(row.get("status", ""))
@@ -434,7 +447,7 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         if bound != signal_id:
             sys.exit(f"build-trust-center: {name} is bound to signal {bound!r}, not this build's {signal_id!r}")
     log, gaps = build_decision_log(inp)
-    pending = build_decisions_pending(inp, now, gaps)
+    pending = build_decisions_pending(inp, now, log, gaps)
     return {
         "schema": SCHEMA,
         "generated_at": now.isoformat(timespec="seconds"),
