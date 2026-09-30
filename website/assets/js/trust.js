@@ -164,30 +164,103 @@ function renderPicture(doc) {
     for (const p of doc.picture || []) ul.append(pictureItem(p));
 }
 
-function recheckLive(doc) {
+// ---------------------------------------------------------------------------
+// The live queue. The deploy builds the queue, but part of it is driven by
+// dates and by evidence that changes between deploys. The page rebuilds that
+// part now, from data the deploy published with it, so an empty queue is true
+// on the day it is read. Everything else (a pending trust-root change, a
+// drifted setting, an unclassified resource) only changes with a deploy.
+
+const DATE_KINDS = ['decision_review_due', 'exception_expiring', 'poam_overdue'];
+const RUNTIME_KINDS = ['runtime_diverged', 'runtime_unassessed', 'runtime_stale'];
+const DAY = 24 * HOUR;
+
+export function liveQueue(doc, now, live = {}) {
+    const lq = doc.live_queue;
+    const deployed = doc.decisions_pending || [];
+    if (!lq || !lq.why_yours) return deployed; // published before the live queue existed
+    const today = new Date(now).toISOString().slice(0, 10);
     const windows = doc.freshness_windows_hours || {};
-    const live = [
-        ['runtime', '/.well-known/ksi-signal-runtime.json', evaluateRuntime, windows.runtime],
-        ['vulnerability_scan', '/.well-known/vdr-status.json', evaluateNightly, windows.vulnerability_scan],
-    ];
-    for (const [id, url, evaluate, windowHours] of live) {
-        const row = ROOT.querySelector(`[data-check="${id}"]`);
-        const base = (doc.picture || []).find((p) => p.id === id);
-        if (!row || !base || !windowHours) continue;
-        fetch(url, { credentials: 'same-origin', cache: 'no-cache' })
-            .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-            .then((data) => row.replaceWith(pictureItem({ ...base, ...evaluate(data, Date.now(), windowHours), live: true })))
-            .catch(() => { /* keep the deploy-time verdict, which says when it was taken */ });
+    const rebuilt = new Set([...DATE_KINDS, 'vulnerability_evidence_stale', ...(live.runtime ? RUNTIME_KINDS : [])]);
+    const out = deployed.filter((d) => !rebuilt.has(d.kind));
+    const item = (kind, id, title, extra = {}) => ({ kind, id, title, why_yours: lq.why_yours[kind], since: null, due: null, refs: [], ...extra });
+
+    for (const p of lq.poam_due || []) {
+        if (p.due < today) out.push(item('poam_overdue', p.id, p.title, { due: p.due, refs: ['/.well-known/oscal-poam.json'] }));
     }
+    for (const e of doc.decision_log || []) {
+        if (!e.review_by) continue;
+        if (e.kind === 'policy_exception') {
+            // An exception's review date is its expiry.
+            const daysLeft = (Date.parse(e.review_by) - Date.parse(today)) / DAY;
+            if (daysLeft <= (lq.exception_warning_days ?? 30)) {
+                out.push(item('exception_expiring', e.id, `Policy exception ${e.subject}`, { due: e.review_by, refs: e.ticket ? [e.ticket] : [] }));
+            }
+        } else if (e.review_by <= today) {
+            out.push(item('decision_review_due', e.id, `Review due: ${e.subject}`, { due: e.review_by, refs: [e.source] }));
+        }
+    }
+    if (live.runtime) {
+        const div = live.runtime.divergence || {};
+        const since = live.runtime.emitted_at || null;
+        for (const r of div.regressions || []) {
+            out.push(item('runtime_diverged', r.ksi_id, `${r.ksi_id} passed at deploy but fails at runtime`, { since, refs: ['/.well-known/ksi-signal-runtime.json'] }));
+        }
+        const unassessed = (div.unassessed || []).map((u) => u.ksi_id);
+        if (unassessed.length) {
+            out.push(item('runtime_unassessed', 'runtime-unassessed', `${unassessed.length} KSI(s) not assessed at runtime: ${unassessed.join(', ')}`, { since, refs: ['/.well-known/ksi-signal-runtime.json'] }));
+        }
+        const age = ageHours(since, now);
+        if (age === null || age > (windows.runtime || 26)) {
+            out.push(item('runtime_stale', 'runtime-stale', 'The runtime signal is past its freshness window', { since }));
+        }
+    }
+    if (live.vdrReport) {
+        // The vulnerability evidence itself, not the job that refreshes it: a
+        // failed nightly matters to an AO once the published evidence is stale.
+        const age = ageHours(live.vdrReport.emitted_at, now);
+        if (age === null || age > (windows.vulnerability_scan || 24)) {
+            out.push(item('vulnerability_evidence_stale', 'vdr-stale', 'The published vulnerability evidence is past its freshness window',
+                { since: live.vdrReport.emitted_at || null, refs: ['/.well-known/vdr-report.json'] }));
+        }
+    }
+    return out;
 }
 
-function renderQueue(doc) {
+function getJson(url) {
+    return fetch(url, { credentials: 'same-origin', cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))));
+}
+
+function recheckLive(doc) {
+    const windows = doc.freshness_windows_hours || {};
+    const settled = (pr) => pr.then((v) => v, () => null); // an unreadable source keeps the deploy-time verdict
+    Promise.all([
+        settled(getJson('/.well-known/ksi-signal-runtime.json')),
+        settled(getJson('/.well-known/vdr-status.json')),
+        settled(getJson('/.well-known/vdr-report.json')),
+    ]).then(([runtime, beacon, vdrReport]) => {
+        const now = Date.now();
+        for (const [id, data, evaluate, windowHours] of [
+            ['runtime', runtime, evaluateRuntime, windows.runtime],
+            ['vulnerability_scan', beacon, evaluateNightly, windows.vulnerability_scan],
+        ]) {
+            const row = ROOT.querySelector(`[data-check="${id}"]`);
+            const base = (doc.picture || []).find((p) => p.id === id);
+            if (row && base && data && windowHours) row.replaceWith(pictureItem({ ...base, ...evaluate(data, now, windowHours), live: true }));
+        }
+        if (doc.live_queue) renderQueue(liveQueue(doc, now, { runtime, vdrReport }), true);
+    });
+}
+
+function renderQueue(items, live = false) {
     const host = slot('queue');
-    const items = doc.decisions_pending || [];
+    host.replaceChildren();
+    const note = live ? el('p', { class: 'tc-check-meta tc-live', text: 'Re-checked live in your browser just now: review dates, expiries, due dates, and runtime and vulnerability-evidence freshness.' }) : null;
     if (!items.length) {
         host.append(el('div', { class: 'tc-empty' },
             el('p', { class: 'tc-empty-title', text: 'Nothing needs your decision right now.' }),
-            el('p', { text: 'Every open item is covered by a recorded decision that is not yet due for review. When that changes, it appears here with the reason it is yours.' })));
+            el('p', { text: 'Every finding and exception is covered by a recorded decision that is not due for review, and nothing else that would need a person has come up. When that changes, it appears here with the reason it is yours.' })), note);
         return;
     }
     const ol = el('ol', { class: 'tc-queue' });
@@ -198,12 +271,12 @@ function renderQueue(doc) {
         ol.append(el('li', { class: 'tc-queue-item' },
             el('h3', { text: d.title }),
             el('p', { class: 'tc-why' }, el('strong', { text: 'Why it is yours: ' }), d.why_yours),
-            meta.length ? el('p', { class: 'tc-check-meta' }, ...meta.flatMap((m, i) => (i ? [' · ', m] : [m]))) : null,
+            meta.length ? el('p', { class: 'tc-check-meta' }, ...meta.flatMap((m, i) => (i ? [' \u00b7 ', m] : [m]))) : null,
             (d.refs || []).length ? el('p', { class: 'tc-check-meta' }, 'See: ',
                 ...d.refs.flatMap((r, i) => [i ? ', ' : null, r.startsWith('/') ? link(r, r.replace('/.well-known/', '')) : el('code', { text: r })])) : null,
         ));
     }
-    host.append(el('p', { class: 'tc-count' }, `${items.length} item${items.length === 1 ? '' : 's'} awaiting a decision`), ol);
+    host.append(el('p', { class: 'tc-count' }, `${items.length} item${items.length === 1 ? '' : 's'} awaiting a decision`), ol, note);
 }
 
 function sparkline(history) {
@@ -232,10 +305,13 @@ function renderEscalation(doc) {
     host.append(el('div', {},
         el('p', { class: 'tc-rate' },
             el('span', { class: 'tc-rate-label', text: 'Escalation rate' }),
-            el('span', { class: 'tc-rate-num', text: String(r.resolved_by_precedent) }), ' settled by precedent · ',
-            el('span', { class: 'tc-rate-num', text: String(r.escalated) }), ` brought to a person (${pct})`),
+            el('span', { class: 'tc-rate-part' }, el('span', { class: 'tc-rate-num', text: String(r.resolved_by_precedent) }), ' settled by precedent'),
+            el('span', { class: 'tc-rate-sep', 'aria-hidden': 'true', text: '\u00b7' }),
+            el('span', { class: 'tc-rate-part' }, el('span', { class: 'tc-rate-num', text: String(r.escalated) }), ` brought to a person (${pct})`)),
         days >= 7 ? sparkline(r.history) : null,
-        el('p', { class: 'tc-check-meta', text: days >= 7 ? r.about : `${r.about} A daily trend appears after a week of history (${days} day${days === 1 ? '' : 's'} so far).` }),
+        el('p', { class: 'tc-check-meta' }, `Measured at the last deploy (`, when(doc.generated_at) || 'time unknown',
+            `), unlike the queue above, which is re-checked live. ${r.about}`,
+            days >= 7 ? '' : ` A daily trend appears after a week of history (${days} day${days === 1 ? '' : 's'} so far).`),
     ));
 }
 
@@ -289,17 +365,17 @@ function renderRecord(doc) {
         el('p', { class: 'tc-filter' }, el('label', { for: 'tc-kind', text: 'Show ' }), select),
     );
 
-    const cell = (v) => (v ? el('td', { text: v }) : el('td', {}, el('span', { class: 'tc-gap', text: 'not recorded' })));
+    const cell = (v, label) => (v ? el('td', { 'data-label': label, text: v }) : el('td', { 'data-label': label }, el('span', { class: 'tc-gap', text: 'not recorded' })));
     const tbody = el('tbody');
     for (const e of log) {
         const reasoning = el('details', { class: 'tc-reason' }, el('summary', { text: e.subject }), el('p', { text: e.reasoning }),
             el('p', { class: 'tc-check-meta' }, 'Source: ', e.source.startsWith('/') ? link(e.source, e.source.replace('/.well-known/', '')) : el('code', { text: e.source })));
         const tr = el('tr', { 'data-kind': e.kind },
             el('th', { scope: 'row' }, el('code', { text: shortId(e), title: e.id })),
-            el('td', {}, el('span', { class: 'tc-muted', text: KIND_LABELS[e.kind] || e.kind }), reasoning),
-            el('td', { text: e.decision }),
-            cell(e.decided_by), cell(e.decided_on),
-            e.kind === 'significant_change' ? el('td', { class: 'tc-muted', text: e.verified ? 'verified' : 'verification pending' }) : cell(e.review_by));
+            el('td', { 'data-label': 'What' }, el('span', { class: 'tc-muted', text: KIND_LABELS[e.kind] || e.kind }), reasoning),
+            el('td', { 'data-label': 'Outcome', text: e.decision }),
+            cell(e.decided_by, 'Decided by'), cell(e.decided_on, 'On'),
+            e.kind === 'significant_change' ? el('td', { 'data-label': 'Review', class: 'tc-muted', text: e.verified ? 'verified' : 'verification pending' }) : cell(e.review_by, 'Review by'));
         tbody.append(tr);
     }
     const table = el('table', { class: 'tc-table' },
@@ -328,7 +404,7 @@ function renderPosture(doc) {
     if (rows.length) {
         host.append(
             el('p', { text: 'Controls with an implementation statement in the System Security Plan, by framework. This measures documentation coverage, not an assessment result.' }),
-            el('dl', { class: 'tc-kv' }, ...rows.map(([key, label]) => el('div', {}, el('dt', { text: label }), el('dd', { text: f[key] })))));
+            el('dl', { class: 'tc-kv tc-kv-compact' }, ...rows.map(([key, label]) => el('div', {}, el('dt', { text: label }), el('dd', { text: f[key] })))));
         if (f.moderate_implemented) {
             host.append(el('p', { class: 'tc-check-meta', text: `Moderate baseline: ${f.moderate_implemented} implemented by this system, ${f.moderate_inherited} inherited from AWS, ${f.moderate_na} not applicable.` }));
         }
@@ -345,8 +421,8 @@ function renderArtifacts() {
 function render(doc) {
     renderFacts(doc);
     renderPicture(doc);
+    renderQueue(doc.decisions_pending || []);
     recheckLive(doc);
-    renderQueue(doc);
     renderEscalation(doc);
     renderPolicy(doc);
     renderRecord(doc);

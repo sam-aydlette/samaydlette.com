@@ -171,9 +171,11 @@
     color: var(--text-secondary);
 }
 
-.tc-check-meta {
+/* .trust raises specificity above articles.css paragraph rules. */
+.trust .tc-check-meta {
     margin: 0.35rem 0 0;
     font-size: var(--font-size-sm);
+    line-height: 1.5;
     color: var(--text-secondary);
 }
 
@@ -298,7 +300,14 @@
 }
 
 .tc-queue {
-    padding-left: 1.25rem;
+    padding-left: 0;
+    list-style: none;
+}
+
+.trust .tc-queue-item p {
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin: 0.3rem 0 0;
 }
 
 .tc-queue-item {
@@ -331,8 +340,18 @@
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0.35rem;
+    gap: 0.2rem 0.5rem;
     margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.tc-rate-part {
+    white-space: nowrap;
+}
+
+.tc-rate-num {
+    margin-right: 0.3rem;
 }
 
 .tc-rate-label {
@@ -541,13 +560,101 @@
     margin: 0.3rem 0;
 }
 
+.tc-kv-compact > div {
+    grid-template-columns: 1fr auto;
+}
+
+.tc-kv-compact dd {
+    font-family: var(--font-mono);
+}
+
 @media (max-width: 640px) {
-    .tc-kv > div {
+    .tc-kv:not(.tc-kv-compact) > div {
         grid-template-columns: 1fr;
         gap: 0.2rem;
     }
 
     .tc-picture {
         grid-template-columns: 1fr;
+    }
+
+    .tc-policy-card > summary {
+        grid-template-columns: 1fr;
+    }
+
+    .tc-policy-count {
+        padding-left: 1.2rem;
+    }
+
+    .tc-policy-about {
+        padding-left: 1.2rem;
+    }
+
+    .tc-rate-label {
+        flex-basis: 100%;
+    }
+
+    .tc-rate-sep {
+        display: none;
+    }
+
+    .tc-rate-part {
+        flex-basis: 100%;
+    }
+
+    /* The decision record becomes one card per decision on a phone. */
+    .tc-table-wrap {
+        max-height: 34rem;
+        border: 0;
+    }
+
+    .tc-table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .tc-table,
+    .tc-table tbody,
+    .tc-table tr,
+    .tc-table th,
+    .tc-table td {
+        display: block;
+        width: auto;
+    }
+
+    .tc-table tr {
+        margin-bottom: 0.75rem;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-secondary);
+    }
+
+    .tc-table tr[hidden] {
+        display: none;
+    }
+
+    .tc-table th,
+    .tc-table td {
+        padding: 0.2rem 0;
+        border: 0;
+        white-space: normal;
+    }
+
+    .tc-table td:nth-child(n + 3) {
+        display: grid;
+        grid-template-columns: 6.5rem 1fr;
+        white-space: normal;
+    }
+
+    .tc-table td[data-label]:nth-child(n + 3)::before {
+        content: attr(data-label);
+        font-size: var(--font-size-xs);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
     }
 }

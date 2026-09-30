@@ -63,6 +63,7 @@ WHY_YOURS = {
     "scn_unverified": "A significant change was approved but its post-implementation verification is not recorded as complete.",
     "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
     "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the AO's call.",
+    "vulnerability_evidence_stale": "The published vulnerability evidence is older than its freshness window, so current exposure is not known. Whether to rely on the system meanwhile is a judgment.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the AO's call.",
 }
 
@@ -416,9 +417,26 @@ def build_decision_log(inp: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[
     return log, gaps
 
 
+# Queue kinds that arise when recorded precedent does not settle something the
+# build encountered. Other kinds (a pending trust-root change, a drifted
+# setting, an unclassified resource) are always a person's call and are not
+# part of the rate.
+PRECEDENT_KINDS = {"vdr_blocking", "vdr_undispositioned", "exception_expiring", "poam_overdue", "decision_review_due"}
+
+
 def build_escalation_rate(inp: dict[str, Any], pending: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
-    auto = int(inp["vdr"].get("summary", {}).get("dispositioned_findings", 0))
-    escalated = len(pending)
+    """Settled vs escalated over one population: the vulnerability findings and
+    policy exceptions this build encountered, plus the recorded decisions that
+    settle them. Settled = covered by a current recorded decision; escalated =
+    the queue items raised because precedent did not settle something."""
+    escalated = sum(1 for d in pending if d["kind"] in PRECEDENT_KINDS)
+    findings = inp["vdr"].get("findings", [])
+    settled_findings = sum(1 for f in findings
+                           if not f.get("is_blocking") and (f.get("final_disposition") or "open") != "open")
+    queued_exceptions = {d["id"] for d in pending if d["kind"] == "exception_expiring"}
+    settled_exceptions = sum(1 for e in inp["exceptions"]
+                             if f"{e.get('rule_id')}:{e.get('resource')}" not in queued_exceptions)
+    auto = settled_findings + settled_exceptions
     today = now.date().isoformat()
     previous = (inp.get("previous") or {}).get("escalation_rate", {}).get("history", [])
     # The previous trust center is read back from the live site: carry forward
@@ -428,7 +446,7 @@ def build_escalation_rate(inp: dict[str, Any], pending: list[dict[str, Any]], no
                and h["date"] != today and isinstance(h.get("resolved_by_precedent"), int) and isinstance(h.get("escalated"), int)]
     history.append({"date": today, "resolved_by_precedent": auto, "escalated": escalated})
     return {
-        "about": "Of the items this build had to resolve, how many the recorded policy settled and how many came to a person.",
+        "about": "Of the vulnerability findings and policy exceptions this build encountered, how many a current recorded decision settled, and how many came to a person because no decision covered them or the one that did had lapsed.",
         "resolved_by_precedent": auto, "escalated": escalated,
         "rate": round(escalated / (auto + escalated), 3) if auto + escalated else 0.0,
         "history": sorted(history, key=lambda h: h["date"])[-HISTORY_DAYS:],
@@ -463,6 +481,16 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         # deploys (runtime signal, nightly beacon) live, against these windows.
         "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS},
         "decisions_pending": pending,
+        # What the page needs to rebuild the date-driven part of the queue live,
+        # so an empty queue is true on the day it is read, not only the day it
+        # was deployed. The reasons travel with the data (one source of truth).
+        "live_queue": {
+            "why_yours": WHY_YOURS,
+            "exception_warning_days": EXCEPTION_WARNING_DAYS,
+            "poam_due": [{"id": p["id"], "title": p["title"], "due": d.isoformat()}
+                         for p in poam_items(inp["poam"])
+                         if p["status"] == "open" and (d := _parse_date(p["scheduled_completion"]))],
+        },
         "policy_catalog": build_policy_catalog(inp),
         "escalation_rate": build_escalation_rate(inp, pending, now),
         "decision_log": log,
