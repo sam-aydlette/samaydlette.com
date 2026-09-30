@@ -70,7 +70,7 @@ The signal joins five sources into one document:
 - **Provenance** from GitHub Actions environment variables (repository, commit SHA, workflow run ID).
 - **Validations** from the OPA gate, each one carrying a `component_refs[]` array naming the specific inventory components it evaluated.
 
-For a browser-friendly view of the live signal and SSP, see the [Trust Center](https://samaydlette.com/trust/). For programmatic access:
+For a browser-friendly view of the live signal and SSP, see the [Trust Center](https://samaydlette.com/trust/index.html). For programmatic access:
 
 ```bash
 # The signal is published live; anyone can fetch it.
