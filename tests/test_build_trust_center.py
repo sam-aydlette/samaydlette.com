@@ -23,9 +23,9 @@ NOW = datetime(2026, 9, 29, 12, 0, tzinfo=timezone.utc)
 SIG = "sig-1"
 
 
-def poam_item(pid: str, status: str, disposition: str, scheduled: str) -> dict:
+def poam_item(pid: str, status: str, disposition: str, scheduled: str, **decision: str) -> dict:
     props = {"poam-id": pid, "status": status, "disposition": disposition, "scheduled-completion-date": scheduled,
-             "point-of-contact": "Operator", "status-date": "2026-05-08"}
+             "point-of-contact": "Operator", "status-date": "2026-05-08", **decision}
     return {"title": f"{pid} title", "description": f"{pid} rationale",
             "props": [{"name": k, "value": v} for k, v in props.items()]}
 
@@ -197,3 +197,18 @@ def test_hand_applied_settings_are_reported_as_observed():
     assert p["dnssec"] == "not_observed"  # a check that did not run is never assumed ok
     assert ("manual_setting", "sns_subscription") in kinds(doc)
     assert ("manual_setting", "github_settings") not in kinds(doc)
+
+
+def test_poam_decision_props_fill_the_record_and_due_reviews_are_queued():
+    poam = {"plan-of-action-and-milestones": {"poam-items": [
+        poam_item("POAM-010", "open", "risk-accepted", "n/a",
+                  **{"decided-by": "Operator", "decided-on": "2025-09-01", "review-by": "2026-09-01"}),  # past review
+        poam_item("POAM-011", "open", "false-positive", "n/a",
+                  **{"decided-by": "Operator", "decided-on": "2026-06-01", "review-by": "2027-06-01"}),
+    ]}}
+    doc = build(poam=poam)
+    entries = {e["id"]: e for e in doc["decision_log"]}
+    assert entries["POAM-011"]["decided_by"] == "Operator" and entries["POAM-011"]["gaps"] == []
+    assert ("decision_review_due", "POAM-010") in kinds(doc)
+    assert ("decision_review_due", "POAM-011") not in kinds(doc)
+    assert ("decision_review_due", "CVE-1") not in kinds(doc)  # no review date recorded: a gap, not due
