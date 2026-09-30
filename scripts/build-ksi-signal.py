@@ -516,9 +516,20 @@ IIW_OVERRIDES = {
     },
     ("object_store", "logs"): {
         "function": "Access-log bucket for the site bucket and CDN",
+        "diagram_label": "S3 access-log bucket",
+        "baseline_configuration": "AWS S3; versioning, SSE-S3 (AES-256) and public access block; bucket policy admits only S3 server-access and CloudFront log delivery, and denies non-TLS access",
     },
     ("object_store", "cloudtrail"): {
         "function": "Delivery bucket for the account's CloudTrail management-event trail",
+        "diagram_label": "S3 CloudTrail delivery bucket",
+        "baseline_configuration": "AWS S3; versioning, SSE-S3 (AES-256) and public access block; bucket policy grants CloudTrail delivery and denies non-TLS access",
+    },
+    # The Terraform state bucket (bootstrap stack). Without this it inherited
+    # the site bucket's text and read as a content origin.
+    ("object_store", "tfstate"): {
+        "function": "Remote Terraform state for the application and bootstrap stacks",
+        "diagram_label": "S3 Terraform state bucket",
+        "baseline_configuration": "AWS S3; versioning, SSE-S3 (AES-256) and public access block; bucket policy denies non-TLS access; locking in DynamoDB",
     },
     ("log_group", "silk_apigw"): {
         "function": "CloudWatch log group for the Silk Reeling API Gateway access logs",

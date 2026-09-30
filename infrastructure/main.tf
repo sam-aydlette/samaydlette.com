@@ -465,7 +465,9 @@ resource "aws_iam_role_policy" "lambda_opa" {
         # resource_read_error, so the omission surfaces as an unassessed
         # resource rather than as fabricated security findings. The CloudTrail
         # bucket was inventoried without this grant and produced exactly that
-        # failure mode.
+        # failure mode, and so did the Terraform state bucket when the
+        # bootstrap stack entered the inventory (tests/test_runtime_bucket_reads.py
+        # now fails a PR that inventories a bucket without adding it here).
         Effect = "Allow"
         Action = [
           "s3:GetBucketVersioning",
@@ -475,7 +477,11 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
         Resource = [
           aws_s3_bucket.logs.arn,
-          aws_s3_bucket.cloudtrail.arn
+          aws_s3_bucket.cloudtrail.arn,
+          # The Terraform state bucket belongs to the bootstrap stack, so it is
+          # named by convention rather than referenced. Configuration metadata
+          # only: the Lambda can never read the state itself.
+          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate"
         ]
       },
       {
