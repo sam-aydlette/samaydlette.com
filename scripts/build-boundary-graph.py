@@ -81,6 +81,24 @@ CONNECTOR_TYPES = {
     "aws_kms_alias",
 }
 
+# A name two components share (an EventBridge rule and the Lambda it invokes are
+# both called "samaydlette-com-opa-compliance") identifies neither on its own.
+# Where the attribute holding it says what kind of thing it names, that settles
+# it: an event target's "rule" is a rule, a permission's "function_name" a function.
+REFERENCE_TYPE_HINTS = {
+    "rule": "event_schedule",
+    "function_name": "function",
+    "user_pool_id": "identity_provider",
+    "zone_id": "dns_zone",
+    "hosted_zone_id": "dns_zone",
+    "bucket": "object_store",
+    "role": "iam_role",
+    "role_name": "iam_role",
+    "api_id": "api_gateway",
+    "certificate_arn": "tls_certificate",
+    "acm_certificate_arn": "tls_certificate",
+}
+
 # Values too generic to identify a resource by exact match.
 MIN_IDENTITY_LEN = 6
 # Policy documents and similar blobs are scanned for ARNs; skip anything larger
@@ -114,16 +132,25 @@ def state_resources(state: dict[str, Any]) -> Iterable[dict[str, Any]]:
             }
 
 
-def strings_in(value: Any) -> Iterable[str]:
+def keyed_strings(value: Any, key: str | None = None) -> Iterable[tuple[str | None, str]]:
+    """Every string in a resource's values, with the attribute name it sits under."""
     if isinstance(value, str):
         if len(value) <= MAX_SCAN_LEN:
-            yield value
+            yield key, value
     elif isinstance(value, dict):
-        for v in value.values():
-            yield from strings_in(v)
+        for k, v in value.items():
+            yield from keyed_strings(v, k)
     elif isinstance(value, list):
         for v in value:
-            yield from strings_in(v)
+            yield from keyed_strings(v, key)
+
+
+def url_tail(value: str) -> str | None:
+    """The last path segment of an https URL: a Cognito issuer URL ends in its pool id."""
+    if not value.startswith("https://"):
+        return None
+    tail = value.rstrip("/").rsplit("/", 1)[-1]
+    return tail if len(tail) >= MIN_IDENTITY_LEN else None
 
 
 # -----------------------------------------------------------------------------
@@ -199,6 +226,8 @@ def build(
     by_address: dict[str, dict[str, Any]] = {}
     for r in resources:
         by_address.setdefault(r["address"], r)
+    managed_by_arn = {str(r["values"]["arn"]): r for r in resources
+                      if r["mode"] == "managed" and isinstance(r["values"].get("arn"), str)}
     kms_aliases = {
         str(r["values"].get("target_key_id")): str(r["values"].get("name"))
         for r in resources
@@ -221,8 +250,8 @@ def build(
     pending_addresses = {c["address"] for c in (trust_root_plan or {}).get("changes", [])}
 
     nodes: list[dict[str, Any]] = []
-    identity: dict[str, str] = {}  # exact identifier -> component_id
-    ambiguous: set[str] = set()  # identifiers shared by several components
+    owners: dict[str, set[str]] = {}  # exact identifier -> the components it names
+    component_type: dict[str, str] = {}
     arn_index: list[tuple[str, str]] = []  # (ARN, component_id) for substring matches in documents
     resource_component: dict[str, str] = {}  # terraform address -> component_id
     unclassified: list[str] = []
@@ -237,6 +266,14 @@ def build(
         res = by_address.get(tf_address) if tf_address else None
         if res is not None:
             resource_component[tf_address] = cid
+        # A resource one stack manages and another reads (the CloudFront
+        # distribution: managed by the bootstrap stack, a data source in the
+        # application stack) is described fully only by the managed instance.
+        managed = managed_by_arn.get(str(c.get("native_id") or ""))
+        if managed is not None and (res is None or res["mode"] != "managed"):
+            resource_component[managed["address"]] = cid
+            res = managed
+        component_type[cid] = str(c.get("type") or "")
 
         flags: list[str] = []
         tags = (res or {}).get("values", {}).get("tags_all") if res else None
@@ -273,14 +310,12 @@ def build(
         candidates = [c.get("native_id"), attrs.get("id"), attrs.get("name"), attrs.get("function_name")]
         if res is not None:
             candidates += [res["values"].get(k) for k in ("arn", "id", "name", "bucket")]
+            if c.get("type") == "cdn_distribution":
+                # DNS alias records name the distribution by its domain.
+                candidates.append(res["values"].get("domain_name"))
         for value in candidates:
-            if not isinstance(value, str) or len(value) < MIN_IDENTITY_LEN:
-                continue
-            # A bucket, a DNS zone and a certificate can all be called
-            # "samaydlette.com"; a shared name is not evidence of a reference.
-            if identity.get(value, cid) != cid:
-                ambiguous.add(value)
-            identity.setdefault(value, cid)
+            if isinstance(value, str) and len(value) >= MIN_IDENTITY_LEN:
+                owners.setdefault(value, set()).add(cid)
         native = str(c.get("native_id") or "")
         if native.startswith("arn:") and len(native) > 20:
             arn_index.append((native, cid))
@@ -296,8 +331,22 @@ def build(
             "why": d.get("why"),
         })
 
-    for value in ambiguous:
-        identity.pop(value, None)
+    # A bucket, a DNS zone and a certificate can all be called "samaydlette.com";
+    # a shared name is evidence of a reference only where a type hint settles it.
+    identity = {v: next(iter(cs)) for v, cs in owners.items() if len(cs) == 1}
+    shared = {v: cs for v, cs in owners.items() if len(cs) > 1}
+
+    def resolve_value(key: str | None, value: str) -> str | None:
+        hit = identity.get(value)
+        if hit:
+            return hit
+        want = REFERENCE_TYPE_HINTS.get(key or "")
+        if want and value in shared:
+            typed = [cid for cid in shared[value] if component_type.get(cid) == want]
+            if len(typed) == 1:
+                return typed[0]
+        tail = url_tail(value)
+        return identity.get(tail) if tail else None
 
     # --- Reference graph --------------------------------------------------------
     edges: dict[tuple[str, str], set[str]] = {}
@@ -308,8 +357,8 @@ def build(
 
     for r in resources:
         refs: set[str] = set()
-        for s in strings_in(r["values"]):
-            hit = identity.get(s)
+        for key, s in keyed_strings(r["values"]):
+            hit = resolve_value(key, s)
             if hit:
                 refs.add(hit)
                 continue
