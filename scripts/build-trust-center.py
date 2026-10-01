@@ -39,6 +39,9 @@ REPO = Path(__file__).resolve().parent.parent
 # thresholds that page the operator.
 VDR_MAX_AGE_HOURS = 24
 RUNTIME_MAX_AGE_HOURS = 26
+# The independent corroboration (RAMPART on TAP) runs on the operator's machine;
+# older than this, the map is no longer independently checked.
+CORROBORATION_MAX_AGE_DAYS = 30
 # An accepted exception this close to expiry is a renewal decision now, not later.
 EXCEPTION_WARNING_DAYS = 30
 # Days of escalation-rate history the artifact carries forward.
@@ -156,6 +159,35 @@ def _brief(text: str, limit: int = 400) -> str:
 # 1. Is this picture true?
 # ---------------------------------------------------------------------------
 
+def corroboration_verdict(report: dict[str, Any] | None, now: datetime) -> tuple[str, str]:
+    """(status, detail) for the independent corroboration of the boundary map."""
+    if not report:
+        return "not_observed", "No independent corroboration has been run."
+    s = report.get("summary", {})
+    age = _age_hours(report.get("checked_at"), now)
+    days = None if age is None else round(age / 24, 1)
+    parts = [f"{s.get('agree', 0)} of {s.get('in_scope', 0)} components agree"]
+    if s.get("tap_only"):
+        parts.append(f"{s['tap_only']} resource(s) only TAP sees")
+    if s.get("map_only"):
+        parts.append(f"{s['map_only']} on the map that TAP did not observe")
+    if s.get("tag_differences"):
+        parts.append(f"{s['tag_differences']} tag difference(s)")
+    if s.get("relationships_tap_only"):
+        parts.append(f"{s['relationships_tap_only']} relationship(s) the map does not draw")
+    stale = days is None or days > CORROBORATION_MAX_AGE_DAYS
+    when = "" if days is None else ("today" if days < 1 else f"{days:g} days ago")
+    detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS} days)." if when else ".")
+    differs = any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
+    return ("attention" if stale or differs else "ok"), detail
+
+
+def add_corroboration(add: Any, report: dict[str, Any] | None, now: datetime) -> None:
+    status, detail = corroboration_verdict(report, now)
+    add("corroboration", "Independent corroboration (RAMPART on TAP)", status, detail,
+        (report or {}).get("checked_at"), "/.well-known/boundary-corroboration.json" if report else None)
+
+
 def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
     signal, report, bmap = inp["signal"], inp["reconcile"], inp["boundary_map"]
     picture: list[dict[str, Any]] = []
@@ -218,6 +250,8 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
             f"Last nightly run: {nightly.get('result', 'unknown')}"
             + (f", {age} h ago (window {VDR_MAX_AGE_HOURS} h)." if age is not None else "."),
             nightly.get("finished_at"), "/.well-known/vdr-status.json")
+
+    add_corroboration(add, inp.get("corroboration"), now)
 
     manual = inp.get("manual_settings") or {}
     observed = {c.get("id"): c for c in manual.get("checks", [])}
@@ -299,6 +333,12 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
         if n.get("kind") == "not_inventoried":
             out.append(_decision("boundary_not_inventoried", n["id"], f"{n.get('name', n['id'])} is used but not inventoried", refs=[n["id"]]))
 
+    for r in (inp.get("corroboration") or {}).get("tap_only", []):
+        out.append(_decision("boundary_not_inventoried", f"tap:{r.get('type')}:{r.get('name')}",
+                             f"{r.get('name')} ({r.get('type')}) exists in the account but is not in the inventory",
+                             since=(inp.get("corroboration") or {}).get("checked_at"),
+                             refs=["/.well-known/boundary-corroboration.json"]))
+
     for c in (inp.get("manual_settings") or {}).get("checks", []):
         if c.get("status") == "attention" and c.get("id") in MANUAL_SETTINGS:
             out.append(_decision("manual_setting", c["id"], f"{MANUAL_SETTINGS[c['id']]}: {c.get('detail', '')}",
@@ -345,6 +385,7 @@ def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
                 {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
                 {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
                 {"name": "Runtime divergence pre-flight staleness", "value": "48 hours", "source": "scripts/check-runtime-divergence.py"},
+                {"name": "Independent corroboration freshness", "value": f"{CORROBORATION_MAX_AGE_DAYS} days", "source": "scripts/build-trust-center.py"},
                 {"name": "Exception renewal warning", "value": f"{EXCEPTION_WARNING_DAYS} days before expiry", "source": "scripts/build-trust-center.py"},
                 {"name": "Minimum TLS policy", "value": str(config.get("tls", {}).get("minimum")), "source": "infrastructure/policy/config/data.json"},
                 {"name": "Required resource tags", "value": ", ".join(config.get("required_tags", [])), "source": "infrastructure/policy/config/data.json"},
@@ -479,7 +520,8 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "picture": build_picture(inp, now),
         # The page re-checks the two evidence streams that change between
         # deploys (runtime signal, nightly beacon) live, against these windows.
-        "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS},
+        "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS,
+                                    "corroboration": CORROBORATION_MAX_AGE_DAYS * 24},
         "decisions_pending": pending,
         # What the page needs to rebuild the date-driven part of the queue live,
         # so an empty queue is true on the day it is read, not only the day it
@@ -525,6 +567,7 @@ def main() -> None:
     ap.add_argument("--runtime", default="ksi-signal-runtime.json", help="the published runtime signal (optional)")
     ap.add_argument("--vdr-status", default="vdr-status.json", help="the nightly status beacon (optional)")
     ap.add_argument("--manual-settings", default="manual-settings.json", help="scripts/check-manual-settings.py output (optional)")
+    ap.add_argument("--corroboration", default="boundary-corroboration.json", help="tools/boundary-map/corroborate.py output (optional)")
     ap.add_argument("--previous", default="trust-center-previous.json", help="the last published trust center (optional)")
     ap.add_argument("--dispositions", default=str(REPO / "data" / "vuln-dispositions.json"))
     ap.add_argument("--exceptions", default=str(REPO / "infrastructure" / "policy" / "exceptions" / "data.json"))
@@ -562,6 +605,7 @@ def main() -> None:
         "runtime": load(a.runtime, required=False), "vdr_status": load(a.vdr_status, required=False),
         "previous": load(a.previous, required=False),
         "manual_settings": load(a.manual_settings, required=False),
+        "corroboration": load(a.corroboration, required=False),
         "dispositions": (load(a.dispositions) or {}).get("dispositions", {}),
         "exceptions": load(a.exceptions) or [],
         "policy_config": load(a.policy_config) or {},

@@ -229,3 +229,16 @@ def test_live_queue_carries_its_inputs():
     assert live["exception_warning_days"] == 30
     assert live["poam_due"] == [{"id": "POAM-001", "title": "POAM-001 title", "due": "2026-09-01"}]
     assert "decision_review_due" in live["why_yours"] and "vulnerability_evidence_stale" in live["why_yours"]
+
+
+def test_independent_corroboration_is_reported_and_its_findings_queued():
+    assert picture(build())["corroboration"] == "not_observed"
+    clean = {"checked_at": "2026-09-25T12:00:00+00:00", "summary": {"in_scope": 3, "agree": 3}, "tap_only": []}
+    assert picture(build(corroboration=clean))["corroboration"] == "ok"
+    stale = {**clean, "checked_at": "2026-08-01T12:00:00+00:00"}
+    assert picture(build(corroboration=stale))["corroboration"] == "attention"
+    found = {**clean, "summary": {"in_scope": 3, "agree": 3, "tap_only": 1},
+             "tap_only": [{"type": "dynamodb_table", "name": "lock"}]}
+    doc = build(corroboration=found)
+    assert picture(doc)["corroboration"] == "attention"
+    assert ("boundary_not_inventoried", "tap:dynamodb_table:lock") in kinds(doc)

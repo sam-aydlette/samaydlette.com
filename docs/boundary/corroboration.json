@@ -1,0 +1,130 @@
+{
+  "schema": "rampart-corroboration/1",
+  "checked_at": "2026-10-01T18:13:17+00:00",
+  "result": "differs",
+  "corroborated_by": {
+    "name": "RAMPART on TAP (The Analogy Platform)",
+    "url": "https://github.com/unified-systems-com/tap",
+    "collector": "aws_core:boto3",
+    "collector_version": "0.5.0",
+    "collected_at": "2026-10-01T12:00:30.526846+00:00"
+  },
+  "compared_against": {
+    "ksi_signal_id": "fa8de8cf-fced-4314-b3d6-6685238c2bbf",
+    "map_commit": "a384893b4f67d285da0348daad6ce6183e799732",
+    "map_generated_at": "2026-10-01T12:46:54+00:00"
+  },
+  "summary": {
+    "in_scope": 32,
+    "agree": 32,
+    "map_only": 0,
+    "tap_only": 1,
+    "tag_differences": 0,
+    "relationships_compared": 22,
+    "relationships_tap_only": 5,
+    "provider_managed": 6
+  },
+  "agree": [
+    "aws::api_gateway::silk_reeling",
+    "aws::audit_log_trail::management",
+    "aws::cdn_distribution::website",
+    "aws::dns_zone::website",
+    "aws::event_schedule::evidence_watchdog",
+    "aws::event_schedule::opa_compliance",
+    "aws::function::evidence_watchdog",
+    "aws::function::opa_compliance",
+    "aws::function::silk_reeling",
+    "aws::iam_role::deploy",
+    "aws::iam_role::evidence_nightly",
+    "aws::iam_role::evidence_watchdog",
+    "aws::iam_role::lambda_opa",
+    "aws::iam_role::plan",
+    "aws::iam_role::silk_reeling",
+    "aws::identity_provider::silk_reeling",
+    "aws::kms_key::at_rest",
+    "aws::kms_key::dnssec_ksk",
+    "aws::kms_key::runtime_signing",
+    "aws::kms_key::silk_reeling",
+    "aws::log_group::evidence_watchdog",
+    "aws::log_group::opa_compliance",
+    "aws::log_group::silk_apigw",
+    "aws::log_group::silk_reeling",
+    "aws::message_queue::compliance_dlq",
+    "aws::object_store::cloudtrail",
+    "aws::object_store::logs",
+    "aws::object_store::tfstate",
+    "aws::object_store::website",
+    "aws::oidc_provider::github",
+    "aws::secrets_manager::silk_anthropic",
+    "aws::tls_certificate::website"
+  ],
+  "map_only": [],
+  "tap_only": [
+    {
+      "type": "dynamodb_table",
+      "name": "samaydlette-com-tflock",
+      "why": "TAP observed it in the account, but the inventory has no component for it, so the map cannot show it."
+    }
+  ],
+  "tag_differences": [],
+  "relationships_tap_only": [
+    {
+      "from": "aws::api_gateway::silk_reeling",
+      "to": "aws::identity_provider::silk_reeling",
+      "relationship": "authenticates via user pool"
+    },
+    {
+      "from": "aws::dns_zone::website",
+      "to": "aws::cdn_distribution::website",
+      "relationship": "routes traffic"
+    },
+    {
+      "from": "aws::cdn_distribution::website",
+      "to": "aws::tls_certificate::website",
+      "relationship": "retrieves cert from"
+    },
+    {
+      "from": "aws::event_schedule::opa_compliance",
+      "to": "aws::function::opa_compliance",
+      "relationship": "invokes lambda"
+    },
+    {
+      "from": "aws::event_schedule::evidence_watchdog",
+      "to": "aws::function::evidence_watchdog",
+      "relationship": "invokes lambda"
+    }
+  ],
+  "provider_managed": [
+    {
+      "type": "iam_role",
+      "name": "aws-service-role/logger.cloudfront.amazonaws.com/AWSServiceRoleForCloudFrontLogger"
+    },
+    {
+      "type": "iam_role",
+      "name": "aws-service-role/resource-explorer-2.amazonaws.com/AWSServiceRoleForResourceExplorer"
+    },
+    {
+      "type": "iam_role",
+      "name": "aws-service-role/support.amazonaws.com/AWSServiceRoleForSupport"
+    },
+    {
+      "type": "iam_role",
+      "name": "aws-service-role/trustedadvisor.amazonaws.com/AWSServiceRoleForTrustedAdvisor"
+    },
+    {
+      "type": "kms_key",
+      "name": "AWS-managed default key (ACM)"
+    },
+    {
+      "type": "kms_key",
+      "name": "AWS-managed default key (Lambda)"
+    }
+  ],
+  "not_covered_by_tap": {
+    "iam_group": 2,
+    "iam_policy": 17,
+    "metric_alarm": 3,
+    "notification_topic": 1
+  },
+  "scope_note": "Compared: the resource types TAP's aws_core collector covers. Types it does not collect (listed in not_covered_by_tap) rest on the deploy's own reconciliation gate."
+}
