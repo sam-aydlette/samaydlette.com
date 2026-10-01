@@ -96,6 +96,9 @@ TYPE_BY_TF_TYPE = {
     "aws_sns_topic": "notification_topic",
     "aws_cloudwatch_metric_alarm": "metric_alarm",
     "aws_sqs_queue": "message_queue",
+    # The Terraform state lock (bootstrap stack). Found missing from the inventory
+    # by the independent corroboration (RAMPART on TAP), 2026-10-01.
+    "aws_dynamodb_table": "kv_table",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -125,6 +128,7 @@ CFN_TYPE_BY_NORMALIZED = {
     "notification_topic": "AWS::SNS::Topic",
     "metric_alarm": "AWS::CloudWatch::Alarm",
     "message_queue": "AWS::SQS::Queue",
+    "kv_table": "AWS::DynamoDB::Table",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -277,6 +281,14 @@ MAS_DEFAULTS = {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [
             {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "failed-invocation-events"},
+        ],
+    },
+    # Holds Terraform lock IDs and state-file checksums only, never state contents.
+    "kv_table": {
+        "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "github-actions", "channel": "tls-1.2", "data_class": "configuration"},
+            {"direction": "inbound", "counterparty": "operator", "channel": "tls-1.2", "data_class": "configuration"},
         ],
     },
     "external_service": {
@@ -437,6 +449,13 @@ IIW_DEFAULTS = {
         "public": False,
         "baseline_configuration": "AWS SQS; SSE-SQS managed encryption; 14-day retention",
         "iiw_asset_type": "Message Queue (SQS)",
+    },
+    "kv_table": {
+        "function": "Terraform state lock for the application and bootstrap stacks (one lock item per run; no state contents)",
+        "diagram_label": "DynamoDB Terraform state lock",
+        "public": False,
+        "baseline_configuration": "AWS DynamoDB; on-demand capacity; point-in-time recovery; AWS-owned-key encryption at rest; lock-item access granted to the CI plan and deploy roles and the operators group",
+        "iiw_asset_type": "Key-Value Table (DynamoDB)",
     },
     "external_service": {
         "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
@@ -651,6 +670,7 @@ CLASSIFICATION_DEFAULTS = {
     "notification_topic":  (False,              "security-tooling"),
     "metric_alarm":        (False,              "security-tooling"),
     "message_queue":       (False,              "security-tooling"),
+    "kv_table":            (False,              "platform-foundation"),
     "oidc_provider":       (False,              "identity-secrets"),
     "iam_group":           (False,              "identity-secrets"),
 }

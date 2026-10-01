@@ -160,3 +160,17 @@ def test_inventory_classification_matches_bootstrap_tags():
             assert have == want, f"{tf_type}.{name}: inventory {inv_key}={have!r}, tag {tag}={want!r}"
         checked += 1
     assert checked >= 5  # the OIDC provider, three CI roles and the state bucket
+
+
+def test_state_lock_table_is_inventoried():
+    # Found missing by the independent corroboration (RAMPART on TAP): the bootstrap
+    # stack's DynamoDB lock table had no inventory type, so it was silently skipped.
+    state = {"values": {"root_module": {"resources": [
+        {"type": "aws_dynamodb_table", "name": "tflock", "address": "aws_dynamodb_table.tflock", "mode": "managed",
+         "values": {"arn": f"arn:aws:dynamodb:us-east-2:{ACCOUNT}:table/samaydlette-com-tflock", "name": "samaydlette-com-tflock"}}]}}}
+    comps = bks.build_cloud_components(state, {})
+    assert [c["component_id"] for c in comps] == ["aws::kv_table::tflock"]
+    c = comps[0]
+    assert c["resource_type"] == "AWS::DynamoDB::Table"
+    assert c["attributes"]["classification"]["archetype"] == "platform-foundation"
+    assert c["attributes"]["classification"]["data_sensitivity"] == "public"
