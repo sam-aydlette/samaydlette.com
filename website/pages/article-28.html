@@ -18,7 +18,7 @@
             <a href="/index.html" class="site-logo">sam_aydlette</a>
             <nav class="main-nav" aria-label="Main navigation">
                 <a href="/index.html" class="nav-link">Home</a>
-                <a href="/trust/" class="nav-link nav-trust"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
+                <a href="/trust/index.html" class="nav-link nav-trust"><span class="nav-trust-dot" aria-hidden="true"></span>Trust (Live)</a>
                 <a href="/pages/books.html" class="nav-link">Books</a>
                 <a href="/pages/articles.html" class="nav-link active">Articles</a>
                 <a href="/pages/projects.html" class="nav-link">Projects</a>
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="article-summary">
-                    <strong>TL;DR</strong> - I spent a few days getting this whole site ready for a FedRAMP 20x assessment - the website you are reading and the Tai Chi web app that runs alongside it - and it runs for a few dollars a month. I hardened the obvious things, ran an open-source scanner against my account, worked the findings one at a time, and let the deploy pipeline emit and sign all the paperwork. Every artifact is <a href="/trust/">live</a> on the internet right now and you can curl it yourself in about five minutes.
+                    <strong>TL;DR</strong> - I spent a few days getting this whole site ready for a FedRAMP 20x assessment - the website you are reading and the Tai Chi web app that runs alongside it - and it runs for a few dollars a month. I hardened the obvious things, ran an open-source scanner against my account, worked the findings one at a time, and let the deploy pipeline emit and sign all the paperwork. Every artifact is <a href="/trust/index.html">live</a> on the internet right now and you can curl it yourself in about five minutes.
                 </div>
 
                 <p><em>Please note: this is a self-attested proof of concept. The site, website and app alike, is not FedRAMP Certified and never will be. There is no agency, no Authorization to Operate, no government data.</em></p>
@@ -95,7 +95,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://samaydlette.com/silk-reeling/ap
                 <p>Then the 20x equivalent. The Decision Record carries the same posture as a set of per-indicator records rather than one big per-control plan:</p>
                 <div class="code-block"><pre><code>curl -s https://samaydlette.com/.well-known/security-decision-record.json | jq -r '"\(.record_type) - \(.class), \(.rule_records | length) indicators"'
 # security-decision-record - Class C, 46 indicators</code></pre></div>
-                <p>A few more one-liners give you the rest - the component count, the vulnerability summary, the daily runtime signal's timestamp (when I ran them just now: 211 components, 18 findings and zero blocking, and a timestamp from this morning). And it is all Sigstore-signed: <code>cosign verify-blob</code> against the exact GitHub Actions workflow identity proves who published the bytes, though not that the claims inside are true - the schema checks and the deploy gate handle that part. Or skip the terminal and just look at the <a href="/trust/">dashboard</a>, which renders all of the same files.</p>
+                <p>A few more one-liners give you the rest - the component count, the vulnerability summary, the daily runtime signal's timestamp (when I ran them just now: 211 components, 18 findings and zero blocking, and a timestamp from this morning). And it is all Sigstore-signed: <code>cosign verify-blob</code> against the exact GitHub Actions workflow identity proves who published the bytes, though not that the claims inside are true - the schema checks and the deploy gate handle that part. Or skip the terminal and just look at the <a href="/trust/index.html">dashboard</a>, which renders all of the same files.</p>
 
                 <h3>The pipeline IS the documentation</h3>
                 <p>The thing that makes the documentation trustworthy is that I don't touch it. Every deploy, a set of generator scripts reads the system as it actually is and emits the documents from it. <code>build-ksi-signal.py</code> walks the Terraform state and inventories every live resource into the canonical signal; <code>build-oscal-ssp.py</code> turns that into the system security plan; <code>build-oscal-poam.py</code> emits the POA&amp;M; the VDR builder emits the vulnerability report. They all derive from the one inventory, so they cannot quietly disagree.</p>

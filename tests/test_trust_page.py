@@ -153,3 +153,17 @@ def test_a_document_without_live_data_is_shown_as_deployed(tmp_path):
     d = doc()
     del d["live_queue"]
     assert queue(tmp_path, d) == d["decisions_pending"]
+
+
+def test_links_name_the_file_not_the_directory():
+    # CloudFront serves index.html only at the site root; /trust/ is a 404 in
+    # production, so every link must name /trust/index.html. /silk-reeling/ is
+    # the exception: CloudFront routes it to the app, not to S3.
+    import re
+    routed = {"/", "/silk-reeling/"}
+    bad = []
+    for path in (REPO / "website").rglob("*.html"):
+        for m in re.finditer(r'href="(/[^"#?]*/)(?:[#?][^"]*)?"', path.read_text()):
+            if m.group(1) not in routed:
+                bad.append(f"{path.relative_to(REPO)}: {m.group(1)}")
+    assert not bad, bad[:10]

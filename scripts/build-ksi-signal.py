@@ -1697,7 +1697,7 @@ def main():
                 "NTC-0009 (machine-readable authorization data, text-based "
                 "equivalents, the five Balance Improvement Releases folding "
                 "into default requirements). See "
-                "https://samaydlette.com/trust/ for "
+                "https://samaydlette.com/trust/index.html for "
                 "context and limitations."
             ),
             "related_artifacts": {
