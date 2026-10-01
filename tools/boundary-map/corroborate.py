@@ -69,11 +69,9 @@ COVERAGE = {
     "message_queue": ("sqs_queue", "queue_arn"),
     "audit_log_trail": ("cloudtrail_trail", "trail_arn"),
     "secrets_manager": ("secrets_manager_secret", "secret_arn"),
+    "kv_table": ("dynamodb_table", "table_arn"),
 }
-# aws_core types with no inventory counterpart: anything TAP finds here is, by
-# construction, something the map cannot show.
-TAP_ONLY_TYPES = {"dynamodb_table": "table_arn"}
-ID_FIELD = {**{t: f for t, f in COVERAGE.values()}, **TAP_ONLY_TYPES}
+ID_FIELD = {t: f for t, f in COVERAGE.values()}
 
 # The governed classification tags (docs/policies/resource-tagging-standard.md),
 # compared between the live resource and the inventory.
