@@ -63,25 +63,3 @@ resource "aws_route53_record" "acm_validation_www" {
   ttl     = 300
   records = ["_221481f32d19b544671f93cb344ff9cd.xlfgrmvvlj.acm-validations.aws."]
 }
-
-# One-time adoption of the existing records (Terraform >= 1.5). Once a deploy
-# has applied these, they are no-ops and can be removed in a later change.
-import {
-  to = aws_route53_record.apex[0]
-  id = "Z025777934PUN9NPN7X28_samaydlette.com_A"
-}
-
-import {
-  to = aws_route53_record.www[0]
-  id = "Z025777934PUN9NPN7X28_www.samaydlette.com_A"
-}
-
-import {
-  to = aws_route53_record.acm_validation_apex[0]
-  id = "Z025777934PUN9NPN7X28__b628b88de4ded9a53048bcfccc917493.samaydlette.com_CNAME"
-}
-
-import {
-  to = aws_route53_record.acm_validation_www[0]
-  id = "Z025777934PUN9NPN7X28__44dc48e27c8c30834255eeda9f2c8d63.www.samaydlette.com_CNAME"
-}

@@ -127,6 +127,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+    # tfsec (end of life) cannot parse Terraform import blocks and aborts the
+    # whole scan on them, which would drop every tfsec finding from the VDR.
+    # They live only in infrastructure/imports.tf (one-time adoptions, no
+    # security-relevant configuration); this job's checkout is scan-only, so
+    # removing the file here changes nothing that is planned or applied.
+    - name: Hide import blocks from tfsec
+      run: rm -f infrastructure/imports.tf
+
     - name: Run tfsec
       uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6 # v1.0.3
       with:
