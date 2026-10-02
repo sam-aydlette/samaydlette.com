@@ -202,6 +202,20 @@ function kv(dl, key, value) {
     dl.append(el('dt', { text: key }), el('dd', { text: String(value) }));
 }
 
+const TAP_LINK = () => el('a', { href: 'https://github.com/unified-systems-com/tap', rel: 'noopener', text: 'RAMPART on TAP — The Analogy Platform' });
+
+function corroborationLine(report) {
+    if (!report || !report.summary) return ['Independently corroborated by ', TAP_LINK(), ' when its report is available.'];
+    const s = report.summary;
+    const extra = [];
+    if (s.tap_only) extra.push(`${s.tap_only} resource${s.tap_only === 1 ? '' : 's'} only TAP sees`);
+    if (s.map_only) extra.push(`${s.map_only} TAP did not observe`);
+    if (s.relationships_tap_only) extra.push(`${s.relationships_tap_only} relationship${s.relationships_tap_only === 1 ? '' : 's'} the map does not yet draw`);
+    return ['Independently corroborated by ', TAP_LINK(),
+        `, which collects the account straight from the AWS APIs: ${s.agree} of ${s.in_scope} components agree${extra.length ? `; ${extra.join('; ')}` : ''}. Checked ${relativeAge(report.checked_at)} (`,
+        el('a', { href: '/.well-known/boundary-corroboration.json', text: 'report' }), ').'];
+}
+
 function init(snap) {
     const byId = new Map(snap.nodes.map((n) => [n.id, n]));
     const groupLabel = new Map(snap.groups.map((g) => [g.key, g.label]));
@@ -217,10 +231,14 @@ function init(snap) {
             el('a', { href: '/.well-known/ksi-signal.json', text: 'canonical inventory' }),
             ' and Terraform state; bound to that build and ',
             el('a', { href: '/.well-known/boundary-map.bundle', text: 'signed' }),
-            `. Built ${relativeAge(generated)} `, el('time', { datetime: generated, text: `(${generated.replace('+00:00', 'Z')})` }),
-            '. The approach was prototyped with RAMPART on ',
-            el('a', { href: 'https://github.com/unified-systems-com/tap', rel: 'noopener', text: 'TAP — The Analogy Platform' }), '.'),
+            `. Built ${relativeAge(generated)} `, el('time', { datetime: generated, text: `(${generated.replace('+00:00', 'Z')})` }), '.'),
+        el('p', { class: 'bm-attribution', 'data-bm-corroboration': '' }, ...corroborationLine(null)),
     );
+    // The independent check, loaded separately: the map stands on its own without it.
+    fetch('/.well-known/boundary-corroboration.json', { credentials: 'same-origin', cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((report) => { if (report) header.querySelector('[data-bm-corroboration]').replaceChildren(...corroborationLine(report)); })
+        .catch(() => { /* keep the plain attribution */ });
     const canvas = el('div', { class: 'bm-canvas', role: 'img',
         'aria-label': 'Interactive authorization boundary map. A text view of the same components and data flows follows the map.' });
     const legend = el('aside', { class: 'bm-legend', 'aria-label': 'Boundary health and data flows' });

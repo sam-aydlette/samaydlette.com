@@ -66,6 +66,25 @@ export function evaluateRuntime(signal, now, windowHours) {
     };
 }
 
+export function evaluateCorroboration(report, now, windowHours) {
+    const s = report?.summary || {};
+    const age = ageHours(report?.checked_at, now);
+    const days = age === null ? null : Math.round((age / 24) * 10) / 10;
+    const parts = [`${s.agree ?? 0} of ${s.in_scope ?? 0} components agree`];
+    if (s.tap_only) parts.push(`${s.tap_only} resource(s) only TAP sees`);
+    if (s.map_only) parts.push(`${s.map_only} on the map that TAP did not observe`);
+    if (s.tag_differences) parts.push(`${s.tag_differences} tag difference(s)`);
+    if (s.relationships_tap_only) parts.push(`${s.relationships_tap_only} relationship(s) the map does not draw`);
+    const windowDays = Math.round(windowHours / 24);
+    const stale = days === null || days > windowDays;
+    const differs = ['tap_only', 'map_only', 'tag_differences', 'relationships_tap_only'].some((k) => s[k]);
+    return {
+        status: stale || differs ? 'attention' : 'ok',
+        detail: `${parts.join('; ')}${days === null ? '.' : `; checked ${days < 1 ? 'today' : `${days} days ago`} (window ${windowDays} days)${stale ? ', past its window' : ''}.`}`,
+        as_of: report?.checked_at || null,
+    };
+}
+
 export function evaluateNightly(beacon, now, windowHours) {
     const age = ageHours(beacon?.finished_at, now);
     const stale = age === null || age > windowHours;
@@ -239,11 +258,13 @@ function recheckLive(doc) {
         settled(getJson('/.well-known/ksi-signal-runtime.json')),
         settled(getJson('/.well-known/vdr-status.json')),
         settled(getJson('/.well-known/vdr-report.json')),
-    ]).then(([runtime, beacon, vdrReport]) => {
+        settled(getJson('/.well-known/boundary-corroboration.json')),
+    ]).then(([runtime, beacon, vdrReport, corroboration]) => {
         const now = Date.now();
         for (const [id, data, evaluate, windowHours] of [
             ['runtime', runtime, evaluateRuntime, windows.runtime],
             ['vulnerability_scan', beacon, evaluateNightly, windows.vulnerability_scan],
+            ['corroboration', corroboration, evaluateCorroboration, windows.corroboration],
         ]) {
             const row = ROOT.querySelector(`[data-check="${id}"]`);
             const base = (doc.picture || []).find((p) => p.id === id);

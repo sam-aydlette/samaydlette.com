@@ -137,6 +137,20 @@ for art in boundary-map reconcile-report trust-center; do
   fi
 done
 
+# The independent corroboration (RAMPART on TAP) is optional, run by the operator
+# and published as committed. It names the inventory it was compared against,
+# which may be an earlier one, so only its signature is checked here.
+if curl -fsS --max-time 30 -o "$work/boundary-corroboration.json" "$BASE/boundary-corroboration.json" \
+   && curl -fsS --max-time 30 -o "$work/boundary-corroboration.bundle" "$BASE/boundary-corroboration.bundle"; then
+  if verify_blob_any_identity "$work/boundary-corroboration.bundle" "$work/boundary-corroboration.json" "$IDENTITY"; then
+    ok "boundary-corroboration.json signed by the pinned workflow on main"
+  else
+    bad "boundary-corroboration.json signature"
+  fi
+else
+  echo "  SKIP  boundary-corroboration.json (not published)"
+fi
+
 # The VDR is refreshed nightly, so either publisher identity is accepted here.
 if verify_attestation_any_identity "$work/vdr-report.json.intoto.jsonl" "$work/vdr-report.json" \
      "$IDENTITY" "$NIGHTLY_IDENTITY"; then
