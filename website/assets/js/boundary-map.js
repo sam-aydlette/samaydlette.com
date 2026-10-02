@@ -41,7 +41,7 @@ const ICON_BY_TYPE = {
     tls_certificate: 'aws-acm', event_schedule: 'aws-eventbridge', log_group: 'aws-cloudwatch',
     metric_alarm: 'aws-cloudwatch', identity_provider: 'aws-cognito', iam_role: 'aws-iam', iam_policy: 'aws-iam',
     iam_group: 'aws-iam', oidc_provider: 'aws-iam', kms_key: 'aws-kms', secrets_manager: 'aws-secrets-manager',
-    message_queue: 'aws-sqs', api_gateway: 'aws-apigateway', audit_log_trail: 'aws-cloudtrail',
+    message_queue: 'aws-sqs', kv_table: 'aws-dynamodb', api_gateway: 'aws-apigateway', audit_log_trail: 'aws-cloudtrail',
 };
 const ICON_BY_ID = {
     'ext::github-repo': 'github-repository', 'ext::github-oidc': 'github-platform',

@@ -20,7 +20,7 @@
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
      "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
     {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
-     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate"]},
+     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
     {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
      "match": ["ext::github-repo", "ext::github-oidc"]},
     {"key": "sigstore", "zone": "external", "label": "Sigstore (Fulcio CA and Rekor log)",

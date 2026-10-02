@@ -270,7 +270,8 @@
             "identity_provider",
             "notification_topic",
             "metric_alarm",
-            "message_queue"
+            "message_queue",
+            "kv_table"
           ]
         },
         "resource_type": {
