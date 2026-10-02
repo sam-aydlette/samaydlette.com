@@ -166,3 +166,70 @@ def test_every_pending_trust_root_change_counts_even_off_the_map():
         {"address": "aws_iam_group_policy.operators", "actions": ["create"], "component": None},
         {"address": "aws_iam_role.app", "actions": ["update"], "component": "aws::iam_role::app"},
     ]
+
+
+# ---------------------------------------------------------------------------
+# Connections the independent corroboration (RAMPART on TAP) found missing.
+
+def _graph(components, resources):
+    signal = {"signal_id": "s", "components": components}
+    classification = {"zones": [{"key": "system", "label": "S", "boundary": True}],
+                      "groups": [{"key": "g", "zone": "system", "label": "G", "match": ["aws::*"]}], "declared": [], "flows": []}
+    return bbg.build(signal=signal, classification=classification, states=[{"values": {"root_module": {"resources": resources}}}],
+                     offering={}, vdr=None, trust_root_plan=None, commit="c", now="2026-10-01T00:00:00+00:00")
+
+
+def res(address, values, mode="managed"):
+    return {"address": address, "type": address.split(".")[-2] if mode == "data" else address.split(".")[0], "mode": mode, "values": values}
+
+
+def test_a_type_hint_settles_a_name_two_components_share():
+    rule_arn, fn_arn = f"arn:aws:events:us-east-2:{ACCOUNT}:rule/job", f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:job"
+    comps = [{"component_id": "aws::event_schedule::job", "type": "event_schedule", "native_id": rule_arn,
+              "attributes": {"tf_address": "aws_cloudwatch_event_rule.job"}},
+             {"component_id": "aws::function::job", "type": "function", "native_id": fn_arn,
+              "attributes": {"tf_address": "aws_lambda_function.job"}}]
+    g = _graph(comps, [res("aws_cloudwatch_event_rule.job", {"arn": rule_arn, "name": "samaydlette-job"}),
+                       res("aws_lambda_function.job", {"arn": fn_arn, "function_name": "samaydlette-job"}),
+                       # the target names the rule by its (shared) name and the function by ARN
+                       res("aws_cloudwatch_event_target.job", {"rule": "samaydlette-job", "arn": fn_arn})])
+    assert ("aws::event_schedule::job", "aws::function::job") in edge_pairs(g)
+
+
+def test_a_resource_another_stack_manages_is_read_from_its_managed_instance():
+    cdn_arn, cert_arn = f"arn:aws:cloudfront::{ACCOUNT}:distribution/E1", f"arn:aws:acm:us-east-1:{ACCOUNT}:certificate/c1"
+    comps = [{"component_id": "aws::cdn_distribution::site", "type": "cdn_distribution", "native_id": cdn_arn,
+              "attributes": {"tf_address": "data.aws_cloudfront_distribution.site"}},
+             {"component_id": "aws::tls_certificate::site", "type": "tls_certificate", "native_id": cert_arn,
+              "attributes": {"tf_address": "aws_acm_certificate.site"}}]
+    g = _graph(comps, [res("data.aws_cloudfront_distribution.site", {"arn": cdn_arn, "id": "E1"}, mode="data"),
+                       res("aws_cloudfront_distribution.website", {"arn": cdn_arn, "id": "E1",
+                           "viewer_certificate": [{"acm_certificate_arn": cert_arn}]}),
+                       res("aws_acm_certificate.site", {"arn": cert_arn})])
+    assert ("aws::cdn_distribution::site", "aws::tls_certificate::site") in edge_pairs(g)
+
+
+def test_dns_alias_records_link_the_zone_to_the_distribution_by_domain():
+    cdn_arn = f"arn:aws:cloudfront::{ACCOUNT}:distribution/E1"
+    comps = [{"component_id": "aws::cdn_distribution::site", "type": "cdn_distribution", "native_id": cdn_arn,
+              "attributes": {"tf_address": "aws_cloudfront_distribution.site"}},
+             {"component_id": "aws::dns_zone::site", "type": "dns_zone", "native_id": "arn:aws:route53:::hostedzone/ZONE12345",
+              "attributes": {"tf_address": "aws_route53_zone.site"}}]
+    g = _graph(comps, [res("aws_cloudfront_distribution.site", {"arn": cdn_arn, "domain_name": "d111.cloudfront.net"}),
+                       res("aws_route53_zone.site", {"id": "ZONE12345", "name": "example.com"}),
+                       res("aws_route53_record.apex", {"zone_id": "ZONE12345", "alias": [{"name": "d111.cloudfront.net"}]})])
+    pairs = edge_pairs(g)
+    assert ("aws::cdn_distribution::site", "aws::dns_zone::site") in pairs or ("aws::dns_zone::site", "aws::cdn_distribution::site") in pairs
+
+
+def test_an_issuer_url_names_the_user_pool_it_ends_in():
+    comps = [{"component_id": "aws::api_gateway::app", "type": "api_gateway", "native_id": "arn:aws:apigateway:us-east-2::/apis/api12345",
+              "attributes": {"tf_address": "aws_apigatewayv2_api.app"}},
+             {"component_id": "aws::identity_provider::app", "type": "identity_provider",
+              "native_id": f"arn:aws:cognito-idp:us-east-2:{ACCOUNT}:userpool/us-east-2_Pool1",
+              "attributes": {"tf_address": "aws_cognito_user_pool.app"}}]
+    g = _graph(comps, [res("aws_apigatewayv2_api.app", {"id": "api12345"}),
+                       res("aws_cognito_user_pool.app", {"id": "us-east-2_Pool1"}),
+                       res("aws_apigatewayv2_authorizer.jwt", {"api_id": "api12345", "jwt_configuration": [
+                           {"issuer": "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_Pool1"}]})])
+    assert ("aws::api_gateway::app", "aws::identity_provider::app") in edge_pairs(g)
