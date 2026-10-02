@@ -290,6 +290,10 @@ resource "aws_iam_role_policy" "compliance_kms" {
 # Route 53 DNSSEC management for the deploy role (Task 5 PR B / D-3): create the
 # key-signing key and enable/disable zone signing. KMS create/manage for the KSK
 # is already covered by the role's account-wide kms:CreateKey/PutKeyPolicy grant.
+data "aws_route53_zone" "site" {
+  name = var.domain_name
+}
+
 data "aws_iam_policy_document" "dnssec_management" {
   statement {
     sid    = "ManageZoneDNSSEC"
@@ -304,6 +308,19 @@ data "aws_iam_policy_document" "dnssec_management" {
       "route53:DisableHostedZoneDNSSEC",
     ]
     resources = ["arn:aws:route53:::hostedzone/*"]
+  }
+  statement {
+    # The site's DNS records (apex and www aliases to CloudFront, ACM
+    # validation CNAMEs) are managed in the application stack, adopted from
+    # hand-made records. Scoped to this system's hosted zone only.
+    sid    = "ManageSiteRecords"
+    effect = "Allow"
+    actions = [
+      "route53:ChangeResourceRecordSets",
+      "route53:ListResourceRecordSets",
+      "route53:GetHostedZone",
+    ]
+    resources = [data.aws_route53_zone.site.arn]
   }
   statement {
     # Provider polls change status after enabling/disabling signing.
