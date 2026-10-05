@@ -2089,6 +2089,33 @@ a:focus {
     padding: var(--space-2xl);
 }
 
+/* Subscribe page: plain-language RSS explainer the nav's RSS link points to */
+.subscribe-page h2 {
+    font-size: var(--font-size-xl);
+    margin: var(--space-xl) 0 var(--space-sm);
+}
+
+.subscribe-page ol {
+    margin: 0 0 var(--space-md) var(--space-lg);
+}
+
+.feed-url {
+    display: inline-block;
+    max-width: 100%;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    overflow-wrap: anywhere;
+    user-select: all;               /* one click selects the whole address */
+}
+
+.subscribe-raw {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
 .code-error {
     margin-bottom: var(--space-xl);
 }

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>about - sam_aydlette</title>
+    <title>Subscribe - Samuel Aydlette</title>
+    <meta name="description" content="Get new articles from samaydlette.com automatically with an RSS feed reader.">
     <link rel="stylesheet" href="/assets/css/main.css?v=1790595453206">
-    <link rel="stylesheet" href="/assets/css/forms.css?v=1790595453206">
     <!-- Apply theme immediately to prevent flash -->
     <script src="/assets/js/theme-init.js?v=1790595453206"></script>
     <link rel="alternate" type="application/rss+xml" title="sam_aydlette RSS Feed" href="/feed.xml">
@@ -25,7 +25,7 @@
                 <a href="/pages/articles.html" class="nav-link">Articles</a>
                 <a href="/pages/projects.html" class="nav-link">Projects</a>
                 <a href="/pages/activities.html" class="nav-link">Activities</a>
-                <a href="/pages/about.html" class="nav-link active">About</a>
+                <a href="/pages/about.html" class="nav-link">About</a>
                 <a href="/pages/contact.html" class="nav-link">Contact</a>
                 <a href="/pages/subscribe.html" class="nav-link rss-link" aria-label="Subscribe by RSS" title="Subscribe by RSS">RSS</a>
                 <button class="theme-toggle" aria-label="Toggle dark mode">
@@ -44,30 +44,26 @@
 
     <!-- Main Content -->
     <main id="main-content" class="content">
-            <h1 class="section-title">about_me</h1>
-            <section class="about-content">
-                <div class="article-card">
-                    <div class="code-example">
-                        <span class="code-comment">// Personal profile configuration</span><br>
-                        <span class="code-keyword">const</span> <span class="code-string">sam_aydlette</span> = {<br>
-                        &nbsp;&nbsp;military_experience: [<span class="code-string">"82nd_airborne"</span>, <span class="code-string">"infantry"</span>],<br>
-                        &nbsp;&nbsp;government_experience: [<span class="code-string">"fedramp_pmo"</span>],<br>
-                        &nbsp;&nbsp;industry_experience: [<span class="code-string">"tech_companies"</span>, <span class="code-string">"consulting"</span>],<br>
-                        &nbsp;&nbsp;side_hustle: <span class="code-string">"author"</span>,<br>
-                        &nbsp;&nbsp;delusion: <span class="code-string">"amateur_philosopher"</span>,<br>
-                        &nbsp;&nbsp;location: <span class="code-string">"washington_dc_metro"</span>,<br>
-                        &nbsp;&nbsp;family: {<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;wife: <span class="code-string">"both_sexy_and_funny"</span>,<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;children: <span class="code-string">"exceptionally_brilliant"</span><br>
-                        &nbsp;&nbsp;}<br>
-                        };
-                    </div>
-                    <p>Sam Aydlette is a former airborne infantryman turned cybersecurity practitioner who has always been an amateur philosopher. He lives in the Washington DC metro area.</p>
-                </div>
-            </section>
+        <section class="article-card subscribe-page">
+            <h1 class="section-title">Subscribe</h1>
+            <p>You can get new articles here automatically, without an account or an email list, by using an <strong>RSS feed</strong>.</p>
+
+            <h2>What is RSS?</h2>
+            <p>RSS is a simple, decades-old way for a website to announce new posts. A free app called a <em>feed reader</em> checks the sites you follow and shows you anything new in one place. Nothing is tracked, and you can unsubscribe at any time by removing the site from your reader.</p>
+
+            <h2>How to subscribe</h2>
+            <ol>
+                <li>Open a feed reader. Many are free, on the web, on your phone, or built into your email app or browser.</li>
+                <li>Choose the option to add a feed or subscription.</li>
+                <li>Paste this address:</li>
+            </ol>
+            <p><code class="feed-url">https://samaydlette.com/feed.xml</code></p>
+
+            <p>Prefer to just browse? Every article is listed on the <a href="/pages/articles.html">Articles</a> page.</p>
+            <p class="subscribe-raw">If you're curious what the feed itself looks like, here's the <a href="/feed.xml">raw feed</a>. It's written for apps, not people, so it looks like code.</p>
+        </section>
     </main>
 
-    <!-- Rich Footer -->
     <footer>
         <div class="footer-container">
             <div class="footer-grid">
