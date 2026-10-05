@@ -73,6 +73,7 @@
     --accent-primary: var(--color-green-600);       /* Matrix green */
     --accent-secondary: var(--color-cyan-500);      /* Cyber cyan */
     --accent-tertiary: var(--color-blue-500);       /* Terminal blue */
+    --logo-color: #b45309;                          /* Amber: blue's complement, amber-phosphor terminals */
 
     --text-primary: var(--color-neutral-900);
     --text-secondary: var(--color-neutral-600);
@@ -106,6 +107,7 @@
     --accent-primary: var(--color-green-400);       /* Brighter matrix green */
     --accent-secondary: var(--color-cyan-400);      /* Brighter cyber cyan */
     --accent-tertiary: var(--color-blue-400);       /* Brighter terminal blue */
+    --logo-color: #fbbf24;                          /* Brighter amber */
 
     --text-primary: #f8f9fa;
     --text-secondary: #dee2e6;
@@ -387,6 +389,11 @@ footer a:active {
     color: var(--text-primary);
     text-decoration: none;
     transition: color 0.3s ease;
+}
+
+/* The name itself, in amber after the blue "> " prompt */
+.logo-name {
+    color: var(--logo-color);
 }
 
 .site-logo:hover {
@@ -737,11 +744,14 @@ body.fixed-header main.content {
     position: relative;
 }
 
-/* Add decorative command prefix to section titles */
+/* Terminal prompt before section titles: the logo's "> " in the same blue,
+   lighter and faded so the logo stays the strongest prompt on the page. */
 .section-title::before {
-    content: '# ';
-    color: var(--accent-tertiary);  /* Red color, same as original */
-    font-weight: 400;
+    content: '> ';
+    content: '> ' / '';             /* decorative: screen readers skip it */
+    color: var(--accent-tertiary);
+    font-weight: 300;
+    opacity: 0.55;
 }
 
 /* =============================================================================
