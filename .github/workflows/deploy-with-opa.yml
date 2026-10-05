@@ -461,11 +461,15 @@ jobs:
     # GitHub runs this script with `bash -e`, and plan -detailed-exitcode exits 2
     # when changes are pending, so every exit code is captured with `|| rc=$?`
     # rather than left to kill the step (tests/test_trust_root_plan_step.py).
+    # The summary also records which bootstrap state version (serial + lineage,
+    # metadata only; the state body is piped straight to jq, never written) the
+    # plan read, so the deploy job can tell if the operator applied the trust
+    # root while the run waited at the approval gate.
     - name: Plan the trust root (bootstrap stack)
       working-directory: infrastructure/bootstrap
       run: |
         set -uo pipefail
-        rc=1; empty=""
+        rc=1; empty=""; stateargs=()
         if terraform init -input=false > trust-root-init.log 2>&1; then
           # An empty remote state means the one-time migration has not happened
           # yet; a plan would claim every resource needs creating. Say so instead.
@@ -475,9 +479,14 @@ jobs:
             rc=0
             terraform plan -input=false -lock=false -detailed-exitcode -out=trust-root.tfplan > trust-root-plan.log 2>&1 || rc=$?
             if [ "$rc" != 1 ]; then terraform show -json trust-root.tfplan > trust-root-plan-full.json || rc=1; fi
+            ver=$(terraform state pull 2>/dev/null | jq -r '"\(.serial) \(.lineage)"' 2>/dev/null) || ver=""
+            read -r serial lineage <<< "$ver" || true
+            if [[ "${serial:-}" =~ ^[0-9]+$ && -n "${lineage:-}" ]]; then
+              stateargs=(--state-serial "$serial" --state-lineage "$lineage")
+            fi
           fi
         fi
-        python3 ../../scripts/summarize-trust-root-plan.py --exit-code "$rc" $empty \
+        python3 ../../scripts/summarize-trust-root-plan.py --exit-code "$rc" $empty "${stateargs[@]}" \
           --plan-json trust-root-plan-full.json --commit "$GITHUB_SHA" > ../trust-root-plan.json
         rm -f trust-root-plan-full.json trust-root.tfplan
         echo "Trust root: $(python3 -c 'import json;print(json.load(open("../trust-root-plan.json"))["status"])')"
@@ -1229,13 +1238,30 @@ jobs:
     # role, so initialize it here. Best-effort, as build_bootstrap_components()
     # always has been: when the state is not readable the builder omits those
     # components and says so, rather than failing the deploy.
+    #
+    # The state is read ONCE, here, into tfstate-bootstrap.json, and both the
+    # inventory (BOOTSTRAP_STATE_JSON) and the boundary map read that file, so
+    # the two cannot describe different moments. The same moment's state
+    # version is checked against the one the trust-root plan read back in
+    # compliance-check: if the operator applied the trust root while this run
+    # waited at the approval gate, the plan is marked superseded rather than
+    # published as pending changes that have already been applied. The file can
+    # hold secret values: owner-only, never uploaded, deleted by the last step.
     - name: Read the trust-root state (bootstrap stack, read-only)
       working-directory: infrastructure/bootstrap
       continue-on-error: true
       run: |
-        if terraform init -input=false > /dev/null 2>&1 && terraform state list > /dev/null 2>&1; then
+        umask 077
+        if terraform init -input=false > /dev/null 2>&1 && terraform show -json > ../tfstate-bootstrap.json 2>/dev/null \
+            && [ -s ../tfstate-bootstrap.json ]; then
           echo "Trust-root state readable: the inventory will include the bootstrap identities."
+          ver=$(terraform state pull 2>/dev/null | jq -r '"\(.serial) \(.lineage)"' 2>/dev/null) || ver=""
+          read -r serial lineage <<< "$ver" || true
+          if [[ "${serial:-}" =~ ^[0-9]+$ && -n "${lineage:-}" && -s ../trust-root-plan.json ]]; then
+            python3 ../../scripts/summarize-trust-root-plan.py --reconcile-state "$serial" "$lineage" --in ../trust-root-plan.json
+          fi
         else
+          rm -f ../tfstate-bootstrap.json
           echo "::warning::Trust-root state not readable; the bootstrap identities are omitted from this inventory."
         fi
 
@@ -1245,6 +1271,9 @@ jobs:
         # Tells the emitter to pre-populate provenance.attestation with the
         # sidecar bundle URL before signing. The URL is well-known.
         KSI_SIGN: "1"
+        # The bootstrap state snapshot taken by the step above (absent when it
+        # was unreadable, in which case the builder omits those components).
+        BOOTSTRAP_STATE_JSON: tfstate-bootstrap.json
       run: |
         echo "Building deploy-time KSI signal..."
         python3 ../scripts/build-ksi-signal.py
@@ -1609,10 +1638,11 @@ jobs:
       run: |
         set -euo pipefail
         umask 077
-        trap 'rm -f tfstate-main.json tfstate-bootstrap.json' EXIT
+        trap 'rm -f tfstate-main.json' EXIT
         terraform show -json > tfstate-main.json
         states=(--state tfstate-main.json)
-        if terraform -chdir=bootstrap show -json > tfstate-bootstrap.json 2>/dev/null && [ -s tfstate-bootstrap.json ]; then
+        # The same bootstrap snapshot the inventory was built from.
+        if [ -s tfstate-bootstrap.json ]; then
           states+=(--state tfstate-bootstrap.json)
         fi
         python3 ../scripts/build-boundary-graph.py \
@@ -2005,6 +2035,12 @@ jobs:
           infrastructure/ksi-signal.bundle
           infrastructure/oscal-ssp.json
         retention-days: 30
+
+    # The bootstrap state snapshot (read once by "Read the trust-root state")
+    # can hold secret values. Delete it whatever happened above.
+    - name: Remove the trust-root state snapshot
+      if: always()
+      run: rm -f infrastructure/tfstate-bootstrap.json
 
   # ===========================================================================
   # JOB 3: EXTRA SECURITY SCANS

@@ -106,6 +106,24 @@ def test_a_resource_both_stacks_know_appears_once(monkeypatch):
     assert {c["type"] for c in fresh} >= {"oidc_provider", "iam_role", "iam_group"}
 
 
+def test_a_named_snapshot_is_read_instead_of_running_terraform(tmp_path, monkeypatch):
+    # CI reads the bootstrap state once and hands the same snapshot to the
+    # inventory and the boundary map, so the two describe one moment.
+    import json
+    snap = tmp_path / "tfstate-bootstrap.json"
+    snap.write_text(json.dumps(BOOTSTRAP_STATE))
+    monkeypatch.setenv("BOOTSTRAP_STATE_JSON", str(snap))
+
+    def no_terraform(_args):
+        raise AssertionError("terraform was run despite a snapshot")
+    monkeypatch.setattr(bks, "run_terraform", no_terraform)
+    assert {c["type"] for c in bks.build_bootstrap_components()} >= {"oidc_provider", "iam_role"}
+    # A named snapshot that could not be taken omits the components; it never
+    # falls back to a second, later read.
+    monkeypatch.setenv("BOOTSTRAP_STATE_JSON", str(tmp_path / "missing.json"))
+    assert bks.build_bootstrap_components() == []
+
+
 # -----------------------------------------------------------------------------
 # The inventory's classification of each bootstrap resource must equal the tags
 # the bootstrap stack applies to it. Reconciliation invariant (i) compares the

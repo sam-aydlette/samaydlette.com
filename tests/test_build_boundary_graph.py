@@ -233,3 +233,11 @@ def test_an_issuer_url_names_the_user_pool_it_ends_in():
                        res("aws_apigatewayv2_authorizer.jwt", {"api_id": "api12345", "jwt_configuration": [
                            {"issuer": "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_Pool1"}]})])
     assert ("aws::api_gateway::app", "aws::identity_provider::app") in edge_pairs(g)
+
+
+def test_a_superseded_plan_flags_nothing_as_pending():
+    plan = {"status": "superseded", "changes": [],
+            "changes_at_plan": [{"address": "aws_iam_role.app", "actions": ["update"]}]}
+    g = build(trust_root_plan=plan)
+    assert g["health"]["pending_trust_root_changes"] == 0 and g["trust_root_changes"] == []
+    assert "change pending apply" not in node(g, "aws::iam_role::app")["flags"]

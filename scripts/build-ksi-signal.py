@@ -965,8 +965,22 @@ def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
     (returns []) when the bootstrap state is not available locally — the same
     bootstrap-before-state-backend chicken-and-egg the SBOM loaders tolerate —
     so a developer run without bootstrap access still produces a valid signal,
-    while CI (which has the state) inventories them."""
-    state = run_terraform([f"-chdir={bootstrap_dir}", "show", "-json"])
+    while CI (which has the state) inventories them.
+
+    When BOOTSTRAP_STATE_JSON names a file, that snapshot is used instead, and
+    terraform is not run: CI reads the bootstrap state once and hands the same
+    snapshot to the boundary map, so the two cannot describe different moments.
+    A named file that is missing means the snapshot could not be taken, and the
+    components are omitted, exactly as the boundary map omits them."""
+    snapshot = os.environ.get("BOOTSTRAP_STATE_JSON")
+    if snapshot:
+        try:
+            state = json.loads(Path(snapshot).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"warning: bootstrap state snapshot {snapshot} unreadable: {exc}", file=sys.stderr)
+            state = None
+    else:
+        state = run_terraform([f"-chdir={bootstrap_dir}", "show", "-json"])
     if not state:
         print(f"info: no bootstrap state at {bootstrap_dir}/; CI/CD identity-plane "
               f"components not added this run", file=sys.stderr)

@@ -13,7 +13,20 @@ the plan of an IAM stack is full of policy documents, ARNs and account IDs.
 
     terraform plan -detailed-exitcode -out=trust-root.tfplan; rc=$?
     terraform show -json trust-root.tfplan > plan.json
-    summarize-trust-root-plan.py --exit-code $rc --plan-json plan.json --commit $SHA > trust-root-plan.json
+    summarize-trust-root-plan.py --exit-code $rc --plan-json plan.json --commit $SHA \
+        --state-serial $SERIAL --state-lineage $LINEAGE > trust-root-plan.json
+
+The plan runs in compliance-check, before the deploy's approval gate; the deploy
+job reads the bootstrap state again afterwards, possibly hours later. If the
+operator applied the trust root in between, the plan's pending changes describe
+a state that no longer exists. So the summary records which state version it
+planned against (Terraform's state serial and lineage, metadata only), and the
+deploy job checks it against the state it actually reads:
+
+    summarize-trust-root-plan.py --reconcile-state $SERIAL $LINEAGE --in trust-root-plan.json
+
+A different version marks the summary "superseded": nothing is reported as
+pending, because nothing about the current state is known from this plan.
 
 Exit code is always 0: reporting drift is this script's job, not failing the build.
 """
@@ -36,6 +49,7 @@ def summarize(
     commit: str,
     now: str,
     state_empty: bool = False,
+    state: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     out: dict[str, Any] = {
         "schema": SCHEMA,
@@ -43,6 +57,8 @@ def summarize(
         "commit": commit,
         "stack": "infrastructure/bootstrap",
     }
+    if state and state.get("serial") is not None and state.get("lineage"):
+        out["state"] = {"serial": int(state["serial"]), "lineage": str(state["lineage"])}
     if state_empty:
         out.update(
             status="not_observable",
@@ -75,12 +91,34 @@ def summarize(
     return out
 
 
+def reconcile_state(summary: dict[str, Any], serial: int | None, lineage: str | None) -> dict[str, Any]:
+    """Mark the summary superseded if the state now differs from the one planned against.
+
+    Only a known, different version supersedes. When either side's version is
+    unknown (the state could not be read, or the plan predates this field), the
+    summary is returned unchanged: there is no evidence it is stale.
+    """
+    planned = summary.get("state") or {}
+    if serial is None or not lineage or planned.get("serial") is None or not planned.get("lineage"):
+        return summary
+    if planned["serial"] == serial and planned["lineage"] == lineage:
+        return summary
+    if summary.get("status") not in ("changes_pending", "in_sync"):
+        return summary
+    out = dict(summary)
+    out["changes_at_plan"] = summary.get("changes", [])
+    out["changes"] = []
+    out["status"] = "superseded"
+    out["state_at_build"] = {"serial": serial, "lineage": lineage}
+    out["note"] = "The trust root was applied after this build planned it. The next build re-plans it."
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument(
         "--exit-code",
         type=int,
-        required=True,
         help="terraform plan -detailed-exitcode result",
     )
     ap.add_argument(
@@ -94,13 +132,35 @@ def main() -> None:
         action="store_true",
         help="the remote state holds no resources yet",
     )
+    ap.add_argument("--state-serial", type=int, help="bootstrap state serial the plan read")
+    ap.add_argument("--state-lineage", help="bootstrap state lineage the plan read")
+    ap.add_argument(
+        "--reconcile-state",
+        nargs=2,
+        metavar=("SERIAL", "LINEAGE"),
+        help="compare an existing summary (--in) against the state the deploy read, and rewrite it in place",
+    )
+    ap.add_argument("--in", dest="in_path", type=Path, help="existing summary, with --reconcile-state")
     args = ap.parse_args()
+    if args.reconcile_state:
+        if not args.in_path:
+            ap.error("--reconcile-state needs --in")
+        raw_serial, lineage = args.reconcile_state
+        serial = int(raw_serial) if raw_serial.isdigit() else None
+        summary = json.loads(args.in_path.read_text())
+        result = reconcile_state(summary, serial, lineage or None)
+        args.in_path.write_text(json.dumps(result, indent=2) + "\n")
+        print(f"Trust root: {result.get('status')}")
+        return
+    if args.exit_code is None:
+        ap.error("--exit-code is required")
     plan = None
     if args.plan_json and args.plan_json.is_file() and args.plan_json.stat().st_size:
         plan = json.loads(args.plan_json.read_text())
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     json.dump(
-        summarize(plan, args.exit_code, args.commit, now, args.state_empty),
+        summarize(plan, args.exit_code, args.commit, now, args.state_empty,
+                  {"serial": args.state_serial, "lineage": args.state_lineage}),
         sys.stdout,
         indent=2,
     )
