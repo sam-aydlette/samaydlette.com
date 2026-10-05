@@ -30,9 +30,9 @@ provider "aws" {
 # Classification tags for the bootstrap stack's resources, per
 # docs/policies/resource-tagging-standard.md and the keys the OPA gate requires
 # (infrastructure/policy/config/data.json). The main stack gets the constant axes
-# from provider default_tags; here they are merged per resource instead, so tagging
-# never touches the CloudFront distribution or the other bootstrap resources in the
-# same plan. Operational values match infrastructure/variables.tf.
+# from provider default_tags; here they are merged per resource instead, so a
+# tagging change touches only the resources it names. Operational values match
+# infrastructure/variables.tf.
 locals {
   bootstrap_tags = {
     Environment = "prod"
@@ -51,6 +51,8 @@ locals {
     state_backend = { DataClassification = "Internal", DataSensitivity = "internal", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "platform-foundation" }
     # The state lock table: lock metadata only, no secrets.
     state_lock = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "platform-foundation" }
+    # The CloudFront distribution: the public edge serving the site and the app.
+    public_edge = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
   }
 }
 
