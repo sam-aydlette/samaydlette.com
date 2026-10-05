@@ -223,14 +223,13 @@ resource "aws_cloudfront_distribution" "website" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  tags = {
-    Name               = "${var.domain_name}-cdn"
-    Environment        = var.deploy_environment
-    Owner              = local.bootstrap_tags.Owner
-    CostCenter         = "website-ops"
-    DataClassification = "Public"
-    ComplianceScope    = "Section508"
-  }
+  # Tag-only change: CloudFront tags are set through TagResource, separate from
+  # the distribution config, so updating them never redeploys the distribution.
+  tags = merge(local.bootstrap_tags, local.bootstrap_cls.public_edge, {
+    Name            = "${var.domain_name}-cdn"
+    Environment     = var.deploy_environment
+    ComplianceScope = "Section508"
+  })
 
   # The distribution serves the entire site and the app. It must never be
   # replaced or destroyed by a plan; changes are made in place and reviewed.
