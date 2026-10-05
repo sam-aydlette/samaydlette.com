@@ -106,6 +106,17 @@ def test_picture_reports_what_was_observed_and_says_when_nothing_was():
     assert p["runtime"] == p["vulnerability_scan"] == p["trust_root"] == "not_observed"
 
 
+def test_a_superseded_trust_root_plan_is_not_observed_and_not_a_decision():
+    # The operator applied the trust root while the run waited at the approval
+    # gate: the plan's changes are no longer known to be pending (2026-10-05).
+    doc = build(trust_root_plan={"status": "superseded", "planned_at": "2026-09-29T11:00:00Z", "changes": [],
+                                 "changes_at_plan": [{"address": "aws_iam_group_policy.ops", "actions": ["create"]}]},
+                boundary_map={**inputs()["boundary_map"], "trust_root_changes": []})
+    tr = next(c for c in doc["picture"] if c["id"] == "trust_root")
+    assert tr["status"] == "not_observed" and "re-checks" in tr["detail"]
+    assert not any(kind == "trust_root_change" for kind, _ in kinds(doc))
+
+
 def test_stale_runtime_signal_is_attention_and_a_decision():
     doc = build(runtime={"emitted_at": "2026-09-27T00:00:00Z", "divergence": {"status": "converged"}})
     assert picture(doc)["runtime"] == "attention"

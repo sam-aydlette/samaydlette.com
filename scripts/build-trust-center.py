@@ -222,6 +222,13 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
     elif status == "changes_pending":
         add("trust_root", "IAM trust root (operator-applied)", "attention",
             f"{len(plan.get('changes', []))} merged change(s) not yet applied.", plan.get("planned_at"))
+    elif status == "superseded":
+        # The operator applied the trust root after this build planned it (the
+        # state version moved while the run waited at the approval gate). What
+        # the plan said is no longer true, and what is true is unknown until the
+        # next build re-plans: not observed, not "needs attention".
+        add("trust_root", "IAM trust root (operator-applied)", "not_observed",
+            "Applied after this build planned it; the next deploy re-checks it.", plan.get("planned_at"))
     else:
         add("trust_root", "IAM trust root (operator-applied)", "not_observed",
             "This build could not plan the trust root" + (f" ({status})." if status else "."), plan.get("planned_at"))

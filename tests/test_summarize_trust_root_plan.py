@@ -83,3 +83,61 @@ def test_never_carries_attribute_values():
 def test_not_observable_before_the_state_migration():
     s = mod.summarize(None, 1, "abc", NOW, state_empty=True)
     assert s["status"] == "not_observable" and s["changes"] == []
+
+
+# The plan runs before the deploy's approval gate and the deploy reads the state
+# after it. An operator apply in between makes the plan's pending changes
+# describe a state that no longer exists; the summary must say so rather than
+# publish them as waiting on a person (2026-10-05).
+LINEAGE = "7a1c0f2e-0000-4000-8000-000000000000"
+
+
+def pending(serial=41, lineage=LINEAGE):
+    return mod.summarize(
+        plan(("aws_cloudfront_distribution.website", "managed", ["update"])),
+        2, "abc", NOW, state={"serial": serial, "lineage": lineage},
+    )
+
+
+def test_the_planned_against_state_version_is_recorded():
+    assert pending()["state"] == {"serial": 41, "lineage": LINEAGE}
+    assert "state" not in mod.summarize(None, 0, "abc", NOW)
+
+
+def test_an_unchanged_state_leaves_the_plan_as_it_is():
+    s = pending()
+    assert mod.reconcile_state(s, 41, LINEAGE) == s
+
+
+def test_an_apply_after_the_plan_supersedes_its_pending_changes():
+    r = mod.reconcile_state(pending(), 42, LINEAGE)
+    assert r["status"] == "superseded" and r["changes"] == []
+    assert r["changes_at_plan"] == [{"address": "aws_cloudfront_distribution.website", "actions": ["update"]}]
+    assert r["state_at_build"] == {"serial": 42, "lineage": LINEAGE}
+
+
+def test_a_different_lineage_also_supersedes():
+    assert mod.reconcile_state(pending(), 41, "other-lineage")["status"] == "superseded"
+
+
+def test_an_unknown_version_on_either_side_is_not_evidence_of_staleness():
+    s = pending()
+    assert mod.reconcile_state(s, None, LINEAGE) == s
+    assert mod.reconcile_state(s, 42, None) == s
+    old = {k: v for k, v in s.items() if k != "state"}  # a plan from before this field
+    assert mod.reconcile_state(old, 42, LINEAGE) == old
+
+
+def test_an_error_or_unobservable_plan_is_never_rewritten():
+    for s in (mod.summarize(None, 1, "abc", NOW, state={"serial": 1, "lineage": LINEAGE}),
+              mod.summarize(None, 1, "abc", NOW, state_empty=True, state={"serial": 1, "lineage": LINEAGE})):
+        assert mod.reconcile_state(s, 2, LINEAGE) == s
+
+
+def test_reconcile_mode_rewrites_the_file_in_place(tmp_path):
+    import subprocess
+    import sys
+    f = tmp_path / "trust-root-plan.json"
+    f.write_text(json.dumps(pending()))
+    subprocess.run([sys.executable, str(SCRIPT), "--reconcile-state", "42", LINEAGE, "--in", str(f)], check=True)
+    assert json.loads(f.read_text())["status"] == "superseded"
