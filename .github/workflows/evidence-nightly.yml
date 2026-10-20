@@ -69,6 +69,21 @@ on:
     - cron: '17 7 * * *'
     - cron: '17 19 * * *'
   workflow_dispatch:
+  # And once more after every deploy to main. A deploy runs the same gates and
+  # republishes the VDR, but it does not write the status beacon, so a nightly
+  # that failed before a fix was deployed kept reporting "failure" on the trust
+  # center and holding the watchdog's nightly-failed alarm until the next cron
+  # (up to 12 hours). Running the refresh right after the deploy makes the
+  # beacon say what is true now. This adds a trigger, not a permission: the run
+  # uses this file from main, the same role and the same environment, and the
+  # `sast` job's condition drops every deploy run that did not succeed or came
+  # from a pull request. The `branches` filter alone is not enough, because a
+  # pull request from a fork whose branch is named `main` would pass it; the
+  # event check closes that.
+  workflow_run:
+    workflows: [Deploy Website with OPA Compliance]
+    types: [completed]
+    branches: [main]
 
 # Never let two refreshes race for the same five objects.
 concurrency:
@@ -118,6 +133,11 @@ jobs:
   # ===========================================================================
   sast:
     name: SAST (Checkov + tfsec)
+    # Every other job needs this one, so a skip here skips the whole run.
+    if: >-
+      github.event_name != 'workflow_run' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event != 'pull_request')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -752,7 +772,9 @@ jobs:
     name: Alert on stale evidence
     runs-on: ubuntu-latest
     needs: [sast, refresh]
-    if: always() && (needs.sast.result != 'success' || needs.refresh.result != 'success')
+    # The one exclusion: a skipped `sast` means the run was deliberately dropped
+    # (a post-deploy trigger for a deploy that did not qualify), not that it failed.
+    if: always() && needs.sast.result != 'skipped' && (needs.sast.result != 'success' || needs.refresh.result != 'success')
     permissions:
       contents: read
       issues: write
