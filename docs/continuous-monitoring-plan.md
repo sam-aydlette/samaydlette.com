@@ -56,7 +56,7 @@ The system targets 20x Class C. Per VDR-TFR-PVR Class C (full table reproduced i
 - N3 + LEV + IRV: 16 days
 - ... and so on
 
-The VDR aggregator currently blocks the build on (a) any KEV-listed CVE without remediation, (b) any N5 + LEV + IRV finding present at all. SLA-clock enforcement for lower-tier findings depends on a first-detected ledger; until that ledger is added, the Class C SLA table is encoded in the script but inert for those tiers. This is acknowledged in the script's comments and in the RA policy.
+The VDR aggregator blocks the build on (a) any KEV-listed CVE without remediation, even when dispositioned; (b) any undispositioned N5 + LEV + IRV finding; and (c) any undispositioned finding past its Class C SLA. The clock runs from first detection: the previous published VDR report serves as the first-detected ledger, so each finding keeps its original `first_detected` across builds.
 
 ## Significant Change Notification (SCN) integration
 

@@ -60,10 +60,10 @@ from pathlib import Path
 # and never silently defaulted. The FedRAMP VDR-TFR-PVR remediation-day matrix is
 # deliberately NOT a knob here: it stays verbatim in CLASS_C_SLA_DAYS below.
 #
-# Wired but inert in this change: the config is loaded, validated fail-closed,
-# and recorded in the report's methodology block, but assign_pain still uses the
-# severity-proxy stub. The CVSS-Environmental derivation that consumes these
-# knobs lands in a follow-on change.
+# The config is loaded, validated fail-closed, recorded in the report's
+# methodology block, and consumed by assign_pain's CVSS-Environmental
+# derivation. The severity proxy remains only as the fallback for findings that
+# carry no CVSS vector.
 DEFAULT_PAIN_CONFIG = (Path(__file__).resolve().parent.parent
                        / "infrastructure" / "schemas" / "vdr-pain-config.json")
 
@@ -1509,9 +1509,8 @@ def main():
     args = parser.parse_args()
 
     # Load the governed classifier calibration. Fails closed if absent/malformed
-    # so the knobs are always present and auditable (memo s14). Wired but inert
-    # in this change: recorded in the methodology block; assign_pain still uses
-    # the severity-proxy stub until the CVSS-Environmental derivation lands.
+    # so the knobs are always present and auditable (memo s14). assign_pain
+    # consumes them; the methodology block records which version was used.
     pain_config, pain_config_sha256 = load_pain_config(args.pain_config)
 
     ksi_signal_id = None
