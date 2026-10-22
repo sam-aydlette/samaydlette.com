@@ -545,3 +545,8 @@
 .rule-box p:last-child {
     margin-bottom: 0;
 }
+
+/* Requirement tables: keep IDs like REQ-IRV-1 on one line. */
+.article-content .req-table td:first-child {
+    white-space: nowrap;
+}
