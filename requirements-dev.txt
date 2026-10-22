@@ -29,7 +29,7 @@ pyyaml
 ruff==0.15.20
 mypy==2.1.0
 
-# NOT in CI's install list — deliberately added here.
+# Declared in CI's install line as well, unpinned like pytest/jsonschema/pyyaml.
 #
 # tests/test_runtime_signature.py does `pytest.importorskip("cryptography")`.
 # Without this package the whole module vanishes: 5 of its 6 tests are not even
@@ -39,14 +39,8 @@ mypy==2.1.0
 # attestation-excluded-from-canonical-bytes. A gate that drops those without
 # saying so is worse than no gate.
 #
-# CI does not install it explicitly, but the GitHub ubuntu runner image provides
-# it: run 32751942007 reports "267 passed, 6 skipped", identical to this venv
-# with cryptography present. So CI is NOT skipping these six today — declaring
-# the dependency here is what makes a local venv match CI's *effective*
-# environment rather than its *declared* install list.
-#
-# It is still an implicit dependency on the runner image. If GitHub ever drops
-# cryptography from that image, those six tests would vanish from CI silently.
-# Adding it to the pip install line in .github/workflows/deploy-with-opa.yml
-# would close that, but nothing is broken today (out of scope for this change).
+# CI used to get it implicitly from the GitHub ubuntu runner image (run
+# 32751942007: "267 passed, 6 skipped", identical to a venv with it present).
+# Naming it in .github/workflows/deploy-with-opa.yml removes that dependency on
+# the image, so the six tests cannot disappear from CI if the image changes.
 cryptography
