@@ -16,7 +16,7 @@
 // Output shape (the policy's `accessibility_scan` input):
 //   {
 //     "accessibility_scan": {
-//       "scanner": {"name": "pa11y", "version": "9.1.1", "standard": "WCAG2AA"},
+//       "scanner": {"name": "pa11y", "version": "10.0.0", "standard": "WCAG2AA"},
 //       "pages": [{
 //         "file_name": "index.html",
 //         "file_path": "../website/index.html",   // as given on the CLI
