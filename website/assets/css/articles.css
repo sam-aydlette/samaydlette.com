@@ -461,3 +461,37 @@
 .article-figure .d-h { fill: var(--text-primary); font-size: 15px; font-weight: 600; }
 .article-figure .d-t { fill: var(--text-primary); font-size: 13px; }
 .article-figure .d-s { fill: var(--text-secondary); font-size: 11.5px; }
+
+/* Scenarios: worked examples in research papers. Labeled so a reader never
+   mistakes an illustrative value for a rule. */
+.scenario {
+    border-left: 4px solid var(--accent-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+.scenario-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.scenario p:last-child {
+    margin-bottom: 0;
+}
+
+.scenario pre {
+    background: var(--bg-code);
+    color: var(--text-code);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
