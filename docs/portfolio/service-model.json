@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "about": "The operator-owned service model: CSP -> CSO -> feature -> service -> inventory component -> owner. One authorization boundary contains both offerings. A service places components either by naming a boundary group in docs/boundary/boundary-classification.json (which already places every AWS and external component) or by selectors for the inventory types the boundary map leaves out (software packages and HTML pages). A service consumed by more than one CSO is a shared service: it is published once, as the shared-services product, and each CSO references it rather than copying it. An empty features list means the service supports the whole offering rather than one feature. Owners are domains from docs/governance/domains.json.",
+  "csp": {
+    "id": "urn:samaydlette:csp",
+    "name": "samaydlette.com operator"
+  },
+  "shared_services": {
+    "id": "urn:samaydlette:shared-services",
+    "name": "Shared services"
+  },
+  "csos": [
+    {
+      "key": "website",
+      "id": "urn:samaydlette:cso:website",
+      "name": "samaydlette.com website",
+      "owner_domain": "website"
+    },
+    {
+      "key": "silk-reeling",
+      "id": "urn:samaydlette:cso:silk-reeling",
+      "name": "Silk Reeling",
+      "owner_domain": "silk-reeling"
+    }
+  ],
+  "features": [
+    {"key": "public-site", "cso": "website", "name": "Public site: articles, research and pages"},
+    {"key": "trust-center", "cso": "website", "name": "Trust Center and published evidence"},
+    {"key": "movement-feedback", "cso": "silk-reeling", "name": "Movement analysis and feedback"},
+    {"key": "sign-in", "cso": "silk-reeling", "name": "Sign-in with MFA"}
+  ],
+  "sources": [
+    {"key": "compliance-lambda-npm", "description": "infrastructure/lambda/package-lock.json", "repo_path": "infrastructure/lambda/package-lock.json"},
+    {"key": "a11y-npm", "description": "tools/a11y/package-lock.json", "repo_path": "tools/a11y/package-lock.json"},
+    {"key": "silk-reeling-frontend", "description": "silk-reeling-mirror frontend, scanned by the deploy as sbom-js.json"},
+    {"key": "silk-reeling-backend", "description": "silk-reeling-mirror Lambda package, scanned by the deploy as sbom-python.json"}
+  ],
+  "services": [
+    {
+      "key": "edge-delivery",
+      "name": "Content delivery, DNS and TLS",
+      "group": "website",
+      "owner_domain": "edge-delivery",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": ["public-site", "trust-center", "movement-feedback", "sign-in"]
+    },
+    {
+      "key": "website-content",
+      "name": "Website pages",
+      "selectors": [{"type": "html_artifact", "id_glob": "html::*"}],
+      "owner_domain": "website",
+      "consumed_by": ["website"],
+      "features": ["public-site", "trust-center"]
+    },
+    {
+      "key": "accessibility-gate",
+      "name": "Accessibility gate (build time)",
+      "selectors": [{"type": "npm_package", "source": "a11y-npm"}],
+      "owner_domain": "platform",
+      "consumed_by": ["website"],
+      "features": []
+    },
+    {
+      "key": "compliance",
+      "name": "Runtime KSI emitter",
+      "group": "compliance",
+      "selectors": [{"type": "npm_package", "source": "compliance-lambda-npm"}],
+      "owner_domain": "observability",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "watchdog",
+      "name": "Evidence-freshness watchdog and alerting",
+      "group": "watchdog",
+      "owner_domain": "observability",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "audit",
+      "name": "Audit trail and shared keys",
+      "group": "audit",
+      "owner_domain": "observability",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "trust-root",
+      "name": "CI/CD trust root",
+      "group": "trust-root",
+      "owner_domain": "platform",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "source-and-ci",
+      "name": "Source control, CI and workload identity",
+      "group": "github",
+      "owner_domain": "platform",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "signing",
+      "name": "Artifact signing and transparency log",
+      "group": "sigstore",
+      "owner_domain": "platform",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "operator-mfa",
+      "name": "Operator MFA",
+      "group": "operator-mfa",
+      "owner_domain": "identity",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "vulnerability-intel",
+      "name": "Vulnerability metadata sources",
+      "group": "vuln-feeds",
+      "owner_domain": "vulnerability",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
+      "key": "silk-reeling-app",
+      "name": "Silk Reeling API, sign-in and app",
+      "group": "app",
+      "selectors": [
+        {"type": "npm_package", "source": "silk-reeling-frontend"},
+        {"type": "pypi_package", "source": "silk-reeling-backend"}
+      ],
+      "owner_domain": "silk-reeling",
+      "consumed_by": ["silk-reeling"],
+      "features": ["movement-feedback", "sign-in"]
+    },
+    {
+      "key": "ai-feedback",
+      "name": "AI feedback interconnection (POAM-020)",
+      "group": "ai-provider",
+      "owner_domain": "silk-reeling",
+      "consumed_by": ["silk-reeling"],
+      "features": ["movement-feedback"]
+    }
+  ]
+}
