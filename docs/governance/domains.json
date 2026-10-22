@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "about": "The governed registry of ownership. Every owner the pipeline publishes is one of the role labels below, never a person, so ownership survives a change of person. Each domain is a functional area that would still exist if a tool were swapped (a scanner, a CDN, a CI vendor), and each has exactly one owning role. Each KSI family has exactly one owning domain. The holder section records who holds the roles today.",
+  "holder": {
+    "name": "Sam Aydlette",
+    "statement": "One person, the operator, holds every role in this registry. The roles are kept separate so that each decision has a named owner, and so the same records would work unchanged with a different person, or a team, in each role."
+  },
+  "roles": [
+    {"id": "role:platform-owner", "title": "Platform owner"},
+    {"id": "role:edge-delivery-owner", "title": "Edge delivery owner"},
+    {"id": "role:identity-owner", "title": "Identity and access owner"},
+    {"id": "role:observability-owner", "title": "Observability and response owner"},
+    {"id": "role:vulnerability-owner", "title": "Vulnerability and supply chain owner"},
+    {"id": "role:risk-owner", "title": "Risk and authorization owner"},
+    {"id": "role:website-owner", "title": "Website application owner"},
+    {"id": "role:silk-reeling-owner", "title": "Silk Reeling application owner"}
+  ],
+  "domains": [
+    {
+      "id": "platform",
+      "name": "Platform and change",
+      "description": "The shared delivery platform: source control, the deploy pipeline and its gates, infrastructure as code, artifact signing, the CI/CD trust root, and recovery.",
+      "owner_role": "role:platform-owner"
+    },
+    {
+      "id": "edge-delivery",
+      "name": "Edge delivery",
+      "description": "Getting requests to the offerings: content delivery, DNS and DNSSEC, TLS certificates, and the origin buckets they serve from.",
+      "owner_role": "role:edge-delivery-owner"
+    },
+    {
+      "id": "identity",
+      "name": "Identity and access",
+      "description": "Who can reach what: operator authentication and MFA, workload identity, and least-privilege access.",
+      "owner_role": "role:identity-owner"
+    },
+    {
+      "id": "observability",
+      "name": "Observability and response",
+      "description": "Knowing what happened and acting on it: audit trails, logs, runtime monitoring, evidence-freshness alarms, and incident response.",
+      "owner_role": "role:observability-owner"
+    },
+    {
+      "id": "vulnerability",
+      "name": "Vulnerability and supply chain",
+      "description": "What the offerings are built from and what is wrong with it: software inventories, vulnerability detection and reporting, and dependency monitoring.",
+      "owner_role": "role:vulnerability-owner"
+    },
+    {
+      "id": "risk",
+      "name": "Risk and authorization",
+      "description": "Deciding and recording risk: the system security plan, the plan of action and milestones, risk acceptances, policy, and training.",
+      "owner_role": "role:risk-owner"
+    },
+    {
+      "id": "website",
+      "name": "Website application",
+      "description": "The samaydlette.com offering's own content and pages, including the Trust Center.",
+      "owner_role": "role:website-owner"
+    },
+    {
+      "id": "silk-reeling",
+      "name": "Silk Reeling application",
+      "description": "The Silk Reeling offering's own application: its API, sign-in, single-page app, and AI feedback interconnection.",
+      "owner_role": "role:silk-reeling-owner"
+    }
+  ],
+  "ksi_families": {
+    "CED": "risk",
+    "CMT": "platform",
+    "CNA": "platform",
+    "IAM": "identity",
+    "INR": "observability",
+    "MLA": "observability",
+    "PIY": "risk",
+    "RPL": "platform",
+    "SCR": "vulnerability",
+    "SVC": "platform"
+  }
+}

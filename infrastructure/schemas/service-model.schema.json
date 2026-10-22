@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/.well-known/service-model.schema.json",
+  "title": "Service model: CSP, CSOs, features and services",
+  "description": "Constrains docs/portfolio/service-model.json. Referential rules (every boundary group is used by exactly one service, owners exist in the governance registry, features and sources resolve) are enforced by tests/test_service_model.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "about", "csp", "shared_services", "csos", "features", "sources", "services"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1},
+    "about": {"type": "string", "minLength": 1},
+    "csp": {"$ref": "#/$defs/named_urn"},
+    "shared_services": {"$ref": "#/$defs/named_urn"},
+    "csos": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "id", "name", "owner_domain"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "id": {"$ref": "#/$defs/urn"},
+          "name": {"type": "string", "minLength": 1},
+          "owner_domain": {"$ref": "#/$defs/key"}
+        }
+      }
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "cso", "name"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "cso": {"$ref": "#/$defs/key"},
+          "name": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "description"],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "description": {"type": "string", "minLength": 1},
+          "repo_path": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "name", "owner_domain", "consumed_by", "features"],
+        "anyOf": [{"required": ["group"]}, {"required": ["selectors"]}],
+        "properties": {
+          "key": {"$ref": "#/$defs/key"},
+          "name": {"type": "string", "minLength": 1},
+          "group": {"$ref": "#/$defs/key"},
+          "selectors": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type"],
+              "oneOf": [{"required": ["id_glob"]}, {"required": ["source"]}],
+              "properties": {
+                "type": {"enum": ["html_artifact", "npm_package", "pypi_package"]},
+                "id_glob": {"type": "string", "minLength": 1},
+                "source": {"$ref": "#/$defs/key"}
+              }
+            }
+          },
+          "owner_domain": {"$ref": "#/$defs/key"},
+          "consumed_by": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/key"}},
+          "features": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/key"}}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "key": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+    "urn": {"type": "string", "pattern": "^urn:samaydlette:[a-z0-9:-]+$"},
+    "named_urn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {"$ref": "#/$defs/urn"},
+        "name": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

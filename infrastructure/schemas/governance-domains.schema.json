@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/.well-known/governance-domains.schema.json",
+  "title": "Governance registry: roles, domains and KSI-family ownership",
+  "description": "Constrains docs/governance/domains.json. Owners are role labels; the holder section is the one place a person is named. Referential rules (every domain's owner is a declared role, every family maps to a declared domain) are enforced by tests/test_governance_registry.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "about", "holder", "roles", "domains", "ksi_families"],
+  "properties": {
+    "version": {"type": "integer", "minimum": 1},
+    "about": {"type": "string", "minLength": 1},
+    "holder": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "statement"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "statement": {"type": "string", "minLength": 1}
+      }
+    },
+    "roles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title"],
+        "properties": {
+          "id": {"$ref": "#/$defs/role_id"},
+          "title": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description", "owner_role"],
+        "properties": {
+          "id": {"$ref": "#/$defs/domain_id"},
+          "name": {"type": "string", "minLength": 1},
+          "description": {"type": "string", "minLength": 1},
+          "owner_role": {"$ref": "#/$defs/role_id"}
+        }
+      }
+    },
+    "ksi_families": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["CED", "CMT", "CNA", "IAM", "INR", "MLA", "PIY", "RPL", "SCR", "SVC"],
+      "patternProperties": {
+        "^[A-Z]{3}$": {"$ref": "#/$defs/domain_id"}
+      }
+    }
+  },
+  "$defs": {
+    "role_id": {"type": "string", "pattern": "^role:[a-z0-9]+(-[a-z0-9]+)*$"},
+    "domain_id": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"}
+  }
+}
