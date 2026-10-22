@@ -550,3 +550,41 @@
 .article-content .req-table td:first-child {
     white-space: nowrap;
 }
+
+/* Beyond CR26: where a research paper's method asks more than the rules do,
+   with the reason. Amber, so it reads apart from scenarios and rule boxes. */
+.beyond {
+    --beyond: #b45309;
+    border-left: 4px solid var(--beyond);
+    background: var(--bg-tertiary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+[data-theme="dark"] .beyond {
+    --beyond: #fbbf24;
+}
+
+.beyond-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--beyond);
+    margin-bottom: 0.5rem;
+}
+
+.beyond p:last-child {
+    margin-bottom: 0;
+}
+
+.article-content .beyond-mark {
+    color: var(--beyond, #b45309);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .article-content .beyond-mark {
+    color: #fbbf24;
+}
