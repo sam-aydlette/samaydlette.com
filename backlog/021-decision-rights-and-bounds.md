@@ -1,0 +1,10 @@
+# Record who may change each rule, separate global rules from local ones, and enforce local settings within global bounds in OPA.
+REPO: samaydlette.com
+STATUS: QUEUED            # QUEUED | IN_PROGRESS | PARKED | DONE | FAILED
+ACCEPTANCE: `make check` passes and CodeGuard ran on the PR, plus: `docs/governance/domains.json` gains `decision_rights[]`, each entry with `scope` (global or local), `may_change` (a role) and `bounds`. Global: identifier scheme, schema major version, signing identities, impact level, freshness ceilings. Local: freshness targets at or below their ceiling, retention at or above its minimum, scanner choice from an allowed set. A new Rego package `policy.governance` (`infrastructure/policy/governance.rego` and tests) denies any local value outside its bound, a CI step evaluates it fail-closed against the contracts and the registry, and `make test-policies` keeps its coverage floor; `build_policy_catalog` adds `scope`, `may_change` and `bounds` to every entry; `build_decisions_pending` items gain `owner_role`.
+OUT OF SCOPE: Changing the decisions of any existing Rego package. Adding a new input shape to the Terraform gate.
+LANDMINES: Measured 2026-10-22 on `main` @ 985fe06: `build_policy_catalog` is at `scripts/build-trust-center.py` L377-420 and `build_decisions_pending` at L285-370 (no assignee today; routing exists only in the `WHY_YOURS` prose at L54-71). `infrastructure/policy/gate.rego` L36 detects the input shape; evaluate the governance package as its own entry point. An `opa` older than `OPA_VERSION` (deploy L79, and the hardcoded download URL at `infrastructure/Makefile` L51) silently skips policy tests; check `opa version`.
+DEPENDS ON: 019
+LIVE-EDGE: `curl -s https://samaydlette.com/.well-known/trust-center.json | jq` shows `may_change` on every policy catalog entry, and the file's signature verifies.
+---
+Filed 2026-10-22 from the data-mesh plan (see `backlog/README.md` for the sequence). Phase 2, serialized. Work item 5: federated computational governance.
