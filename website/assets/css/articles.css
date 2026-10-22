@@ -588,3 +588,8 @@
 [data-theme="dark"] .article-content .beyond-mark {
     color: #fbbf24;
 }
+
+/* Keep rule IDs like VDR-TFR-PVR on one line wherever they are linked. */
+.article-content a[href*="fedramp.gov/2026/"] {
+    white-space: nowrap;
+}
