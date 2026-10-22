@@ -399,3 +399,65 @@
     letter-spacing: 0.04em;
     opacity: 0.8;
 }
+
+/* Diagrams: inline SVG figures in research papers. Colors come from the theme
+   tokens, so a figure reads the same in light and dark mode. On narrow screens
+   the figure scrolls sideways inside its own box; the page never does. */
+.article-figure {
+    margin: 2rem 0;
+    --d-edge: #2563eb;
+    --d-backed: #7c3aed;
+    --d-internal: #6c757d;
+    --d-ok: #059669;
+    --d-queue: #b45309;
+    --d-fail: #dc2626;
+}
+
+[data-theme="dark"] .article-figure {
+    --d-edge: #60a5fa;
+    --d-backed: #a78bfa;
+    --d-internal: #adb5bd;
+    --d-ok: #34d399;
+    --d-queue: #fbbf24;
+    --d-fail: #f87171;
+}
+
+.article-figure .fig-scroll {
+    overflow-x: auto;
+}
+
+.article-figure svg {
+    display: block;
+    width: 100%;
+    min-width: 560px;
+    max-width: 760px;
+    height: auto;
+    margin: 0 auto;
+    font-family: var(--font-sans);
+}
+
+.article-figure figcaption {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+.article-figure .d-panel { fill: var(--bg-tertiary); stroke: none; }
+.article-figure .d-box { fill: var(--bg-secondary); stroke: var(--border-color); stroke-width: 1.5; }
+.article-figure .d-edge { fill: var(--bg-secondary); stroke: var(--d-edge); stroke-width: 2; }
+.article-figure .d-backed { fill: var(--bg-secondary); stroke: var(--d-backed); stroke-width: 2; }
+.article-figure .d-internal { fill: var(--bg-secondary); stroke: var(--d-internal); stroke-width: 2; }
+.article-figure .d-ok { fill: var(--bg-secondary); stroke: var(--d-ok); stroke-width: 2; }
+.article-figure .d-queue { fill: var(--bg-secondary); stroke: var(--d-queue); stroke-width: 2; }
+.article-figure .d-fail { fill: var(--bg-secondary); stroke: var(--d-fail); stroke-width: 2; }
+.article-figure .d-bar-ok { fill: var(--d-ok); }
+.article-figure .d-bar-queue { fill: var(--d-queue); }
+.article-figure .d-bar-fail { fill: var(--d-fail); }
+.article-figure .d-line { stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+.article-figure .d-dash { stroke-dasharray: 5 4; }
+.article-figure .d-head { fill: var(--text-secondary); }
+.article-figure .d-h { fill: var(--text-primary); font-size: 15px; font-weight: 600; }
+.article-figure .d-t { fill: var(--text-primary); font-size: 13px; }
+.article-figure .d-s { fill: var(--text-secondary); font-size: 11.5px; }
