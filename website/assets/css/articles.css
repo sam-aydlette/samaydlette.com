@@ -495,3 +495,10 @@
     font-size: 0.85rem;
     line-height: 1.6;
 }
+
+/* Subtitle under an article title. */
+.article-subtitle {
+    margin: -0.75rem 0 1.5rem;
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+}
