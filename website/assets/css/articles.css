@@ -502,3 +502,46 @@
     font-size: 1.15rem;
     color: var(--text-secondary);
 }
+
+/* Operating rule: a short policy statement a reader can lift as written. */
+.rule-box {
+    border: 2px solid var(--accent-primary);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+.rule-box .rule-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.rule-box .rule-lead {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.rule-box dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0 0 0.75rem;
+}
+
+.rule-box dt {
+    font-weight: 600;
+}
+
+.rule-box dd {
+    margin: 0;
+}
+
+.rule-box p:last-child {
+    margin-bottom: 0;
+}
