@@ -178,7 +178,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
     - name: Install test dependencies
-      run: python3 -m pip install --user pytest jsonschema pyyaml 'ruff==0.15.20' 'mypy==2.1.0'
+      run: python3 -m pip install --user pytest jsonschema pyyaml cryptography 'ruff==0.15.20' 'mypy==2.1.0'
 
     - name: Setup OPA
       run: |
