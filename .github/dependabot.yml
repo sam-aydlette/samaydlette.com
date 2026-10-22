@@ -14,6 +14,15 @@ updates:
     commit-message:
       prefix: "deps(lambda)"
       include: "scope"
+    # The AWS SDK v3 clients release in lockstep and share one lockfile, so
+    # separate PRs conflict with each other after the first merge. One grouped
+    # PR per release keeps the clients on one version. Security updates are not
+    # grouped (the default applies-to is version-updates), so an advisory still
+    # gets its own PR.
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
 
   # The accessibility scanner. Security alerts already reached this lockfile
   # (Dependabot raises those against every manifest it detects), but routine
