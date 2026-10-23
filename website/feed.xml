@@ -14,7 +14,7 @@
       <guid>https://samaydlette.com/research/vulnerability-evidence.html</guid>
       <pubDate>Fri, 23 Oct 2026 00:00:00 +0000</pubDate>
       <category>research</category>
-      <description>FedRAMP’s 2026 rules leave each vulnerability decision to the provider. Is it reachable? Is it likely to be exploited? How bad would it be, and how fast must it be fixed? I propose a method, built on data mesh, that makes those answers trustworthy and comparable across providers. Reachability comes from declared design intent checked against what attackers can see, exceptions become published records that lapse, and the evidence ships as a signed product.</description>
+      <description>FedRAMP’s 2026 rules leave each vulnerability decision to the provider. Is it reachable? Is it likely to be exploited? How bad would it be, and how fast must it be fixed? I propose a method, built on data mesh, that makes those answers trustworthy and comparable across providers.</description>
     </item>
     <item>
       <title>The Knot at the Center: Orientation and Judgment for FedRAMP 20x and Beyond</title>
