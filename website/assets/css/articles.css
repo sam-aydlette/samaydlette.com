@@ -593,3 +593,29 @@
 .article-content a[href*="fedramp.gov/2026/"] {
     white-space: nowrap;
 }
+
+/* "Through the mesh" codas: the data mesh principle at work in a section.
+   A quiet close, not a callout, so no box and no background. A short accent
+   rule, a small label, and secondary text set it apart from the argument. */
+.article-content .mesh-note {
+    position: relative;
+    margin-top: 2rem;
+    padding-top: 0.9rem;
+    color: var(--text-secondary);
+}
+.article-content .mesh-note::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2.5rem;
+    border-top: 2px solid var(--accent-primary);
+}
+.article-content .mesh-label {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    margin-right: 0.4rem;
+}
