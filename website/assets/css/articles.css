@@ -399,3 +399,317 @@
     letter-spacing: 0.04em;
     opacity: 0.8;
 }
+
+/* Diagrams: inline SVG figures in research papers. Colors come from the theme
+   tokens, so a figure reads the same in light and dark mode. On narrow screens
+   the figure scrolls sideways inside its own box; the page never does. */
+.article-figure {
+    margin: 2rem 0;
+    --d-edge: #2563eb;
+    --d-backed: #7c3aed;
+    --d-internal: #6c757d;
+    --d-ok: #059669;
+    --d-queue: #b45309;
+    --d-fail: #dc2626;
+}
+
+[data-theme="dark"] .article-figure {
+    --d-edge: #60a5fa;
+    --d-backed: #a78bfa;
+    --d-internal: #adb5bd;
+    --d-ok: #34d399;
+    --d-queue: #fbbf24;
+    --d-fail: #f87171;
+}
+
+.article-figure .fig-scroll {
+    overflow-x: auto;
+}
+
+.article-figure svg {
+    display: block;
+    width: 100%;
+    min-width: 560px;
+    max-width: 760px;
+    height: auto;
+    margin: 0 auto;
+    font-family: var(--font-sans);
+}
+
+.article-figure figcaption {
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    text-align: center;
+}
+
+.article-figure .d-panel { fill: var(--bg-tertiary); stroke: none; }
+.article-figure .d-box { fill: var(--bg-secondary); stroke: var(--border-color); stroke-width: 1.5; }
+.article-figure .d-edge { fill: var(--bg-secondary); stroke: var(--d-edge); stroke-width: 2; }
+.article-figure .d-backed { fill: var(--bg-secondary); stroke: var(--d-backed); stroke-width: 2; }
+.article-figure .d-internal { fill: var(--bg-secondary); stroke: var(--d-internal); stroke-width: 2; }
+.article-figure .d-ok { fill: var(--bg-secondary); stroke: var(--d-ok); stroke-width: 2; }
+.article-figure .d-queue { fill: var(--bg-secondary); stroke: var(--d-queue); stroke-width: 2; }
+.article-figure .d-fail { fill: var(--bg-secondary); stroke: var(--d-fail); stroke-width: 2; }
+.article-figure .d-bar-ok { fill: var(--d-ok); }
+.article-figure .d-bar-queue { fill: var(--d-queue); }
+.article-figure .d-bar-fail { fill: var(--d-fail); }
+.article-figure .d-line { stroke: var(--text-secondary); stroke-width: 1.5; fill: none; }
+.article-figure .d-dash { stroke-dasharray: 5 4; }
+.article-figure .d-head { fill: var(--text-secondary); }
+.article-figure .d-h { fill: var(--text-primary); font-size: 15px; font-weight: 600; }
+.article-figure .d-t { fill: var(--text-primary); font-size: 13px; }
+.article-figure .d-s { fill: var(--text-secondary); font-size: 11.5px; }
+
+/* Scenarios: worked examples in research papers. Labeled so a reader never
+   mistakes an illustrative value for a rule. */
+.scenario {
+    border-left: 4px solid var(--accent-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+.scenario-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.scenario p:last-child {
+    margin-bottom: 0;
+}
+
+.scenario pre {
+    background: var(--bg-code);
+    color: var(--text-code);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+/* Subtitle under an article title. */
+.article-subtitle {
+    margin: -0.75rem 0 1.5rem;
+    font-size: 1.15rem;
+    color: var(--text-secondary);
+}
+
+/* Operating rule: a short policy statement a reader can lift as written. */
+.rule-box {
+    border: 2px solid var(--accent-primary);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+.rule-box .rule-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.rule-box .rule-lead {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.rule-box dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0 0 0.75rem;
+}
+
+.rule-box dt {
+    font-weight: 600;
+}
+
+.rule-box dd {
+    margin: 0;
+}
+
+.rule-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* Requirement tables: keep IDs like REQ-IRV-1 on one line. */
+.article-content .req-table td:first-child {
+    white-space: nowrap;
+}
+
+/* Beyond CR26: where a research paper's method asks more than the rules do,
+   with the reason. Amber, so it reads apart from scenarios and rule boxes. */
+.beyond {
+    --beyond: #b45309;
+    border-left: 4px solid var(--beyond);
+    background: var(--bg-tertiary);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1.75rem 0;
+}
+
+[data-theme="dark"] .beyond {
+    --beyond: #fbbf24;
+}
+
+.beyond-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--beyond);
+    margin-bottom: 0.5rem;
+}
+
+.beyond p:last-child {
+    margin-bottom: 0;
+}
+
+.article-content .beyond-mark {
+    color: var(--beyond, #b45309);
+    font-weight: 600;
+}
+
+[data-theme="dark"] .article-content .beyond-mark {
+    color: #fbbf24;
+}
+
+/* Keep rule IDs like VDR-TFR-PVR on one line wherever they are linked. */
+.article-content a[href*="fedramp.gov/2026/"] {
+    white-space: nowrap;
+}
+
+/* "Through the mesh" codas: the data mesh principle at work in a section.
+   A quiet close, not a callout, so no box and no background. A short accent
+   rule, a small label, and secondary text set it apart from the argument. */
+.article-content .mesh-note {
+    position: relative;
+    margin-top: 2rem;
+    padding-top: 0.9rem;
+    color: var(--text-secondary);
+}
+.article-content .mesh-note::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2.5rem;
+    border-top: 2px solid var(--accent-primary);
+}
+.article-content .mesh-label {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    margin-right: 0.4rem;
+}
+
+/* Contents for long research pages: a quiet card. Numbered sections in body text,
+   subsections run together on one muted line, appendices on a footer line. The
+   selectors carry .content so they outrank the site-wide content link colors. */
+.article-content .toc {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.1rem 1.5rem 1rem;
+    margin: 1.75rem 0 2.25rem;
+}
+.article-content .toc .toc-label,
+.article-content .toc .toc-back-label {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 0.6rem;
+}
+.article-content .toc .toc-main {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: toc;
+    columns: 2;
+    column-gap: 2.5rem;
+}
+.article-content .toc .toc-main > li {
+    counter-increment: toc;
+    position: relative;
+    break-inside: avoid;
+    padding: 0.38rem 0 0.38rem 2rem;
+    margin: 0;
+    line-height: 1.35;
+}
+.article-content .toc .toc-main > li::before {
+    content: counter(toc, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--accent-primary);
+}
+.content .article-content .toc .toc-main > li > a:is(:link, :visited) {
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+.article-content .toc .toc-sub {
+    list-style: none;
+    margin: 0.2rem 0 0;
+    padding: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+.article-content .toc .toc-sub li {
+    display: inline;
+    margin: 0;
+}
+.article-content .toc .toc-sub li + li::before {
+    content: "\00B7";
+    margin: 0 0.4rem;
+    color: var(--text-muted);
+}
+.content .article-content .toc .toc-sub a:is(:link, :visited),
+.content .article-content .toc .toc-back a:is(:link, :visited) {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+.content .article-content .toc a:is(:link, :visited):hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+.article-content .toc .toc-back {
+    border-top: 1px solid var(--border-color);
+    margin: 0.7rem 0 0;
+    padding-top: 0.75rem;
+    font-size: 0.82rem;
+}
+.article-content .toc .toc-back-label {
+    display: inline;
+    margin-right: 0.6rem;
+}
+.article-content .toc .toc-sep {
+    margin: 0 0.45rem;
+    color: var(--text-muted);
+}
+@media (max-width: 640px) {
+    .article-content .toc { padding: 1rem 1.1rem 0.9rem; }
+    .article-content .toc .toc-main { columns: 1; }
+}

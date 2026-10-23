@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile essay-check require-tools require-artifacts
+        reconcile essay-check preview require-tools require-artifacts
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -65,6 +65,7 @@ help:
 	@echo "  make typecheck   - mypy scripts/"
 	@echo "  make fmt         - ruff format scripts/ tests/ (opt-in, rewrites files)"
 	@echo "  make essay-check - essay + homepage structure and citations (local only)"
+	@echo "  make preview     - serve website/ locally, reloading on save (local only)"
 	@echo "  make dev-setup   - create .venv and install requirements-dev.txt"
 	@echo ""
 	@echo "Resolved Python: $(PY)"
@@ -182,6 +183,11 @@ reconcile:
 essay-check:
 	@echo "Checking essay structure and citations..."
 	$(VENV_PY) -m pytest -q tools/essay
+
+# Serve website/ at http://127.0.0.1:8000/ for writing; pages reload on save.
+# Local only. PORT=8001 make preview to pick another port.
+preview:
+	python3 tools/preview/serve.py --port $(or $(PORT),8000)
 
 # The RSS feed is generated from the article index; this fails if the committed
 # feed no longer matches it. Derived artifacts are
