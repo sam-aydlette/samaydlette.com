@@ -619,3 +619,41 @@
     color: var(--accent-primary);
     margin-right: 0.4rem;
 }
+
+/* Contents list for long research pages. Compact, two columns where there is room. */
+.article-content .toc {
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 0;
+    margin: 1.75rem 0 2rem;
+    font-size: 0.92rem;
+}
+.article-content .toc-label {
+    display: block;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+    margin-bottom: 0.6rem;
+}
+.article-content .toc > ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    columns: 2;
+    column-gap: 2rem;
+}
+.article-content .toc li {
+    margin: 0 0 0.35rem;
+    break-inside: avoid;
+}
+.article-content .toc ul ul {
+    list-style: none;
+    margin: 0.3rem 0 0.2rem;
+    padding-left: 1rem;
+    font-size: 0.95em;
+}
+@media (max-width: 640px) {
+    .article-content .toc > ul { columns: 1; }
+}
