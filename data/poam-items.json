@@ -766,6 +766,31 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-10-20",
       "review_by": "2027-10-20"
+    },
+    {
+      "id": "POAM-036",
+      "controls": [
+        "sc-7",
+        "sc-8",
+        "si-10"
+      ],
+      "title": "Silk Reeling path served without CloudFront security headers",
+      "description": "The CloudFront response-headers policy (POAM-031) is attached to the distribution's default cache behavior only. The /silk-reeling/* behavior, which serves the Cognito-gated Silk Reeling app, carries no policy, so the app is delivered with no Content-Security-Policy, no frame protection (X-Frame-Options or frame-ancestors), no X-Content-Type-Options and no Strict-Transport-Security header. A page on another origin can frame the app, which exposes a signed-in user to clickjacking. HSTS is mitigated in practice because other responses on the domain set includeSubDomains and preload. Found 2026-10-23 by an outside-in review: a passive OWASP ZAP baseline against the public site (alerts 10020-1, 10038-1, 10021, 10035-1), confirmed against infrastructure/bootstrap/cloudfront.tf.",
+      "weakness_detector_source": "OWASP ZAP baseline + outside-in review (manual)",
+      "weakness_source_identifier": "zap-10020-1; zap-10038-1; zap-10021; zap-10035-1",
+      "asset_identifiers": [
+        "aws-cloudfront-distribution::silk-reeling-behavior"
+      ],
+      "point_of_contact": "Sam Aydlette (operator)",
+      "resources_required": "Operator time to apply the bootstrap stack and verify the app in a browser; no additional cost.",
+      "remediation_plan": "Attach a response-headers policy of its own to the /silk-reeling/* behavior: the site's transport and framing headers plus a CSP fitted to what the app loads (the pinned MediaPipe runtime, the pose model and the Cognito token endpoint). The site's policy cannot be reused because its connect-src and script-src would break the app. Close once the live response carries the headers and the app works.",
+      "original_detection_date": "2026-10-23",
+      "scheduled_completion_date": "2026-11-06",
+      "status_date": "2026-10-23",
+      "original_risk_rating": "moderate",
+      "adjusted_risk_rating": null,
+      "risk_adjustment": false,
+      "status": "open"
     }
   ]
 }

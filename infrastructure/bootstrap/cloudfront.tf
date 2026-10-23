@@ -68,8 +68,11 @@ resource "aws_cloudfront_origin_access_control" "website" {
 # ochelli.com, and libsyn's stable episode URL (traffic.libsyn.com), which
 # redirects to a signed, expiring URL on content.libsyn.com. CSP checks every
 # redirect hop, so both libsyn hosts are needed.
+# Permissions-Policy turns off powerful browser features the static pages never
+# use, and COOP/CORP keep the pages out of other origins' windows and no-cors
+# loads. No COEP: require-corp would break the YouTube embed.
 # Attached to the default (static-site) behavior only; the /silk-reeling/*
-# application path is left off this policy.
+# application path has its own policy below, because this CSP would break it.
 resource "aws_cloudfront_response_headers_policy" "website" {
   name    = "${replace(var.domain_name, ".", "-")}-security-headers"
   comment = "Baseline security headers for ${var.domain_name}"
@@ -113,6 +116,95 @@ resource "aws_cloudfront_response_headers_policy" "website" {
       mode_block = true
       protection = true
       override   = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      value    = "same-origin"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Resource-Policy"
+      value    = "same-origin"
+      override = true
+    }
+  }
+}
+
+# Security headers for the Silk Reeling app (/silk-reeling/*). The same
+# transport and framing headers as the site, with a CSP fitted to what the app
+# loads: the MediaPipe runtime and its WebAssembly from jsDelivr (pinned to the
+# tasks-vision version the app bundle pins; move both together), the pose model
+# from Google's model bucket, and the Cognito token endpoint. 'wasm-unsafe-eval'
+# permits compiling WebAssembly; it does not permit JavaScript eval. The OAuth
+# authorize step is a top-level navigation, so it needs no form-action source.
+# The camera is the one browser feature the app uses.
+resource "aws_cloudfront_response_headers_policy" "silk_reeling" {
+  name    = "${local.domain_dashed}-silk-reeling-security-headers"
+  comment = "Security headers for the Silk Reeling app on ${var.domain_name}"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+    content_type_options {
+      override = true
+    }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self' 'wasm-unsafe-eval' ${local.silk_reeling_mediapipe}",
+        "connect-src 'self' ${local.silk_reeling_mediapipe} https://storage.googleapis.com/mediapipe-models/ https://${local.silk_reeling_cognito_domain}",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "frame-ancestors 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "object-src 'none'",
+      ])
+      override = true
+    }
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      value    = "same-origin"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Resource-Policy"
+      value    = "same-origin"
+      override = true
     }
   }
 }
@@ -179,16 +271,18 @@ resource "aws_cloudfront_distribution" "website" {
   }
 
   # App path: no caching, forward everything except Host (so the JWT authorizer
-  # sees the Authorization header), strip the prefix at the edge.
+  # sees the Authorization header), strip the prefix at the edge, and add the
+  # app's security headers.
   ordered_cache_behavior {
-    path_pattern             = "/silk-reeling/*"
-    target_origin_id         = "apigw-silk-reeling"
-    viewer_protocol_policy   = "redirect-to-https"
-    allowed_methods          = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
-    cached_methods           = ["HEAD", "GET"]
-    compress                 = true
-    cache_policy_id          = data.aws_cloudfront_cache_policy.caching_disabled.id
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    path_pattern               = "/silk-reeling/*"
+    target_origin_id           = "apigw-silk-reeling"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.silk_reeling.id
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["HEAD", "DELETE", "POST", "GET", "OPTIONS", "PUT", "PATCH"]
+    cached_methods             = ["HEAD", "GET"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
     function_association {
       event_type   = "viewer-request"
       function_arn = data.aws_cloudfront_function.strip_prefix.arn
@@ -253,4 +347,9 @@ data "aws_apigatewayv2_api" "silk_reeling" {
 
 locals {
   silk_reeling_api_origin_domain = trimprefix(data.aws_apigatewayv2_api.silk_reeling.api_endpoint, "https://")
+  # The app's Cognito Hosted UI domain, named by the per-deploy stack
+  # (local.silk_name in ../silk-reeling.tf).
+  silk_reeling_cognito_domain = "${local.domain_dashed}-silk-reeling.auth.${var.aws_region}.amazoncognito.com"
+  # The MediaPipe runtime the app bundle loads, at the version the bundle pins.
+  silk_reeling_mediapipe = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/"
 }
