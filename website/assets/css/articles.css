@@ -620,40 +620,96 @@
     margin-right: 0.4rem;
 }
 
-/* Contents list for long research pages. Compact, two columns where there is room. */
+/* Contents for long research pages: a quiet card. Numbered sections in body text,
+   subsections run together on one muted line, appendices on a footer line. The
+   selectors carry .content so they outrank the site-wide content link colors. */
 .article-content .toc {
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem 0;
-    margin: 1.75rem 0 2rem;
-    font-size: 0.92rem;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.1rem 1.5rem 1rem;
+    margin: 1.75rem 0 2.25rem;
 }
-.article-content .toc-label {
-    display: block;
+.article-content .toc .toc-label,
+.article-content .toc .toc-back-label {
     font-family: var(--font-mono, monospace);
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent-primary);
-    margin-bottom: 0.6rem;
+    color: var(--text-muted);
+    margin: 0 0 0.6rem;
 }
-.article-content .toc > ul {
+.article-content .toc .toc-main {
     list-style: none;
     margin: 0;
     padding: 0;
+    counter-reset: toc;
     columns: 2;
-    column-gap: 2rem;
+    column-gap: 2.5rem;
 }
-.article-content .toc li {
-    margin: 0 0 0.35rem;
+.article-content .toc .toc-main > li {
+    counter-increment: toc;
+    position: relative;
     break-inside: avoid;
+    padding: 0.38rem 0 0.38rem 2rem;
+    margin: 0;
+    line-height: 1.35;
 }
-.article-content .toc ul ul {
+.article-content .toc .toc-main > li::before {
+    content: counter(toc, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--accent-primary);
+}
+.content .article-content .toc .toc-main > li > a:is(:link, :visited) {
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    font-weight: 500;
+    text-decoration: none;
+}
+.article-content .toc .toc-sub {
     list-style: none;
-    margin: 0.3rem 0 0.2rem;
-    padding-left: 1rem;
-    font-size: 0.95em;
+    margin: 0.2rem 0 0;
+    padding: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+}
+.article-content .toc .toc-sub li {
+    display: inline;
+    margin: 0;
+}
+.article-content .toc .toc-sub li + li::before {
+    content: "\00B7";
+    margin: 0 0.4rem;
+    color: var(--text-muted);
+}
+.content .article-content .toc .toc-sub a:is(:link, :visited),
+.content .article-content .toc .toc-back a:is(:link, :visited) {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+.content .article-content .toc a:is(:link, :visited):hover {
+    color: var(--accent-primary);
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+}
+.article-content .toc .toc-back {
+    border-top: 1px solid var(--border-color);
+    margin: 0.7rem 0 0;
+    padding-top: 0.75rem;
+    font-size: 0.82rem;
+}
+.article-content .toc .toc-back-label {
+    display: inline;
+    margin-right: 0.6rem;
+}
+.article-content .toc .toc-sep {
+    margin: 0 0.45rem;
+    color: var(--text-muted);
 }
 @media (max-width: 640px) {
-    .article-content .toc > ul { columns: 1; }
+    .article-content .toc { padding: 1rem 1.1rem 0.9rem; }
+    .article-content .toc .toc-main { columns: 1; }
 }
