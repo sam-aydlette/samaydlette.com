@@ -1,6 +1,6 @@
 {
   "$schema": "./vdr-pain-config.schema.json",
-  "version": "1.0",
+  "version": "1.1",
   "description": "Governed calibration for the deterministic CVSS-Environmental VDR PAIN classifier. These are the ONLY tunable knobs in the method: the word thresholds, the EPSS likely-exploitable threshold, the impact/requirement weights, and the tag-to-requirement maps. The FedRAMP VDR-TFR-PVR remediation-day matrix is deliberately NOT here — it is fixed by FedRAMP and lives verbatim in code (scripts/build-vdr-report.py). Only the classifier is ours to tune; the deadlines are not.",
   "method_reference": "A Deterministic, CVSS-Environmental Method for FedRAMP Rev5 VDR/VER Vulnerability Prioritization (informational memo, June 2026); CVSS v3.1 Environmental metric group (Modified Impact Sub-Score, CR/IR/AR).",
   "fedramp_corpus_pin": "2a75592",
@@ -9,7 +9,8 @@
     "narrow_to_disruptive": 0.55,
     "disruptive_to_debilitating": 0.80
   },
-  "epss_threshold": 0.70,
+  "epss_threshold": 0.10,
+  "epss_threshold_rationale": "FIRST publishes no universal EPSS threshold; the right one depends on remediation capacity, risk tolerance and asset context. 0.10 is the value FIRST notes is commonly cited. At 0.10 a finding is likely exploitable once its estimated chance of exploitation activity in the next 30 days reaches 10%, a remediation volume this system can sustain. Known-exploited and actively exploited findings are LEV regardless of score. Revisited when remediation capacity changes or as EPSS's record on this system builds up.",
   "isc_cap": 0.915,
   "cvss_impact_weights": {
     "none": 0.0,

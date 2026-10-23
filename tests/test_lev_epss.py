@@ -19,7 +19,7 @@ def _vdr():
 
 
 vdr = _vdr()
-THRESH = 0.70
+THRESH = 0.10
 
 EPSS_CSV = (
     "#model_version:v2026.06.30,score_date:2026-06-30T00:00:00+0000\n"
@@ -62,6 +62,12 @@ def test_ingest_epss_missing_returns_empty():
 def test_lev_true_when_epss_at_or_above_threshold():
     f = {"cve": "CVE-2026-HIGH", "severity": "LOW"}
     assert vdr.is_likely_exploitable(f, {"CVE-2026-HIGH": 0.91}, THRESH) is True
+
+
+def test_lev_true_for_a_score_between_the_old_and_new_thresholds():
+    """0.30 was NLEV at the retired 0.70 threshold; at the governed 0.10 it is LEV."""
+    f = {"cve": "CVE-2026-MIDP", "severity": "LOW"}
+    assert vdr.is_likely_exploitable(f, {"CVE-2026-MIDP": 0.30}, THRESH) is True
 
 
 def test_lev_false_when_epss_below_threshold_overrides_severity_proxy():
