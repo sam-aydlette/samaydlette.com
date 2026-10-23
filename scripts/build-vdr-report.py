@@ -72,7 +72,8 @@ def _validate_pain_config(cfg, where):
     """Fail-closed structural validation of the governed PAIN config. A malformed
     or incomplete config is an error, never a silent fallback to built-in
     defaults — that is what keeps the governed knobs from being bypassed."""
-    required = ["version", "pain_word_thresholds", "epss_threshold", "isc_cap",
+    required = ["version", "pain_word_thresholds", "epss_threshold",
+                "epss_threshold_rationale", "isc_cap",
                 "cvss_impact_weights", "requirement_weights",
                 "data_sensitivity_to_requirement", "mission_criticality_to_requirement",
                 "multi_agency_default"]
@@ -89,6 +90,10 @@ def _validate_pain_config(cfg, where):
                          f"ascending in [0,1], got {th}")
     if not (0 <= cfg["epss_threshold"] <= 1):
         raise SystemExit(f"::error::PAIN config {where}: epss_threshold must be in [0,1]")
+    # The threshold is a risk-tolerance decision; it is not published without its reason.
+    rationale = cfg["epss_threshold_rationale"]
+    if not isinstance(rationale, str) or not rationale.strip():
+        raise SystemExit(f"::error::PAIN config {where}: epss_threshold_rationale must be a non-empty string")
     if not (0 < cfg["isc_cap"] <= 1):
         raise SystemExit(f"::error::PAIN config {where}: isc_cap must be in (0,1]")
     if cfg["multi_agency_default"] not in (0, 1):
@@ -884,7 +889,7 @@ def is_internet_reachable(finding):
     return any(hint in haystack for hint in INTERNET_REACHABLE_RESOURCE_HINTS)
 
 
-def is_likely_exploitable(finding, epss_scores=None, epss_threshold=0.70, is_kev=False):
+def is_likely_exploitable(finding, epss_scores, epss_threshold, is_kev=False):
     """VER-EVA-ELX: Likely-Exploitable by the memo's union. A finding is LEV if its
     EPSS probability meets the governed threshold OR exploitation is observed
     active (CISA KEV membership, or an explicit exploitation=active marker). The
@@ -1586,6 +1591,7 @@ def main():
         "pain_classifier_fallback": "severity-proxy (findings without a CVSS vector)",
         "lev_method": "EPSS union (>= threshold) OR active-exploitation (CISA KEV); severity-proxy fallback where EPSS is unavailable",
         "epss_threshold": pain_config["epss_threshold"],
+        "epss_threshold_rationale": pain_config["epss_threshold_rationale"],
         "epss_scores_loaded": len(epss_scores),
         "pain_config_version": pain_config["version"],
         "pain_config_sha256": pain_config_sha256,

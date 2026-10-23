@@ -30,7 +30,8 @@ def test_committed_config_loads_and_validates():
     assert cfg["version"]
     t = cfg["pain_word_thresholds"]
     assert (t["minimal_to_narrow"], t["narrow_to_disruptive"], t["disruptive_to_debilitating"]) == (0.25, 0.55, 0.80)
-    assert cfg["epss_threshold"] == 0.70
+    assert cfg["epss_threshold"] == 0.10
+    assert cfg["epss_threshold_rationale"].strip()
     assert cfg["isc_cap"] == 0.915
     assert cfg["cvss_impact_weights"] == {"none": 0.0, "low": 0.22, "high": 0.56}
     assert cfg["requirement_weights"] == {"low": 0.5, "medium": 1.0, "high": 1.5}
@@ -79,6 +80,20 @@ def test_loader_fails_closed_on_bad_multi_agency_value(tmp_path):
 def test_loader_fails_closed_on_missing_required_key(tmp_path):
     cfg = json.loads(CONFIG.read_text())
     del cfg["epss_threshold"]
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps(cfg))
+    with pytest.raises(SystemExit):
+        vdr.load_pain_config(str(bad))
+
+
+@pytest.mark.parametrize("rationale", [None, "", "   ", 0.1])
+def test_loader_fails_closed_without_a_threshold_rationale(tmp_path, rationale):
+    """The threshold is a risk-tolerance decision; it never ships without its reason."""
+    cfg = json.loads(CONFIG.read_text())
+    if rationale is None:
+        del cfg["epss_threshold_rationale"]
+    else:
+        cfg["epss_threshold_rationale"] = rationale
     bad = tmp_path / "bad.json"
     bad.write_text(json.dumps(cfg))
     with pytest.raises(SystemExit):
