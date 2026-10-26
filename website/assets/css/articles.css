@@ -546,6 +546,86 @@
     margin-bottom: 0;
 }
 
+/* Tables in research papers sit in a wrapper that scrolls sideways. The body's
+   overflow-x: hidden would otherwise clip a table wider than a phone. */
+.article-content .table-scroll {
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.article-content .table-scroll > table {
+    margin: 0;
+}
+
+/* Prose tables stack on phones: one card per row, each cell labeled with its
+   column header from data-label. The header row stays for screen readers, and
+   the explicit table roles in the markup keep the semantics through the
+   display change. */
+@media (max-width: 600px) {
+    .article-content .table-stack thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .article-content .table-stack,
+    .article-content .table-stack tbody,
+    .article-content .table-stack tr,
+    .article-content .table-stack td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .article-content .table-stack tr {
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        padding: 0.35rem 0;
+    }
+
+    .article-content .table-stack tbody tr:hover {
+        background: none;
+    }
+
+    .article-content .table-stack td {
+        border-bottom: none;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .article-content .table-stack td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--accent-primary);
+    }
+
+    /* The first cell titles the card. */
+    .article-content .table-stack td:first-child {
+        font-weight: 600;
+    }
+
+    .article-content .table-stack td:first-child::before {
+        content: none;
+    }
+
+    /* A bare number reads as "Step 1". */
+    .article-content .table-stack-numbered td:first-child::before {
+        content: attr(data-label) " ";
+        display: inline;
+        font: inherit;
+        letter-spacing: normal;
+        text-transform: none;
+        color: inherit;
+    }
+}
+
 /* Requirement tables: keep IDs like REQ-IRV-1 on one line. */
 .article-content .req-table td:first-child {
     white-space: nowrap;
