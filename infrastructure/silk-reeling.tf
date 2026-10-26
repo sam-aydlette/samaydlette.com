@@ -3,8 +3,10 @@
 # =============================================================================
 # Adds a small Python API Lambda that serves the gated "Silk Reeling Mirror"
 # app (static SPA + /api). Pose extraction runs in the browser, so this Lambda
-# only does the numpy comparison and the Anthropic call — a small zip, no
-# OpenCV/MediaPipe, no container.
+# only does the numpy comparison and writes numeric feedback — a small zip, no
+# OpenCV/MediaPipe, no container. The app can optionally call an LLM for
+# feedback (SRM_ENABLE_LLM_FEEDBACK, customer-configurable); this deployment
+# leaves it off, so the Lambda has no egress beyond AWS (SCN-2026-006).
 #
 # Access control (Task 3 — Cognito):
 #   Amazon Cognito is the identity provider (see cognito.tf): admin-create users,
@@ -20,11 +22,8 @@
 #   function — manual wiring in outputs.tf. (POAM-021 closed — MFA via Cognito;
 #   SAML/OIDC federation to a customer IdP remains the upgrade path on request.)
 #
-# The Anthropic API key lives in Secrets Manager, encrypted with a customer-
-# managed KMS key, read at runtime via least-privilege IAM. The secret VALUE is
-# injected OUT OF BAND (CI `put-secret-value` from a GitHub secret); this config
-# creates only the secret container, so plaintext never enters Terraform state.
-# (The shared HTTP Basic Auth secret was removed in Task 3.)
+# The app holds no secrets: the HTTP Basic Auth secret was removed in Task 3
+# and the Anthropic API-key secret in SCN-2026-006 (POAM-019/020).
 #
 # Everything here is gated by var.create_silk_reeling (default false), inert
 # until explicitly enabled — matching the repo's feature-flag pattern.
@@ -45,24 +44,25 @@ locals {
 data "aws_caller_identity" "current" {}
 
 # -----------------------------------------------------------------------------
-# Customer-managed KMS key for the app's secrets (rotation enabled).
+# Customer-managed KMS key for the app (rotation enabled).
 # -----------------------------------------------------------------------------
 resource "aws_kms_key" "silk_reeling" {
   count = local.silk_create
   # Description is left at its original value: a KMS key description is immutable
   # metadata that can only be changed via kms:UpdateKeyDescription, which the
   # deploy role intentionally does not hold (least privilege — not worth a new
-  # grant for a cosmetic relabel). Post-Task-3 the key now protects only the
-  # Anthropic key; the "basic-auth" label is historical and carries no compliance
-  # claim. The CMK still encrypts all app secrets at rest (SC-28).
+  # grant for a cosmetic relabel). The app no longer has secrets (SCN-2026-006);
+  # the "basic-auth, Anthropic key" label is historical and carries no compliance
+  # claim. The CMK encrypts the Lambda environment and the app's log group at
+  # rest (SC-28).
   description             = "CMK for ${local.silk_name} secrets (basic-auth, Anthropic key)"
   deletion_window_in_days = 30
   enable_key_rotation     = true
 
   # Explicit key policy (CKV2_AWS_64): re-enable IAM-governed access for the
-  # account, and allow Secrets Manager to use the key only via the Secrets
-  # Manager service in this region. The Lambda's kms:Decrypt is governed by its
-  # IAM policy under the root-enable statement.
+  # account, and let CloudWatch Logs encrypt the app's log groups. The Lambda's
+  # kms:Decrypt is governed by its IAM policy under the root-enable statement.
+  # (The Secrets Manager statement went with the app's last secret, SCN-2026-006.)
   policy = jsonencode({
     Version = "2012-10-17"
     Id      = "${local.silk_name}-cmk"
@@ -73,23 +73,6 @@ resource "aws_kms_key" "silk_reeling" {
         Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
         Action    = "kms:*"
         Resource  = "*"
-      },
-      {
-        Sid       = "AllowSecretsManagerUse"
-        Effect    = "Allow"
-        Principal = { Service = "secretsmanager.amazonaws.com" }
-        Action = [
-          "kms:Decrypt",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey",
-          "kms:CreateGrant",
-        ]
-        Resource = "*"
-        Condition = {
-          StringEquals = {
-            "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com"
-          }
-        }
       },
       {
         # Allow CloudWatch Logs to encrypt this app's log groups at rest with this
@@ -121,26 +104,6 @@ resource "aws_kms_alias" "silk_reeling" {
   name          = "alias/${local.silk_name}"
   target_key_id = aws_kms_key.silk_reeling[0].key_id
 }
-
-# -----------------------------------------------------------------------------
-# Secrets (containers only; values set out-of-band — see header).
-# -----------------------------------------------------------------------------
-# (The HTTP Basic Auth secret was removed in Task 3 — access control is now
-# Cognito, enforced by the API Gateway JWT authorizer + app-layer validation.)
-
-resource "aws_secretsmanager_secret" "silk_anthropic" {
-  count       = local.silk_create
-  name        = "${local.silk_name}-anthropic-api-key"
-  description = "Anthropic API key used by the app Lambda for feedback generation"
-  kms_key_id  = aws_kms_key.silk_reeling[0].arn
-
-  tags = merge(local.cls.identity_secrets_internal, local.silk_tags, { Name = "${var.domain_name}-silk-reeling-anthropic" })
-}
-
-# Secret VALUES are injected out-of-band by the deploy's "Seed Silk Reeling
-# secrets" step (`aws secretsmanager put-secret-value` from GitHub secrets).
-# Terraform manages only the secret containers — it never sees or sets the
-# value, so a re-deploy can't clobber the seeded credential.
 
 # -----------------------------------------------------------------------------
 # IAM role for the app Lambda — least privilege.
@@ -179,14 +142,7 @@ resource "aws_iam_role_policy" "silk_reeling" {
         Resource = "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${local.silk_name}:*"
       },
       {
-        # Read ONLY the Anthropic API-key secret (the basic-auth secret was
-        # removed in Task 3; auth is now Cognito).
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        Resource = [aws_secretsmanager_secret.silk_anthropic[0].arn]
-      },
-      {
-        # Decrypt those secrets with the app CMK only.
+        # Decrypt the environment block (encrypted with the app CMK) only.
         Effect   = "Allow"
         Action   = ["kms:Decrypt"]
         Resource = [aws_kms_key.silk_reeling[0].arn]
@@ -208,7 +164,7 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
 }
 
 # -----------------------------------------------------------------------------
-# The app Lambda. Small Python zip (numpy + anthropic); the browser does the ML.
+# The app Lambda. Small Python zip (numpy); the browser does the ML.
 # The package is built and supplied by CI at var.silk_reeling_package_path.
 # -----------------------------------------------------------------------------
 resource "aws_lambda_function" "silk_reeling" {
@@ -230,17 +186,16 @@ resource "aws_lambda_function" "silk_reeling" {
   # the account limit is raised.
 
   # Encrypt the environment block at rest with the app's customer-managed CMK
-  # (POAM-011). The contents are non-sensitive (secret ARNs + config, never
-  # secret values), but customer-CMK encryption is applied for consistency with
-  # the rest of the system; the function's role already holds kms:Decrypt on
-  # this key for its Secrets Manager reads, so no IAM change is needed.
+  # (POAM-011). The contents are non-sensitive config, but customer-CMK
+  # encryption is applied for consistency with the rest of the system; the
+  # function's role holds kms:Decrypt on this key for that reason.
   kms_key_arn = aws_kms_key.silk_reeling[0].arn
 
   environment {
     variables = {
-      # Non-sensitive config only — secret ARNs, never values (POAM-011).
-      SRM_ANTHROPIC_SECRET_ARN = aws_secretsmanager_secret.silk_anthropic[0].arn
-      SRM_ALLOWED_ORIGIN       = "https://${var.domain_name}"
+      # Non-sensitive config only (POAM-011). SRM_ENABLE_LLM_FEEDBACK is left
+      # unset: LLM feedback is off in this deployment (SCN-2026-006).
+      SRM_ALLOWED_ORIGIN = "https://${var.domain_name}"
       # Cognito for app-layer JWT validation (Task 3). The API Gateway JWT
       # authorizer is the boundary control; the app validates too so it stays
       # standalone-deployable.

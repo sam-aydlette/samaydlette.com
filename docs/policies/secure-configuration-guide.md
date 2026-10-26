@@ -57,10 +57,11 @@ Secrets Manager and CMK-encrypted. It is the access-control setting for the app
 **Fixed secure-by-default baseline (not operator-tunable, recorded here for the SCG inventory).**
 
 - **KMS CMK** with key rotation enabled; an explicit least-privilege key policy (account root-enable + Secrets-Manager-via-service condition only).
-- **Secrets Manager** secrets (basic-auth credential, Anthropic API key) CMK-encrypted; read at runtime via least-privilege IAM (`GetSecretValue` on exactly the two ARNs, `kms:Decrypt` on the one key).
-- **Lambda** runs with that least-privilege role; non-sensitive config only in environment variables (secret ARNs, never values); CORS locked to the site origin; constant-time credential compare.
+- **Secrets Manager:** none. The basic-auth credential was removed in Task 3 and the Anthropic API key in SCN-2026-006, so the app role holds no `GetSecretValue`; it keeps `kms:Decrypt` on the one CMK for its encrypted environment.
+- **Lambda** runs with that least-privilege role; non-sensitive config only in environment variables; CORS locked to the site origin; constant-time credential compare.
 - **API Gateway HTTP API** has no authorizer by design (app-layer Basic Auth is the gate, POAM-022); TLS-only; access logging deferred (POAM-024).
-- **Egress** is a single documented path: TLS to the Anthropic API (SA-9/CA-3, POAM-020).
+- **Egress:** none. The app Lambda calls no external service; feedback text is written from the scores in the Lambda.
+- **LLM-written feedback (customer-configurable, off).** The app can have an LLM write its feedback (`SRM_ENABLE_LLM_FEEDBACK=1` plus a provider key). It is disabled in this deployment. Enabling it adds an external interconnection and a secret, so it is a significant change that needs an SCN and SA-9/CA-3 treatment first (see SCN-2026-006).
 - **Logs** go to an explicit CloudWatch log group with managed retention.
 
 ## What this guide does NOT cover

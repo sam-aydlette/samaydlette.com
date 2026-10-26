@@ -240,17 +240,6 @@ output "silk_reeling_api_endpoint" {
   value       = var.create_silk_reeling ? aws_apigatewayv2_api.silk_reeling[0].api_endpoint : "Not created (set create_silk_reeling = true)"
 }
 
-# Secret ARNs whose VALUES must be set OUT OF BAND — never store values in
-# Terraform:
-#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string 'user:pass'
-#   aws secretsmanager put-secret-value --secret-id <arn> --secret-string '<anthropic-key>'
-output "silk_reeling_secret_arns" {
-  description = "Secret ARNs to populate out-of-band (Anthropic key)"
-  value = var.create_silk_reeling ? {
-    anthropic_key = aws_secretsmanager_secret.silk_anthropic[0].arn
-  } : {}
-}
-
 # Manual CloudFront wiring (post-deploy). The distribution is managed outside
 # this config, so add the behavior by hand (same pattern as the response-headers
 # policy). Access control is Cognito: the SPA (no authorizer) loads, then the
