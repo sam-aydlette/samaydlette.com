@@ -793,3 +793,58 @@
     .article-content .toc { padding: 1rem 1.1rem 0.9rem; }
     .article-content .toc .toc-main { columns: 1; }
 }
+
+/* =============================================================================
+   ARTICLE 29 FIGURES
+   =============================================================================
+   The three inline SVG figures in pages/article-29.html (Boyd's OODA sketch, the
+   DIKWA loop, the convergence zone). These rules used to sit in <style> blocks
+   and style="" attributes inside the page; they live here so the page CSP can
+   drop 'unsafe-inline' from style-src. Inline SVG inherits the theme tokens.
+   ============================================================================= */
+.article-image .fig-scroll { overflow-x: auto; }
+.article-image .fig-wide { width: 100%; min-width: 640px; height: auto; display: block; font-family: inherit; }
+
+.boyd-box { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.5; }
+.boyd-knot { fill: var(--bg-tertiary); stroke: var(--accent-primary); stroke-width: 2.5; }
+.boyd-node { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.2; }
+.boyd-hot { fill: var(--bg-secondary); stroke: var(--accent-primary); stroke-width: 2.2; }
+.boyd-title { fill: var(--text-primary); font-size: 17px; font-weight: 700; }
+.boyd-t { fill: var(--text-primary); font-size: 13px; }
+.boyd-sub { fill: var(--text-muted); font-size: 12px; font-style: italic; }
+.boyd-lab { fill: var(--text-muted); font-size: 12px; }
+.boyd-acc { fill: var(--accent-primary); font-size: 12px; font-weight: 600; }
+.boyd-line { fill: none; stroke: var(--text-secondary); stroke-width: 1.5; }
+.boyd-thin { fill: none; stroke: var(--border-color); stroke-width: 1.2; }
+.boyd-ig { fill: none; stroke: var(--accent-primary); stroke-width: 1.8; stroke-dasharray: 6 4; }
+.boyd-head { fill: var(--text-secondary); }
+.boyd-headacc { fill: var(--accent-primary); }
+.dikwa-box { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.5; }
+.dikwa-knot { fill: var(--bg-tertiary); stroke: var(--accent-primary); stroke-width: 2.5; }
+.dikwa-node { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.2; }
+.dikwa-hot { fill: var(--bg-secondary); stroke: var(--accent-primary); stroke-width: 2.2; }
+.dikwa-title { fill: var(--text-primary); font-size: 17px; font-weight: 700; }
+.dikwa-t { fill: var(--text-primary); font-size: 13px; }
+.dikwa-sub { fill: var(--text-muted); font-size: 12px; font-style: italic; }
+.dikwa-lab { fill: var(--text-muted); font-size: 12px; }
+.dikwa-acc { fill: var(--accent-primary); font-size: 12px; font-weight: 600; }
+.dikwa-line { fill: none; stroke: var(--text-secondary); stroke-width: 1.5; }
+.dikwa-thin { fill: none; stroke: var(--border-color); stroke-width: 1.2; }
+.dikwa-ig { fill: none; stroke: var(--accent-primary); stroke-width: 1.8; stroke-dasharray: 6 4; }
+.dikwa-head { fill: var(--text-secondary); }
+.dikwa-headacc { fill: var(--accent-primary); }
+.conv-box { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.5; }
+.conv-knot { fill: var(--bg-tertiary); stroke: var(--accent-primary); stroke-width: 2.5; }
+.conv-zone { fill: var(--bg-tertiary); stroke: var(--accent-primary); stroke-width: 4; }
+.conv-node { fill: var(--bg-secondary); stroke: var(--text-secondary); stroke-width: 1.2; }
+.conv-hot { fill: var(--bg-secondary); stroke: var(--accent-primary); stroke-width: 2.2; }
+.conv-title { fill: var(--text-primary); font-size: 17px; font-weight: 700; }
+.conv-t { fill: var(--text-primary); font-size: 13px; }
+.conv-sub { fill: var(--text-muted); font-size: 12px; font-style: italic; }
+.conv-lab { fill: var(--text-muted); font-size: 12px; }
+.conv-acc { fill: var(--accent-primary); font-size: 12px; font-weight: 600; }
+.conv-line { fill: none; stroke: var(--text-secondary); stroke-width: 1.5; }
+.conv-thin { fill: none; stroke: var(--border-color); stroke-width: 1.2; }
+.conv-ig { fill: none; stroke: var(--accent-primary); stroke-width: 1.8; stroke-dasharray: 6 4; }
+.conv-head { fill: var(--text-secondary); }
+.conv-headacc { fill: var(--accent-primary); }

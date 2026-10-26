@@ -1,6 +1,14 @@
 /* Live boundary map (assets/js/boundary-map.js). Colours come from the site theme
    variables so the map follows light and dark mode. */
 
+/* Cytoscape's own container rule. Left alone, Cytoscape injects it at init as an
+   inline <style> element, which the site CSP (style-src 'self') blocks. It skips
+   the injection when an element with id "__________cytoscape_stylesheet" exists,
+   so the <link> that loads this file carries that id and the rule lives here. */
+.__________cytoscape_container {
+    position: relative;
+}
+
 .boundary-map {
     margin: 1.5rem 0;
 }
