@@ -22,7 +22,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-**POAM-036** (Silk Reeling path served without CloudFront security headers) is an open remediation, tracked with the Configuration Findings below. POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted or open), False Positives, or PL-2 Findings.
+*No items are currently open.* POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -40,7 +40,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-009 | CP-2, CP-7 | CloudFront origin failover not configured | Checkov | CKV_AWS_86, CKV_AWS_310 | aws-cloudfront-distribution | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-031 | SC-7, SC-8 | CloudFront response-headers policy not attached | Checkov | CKV2_AWS_32 | aws-cloudfront-distribution | N1 | Low | — | No | Closed (security headers attached 2026-06-29) |
 | POAM-032 | AU-6, SI-4 | CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications | Checkov, tfsec | CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162 | aws-cloudtrail::management | N1 | Low | — | No | Open (risk-accepted) |
-| POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Open (remediation) |
+| POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Closed (app security headers live 2026-10-26) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
@@ -54,16 +54,24 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-024 | AU-2, AU-3 | API Gateway HTTP API access logging not enabled | Checkov | CKV_AWS_76 | aws-apigatewayv2::silk-reeling | N1 | Low | — | No | Closed (Task 7) |
 | POAM-026 | AC-5, AC-6, AC-6(7) | Operator IAM group holds broad IAM administration privileges | Checkov | CKV2_AWS_56 | aws-iam-group::operators | N2 | Moderate | Low | Yes | Open (risk-accepted) |
 
-**POAM-036 (open, found 2026-10-23 by an outside-in review):** POAM-031 attached the
-response-headers policy to the distribution's default cache behavior only. The
-`/silk-reeling/*` behavior, which serves the Cognito-gated app, carries no policy,
-so the app is delivered with no CSP, no frame protection, no `nosniff` and no
-HSTS header, and another origin can frame it (clickjacking against a signed-in
-user). A passive OWASP ZAP baseline against the public site flagged it, and the
-CloudFront configuration confirms it. Remediation: a response-headers policy of
-the app's own on that behavior, with the site's transport and framing headers
-and a CSP fitted to what the app loads. It closes when the live response
-carries the headers and the app still works.
+**POAM-036 (closed 2026-10-26; found 2026-10-23 by an outside-in review):** POAM-031
+attached the response-headers policy to the distribution's default cache behavior
+only, so the `/silk-reeling/*` behavior, which serves the Cognito-gated app, was
+delivered with no CSP, no frame protection, no `nosniff` and no HSTS header, and
+another origin could frame it. A passive OWASP ZAP baseline flagged it. The
+behavior now carries a policy of the app's own, applied from the bootstrap
+stack: a CSP fitted to what the app loads (`frame-ancestors 'none'`, script and
+connect sources limited to the pinned MediaPipe runtime, the pose model and the
+app's Cognito domain), plus `X-Frame-Options: DENY`, HSTS, `nosniff`,
+Referrer-Policy, Permissions-Policy (camera for the app's own origin only), and
+COOP and CORP set to `same-origin`. The site policy gained Permissions-Policy,
+COOP and CORP with its CSP unchanged. Verified live from outside on
+`/silk-reeling/` and `/`. Through CloudFront, the API's JWT authorizer still
+receives bearer tokens, and the app's HTML and bundle, inspected statically, reference nothing
+the CSP does not allow. **Not exercised:** the in-browser camera and pose path, because the
+app's API is down for an unrelated reason (its backend does not see its
+Cognito configuration at runtime and refuses to serve, fail-closed). That outage
+is tracked separately; it is not a header regression.
 
 **POAM-011 and POAM-018 closed (Task 6, 2026-06-16) — encryption-consistency remediation.** Both were risk-accepted on the rationale that the contents were non-sensitive and AWS-default encryption sufficed. Rather than carry them as standing acceptances, the system was brought to a single at-rest standard: *every* Lambda environment block and *every* CloudWatch log group is now encrypted with a customer-managed CMK. Specifically — the compliance Lambda's environment and log group use a new `aws_kms_key.at_rest` CMK; the route53 query-log group (when enabled) uses the same CMK; and the silk-reeling Lambda's environment uses the existing `aws_kms_key.silk_reeling` CMK (its role already held `kms:Decrypt` on that key). With no Lambda env or log group left unencrypted, the global Checkov suppressions for `CKV_AWS_173` and `CKV_AWS_158` were **removed** from `.checkov.yaml` — the checks now pass on their own, so the remediation is enforced by the gate rather than asserted. The website S3 bucket remains on SSE-S3 (AES-256, AWS-managed keys) by deliberate decision: it holds only public static content and persists no user data, so a customer CMK there would add cost and key-management burden without protecting anything sensitive (the app's pose extraction is client-side; nothing is stored at rest).
 
