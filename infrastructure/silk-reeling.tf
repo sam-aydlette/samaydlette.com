@@ -6,7 +6,8 @@
 # only does the numpy comparison and writes numeric feedback — a small zip, no
 # OpenCV/MediaPipe, no container. The app can optionally call an LLM for
 # feedback (SRM_ENABLE_LLM_FEEDBACK, customer-configurable); this deployment
-# leaves it off, so the Lambda has no egress beyond AWS (SCN-2026-006).
+# leaves it off, so the Lambda calls no third-party service; its only outbound
+# call is Cognito's JWKS endpoint (SCN-2026-006).
 #
 # Access control (Task 3 — Cognito):
 #   Amazon Cognito is the identity provider (see cognito.tf): admin-create users,

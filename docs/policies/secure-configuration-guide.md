@@ -60,7 +60,7 @@ Secrets Manager and CMK-encrypted. It is the access-control setting for the app
 - **Secrets Manager:** none. The basic-auth credential was removed in Task 3 and the Anthropic API key in SCN-2026-006, so the app role holds no `GetSecretValue`; it keeps `kms:Decrypt` on the one CMK for its encrypted environment.
 - **Lambda** runs with that least-privilege role; non-sensitive config only in environment variables; CORS locked to the site origin; constant-time credential compare.
 - **API Gateway HTTP API** has no authorizer by design (app-layer Basic Auth is the gate, POAM-022); TLS-only; access logging deferred (POAM-024).
-- **Egress:** none. The app Lambda calls no external service; feedback text is written from the scores in the Lambda.
+- **Egress:** no third-party service. The app Lambda's only outbound call is to the Cognito user pool's public JWKS endpoint (TLS) to validate tokens; feedback text is written from the scores in the Lambda. It runs outside a VPC, so this is enforced by code and configuration, not a network control.
 - **LLM-written feedback (customer-configurable, off).** The app can have an LLM write its feedback (`SRM_ENABLE_LLM_FEEDBACK=1` plus a provider key). It is disabled in this deployment. Enabling it adds an external interconnection and a secret, so it is a significant change that needs an SCN and SA-9/CA-3 treatment first (see SCN-2026-006).
 - **Logs** go to an explicit CloudWatch log group with managed retention.
 

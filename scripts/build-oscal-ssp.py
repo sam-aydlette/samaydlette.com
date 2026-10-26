@@ -1164,8 +1164,11 @@ def build_system_characteristics(signal):
             "rate-limit throttling (POAM-022/POAM-023). The HTTP API uses an "
             "AWS_PROXY integration to the Python 3.13 ZIP Lambda. This "
             "introduces new public inbound compute ingress (SC-7) absent from "
-            "the base system. The Lambda has no outbound internet egress: it "
-            "calls no external service and holds no credentials."
+            "the base system. The Lambda calls no third-party service and "
+            "stores no third-party credential: its only outbound call is to "
+            "the Cognito user pool's public signing-key (JWKS) endpoint over "
+            "TLS, to validate tokens. It runs outside a VPC, so this limit is "
+            "set by its code and configuration, not by a network control."
         )
     return sc
 

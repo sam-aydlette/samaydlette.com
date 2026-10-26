@@ -90,7 +90,7 @@
 
                 <p><strong>External, no FedRAMP ATO.</strong> The Sigstore signing chain uses the FIPS-approved ECDSA P-256 algorithm, but the Fulcio and Rekor implementations are not FIPS-validated cryptographic modules. The compensating control is the public Rekor transparency log: integrity is anchored in independent observation rather than module validation. This is documented as an awareness item rather than a remediation gap because the threat model is "anyone can verify, including via independent Rekor mirrors" rather than "trust the cryptographic module."</p>
 
-                <p><strong>Cross-cutting.</strong> AES-256-GCM for data at rest. ECDSA P-256 for Sigstore signatures and for the runtime-signal and DNSSEC signing keys. SHA-256 for content hashing across the canonical inventory. TLS 1.2+ on every public endpoint (CloudFront, API Gateway, AWS APIs, GitHub, Sigstore, Duo, Anthropic).</p>
+                <p><strong>Cross-cutting.</strong> AES-256-GCM for data at rest. ECDSA P-256 for Sigstore signatures and for the runtime-signal and DNSSEC signing keys. SHA-256 for content hashing across the canonical inventory. TLS 1.2+ on every public endpoint (CloudFront, API Gateway, AWS APIs, GitHub, Sigstore, Duo).</p>
 
                 <h3 id="data-flows">Data Flows (A&ndash;I)</h3>
                 <p>The lettered flows on the map match its data flow table. A few flow-level notes that won't fit on the table:</p>

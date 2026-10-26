@@ -38,8 +38,8 @@ production deploy sets it to true (see Status below).
   stays standalone-deployable. Stage throttling provides rate limiting (POAM-023
   closed). This replaced the original single shared-credential HTTP Basic Auth
   (POAM-021 closed, 2026-06-22; see the history below).
-- **No secrets, no egress.** The Lambda writes feedback text from the scores itself
-  and calls no external service. See "LLM-written feedback" below.
+- **No secrets, no third-party calls.** The Lambda writes feedback text from the
+  scores itself; its only outbound call is to Cognito's public JWKS endpoint. See "LLM-written feedback" below.
 
 ## Exercise the compliance pipeline (the test)
 
@@ -69,16 +69,17 @@ new resources, and review the generated VDR.
 > was written for the daily compliance Lambda with the rationale *"no internet
 > egress."* The app Lambda used to egress (to the Anthropic API), so that
 > rationale didn't fit it, and it was flagged as **POAM-020** for an explicit
-> decision. Since SCN-2026-006 the app Lambda has no egress either, so the
-> rationale now fits both functions.
+> decision. Since SCN-2026-006 the app Lambda's only outbound call is to
+> Cognito's public JWKS endpoint (AWS), with no third-party egress; it runs
+> outside a VPC, so that limit is set by its code, not a network control.
 
 ## POA&M responses (history: 2026-06 rollout)
 
 > The rest of this section and the next record the original rollout. Since then
 > POAM-019 has been reclassified as a false positive, POAM-021/022/023 have been
 > closed by the Cognito migration, and the basic-auth secret has been removed.
-> SCN-2026-006 removes the Anthropic key and interconnection, which retires
-> POAM-019 and POAM-020.
+> SCN-2026-006 removes the Anthropic key and interconnection; POAM-019 and
+> POAM-020 will be retired once that deploy is verified live.
 > `docs/poam.md` is the current record.
 
 > Status: **POAM-019, POAM-020, and POAM-021 are all finalized** in

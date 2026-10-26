@@ -17,7 +17,7 @@ The system has two ingress paths:
 1. **CloudFront → S3** for the static site: the bucket's public access is fully blocked and CloudFront's origin access is restricted via a service-principal policy with a `SourceArn` condition; no other principal can read the bucket directly.
 2. **API Gateway → Silk Reeling Lambda** for the gated app: the HTTP API's data routes (`ANY /api/{proxy+}`) require a Cognito JWT authorizer, the stage is throttled (20 req/s, burst 10), and access-logged. This is the only public ingress to compute, added with SCN-2026-001.
 
-Egress: the compliance Lambda calls AWS APIs only, within the AWS network — no internet egress, no NAT gateway. The Silk Reeling Lambda has no egress either: it writes feedback text from the scores itself. The app's optional LLM-written feedback is customer-configurable and disabled in this deployment; the Anthropic interconnection it used was removed under [SCN-2026-006](scn/SCN-2026-006-remove-anthropic-interconnection.md) (formerly POAM-020).
+Egress: the compliance Lambda calls AWS APIs only, within the AWS network — no internet egress, no NAT gateway. The Silk Reeling Lambda calls no third-party service: it writes feedback text from the scores itself, and its only outbound call is to the Cognito user pool's public signing-key (JWKS) endpoint over TLS. It runs outside a VPC, so that limit is set by its code and configuration, not a network control. The app's optional LLM-written feedback is customer-configurable and disabled in this deployment; the Anthropic interconnection it used was removed under [SCN-2026-006](scn/SCN-2026-006-remove-anthropic-interconnection.md) (formerly POAM-020).
 
 ## Traffic flow controls (KSI-CNA-ULN)
 
