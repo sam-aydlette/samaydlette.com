@@ -22,7 +22,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-**POAM-037** (site CSP permits inline styles, `style-src 'unsafe-inline'`) is open for remediation; see its row and note below. POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
+*No items are currently open.* POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -41,13 +41,13 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-031 | SC-7, SC-8 | CloudFront response-headers policy not attached | Checkov | CKV2_AWS_32 | aws-cloudfront-distribution | N1 | Low | — | No | Closed (security headers attached 2026-06-29) |
 | POAM-032 | AU-6, SI-4 | CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications | Checkov, tfsec | CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162 | aws-cloudtrail::management | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Closed (app security headers live 2026-10-26) |
-| POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Open (remediation) |
+| POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Closed (style-src 'self' live 2026-10-27) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
 | POAM-017 | AU-11 | CloudWatch log retention < 1 year (7-day retention) | Checkov | CKV_AWS_338 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 7) |
 | POAM-018 | SC-28 | CloudWatch log group not customer-key encrypted | Checkov | CKV_AWS_158 | aws-cloudwatch-log-group | N1 | Low | — | No | Closed (Task 6) |
-| POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Open (risk-accepted) |
+| POAM-020 | SA-9, CA-3 | Interconnection with Anthropic API (non-FedRAMP-authorized external service) | Architectural decision | silk-reeling-deploy.md | interconnection::anthropic-api | N2 | Moderate | Low | Yes | Closed (interconnection removed 2026-10-27, SCN-2026-006) |
 | POAM-025 | IA-2(1), IA-2(2), IA-2(8), CM-6 | Root + operator MFA is virtual TOTP, not hardware/phishing-resistant | Prowler | root-account-hardware-mfa-enabled; iam_user_hardware_mfa_enabled | aws-account::root; aws-iam-user::saydlette-dev | N2 | Moderate | Low | Yes | Open (operational requirement) |
 | POAM-021 | IA-2(2), AC-7 | App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout) | Architectural decision | silk-reeling-deploy.md | silk-reeling::access-control | N2 | Moderate | Low | Yes | Closed (Task 3) |
 | POAM-022 | IA-2, AC-3 | API Gateway HTTP API route specifies no authorizer (app-layer Basic Auth is the access control) | Checkov | CKV_AWS_309 | aws-apigatewayv2::silk-reeling | N2 | Moderate | Low | Yes | Closed (Task 3) |
@@ -74,20 +74,27 @@ app's API is down for an unrelated reason (its backend does not see its
 Cognito configuration at runtime and refuses to serve, fail-closed). That outage
 is tracked separately; it is not a header regression.
 
-**POAM-037 (open; found 2026-10-23 by a passive OWASP ZAP baseline):** the
-static site's CSP allowed `style-src 'unsafe-inline'`. It was kept for KaTeX's
-inline math layout, but no page loads KaTeX any more. The inline styles that
-remained (one landing page, three SVG figures in one article, and the boundary
-map library's injected container rule) are moved into stylesheets, and the
-policy becomes `style-src 'self'` in the bootstrap stack. Exposure while open is
-limited: `script-src` is `'self'` with no inline script, so injected CSS cannot
-run script, and `connect-src` and `img-src` are `'self'`. ZAP rates it medium;
-the rating is kept as found. Closes once the live header is `style-src 'self'`,
-the pages render without CSP violations, and a rescan no longer reports 10055-6.
+**POAM-037 (closed 2026-10-27; found 2026-10-23 by a passive OWASP ZAP baseline):** the
+static site's CSP allowed `style-src 'unsafe-inline'`, kept for KaTeX's inline
+math layout although no page loads KaTeX any more. The remaining inline styles
+(one landing page, three SVG figures in one article, and the boundary map
+library's injected container rule) moved into stylesheets, and the bootstrap
+stack's site policy is now `style-src 'self'`. Verified live from outside: the
+header on `/` carries `style-src 'self'`; headless Chrome loaded every page from
+the live site (48 loads) with no CSP violations, and the boundary map lays out
+on its four pages; a ZAP baseline rescan with the same pinned image no longer
+reports 10055-6. ZAP's medium rating was kept as found, unadjusted.
 
 **POAM-011 and POAM-018 closed (Task 6, 2026-06-16) — encryption-consistency remediation.** Both were risk-accepted on the rationale that the contents were non-sensitive and AWS-default encryption sufficed. Rather than carry them as standing acceptances, the system was brought to a single at-rest standard: *every* Lambda environment block and *every* CloudWatch log group is now encrypted with a customer-managed CMK. Specifically — the compliance Lambda's environment and log group use a new `aws_kms_key.at_rest` CMK; the route53 query-log group (when enabled) uses the same CMK; and the silk-reeling Lambda's environment uses the existing `aws_kms_key.silk_reeling` CMK (its role already held `kms:Decrypt` on that key). With no Lambda env or log group left unencrypted, the global Checkov suppressions for `CKV_AWS_173` and `CKV_AWS_158` were **removed** from `.checkov.yaml` — the checks now pass on their own, so the remediation is enforced by the gate rather than asserted. The website S3 bucket remains on SSE-S3 (AES-256, AWS-managed keys) by deliberate decision: it holds only public static content and persists no user data, so a customer CMK there would add cost and key-management burden without protecting anything sensitive (the app's pose extraction is client-side; nothing is stored at rest).
 
-**POAM-020 (added with the gated Silk Reeling app):** The app Lambda calls the
+**POAM-020 (closed 2026-10-27, SCN-2026-006):** the app now writes its feedback from the scores; its
+optional LLM-written feedback is customer-configurable and disabled in this
+deployment, so the interconnection, its data flow and the API-key secret were
+removed. Verified live after the gated deploy: the secret is scheduled for
+deletion, neither role policy references it, the app CMK's key policy has no
+Secrets Manager statement, and the published SSP and KSI signal carry no
+Anthropic interconnection or external component. The record as accepted
+follows. **As accepted (2026-06):** The app Lambda calls the
 Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
 crossing the authorization boundary is the derived deviation summary (per-joint
 metrics, scores, hotspots, exercise id) over TLS — no video, raw landmarks, or
@@ -103,7 +110,8 @@ and is an **assumption to re-verify against the then-current Anthropic commercia
 terms at each annual security review**; a change in those terms reopens this POA&M.
 **Remediation:** migrate feedback to Claude on AWS Bedrock (FedRAMP-authorized,
 in-boundary), which removes the external interconnection. Applies only while the
-app is deployed. **POAM-019**
+app is deployed. **POAM-019** (closed 2026-10-27: the secret was removed under SCN-2026-006, so the
+check no longer applies)
 (Secrets Manager automatic rotation, Checkov CKV2_AWS_57) was **reclassified as a
 false positive under Task 3** — see the False Positives register. With the
 basic-auth secret removed (Task 3), the only remaining app secret is the
@@ -337,7 +345,7 @@ machine-tracked items.
 | POAM-014 | AU-2 | CKV_AWS_50 (Lambda X-Ray tracing) | X-Ray is performance/latency observability, not a security audit control; AU-2 coverage does not depend on it. | CloudWatch Logs + CloudTrail (SSP AU-2 narrative). |
 | POAM-012 | SC-5 | CKV_AWS_115 (Lambda reserved concurrency) | Reserved concurrency manages concurrency contention/DoS; the compliance monitor is a daily EventBridge-triggered internal function with no DoS exposure or contention. SC-5 does not depend on it here (and the account is hard-capped at 10 concurrency, so reservation is infeasible regardless). | SC-5 at the system boundary: CloudFront + API Gateway throttling + AWS Shield Standard (SSP SC-5 narrative). |
 | POAM-015 | SI-7, SA-12 | CKV_AWS_272 (Lambda AWS Signer) | The check flags the absence of one specific signing tool (AWS Signer); no control mandates that tool. Software/supply-chain integrity is established by another mechanism. | Sigstore source-signing chain (deploy-time KSI signal Sigstore-signed, anchored in the public Rekor log; Wasm policy bytes verify against the canonical inventory hash) + the GitHub OIDC / GitOps chain of custody with no out-of-band code path (SSP SI-7/SA-12 narrative). |
-| POAM-019 | SC-12, SC-28 | CKV2_AWS_57 (Secrets Manager automatic rotation) | The check flags the absence of *automatic* rotation; no control mandates that specific mechanism. The one remaining secret is a third-party Anthropic API key with no programmatic rotation source — AWS cannot mint a new upstream key — so a Secrets Manager rotation Lambda is infeasible by construction (the basic-auth secret it shared the finding with was removed under Task 3). SC-12 rotation is met by an equivalent procedure, and rotation currency is verified automatically, so this is not an accepted risk. | Documented annual manual rotation (operator regenerates the key at the provider and writes it via `put-secret-value`), **verified automatically** by the runtime KSI emitter: it reads the secret's `LastChangedDate` each day and fails an SC-12 validation if rotation lapses past the cadence (395-day grace), so a missed rotation surfaces as a runtime KSI failure rather than relying on a calendar reminder (SSP SC-12 narrative). |
+| POAM-019 | SC-12, SC-28 | CKV2_AWS_57 (Secrets Manager automatic rotation) | **Closed 2026-10-27 (SCN-2026-006):** the secret was removed, so no Secrets Manager secret remains and the skip is gone. As dispositioned: the check flags the absence of *automatic* rotation; no control mandates that specific mechanism. The one remaining secret is a third-party Anthropic API key with no programmatic rotation source — AWS cannot mint a new upstream key — so a Secrets Manager rotation Lambda is infeasible by construction (the basic-auth secret it shared the finding with was removed under Task 3). SC-12 rotation is met by an equivalent procedure, and rotation currency is verified automatically, so this is not an accepted risk. | Documented annual manual rotation (operator regenerates the key at the provider and writes it via `put-secret-value`), **verified automatically** by the runtime KSI emitter: it reads the secret's `LastChangedDate` each day and fails an SC-12 validation if rotation lapses past the cadence (395-day grace), so a missed rotation surfaces as a runtime KSI failure rather than relying on a calendar reminder (SSP SC-12 narrative). |
 | — (Prowler 2026-06-22) | n/a | `iam_role_access_not_stale_to_bedrock` (AWSServiceRoleForSupport) | The role is an **AWS-managed service-linked role**; its permission set is defined and controlled by AWS, is not operator-modifiable, and the Support SLR is benign. (The other hit, `CLI_admin`, was deleted, so it no longer reports.) | N/A — the operator cannot alter a service-linked role's permissions; AWS owns its lifecycle. |
 | POAM-027 | AC-6 | `CKV_AWS_355`, `CKV_AWS_287`, `CKV_AWS_356` (bootstrap deploy/assessment role read-only IAM) | The flagged actions are account-level read-only IAM/enumeration (List*/Describe*/Get*, metadata-only Secrets reads) that AWS does not permit to be resource-scoped — they have no per-resource ARN form, so `Resource "*"` is required. No write, no admin, no credential retrieval. | Least privilege (AC-6) met by explicit enumerated read-only Action lists + ARN-scoped management statements; inline `#checkov:skip=` rationale in `infrastructure/bootstrap/main.tf`. |
 | POAM-029 (Prowler 2026-06-22; extended 2026-07-09 to the CloudTrail trail) | SC-28 | `CKV_AWS_145` / `AVD-AWS-0132` / `s3_bucket_default_encryption` *(Prowler-deprecated)* (samaydlette-com-logs); `CKV_AWS_145` (samaydlette-com-tfstate); `CKV_AWS_119` (samaydlette-com-tflock); `CKV_AWS_35` / `AVD-AWS-0015` (CloudTrail log files) + `CKV_AWS_145` (samaydlette-com-cloudtrail) | Internal resources encrypt at rest with **AES256 (SSE-S3 / AWS-managed)** rather than a customer CMK. SC-28 is met by AES256 in each case; a CMK is declined deliberately: the log bucket holds low-sensitivity public-resource logs (a CMK adds no confidentiality benefit and complicates log delivery); the lock table holds only lock metadata; and the state bucket, though it can hold secrets, is private, TLS-only, versioned, and reachable only by the deploy role + operator, so a CMK is defense-in-depth, declined to limit key sprawl. | SSE-S3/AES256 at rest on all three (`infrastructure/logging.tf`, `infrastructure/bootstrap/tf-state-backend.tf`) — a deliberate choice (SSP SC-28 narrative). |

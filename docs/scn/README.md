@@ -40,4 +40,4 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
 | [SCN-2026-003](SCN-2026-003-cloudtrail.md) | Adaptive | CloudTrail management-events trail | Implemented + post-impl. verified 2026-07-09 |
 | [SCN-2026-004](SCN-2026-004-evidence-alerting.md) | Adaptive | Evidence SLA watchdog and operator email alerting (backfilled record) | Implemented + post-impl. verified 2026-09-25 |
 | [SCN-2026-005](SCN-2026-005-ci-identity-split.md) | Adaptive | CI identity split: read-only plan role; deploy role trusts only the prod environment | Implemented and verified 2026-09-28 |
-| [SCN-2026-006](SCN-2026-006-remove-anthropic-interconnection.md) | Adaptive | Remove the Anthropic API interconnection; LLM feedback customer-configurable, off | Planned |
+| [SCN-2026-006](SCN-2026-006-remove-anthropic-interconnection.md) | Adaptive | Remove the Anthropic API interconnection; LLM feedback customer-configurable, off | Implemented (2026-10-27) |
