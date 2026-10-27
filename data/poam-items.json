@@ -800,7 +800,7 @@
         "si-10"
       ],
       "title": "Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline')",
-      "description": "Open (remediation): the static site's response-headers policy (aws_cloudfront_response_headers_policy.website in infrastructure/bootstrap/cloudfront.tf) allows style-src 'unsafe-inline', so the browser would apply a <style> block or style=\"\" attribute injected into a page. The original reason for the allowance (KaTeX math layout) no longer applies: no page loads KaTeX. The remaining inline styles (one landing page, three SVG figures in one article, and Cytoscape's injected container rule on the boundary map) have been moved into stylesheets, and the policy is changed to style-src 'self'. Exposure while open is limited: script-src is 'self' with no inline script, so injected CSS cannot run script, and connect-src and img-src are 'self', which narrows CSS-based exfiltration. Original finding (2026-10-23, passive OWASP ZAP baseline, rated medium by the tool): CSP style-src unsafe-inline on every static page.",
+      "description": "Closed (2026-10-27): the static site's response-headers policy (aws_cloudfront_response_headers_policy.website in infrastructure/bootstrap/cloudfront.tf) is now style-src 'self', applied by the operator from a tree synced to main after the plan showed only that change. Verified from outside: the live response for / carries style-src 'self'; headless Chrome loaded every page under website/ from the live site (48 loads) with no securitypolicyviolation events, and the boundary map lays out on its four pages with Cytoscape's stylesheet injection pre-empted; a passive OWASP ZAP baseline rescan with the same pinned image no longer reports 10055-6. Original finding (2026-10-23, passive OWASP ZAP baseline, rated medium by the tool): CSP style-src unsafe-inline on every static page, kept for KaTeX math layout that no page loads any more.",
       "weakness_detector_source": "OWASP ZAP baseline",
       "weakness_source_identifier": "zap-10055-6",
       "asset_identifiers": [
@@ -811,11 +811,12 @@
       "remediation_plan": "Move every inline style into stylesheets, pre-empt Cytoscape's injected stylesheet, and set style-src 'self' on the site policy. Close once the live response carries style-src 'self', the affected pages render without CSP violations, and a ZAP rescan no longer reports 10055-6.",
       "original_detection_date": "2026-10-23",
       "scheduled_completion_date": "2026-11-06",
-      "status_date": "2026-10-26",
+      "status_date": "2026-10-27",
       "original_risk_rating": "moderate",
       "adjusted_risk_rating": null,
       "risk_adjustment": false,
-      "status": "open"
+      "status": "closed",
+      "category": "closed"
     }
   ]
 }

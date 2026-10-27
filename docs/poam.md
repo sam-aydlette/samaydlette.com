@@ -22,7 +22,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-**POAM-037** (site CSP permits inline styles, `style-src 'unsafe-inline'`) is open for remediation; see its row and note below. POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
+*No items are currently open.* POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -41,7 +41,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-031 | SC-7, SC-8 | CloudFront response-headers policy not attached | Checkov | CKV2_AWS_32 | aws-cloudfront-distribution | N1 | Low | — | No | Closed (security headers attached 2026-06-29) |
 | POAM-032 | AU-6, SI-4 | CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications | Checkov, tfsec | CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162 | aws-cloudtrail::management | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Closed (app security headers live 2026-10-26) |
-| POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Open (remediation) |
+| POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Closed (style-src 'self' live 2026-10-27) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
@@ -74,16 +74,16 @@ app's API is down for an unrelated reason (its backend does not see its
 Cognito configuration at runtime and refuses to serve, fail-closed). That outage
 is tracked separately; it is not a header regression.
 
-**POAM-037 (open; found 2026-10-23 by a passive OWASP ZAP baseline):** the
-static site's CSP allowed `style-src 'unsafe-inline'`. It was kept for KaTeX's
-inline math layout, but no page loads KaTeX any more. The inline styles that
-remained (one landing page, three SVG figures in one article, and the boundary
-map library's injected container rule) are moved into stylesheets, and the
-policy becomes `style-src 'self'` in the bootstrap stack. Exposure while open is
-limited: `script-src` is `'self'` with no inline script, so injected CSS cannot
-run script, and `connect-src` and `img-src` are `'self'`. ZAP rates it medium;
-the rating is kept as found. Closes once the live header is `style-src 'self'`,
-the pages render without CSP violations, and a rescan no longer reports 10055-6.
+**POAM-037 (closed 2026-10-27; found 2026-10-23 by a passive OWASP ZAP baseline):** the
+static site's CSP allowed `style-src 'unsafe-inline'`, kept for KaTeX's inline
+math layout although no page loads KaTeX any more. The remaining inline styles
+(one landing page, three SVG figures in one article, and the boundary map
+library's injected container rule) moved into stylesheets, and the bootstrap
+stack's site policy is now `style-src 'self'`. Verified live from outside: the
+header on `/` carries `style-src 'self'`; headless Chrome loaded every page from
+the live site (48 loads) with no CSP violations, and the boundary map lays out
+on its four pages; a ZAP baseline rescan with the same pinned image no longer
+reports 10055-6. ZAP's medium rating was kept as found, unadjusted.
 
 **POAM-011 and POAM-018 closed (Task 6, 2026-06-16) — encryption-consistency remediation.** Both were risk-accepted on the rationale that the contents were non-sensitive and AWS-default encryption sufficed. Rather than carry them as standing acceptances, the system was brought to a single at-rest standard: *every* Lambda environment block and *every* CloudWatch log group is now encrypted with a customer-managed CMK. Specifically — the compliance Lambda's environment and log group use a new `aws_kms_key.at_rest` CMK; the route53 query-log group (when enabled) uses the same CMK; and the silk-reeling Lambda's environment uses the existing `aws_kms_key.silk_reeling` CMK (its role already held `kms:Decrypt` on that key). With no Lambda env or log group left unencrypted, the global Checkov suppressions for `CKV_AWS_173` and `CKV_AWS_158` were **removed** from `.checkov.yaml` — the checks now pass on their own, so the remediation is enforced by the gate rather than asserted. The website S3 bucket remains on SSE-S3 (AES-256, AWS-managed keys) by deliberate decision: it holds only public static content and persists no user data, so a customer CMK there would add cost and key-management burden without protecting anything sensitive (the app's pose extraction is client-side; nothing is stored at rest).
 
