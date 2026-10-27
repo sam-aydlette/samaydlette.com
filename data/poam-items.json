@@ -377,19 +377,19 @@
         "sc-28"
       ],
       "title": "Secrets Manager automatic rotation not configured",
-      "description": "Reclassified false positive (Task 3): CKV2_AWS_57 flags the absence of automatic rotation, but no control mandates that specific mechanism. The basic-auth secret it shared the finding with was removed under Task 3, leaving only the third-party Anthropic API key, which has no programmatic rotation source (AWS cannot mint a new upstream key), so a Secrets Manager rotation Lambda is infeasible by construction. SC-12 rotation is met by documented annual manual rotation, and rotation currency is verified automatically: the runtime KSI emitter reads the secret's LastChangedDate daily and fails an SC-12 validation if rotation lapses past the cadence (395-day grace). Because rotation is met and self-verifying, this is a false positive, not an accepted risk.",
+      "description": "Closed (2026-10-27, SCN-2026-006): the check no longer applies. The app's only Secrets Manager secret, the Anthropic API key, was removed with the interconnection (POAM-020) and is scheduled for deletion, so no secret remains and the CKV2_AWS_57 skip was removed from .checkov.yaml. Original record: Reclassified false positive (Task 3): CKV2_AWS_57 flags the absence of automatic rotation, but no control mandates that specific mechanism. The basic-auth secret it shared the finding with was removed under Task 3, leaving only the third-party Anthropic API key, which has no programmatic rotation source (AWS cannot mint a new upstream key), so a Secrets Manager rotation Lambda is infeasible by construction. SC-12 rotation is met by documented annual manual rotation, and rotation currency is verified automatically: the runtime KSI emitter reads the secret's LastChangedDate daily and fails an SC-12 validation if rotation lapses past the cadence (395-day grace). Because rotation is met and self-verifying, this is a false positive, not an accepted risk.",
       "weakness_detector_source": "Checkov",
       "weakness_source_identifier": "CKV2_AWS_57",
       "asset_identifiers": [
         "aws-secretsmanager-secret::anthropic-api-key"
       ],
       "original_detection_date": "2026-06-08",
-      "status_date": "2026-06-22",
+      "status_date": "2026-10-27",
       "original_risk_rating": "low",
       "adjusted_risk_rating": null,
       "risk_adjustment": false,
-      "status": "false-positive",
-      "category": "false-positive",
+      "status": "closed",
+      "category": "closed",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-06-26",
       "review_by": "2027-06-26"
@@ -401,7 +401,7 @@
         "ca-3"
       ],
       "title": "Interconnection with Anthropic API (non-FedRAMP-authorized external service)",
-      "description": "The gated Silk Reeling app Lambda calls the Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data crossing the authorization boundary is the derived deviation summary (per-joint metrics, scores, hotspots, exercise id) over TLS - no video, raw landmarks, or personal data. SA-9 due diligence rests on Anthropic's commercial API terms (API inputs/outputs not used to train models, retained only transiently for trust-and-safety); this is an assumption re-verified at each annual security review, and a change in those terms reopens this item. Applies only while the app is deployed.",
+      "description": "Closed (2026-10-27, SCN-2026-006): the Silk Reeling app writes its feedback from the scores, and its optional LLM-written feedback is customer-configurable and disabled in this deployment, so the interconnection was removed. Verified live after the gated deploy: the API-key secret is scheduled for deletion, neither the app role nor the runtime emitter role references it, the app CMK's key policy no longer has a Secrets Manager statement, and the published SSP and KSI signal carry no Anthropic interconnection or external component (the published evidence verifies). The Anthropic SDK remains in the app package for the optional setting and is inventoried as a software component; it makes no calls while the setting is off. Original record: The gated Silk Reeling app Lambda calls the Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data crossing the authorization boundary is the derived deviation summary (per-joint metrics, scores, hotspots, exercise id) over TLS - no video, raw landmarks, or personal data. SA-9 due diligence rests on Anthropic's commercial API terms (API inputs/outputs not used to train models, retained only transiently for trust-and-safety); this is an assumption re-verified at each annual security review, and a change in those terms reopens this item. Applies only while the app is deployed.",
       "weakness_detector_source": "Architectural decision",
       "weakness_source_identifier": "silk-reeling-deploy.md",
       "asset_identifiers": [
@@ -412,12 +412,12 @@
       "remediation_plan": "Migrate the app's feedback generation to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes the external interconnection entirely.",
       "original_detection_date": "2026-06-08",
       "scheduled_completion_date": null,
-      "status_date": "2026-06-22",
+      "status_date": "2026-10-27",
       "original_risk_rating": "moderate",
       "adjusted_risk_rating": "low",
       "risk_adjustment": true,
-      "status": "risk-accepted",
-      "category": "interconnection",
+      "status": "closed",
+      "category": "closed",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-06-26",
       "review_by": "2027-06-26"

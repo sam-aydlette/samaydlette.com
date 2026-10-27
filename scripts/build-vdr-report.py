@@ -139,8 +139,8 @@ POAM_BY_CHECK_ID = {
     # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
     # CKV_AWS_338 (POAM-017) + CKV_AWS_158 (POAM-018) closed — suppressions removed
     # from .checkov.yaml (Task 7 retention; Task 6 CMK encryption).
-    # CKV2_AWS_57 (was POAM-019) reclassified as a false positive under Task 3 —
-    # in FALSE_POSITIVE_BY_CHECK_ID below.
+    # CKV2_AWS_57 (was POAM-019) no longer applies: the app's only secret was
+    # removed under SCN-2026-006, so the skip and its mapping are gone.
     # CKV_AWS_76 (POAM-024) closed under Task 7 — HTTP API access logging enabled.
 }
 
@@ -160,7 +160,6 @@ FALSE_POSITIVE_BY_CHECK_ID = {
     "CKV_AWS_115": "POAM-012",  # Lambda reserved concurrency
     "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
     "CKV_AWS_272": "POAM-015",  # Lambda AWS Signer
-    "CKV2_AWS_57": "POAM-019",  # Secrets Manager automatic rotation
     "CKV_AWS_355": "POAM-027",  # bootstrap read-only assessment IAM (inline)
     "CKV_AWS_287": "POAM-027",  # bootstrap metadata-only Secrets reads (inline)
     "CKV_AWS_356": "POAM-027",  # bootstrap account-level enumeration IAM (inline)

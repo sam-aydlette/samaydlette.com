@@ -6,7 +6,7 @@
 | **SCN ID** | SCN-2026-006 |
 | **System** | samaydlette.com (FedRAMP 20x KSI Certification + OSCAL Rev 5 Moderate SSP) |
 | **SCN type** | **Adaptive** (`SCN-ADP`) |
-| **Status** | **Planned.** Becomes implemented once the deploy applies and the post-implementation verification below passes. |
+| **Status** | **Implemented and verified 2026-10-27.** Deployed through the gated pipeline; the post-implementation verification below passed. |
 | **Date initiated** | 2026-10-26 |
 | **Approver** | Sam Aydlette — System Owner / Authorizing Operator |
 | **Authoritative source** | CR26 corpus (`final_consolidated_rules_2026/2026-markdown`) |
@@ -78,3 +78,24 @@ It is not Transformative:
    interconnection, and the signal is fresh (`make verify-published`).
 4. Then close POAM-020 and retire POAM-019 in `data/poam-items.json` and
    `docs/poam.md`, and mark this SCN implemented.
+
+### Post-implementation verification (2026-10-27)
+
+1. The reviewed plan showed the secret destroyed, the two IAM policies, the
+   CMK key policy and the app Lambda updated, and the output removed.
+2. Read back from AWS after the deploy: the secret is scheduled for deletion
+   (30-day recovery window); neither role policy references Secrets Manager or
+   the secret; the app CMK's key policy keeps only its account-root and
+   CloudWatch Logs statements. Terraform's applied environment for the app
+   Lambda carries no secret ARN; the environment itself is CMK-encrypted and was
+   not read back directly.
+3. The published SSP and boundary map carry no Anthropic component, flow or
+   interconnection. The KSI signal's only match is the `anthropic` Python
+   package, inventoried as software because the optional setting ships in the
+   app package. `make verify-published` passes: one inventory, one commit.
+4. POAM-020 and POAM-019 are closed in `data/poam-items.json` and
+   `docs/poam.md`.
+5. Independent corroboration (RAMPART on TAP), run before the deploy against
+   the expected post-change inventory, matched every component except the
+   secret itself, which stays visible to the AWS APIs until its recovery window
+   ends. The corroboration report is regenerated after that.
