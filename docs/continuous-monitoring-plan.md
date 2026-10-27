@@ -8,7 +8,7 @@ This Continuous Monitoring Plan (CMP) describes the strategy and mechanisms by w
 
 The full system as defined in the [authorization boundary](../website/research/authorization-boundary.html), including all components inside the boundary (Cloud Service Offering internals, leveraged AWS services, and external services without FedRAMP ATO that are in boundary per Rule of Thumb #2).
 
-The Silk Reeling Mirror app is **active in production** (`create_silk_reeling = true` in the main deploy pipeline; live since 2026-06-03), so the scope includes its components — the app Lambda (Python 3.13 ZIP), the API Gateway HTTP API, the customer-managed KMS key and Secrets Manager secrets, and the **external Anthropic API interconnection** (non-FedRAMP-authorized, in boundary per SA-9/CA-3, POAM-020). These were introduced under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md) (Adaptive). Their dependency ecosystems (PyPI, the SPA's npm tree) are monitored by mechanism 2 via the Syft+Grype SCA source.
+The Silk Reeling Mirror app is **active in production** (`create_silk_reeling = true` in the main deploy pipeline; live since 2026-06-03), so the scope includes its components — the app Lambda (Python 3.13 ZIP), the API Gateway HTTP API, and the customer-managed KMS key. These were introduced under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md) (Adaptive); the app's Secrets Manager secret and its external Anthropic API interconnection were removed under [SCN-2026-006](scn/SCN-2026-006-remove-anthropic-interconnection.md). Their dependency ecosystems (PyPI, the SPA's npm tree) are monitored by mechanism 2 via the Syft+Grype SCA source.
 
 ## Monitoring Mechanisms
 

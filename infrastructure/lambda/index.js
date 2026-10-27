@@ -52,15 +52,16 @@ const { computeDivergence } = require('./divergence');
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
 
-// SC-12 manual rotation cadence. The Silk Reeling app's Anthropic API key is a
-// third-party credential with no programmatic rotation source (AWS cannot call
-// Anthropic to mint a new key), so Secrets Manager auto-rotation (CKV2_AWS_57)
-// is not applicable. The compensating control is a documented annual manual
-// rotation, and THIS check is its automated verification: the runtime monitor
-// reads the secret's LastChangedDate and fails the validation if the secret has
-// not been rotated within the cadence, so a lapsed rotation surfaces as a
-// runtime KSI failure instead of relying on a calendar reminder. 365-day cadence
-// + 30-day operational grace before the validation goes red.
+// SC-12 manual rotation cadence, for any Secrets Manager secret the inventory
+// carries (none today: the app's Anthropic key was removed in SCN-2026-006). A
+// third-party credential has no programmatic rotation source, so Secrets
+// Manager auto-rotation (CKV2_AWS_57) would not apply. The compensating control
+// is a documented annual manual rotation, and THIS check is its automated
+// verification: the runtime monitor reads the secret's LastChangedDate and fails
+// the validation if the secret has not been rotated within the cadence, so a
+// lapsed rotation surfaces as a runtime KSI failure instead of relying on a
+// calendar reminder. 365-day cadence + 30-day operational grace before the
+// validation goes red.
 const SECRET_ROTATION_MAX_AGE_DAYS = 395;
 
 // Lazy-loaded policy. Loaded once per Lambda container, reused across

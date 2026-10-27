@@ -76,16 +76,9 @@ skip-check:
   # customer-managed CMK (compliance Lambda + route53 query logs → at_rest CMK;
   # silk-reeling → silk_reeling CMK). CKV_AWS_158 passes, so the skip is removed.
 
-  # FALSE POSITIVE (was POAM-019, Task 3) — CKV2_AWS_57 flags the absence of
-  # *automatic* rotation; no control mandates that specific mechanism. After
-  # Task 3 the only remaining app secret is the third-party Anthropic API key,
-  # which has no programmatic rotation source (AWS cannot mint a new upstream
-  # key), so a rotation Lambda is infeasible by construction. SC-12 rotation is
-  # met by documented annual manual rotation, and rotation currency is verified
-  # automatically — the runtime KSI emitter reads the secret's LastChangedDate
-  # daily and fails an SC-12 validation if rotation lapses past the cadence — so
-  # this is not an accepted risk. See the False Positives register in poam.md.
-  - CKV2_AWS_57
+  # POAM-019 (false positive) RETIRED (SCN-2026-006) — the app's Anthropic API
+  # key secret was removed, so no Secrets Manager secret remains and CKV2_AWS_57
+  # has nothing to flag; the skip is removed.
 
   # POAM-022 CLOSED (Task 3) — the /api/* routes now carry a Cognito JWT authorizer
   # at the gateway; CKV_AWS_309 passes. (The $default SPA route is intentionally

@@ -17,11 +17,11 @@ The system has two ingress paths:
 1. **CloudFront → S3** for the static site: the bucket's public access is fully blocked and CloudFront's origin access is restricted via a service-principal policy with a `SourceArn` condition; no other principal can read the bucket directly.
 2. **API Gateway → Silk Reeling Lambda** for the gated app: the HTTP API's data routes (`ANY /api/{proxy+}`) require a Cognito JWT authorizer, the stage is throttled (20 req/s, burst 10), and access-logged. This is the only public ingress to compute, added with SCN-2026-001.
 
-Egress: the compliance Lambda calls AWS APIs only, within the AWS network — no internet egress, no NAT gateway. The Silk Reeling Lambda additionally calls the external Anthropic API for feedback text; that interconnection is tracked as [POAM-020](poam.md) (SA-9/CA-3, risk-accepted).
+Egress: the compliance Lambda calls AWS APIs only, within the AWS network — no internet egress, no NAT gateway. The Silk Reeling Lambda calls no third-party service: it writes feedback text from the scores itself, and its only outbound call is to the Cognito user pool's public signing-key (JWKS) endpoint over TLS. It runs outside a VPC, so that limit is set by its code and configuration, not a network control. The app's optional LLM-written feedback is customer-configurable and disabled in this deployment; the Anthropic interconnection it used was removed under [SCN-2026-006](scn/SCN-2026-006-remove-anthropic-interconnection.md) (formerly POAM-020).
 
 ## Traffic flow controls (KSI-CNA-ULN)
 
-The system has four logical paths: viewer→CloudFront→S3 (read-only, all viewers), authenticated user→API Gateway→Silk Reeling Lambda (JWT-gated, throttled), Silk Reeling Lambda→Anthropic API (egress interconnection, POAM-020), and compliance Lambda→AWS APIs (scoped via IAM). There is no internal east-west traffic to control; the IAM policies on the two Lambda roles and the gateway authorizer are the traffic-flow control mechanisms for the non-public paths.
+The system has three logical paths: viewer→CloudFront→S3 (read-only, all viewers), authenticated user→API Gateway→Silk Reeling Lambda (JWT-gated, throttled), and compliance Lambda→AWS APIs (scoped via IAM). There is no internal east-west traffic to control; the IAM policies on the two Lambda roles and the gateway authorizer are the traffic-flow control mechanisms for the non-public paths.
 
 ## DDoS and unwanted-activity protection (KSI-CNA-RVP)
 
@@ -99,7 +99,7 @@ The annual security review (see [`security-review.md`](security-review.md)) is t
 Secrets in scope:
 
 - **Deployer credentials:** none stored. CI deploys via GitHub OIDC role assumption ([POAM-001](poam.md), closed 2026-06-15); the ephemeral token exists only for the workflow run. The legacy long-lived access keys and their 90-day rotation procedure were retired with the migration.
-- **Anthropic API key (Silk Reeling app):** held in Secrets Manager under a customer CMK; a third-party credential with no programmatic rotation source, so the compensating control is an annual manual rotation whose currency the runtime emitter verifies daily against the secret's `LastChangedDate` (SC-12).
+- **Silk Reeling app:** holds no secrets. Its Anthropic API key was removed with the interconnection (SCN-2026-006). The runtime emitter's SC-12 rotation check still covers any Secrets Manager secret the inventory carries; today there are none.
 - **TLS certificate:** ACM-managed, auto-rotated by AWS.
 - **GitHub PATs:** none in use. All GitHub access uses the workflow's `GITHUB_TOKEN` with workflow-scoped permissions, plus the OIDC token for cosign keyless signing (which is ephemeral).
 - **Sigstore signing identity:** ephemeral, generated per-run by Fulcio, never stored anywhere.
@@ -146,7 +146,6 @@ Cross-component communications:
 - viewer ↔ CloudFront: TLS 1.2+
 - CloudFront ↔ S3: TLS within the AWS network, with origin authentication via service principal + SourceArn
 - authenticated user ↔ API Gateway ↔ Silk Reeling Lambda: TLS, Cognito JWT verified at the gateway
-- Silk Reeling Lambda ↔ Anthropic API: TLS to the external endpoint (interconnection, POAM-020)
 - Lambda ↔ AWS service APIs: TLS within the AWS network
 - CI ↔ AWS APIs: TLS, with an ephemeral OIDC-assumed role scoped via IAM
 

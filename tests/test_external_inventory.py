@@ -1,7 +1,8 @@
 """External services inside the boundary (Rule of Thumb #2) are inventoried and placed.
 
-The Anthropic API was drawn on the boundary but missing from the canonical
-inventory, so the map could show it only as "declared, not inventoried".
+The Anthropic API was once drawn on the boundary but missing from the canonical
+inventory. Since SCN-2026-006 the app's LLM feedback is off in this deployment,
+so the interconnection must be gone from the inventory, the map and the SSP.
 """
 
 from __future__ import annotations
@@ -23,16 +24,26 @@ def _load(name: str, path: Path):
 
 bks = _load("bks", REPO / "scripts" / "build-ksi-signal.py")
 bbg = _load("bbg", REPO / "scripts" / "build-boundary-graph.py")
+ssp = _load("ssp", REPO / "scripts" / "build-oscal-ssp.py")
 CLASSIFICATION = json.loads((REPO / "docs" / "boundary" / "boundary-classification.json").read_text())
 
 
-def test_anthropic_api_is_an_inventoried_external_service():
-    comps = {c["component_id"]: c for c in bks.build_external_components()}
-    api = comps["ext::anthropic-api"]
-    assert api["type"] == "external_service"
-    assert api["native_id"] == "https://api.anthropic.com"
-    assert "POAM-020" in api["attributes"]["fedramp_status"]
-    assert {f["direction"] for f in api["information_flow"]} == {"inbound", "outbound"}
+def test_anthropic_api_is_not_in_the_inventory_or_the_map():
+    ids = {c["component_id"] for c in bks.build_external_components()}
+    assert "ext::anthropic-api" not in ids
+    matched = [m for g in CLASSIFICATION["groups"] for m in g.get("match", [])]
+    assert "ext::anthropic-api" not in matched
+    for flow in CLASSIFICATION["flows"]:
+        assert {"component": "ext::anthropic-api"} not in flow["path"], flow["id"]
+
+
+def test_ssp_declares_no_anthropic_interconnection_when_the_app_is_deployed():
+    signal = {"components": [{"component_id": "aws::function::silk_reeling",
+                               "type": "function", "native_id": "silk-reeling"}]}
+    assert ssp._silk_reeling_present(signal)
+    impl = ssp.build_system_implementation(signal)
+    assert not [c for c in impl["components"] if c["type"] == "interconnection"]
+    assert "anthropic" not in json.dumps(impl).lower()
 
 
 def test_every_external_service_is_placed_in_the_external_zone():

@@ -136,14 +136,6 @@
       "owner_domain": "silk-reeling",
       "consumed_by": ["silk-reeling"],
       "features": ["movement-feedback", "sign-in"]
-    },
-    {
-      "key": "ai-feedback",
-      "name": "AI feedback interconnection (POAM-020)",
-      "group": "ai-provider",
-      "owner_domain": "silk-reeling",
-      "consumed_by": ["silk-reeling"],
-      "features": ["movement-feedback"]
     }
   ]
 }

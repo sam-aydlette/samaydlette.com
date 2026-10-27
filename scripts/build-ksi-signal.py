@@ -1295,22 +1295,6 @@ def build_external_components():
             "verification": "U.S. federal government source",
             "fedramp_status": "external; U.S. federal government source",
         },
-        {
-            # POAM-020: the Silk Reeling app Lambda calls it. Only the derived
-            # deviation summary crosses the boundary (no video, raw landmarks or
-            # personal data), so confidentiality stays at the type default.
-            "id": "ext::anthropic-api",
-            "native_id": "https://api.anthropic.com",
-            "name": "Anthropic API",
-            "purpose": "Generates the Silk Reeling app's coaching feedback from a derived deviation summary",
-            "cia_impact": "app feedback integrity; outbound data limited to derived metrics",
-            "verification": "TLS to the provider's public endpoint; API key held in Secrets Manager under a customer-managed KMS key",
-            "fedramp_status": "external; no FedRAMP authorization (interconnection risk-accepted as POAM-020)",
-            "information_flow": [
-                {"direction": "inbound", "counterparty": "function", "channel": "tls-1.2", "data_class": "derived-metrics"},
-                {"direction": "outbound", "counterparty": "function", "channel": "tls-1.2", "data_class": "generated-feedback"},
-            ],
-        },
     ]
     components = []
     for svc in services:

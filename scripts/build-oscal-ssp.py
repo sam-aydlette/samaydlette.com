@@ -1002,9 +1002,8 @@ def build_metadata(signal):
 def _silk_reeling_present(signal):
     """True when the gated Silk Reeling app Lambda is in the canonical inventory.
 
-    Lets the SSP document the Anthropic interconnection + data flow ONLY when the
-    app is actually deployed, so it never claims an interconnection that doesn't
-    exist.
+    Lets the SSP document the app's data flow and ingress ONLY when the app is
+    actually deployed, so it never describes a path that doesn't exist.
     """
     for c in signal.get("components", []):
         # Normalize separators: the canonical inventory names the function
@@ -1128,9 +1127,10 @@ def build_system_characteristics(signal):
             ],
         },
     }
-    # The gated Silk Reeling app, when deployed, adds an external interconnection
-    # (Anthropic API) and a boundary-crossing data flow. Emitted only when the
-    # app is present in the canonical inventory. See docs/poam.md POAM-020 (SA-9).
+    # The gated Silk Reeling app, when deployed, adds an in-boundary data flow
+    # and a public ingress. Emitted only when the app is present in the canonical
+    # inventory. Its optional LLM feedback is off here, so there is no external
+    # interconnection (SCN-2026-006; formerly POAM-020).
     if _silk_reeling_present(signal):
         sc["data-flow"] = {
             "description": (
@@ -1140,19 +1140,18 @@ def build_system_characteristics(signal):
                 "Cognito JWT authorizer at the gateway, and the app also "
                 "validates the JWT in-Lambda so it stays standalone-deployable, "
                 "per POAM-022). The Lambda "
-                "computes movement deviations locally "
-                "and sends ONLY a derived summary (per-joint angle deviations, "
-                "similarity scores, hotspots, exercise identifier) to the "
-                "Anthropic API over TLS for natural-language feedback. No video, "
-                "no raw landmarks, and no personal data cross the boundary; pose "
-                "frames are processed transiently and not persisted. The Anthropic "
-                "API is an external, non-FedRAMP-authorized service (SA-9), "
-                "enumerated as an interconnection component; residual risk is "
-                "accepted in POAM-020."
+                "computes movement deviations and writes the feedback text from "
+                "those numbers itself, and returns both to the browser. No video "
+                "leaves the browser, and pose frames are processed transiently "
+                "and not persisted. No data leaves the boundary: the app's "
+                "optional LLM-written feedback is a customer-configurable "
+                "setting that is disabled in this deployment, and enabling it "
+                "would add an external interconnection and require a "
+                "significant change notification."
             )
         }
-        # Silk Reeling adds a public inbound path and a new outbound egress that
-        # do not exist in the base system. Extend (do not replace) the base
+        # Silk Reeling adds a public inbound path that does not exist in the
+        # base system. Extend (do not replace) the base
         # network-architecture description.
         sc["network-architecture"]["description"] += (
             " When the Silk Reeling app is deployed, CloudFront adds a "
@@ -1163,14 +1162,13 @@ def build_system_characteristics(signal):
             "login page can load); the ANY /api/{proxy+} route carries a Cognito "
             "JWT authorizer (required TOTP MFA), and the stage enforces "
             "rate-limit throttling (POAM-022/POAM-023). The HTTP API uses an "
-            "AWS_PROXY integration to the Python 3.13 ZIP Lambda, which holds "
-            "its Anthropic API credential in Secrets Manager encrypted with a "
-            "customer-managed CMK. This introduces new public inbound compute ingress "
-            "(SC-7) absent from the base system. The Lambda's only outbound "
-            "internet path is an egress over TLS to the external Anthropic API "
-            "for natural-language feedback; that service is non-FedRAMP-"
-            "authorized and is documented as an interconnection (SA-9/CA-3), "
-            "with residual risk accepted in POAM-020."
+            "AWS_PROXY integration to the Python 3.13 ZIP Lambda. This "
+            "introduces new public inbound compute ingress (SC-7) absent from "
+            "the base system. The Lambda calls no third-party service and "
+            "stores no third-party credential: its only outbound call is to "
+            "the Cognito user pool's public signing-key (JWKS) endpoint over "
+            "TLS, to validate tokens. It runs outside a VPC, so this limit is "
+            "set by its code and configuration, not by a network control."
         )
     return sc
 
@@ -1316,42 +1314,6 @@ def build_system_implementation(signal):
                 {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
             ],
             "status": {"state": "operational"},
-        })
-
-    # External interconnection: Anthropic API used by the Silk Reeling app for
-    # feedback. Present only when the app is deployed. Non-FedRAMP-authorized
-    # external service (SA-9, POAM-020); data flow in system-characteristics.
-    if _silk_reeling_present(signal):
-        components.append({
-            "uuid": stable_uuid("component:interconnection-anthropic-api"),
-            "type": "interconnection",
-            "title": "Anthropic API (LLM feedback)",
-            "description": (
-                "External system interconnection from the Silk Reeling app "
-                "Lambda to the Anthropic API (api.anthropic.com) over TLS, used "
-                "to turn derived movement-deviation summaries into natural-"
-                "language feedback. Only the derived summary crosses the boundary "
-                "(per-joint deviations, scores, hotspots, exercise id) — no video, "
-                "raw landmarks, or personal data. NOT FedRAMP-authorized; residual "
-                "risk accepted in POAM-020, with migration to Claude on AWS "
-                "Bedrock as the documented remediation."
-            ),
-            "props": [
-                {"name": "interconnection-direction", "value": "outbound"},
-                {"name": "service-provider", "value": "Anthropic"},
-                {"name": "remote-endpoint", "value": "https://api.anthropic.com"},
-                {"name": "transport-security", "value": "TLS 1.2+"},
-                {"name": "fedramp-authorized", "value": "no"},
-                {"name": "data-crossing-boundary", "value": "derived deviation summary (non-PII)"},
-                {"name": "related-poam", "value": "POAM-020"},
-            ],
-            "status": {"state": "operational"},
-            "responsible-roles": [
-                {
-                    "role-id": "system-owner",
-                    "party-uuids": [stable_uuid("party:operator")],
-                }
-            ],
         })
 
     return {

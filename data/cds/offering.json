@@ -33,7 +33,7 @@
     },
     {
       "name": "Silk Reeling Mirror application",
-      "description": "Cognito-gated HTTP API (API Gateway -> Lambda) serving a browser SPA that coaches Tai Chi; calls the external Anthropic API for feedback text (interconnection tracked as POAM-020).",
+      "description": "Cognito-gated HTTP API (API Gateway -> Lambda) serving a browser SPA that coaches Tai Chi; writes feedback text from the scores in the Lambda, with no external interconnection (optional LLM feedback is customer-configurable and disabled here).",
       "security_category": "FIPS-199 Moderate (FedRAMP 20x Class C)",
       "in_mas_scope": true
     }
