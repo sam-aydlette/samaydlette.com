@@ -355,5 +355,11 @@ locals {
   # (local.silk_name in ../silk-reeling.tf).
   silk_reeling_cognito_domain = "${local.domain_dashed}-silk-reeling.auth.${var.aws_region}.amazoncognito.com"
   # The MediaPipe runtime the app bundle loads, at the version the bundle pins.
-  silk_reeling_mediapipe = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.34/"
+  # During a version bump both the current and the next version are allowed, so
+  # the policy can be applied before the app ships; drop the old one after.
+  silk_reeling_mediapipe_versions = ["0.10.34", "1.1.1"]
+  silk_reeling_mediapipe = join(" ", [
+    for v in local.silk_reeling_mediapipe_versions :
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${v}/"
+  ])
 }
