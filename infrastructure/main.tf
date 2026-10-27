@@ -215,9 +215,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "website" {
 # self-hosted under /assets/vendor/katex/ instead of cdn.jsdelivr.net, and its
 # init call lives in /assets/vendor/katex/katex-init.js rather than an inline
 # onload handler, so no CDN or inline-script allowance is needed (SA-9 / KSI-3IR:
-# removes a third-party supply-chain vector). style-src retains 'unsafe-inline'
-# because KaTeX injects inline style="" attributes at render time for math layout;
-# this is materially lower-risk than inline scripts and is the documented residual.
+# removes a third-party supply-chain vector). style-src is 'self' only: no page
+# loads KaTeX any more (the eigenvalue paper is a redirect stub), and no page carries
+# inline styles. The live policy is in bootstrap/cloudfront.tf; this one is unused.
 # media-src allows the operator's podcast audio (ochelli.com, and libsyn's
 # traffic.libsyn.com, which redirects to a signed URL on content.libsyn.com; CSP
 # checks every redirect hop) and frame-src allows embedded YouTube videos — the
@@ -255,7 +255,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
       content_security_policy = join("; ", [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' 'unsafe-inline'",
+        "style-src 'self'",
         "img-src 'self' data:",
         "font-src 'self'",
         "media-src 'self' https://ochelli.com https://traffic.libsyn.com https://content.libsyn.com",

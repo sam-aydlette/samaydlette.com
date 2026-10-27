@@ -71,6 +71,10 @@ resource "aws_cloudfront_origin_access_control" "website" {
 # Permissions-Policy turns off powerful browser features the static pages never
 # use, and COOP/CORP keep the pages out of other origins' windows and no-cors
 # loads. No COEP: require-corp would break the YouTube embed.
+# style-src is 'self' only: no page carries a <style> block or style="" attribute,
+# and Cytoscape's injected container rule is pre-empted (boundary-map.css; the
+# stylesheet <link> carries the id Cytoscape checks for). Styles set through the
+# CSSOM (element.style.x = ...) are not governed by CSP.
 # Attached to the default (static-site) behavior only; the /silk-reeling/*
 # application path has its own policy below, because this CSP would break it.
 resource "aws_cloudfront_response_headers_policy" "website" {
@@ -99,7 +103,7 @@ resource "aws_cloudfront_response_headers_policy" "website" {
       content_security_policy = join("; ", [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' 'unsafe-inline'",
+        "style-src 'self'",
         "img-src 'self' data:",
         "font-src 'self'",
         "media-src 'self' https://ochelli.com https://traffic.libsyn.com https://content.libsyn.com",
