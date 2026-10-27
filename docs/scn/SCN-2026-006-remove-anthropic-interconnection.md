@@ -88,7 +88,11 @@ It is not Transformative:
    the secret; the app CMK's key policy keeps only its account-root and
    CloudWatch Logs statements. Terraform's applied environment for the app
    Lambda carries no secret ARN; the environment itself is CMK-encrypted and was
-   not read back directly.
+   not read back directly. **Correction (2026-10-27):** the app's cold-start log
+   later showed the running environment still holds the removed secret's ARN,
+   because Terraform's environment updates have not taken effect since 2026-06
+   (POAM-038). The reference is inert: the secret is pending deletion, no role
+   can read it, and LLM feedback is off.
 3. The published SSP and boundary map carry no Anthropic component, flow or
    interconnection. The KSI signal's only match is the `anthropic` Python
    package, inventoried as software because the optional setting ships in the

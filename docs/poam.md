@@ -22,7 +22,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-*No items are currently open.* POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
+**POAM-038** (Silk Reeling app Lambda environment drifted from Terraform, undetected) is open for remediation; see its row and note below. POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -42,6 +42,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-032 | AU-6, SI-4 | CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications | Checkov, tfsec | CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162 | aws-cloudtrail::management | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Closed (app security headers live 2026-10-26) |
 | POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Closed (style-src 'self' live 2026-10-27) |
+| POAM-038 | CM-3, CM-6, CA-7 | Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected | Operator investigation (app cold-start log) | silk-reeling-env-drift | aws-lambda::silk-reeling | N2 | Moderate | — | No | Open (remediation) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
@@ -72,7 +73,20 @@ receives bearer tokens, and the app's HTML and bundle, inspected statically, ref
 the CSP does not allow. **Not exercised:** the in-browser camera and pose path, because the
 app's API is down for an unrelated reason (its backend does not see its
 Cognito configuration at runtime and refuses to serve, fail-closed). That outage
-is tracked separately; it is not a header regression.
+is tracked as POAM-038; it is not a header regression.
+
+**POAM-038 (open; found 2026-10-27):** since 2026-06 the app Lambda's runtime
+environment has not matched what Terraform applies. The function runs with the
+pre-Cognito settings (including the ARNs of the since-removed basic-auth and
+Anthropic API-key secrets) and without the four Cognito settings, so the app's
+API refuses to serve (fail-closed) and Hosted-UI sign-in does not start. No
+unauthorized access results: the gateway's JWT authorizer still guards `/api`,
+and both secrets are deleted or pending deletion with no role able to read them.
+Each deploy reports the environment as updated, and the reconciliation gate
+cannot see the drift because neither CI role can decrypt the environment.
+Found from the app's cold-start log, which names the `SRM_*` settings it sees.
+Remediation: fix the cause, then add a deploy-time check that fails when the
+running function's settings differ from the deployed configuration.
 
 **POAM-037 (closed 2026-10-27; found 2026-10-23 by a passive OWASP ZAP baseline):** the
 static site's CSP allowed `style-src 'unsafe-inline'`, kept for KaTeX's inline
@@ -93,8 +107,11 @@ deployment, so the interconnection, its data flow and the API-key secret were
 removed. Verified live after the gated deploy: the secret is scheduled for
 deletion, neither role policy references it, the app CMK's key policy has no
 Secrets Manager statement, and the published SSP and KSI signal carry no
-Anthropic interconnection or external component. The record as accepted
-follows. **As accepted (2026-06):** The app Lambda calls the
+Anthropic interconnection or external component. *Correction (2026-10-27):* the live
+function environment still holds the removed secret's ARN as a stale setting,
+because Terraform's environment updates have not taken effect since 2026-06
+(POAM-038). The reference is inert: the secret is pending deletion, no role can
+read it, and LLM feedback is off. The record as accepted follows. **As accepted (2026-06):** The app Lambda calls the
 Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data
 crossing the authorization boundary is the derived deviation summary (per-joint
 metrics, scores, hotspots, exercise id) over TLS — no video, raw landmarks, or

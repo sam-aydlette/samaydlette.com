@@ -401,7 +401,7 @@
         "ca-3"
       ],
       "title": "Interconnection with Anthropic API (non-FedRAMP-authorized external service)",
-      "description": "Closed (2026-10-27, SCN-2026-006): the Silk Reeling app writes its feedback from the scores, and its optional LLM-written feedback is customer-configurable and disabled in this deployment, so the interconnection was removed. Verified live after the gated deploy: the API-key secret is scheduled for deletion, neither the app role nor the runtime emitter role references it, the app CMK's key policy no longer has a Secrets Manager statement, and the published SSP and KSI signal carry no Anthropic interconnection or external component (the published evidence verifies). The Anthropic SDK remains in the app package for the optional setting and is inventoried as a software component; it makes no calls while the setting is off. Original record: The gated Silk Reeling app Lambda calls the Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data crossing the authorization boundary is the derived deviation summary (per-joint metrics, scores, hotspots, exercise id) over TLS - no video, raw landmarks, or personal data. SA-9 due diligence rests on Anthropic's commercial API terms (API inputs/outputs not used to train models, retained only transiently for trust-and-safety); this is an assumption re-verified at each annual security review, and a change in those terms reopens this item. Applies only while the app is deployed.",
+      "description": "Closed (2026-10-27, SCN-2026-006): the Silk Reeling app writes its feedback from the scores, and its optional LLM-written feedback is customer-configurable and disabled in this deployment, so the interconnection was removed. Verified live after the gated deploy: the API-key secret is scheduled for deletion, neither the app role nor the runtime emitter role references it, the app CMK's key policy no longer has a Secrets Manager statement, and the published SSP and KSI signal carry no Anthropic interconnection or external component (the published evidence verifies). The Anthropic SDK remains in the app package for the optional setting and is inventoried as a software component; it makes no calls while the setting is off. Correction (2026-10-27): the live function environment still holds the removed secret's ARN as a stale setting, because Terraform's environment updates to the app Lambda have not taken effect since 2026-06 (POAM-038). The reference is inert: the secret is pending deletion, no role can read it, and LLM-written feedback is off. Original record: The gated Silk Reeling app Lambda calls the Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data crossing the authorization boundary is the derived deviation summary (per-joint metrics, scores, hotspots, exercise id) over TLS - no video, raw landmarks, or personal data. SA-9 due diligence rests on Anthropic's commercial API terms (API inputs/outputs not used to train models, retained only transiently for trust-and-safety); this is an assumption re-verified at each annual security review, and a change in those terms reopens this item. Applies only while the app is deployed.",
       "weakness_detector_source": "Architectural decision",
       "weakness_source_identifier": "silk-reeling-deploy.md",
       "asset_identifiers": [
@@ -775,7 +775,7 @@
         "si-10"
       ],
       "title": "Silk Reeling path served without CloudFront security headers",
-      "description": "Closed (2026-10-26): the /silk-reeling/* cache behavior now carries a response-headers policy of its own (aws_cloudfront_response_headers_policy.silk_reeling in infrastructure/bootstrap/cloudfront.tf), applied by the operator from a tree synced to main. The live response for /silk-reeling/ carries a Content-Security-Policy fitted to the app (frame-ancestors 'none', object-src 'none', script and connect sources limited to the pinned MediaPipe runtime, the pose model path and the app's Cognito domain), X-Frame-Options: DENY, Strict-Transport-Security (includeSubDomains; preload), X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy (camera for the app's own origin only), and Cross-Origin-Opener-Policy and Cross-Origin-Resource-Policy set to same-origin. The site policy gained Permissions-Policy, COOP and CORP with its CSP unchanged. Verified from outside with HEAD requests to /silk-reeling/ and / that reached the origin. Through CloudFront, the API Gateway JWT authorizer still receives and evaluates bearer tokens, and the app's HTML and bundle, inspected statically, reference nothing the CSP does not allow. Not exercised: the in-browser camera and pose-detection path, because the app's API is unavailable for an unrelated reason (its backend does not see its Cognito configuration at runtime and refuses to serve, fail-closed). That outage is tracked separately and is not a header regression. Original finding (2026-10-23, passive OWASP ZAP baseline): the /silk-reeling/* behavior carried no response-headers policy, so the app was served without CSP, frame protection, nosniff or HSTS and could be framed by another origin.",
+      "description": "Closed (2026-10-26): the /silk-reeling/* cache behavior now carries a response-headers policy of its own (aws_cloudfront_response_headers_policy.silk_reeling in infrastructure/bootstrap/cloudfront.tf), applied by the operator from a tree synced to main. The live response for /silk-reeling/ carries a Content-Security-Policy fitted to the app (frame-ancestors 'none', object-src 'none', script and connect sources limited to the pinned MediaPipe runtime, the pose model path and the app's Cognito domain), X-Frame-Options: DENY, Strict-Transport-Security (includeSubDomains; preload), X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy (camera for the app's own origin only), and Cross-Origin-Opener-Policy and Cross-Origin-Resource-Policy set to same-origin. The site policy gained Permissions-Policy, COOP and CORP with its CSP unchanged. Verified from outside with HEAD requests to /silk-reeling/ and / that reached the origin. Through CloudFront, the API Gateway JWT authorizer still receives and evaluates bearer tokens, and the app's HTML and bundle, inspected statically, reference nothing the CSP does not allow. Not exercised: the in-browser camera and pose-detection path, because the app's API is unavailable for an unrelated reason (its backend does not see its Cognito configuration at runtime and refuses to serve, fail-closed). That outage is tracked as POAM-038 and is not a header regression. Original finding (2026-10-23, passive OWASP ZAP baseline): the /silk-reeling/* behavior carried no response-headers policy, so the app was served without CSP, frame protection, nosniff or HSTS and could be framed by another origin.",
       "weakness_detector_source": "OWASP ZAP baseline + outside-in review (manual)",
       "weakness_source_identifier": "zap-10020-1; zap-10038-1; zap-10021; zap-10035-1",
       "asset_identifiers": [
@@ -817,6 +817,31 @@
       "risk_adjustment": false,
       "status": "closed",
       "category": "closed"
+    },
+    {
+      "id": "POAM-038",
+      "controls": [
+        "cm-3",
+        "cm-6",
+        "ca-7"
+      ],
+      "title": "Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected",
+      "description": "Open (remediation): since 2026-06 the app Lambda's runtime environment has not matched the environment Terraform applies on every deploy. The function runs with the pre-Cognito settings (the allowed origin, the SPA path, and the ARNs of the since-removed basic-auth and Anthropic API-key secrets) and without the four Cognito settings, so the app's API refuses to serve (fail-closed) and Hosted-UI sign-in and sign-out do not start. No unauthorized access results: the API Gateway JWT authorizer still guards /api, and both referenced secrets are deleted or pending deletion with no role able to read them. Each deploy's plan and apply report the environment as updated, and the reconciliation gate cannot see the drift because neither CI role can decrypt the CMK-encrypted environment to compare it. Found 2026-10-27 from the app's cold-start log, which names the SRM_* settings the process sees (names only). The root cause is under investigation.",
+      "weakness_detector_source": "Operator investigation (app cold-start log)",
+      "weakness_source_identifier": "silk-reeling-env-drift",
+      "asset_identifiers": [
+        "aws-lambda::silk-reeling"
+      ],
+      "point_of_contact": "Sam Aydlette (operator)",
+      "resources_required": "Operator time; no additional cost expected.",
+      "remediation_plan": "Find why the environment update does not take effect, fix it so the function runs with the environment Terraform declares, and add a deploy-time check that fails when the running function's settings differ from the deployed configuration. Close once the app reports its Cognito settings present, sign-in works end to end, and the check is in place.",
+      "original_detection_date": "2026-10-27",
+      "scheduled_completion_date": "2026-11-10",
+      "status_date": "2026-10-27",
+      "original_risk_rating": "moderate",
+      "adjusted_risk_rating": null,
+      "risk_adjustment": false,
+      "status": "open"
     }
   ]
 }
