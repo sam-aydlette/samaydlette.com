@@ -169,7 +169,9 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
 # has not taken the environment each apply sends, so it runs with pre-Cognito
 # settings. Changing this value makes Terraform destroy and recreate the function
 # (and its API Gateway invoke permission), so Lambda sets the environment and its
-# KMS grant fresh at creation. Not an inventoried resource type.
+# KMS grant fresh at creation. Creating the trigger does not count as a change, so
+# the first apply only creates it; bump the value to recreate. Not an
+# inventoried resource type.
 # -----------------------------------------------------------------------------
 resource "terraform_data" "silk_reeling_recreate" {
   count = local.silk_create
