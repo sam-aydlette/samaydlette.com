@@ -165,6 +165,18 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
 }
 
 # -----------------------------------------------------------------------------
+# Recreate trigger (POAM-038). Since 2026-06 the function's runtime environment
+# has not taken the environment each apply sends, so it runs with pre-Cognito
+# settings. Changing this value makes Terraform destroy and recreate the function
+# (and its API Gateway invoke permission), so Lambda sets the environment and its
+# KMS grant fresh at creation. Not an inventoried resource type.
+# -----------------------------------------------------------------------------
+resource "terraform_data" "silk_reeling_recreate" {
+  count = local.silk_create
+  input = "2026-10-27-poam-038"
+}
+
+# -----------------------------------------------------------------------------
 # The app Lambda. Small Python zip (numpy); the browser does the ML.
 # The package is built and supplied by CI at var.silk_reeling_package_path.
 # -----------------------------------------------------------------------------
@@ -217,6 +229,10 @@ resource "aws_lambda_function" "silk_reeling" {
   # Alias must exist before the env is encrypted — the deploy role's kms:Encrypt
   # grant is scoped by alias (see bootstrap compliance-kms-encrypt).
   depends_on = [aws_cloudwatch_log_group.silk_reeling, aws_kms_alias.silk_reeling]
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.silk_reeling_recreate[0]]
+  }
 
   tags = merge(local.cls.app_tier, local.silk_tags, { Name = "${var.domain_name}-silk-reeling" })
 }
@@ -355,6 +371,12 @@ resource "aws_lambda_permission" "silk_reeling_apigw" {
   function_name = aws_lambda_function.silk_reeling[0].function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.silk_reeling[0].execution_arn}/*/*"
+
+  # Deleting the function deletes its resource policy, so a recreate must
+  # recreate this permission too (POAM-038).
+  lifecycle {
+    replace_triggered_by = [terraform_data.silk_reeling_recreate[0]]
+  }
 }
 
 # Expose the (public) Cognito config for the SPA as a Terraform output. The CI
