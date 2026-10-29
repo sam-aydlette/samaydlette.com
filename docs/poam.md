@@ -22,7 +22,7 @@ Status values: **Open** · **In progress** · **Closed** · **Risk-accepted**.
 ## Open POA&M Items
 
 
-**POAM-038** (Silk Reeling app Lambda environment drifted from Terraform, undetected) is open for remediation; see its row and note below. POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
+POAM-038 (Silk Reeling app Lambda environment drifted from Terraform, undetected) closed 2026-10-29; POAM-037 (site CSP permitted inline styles) closed 2026-10-27; POAM-036 (Silk Reeling path served without CloudFront security headers) closed 2026-10-26; POAM-001 (deployer credentials) and POAM-002 (runtime-signal signing) are Closed below; the remaining assessment findings are tracked as Configuration Findings (risk-accepted), False Positives, or PL-2 Findings.
 
 ---
 
@@ -42,7 +42,7 @@ The source of truth for the rationale is the inline `#checkov:skip=ID:reason` an
 | POAM-032 | AU-6, SI-4 | CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications | Checkov, tfsec | CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162 | aws-cloudtrail::management | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-036 | SC-7, SC-8, SI-10 | Silk Reeling path served without CloudFront security headers | OWASP ZAP baseline + outside-in review (manual) | zap-10020-1; zap-10038-1; zap-10021; zap-10035-1 | aws-cloudfront-distribution::silk-reeling-behavior | N2 | Moderate | — | No | Closed (app security headers live 2026-10-26) |
 | POAM-037 | SC-18, SI-10 | Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline') | OWASP ZAP baseline | zap-10055-6 | aws-cloudfront-distribution | N1 | Moderate | — | No | Closed (style-src 'self' live 2026-10-27) |
-| POAM-038 | CM-3, CM-6, CA-7 | Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected | Operator investigation (app cold-start log) | silk-reeling-env-drift | aws-lambda::silk-reeling | N2 | Moderate | — | No | Open (remediation) |
+| POAM-038 | CM-3, CM-6, CA-7 | Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected | Operator investigation (app cold-start log) | silk-reeling-env-drift | aws-lambda::silk-reeling | N2 | Moderate | — | No | Closed (function recreated, runtime check in deploy 2026-10-29) |
 | POAM-010 | SC-7 | Lambda VPC configuration absent | Checkov | CKV_AWS_117 | aws-lambda::compliance-monitor | N1 | Low | — | No | Open (risk-accepted) |
 | POAM-011 | SC-12, SC-28 | Lambda env vars not customer-key encrypted | Checkov | CKV_AWS_173 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 6) |
 | POAM-013 | SI-4 | Lambda DLQ not configured | Checkov | CKV_AWS_116 | aws-lambda::compliance-monitor | N1 | Low | — | No | Closed (Task 8b) |
@@ -75,8 +75,20 @@ app's API is down for an unrelated reason (its backend does not see its
 Cognito configuration at runtime and refuses to serve, fail-closed). That outage
 is tracked as POAM-038; it is not a header regression.
 
-**POAM-038 (open; found 2026-10-27):** since 2026-06 the app Lambda's runtime
-environment has not matched what Terraform applies. The function runs with the
+**POAM-038 (closed 2026-10-29; found 2026-10-27):** the app Lambda was
+destroyed and recreated through the reviewed pipeline (a Terraform replace
+trigger, two gated deploys), so Lambda set its environment fresh from the
+Terraform configuration. Verified from outside: `/silk-reeling/auth-config`
+reports all four Cognito settings, with the domain, client id and redirect URI
+equal to the Terraform output, and the Hosted-UI authorize endpoint accepts the
+app client. Detection is now part of the deploy: after apply and before any
+evidence is published, `scripts/check-silk-runtime-config.py` compares what the
+running app reports with the Terraform output and fails the deploy on any
+difference. The root cause was not determined: every apply sent the environment
+and reported success while the running function kept the old one. Recreating
+the function fixed it, and the check would catch a recurrence. The record as
+found follows. Since 2026-06 the app Lambda's runtime
+environment had not matched what Terraform applies. The function runs with the
 pre-Cognito settings (including the ARNs of the since-removed basic-auth and
 Anthropic API-key secrets) and without the four Cognito settings, so the app's
 API refuses to serve (fail-closed) and Hosted-UI sign-in does not start. No
