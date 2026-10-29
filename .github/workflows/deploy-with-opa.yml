@@ -1110,6 +1110,16 @@ jobs:
       working-directory: infrastructure
       run: terraform apply -lock-timeout=300s -auto-approve tfplan
 
+    # The app Lambda once ran a stale environment for four months while every
+    # apply reported it updated (POAM-038). Ask the running app which Cognito
+    # settings it sees and stop before publishing if they differ from Terraform.
+    - name: Silk Reeling runtime config matches Terraform
+      run: |
+        # A separate assignment so a failing `terraform output` fails the step
+        # (bash -e) rather than passing an empty string, which means "not deployed".
+        EXPECTED=$(terraform -chdir=infrastructure output -raw silk_reeling_auth_config_json)
+        python3 scripts/check-silk-runtime-config.py "$EXPECTED"
+
     # -------------------------------------------------------------------------
     # CACHE-BUST WEBSITE ASSETS
     # -------------------------------------------------------------------------

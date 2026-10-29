@@ -826,7 +826,7 @@
         "ca-7"
       ],
       "title": "Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected",
-      "description": "Open (remediation): since 2026-06 the app Lambda's runtime environment has not matched the environment Terraform applies on every deploy. The function runs with the pre-Cognito settings (the allowed origin, the SPA path, and the ARNs of the since-removed basic-auth and Anthropic API-key secrets) and without the four Cognito settings, so the app's API refuses to serve (fail-closed) and Hosted-UI sign-in and sign-out do not start. No unauthorized access results: the API Gateway JWT authorizer still guards /api, and both referenced secrets are deleted or pending deletion with no role able to read them. Each deploy's plan and apply report the environment as updated, and the reconciliation gate cannot see the drift because neither CI role can decrypt the CMK-encrypted environment to compare it. Found 2026-10-27 from the app's cold-start log, which names the SRM_* settings the process sees (names only). The root cause is under investigation.",
+      "description": "Closed (2026-10-29): the app Lambda was destroyed and recreated through the reviewed pipeline (a Terraform replace trigger, two gated deploys), so Lambda set its environment fresh from the Terraform configuration. Verified from outside: the app's /silk-reeling/auth-config reports all four Cognito settings present, with the domain, client id and redirect URI equal to the Terraform output, and the Hosted-UI authorize endpoint accepts the app client. Detection is now in the deploy: after apply and before any evidence is published, scripts/check-silk-runtime-config.py compares what the running app reports against the Terraform output and fails the deploy on any difference. Root cause not determined: every apply sent the environment and reported success while the running function kept the old one; recreating the function is the fix, and the check is what would catch a recurrence. Original record: since 2026-06 the app Lambda's runtime environment has not matched the environment Terraform applies on every deploy. The function runs with the pre-Cognito settings (the allowed origin, the SPA path, and the ARNs of the since-removed basic-auth and Anthropic API-key secrets) and without the four Cognito settings, so the app's API refuses to serve (fail-closed) and Hosted-UI sign-in and sign-out do not start. No unauthorized access results: the API Gateway JWT authorizer still guards /api, and both referenced secrets are deleted or pending deletion with no role able to read them. Each deploy's plan and apply report the environment as updated, and the reconciliation gate cannot see the drift because neither CI role can decrypt the CMK-encrypted environment to compare it. Found 2026-10-27 from the app's cold-start log, which names the SRM_* settings the process sees (names only). The root cause is under investigation.",
       "weakness_detector_source": "Operator investigation (app cold-start log)",
       "weakness_source_identifier": "silk-reeling-env-drift",
       "asset_identifiers": [
@@ -837,11 +837,12 @@
       "remediation_plan": "Find why the environment update does not take effect, fix it so the function runs with the environment Terraform declares, and add a deploy-time check that fails when the running function's settings differ from the deployed configuration. Close once the app reports its Cognito settings present, sign-in works end to end, and the check is in place.",
       "original_detection_date": "2026-10-27",
       "scheduled_completion_date": "2026-11-10",
-      "status_date": "2026-10-27",
+      "status_date": "2026-10-29",
       "original_risk_rating": "moderate",
       "adjusted_risk_rating": null,
       "risk_adjustment": false,
-      "status": "open"
+      "status": "closed",
+      "category": "closed"
     }
   ]
 }
