@@ -2435,6 +2435,27 @@ a:focus {
     margin: 0;
 }
 
+/* Event photos inside an activity card: side by side, stacked on narrow screens. */
+.photo-pair {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.photo-pair img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+    .photo-pair {
+        grid-template-columns: 1fr;
+    }
+}
+
 .audio-player-wrapper audio {
     width: 100%;
     height: 40px;
