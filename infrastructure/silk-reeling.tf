@@ -175,7 +175,7 @@ resource "aws_cloudwatch_log_group" "silk_reeling" {
 # -----------------------------------------------------------------------------
 resource "terraform_data" "silk_reeling_recreate" {
   count = local.silk_create
-  input = "2026-10-27-poam-038"
+  input = "2026-10-29-poam-038-recreate"
 }
 
 # -----------------------------------------------------------------------------
