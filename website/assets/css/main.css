@@ -2435,6 +2435,14 @@ a:focus {
     margin: 0;
 }
 
+/* An event photo inside an activity card. */
+.event-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
 .audio-player-wrapper audio {
     width: 100%;
     height: 40px;
