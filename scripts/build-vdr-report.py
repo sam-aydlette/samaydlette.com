@@ -291,14 +291,17 @@ def classify_vulnerability(finding, register):
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
 # auditor would see in the POA&M.
+# Only the PAIN fallback is kept here, for a suppression whose check has no
+# governed vector in force. IRV comes from the inventory (a central suppression
+# names no resource, so it is unresolved and IRV) and LEV from Figure 7.
 SUPPRESSION_EVALUATION = {
-    "CKV_AWS_68":  {"pain": "N2", "irv": True,  "lev": False},
-    "CKV_AWS_86":  {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_310": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_117": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_35":  {"pain": "N1", "irv": False, "lev": False},
-    "CKV2_AWS_10": {"pain": "N1", "irv": False, "lev": False},
-    "CKV_AWS_252": {"pain": "N1", "irv": False, "lev": False},
+    "CKV_AWS_68":  {"pain": "N2"},
+    "CKV_AWS_86":  {"pain": "N1"},
+    "CKV_AWS_310": {"pain": "N1"},
+    "CKV_AWS_117": {"pain": "N1"},
+    "CKV_AWS_35":  {"pain": "N1"},
+    "CKV2_AWS_10": {"pain": "N1"},
+    "CKV_AWS_252": {"pain": "N1"},
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
@@ -378,15 +381,6 @@ SEVERITY_TO_PAIN = {
 # Findings tied to CloudFront / S3 / static content or the Silk Reeling public
 # app are upgraded to IRV true; Grype SCA findings additionally carry an explicit
 # internet_reachable=True (see ingest_grype) since they ride that public Lambda.
-INTERNET_REACHABLE_RESOURCE_HINTS = (
-    "cloudfront",
-    "aws_s3_bucket_policy",
-    "aws_s3_bucket_public_access",
-    "html_artifact",
-    "public_access",
-    "silk-reeling",
-    "apigatewayv2",
-)
 
 
 # =============================================================================
@@ -420,6 +414,37 @@ def ingest_opa(path):
     return findings
 
 
+_TF_RESOURCE_LINE = re.compile(r'^resource\s+"([A-Za-z0-9_-]+)"\s+"([A-Za-z0-9_-]+)"')
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def _tf_address_from_snippet(text):
+    """'type.name' from the first line of a Checkov snippet, if it opens a resource block."""
+    for raw in (text or "").splitlines()[:1]:
+        m = _TF_RESOURCE_LINE.match(raw.strip())
+        if m:
+            return f"{m.group(1)}.{m.group(2)}"
+    return None
+
+
+def _tf_address_from_file(uri, line):
+    """'type.name' of the resource block enclosing `line` in a repo file. Reads
+    only files inside the repository; anything else resolves to None."""
+    if not uri or not isinstance(line, int) or line < 1:
+        return None
+    try:
+        path = (_REPO_ROOT / uri).resolve()
+        path.relative_to(_REPO_ROOT)
+        lines = path.read_text().splitlines()
+    except (OSError, ValueError):
+        return None
+    for raw in reversed(lines[:line]):
+        m = _TF_RESOURCE_LINE.match(raw)
+        if m:
+            return f"{m.group(1)}.{m.group(2)}"
+    return None
+
+
 def ingest_checkov(path):
     """Load Checkov findings. Accepts either Checkov's native JSON or SARIF."""
     if not path or not Path(path).exists():
@@ -439,19 +464,28 @@ def ingest_checkov(path):
                 # error indicates a higher-severity finding.
                 sev = {"error": "HIGH", "warning": "MEDIUM", "note": "LOW"}.get(level, "MEDIUM")
                 msg = (r.get("message") or {}).get("text", rule_id)
-                loc = ""
+                loc, line, snippet = "", None, ""
                 locs = r.get("locations") or []
                 if locs:
-                    art = (locs[0].get("physicalLocation") or {}).get("artifactLocation") or {}
-                    loc = art.get("uri", "")
+                    phys = locs[0].get("physicalLocation") or {}
+                    loc = (phys.get("artifactLocation") or {}).get("uri", "")
+                    region = phys.get("region") or {}
+                    line = region.get("startLine")
+                    snippet = (region.get("snippet") or {}).get("text", "")
+                address = _tf_address_from_snippet(snippet) or _tf_address_from_file(loc, line)
                 findings.append({
                     "source": "checkov",
                     "tool_id": rule_id,
-                    "tracking_id": f"checkov-{rule_id}-{loc}",
+                    # The Terraform address is the finding's identity; the file is
+                    # only where it was seen. Editing the file never resets the clock.
+                    "tracking_id": f"checkov-{rule_id}-{address or loc}",
+                    "legacy_tracking_id": f"checkov-{rule_id}-{loc}",
                     "title": rule_id,
                     "description": msg,
                     "severity": sev,
-                    "resource": loc,
+                    "resource": address or loc,
+                    "file": loc,
+                    "start_line": line,
                 })
         return findings
     # Native Checkov JSON: results.failed_checks[] shape.
@@ -515,7 +549,7 @@ def ingest_suppressions(checkov_yaml):
     for check_id in ids:
         if check_id in fp:
             continue  # false positive — handled by ingest_false_positives
-        evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1", "irv": False, "lev": False})
+        evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1"})
         rationale = SUPPRESSION_RATIONALE.get(check_id, "Suppressed in .checkov.yaml; see corresponding POA&M entry for rationale.")
         suppressions.append({
             "tracking_id": check_id,
@@ -527,8 +561,6 @@ def ingest_suppressions(checkov_yaml):
             "resource": ".checkov.yaml",
             "current_disposition": "risk-accepted",
             "pain": evaluation["pain"],
-            "internet_reachable": evaluation["irv"],
-            "likely_exploitable": evaluation["lev"],
             "is_kev": False,
             "explanation": rationale,
         })
@@ -577,7 +609,9 @@ def ingest_tfsec(path):
         findings.append({
             "source": "tfsec",
             "tool_id": r.get("rule_id", "tfsec"),
-            "tracking_id": f"tfsec-{r.get('rule_id','x')}-{r.get('location',{}).get('filename','x')}-{r.get('location',{}).get('start_line','0')}",
+            "tracking_id": (f"tfsec-{r.get('rule_id','x')}-{r['resource']}" if r.get("resource")
+                            else f"tfsec-{r.get('rule_id','x')}-{r.get('location',{}).get('filename','x')}-{r.get('location',{}).get('start_line','0')}"),
+            "legacy_tracking_id": f"tfsec-{r.get('rule_id','x')}-{r.get('location',{}).get('filename','x')}-{r.get('location',{}).get('start_line','0')}",
             "title": r.get("description", "tfsec-finding"),
             "description": r.get("resolution") or r.get("rule_description", ""),
             "severity": (r.get("severity") or "MEDIUM").upper(),
@@ -695,11 +729,6 @@ def ingest_grype(path):
             "resource": component,
             "cve": cve,
             "cvss_vector": cvss_vector,
-            # The Silk Reeling app Lambda is internet-reachable (public API
-            # Gateway), so its dependency vulnerabilities are IRV per
-            # VER-EVA-EIR. This explicit flag overrides the hostname-hint
-            # heuristic and pulls these findings onto the tighter Class C SLAs.
-            "internet_reachable": True,
         })
     return findings
 
@@ -881,25 +910,55 @@ def ingest_previous_ledger(path):
 # =============================================================================
 
 
-def is_internet_reachable(finding):
-    """VER-EVA-EIR: heuristic for internet-reachable vulnerability.
+_PACKAGE_TYPES = {"npm_package", "pypi_package"}
 
-    A finding may carry an explicit `internet_reachable` boolean (e.g. Grype SCA
-    findings, which ride the publicly-invokable Silk Reeling app Lambda behind
-    API Gateway); that explicit determination wins. Otherwise, any finding whose
-    resource hint matches the system's internet-facing surface (CloudFront,
-    public S3 paths, public HTML artifacts, the public Silk Reeling app) is IRV.
-    Findings on the internal compliance Lambda / IAM / EventBridge are NIRV.
-    """
-    explicit = finding.get("internet_reachable")
-    if isinstance(explicit, bool):
-        return explicit
-    haystack = " ".join([
-        str(finding.get("resource", "")),
-        str(finding.get("description", "")),
-        str(finding.get("title", "")),
-    ]).lower()
-    return any(hint in haystack for hint in INTERNET_REACHABLE_RESOURCE_HINTS)
+
+def load_inventory(ksi_signal_path):
+    """Everything resolution needs from the bound inventory: identifier -> component
+    index, Terraform components, and each component's type and classification."""
+    classes, types = {}, {}
+    p = Path(ksi_signal_path) if ksi_signal_path else None
+    if p and p.exists():
+        try:
+            sig = json.loads(p.read_text())
+        except json.JSONDecodeError:
+            sig = {}
+        for comp in sig.get("components") or []:
+            cid = comp.get("component_id")
+            if cid:
+                classes[cid] = (comp.get("attributes") or {}).get("classification")
+                types[cid] = comp.get("type")
+    return {"index": build_component_index(ksi_signal_path) if p else {},
+            "tf": tf_components_of(ksi_signal_path) if p else [],
+            "classes": classes, "types": types}
+
+
+def irv_determination(finding, cid, inventory):
+    """VER-EVA-EIR from the inventory (REQ-IRV-6). Returns (irv, basis).
+
+      observed                 an outside-in observation (DAST) reached it -> IRV
+      unresolved               no inventory component -> IRV (fail-safe, T7)
+      package-host-unrecorded  a package: its host is not yet recorded -> IRV
+      inventory                the component's declared internet_reachable"""
+    if finding.get("internet_reachable") is True:
+        return True, "observed"
+    if cid is None:
+        return True, "unresolved"
+    if inventory["types"].get(cid) in _PACKAGE_TYPES:
+        return True, "package-host-unrecorded"
+    cls = inventory["classes"].get(cid) or {}
+    if not isinstance(cls.get("internet_reachable"), bool):
+        return True, "unresolved"
+    return cls["internet_reachable"], "inventory"
+
+
+def classification_for(finding, inventory, index):
+    """The classification PAIN uses: the resolved component's, or the fail-safe.
+    Without an inventory (unit callers), the older index lookup applies."""
+    if inventory is None:
+        return resolve_classification(finding, index or {})
+    cid = resolve_component(finding, inventory["index"], inventory["tf"])
+    return (inventory["classes"].get(cid) if cid else None) or _FAILSAFE_CLASSIFICATION
 
 
 _VEC_METRIC_RE = re.compile(r"/([A-Z]{1,3}):([A-Z])")
@@ -1321,7 +1380,7 @@ def assign_pain(finding, index, config):
         # REQ-PAI-7: neither a vector nor a severity -> total technical impact.
         high = config["cvss_impact_weights"]["high"]
         cia = (high, high, high)
-    cls = resolve_classification(finding, index)
+    cls = finding.get("_classification") or resolve_classification(finding, index)
     req = requirement_triplet(cls, config)
     m = scope_flag(cls, config)
     return pain_from_environmental(cia, req, m, config,
@@ -1395,7 +1454,7 @@ def consolidate_by_cve(report_findings, risk_accepted):
 
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
                  epss_scores=None, disposition_register=None, check_vectors=None,
-                 lev_overrides=None):
+                 lev_overrides=None, inventory=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
     # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
     # disposition_register: the operator vulnerability disposition register.
@@ -1425,11 +1484,17 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
 
     check_vectors = check_vectors or {}
     lev_overrides = lev_overrides or {}
+    inv = inventory or {"index": {}, "tf": [], "classes": {}, "types": {}}
+    summary["unresolved_components"] = 0
     for f in findings:
         f = apply_check_vector(f, check_vectors)
+        cid = resolve_component(f, inv["index"], inv["tf"])
+        f = {**f, "_classification": classification_for(f, inventory, index)}
         pain = assign_pain(f, index, config)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
-        irv = is_internet_reachable(f)
+        irv, irv_basis = irv_determination(f, cid, inv)
+        if cid is None:
+            summary["unresolved_components"] += 1
         lev, lev_basis = lev_determination(f, epss_scores, config["epss_threshold"],
                                            is_kev=is_kev, irv=irv)
         lev, lev_override = apply_lev_override(f, lev, lev_overrides, is_kev=is_kev)
@@ -1460,6 +1525,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # report), then any caller-supplied value, then current build time.
         # The ledger is what makes Class C SLA-clock enforcement real.
         tid = f["tracking_id"]
+        if tid not in ledger and f.get("legacy_tracking_id") in ledger:
+            tid = f["legacy_tracking_id"]  # identity changed format; keep the clock
         if tid in ledger:
             first_detected_str = ledger[tid]
             summary["ledger_carried_forward"] += 1
@@ -1523,7 +1590,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "pain": pain,
             "current_pain": pain,
             "historical_pain": pain,
+            "component_id": cid,
+            "unresolved_component": cid is None,
             "internet_reachable": irv,
+            "irv_basis": irv_basis,
             "likely_exploitable": lev,
             "lev_basis": "override" if lev_override else lev_basis,
             "lev_override": lev_override,
@@ -1570,7 +1640,9 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     risk_accepted_records = []
     for s in suppressions:
         s = apply_check_vector(s, check_vectors)
-        s_irv = s.get("internet_reachable", False)
+        s_cid = resolve_component(s, inv["index"], inv["tf"])
+        s = {**s, "_classification": classification_for(s, inventory, index)}
+        s_irv, s_irv_basis = irv_determination(s, s_cid, inv)
         s_lev, s_basis = lev_determination(s, epss_scores, config["epss_threshold"],
                                            is_kev=s.get("is_kev", False), irv=s_irv)
         s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
@@ -1584,7 +1656,9 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "first_detected": now.isoformat(),
             "completed_evaluation": now.isoformat(),
             "pain": s_pain,
+            "component_id": s_cid,
             "internet_reachable": s_irv,
+            "irv_basis": s_irv_basis,
             "likely_exploitable": s_lev,
             "lev_basis": s_basis,
             "cvss_vector": s.get("cvss_vector"),
@@ -1762,14 +1836,15 @@ def main():
                                     epss_scores=epss_scores,
                                     disposition_register=disposition_register,
                                     check_vectors=check_vectors,
-                                    lev_overrides=lev_overrides)
+                                    lev_overrides=lev_overrides,
+                                    inventory=load_inventory(args.ksi_signal))
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can
     # place findings on the boundary map. Resolution only; scoring is unchanged.
     component_index = build_component_index(args.ksi_signal)
     tf_components = tf_components_of(args.ksi_signal)
-    for section in ("findings", "risk_accepted", "false_positives"):
+    for section in ("false_positives",):
         for f in report.get(section) or []:
             if isinstance(f, dict):
                 cid = resolve_component(f, component_index, tf_components)
