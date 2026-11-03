@@ -2048,6 +2048,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "title": f.get("title", ""),
             "description": f.get("description", ""),
             "resource": f.get("resource", ""),
+            # Outside-in (ZAP) only: where it was observed and whether the probe
+            # was allowlisted there (REQ-IRV-11). Absent for other sources.
+            **({"locations": f["locations"], "allowlisted": f.get("allowlisted")}
+               if "locations" in f else {}),
             "cve": f.get("cve"),
             "first_detected": clk["first_detected"],
             "first_evaluated": clk["first_evaluated"],

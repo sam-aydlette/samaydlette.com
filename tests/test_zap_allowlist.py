@@ -73,3 +73,15 @@ def test_allowlist_prefix_does_not_match_a_lookalike_host():
     al = {"entries": [{"url_prefix": "https://samaydlette.com"}]}
     assert vdr._zap_location("https://samaydlette.com.evil.net/x", al)["allowlisted"] is False
     assert vdr._zap_location("https://samaydlette.com/x", al)["allowlisted"] is True
+
+
+def test_allowlist_status_is_published_in_the_report():
+    """The published VDR finding, not only the ingested one, carries the
+    observed locations and the allowlist status (REQ-IRV-11)."""
+    al = vdr.load_zap_allowlist(FIX / "allowlist-research.json")
+    report, _ = vdr.build_report(vdr.ingest_zap(str(FIX / "report.json"), al), [], set(), {})
+    pub = {f["tool_id"]: f for f in report["findings"]}
+    ing = _by_ref(al)
+    for ref, f in ing.items():
+        assert pub[ref]["allowlisted"] == f["allowlisted"], ref
+        assert pub[ref]["locations"] == f["locations"], ref
