@@ -1,9 +1,10 @@
 """The Wasm-safe check fails closed on sprintf formats the opa-wasm host must not see.
 
-POAM-035 (sprintf-js, CVE-2026-97058) is dispositioned on the condition that
+POAM-035 (sprintf-js, CVE-2026-97058) was dispositioned on the condition that
 every Rego sprintf format is a literal (or a concat of literals) with no
-precision specifier. These tests pin that the check enforces exactly that
-condition, against committed known-bad fixtures and the live policy tree.
+precision specifier. The advisory was withdrawn on 2026-10-22 and the item
+closed; the check stays as a guard. These tests pin that it enforces exactly
+that condition, against committed known-bad fixtures and the live policy tree.
 """
 
 from __future__ import annotations
@@ -51,8 +52,8 @@ def test_known_bad_fixture_fails(case, phrase):
 
 
 def test_current_policy_tree_passes():
-    # The POAM-035 disposition depends on this: if a policy ever needs a
-    # non-literal or precision-bearing format, the disposition must be revisited.
+    # The guard the closed POAM-035 rested on: a policy that needs a non-literal
+    # or precision-bearing format must first show sprintf-js handles it safely.
     r = subprocess.run([sys.executable, str(SCRIPT)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
 

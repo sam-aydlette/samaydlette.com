@@ -18,10 +18,11 @@ offenders from entering the policy tree at all, exercised or not:
   - sprintf format   — the FIRST argument of every sprintf call must be a
     not a literal      string literal ("..." or `...`), or concat(<literal>,
                        [<literal>, ...]) whose every element is a literal.
-                       The format is handed to sprintf-js, whose
-                       CVE-2026-97058 (POAM-035) is a denial of service
-                       driven by the format string; a literal format keeps
-                       runtime input out of it. The first argument is parsed
+                       The format is handed to sprintf-js, where an
+                       unbounded precision specifier in the format throws
+                       (CVE-2026-97058, POAM-035; advisory withdrawn
+                       2026-10-22, item closed, check kept as a guard); a
+                       literal format keeps runtime input out of it. The first argument is parsed
                        wherever it starts, including on the next line.
   - precision in a   — no format literal may carry a precision specifier
     format literal     (%.5f, %08.3f, %.*f, %1$.2f, ...): the CVE's trigger.
@@ -53,8 +54,8 @@ CONCAT = re.compile(r"concat\s*\(")
 # '%%' is matched first so an escaped percent is never read as a placeholder.
 PRECISION = re.compile(r"%%|%(?:[1-9]\d*\$|\([^)]*\))?[-+ #0]*(?:'.)?-?(?:\d+|\*)?\.")
 
-NONLITERAL = "sprintf format is not a string literal (or concat of literals); runtime data must not reach the sprintf-js format (POAM-035)"
-PRECISION_WHY = "sprintf format carries a precision specifier, the CVE-2026-97058 trigger in sprintf-js (POAM-035)"
+NONLITERAL = "sprintf format is not a string literal (or concat of literals); runtime data must not reach the sprintf-js format"
+PRECISION_WHY = "sprintf format carries a precision specifier, the CVE-2026-97058 trigger in sprintf-js"
 
 
 def has_precision(fmt):
