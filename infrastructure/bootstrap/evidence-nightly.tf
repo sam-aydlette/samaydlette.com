@@ -77,7 +77,7 @@ resource "aws_iam_role" "evidence_nightly" {
 # vdr-report.md, vdr-trend.json and vdr-trend.bundle. The resource pattern is
 # the prefix rather than five literal keys so that adding a vdr-* artifact does
 # not need an IAM change, while the KSI signal, the OSCAL SSP and POA&M, the
-# IIW, the SCuBA bundle, the provenance attestations and every byte of website
+# IIW, the provenance attestations and every byte of website
 # content stay out of reach.
 #
 # No s3:DeleteObject: an unattended job should never be able to unpublish

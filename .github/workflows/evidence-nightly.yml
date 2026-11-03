@@ -29,7 +29,7 @@
 #   - The canonical inventory. This binds to the PUBLISHED ksi-signal.json
 #     (signature-verified against the deploy workflow's pinned identity) rather
 #     than rebuilding it, which is what satisfies reconciliation invariant (e)
-#     without touching the SSP/POA&M/IIW/SCuBA. A changed inventory means changed
+#     without touching the SSP/POA&M/IIW. A changed inventory means changed
 #     infrastructure, and that belongs on the reviewed deploy path.
 #   - The OPA gate axis. `validations.json` is produced by `terraform plan`,
 #     which this workflow has neither the state access nor the IAM rights to run.
@@ -38,7 +38,7 @@
 #     blocks the deploy first. So its absence changes no published value. It does
 #     mean the nightly VDR is an SAST+SCA+DAST report re-verified against today's
 #     threat data, not a re-evaluation of the infrastructure plan.
-#   - The SSP, POA&M, IIW, SCuBA, OCR, CDS and provenance attestations. The SSP
+#   - The SSP, POA&M, IIW, OCR, CDS and provenance attestations. The SSP
 #     and POA&M ARE rebuilt here, but only as inputs to the reconciliation gate
 #     (it loads all four artifacts); they are never signed and never published.
 #     Rebuilding them from the published inventory keeps the gate evaluating one

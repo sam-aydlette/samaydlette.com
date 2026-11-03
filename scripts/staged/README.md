@@ -34,7 +34,7 @@ The spoke generators do. Wiring one into the pipeline means all four of:
 3. **An invariant in `scripts/reconcile.py`** binding the new artifact to the same inventory
    `signal_id` as everything else — this is the part that matters. An artifact that publishes
    without a reconciliation invariant is exactly the drift the gate exists to prevent, and
-   invariant (k) already does this for the SCuBA bundle as the pattern to copy.
+   invariant (l) already does this for the boundary map as the pattern to copy.
 4. A unit test for that invariant, plus a broken fixture under `tests/fixtures/broken/`.
 
 ## Note on `OSCAL_VERSION`

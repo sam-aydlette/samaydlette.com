@@ -21,8 +21,8 @@
 # WHAT BELONGS HERE: only definitions that were already duplicated VERBATIM, and
 # only where divergence between the copies would be a bug rather than a choice.
 # The four copies of classify() were the case that mattered — it is a compliance
-# semantic that the SCuBA bundle, the CMMC projection, the coverage figures and
-# the framework spokes must all agree on, and nothing was keeping them in step.
+# semantic that the CMMC projection, the coverage figures and the framework
+# spokes must all agree on, and nothing was keeping them in step.
 #
 # WHAT DOES NOT BELONG HERE: same-named functions that do different things.
 # render_markdown() exists five times and renders five different artifacts;
@@ -100,9 +100,9 @@ def classify(status, origination):
     """Project an SSP implemented-requirement onto the shared-responsibility
     vocabulary every downstream framework view uses.
 
-    This is the compliance semantic four artifacts have to agree on — the SCuBA
-    bundle (the executable CRM), the CMMC SRM projection, the published coverage
-    figures, and the framework spokes. It lived as four verbatim copies, so a
+    This is the compliance semantic the downstream framework views have to agree
+    on — the CMMC SRM projection, the published coverage figures, and the
+    framework spokes. It lived as four verbatim copies, so a
     change to one would have silently split them apart while every gate stayed
     green: none of the invariants in reconcile.py compare these projections to
     each other.
