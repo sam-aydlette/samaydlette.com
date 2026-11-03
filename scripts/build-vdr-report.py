@@ -443,13 +443,20 @@ def load_runtime_signal(path, pubkey_path=None, now=None, max_age_hours=RUNTIME_
 
 
 def mitigation_state(finding, mitigations, inventory, runtime, today):
-    """The mitigation covering this finding, evaluated, or None."""
+    """The mitigation covering this finding, evaluated, or None. When several
+    name the finding, the first valid one (by ID) is used, else the first; a
+    void record never hides a valid one. `matched` lists every ID that named it."""
     keys = {register_vuln_id(finding), finding.get("tracking_id"),
             normalize_check_id(finding.get("tool_id") or "")}
-    match = next(((mid, m) for mid, m in sorted(mitigations.items()) if m["finding"] in keys), None)
-    if match is None:
+    states = [_mitigation_state_one(mid, m, inventory, runtime, today)
+              for mid, m in sorted(mitigations.items()) if m["finding"] in keys]
+    if not states:
         return None
-    mid, m = match
+    chosen = next((st for st in states if st["valid"]), states[0])
+    return {**chosen, "matched": [st["id"] for st in states]}
+
+
+def _mitigation_state_one(mid, m, inventory, runtime, today):
     ctl, vc = m["control"], m["verifying_check"]
     cid = ctl["component_id"]
     out = {"id": mid, "effect": m["effect"], "valid": False, "void_reason": None,
@@ -629,6 +636,24 @@ def _tf_address_from_snippet(text):
     return None
 
 
+def _tf_stack(path):
+    """The root module a scanned file belongs to ("infrastructure/bootstrap"), or
+    None for the main stack (infrastructure/) or a path outside it. A Terraform
+    address is unique only within its root module."""
+    parts = Path(str(path or "")).parts
+    if "infrastructure" not in parts:
+        return None
+    dirs = parts[parts.index("infrastructure"):-1]
+    return "/".join(dirs) if len(dirs) > 1 else None
+
+
+def _scoped(address, path):
+    """A finding's identity: the address, qualified by its root module unless it
+    is the main stack (whose identities predate this and must not move)."""
+    stack = _tf_stack(path)
+    return f"{stack}:{address}" if stack else address
+
+
 def _tf_address_from_file(uri, line):
     """'type.name' of the resource block enclosing `line` in a repo file. Reads
     only files inside the repository; anything else resolves to None."""
@@ -680,7 +705,7 @@ def ingest_checkov(path):
                     "tool_id": rule_id,
                     # The Terraform address is the finding's identity; the file is
                     # only where it was seen. Editing the file never resets the clock.
-                    "tracking_id": f"checkov-{rule_id}-{address or loc}",
+                    "tracking_id": f"checkov-{rule_id}-{_scoped(address, loc) if address else loc}",
                     "legacy_tracking_id": f"checkov-{rule_id}-{loc}",
                     "title": rule_id,
                     "description": msg,
@@ -696,7 +721,7 @@ def ingest_checkov(path):
         findings.append({
             "source": "checkov",
             "tool_id": c.get("check_id", "checkov"),
-            "tracking_id": f"checkov-{c.get('check_id','x')}-{c.get('resource','x')}",
+            "tracking_id": f"checkov-{c.get('check_id','x')}-{_scoped(c.get('resource','x'), c.get('file_path'))}",
             "title": c.get("check_name", "checkov-finding"),
             "description": c.get("description") or c.get("guideline", ""),
             "severity": (c.get("severity") or "MEDIUM").upper(),
@@ -857,7 +882,8 @@ def ingest_tfsec(path):
         findings.append({
             "source": "tfsec",
             "tool_id": r.get("rule_id", "tfsec"),
-            "tracking_id": (f"tfsec-{r.get('rule_id','x')}-{r['resource']}" if r.get("resource")
+            "tracking_id": (f"tfsec-{r.get('rule_id','x')}-{_scoped(r['resource'], r.get('location',{}).get('filename'))}"
+                            if r.get("resource")
                             else f"tfsec-{r.get('rule_id','x')}-{r.get('location',{}).get('filename','x')}-{r.get('location',{}).get('start_line','0')}"),
             "legacy_tracking_id": f"tfsec-{r.get('rule_id','x')}-{r.get('location',{}).get('filename','x')}-{r.get('location',{}).get('start_line','0')}",
             "title": r.get("description", "tfsec-finding"),
@@ -1894,7 +1920,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # here; what a valid one changes is the policy's decision.
         mit = mitigation_state(f, mitigations, inv, runtime, today) if mitigations else None
         if mit:
-            matched_mitigations.add(mit["id"])
+            matched_mitigations.update(mit.get("matched") or [mit["id"]])
         if mit and mit["valid"]:
             f = {**f, "verified_mitigation_at": mit["verified_on"], "mitigation_id": mit["id"]}
         if cid is None:
@@ -2043,7 +2069,12 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "will_be_overdue": d["will_be_overdue"],
             "accepted": d["accepted"],
             "accepted_at": accepted_at,
-            "acceptance_explanation": ("not recorded" if d["accepted"] else None),
+            # VER-RPT-AVI: the recorded justification when an in-force record
+            # carries one; otherwise the gap is stated, never filled in.
+            "acceptance_explanation": (
+                ((reg[1].get("justification") or "").strip() or NOT_RECORDED
+                 if reg and d["record_status"] == "in-force" else NOT_RECORDED)
+                if d["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
                                     else f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
                                     if is_suppressed else overdue_explanation),

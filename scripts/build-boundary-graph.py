@@ -204,6 +204,25 @@ def display_name(
 # -----------------------------------------------------------------------------
 # Build
 # -----------------------------------------------------------------------------
+def finding_counts(vdr: dict[str, Any] | None) -> dict[str, dict[str, int]]:
+    """Per-component finding counts from the VDR. A finding is open by its
+    final_disposition: current_disposition is a label (vendor-dependency,
+    under-investigation, ...) and does not close anything. risk_accepted
+    records carry no final_disposition and are never open."""
+    findings: dict[str, dict[str, int]] = {}
+    for f in (vdr or {}).get("findings", []) + (vdr or {}).get("risk_accepted", []):
+        cid = f.get("component_id")
+        if not cid:
+            continue
+        agg = findings.setdefault(cid, {"total": 0, "open": 0, "blocking": 0, "kev": 0})
+        agg["total"] += 1
+        if (f.get("final_disposition") or f.get("current_disposition") or "open") == "open":
+            agg["open"] += 1
+        agg["blocking"] += bool(f.get("is_blocking"))
+        agg["kev"] += bool(f.get("is_kev"))
+    return findings
+
+
 def build(
     signal: dict[str, Any],
     classification: dict[str, Any],
@@ -235,17 +254,7 @@ def build(
     }
 
     # Findings per component (the VDR resolves each finding's component).
-    findings: dict[str, dict[str, int]] = {}
-    for f in (vdr or {}).get("findings", []) + (vdr or {}).get("risk_accepted", []):
-        cid = f.get("component_id")
-        if not cid:
-            continue
-        agg = findings.setdefault(cid, {"total": 0, "open": 0, "blocking": 0, "kev": 0})
-        agg["total"] += 1
-        if (f.get("current_disposition") or "open") == "open":
-            agg["open"] += 1
-        agg["blocking"] += bool(f.get("is_blocking"))
-        agg["kev"] += bool(f.get("is_kev"))
+    findings = finding_counts(vdr)
 
     pending_addresses = {c["address"] for c in (trust_root_plan or {}).get("changes", [])}
 

@@ -228,3 +228,29 @@ test_vocabulary_has_pass_within_dispositions if {
 		p in triage.vocabulary.dispositions
 	}
 }
+
+# ---- pre-merge review (#479) -----------------------------------------------------------
+test_wont_fix_lapses_vendor_dependency_with_its_own_reason if {
+	d := one({"fix_state": "wont-fix", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
+	d.record_status == "invalid"
+	contains(d.record_reason, "will not ship a fix")
+}
+
+test_override_never_clears_observed_exploitation if {
+	d := run([object.union(base, {"exploitation": "active"})], override)[0]
+	d.lev_override == null
+	d.lev_basis == "exploitation-observed"
+}
+
+test_mitigation_never_clears_observed_exploitation if {
+	d := one({"exploitation": "active", "mitigation": {"id": "M", "valid": true, "effect": "not-likely-exploitable"}})
+	d.lev == true
+}
+
+test_observed_reachability_beats_not_reachable_mitigation if {
+	d := one({
+		"reach": object.union(base.reach, {"observed": true}),
+		"mitigation": {"id": "M", "valid": true, "effect": "not-reachable"},
+	})
+	d.irv_basis == "observed"
+}
