@@ -139,6 +139,7 @@ Recorded 2026-11-03 from Sam.
 | 5 | POAM-035 | **Fix as recommended in 3.3.** | Strengthen `check-wasm-safe.py`; re-record as mitigated + vendor-dependency; same review for POAM-034. |
 | 6 | CR26 Rev5 transition (no POA&M, no SSP) | **Transition fully to CR26 now.** | Section 4. The OSCAL SSP and POA&M are retired, not kept as exports. |
 | 7 | N-SRC-6: Checkov findings to components | **Match them.** | Use Checkov's Terraform address (native JSON), else file + line → enclosing resource block. |
+| 8 | N-VD: scanner fix state `wont-fix` (the vendor will never ship a fix) | **A vendor dependency until the maximum period, then accepted.** | The record stays in force; the clock runs; past VER-TFR-MAV (192 days from first evaluation) the finding is accepted. `fixed` and unknown still lapse it. Shipped in #479. **The article diverges:** `vulnerability-evidence.html` says `NONE_PLANNED` means the finding "must be accepted with an explanation, mitigated, or removed". The sentence changes in T14 (AI-drafted, Sam's wording). |
 
 ### 3.1 G10: what "from the FedRAMP rules" means concretely (verified 2026-11-03)
 
