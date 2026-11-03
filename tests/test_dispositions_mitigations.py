@@ -293,7 +293,13 @@ def test_vendor_dependency_in_force_while_no_fix():
     assert r["remediation_due_at"] is not None  # the clock never pauses
 
 
-@pytest.mark.parametrize("state", ["fixed", "unknown", None, "wont-fix"])
+def test_vendor_dependency_in_force_when_no_fix_is_coming():
+    r = build([finding(fix_state="wont-fix")], register=REG_VD)[0]["findings"][0]
+    assert r["current_disposition"] == "vendor-dependency" and r["fix_state"] == "wont-fix"
+    assert r["remediation_due_at"] is not None  # the clock never pauses
+
+
+@pytest.mark.parametrize("state", ["fixed", "unknown", None])
 def test_vendor_dependency_lapses_when_a_fix_may_exist(state):
     r = build([finding(fix_state=state)], register=REG_VD)[0]["findings"][0]
     assert r["current_disposition"] == "open"

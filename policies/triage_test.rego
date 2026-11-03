@@ -230,10 +230,30 @@ test_vocabulary_has_pass_within_dispositions if {
 }
 
 # ---- pre-merge review (#479) -----------------------------------------------------------
-test_wont_fix_lapses_vendor_dependency_with_its_own_reason if {
+# A vendor that will never ship a fix keeps the record in force; the clock runs and
+# the finding becomes accepted at the maximum period.
+test_wont_fix_keeps_vendor_dependency_in_force if {
 	d := one({"fix_state": "wont-fix", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
+	d.record_status == "in-force"
+	d.disposition == "vendor-dependency"
+	d.closed == false
+	d.sla_days == 48
+}
+
+test_wont_fix_vendor_dependency_accepted_at_maximum_period if {
+	d := one({
+		"fix_state": "wont-fix", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"}),
+		"clock": {"start_ns": now - (192 * day), "first_evaluated_ns": now - (192 * day)},
+	})
+	d.record_status == "in-force"
+	d.needs_remediation == true
+	d.accepted == true
+}
+
+test_fixed_state_still_lapses_vendor_dependency if {
+	d := one({"fix_state": "fixed", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
 	d.record_status == "invalid"
-	contains(d.record_reason, "will not ship a fix")
+	contains(d.record_reason, "a fix may be available")
 }
 
 test_override_never_clears_observed_exploitation if {
