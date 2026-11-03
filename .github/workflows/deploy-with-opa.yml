@@ -228,7 +228,10 @@ jobs:
 
     # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
     # banned at lint time; the parity test catches what the corpus exercises,
-    # this catches the rest before it exists.
+    # this catches the rest before it exists. It also requires every sprintf
+    # format to be a literal (or concat of literals) with no precision
+    # specifier: the condition the closed POAM-035 (sprintf-js) rested on, kept
+    # as a guard.
     - name: Wasm-safe builtin check
       run: python3 scripts/check-wasm-safe.py
 
