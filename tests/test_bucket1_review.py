@@ -1,7 +1,7 @@
 """Fixes from the pre-merge review of the VDR decision engine (#479).
 
 Each test names the defect it pins:
-  1  "wont-fix" lapses a vendor dependency with a true reason, not "a fix may be available"
+  1  "wont-fix" (no fix coming) keeps a vendor dependency in force until the maximum period
   2  the boundary map counts a finding open by its final disposition, not its label
   3  the same Terraform address in two root modules is two findings
   4  observed exploitation is never cleared by an override or a mitigation
@@ -53,19 +53,27 @@ def decide(it, overrides=None):
 VD = {"key": "CVE-0000-0001", "entry": {"disposition": "vendor-dependency", "poam_ref": "P1"}}
 
 
-def test_wont_fix_lapses_with_a_true_reason():
+def test_wont_fix_keeps_a_vendor_dependency_in_force():
     d = decide(item(fix_state="wont-fix", register=VD))
-    assert d["record_status"] == "invalid"
-    assert "will not ship a fix" in d["record_reason"] and "may be available" not in d["record_reason"]
+    assert d["record_status"] == "in-force" and d["disposition"] == "vendor-dependency"
+    assert d["due_ns"] is not None and d["accepted"] is False
     assert decide(item(fix_state="not-fixed", register=VD))["record_status"] == "in-force"
-    assert decide(item(fix_state="fixed", register=VD))["record_status"] == "invalid"
+    for state in ("fixed", "unknown", None):
+        assert decide(item(fix_state=state, register=VD))["record_status"] == "invalid", state
+
+
+def test_wont_fix_vendor_dependency_is_accepted_at_the_maximum_period():
+    old = NS - 192 * 86400 * 10**9
+    d = decide(item(fix_state="wont-fix", register=VD, clock={"start_ns": old, "first_evaluated_ns": old}))
+    assert d["record_status"] == "in-force" and d["accepted"] is True
 
 
 def test_gate_agrees_on_fix_states():
     entry = {"disposition": "vendor-dependency", "poam_ref": "P1"}
-    assert vg.handled({"fix_state": "not-fixed"}, entry, date(2026, 11, 3))
-    assert not vg.handled({"fix_state": "wont-fix"}, entry, date(2026, 11, 3))
-    assert not vg.handled({"fix_state": "fixed"}, entry, date(2026, 11, 3))
+    for state in ("not-fixed", "wont-fix"):
+        assert vg.handled({"fix_state": state}, entry, date(2026, 11, 3)), state
+    for state in ("fixed", "unknown", None):
+        assert not vg.handled({"fix_state": state}, entry, date(2026, 11, 3)), state
 
 
 # 2 ---------------------------------------------------------------------------------
