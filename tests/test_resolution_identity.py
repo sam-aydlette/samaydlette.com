@@ -88,7 +88,7 @@ def test_suppression_record_without_a_resource_is_irv():
 def test_no_name_hint_table_remains():
     src = (REPO / "scripts" / "build-vdr-report.py").read_text()
     assert "INTERNET_REACHABLE_RESOURCE_HINTS" not in src
-    assert '"irv":' not in src
+    assert all(set(v) == {"pain"} for v in vdr.SUPPRESSION_EVALUATION.values())
 
 
 # --- Checkov resolution and stable IDs -------------------------------------------------
@@ -134,7 +134,8 @@ def test_tfsec_id_survives_a_line_move(tmp_path):
 
 
 def test_clock_carries_over_from_the_legacy_id():
-    ledger = {"checkov-CKV_X-infrastructure/x.tf": "2026-01-01T00:00:00+00:00"}
+    ledger = {"checkov-CKV_X-infrastructure/x.tf": {"first_detected": "2026-01-01T00:00:00+00:00",
+                                                   "first_evaluated": "2026-01-01T00:00:00+00:00"}}
     f = one({"resource": "aws_s3_bucket.logs", "tracking_id": "checkov-CKV_X-aws_s3_bucket.logs",
              "legacy_tracking_id": "checkov-CKV_X-infrastructure/x.tf"}, ledger=ledger)
     assert f["first_detected"] == "2026-01-01T00:00:00+00:00"

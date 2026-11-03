@@ -1,6 +1,6 @@
 {
   "$schema": "./vdr-pain-config.schema.json",
-  "version": "1.2",
+  "version": "1.3",
   "description": "Governed calibration for the deterministic CVSS-Environmental VDR PAIN classifier. These are the ONLY tunable knobs in the method: the word thresholds, the EPSS likely-exploitable threshold, the impact/requirement weights, and the tag-to-requirement maps. The FedRAMP VDR-TFR-PVR remediation-day matrix is NOT here: it is FedRAMP's, read at build time from the pinned machine-readable rules in infrastructure/schemas/fedramp-rules/ (never typed into code). Only the classifier is ours to tune; the deadlines are not.",
   "method_reference": "A Deterministic, CVSS-Environmental Method for FedRAMP Rev5 VDR/VER Vulnerability Prioritization (informational memo, June 2026); CVSS v3.1 Environmental metric group (Modified Impact Sub-Score, CR/IR/AR).",
   "pain_word_thresholds": {
@@ -32,5 +32,7 @@
     "moderate": "medium",
     "high": "high"
   },
-  "multi_agency_default": 0
+  "multi_agency_default": 0,
+  "likely_overdue_margin_days": 5,
+  "likely_overdue_margin_rationale": "REQ-DLN-2: an open finding is reported likely overdue once five days or fewer remain before its deadline. Five days matches the Class C evaluation window (VER-TFR-EVU): one operator needs at least that long to schedule, ship and verify a fix, so with less time left the deadline is likely to be missed."
 }

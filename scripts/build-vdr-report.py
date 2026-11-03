@@ -82,7 +82,8 @@ def _validate_pain_config(cfg, where):
                 "epss_threshold_rationale", "isc_cap",
                 "cvss_impact_weights", "requirement_weights",
                 "data_sensitivity_to_requirement", "mission_criticality_to_requirement",
-                "multi_agency_default"]
+                "multi_agency_default", "likely_overdue_margin_days",
+                "likely_overdue_margin_rationale"]
     missing = [k for k in required if k not in cfg]
     if missing:
         raise SystemExit(f"::error::PAIN config {where} missing required keys: {missing}")
@@ -102,6 +103,10 @@ def _validate_pain_config(cfg, where):
         raise SystemExit(f"::error::PAIN config {where}: epss_threshold_rationale must be a non-empty string")
     if not (0 < cfg["isc_cap"] <= 1):
         raise SystemExit(f"::error::PAIN config {where}: isc_cap must be in (0,1]")
+    if not isinstance(cfg["likely_overdue_margin_days"], int) or cfg["likely_overdue_margin_days"] < 1:
+        raise SystemExit(f"::error::PAIN config {where}: likely_overdue_margin_days must be a positive integer")
+    if not str(cfg["likely_overdue_margin_rationale"]).strip():
+        raise SystemExit(f"::error::PAIN config {where}: likely_overdue_margin_rationale must be non-empty")
     if cfg["multi_agency_default"] not in (0, 1):
         raise SystemExit(f"::error::PAIN config {where}: multi_agency_default must be 0 or 1")
 
@@ -525,7 +530,40 @@ def false_positive_checks():
     return fp
 
 
-def ingest_suppressions(checkov_yaml):
+DEFAULT_POAM_ITEMS = Path(__file__).resolve().parent.parent / "data" / "poam-items.json"
+
+
+def _decision_detection_dates(path=DEFAULT_POAM_ITEMS):
+    """{decision id: original detection date} from the decision records, the
+    source's own detection time for a suppression (REQ-SRC-1)."""
+    try:
+        doc = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    items = doc if isinstance(doc, list) else next((v for v in doc.values() if isinstance(v, list)), [])
+    out = {}
+    for i in items:
+        d = i.get("original_detection_date")
+        if i.get("id") and isinstance(d, str) and re.match(r"^\d{4}-\d{2}-\d{2}$", d):
+            out[i["id"]] = f"{d}T00:00:00+00:00"
+    return out
+
+
+def dedupe_findings(findings):
+    """Collapse scanner results that share a tracking ID (Checkov reports a
+    for_each resource once per instance, all at the same address) into one
+    finding with an occurrence count."""
+    seen = {}
+    for f in findings:
+        tid = f.get("tracking_id")
+        if tid in seen:
+            seen[tid]["occurrences"] = seen[tid].get("occurrences", 1) + 1
+        else:
+            seen[tid] = f
+    return list(seen.values())
+
+
+def ingest_suppressions(checkov_yaml, decision_records=DEFAULT_POAM_ITEMS):
     """Read .checkov.yaml's skip-check list and emit risk-accepted entries.
 
     Each entry becomes a risk-accepted record with VER-RPT-AVI fields populated
@@ -546,6 +584,7 @@ def ingest_suppressions(checkov_yaml):
         print(f"warning: could not read {p}: {exc}", file=sys.stderr)
         return suppressions
     fp = false_positive_checks()
+    detected = _decision_detection_dates(decision_records)
     for check_id in ids:
         if check_id in fp:
             continue  # false positive — handled by ingest_false_positives
@@ -560,6 +599,7 @@ def ingest_suppressions(checkov_yaml):
             "description": rationale,
             "resource": ".checkov.yaml",
             "current_disposition": "risk-accepted",
+            "detected_at": detected.get(POAM_BY_CHECK_ID.get(check_id)),
             "pain": evaluation["pain"],
             "is_kev": False,
             "explanation": rationale,
@@ -645,6 +685,7 @@ def ingest_dependabot(path):
             "severity": sev,
             "resource": f"{package.get('ecosystem','npm')}:{package.get('name','')}",
             "cve": adv.get("cve_id"),
+            "detected_at": alert.get("created_at"),
             # CVSS impact vector for the CVSS-Environmental PAIN derivation; absent
             # -> assign_pain falls back to the severity proxy.
             "cvss_vector": _extract_cvss_vector(adv.get("cvss")),
@@ -736,6 +777,17 @@ def ingest_grype(path):
 ZAP_RISK_TO_SEVERITY = {"3": "HIGH", "2": "MEDIUM", "1": "LOW", "0": "INFORMATIONAL"}
 
 
+def _zap_generated_iso(doc):
+    """The scan's own time from ZAP's '@generated' header, as ISO 8601, or None."""
+    stamp = str(doc.get("@generated") or "").strip()
+    for fmt in ("%a, %d %b %Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(stamp, fmt).replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            continue
+    return None
+
+
 def ingest_zap(path):
     """Load an OWASP ZAP JSON report (zaproxy/action-baseline `report_json`, or
     `zap.py ... -J report.json`). DAST source: each alert above informational is
@@ -752,6 +804,7 @@ def ingest_zap(path):
     except json.JSONDecodeError:
         return []
     findings = []
+    generated = _zap_generated_iso(doc)
     for site in doc.get("site") or []:
         target = site.get("@name", "")
         for a in site.get("alerts") or []:
@@ -770,6 +823,7 @@ def ingest_zap(path):
                 "resource": target,
                 "cve": cveid if cveid.upper().startswith("CVE-") else None,
                 "internet_reachable": True,
+                "detected_at": generated,
             })
     return findings
 
@@ -881,15 +935,17 @@ def ingest_epss(path):
     return scores
 
 
-def ingest_previous_ledger(path):
-    """Read the previous VDR report and return {tracking_id: first_detected}.
+_LEDGER_KEYS = ("first_detected", "first_evaluated", "clock_start", "historical_pain",
+                "rating_history", "completed_reductions")
 
-    The previous published VDR report acts as the first-detected ledger:
-    each finding's first_detected timestamp is preserved across builds by
-    looking it up here. New findings (not in the previous report) are
-    stamped with the current build time. Without a ledger, the Class C
-    SLA-clock cannot enforce remediation timeframes.
-    """
+
+def ingest_previous_ledger(path):
+    """The previous published VDR is the ledger (REQ-DLN-1). Returns
+    {tracking_id: {first_detected, first_evaluated, clock_start, pain,
+    historical_pain, rating_history, completed_reductions}} for every finding
+    and every risk-accepted record. A record published before first_evaluated
+    existed was evaluated in the build that detected it, so first_evaluated
+    defaults to first_detected."""
     if not path or not Path(path).exists():
         return {}
     try:
@@ -897,12 +953,83 @@ def ingest_previous_ledger(path):
     except json.JSONDecodeError:
         return {}
     ledger = {}
-    for f in prev.get("findings") or []:
-        tid = f.get("tracking_id")
-        first = f.get("first_detected")
-        if tid and first:
-            ledger[tid] = first
+    for section in ("findings", "risk_accepted"):
+        for f in prev.get(section) or []:
+            tid, first = f.get("tracking_id"), f.get("first_detected")
+            if not tid or not first:
+                continue
+            e = {k: f[k] for k in _LEDGER_KEYS if f.get(k) is not None}
+            e.setdefault("first_evaluated", first)
+            if f.get("current_pain") or f.get("pain"):
+                e["pain"] = f.get("current_pain") or f.get("pain")
+            ledger[tid] = e
     return ledger
+
+
+def _ts(value, fallback):
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return fallback
+
+
+def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_remediation):
+    """Clock, deadline, likely-overdue, maximum period and rating history for one
+    finding (REQ-DLN-1..3, REQ-PAI-2; T14, T34-T36).
+
+    - first_detected: the earliest of the ledger and the source's own time.
+    - first_evaluated: carried; set on the first build that evaluated it.
+    - clock_start: first_evaluated, moved only by a verified mitigation (T34);
+      any other change in evaluation re-selects the timeframe from the same
+      start (T35). No disposition pauses it.
+    - accepted: past first_evaluated + VER-TFR-MAV, never reset (T14, T36)."""
+    prior = prior or {}
+    candidates = [x for x in (prior.get("first_detected"), f.get("detected_at"), f.get("first_detected")) if x]
+    first_detected = min(candidates, key=lambda x: _ts(x, now)) if candidates else now.isoformat()
+    first_evaluated = prior.get("first_evaluated") or now.isoformat()
+    clock_start = prior.get("clock_start") or first_evaluated
+    if f.get("verified_mitigation_at") and _ts(f["verified_mitigation_at"], now) > _ts(clock_start, now):
+        clock_start = f["verified_mitigation_at"]
+    start_dt = _ts(clock_start, now)
+    due_dt = start_dt + timedelta(days=sla) if sla is not None else None
+    is_overdue = bool(needs_remediation and due_dt is not None and now > due_dt)
+    # Governed margin, capped at half the timeframe so a short deadline is not
+    # flagged the moment it opens.
+    margin = timedelta(days=min(margin_days, sla / 2)) if sla is not None else None
+    will_be_overdue = bool(needs_remediation and due_dt is not None and not is_overdue
+                           and (due_dt - now) <= margin)
+    accepted_dt = _ts(first_evaluated, now) + timedelta(days=mav_days)
+    accepted = bool(needs_remediation and now >= accepted_dt)
+    history = list(prior.get("rating_history") or [])
+    reductions = list(prior.get("completed_reductions") or [])
+    point = {"at": now.isoformat(), "pain": pain, "lev": lev, "irv": irv}
+    if not history:
+        history.append({**point, "reason": "first evaluation"})
+    else:
+        last = history[-1]
+        if (last.get("pain"), last.get("lev"), last.get("irv")) != (pain, lev, irv):
+            reason = "re-evaluation: " + "; ".join(
+                f"{k} {last.get(k)}->{v}" for k, v in (("pain", pain), ("lev", lev), ("irv", irv)) if last.get(k) != v)
+            if f.get("verified_mitigation_at"):
+                reason += "; verified mitigation"
+            history.append({**point, "reason": reason})
+            if last.get("pain") and last["pain"] > pain:
+                reductions.append({"at": now.isoformat(), "from": last["pain"], "to": pain, "reason": reason})
+    return {
+        "first_detected": first_detected,
+        "first_evaluated": first_evaluated,
+        "clock_start": clock_start,
+        "due_at": due_dt.isoformat() if due_dt else None,
+        "days_since_detected": (now - _ts(first_detected, now)).days,
+        "days_since_clock_start": (now - start_dt).days,
+        "is_overdue": is_overdue,
+        "will_be_overdue": will_be_overdue,
+        "accepted": accepted,
+        "accepted_at": accepted_dt.isoformat() if accepted else None,
+        "historical_pain": prior.get("historical_pain") or (history[0].get("pain") if history else pain),
+        "rating_history": history,
+        "completed_reductions": reductions,
+    }
 
 
 # =============================================================================
@@ -1461,7 +1588,7 @@ def consolidate_by_cve(report_findings, risk_accepted):
 
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
                  epss_scores=None, disposition_register=None, check_vectors=None,
-                 lev_overrides=None, inventory=None):
+                 lev_overrides=None, inventory=None, now=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
     # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
     # disposition_register: the operator vulnerability disposition register.
@@ -1477,7 +1604,9 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     if disposition_register is None:
         disposition_register = {}
     epss_scores = epss_scores or {}
-    now = datetime.now(timezone.utc)
+    now = now or datetime.now(timezone.utc)
+    mav_days = _rules.max_accepted_days()
+    margin_days = int(config["likely_overdue_margin_days"])
     report_findings = []
     summary = {
         "by_pain": {"N1": 0, "N2": 0, "N3": 0, "N4": 0, "N5": 0},
@@ -1528,25 +1657,21 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         is_suppressed = disposition is not None
 
         sla = class_c_sla_days(pain, lev, irv)
-        # First-detected lookup: prefer the ledger (previous published VDR
-        # report), then any caller-supplied value, then current build time.
-        # The ledger is what makes Class C SLA-clock enforcement real.
         tid = f["tracking_id"]
         if tid not in ledger and f.get("legacy_tracking_id") in ledger:
             tid = f["legacy_tracking_id"]  # identity changed format; keep the clock
         if tid in ledger:
-            first_detected_str = ledger[tid]
             summary["ledger_carried_forward"] += 1
         else:
-            first_detected_str = f.get("first_detected") or now.isoformat()
             summary["ledger_newly_detected"] += 1
-        try:
-            first_detected_dt = datetime.fromisoformat(first_detected_str.replace("Z", "+00:00"))
-        except ValueError:
-            first_detected_dt = now
-        days_since_detected = (now - first_detected_dt).days
+        # A false positive is not a vulnerability: nothing to remediate, no clock.
+        needs_remediation = disposition != "false-positive"
+        clk = clock_for(f, ledger.get(tid), now, pain, lev, irv, sla, mav_days, margin_days,
+                        needs_remediation)
+        first_detected_str = clk["first_detected"]
+        days_since_detected = clk["days_since_clock_start"]
         completed_eval = now.isoformat()
-        due_at = (first_detected_dt + timedelta(days=sla)).isoformat() if sla is not None else None
+        due_at = clk["due_at"]
 
         # Blocking conditions, in priority order:
         #   1. Any KEV-listed CVE without remediation (VDR-TFR-KEV / BOD 26-04).
@@ -1568,15 +1693,13 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         elif pain == "N5" and lev and irv:
             block_this = True
             block_reason = "N5+LEV+IRV (most-severe Class C tier)"
-        elif sla is not None and days_since_detected > sla:
+        elif clk["is_overdue"]:
             block_this = True
-            block_reason = f"past Class C SLA ({days_since_detected}d > {sla}d for PAIN={pain}, LEV={lev}, IRV={irv})"
+            block_reason = f"past Class C SLA ({days_since_detected}d > {sla}d from {clk['clock_start']} for PAIN={pain}, LEV={lev}, IRV={irv})"
 
-        # VER-RPT-VDT per-vulnerability record fields. We do not progressively
-        # reduce PAIN across builds (config findings are remediated outright,
-        # not down-rated), so historical == current PAIN and completed_reductions
-        # is empty; the next reduction is full remediation by the Class C due date.
-        is_overdue = sla is not None and days_since_detected > sla
+        # VER-RPT-VDT per-vulnerability record fields. History and reductions come
+        # from the ledger (REQ-PAI-2); the deadline runs whatever the disposition.
+        is_overdue = clk["is_overdue"]
         next_reduction = ({"estimated_time": due_at, "target_pain": "remediated"}
                           if sla is not None else None)
         overdue_explanation = (block_reason if block_this
@@ -1592,11 +1715,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "resource": f.get("resource", ""),
             "cve": f.get("cve"),
             "first_detected": first_detected_str,
-            "days_since_first_detected": days_since_detected,
+            "first_evaluated": clk["first_evaluated"],
+            "clock_start": clk["clock_start"],
+            "days_since_first_detected": clk["days_since_detected"],
             "completed_evaluation": completed_eval,
             "pain": pain,
             "current_pain": pain,
-            "historical_pain": pain,
+            "historical_pain": clk["historical_pain"],
+            "rating_history": clk["rating_history"],
             "component_id": cid,
             "unresolved_component": cid is None,
             "internet_reachable": irv,
@@ -1609,15 +1735,19 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
             "technical_impact": technical_impact(f),
             "is_kev": is_kev,
-            "completed_reductions": [],
-            "next_reduction": next_reduction if not is_suppressed else None,
+            "completed_reductions": clk["completed_reductions"],
+            "next_reduction": next_reduction if needs_remediation else None,
             "current_disposition": disposition or "open",
             "final_disposition": disposition or "open",
             "poam_ref": finding_poam_ref,
-            "remediation_sla_days": None if is_suppressed else sla,
-            "remediation_due_at": None if is_suppressed else due_at,
-            "is_overdue": False if is_suppressed else is_overdue,
-            "will_be_overdue": False,
+            "remediation_sla_days": sla if needs_remediation else None,
+            "remediation_due_at": due_at if needs_remediation else None,
+            "occurrences": f.get("occurrences", 1),
+            "is_overdue": is_overdue,
+            "will_be_overdue": clk["will_be_overdue"],
+            "accepted": clk["accepted"],
+            "accepted_at": clk["accepted_at"],
+            "acceptance_explanation": ("not recorded" if clk["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
                                     else f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
                                     if is_suppressed else overdue_explanation),
@@ -1653,6 +1783,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         s_lev, s_basis = lev_determination(s, epss_scores, config["epss_threshold"],
                                            is_kev=s.get("is_kev", False), irv=s_irv)
         s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
+        s_clk = clock_for(s, ledger.get(s["tracking_id"]), now, s_pain, s_lev, s_irv, None,
+                          mav_days, margin_days, False)
         risk_accepted_records.append({
             "tracking_id": s["tracking_id"],
             "poam_ref": s.get("poam_ref"),
@@ -1660,7 +1792,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "tool_id": s.get("tool_id"),
             "title": s.get("title", ""),
             "resource": s.get("resource", ""),
-            "first_detected": now.isoformat(),
+            "first_detected": s_clk["first_detected"],
+            "first_evaluated": s_clk["first_evaluated"],
             "completed_evaluation": now.isoformat(),
             "pain": s_pain,
             "component_id": s_cid,
@@ -1821,6 +1954,7 @@ def main():
                     print(f"::error::ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh monthly DAST scan and commit it.", file=sys.stderr)
                     return 1
 
+    findings = dedupe_findings(findings)
     kev_cves = ingest_kev(args.kev)
     epss_scores = ingest_epss(args.epss)
     suppressions = ingest_suppressions(args.checkov_yaml)
