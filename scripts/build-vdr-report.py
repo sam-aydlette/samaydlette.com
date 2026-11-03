@@ -982,6 +982,12 @@ def _no_direct_impact(m):
     return imp is not None and all(x == "N" for x in imp)
 
 
+PAIN_CLASSIFIER_DEVIATION = (
+    "REQ-PAI-4 deviation: impact is combined by the CVSS-Environmental function (impact "
+    "re-weighted by CR/IR/AR, governed word thresholds, scope flag) instead of the method's "
+    "default decision tables. The function, its config version and sha256 are published here.")
+
+
 def lev_determination(finding, epss_scores, epss_threshold, is_kev=False, irv=False):
     """VER-EVA-ELX by the method's Figure 7 (REQ-LEV-1). Each check stands alone
     and the first to fire decides. Returns (lev, basis).
@@ -1142,7 +1148,7 @@ _CIA_LETTER = {"N": "none", "L": "low", "H": "high"}
 # missing metadata must not lower PAIN, so an unknown asset scores loudly.
 _FAILSAFE_CLASSIFICATION = {
     "data_sensitivity": "cui", "mission_criticality": "high",
-    "internet_reachable": True, "agency_scope": "single",
+    "internet_reachable": True, "agency_scope": "multi",
 }
 
 # (severity word, scope m) -> N-level, per memo Eq. 4.
@@ -1327,11 +1333,12 @@ def requirement_triplet(classification, config):
 
 
 def scope_flag(classification, config):
-    """The multi-agency scope term m: 1 only if the asset is tagged multi-agency,
-    else the governed default (0 for this single-operator system)."""
-    if classification.get("agency_scope") == "multi":
-        return 1
-    return int(config.get("multi_agency_default", 0))
+    """The multi-agency scope term m (REQ-PAI-3, T44): 1 for an asset tagged
+    multi-agency or with no declared scope (missing is treated as multi-agency);
+    for an asset declared single-agency, the governed value (0 here)."""
+    if classification.get("agency_scope") == "single":
+        return int(config.get("multi_agency_default", 0))
+    return 1
 
 
 def severity_word(s, config):
@@ -1858,6 +1865,7 @@ def main():
     # is unavailable.
     report["methodology"] = {
         "pain_classifier": "cvss-environmental",
+        "pain_classifier_deviation": PAIN_CLASSIFIER_DEVIATION,
         "pain_classifier_fallback": ("governed per-check vector for config findings; severity-proxy "
                                      "where neither applies; total technical impact where no severity exists"),
         "lev_method": ("Figure 7, first match deciding: fully mitigated -> known exploited -> exploitation "

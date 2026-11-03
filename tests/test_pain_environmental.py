@@ -84,11 +84,12 @@ def test_vectorless_finding_uses_severity_proxy():
 
 
 def test_unresolved_asset_uses_failsafe_classification():
-    """A vectored CVE whose asset does not resolve scores loudly (memo s7):
-    fail-safe CR/IR/AR are all High, so an all-High impact reaches N4 (m=0)."""
+    """A vectored CVE whose asset does not resolve scores loudly (memo s7,
+    REQ-PAI-6): the fail-safe is mission critical and multi-agency, so an
+    all-High impact reaches N5 (m=1)."""
     f = {"severity": "HIGH", "resource": "pkg:pypi/unknown@9", "cve": "CVE-2026-0001",
          "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}
-    assert vdr.assign_pain(f, {}, CFG) == "N4"
+    assert vdr.assign_pain(f, {}, CFG) == "N5"
 
 
 def test_assign_pain_resolves_asset_from_classification_index():
