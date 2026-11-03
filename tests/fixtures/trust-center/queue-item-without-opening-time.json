@@ -1,0 +1,7 @@
+{
+  "_about": "Known-bad input for scripts/build-trust-center.py (REQ-QUE-1). An unclassified resource is queued, but nothing this build read records when it was observed: the boundary map has no generated_at, the inventory has no emitted_at and there is no previous trust center. The builder must refuse to publish a queue item without an opening time rather than stamp it with the build time.",
+  "signal": {"signal_id": "sig-1", "system_id": "sys", "categorization": {"impact_level": "moderate"},
+             "components": [{}], "ksis": []},
+  "boundary_map": {"ksi_signal_id": "sig-1", "health": {"unclassified": 1}, "trust_root_changes": [],
+                   "unclassified": ["aws::s3_bucket::orphan"], "nodes": []}
+}
