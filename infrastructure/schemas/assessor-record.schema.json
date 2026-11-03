@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/schemas/assessor-record.schema.json",
+  "title": "Assessor record (REQ-ASR-1)",
+  "description": "A finding, summary or comment written and signed by an assessor. The signature is ECDSA P-256 with SHA-256 over the canonical form of the record without its \"signature\" member: keys sorted, separators \",\" and \":\" with no whitespace, UTF-8, non-ASCII characters unescaped. The signer must be the assessor identity pinned at infrastructure/keys/assessor-identity.json. The provider never edits a record; outputs carry its text verbatim with the signature.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["record_type", "schema_version", "record_id", "assessor", "issued_at", "kind", "text", "signature"],
+  "properties": {
+    "record_type": {"const": "assessor-record"},
+    "schema_version": {"const": "1"},
+    "record_id": {"type": "string", "minLength": 1, "description": "The assessor's identifier for this record; unique."},
+    "assessor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organization", "key_id"],
+      "properties": {
+        "organization": {"type": "string", "minLength": 1},
+        "key_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "issued_at": {"type": "string", "format": "date-time"},
+    "kind": {"enum": ["finding", "summary", "comment"]},
+    "rule_id": {"type": "string", "minLength": 1, "description": "Optional. The SDR rule record this attaches to; a rule the SDR does not have fails the build."},
+    "text": {"type": "string", "minLength": 1},
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {"const": "ECDSA_P256_SHA256"},
+        "value": {"type": "string", "minLength": 1, "description": "Base64 DER signature."}
+      }
+    }
+  }
+}

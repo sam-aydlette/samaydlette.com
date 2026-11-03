@@ -1,0 +1,4 @@
+{
+  "_note": "REQ-IRV-11: where the outside-in probe (the monthly ZAP scan) was allowlisted at the edge, so its results there may not show what an unauthenticated stranger sees. Each entry needs url_prefix, reason, decided_by and decided_on; a malformed file fails the VDR build. A finding is allowlisted only when every URL it was observed at matches an entry. No edge allowlist exists for the scanner today (the estate has no WAF), so there are no entries.",
+  "entries": []
+}

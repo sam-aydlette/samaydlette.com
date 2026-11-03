@@ -32,6 +32,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import prop  # noqa: E402
+import _assessor  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
@@ -143,6 +144,10 @@ def main():
     ap.add_argument("--previous-sdr", default=None)
     ap.add_argument("--output", default="security-decision-record.json")
     ap.add_argument("--md-output", default="security-decision-record.md")
+    ap.add_argument("--assessor-records", default=str(_assessor.RECORDS_DIR),
+                    help="directory of signed assessor records (REQ-ASR-1); empty = no assessor record")
+    ap.add_argument("--assessor-identity", default=str(_assessor.IDENTITY_PATH),
+                    help="pinned assessor identity the records must verify against")
     a = ap.parse_args()
 
     now = datetime.now(timezone.utc)
@@ -160,6 +165,10 @@ def main():
 
     cmap = _control_map(ssp)
     records = build_records(catalog, cmap)
+    # REQ-ASR-1: assessor records enter only through the signed port; any record
+    # that does not verify fails the build. They are carried verbatim.
+    assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
+    assessor_block = _assessor.attach(records, assessor_records)
     metrics = build_metrics(records, len(cmap), vdr, signal, history, now)
 
     sdr = {
@@ -178,7 +187,11 @@ def main():
         "ksi_signal_id": (signal or {}).get("signal_id"),
         "rule_records": records,                 # SDR-CSO-FRR + SDR-CSX-KSI
         "metrics": metrics,                      # SDR-CSX-KMT
+        # REQ-ASR-1: verified, signed assessor records not tied to one rule, and
+        # the status ("no assessor record" when none exist).
+        "assessor_records": assessor_block,
     }
+    _assessor.verify_output(sdr, assessor_records)  # T74: output text == signed text
     Path(a.output).write_text(json.dumps(sdr, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(sdr) + "\n")
@@ -186,6 +199,23 @@ def main():
           f"{metrics['current']['controls_in_scope']} controls in scope; "
           f"{len(metrics['daily_metric_data'])} day(s) of metric history")
     return 0
+
+
+def _assessor_lines(sdr):
+    block = sdr.get("assessor_records") or {"status": _assessor.NO_RECORD, "records": []}
+    entries = list(block.get("records", []))
+    for r in sdr["rule_records"]:
+        entries += [dict(e, rule_id=r["rule_id"]) for e in r.get("assessor_comment_responses", [])]
+    if not entries:
+        return ["**Assessor records:** No assessor record. Nothing on this page was written "
+                "or signed by an assessor."]
+    out = [f"**Assessor records:** {block['status']}. Each is quoted verbatim from the "
+           "assessor's signed record; the signature is in the JSON."]
+    for e in sorted(entries, key=lambda e: e["record_id"]):
+        rule = f" (`{e['rule_id']}`)" if e.get("rule_id") else ""
+        out.append(f"- `{e['record_id']}`{rule}, {e['kind']}, {e['assessor']['organization']}, "
+                   f"{e['issued_at']}: > {e['text']}")
+    return out
 
 
 def render_markdown(sdr):
@@ -210,6 +240,7 @@ def render_markdown(sdr):
            "Independent verification and validation are N/A for this self-attested system "
            "(no FedRAMP Recognized assessor). Verification and validation below are the "
            "provider-side evidence an assessor would consume.", "",
+           *_assessor_lines(sdr), "",
            "| KSI | Controls | Explanation |", "|---|---|---|"]
     for r in sdr["rule_records"]:
         cids = ", ".join(c["control_id"] for c in r["controls"]) or "—"
