@@ -1,0 +1,9 @@
+{
+  "_note": "TEST FIXTURE ONLY. Throwaway key; the private half was discarded when the fixtures were generated.",
+  "assessor": "Example Assessor (test fixture)",
+  "key_id": "test-assessor-a",
+  "algorithm": "ECDSA_P256_SHA256",
+  "pinned_on": "2026-11-03",
+  "public_key_sha256": "b794c643f12e0a36f07ad6d8b1435308f7678a3f4d4e35893f2656067a7236a9",
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERFXO0GFUPyTyst3laPsldfN+rS2i\nbilFliwTLjVifSheR4DrIGEB8OtHpZSn9TlNWPbX/h/mPbKWxd4xxFfp4w==\n-----END PUBLIC KEY-----\n"
+}

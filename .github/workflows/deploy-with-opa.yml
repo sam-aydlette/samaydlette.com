@@ -1628,6 +1628,9 @@ jobs:
         python3 ../scripts/build-sdr.py \
           --ssp oscal-ssp.json --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
+        # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
+        # differs from the assessor's signed record, or a signed record is missing.
+        python3 ../scripts/_assessor.py --sdr security-decision-record.json
 
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure

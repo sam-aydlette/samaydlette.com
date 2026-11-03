@@ -1,0 +1,17 @@
+{
+  "record_type": "assessor-record",
+  "schema_version": "1",
+  "record_id": "ASR-TEST-1",
+  "assessor": {
+    "organization": "Example Assessor (test fixture)",
+    "key_id": "test-assessor-a"
+  },
+  "issued_at": "2026-11-01T00:00:00+00:00",
+  "kind": "finding",
+  "rule_id": "KSI-TEST-01",
+  "text": "Test fixture: the assessor observed nothing.",
+  "signature": {
+    "algorithm": "ECDSA_P256_SHA256",
+    "value": "MEUCIQCkI32IVS0feCyL4yiAoGV5pGf12QmCdbngD/g9PxhoswIgVLniPrdAG9RpyLMIVpY3VvlBpPjBqjxhvMw7BU5VnHM="
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "record_type": "assessor-record",
+  "schema_version": "1",
+  "record_id": "ASR-TEST-1",
+  "assessor": {
+    "organization": "Other Assessor (test fixture)",
+    "key_id": "test-assessor-b"
+  },
+  "issued_at": "2026-11-01T00:00:00+00:00",
+  "kind": "finding",
+  "rule_id": "KSI-TEST-01",
+  "text": "Test fixture: the assessor observed X.",
+  "signature": {
+    "algorithm": "ECDSA_P256_SHA256",
+    "value": "MEUCIQDRPi1fe+U1diwFLwMV9V7PwUgOj5eV545mhYXSPxSHSwIgeDTwQ3CtN6zC2NRf+BvMGl9XvY/xxOV0mG85wDt/5ng="
+  }
+}
