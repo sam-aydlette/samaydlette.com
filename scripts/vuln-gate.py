@@ -13,8 +13,8 @@
 #       operational-requirement (Rev5 term: real risk, deliberately accepted)
 #       accepted                (will not fix, with the acceptance explanation)
 #       mitigated               (only with a mitigation the VDR shows in force)
-#       vendor-dependency       (only while the VDR shows fix state not-fixed or
-#                                wont-fix; an unknown fix state counts as fixable)
+#       vendor-dependency       (only while the VDR shows fix state not-fixed;
+#                                an unknown fix state counts as fixable)
 #
 # under-investigation and remediate are recorded but do not pass. Passing this
 # gate never stops a deadline: the VDR's deadline gate still blocks an overdue
@@ -54,10 +54,9 @@ PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
 # (opa/checkov/tfsec) are governed separately via .checkov.yaml + the VDR maps.
 VULN_SOURCES = {"grype", "zap", "dependabot"}
 
-# The scanner fix states a vendor dependency needs: no fix yet ("not-fixed") or
-# none coming ("wont-fix"). The clock still runs, and past the maximum period the
-# finding is accepted. Mirrors no_fix_states in policies/triage.rego.
-NO_FIX_STATES = {"not-fixed", "wont-fix"}
+# The scanner fix state a vendor dependency needs: no fix yet. "wont-fix" (none
+# coming) is not a vendor dependency. Mirrors policies/triage.rego.
+NO_FIX_STATES = {"not-fixed"}
 
 
 def load_register(path):
@@ -160,7 +159,7 @@ def main():
     print("Each must be either fixed (so the scanner stops reporting it) or added to", file=sys.stderr)
     print(f"  {Path(args.register).name}  with a passing disposition in force (review_by not", file=sys.stderr)
     print("  passed): false-positive, accepted, operational-requirement, mitigated (with a", file=sys.stderr)
-    print("  mitigation in force) or vendor-dependency (only while no fix exists or none is coming).", file=sys.stderr)
+    print("  mitigation in force) or vendor-dependency (only while no fix exists).", file=sys.stderr)
     print("  Risk-adjustment, under-investigation and remediate do NOT pass.", file=sys.stderr)
     return 1
 

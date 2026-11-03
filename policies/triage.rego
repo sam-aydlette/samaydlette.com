@@ -277,14 +277,13 @@ record_status(e, item) := ["invalid", sprintf("unknown disposition %s", [py_repr
 	e.disposition == "mitigated"
 	truthy(object.get(e, "mitigation", null))
 	e.mitigation != item.mitigation.id
+} else := ["invalid", "fix state wont-fix: the vendor will not ship a fix, so this is not a vendor dependency; record it as accepted, or remediate another way"] if {
+	e.disposition == "vendor-dependency"
+	object.get(item, "fix_state", null) == "wont-fix"
 } else := ["invalid", sprintf("fix state %v: a fix may be available, so the vendor dependency has lapsed", [fix_state_word(item)])] if {
 	e.disposition == "vendor-dependency"
-	not object.get(item, "fix_state", null) in no_fix_states
+	object.get(item, "fix_state", null) != "not-fixed"
 } else := ["in-force", null]
-
-# Scanner fix states that hold a vendor dependency in force: no fix yet, or none
-# coming. The clock still runs; past VER-TFR-MAV the finding is accepted.
-no_fix_states := {"not-fixed", "wont-fix"}
 
 fix_state_word(item) := item.fix_state if {
 	truthy(object.get(item, "fix_state", null))
