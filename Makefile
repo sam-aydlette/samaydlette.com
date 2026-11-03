@@ -159,6 +159,11 @@ test:
 test-policies:
 	@echo "==> test-policies (opa)"
 	@$(MAKE) --no-print-directory -C infrastructure test-policies
+	@echo "==> test-policies (triage: the VDR's decisions)"
+	opa fmt --fail --list policies/
+	opa check --strict policies/
+	opa test --coverage --threshold 90 policies/ > /dev/null
+	opa test policies/
 
 # Artifact-dependent; reachable via check-full, never via check.
 reconcile:

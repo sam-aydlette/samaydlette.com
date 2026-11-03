@@ -1,0 +1,16 @@
+{
+  "_note": "Governed mitigation records (REQ-DSP, rule 1). A mitigation names a control by inventory component ID, the control's fingerprint when the decision was made (build-vdr-report.py --ksi-signal ksi-signal.json --fingerprint COMPONENT_ID), and a verifying check. It is void when the control's fingerprint changes, when the check has no passing result for the control, when the control leaves the inventory, or past review_by; a void mitigation withdraws the clock reset it earned. effect: full (fully mitigated: NLEV at the lowest impact level; needs verifying_check.signal 'runtime', the signed runtime signal, verified and fresh), not-reachable (NIRV) or not-likely-exploitable (NLEV; never for a KEV). A vulnerability covered here is recorded in data/vuln-dispositions.json as 'mitigated', never as 'false-positive'.",
+  "_example": {
+    "MIT-000": {
+      "finding": "CVE-2025-00000",
+      "control": {"component_id": "aws::waf::edge", "fingerprint": "sha256:<from --fingerprint>", "setting": "rule that rejects the payload"},
+      "verifying_check": {"signal": "runtime", "policy": "terraform.compliance"},
+      "effect": "full",
+      "justification": "Why the control removes the exploit path, and how the check shows the control is in place.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-03",
+      "review_by": "2027-11-03"
+    }
+  },
+  "mitigations": {}
+}

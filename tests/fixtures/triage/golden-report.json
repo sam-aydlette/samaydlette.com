@@ -1,0 +1,5271 @@
+{
+ "blocking": [
+  "kev-fp",
+  "m-nlev-kev",
+  "r-vendor-ok",
+  "overdue",
+  "mav",
+  "ovr-lapsed",
+  "ovr-excluded",
+  "ovr-kev"
+ ],
+ "report": {
+  "class": "C",
+  "cve_findings": [
+   {
+    "assets": [
+     "pkg:npm/a@1"
+    ],
+    "cve": "CVE-0000-1001",
+    "dispositions": [
+     "false-positive"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": true,
+    "pain": "N2",
+    "poam_refs": [
+     "POAM-901"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1002",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1003",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1004",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1005",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1006",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1007",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1008",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1009",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "nowhere"
+    ],
+    "cve": "CVE-0000-1010",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N5",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "pkg:npm/a@1"
+    ],
+    "cve": "CVE-0000-1011",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1012",
+    "dispositions": [
+     "mitigated"
+    ],
+    "first_detected": "2026-10-14T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N1",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1013",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1014",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1015",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": true,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1016",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-10-04T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1017",
+    "dispositions": [
+     "mitigated"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N1",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1020",
+    "dispositions": [
+     "mitigated"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [
+     "POAM-902"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1021",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1022",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1023",
+    "dispositions": [
+     "mitigated"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N1",
+    "poam_refs": [
+     "POAM-905"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1024",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1025",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1026",
+    "dispositions": [
+     "vendor-dependency"
+    ],
+    "first_detected": "2026-07-26T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N3",
+    "poam_refs": [
+     "POAM-908"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1027",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1028",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1029",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1030",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1031",
+    "dispositions": [
+     "under-investigation"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1032",
+    "dispositions": [
+     "operational-requirement"
+    ],
+    "first_detected": "2025-09-29T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [
+     "POAM-914"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1033",
+    "dispositions": [
+     "accepted"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1034",
+    "dispositions": [
+     "false-positive"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N3",
+    "poam_refs": [
+     "POAM-915"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1035",
+    "dispositions": [
+     "operational-requirement"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [
+     "POAM-916"
+    ],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1036",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N3",
+    "poam_refs": [],
+    "scanners": [
+     "checkov"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1040",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-02T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N3",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1041",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-06-06T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1042",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-04-17T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1043",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-04-29T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.public"
+    ],
+    "cve": "CVE-0000-1044",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-10-20T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N3",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1045",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-09-04T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1046",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-09-24T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "pkg:npm/b@1",
+     "pkg:npm/excluded@1",
+     "aws_s3_bucket.internal"
+    ],
+    "cve": "CVE-0000-1050",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N5",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "pkg:npm/c@1"
+    ],
+    "cve": "CVE-0000-1051",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N5",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "pkg:npm/d@1"
+    ],
+    "cve": "CVE-0000-1052",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": true,
+    "pain": "N5",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "pkg:npm/e@1"
+    ],
+    "cve": "CVE-0000-1053",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N1",
+    "poam_refs": [],
+    "scanners": [
+     "grype"
+    ]
+   },
+   {
+    "assets": [
+     "https://example.test"
+    ],
+    "cve": "ZAP-1",
+    "dispositions": [
+     "open"
+    ],
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "is_kev": false,
+    "pain": "N2",
+    "poam_refs": [],
+    "scanners": [
+     "zap"
+    ]
+   }
+  ],
+  "emitted_at": "2026-11-03T12:00:00+00:00",
+  "findings": [
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "KEV (CISA Known Exploited Vulnerability)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pkg",
+    "current_disposition": "false-positive",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1001",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "false-positive",
+     "key": "CVE-0000-1001",
+     "poam_ref": "POAM-901",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "false-positive",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "package-host-unrecorded",
+    "is_blocking": true,
+    "is_kev": true,
+    "is_overdue": false,
+    "lev_basis": "known-exploited",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
+    "pain": "N2",
+    "poam_ref": "POAM-901",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "pkg:npm/a@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1001",
+    "tracking_id": "kev-fp",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1002",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1002",
+    "tracking_id": "floor",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1003",
+    "cvss_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.0,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1003",
+    "tracking_id": "floor-v4",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1004",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-05-14T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-05-14T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1004",
+    "tracking_id": "floor-nirv",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "open",
+    "current_pain": "N1",
+    "cve": null,
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-direct-impact",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "informational severity; no remediation SLA applies",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_999",
+    "tracking_id": "no-impact",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1005",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1005",
+    "tracking_id": "pred-hi",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1006",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-05-14T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-05-14T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1006",
+    "tracking_id": "pred-lo",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1007",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.1,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1007",
+    "tracking_id": "pred-at",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1008",
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1008",
+    "tracking_id": "no-score",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1009",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.0,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "exploitation-observed",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1009",
+    "tracking_id": "observed",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "open",
+    "current_pain": "N1",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "informational severity; no remediation SLA applies",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_998",
+    "tracking_id": "cfg-noscore",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-edge",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "ZAP-1",
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "observed",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "https://example.test",
+    "source": "zap",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "ZAP-1",
+    "tracking_id": "irv-observed",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N5",
+    "cve": "CVE-0000-1010",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N5",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-19T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
+    "pain": "N5",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N5",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-19T12:00:00+00:00",
+    "remediation_sla_days": 16,
+    "resource": "nowhere",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1010",
+    "tracking_id": "irv-unresolved",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pkg",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1011",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "package-host-unrecorded",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-05-14T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-05-14T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "pkg:npm/a@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1011",
+    "tracking_id": "irv-package",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_997",
+    "tracking_id": "irv-inventory-false",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_996",
+    "tracking_id": "irv-inventory-true",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-10-14T12:00:00+00:00"
+     },
+     {
+      "mitigation": "MIT-1",
+      "start": "2026-10-31T00:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-10-31T00:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "mitigated",
+    "current_pain": "N1",
+    "cve": "CVE-0000-1012",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 20,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "mitigated",
+    "first_detected": "2026-10-14T12:00:00+00:00",
+    "first_evaluated": "2026-10-14T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": true,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "fully-mitigated",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "full",
+     "id": "MIT-1",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (mitigated); tracked as None",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1012",
+    "tracking_id": "m-full",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1013",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "mitigation",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "not-reachable",
+     "id": "MIT-2",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": {
+     "estimated_time": "2027-05-14T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-05-14T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1013",
+    "tracking_id": "m-nirv",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1014",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.9,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "mitigation",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "not-likely-exploitable",
+     "id": "MIT-3",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": {
+     "estimated_time": "2027-05-14T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-05-14T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1014",
+    "tracking_id": "m-nlev",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "KEV (CISA Known Exploited Vulnerability)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1015",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": true,
+    "is_kev": true,
+    "is_overdue": false,
+    "lev_basis": "known-exploited",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "not-likely-exploitable",
+     "id": "MIT-4",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1015",
+    "tracking_id": "m-nlev-kev",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-10-04T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-10-04T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "from": "N3",
+      "reason": "re-evaluation: pain N3->N2",
+      "to": "N2"
+     }
+    ],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1016",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 30,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-10-04T12:00:00+00:00",
+    "first_evaluated": "2026-10-04T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "full",
+     "id": "MIT-5",
+     "review_by": "2027-01-31",
+     "valid": false,
+     "verified_on": "2026-10-31T00:00:00+00:00",
+     "void_reason": "fingerprint differs"
+    },
+    "next_reduction": {
+     "estimated_time": "2026-11-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 30d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-10-04T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     },
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "re-evaluation: pain N3->N2"
+     },
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "mitigation MIT-5 void; clock returns to 2026-10-04T12:00:00+00:00"
+     }
+    ],
+    "remediation_due_at": "2026-11-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1016",
+    "tracking_id": "m-void",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "mitigated",
+    "current_pain": "N1",
+    "cve": "CVE-0000-1017",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "mitigated",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": true,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "fully-mitigated",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (mitigated); tracked as None",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1017",
+    "tracking_id": "fm-flag",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "mitigated",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1020",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "mitigated",
+     "key": "CVE-0000-1020",
+     "poam_ref": "POAM-902",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "mitigation",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "not-reachable",
+     "id": "MIT-6",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": "POAM-902",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1020",
+    "tracking_id": "r-mitigated-ok",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1021",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "mitigated",
+     "key": "CVE-0000-1021",
+     "poam_ref": "POAM-903",
+     "reason": "no mitigation in force for this finding",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1021",
+    "tracking_id": "r-mitigated-none",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1022",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "mitigated",
+     "key": "CVE-0000-1022",
+     "poam_ref": "POAM-904",
+     "reason": "names MIT-99 but MIT-7 covers the finding",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "mitigation",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "not-reachable",
+     "id": "MIT-7",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1022",
+    "tracking_id": "r-mitigated-other",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "mitigated",
+    "current_pain": "N1",
+    "cve": "CVE-0000-1023",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "mitigated",
+     "key": "CVE-0000-1023",
+     "poam_ref": "POAM-905",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "mitigated",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": true,
+    "historical_pain": "N1",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "fully-mitigated",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": {
+     "control": {
+      "component_id": "cmp-int"
+     },
+     "decided_by": "Operator",
+     "decided_on": "2026-10-31",
+     "effect": "full",
+     "id": "MIT-8",
+     "review_by": "2027-01-31",
+     "valid": true,
+     "verified_on": "2026-10-31T00:00:00+00:00"
+    },
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (mitigated); tracked as POAM-905",
+    "pain": "N1",
+    "poam_ref": "POAM-905",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1023",
+    "tracking_id": "r-mitigated-full",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1024",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "false-positive",
+     "key": "CVE-0000-1024",
+     "poam_ref": "POAM-906",
+     "reason": "names a control; a finding a control protects is recorded as mitigated, never as a false positive",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1024",
+    "tracking_id": "r-fp-control",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1025",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-01-01",
+     "disposition": "operational-requirement",
+     "key": "CVE-0000-1025",
+     "poam_ref": "POAM-907",
+     "reason": "review_by 2026-10-01 has passed",
+     "review_by": "2026-10-01",
+     "source": "vuln-dispositions",
+     "status": "lapsed"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1025",
+    "tracking_id": "r-lapsed",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "past Class C SLA (100d > 32d from 2026-07-26T12:00:00+00:00 for PAIN=N3, LEV=True, IRV=False)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-07-26T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-07-26T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "vendor-dependency",
+    "current_pain": "N3",
+    "cve": "CVE-0000-1026",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "days_since_first_detected": 100,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "vendor-dependency",
+     "key": "CVE-0000-1026",
+     "poam_ref": "POAM-908",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-07-26T12:00:00+00:00",
+    "first_evaluated": "2026-07-26T12:00:00+00:00",
+    "fix_state": "not-fixed",
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": true,
+    "is_kev": false,
+    "is_overdue": true,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-08-27T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "past Class C SLA (100d > 32d from 2026-07-26T12:00:00+00:00 for PAIN=N3, LEV=True, IRV=False)",
+    "pain": "N3",
+    "poam_ref": "POAM-908",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-08-27T12:00:00+00:00",
+    "remediation_sla_days": 32,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "total",
+    "title": "",
+    "tool_id": "CVE-0000-1026",
+    "tracking_id": "r-vendor-ok",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1027",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "vendor-dependency",
+     "key": "CVE-0000-1027",
+     "poam_ref": "POAM-909",
+     "reason": "fix state fixed: a fix may be available, so the vendor dependency has lapsed",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": "fixed",
+    "fix_versions": [
+     "2.0.0"
+    ],
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1027",
+    "tracking_id": "r-vendor-fixed",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1028",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "vendor-dependency",
+     "key": "CVE-0000-1028",
+     "poam_ref": "POAM-910",
+     "reason": "fix state unknown: a fix may be available, so the vendor dependency has lapsed",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1028",
+    "tracking_id": "r-vendor-unknown",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1029",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "wont-fix",
+     "key": "CVE-0000-1029",
+     "poam_ref": "POAM-911",
+     "reason": "unknown disposition 'wont-fix'",
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1029",
+    "tracking_id": "r-unknown-term",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1030",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "not recorded",
+     "decided_on": "not recorded",
+     "disposition": "accepted",
+     "key": "CVE-0000-1030",
+     "poam_ref": "POAM-912",
+     "reason": "review_by 'soon' is not a date",
+     "review_by": "soon",
+     "source": "vuln-dispositions",
+     "status": "invalid"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1030",
+    "tracking_id": "r-bad-date",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "under-investigation",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1031",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "under-investigation",
+     "key": "CVE-0000-1031",
+     "poam_ref": "POAM-913",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1031",
+    "tracking_id": "r-investigating",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": "not recorded",
+    "accepted": true,
+    "accepted_at": "2026-04-09T12:00:00+00:00",
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2025-09-29T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2025-09-29T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "operational-requirement",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1032",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 400,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "operational-requirement",
+     "key": "CVE-0000-1032",
+     "poam_ref": "POAM-914",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "operational-requirement",
+    "first_detected": "2025-09-29T12:00:00+00:00",
+    "first_evaluated": "2025-09-29T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": true,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-02-04T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (operational-requirement); tracked as POAM-914",
+    "pain": "N2",
+    "poam_ref": "POAM-914",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-02-04T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1032",
+    "tracking_id": "r-oprq",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "accepted",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1033",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "accepted",
+     "key": "CVE-0000-1033",
+     "poam_ref": null,
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1033",
+    "tracking_id": "r-accepted-noref",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "false-positive",
+    "current_pain": "N3",
+    "cve": "CVE-0000-1034",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "false-positive",
+     "key": "CVE-0000-1034",
+     "poam_ref": "POAM-915",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "false-positive",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-915",
+    "pain": "N3",
+    "poam_ref": "POAM-915",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "total",
+    "title": "",
+    "tool_id": "CVE-0000-1034",
+    "tracking_id": "r-fp",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "operational-requirement",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1035",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "not recorded",
+     "decided_on": "not recorded",
+     "disposition": "operational-requirement",
+     "key": "CVE-0000-1035",
+     "poam_ref": "POAM-916",
+     "reason": null,
+     "review_by": "not recorded",
+     "source": "vuln-dispositions",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "operational-requirement",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (operational-requirement); tracked as POAM-916",
+    "pain": "N2",
+    "poam_ref": "POAM-916",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1035",
+    "tracking_id": "r-no-review-by",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N3",
+    "cve": "CVE-0000-1036",
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-05T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 32d allowed",
+    "pain": "N3",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-05T12:00:00+00:00",
+    "remediation_sla_days": 32,
+    "resource": "aws_s3_bucket.internal",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1036",
+    "tracking_id": "r-config-ignored",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-08-05T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-08-05T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "risk-accepted",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 90,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "risk-accepted",
+     "key": "POAM-007",
+     "poam_ref": "POAM-007",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "decision-record",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "risk-accepted",
+    "first_detected": "2026-08-05T12:00:00+00:00",
+    "first_evaluated": "2026-08-05T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": true,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-09-22T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (risk-accepted); tracked as POAM-007",
+    "pain": "N2",
+    "poam_ref": "POAM-007",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-09-22T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_68",
+    "tracking_id": "c-ra",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2025-01-01",
+     "disposition": "risk-accepted",
+     "key": "POAM-009",
+     "poam_ref": "POAM-009",
+     "reason": "review_by 2026-06-01 has passed",
+     "review_by": "2026-06-01",
+     "source": "decision-record",
+     "status": "lapsed"
+    },
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_86",
+    "tracking_id": "c-ra-lapsed",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "risk-accepted",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "not recorded",
+     "decided_on": "not recorded",
+     "disposition": "risk-accepted",
+     "key": "POAM-010",
+     "poam_ref": "POAM-010",
+     "reason": null,
+     "review_by": "not recorded",
+     "source": "decision-record",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "risk-accepted",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-12-21T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (risk-accepted); tracked as POAM-010",
+    "pain": "N2",
+    "poam_ref": "POAM-010",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-12-21T12:00:00+00:00",
+    "remediation_sla_days": 48,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_117",
+    "tracking_id": "c-ra-tfsec",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "false-positive",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "Operator",
+     "decided_on": "2026-10-01",
+     "disposition": "false-positive",
+     "key": "POAM-003",
+     "poam_ref": "POAM-003",
+     "reason": null,
+     "review_by": "2027-04-01",
+     "source": "decision-record",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "false-positive",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-003",
+    "pain": "N2",
+    "poam_ref": "POAM-003",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.internal",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_144",
+    "tracking_id": "c-fp",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "false-positive",
+    "current_pain": "N2",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": {
+     "decided_by": "not recorded",
+     "decided_on": "not recorded",
+     "disposition": "false-positive",
+     "key": "POAM-004",
+     "poam_ref": "POAM-004",
+     "reason": null,
+     "review_by": "not recorded",
+     "source": "decision-record",
+     "status": "in-force"
+    },
+    "epss": null,
+    "final_disposition": "false-positive",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-004",
+    "pain": "N2",
+    "poam_ref": "POAM-004",
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_s3_bucket.internal",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_23",
+    "tracking_id": "c-fp-norecord",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-02T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-02T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N3",
+    "cve": "CVE-0000-1040",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "days_since_first_detected": 1,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-02T12:00:00+00:00",
+    "first_evaluated": "2026-11-02T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-18T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 1d of 16d allowed",
+    "pain": "N3",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-18T12:00:00+00:00",
+    "remediation_sla_days": 16,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "total",
+    "title": "",
+    "tool_id": "CVE-0000-1040",
+    "tracking_id": "n5-block",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "past Class C SLA (150d > 128d from 2026-06-06T12:00:00+00:00 for PAIN=N2, LEV=True, IRV=False)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-06-06T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-06-06T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1041",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 150,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-06-06T12:00:00+00:00",
+    "first_evaluated": "2026-06-06T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": true,
+    "is_kev": false,
+    "is_overdue": true,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-10-12T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "past Class C SLA (150d > 128d from 2026-06-06T12:00:00+00:00 for PAIN=N2, LEV=True, IRV=False)",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-10-12T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1041",
+    "tracking_id": "overdue",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": "not recorded",
+    "accepted": true,
+    "accepted_at": "2026-10-26T12:00:00+00:00",
+    "block_reason": "past Class C SLA (200d > 192d from 2026-04-17T12:00:00+00:00 for PAIN=N2, LEV=False, IRV=False)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-04-17T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-04-17T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1042",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 200,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-04-17T12:00:00+00:00",
+    "first_evaluated": "2026-04-17T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": true,
+    "is_kev": false,
+    "is_overdue": true,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-10-26T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "past Class C SLA (200d > 192d from 2026-04-17T12:00:00+00:00 for PAIN=N2, LEV=False, IRV=False)",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-10-26T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1042",
+    "tracking_id": "mav",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-04-29T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-04-29T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1043",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 188,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.01,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-04-29T12:00:00+00:00",
+    "first_evaluated": "2026-04-29T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-07T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 188d of 192d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": false,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-07T12:00:00+00:00",
+    "remediation_sla_days": 192,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1043",
+    "tracking_id": "likely-overdue",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": true
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-10-20T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-10-20T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-pub",
+    "current_disposition": "open",
+    "current_pain": "N3",
+    "cve": "CVE-0000-1044",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+    "days_since_first_detected": 14,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-10-20T12:00:00+00:00",
+    "first_evaluated": "2026-10-20T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N3",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "floor",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-05T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 14d of 16d allowed",
+    "pain": "N3",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N3",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-05T12:00:00+00:00",
+    "remediation_sla_days": 16,
+    "resource": "aws_s3_bucket.public",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "total",
+    "title": "",
+    "tool_id": "CVE-0000-1044",
+    "tracking_id": "likely-overdue-short",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": true
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-app",
+    "current_disposition": "open",
+    "current_pain": "N1",
+    "cve": null,
+    "cvss_vector": null,
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "informational severity; no remediation SLA applies",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "aws_lambda_function.app",
+    "source": "checkov",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CKV_AWS_995",
+    "tracking_id": "informational",
+    "unresolved_component": false,
+    "vector_source": null,
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-09-04T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-09-04T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1045",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 60,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-09-04T12:00:00+00:00",
+    "first_evaluated": "2026-09-04T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-01-10T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 60d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-01-10T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1045",
+    "tracking_id": "legacy-id",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1046",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 40,
+    "description": "",
+    "disposition_record": null,
+    "epss": null,
+    "final_disposition": "open",
+    "first_detected": "2026-09-24T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "no-score",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1046",
+    "tracking_id": "detected-earlier",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N5",
+    "cve": "CVE-0000-1050",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N5",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "override",
+    "lev_override": "OVR-1",
+    "likely_exploitable": false,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-19T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
+    "pain": "N5",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": false,
+      "pain": "N5",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-19T12:00:00+00:00",
+    "remediation_sla_days": 16,
+    "resource": "pkg:npm/b@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1050",
+    "tracking_id": "ovr",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "N5+LEV+IRV (most-severe Class C tier)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N5",
+    "cve": "CVE-0000-1051",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N5",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": true,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-05T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
+    "pain": "N5",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N5",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-05T12:00:00+00:00",
+    "remediation_sla_days": 2,
+    "resource": "pkg:npm/c@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1051",
+    "tracking_id": "ovr-lapsed",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "N5+LEV+IRV (most-severe Class C tier)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N5",
+    "cve": "CVE-0000-1050",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N5",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": true,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-05T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
+    "pain": "N5",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N5",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-05T12:00:00+00:00",
+    "remediation_sla_days": 2,
+    "resource": "pkg:npm/excluded@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1050",
+    "tracking_id": "ovr-excluded",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": "KEV (CISA Known Exploited Vulnerability)",
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N5",
+    "cve": "CVE-0000-1052",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N5",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": true,
+    "is_kev": true,
+    "is_overdue": false,
+    "lev_basis": "known-exploited",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2026-11-05T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
+    "pain": "N5",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N5",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2026-11-05T12:00:00+00:00",
+    "remediation_sla_days": 2,
+    "resource": "pkg:npm/d@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1052",
+    "tracking_id": "ovr-kev",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": "cmp-int",
+    "current_disposition": "open",
+    "current_pain": "N2",
+    "cve": "CVE-0000-1050",
+    "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.5,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N2",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "prediction",
+    "lev_override": null,
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": {
+     "estimated_time": "2027-03-11T12:00:00+00:00",
+     "target_pain": "remediated"
+    },
+    "occurrences": 1,
+    "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
+    "pain": "N2",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": false,
+      "lev": true,
+      "pain": "N2",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": "2027-03-11T12:00:00+00:00",
+    "remediation_sla_days": 128,
+    "resource": "aws_s3_bucket.internal",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1050",
+    "tracking_id": "ovr-selector-miss",
+    "unresolved_component": false,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   },
+   {
+    "acceptance_explanation": null,
+    "accepted": false,
+    "accepted_at": null,
+    "block_reason": null,
+    "clock_basis": [
+     {
+      "mitigation": null,
+      "start": "2026-11-03T12:00:00+00:00"
+     }
+    ],
+    "clock_start": "2026-11-03T12:00:00+00:00",
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "completed_reductions": [],
+    "component_id": null,
+    "current_disposition": "open",
+    "current_pain": "N1",
+    "cve": "CVE-0000-1053",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+    "days_since_first_detected": 0,
+    "description": "",
+    "disposition_record": null,
+    "epss": {
+     "model_version": "v2026.06.15",
+     "score": 0.0,
+     "score_date": "2026-11-03T00:00:00Z"
+    },
+    "final_disposition": "open",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "fix_state": null,
+    "fix_versions": null,
+    "fully_mitigated": false,
+    "historical_pain": "N1",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_blocking": false,
+    "is_kev": false,
+    "is_overdue": false,
+    "lev_basis": "override",
+    "lev_override": "OVR-4",
+    "likely_exploitable": true,
+    "mitigation": null,
+    "next_reduction": null,
+    "occurrences": 1,
+    "overdue_explanation": "informational severity; no remediation SLA applies",
+    "pain": "N1",
+    "poam_ref": null,
+    "rating_history": [
+     {
+      "at": "2026-11-03T12:00:00+00:00",
+      "irv": true,
+      "lev": true,
+      "pain": "N1",
+      "reason": "first evaluation"
+     }
+    ],
+    "remediation_due_at": null,
+    "remediation_sla_days": null,
+    "resource": "pkg:npm/e@1",
+    "source": "grype",
+    "supplementary_info": "",
+    "technical_impact": "partial",
+    "title": "",
+    "tool_id": "CVE-0000-1053",
+    "tracking_id": "ovr-raise",
+    "unresolved_component": true,
+    "vector_source": "scanner",
+    "will_be_overdue": false
+   }
+  ],
+  "impact_level": "Moderate",
+  "ksi_signal_ref": "/.well-known/ksi-signal.json",
+  "poam_ref": "docs/poam.md",
+  "report_version": "1.2.0",
+  "risk_accepted": [
+   {
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "component_id": null,
+    "current_disposition": "risk-accepted",
+    "cvss_vector": null,
+    "explanation": "",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "internet_reachable": true,
+    "irv_basis": "unresolved",
+    "is_kev": false,
+    "lev_basis": "no-score",
+    "likely_exploitable": true,
+    "pain": "N2",
+    "poam_ref": "POAM-007",
+    "resource": ".checkov.yaml",
+    "source": "checkov-suppression",
+    "title": "",
+    "tool_id": "CKV_AWS_68",
+    "tracking_id": "CKV_AWS_68",
+    "vector_source": null
+   },
+   {
+    "completed_evaluation": "2026-11-03T12:00:00+00:00",
+    "component_id": "cmp-int",
+    "current_disposition": "risk-accepted",
+    "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+    "explanation": "",
+    "first_detected": "2026-11-03T12:00:00+00:00",
+    "first_evaluated": "2026-11-03T12:00:00+00:00",
+    "internet_reachable": false,
+    "irv_basis": "inventory",
+    "is_kev": false,
+    "lev_basis": "no-direct-impact",
+    "likely_exploitable": false,
+    "pain": "N1",
+    "poam_ref": null,
+    "resource": "aws_s3_bucket.internal",
+    "source": "checkov-suppression",
+    "title": "",
+    "tool_id": "CKV_AWS_18",
+    "tracking_id": "CKV_AWS_18",
+    "vector_source": "governed-check-vector"
+   }
+  ],
+  "rules_reference": {
+   "evaluation": "FedRAMP 20x VER-EVA-* (PAIN, IRV, LEV)",
+   "fedramp_rules": {
+    "commit": "64fa769510416fa75fd00a4689466094265b8083",
+    "path": "fedramp-consolidated-rules.json",
+    "sha256": "782faecae3eee4aa2aa9d32cdb0de4c929524f2e41dc1f3d143a94a9ca64c4e3",
+    "source": "https://github.com/FedRAMP/rules",
+    "version": "2026.11.02.01"
+   },
+   "kev": "VDR-TFR-KEV / CISA BOD 26-04",
+   "reporting": "FedRAMP 20x VER-RPT-VDT (per-vulnerability), VER-RPT-AVI (accepted); human-readable rendering published per VER-TFR-MHR",
+   "timeframes": "FedRAMP 20x VDR-TFR-PVR Class C remediation; VDR-TFR-PDD 14-day drift detection; VER-TFR-EVU 5-day evaluation; VDR-TFR-MVX 3-day machine V&V"
+  },
+  "summary": {
+   "blocking": 8,
+   "by_pain": {
+    "N1": 4,
+    "N2": 34,
+    "N3": 4,
+    "N4": 0,
+    "N5": 5
+   },
+   "dispositioned_findings": 11,
+   "kev": 2,
+   "lapsed_dispositions": [
+    "CVE-0000-1025",
+    "POAM-009"
+   ],
+   "ledger_carried_forward": 11,
+   "ledger_newly_detected": 47,
+   "risk_accepted": 4,
+   "total_findings": 47,
+   "unique_cves": 46,
+   "unique_cves_open": 35,
+   "unmatched_dispositions": [
+    "CVE-0000-1036",
+    "CVE-0000-9999"
+   ],
+   "unmatched_mitigations": [
+    "MIT-unused"
+   ],
+   "unresolved_components": 6
+  },
+  "system_id": "urn:samaydlette:website-prod"
+ }
+}

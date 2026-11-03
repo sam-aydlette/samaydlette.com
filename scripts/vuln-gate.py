@@ -6,9 +6,19 @@
 # severity (Critical/High/Medium/Low) fails the build unless it is handled.
 # A vulnerability is handled only if it is:
 #   - remediated  (no longer reported by the scanner — it simply isn't here), or
-#   - dispositioned in data/vuln-dispositions.json as one of:
-#       false-positive          (no real risk / not applicable), or
-#       operational-requirement (real risk, deliberately accepted).
+#   - dispositioned in data/vuln-dispositions.json, in force (review_by not
+#     passed), as one of:
+#       false-positive          (the reason lives in the scanned artifact; a
+#                                false positive naming a control does not pass)
+#       operational-requirement (Rev5 term: real risk, deliberately accepted)
+#       accepted                (will not fix, with the acceptance explanation)
+#       mitigated               (only with a mitigation the VDR shows in force)
+#       vendor-dependency       (only while the VDR shows fix state not-fixed;
+#                                an unknown fix state counts as fixable)
+#
+# under-investigation and remediate are recorded but do not pass. Passing this
+# gate never stops a deadline: the VDR's deadline gate still blocks an overdue
+# vendor dependency or partly mitigated finding.
 #
 # A risk-adjusted vulnerability still has a severity, so it does NOT pass — fix
 # it. There is no SLA-with-a-future-date pass state for vulnerabilities: you
@@ -30,16 +40,23 @@
 import argparse
 import json
 import sys
+from datetime import date
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-# The only two dispositions that let a vulnerability pass the build.
-PASS_DISPOSITIONS = {"false-positive", "operational-requirement"}
+# The only dispositions that let a vulnerability pass the build; mitigated and
+# vendor-dependency also need their evidence (see handled()).
+PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
+                     "mitigated", "vendor-dependency"}
 
 # Sources that produce vulnerabilities (gated here). Config scanners
 # (opa/checkov/tfsec) are governed separately via .checkov.yaml + the VDR maps.
 VULN_SOURCES = {"grype", "zap", "dependabot"}
+
+# The scanner fix state a vendor dependency needs: no fix yet. "wont-fix" (none
+# coming) is not a vendor dependency. Mirrors policies/triage.rego.
+NO_FIX_STATES = {"not-fixed"}
 
 
 def load_register(path):
@@ -58,8 +75,19 @@ def vulns_from_vdr(vdr):
             continue
         vid = f.get("cve") or f.get("tracking_id") or f.get("tool_id")
         if vid:
+            # Evidence the builder evaluated: a mitigation in force, and the
+            # scanner's fix state. One ID can cover several findings (one CVE in
+            # several packages); the evidence must hold on every one of them.
+            mit = (f.get("mitigation") or {}).get("valid") is True
+            fix = f.get("fix_state")
+            prev = out.get(vid)
+            if prev:
+                mit = mit and prev["mitigation_valid"]
+                if prev["fix_state"] not in NO_FIX_STATES:
+                    fix = prev["fix_state"]
             out[vid] = {"id": vid, "severity": (f.get("severity") or "").upper(),
-                        "source": f.get("source", "vdr")}
+                        "source": f.get("source", "vdr"),
+                        "mitigation_valid": mit, "fix_state": fix}
     for c in vdr.get("cve_findings", []) or []:
         vid = c.get("cve") or c.get("id") or c.get("tracking_id")
         if vid and vid not in out:
@@ -73,14 +101,32 @@ def disposition_of(vuln_id, register):
     return entry.get("disposition")
 
 
-def find_unhandled(vulns, register):
-    """Return the vulnerabilities that are neither false-positive nor
-    operational-requirement in the register."""
-    unhandled = []
-    for v in vulns:
-        if disposition_of(v["id"], register) not in PASS_DISPOSITIONS:
-            unhandled.append(v)
-    return unhandled
+def handled(v, entry, today):
+    """True when the register entry is in force and its disposition passes with
+    the evidence it needs. A record past review_by is absent."""
+    disp = (entry or {}).get("disposition")
+    if disp not in PASS_DISPOSITIONS:
+        return False
+    review_by = entry.get("review_by")
+    if review_by:
+        try:
+            if date.fromisoformat(str(review_by)) < today:
+                return False
+        except ValueError:
+            return False
+    if disp == "false-positive" and entry.get("mitigation"):
+        return False
+    if disp == "mitigated" and v.get("mitigation_valid") is not True:
+        return False
+    if disp == "vendor-dependency" and v.get("fix_state") not in NO_FIX_STATES:
+        return False
+    return True
+
+
+def find_unhandled(vulns, register, today=None):
+    """Return the vulnerabilities the register does not handle."""
+    today = today or date.today()
+    return [v for v in vulns if not handled(v, register.get(v["id"]), today)]
 
 
 def main():
@@ -102,7 +148,7 @@ def main():
     unhandled = find_unhandled(vulns, register)
 
     if not unhandled:
-        print(f"vulnerability gate: OK — {len(vulns)} scanned, all remediated or dispositioned (FP/OR)")
+        print(f"vulnerability gate: OK — {len(vulns)} scanned, all remediated or dispositioned in force")
         return 0
 
     print(f"VULNERABILITY GATE FAILED — {len(unhandled)} uncategorized vulnerability(ies):", file=sys.stderr)
@@ -111,8 +157,10 @@ def main():
         print(f"  ✗ {v['id']} [{sev}] (source: {v.get('source','?')})", file=sys.stderr)
     print("", file=sys.stderr)
     print("Each must be either fixed (so the scanner stops reporting it) or added to", file=sys.stderr)
-    print(f"  {Path(args.register).name}  with a disposition of 'false-positive' or", file=sys.stderr)
-    print("  'operational-requirement' and a justification. Risk-adjustment does NOT pass.", file=sys.stderr)
+    print(f"  {Path(args.register).name}  with a passing disposition in force (review_by not", file=sys.stderr)
+    print("  passed): false-positive, accepted, operational-requirement, mitigated (with a", file=sys.stderr)
+    print("  mitigation in force) or vendor-dependency (only while no fix exists).", file=sys.stderr)
+    print("  Risk-adjustment, under-investigation and remediate do NOT pass.", file=sys.stderr)
     return 1
 
 

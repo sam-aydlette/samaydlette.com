@@ -1,0 +1,9 @@
+{
+  "description": "KNOWN-BAD FIXTURE: N5 IRV+LEV timeframe edited without updating the hash; the build must fail.",
+  "repository": "https://github.com/FedRAMP/rules",
+  "path": "fedramp-consolidated-rules.json",
+  "commit": "64fa769510416fa75fd00a4689466094265b8083",
+  "version": "2026.11.02.01",
+  "retrieved": "2026-11-03",
+  "sha256": "782faecae3eee4aa2aa9d32cdb0de4c929524f2e41dc1f3d143a94a9ca64c4e3"
+}

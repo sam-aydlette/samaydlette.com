@@ -1,0 +1,4 @@
+{
+  "description": "REQ-LEV-4 LEV override decision records. Each covers one advisory across components matched by a glob selector, minus named exclusions; it is published with every finding it covers, lapses at review_by, and never clears a known-exploited finding.",
+  "overrides": {}
+}

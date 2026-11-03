@@ -525,7 +525,7 @@ def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
         "thresholds": {
             "about": "Numbers the automation acts on. Each is set in code and changes only in review.",
             "items": [
-                {"name": "Remediation SLA (FedRAMP Class C)", "value": "2 to 192 days by PAIN, internet reachability and exploitability; none for N1", "source": "scripts/build-vdr-report.py CLASS_C_SLA_DAYS"},
+                {"name": "Remediation SLA (FedRAMP Class C)", "value": "2 to 192 days by PAIN, internet reachability and exploitability; none for N1", "source": "FedRAMP machine-readable rules (VDR-TFR-PVR), pinned in infrastructure/schemas/fedramp-rules/"},
                 {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
                 {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
                 {"name": "Runtime divergence pre-flight staleness", "value": "48 hours", "source": "scripts/check-runtime-divergence.py"},
