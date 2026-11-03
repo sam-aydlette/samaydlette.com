@@ -253,3 +253,15 @@ def test_independent_corroboration_is_reported_and_its_findings_queued():
     doc = build(corroboration=found)
     assert picture(doc)["corroboration"] == "attention"
     assert ("boundary_not_inventoried", "tap:dynamodb_table:lock") in kinds(doc)
+
+
+def test_the_output_records_the_governed_freshness_config():
+    # REQ-GOV-1: every output records the version of the configuration it used.
+    doc = build()
+    fc = doc["freshness_config"]
+    assert fc["version"] == btc.FRESHNESS["version"] and len(fc["sha256"]) == 64
+    assert fc["source"] == "infrastructure/schemas/freshness-config.json"
+    assert fc["windows_hours"][".well-known/vdr-report.json"] == doc["freshness_windows_hours"]["vulnerability_scan"]
+    assert doc["freshness_windows_hours"]["corroboration"] == fc["windows_hours"][".well-known/boundary-corroboration.json"]
+    sources = {t["name"]: t["source"] for t in doc["policy_catalog"]["thresholds"]["items"]}
+    assert sources["Vulnerability evidence freshness"] == fc["source"]

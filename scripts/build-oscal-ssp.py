@@ -1340,10 +1340,12 @@ _COMPONENT_TEXT = {
         "API Gateway behind Cognito authentication."),
     ("function", "evidence_watchdog"): (
         "Lambda function (evidence SLA watchdog)",
-        "Hourly evidence SLA watchdog. Reads the published VDR, the runtime "
-        "signal and the evidence nightly's status beacon from the site bucket "
-        "over the AWS API and publishes their ages as CloudWatch metrics; "
-        "three alarms email the operator through a CMK-encrypted SNS topic."),
+        "Hourly evidence SLA watchdog. Reads every artifact published under "
+        "/.well-known/ that the governed freshness configuration lists, from "
+        "the site bucket over the AWS API, and publishes the VDR's and runtime "
+        "signal's ages, the nightly's result and the count of artifacts past "
+        "their window as CloudWatch metrics; four alarms email the operator "
+        "through a CMK-encrypted SNS topic."),
 }
 
 

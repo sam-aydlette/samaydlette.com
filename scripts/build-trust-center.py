@@ -24,6 +24,7 @@ import argparse
 import csv
 import importlib.util
 import json
+import os
 import re
 import sys
 from datetime import date, datetime, timezone
@@ -34,14 +35,22 @@ from typing import Any
 SCHEMA = "trust-center/1"
 REPO = Path(__file__).resolve().parent.parent
 
-# Freshness windows. They mirror the watchdog alarms in infrastructure/watchdog.tf
-# (vdr-age > 24h, runtime-age > 26h); the trust center reports against the same
-# thresholds that page the operator.
-VDR_MAX_AGE_HOURS = 24
-RUNTIME_MAX_AGE_HOURS = 26
+# Freshness windows, from the governed config (infrastructure/schemas/
+# freshness-config.json) that the watchdog alarms and the published-evidence
+# check also read, so the trust center reports against the thresholds that page
+# the operator. Loaded at import and fail-closed: no config, no trust center.
+# FRESHNESS_CONFIG names another file (tests); it is validated the same way.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _freshness import load_freshness_config  # noqa: E402
+
+FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
+VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
+RUNTIME_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/ksi-signal-runtime.json"]
 # The independent corroboration (RAMPART on TAP) runs on the operator's machine;
 # older than this, the map is no longer independently checked.
-CORROBORATION_MAX_AGE_DAYS = 30
+CORROBORATION_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/boundary-corroboration.json"]
+CORROBORATION_MAX_AGE_DAYS = CORROBORATION_MAX_AGE_HOURS / 24
+FRESHNESS_SOURCE = "infrastructure/schemas/freshness-config.json"
 # An accepted exception this close to expiry is a renewal decision now, not later.
 EXCEPTION_WARNING_DAYS = 30
 # Days of escalation-rate history the artifact carries forward.
@@ -177,7 +186,7 @@ def corroboration_verdict(report: dict[str, Any] | None, now: datetime) -> tuple
         parts.append(f"{s['relationships_tap_only']} relationship(s) the map does not draw")
     stale = days is None or days > CORROBORATION_MAX_AGE_DAYS
     when = "" if days is None else ("today" if days < 1 else f"{days:g} days ago")
-    detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS} days)." if when else ".")
+    detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS:g} days)." if when else ".")
     differs = any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
     return ("attention" if stale or differs else "ok"), detail
 
@@ -241,7 +250,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         age = _age_hours(runtime.get("emitted_at"), now)
         stale = age is None or age > RUNTIME_MAX_AGE_HOURS
         detail = f"{div.get('status', 'unknown')}: {div.get('ksis_compared', 0)} KSIs compared, {len(div.get('regressions', []))} regressed, {len(div.get('unassessed', []))} not assessed"
-        detail += f"; {age} h old (window {RUNTIME_MAX_AGE_HOURS} h)." if age is not None else "."
+        detail += f"; {age} h old (window {RUNTIME_MAX_AGE_HOURS:g} h)." if age is not None else "."
         add("runtime", "Runtime evidence (daily emitter)",
             "ok" if div.get("status") == "converged" and not stale else "attention",
             detail, runtime.get("emitted_at"), "/.well-known/ksi-signal-runtime.json")
@@ -255,7 +264,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         add("vulnerability_scan", "Nightly vulnerability evidence",
             "ok" if nightly.get("result") == "success" and fresh else "attention",
             f"Last nightly run: {nightly.get('result', 'unknown')}"
-            + (f", {age} h ago (window {VDR_MAX_AGE_HOURS} h)." if age is not None else "."),
+            + (f", {age} h ago (window {VDR_MAX_AGE_HOURS:g} h)." if age is not None else "."),
             nightly.get("finished_at"), "/.well-known/vdr-status.json")
 
     add_corroboration(add, inp.get("corroboration"), now)
@@ -389,10 +398,13 @@ def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
             "about": "Numbers the automation acts on. Each is set in code and changes only in review.",
             "items": [
                 {"name": "Remediation SLA (FedRAMP Class C)", "value": "2 to 192 days by PAIN, internet reachability and exploitability; none for N1", "source": "scripts/build-vdr-report.py CLASS_C_SLA_DAYS"},
-                {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
-                {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
+                {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
+                {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
                 {"name": "Runtime divergence pre-flight staleness", "value": "48 hours", "source": "scripts/check-runtime-divergence.py"},
-                {"name": "Independent corroboration freshness", "value": f"{CORROBORATION_MAX_AGE_DAYS} days", "source": "scripts/build-trust-center.py"},
+                {"name": "Independent corroboration freshness", "value": f"{CORROBORATION_MAX_AGE_DAYS:g} days", "source": FRESHNESS_SOURCE},
+                {"name": "Published evidence freshness (every /.well-known/ output)",
+                 "value": f"{len(FRESHNESS['windows'])} artifacts, {min(FRESHNESS['windows'].values()):g} to {max(FRESHNESS['windows'].values()):g} hours",
+                 "source": FRESHNESS_SOURCE},
                 {"name": "Exception renewal warning", "value": f"{EXCEPTION_WARNING_DAYS} days before expiry", "source": "scripts/build-trust-center.py"},
                 {"name": "Minimum TLS policy", "value": str(config.get("tls", {}).get("minimum")), "source": "infrastructure/policy/config/data.json"},
                 {"name": "Required resource tags", "value": ", ".join(config.get("required_tags", [])), "source": "infrastructure/policy/config/data.json"},
@@ -528,7 +540,12 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         # The page re-checks the two evidence streams that change between
         # deploys (runtime signal, nightly beacon) live, against these windows.
         "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS,
-                                    "corroboration": CORROBORATION_MAX_AGE_DAYS * 24},
+                                    "corroboration": CORROBORATION_MAX_AGE_HOURS},
+        # Which governed windows this build used (REQ-GOV-1: outputs record the
+        # version of the configuration they were built under).
+        "freshness_config": {"version": FRESHNESS["version"], "sha256": FRESHNESS["sha256"], "source": FRESHNESS_SOURCE,
+                             "decided_by": FRESHNESS["decided_by"], "decided_on": FRESHNESS["decided_on"],
+                             "review_by": FRESHNESS["review_by"], "windows_hours": FRESHNESS["windows"]},
         "decisions_pending": pending,
         # What the page needs to rebuild the date-driven part of the queue live,
         # so an empty queue is true on the day it is read, not only the day it
