@@ -94,7 +94,7 @@ Only corrections. Everything not listed here was confirmed as written.
 | G15 | REQ-DSP-2; T16 | `review_by` read only by the trust center (`build-trust-center.py:360-363`). | A lapsed disposition would stop exempting its finding; G2/G3 gates could then block. Need a check of today's `review_by` dates before merging. | S | Fix code |
 | N-DSP-1 | REQ-DSP-1 | Published VDR finding carries only `current_disposition` and `poam_ref`; 16 of 37 POA&M items lack decision fields; missing fields published as `null` + `gaps`, not "not recorded"; vocabulary lacks mitigated, overdue, accepted. | — | S-M | Fix code |
 | N-DSP-3 | REQ-DSP-3 | Not-present vs protected, under-investigation vs waiting, will-not-fix vs cannot-fix-yet: all collapsed into false-positive. | Several FPs would be relabeled. | M (with G3, N-VD) | Fix code |
-| N-DSP-4 | REQ-DSP-4 | POAM-034 and POAM-035 are in the register, POA&M and trust center, but not in the signed VDR (live `false_positives` lists 6 Checkov items only). Live VDR has 0 Grype findings. Cause not established. | Two FP records would appear in the VDR. | S-M | Investigate, then fix |
+| N-DSP-4 | REQ-DSP-4 | POAM-034 and POAM-035 are in the register, POA&M and trust center, but not in the signed VDR (live `false_positives` lists 6 Checkov items only). Live VDR has 0 Grype findings. **Cause (verified 2026-11-03):** neither finding exists any more. GitHub withdrew GHSA-hp3w-g68c-fv3c on 2026-10-22, and pa11y 10.0.0 (#444) removed extract-zip from `tools/a11y`. Nightly Grype counts were 1–3 through 2026-10-22 and 0 since 2026-10-23. The two register entries were stale, and nothing reported that. | None on the VDR. The register, trust center and POA&M stop listing two dead items. | S | Fix: close both (#476); publish unmatched dispositions (#475) |
 | N-DSP-5 | REQ-DSP-5 | No VEX ingestion. | — | — | Not applicable |
 | N-DSP-6 | REQ-DSP-4, MIT-1 | POAM-035's justification cites `check-wasm-safe.py` as a control gating `sprintf`; it bans only `%q`, `%v`, `time.now_ns(` (`check-wasm-safe.py:28-32`). The literal-format condition is unenforced. | Published justification overstates a control. | S | Fix code (strengthen check) and correct the record |
 | G17 | (architecture) | See correction above. | None. | S (retire) / M (wire in) | **Decide** |
@@ -103,7 +103,7 @@ Only corrections. Everything not listed here was confirmed as written.
 
 | ID | Requirement / tests | Current behavior (verified) | Effect | Size | Recommendation |
 | --- | --- | --- | --- | --- | --- |
-| G16 | T52 (G7) | KEV, EPSS, previous VDR, Dependabot fetch failures continue with a warning; Grype `|| true`; no Grype DB age check; missing ZAP report only warns (`:1538-1539`). G7 does not exist. | A feed outage would fail the run instead of publishing a report with no KEV flags or reset clocks. Adds a new way for the nightly to fail. | M | Fix code |
+| G16 | T52 (G7) | KEV, EPSS, previous VDR, Dependabot fetch failures continue with a warning; Grype `|| true`; no Grype DB age check; missing ZAP report only warns (`:1538-1539`). G7 does not exist. | A feed outage would fail the run instead of publishing a report with no KEV flags or reset clocks. Adds a new way for the nightly to fail. **Live instance (verified 2026-11-03):** the Dependabot fetch has logged "Could not fetch Dependabot alerts; proceeding with an empty SCA set" in every sampled nightly from 2026-08-29 to 2026-11-03. The job grants `GITHUB_TOKEN` `security-events: read`. The likely cause is that this token can't read Dependabot alerts (inference; the error is discarded by `2>/dev/null`). The repository has 0 open alerts today, so nothing is missing from the VDR now, but the run can't tell. Fixing it needs a token or GitHub App with Dependabot-alerts read, which only Sam can provision. | M | Fix code (T8) + Sam: token |
 | N-GAT-1 | REQ-GAT-1 | G1, G2, G3 exist (`:1314-1324`) fail-closed on both paths. G4 partial (reconcile --live), G5 proxy only (invariant (l), deploy only), G6 partial (deploy writes no status record), G7 absent. G1 ignores the KEV `dueDate` and is stricter (blocks any KEV). G1 runs after `terraform apply`. | — | M | Fix code (G7 via G16; G5 with G6) |
 | N-GAT-2 | REQ-GAT-2 | Only `tests/fixtures/broken/` (reconcile; covers invariants c, d, e, g/h). No test for the N5+LEV+IRV block or past-SLA block; KEV test is inline (`tests/test_vuln_gate.py:210`). CLAUDE.md's rule holds only for reconcile.py, partly. | — | M | Fix code (first: fixtures for G2/G3 blocks) |
 | N-GAT-3 | REQ-GAT-3 | One owner; scoping trivially met. | — | — | Document gap |
@@ -166,6 +166,7 @@ The question is what lets a finding with no prediction score be NLEV without a p
 - **The record overstates its control.** The record says `scripts/check-wasm-safe.py` "gates Rego sprintf usage". It bans only `%q`, `%v` and `time.now_ns(` (`check-wasm-safe.py:28-32`). It does not ban precision specifiers or non-literal format strings. The "all formats are literals" condition is true by inspection today but enforced by nothing.
 - **Classification under the method:** the vulnerable code is present and deployed, so it isn't a false positive under REQ-DSP-4. It is a mitigation (the literal-format condition) plus a vendor dependency (no fix). Recommendation: (a) extend `check-wasm-safe.py` to fail on any `sprintf` whose format isn't a string literal and on precision specifiers, with a known-bad fixture (a gate strengthening; plan mode); (b) re-record POAM-035 as mitigated, naming that check as the control, plus vendor-dependency; (c) correct the justification text. POAM-034 (extract-zip, build-time only, not deployed) has the same "compensating control" wording and needs the same review.
 - New register rows: N-DSP-6 (the overstated control).
+- **Update 2026-11-03 (verified):** the advisory was withdrawn on 2026-10-22 and Grype no longer reports it. The item's own remediation plan says to close it then, so it is closed rather than re-recorded (#476). POAM-034 is closed on the same basis: extract-zip left the tree with pa11y 10.0.0. (a) shipped in #468. The mitigated and vendor-dependency vocabulary from (b) exists in #475 for the next such finding. As a mitigation under rule 1, the literal-format check would be partial, not full, because it reads source rather than live state.
 
 ## 4. CR26 Rev5 transition: no POA&M, no SSP (planning only)
 
@@ -214,7 +215,20 @@ Decided 2026-11-03: implement now; OSCAL is retired and there is no separate Rev
 
 ## 5. Talk tracker
 
-Nothing is closed yet. Updated as PRs merge.
+Nothing is merged yet. Updated as PRs merge. Open PRs as of 2026-11-03: trunk #467 (T1) → #470 (T2) → #471 (T3) → #472 (T4) → #474 (T5) → #475 (T6), plus #466, #468 → #476, #469, #473, and this register (#465).
+
+| PR | Gaps it closes on merge |
+| --- | --- |
+| #467 T1 | G10, N-RUL-2 |
+| #470 T2 | G1, G2 (rule 2), G4, N-PAI-7, N-LEV-4 |
+| #471 T3 | N-SRC-6, N-DLN-1, G5 (IRV from the inventory), N-IRV-5 |
+| #472 T4 | G8, N-PAI-4 |
+| #474 T5 | G9, G11, G12, G13, G14 |
+| #475 T6 | G3, G15, N-VD, N-DSP-1, N-DSP-3, rule 1 |
+| #468 + #476 | N-DSP-6, N-DSP-4 |
+| #466 | W-2 |
+| #469 | N-QUE-1 |
+| #473 | N-PUB-2, N-GOV-1 (windows) |
 
 | Target | Gaps planned | Closed |
 | --- | --- | --- |
