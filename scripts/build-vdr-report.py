@@ -251,8 +251,7 @@ VULN_SOURCES = {"grype", "zap", "dependabot"}
 #   false-positive          the reason it is not exploitable lives inside the
 #                           scanned artifact and it never was (REQ-DSP-4)
 #   mitigated               a named control, verified by a named check, protects it
-#   vendor-dependency       known, exploitable, no fix exists yet or none is coming;
-#                           the clock runs, and past the maximum period it is accepted
+#   vendor-dependency       known, exploitable, no fix exists yet; the clock runs
 #   under-investigation     not yet known whether it applies; the clock runs
 #   operational-requirement Rev5 term for a deliberate acceptance, kept until the
 #                           POA&M is retired; equivalent to accepted
@@ -1017,8 +1016,7 @@ def ingest_grype(path):
             "cvss_vector": cvss_vector,
             # Fix state decides whether a vendor dependency still holds: it lapses
             # on the first scan where a fix is available, and an unknown state
-            # counts as available. Grype: fixed / not-fixed / wont-fix / unknown;
-            # not-fixed and wont-fix (none coming) hold it.
+            # counts as available. Grype: fixed / not-fixed / wont-fix / unknown.
             "fix_state": (vuln.get("fix") or {}).get("state") or "unknown",
             "fix_versions": list((vuln.get("fix") or {}).get("versions") or []),
         })
