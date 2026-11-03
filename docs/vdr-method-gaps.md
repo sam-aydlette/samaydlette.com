@@ -229,6 +229,7 @@ Nothing is merged yet. Updated as PRs merge. Open PRs as of 2026-11-03: trunk #4
 | #466 | W-2 |
 | #469 | N-QUE-1 |
 | #473 | N-PUB-2, N-GOV-1 (windows) |
+| #477 L5 | N-TPR-1 (partly: exposure intent waits on T10), N-IRV-11 (ZAP), N-ASR-1 (T74) |
 
 | Target | Gaps planned | Closed |
 | --- | --- | --- |
