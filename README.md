@@ -27,8 +27,8 @@ Every deployment goes through this gate, in CI:
     │                    + SLSA-style build provenance
     ├─ build OSCAL Rev 5 SSP          ├─ build VDR + vuln trend ledger (RA-5(6))
     ├─ build OSCAL POA&M              ├─ build IIW (SSP Appendix M)
-    ├─ build SCuBA bundle (CRM)       ├─ build Ongoing Certification Report
-    ├─ build SDR + CPO                └─ build CDS certification-data artifacts
+    ├─ build SDR + CPO                ├─ build Ongoing Certification Report
+    │                                 └─ build CDS certification-data artifacts
     │
     → RECONCILIATION GATE — fails closed on any cross-artifact drift
     │    (a) completeness   every live in-boundary AWS resource is inventoried,
@@ -36,7 +36,8 @@ Every deployment goes through this gate, in CI:
     │    (b) referential    (c) suppressions     (d) impact level
     │    (e) binding — every artifact carries ONE inventory signal_id
     │    (f) publish freshness  (g) POA&M parity  (h) finding coverage
-    │    (i) live classification tags  (j) POA&M refs  (k) SCuBA binding
+    │    (i) live classification tags  (j) POA&M refs  (k) retired
+    │    (l) boundary map
     │
     → cosign sign-blob (Sigstore keyless via GitHub OIDC) for every artifact
     → publish the signed set to /.well-known/
@@ -231,11 +232,11 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── schemas/                    # KSI signal schema, FedRAMP KSI catalog, policy-input schemas
 │   ├── lambda/index.js             # runtime KSI emitter; runs the SAME Rego, compiled to Wasm
 │   └── bootstrap/                  # operator-applied: OIDC, IAM, CloudFront, DNSSEC, tf state
-├── scripts/                        # the artifact generators — 26 live
+├── scripts/                        # the artifact generators — 25 live
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
 │   ├── build-oscal-ssp.py build-oscal-poam.py build-vdr-report.py build-iiw.py
-│   ├── build-scuba-bundle.py build-sdr.py build-cpo.py build-ocr.py ...
+│   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py
 │   ├── verify-published.sh         # verify the LIVE evidence, no AWS needed
@@ -246,7 +247,6 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   └── .well-known/security.txt    # RFC 9116 (generated artifacts are NOT committed)
 ├── data/                           # vendored NIST/FedRAMP source data + PROVENANCE.md
 │   ├── catalogs/ profiles/ mappings/ baselines/ schemas/oscal/
-├── scuba/                          # SCuBA-style executable CRM (policies + runner)
 ├── policies/triage.rego            # vulnerability triage policy
 ├── docs/                           # poam.md (+ False Positives), policies/, scn/, assessment/
 ├── tools/                          # both are CI gates, not optional tooling

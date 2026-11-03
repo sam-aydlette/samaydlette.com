@@ -29,7 +29,7 @@
 #   - The canonical inventory. This binds to the PUBLISHED ksi-signal.json
 #     (signature-verified against the deploy workflow's pinned identity) rather
 #     than rebuilding it, which is what satisfies reconciliation invariant (e)
-#     without touching the SSP/POA&M/IIW/SCuBA. A changed inventory means changed
+#     without touching the SSP/POA&M/IIW. A changed inventory means changed
 #     infrastructure, and that belongs on the reviewed deploy path.
 #   - The OPA gate axis. `validations.json` is produced by `terraform plan`,
 #     which this workflow has neither the state access nor the IAM rights to run.
@@ -38,7 +38,7 @@
 #     blocks the deploy first. So its absence changes no published value. It does
 #     mean the nightly VDR is an SAST+SCA+DAST report re-verified against today's
 #     threat data, not a re-evaluation of the infrastructure plan.
-#   - The SSP, POA&M, IIW, SCuBA, OCR, CDS and provenance attestations. The SSP
+#   - The SSP, POA&M, IIW, OCR, CDS and provenance attestations. The SSP
 #     and POA&M ARE rebuilt here, but only as inputs to the reconciliation gate
 #     (it loads all four artifacts); they are never signed and never published.
 #     Rebuilding them from the published inventory keeps the gate evaluating one
@@ -114,8 +114,9 @@ env:
   # terraform.tfvars as `existing_s3_bucket_name`.
   SITE_BUCKET: samaydlette.com
   SITE_ORIGIN: https://samaydlette.com
-  # The published-freshness policy, in one place.
-  MAX_EVIDENCE_AGE_HOURS: '24'
+  # The published-freshness windows live in one governed place,
+  # infrastructure/schemas/freshness-config.json (REQ-PUB-2); the freshness
+  # check below reads its window from there, not from this workflow.
   # The identity that signs the published inventory. The nightly binds its VDR to
   # an artifact it fetched over the public internet, so it verifies that artifact
   # against this pinned identity before trusting a single byte of it.
@@ -719,7 +720,7 @@ jobs:
     # Everything above verifies the build. This verifies the CLAIM: fetch the
     # artifact over the public URL exactly as a third party would, assert the
     # served bytes are the bytes just built, and assert its emitted_at is inside
-    # the 24-hour policy window. Retries ride out CDN propagation.
+    # its governed window (infrastructure/schemas/freshness-config.json). Retries ride out CDN propagation.
     #
     # Deliberately not `aws cloudfront wait invalidation-completed`: polling the
     # public edge is a stronger check than asking the CDN's control plane
@@ -735,7 +736,6 @@ jobs:
         BUILT_SHA=$(sha256sum vdr-report.json | awk '{print $1}')
         python3 ../scripts/check-evidence-freshness.py \
           --url "${SITE_ORIGIN}/.well-known/vdr-report.json" \
-          --max-age-hours "${MAX_EVIDENCE_AGE_HOURS}" \
           --expect-sha256 "${BUILT_SHA}" \
           --retries 12 --retry-delay 20
 
