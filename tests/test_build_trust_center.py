@@ -253,3 +253,121 @@ def test_independent_corroboration_is_reported_and_its_findings_queued():
     doc = build(corroboration=found)
     assert picture(doc)["corroboration"] == "attention"
     assert ("boundary_not_inventoried", "tap:dynamodb_table:lock") in kinds(doc)
+
+
+# ---------------------------------------------------------------------------
+# REQ-QUE-1: every queue item carries kind, subject, opening time, why it is a
+# person's call, and the options; the escalation rate is published per kind
+# with its denominator.
+# ---------------------------------------------------------------------------
+
+def test_every_queue_item_has_options_and_an_opening_time():
+    doc = build(manual_settings={"checked_at": "2026-09-29T11:00:00+00:00",
+                                 "checks": [{"id": "dnssec", "status": "attention", "detail": "x"}]})
+    assert {d["kind"] for d in doc["decisions_pending"]} >= {
+        "vdr_blocking", "vdr_undispositioned", "poam_overdue", "exception_expiring", "runtime_diverged",
+        "runtime_unassessed", "trust_root_change", "boundary_untagged", "boundary_not_inventoried",
+        "manual_setting", "scn_unverified", "decision_records_incomplete"}
+    for d in doc["decisions_pending"]:
+        assert d["kind"] and d["id"] and d["title"] and d["why_yours"], d
+        assert d["options"] and all(isinstance(o, str) and o for o in d["options"]), d
+        assert d["since"], d
+        assert d["since_basis"] in btc.SINCE_BASES, d
+        assert btc._parse_time(d["since"]) is not None or btc._parse_date(d["since"]) is not None, d
+
+
+def test_options_and_since_sources_cover_every_kind():
+    # One static table each, keyed like WHY_YOURS, so a new kind cannot ship
+    # without its options and a documented opening-time source.
+    assert set(btc.OPTIONS) == set(btc.WHY_YOURS)
+    assert set(btc.SINCE_SOURCE) == set(btc.WHY_YOURS)
+    assert all(len(v) >= 2 for v in btc.OPTIONS.values())
+    live = build()["live_queue"]
+    assert live["options"] == btc.OPTIONS and live["since_source"] == btc.SINCE_SOURCE
+
+
+def _item(doc, kind, id_):
+    return next(d for d in doc["decisions_pending"] if d["kind"] == kind and d["id"] == id_)
+
+
+def test_since_is_when_the_condition_began_never_the_build_time():
+    poam = {"plan-of-action-and-milestones": {"poam-items": [
+        poam_item("POAM-001", "open", "risk-accepted", "2026-09-01"),
+        poam_item("POAM-010", "open", "risk-accepted", "n/a",
+                  **{"decided-by": "Operator", "decided-on": "2025-09-01", "review-by": "2026-09-15"}),
+    ]}}
+    vdr = {"emitted_at": "2026-09-29T09:00:00Z", "findings": [
+        {"tracking_id": "f-block", "title": "b", "is_blocking": True, "final_disposition": "open",
+         "first_detected": "2026-09-20T00:00:00Z"},
+        {"tracking_id": "f-nodate", "title": "n", "is_blocking": False, "final_disposition": "open"},
+    ]}
+    doc = build(poam=poam, vdr=vdr,
+                runtime={"emitted_at": "2026-09-27T00:00:00Z", "divergence": {"status": "converged"}},
+                boundary_map={**inputs()["boundary_map"], "generated_at": "2026-09-29T11:10:00Z"})
+    # The due date passed: the condition began on the due date.
+    assert _item(doc, "poam_overdue", "POAM-001")["since"] == "2026-09-01"
+    # A review came due on its review_by date.
+    assert _item(doc, "decision_review_due", "POAM-010")["since"] == "2026-09-15"
+    # An exception enters the queue when it enters the warning window.
+    assert _item(doc, "exception_expiring", "a11y_error:page.html")["since"] == "2026-09-10"
+    # A finding opened when it was first detected; without a detection date, the
+    # VDR that first reported it is the earliest real observation.
+    assert _item(doc, "vdr_blocking", "f-block")["since"] == "2026-09-20T00:00:00Z"
+    nodate = _item(doc, "vdr_undispositioned", "f-nodate")
+    assert nodate["since"] == "2026-09-29T09:00:00Z" and nodate["since_basis"] == "observed"
+    # A stale signal went stale when its window ran out, not when it was noticed.
+    assert _item(doc, "runtime_stale", "runtime-stale")["since"] == "2026-09-28T02:00:00+00:00"
+    # Observed conditions open when the artifact that observed them was made.
+    assert _item(doc, "boundary_untagged", "aws::iam_role::x")["since"] == "2026-09-29T11:10:00Z"
+    assert _item(doc, "trust_root_change", "aws_iam_group_policy.ops")["since"] == "2026-09-29T11:00:00Z"
+    assert _item(doc, "scn_unverified", "SCN-2")["since"] == "2026-09-01"
+    assert not any(d["since"] == NOW.isoformat(timespec="seconds") for d in doc["decisions_pending"])
+
+
+def test_an_observed_item_keeps_its_earliest_opening_time_across_deploys():
+    prev = {"decisions_pending": [
+        {"kind": "boundary_untagged", "id": "aws::iam_role::x", "since": "2026-09-01T00:00:00+00:00"},
+        {"kind": "trust_root_change", "id": "aws_iam_group_policy.ops", "since": "2027-01-01T00:00:00+00:00"},  # future: ignored
+        {"kind": "boundary_not_inventoried", "id": "declared:vendor", "since": "<script>"},  # malformed: ignored
+        {"kind": "poam_overdue", "id": "POAM-001", "since": "2020-01-01"},  # intrinsic kinds are not carried
+        "junk",
+    ]}
+    doc = build(previous=prev, boundary_map={**inputs()["boundary_map"], "generated_at": "2026-09-29T11:10:00Z"})
+    assert _item(doc, "boundary_untagged", "aws::iam_role::x")["since"] == "2026-09-01T00:00:00+00:00"
+    assert _item(doc, "boundary_untagged", "aws::iam_role::x")["since_basis"] == "first_observed"
+    assert _item(doc, "trust_root_change", "aws_iam_group_policy.ops")["since"] == "2026-09-29T11:00:00Z"
+    assert _item(doc, "boundary_not_inventoried", "declared:vendor")["since"] == "2026-09-29T11:10:00Z"
+    assert _item(doc, "poam_overdue", "POAM-001")["since"] == "2026-09-01"
+
+
+def test_a_queue_item_with_no_known_opening_time_fails_closed():
+    bad = json.loads((REPO / "tests" / "fixtures" / "trust-center" / "queue-item-without-opening-time.json").read_text())
+    bad.pop("_about")
+    with pytest.raises(SystemExit, match="opening time"):
+        btc.build(inputs(**bad, runtime=None, trust_root_plan=None, vdr={"findings": []},
+                         poam={"plan-of-action-and-milestones": {"poam-items": []}}, exceptions=[], dispositions={},
+                         scn_register=[]), "c0ffee", NOW)
+
+
+def test_escalation_rate_is_published_per_kind_with_its_denominator():
+    rate = build()["escalation_rate"]
+    assert rate["denominator"] == rate["resolved_by_precedent"] + rate["escalated"]
+    by = rate["by_kind"]
+    assert set(by) == set(btc.WHY_YOURS) - set(rate["not_measured"])
+    assert rate["not_measured"] == {"vulnerability_evidence_stale": rate["not_measured"]["vulnerability_evidence_stale"]}
+    for kind, k in by.items():
+        assert {"escalated", "denominator", "rate", "population", "precedent"} <= set(k), kind
+        assert 0 <= k["escalated"] <= k["denominator"], kind
+        assert k["rate"] == (round(k["escalated"] / k["denominator"], 3) if k["denominator"] else None), kind
+        assert k["precedent"] == (kind in btc.PRECEDENT_KINDS)
+    # Three findings: one blocking, one undispositioned.
+    assert (by["vdr_blocking"]["escalated"], by["vdr_blocking"]["denominator"]) == (1, 3)
+    assert (by["vdr_undispositioned"]["escalated"], by["vdr_undispositioned"]["denominator"]) == (1, 3)
+    # Two open POA&M items, one overdue; two exceptions, one expiring.
+    assert (by["poam_overdue"]["escalated"], by["poam_overdue"]["denominator"]) == (1, 2)
+    assert (by["exception_expiring"]["escalated"], by["exception_expiring"]["denominator"]) == (1, 2)
+    assert (by["manual_setting"]["escalated"], by["manual_setting"]["denominator"]) == (0, 3)
+    assert (by["scn_unverified"]["escalated"], by["scn_unverified"]["denominator"]) == (1, 2)
+    # The per-kind counts add up to the queue.
+    pending = build()["decisions_pending"]
+    assert sum(k["escalated"] for k in by.values()) == len(pending)
