@@ -1,0 +1,73 @@
+{
+ "signal_id": "fixture",
+ "components": [
+  {
+   "component_id": "aws::identity_provider::silk_reeling",
+   "type": "identity_provider",
+   "attributes": {
+    "tf_type": "aws_cognito_user_pool",
+    "tf_name": "silk_reeling",
+    "tf_address": "aws_cognito_user_pool.silk_reeling",
+    "classification": {
+     "data_sensitivity": "internal",
+     "mission_criticality": "moderate",
+     "internet_reachable": true,
+     "archetype": "x",
+     "agency_scope": "single"
+    }
+   },
+   "resource_type": "AWS::Cognito::UserPool"
+  },
+  {
+   "component_id": "aws::function::silk_reeling",
+   "type": "function",
+   "attributes": {
+    "tf_type": "aws_lambda_function",
+    "tf_name": "silk_reeling",
+    "tf_address": "aws_lambda_function.silk_reeling",
+    "classification": {
+     "data_sensitivity": "internal",
+     "mission_criticality": "moderate",
+     "internet_reachable": true,
+     "archetype": "x",
+     "agency_scope": "single"
+    }
+   },
+   "resource_type": "AWS::Lambda::Function"
+  },
+  {
+   "component_id": "aws::object_store::logs",
+   "type": "object_store",
+   "attributes": {
+    "tf_type": "aws_s3_bucket",
+    "tf_name": "logs",
+    "tf_address": "aws_s3_bucket.logs",
+    "classification": {
+     "data_sensitivity": "internal",
+     "mission_criticality": "moderate",
+     "internet_reachable": false,
+     "archetype": "x",
+     "agency_scope": "single"
+    }
+   },
+   "resource_type": "AWS::S3::Bucket"
+  },
+  {
+   "component_id": "npm::left-pad@1.0.0",
+   "type": "npm_package",
+   "global_id": {
+    "purl": "pkg:npm/left-pad@1.0.0"
+   },
+   "attributes": {
+    "name": "left-pad",
+    "classification": {
+     "data_sensitivity": "public",
+     "mission_criticality": "moderate",
+     "internet_reachable": false,
+     "archetype": "app-tier",
+     "agency_scope": "single"
+    }
+   }
+  }
+ ]
+}

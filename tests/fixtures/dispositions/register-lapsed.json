@@ -1,0 +1,7 @@
+{
+  "_note": "Known-bad: a disposition past review_by (REQ-DSP-2, T16). The gate and the builder must treat it as absent.",
+  "dispositions": {
+    "CVE-0000-0200": {"disposition": "false-positive", "justification": "fixture", "poam_ref": "POAM-003",
+                      "decided_by": "Fixture", "decided_on": "2025-01-01", "review_by": "2026-01-01"}
+  }
+}

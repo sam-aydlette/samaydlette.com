@@ -1,0 +1,9 @@
+{
+  "_note": "Public half of the runtime signal's signing key (KMS, never exported). The VDR builder verifies /.well-known/ksi-signal-runtime.json against this key before any mitigation may cite it as a live read. Rotating the KMS key means replacing this record in a reviewed change. Stored as JSON because the repository ignores *.pem files to keep private keys out.",
+  "key_id": "alias/samaydlette-com-runtime-signing",
+  "algorithm": "ECDSA_SHA_256",
+  "published_at": "https://samaydlette.com/.well-known/runtime-signing-pubkey.pem",
+  "pinned_on": "2026-11-03",
+  "public_key_sha256": "dc58199df6e4e65ff6fb46c20557b6703646064497e5ae05d8ec2216738fba31",
+  "public_key_pem": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEumV6GgkVxTqsX4aQVLurXLicE2lJ\nBX8RAPG7ZWzE3PngbgTibm2hdzbppTHoN9wyailBjUBeIEqo0tEtNytXAw==\n-----END PUBLIC KEY-----\n"
+}

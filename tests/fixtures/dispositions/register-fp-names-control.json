@@ -1,0 +1,7 @@
+{
+  "_note": "Known-bad: a false positive whose reason is a control outside the scanned artifact (REQ-DSP-4, T15). It must be recorded as mitigated, never as a false positive.",
+  "dispositions": {
+    "CVE-0000-0201": {"disposition": "false-positive", "mitigation": "MIT-FIX-1", "justification": "a WAF rule blocks it",
+                      "poam_ref": "POAM-003", "decided_by": "Fixture", "decided_on": "2026-10-01", "review_by": "2027-10-01"}
+  }
+}
