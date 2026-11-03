@@ -1,0 +1,23 @@
+{
+  "@version": "2.15.0",
+  "@generated": "Mon, 2 Nov 2026 12:00:00",
+  "site": [
+    {
+      "@name": "https://samaydlette.com",
+      "@host": "samaydlette.com",
+      "alerts": [
+        {"pluginid": "10038", "alertRef": "10038", "alert": "Content Security Policy (CSP) Header Not Set",
+         "riskcode": "2", "desc": "test fixture",
+         "instances": [{"uri": "https://samaydlette.com/research/", "method": "GET"},
+                       {"uri": "https://samaydlette.com/", "method": "GET"}]},
+        {"pluginid": "10021", "alertRef": "10021", "alert": "X-Content-Type-Options Header Missing",
+         "riskcode": "1", "desc": "test fixture",
+         "instances": [{"uri": "https://samaydlette.com/research/a.html", "method": "GET"}]},
+        {"pluginid": "90004", "alertRef": "90004", "alert": "Insufficient Site Isolation", "riskcode": "1",
+         "desc": "test fixture"},
+        {"pluginid": "10109", "alertRef": "10109", "alert": "Modern Web Application", "riskcode": "0",
+         "instances": [{"uri": "https://samaydlette.com/"}]}
+      ]
+    }
+  ]
+}

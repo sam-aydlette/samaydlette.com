@@ -1222,7 +1222,48 @@ def build_sbom_components(sbom_path, existing_components=None):
     return components
 
 
-def build_external_components():
+THIRD_PARTY_PATH = Path(__file__).resolve().parent.parent / "data" / "third-party-components.json"
+NOT_RECORDED = "not recorded"
+TPR_FIELDS = ("upstream_offering", "upstream_component_id", "responsibility_split")
+
+
+def load_third_party_records(path, known_ids):
+    """REQ-TPR-1 records for external services: {component_id: record}. Fails
+    closed on a malformed file or a record for a service the inventory does not
+    declare (a stale record would otherwise go unnoticed)."""
+    try:
+        doc = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"::error::third-party record {path} is unreadable ({type(exc).__name__})") from None
+    recs = doc.get("components") if isinstance(doc, dict) else None
+    if not isinstance(recs, dict):
+        raise SystemExit(f"::error::third-party record {path} has no components object")
+    for cid, rec in recs.items():
+        if cid not in known_ids:
+            raise SystemExit(f"::error::third-party record names {cid}, which is not an inventoried external service")
+        if not isinstance(rec, dict):
+            raise SystemExit(f"::error::third-party record for {cid} is not an object")
+        split = rec.get("responsibility_split")
+        if split is not None and not (isinstance(split, dict) and split.get("upstream_runs") and split.get("provider_configures")):
+            raise SystemExit(f"::error::third-party record for {cid}: responsibility_split needs upstream_runs and provider_configures")
+    return recs
+
+
+def third_party_attributes(rec):
+    """The TPR-1 fields for one component. A record without a decision
+    (decided_by and decided_on) publishes every field as "not recorded"."""
+    if rec is None:
+        return {**{f: NOT_RECORDED for f in TPR_FIELDS}, "third_party_record": {"status": "no record"}}
+    if not (rec.get("decided_by") and rec.get("decided_on")):
+        return {**{f: NOT_RECORDED for f in TPR_FIELDS},
+                "third_party_record": {"status": "drafted; no decision recorded"}}
+    out = {f: rec.get(f) or NOT_RECORDED for f in TPR_FIELDS}
+    out["third_party_record"] = {"status": "decided", "decided_by": rec["decided_by"],
+                                 "decided_on": rec["decided_on"]}
+    return out
+
+
+def build_external_components(third_party_path=THIRD_PARTY_PATH):
     """Emit synthetic components for external services in boundary per ROT #2.
 
     These services aren't in Terraform state (they're upstream public services
@@ -1296,6 +1337,7 @@ def build_external_components():
             "fedramp_status": "external; U.S. federal government source",
         },
     ]
+    tpr = load_third_party_records(third_party_path, {s["id"] for s in services})
     components = []
     for svc in services:
         component = {
@@ -1308,6 +1350,8 @@ def build_external_components():
                 "cia_impact": svc["cia_impact"],
                 "verification_mechanism": svc["verification"],
                 "fedramp_status": svc["fedramp_status"],
+                # REQ-TPR-1: upstream offering, upstream component ID, and the split.
+                **third_party_attributes(tpr.get(svc["id"])),
             },
         }
         apply_mas_defaults(component)

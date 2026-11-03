@@ -1037,7 +1037,44 @@ def _zap_generated_iso(doc):
     return None
 
 
-def ingest_zap(path):
+ZAP_ALLOWLIST_PATH = Path(__file__).resolve().parent.parent / "security" / "zap" / "allowlist.json"
+
+
+def load_zap_allowlist(path=ZAP_ALLOWLIST_PATH):
+    """Governed record of where the outside-in probe was allowlisted (REQ-IRV-11):
+    {"entries": [{"url_prefix", "reason", "decided_by", "decided_on"}]}. Fails
+    closed on a malformed file or an entry without a decision."""
+    try:
+        doc = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"::error::ZAP allowlist {path} is unreadable ({type(exc).__name__})") from None
+    entries = doc.get("entries") if isinstance(doc, dict) else None
+    if not isinstance(entries, list):
+        raise SystemExit(f"::error::ZAP allowlist {path} has no entries list")
+    for e in entries:
+        if not (isinstance(e, dict) and all(isinstance(e.get(k), str) and e.get(k)
+                                            for k in ("url_prefix", "reason", "decided_by", "decided_on"))):
+            raise SystemExit(f"::error::ZAP allowlist entry {e!r} needs url_prefix, reason, decided_by, decided_on")
+    return {"entries": entries}
+
+
+def _zap_allowlisted(uri, prefix):
+    """Scheme and host must be equal (a bare string prefix would let
+    https://example.com match https://example.com.evil.net), then path prefix."""
+    from urllib.parse import urlsplit
+    u, p = urlsplit(uri), urlsplit(prefix)
+    return (u.scheme, u.hostname, u.port) == (p.scheme, p.hostname, p.port) and \
+        (u.path or "/").startswith(p.path or "/")
+
+
+def _zap_location(uri, allowlist):
+    from urllib.parse import urlsplit
+    host = urlsplit(uri).hostname or ""
+    listed = any(_zap_allowlisted(uri, e["url_prefix"]) for e in (allowlist or {}).get("entries", []))
+    return {"uri": uri, "host": host, "allowlisted": listed}
+
+
+def ingest_zap(path, allowlist=None):
     """Load an OWASP ZAP JSON report (zaproxy/action-baseline `report_json`, or
     `zap.py ... -J report.json`). DAST source: each alert above informational is
     a web-app vulnerability found against the LIVE site (static pages + API), so
@@ -1062,6 +1099,12 @@ def ingest_zap(path):
                 continue
             ref = a.get("alertRef") or a.get("pluginid") or "zap"
             cveid = str(a.get("cveid") or "")
+            # REQ-IRV-11: attribute by the URL observed (host included), and
+            # record whether the probe was allowlisted there. A finding is
+            # allowlisted only when every location was; one location reached
+            # without an allowlist entry is real exposure.
+            uris = list(dict.fromkeys(i.get("uri") for i in a.get("instances") or [] if i.get("uri")))
+            locations = [_zap_location(u, allowlist) for u in uris]
             findings.append({
                 "source": "zap",
                 "tool_id": ref,
@@ -1069,7 +1112,9 @@ def ingest_zap(path):
                 "title": a.get("alert") or a.get("name") or ref,
                 "description": (a.get("desc") or "").strip()[:500],
                 "severity": sev,
-                "resource": target,
+                "resource": uris[0] if uris else target,
+                "locations": locations,
+                "allowlisted": bool(locations) and all(loc["allowlisted"] for loc in locations),
                 "cve": cveid if cveid.upper().startswith("CVE-") else None,
                 "internet_reachable": True,
                 "detected_at": generated,
@@ -2029,6 +2074,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "title": f.get("title", ""),
             "description": f.get("description", ""),
             "resource": f.get("resource", ""),
+            # Outside-in (ZAP) only: where it was observed and whether the probe
+            # was allowlisted there (REQ-IRV-11). Absent for other sources.
+            **({"locations": f["locations"], "allowlisted": f.get("allowlisted")}
+               if "locations" in f else {}),
             "cve": f.get("cve"),
             "first_detected": clk["first_detected"],
             "first_evaluated": clk["first_evaluated"],
@@ -2278,7 +2327,7 @@ def main():
         if not Path(args.zap).exists():
             print(f"::warning::No ZAP report at {args.zap}; DAST coverage is absent until a scan is committed (see security/zap/README.md).", file=sys.stderr)
         else:
-            findings.extend(ingest_zap(args.zap))
+            findings.extend(ingest_zap(args.zap, load_zap_allowlist()))
             if args.zap_max_age_days > 0:
                 age = zap_report_age_days(args.zap, datetime.now(timezone.utc))
                 if age is None:

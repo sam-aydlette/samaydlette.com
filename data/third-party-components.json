@@ -1,0 +1,86 @@
+{
+  "_note": "REQ-TPR-1 records for the external services the inventory declares (scripts/build-ksi-signal.py build_external_components). Each names the upstream offering, the upstream component's identifier, and the split between what the upstream runs and what this provider configures. A record is published only once it carries decided_by and decided_on; until then the inventory publishes every field as \"not recorded\". A record for a service the inventory does not declare fails the build. AI-drafted entries (drafted_by) are proposals from the evidence listed; none is in force until the operator records a decision. A null value is unknown and is published as \"not recorded\" even after a decision.",
+  "components": {
+    "ext::sigstore-fulcio": {
+      "upstream_offering": "Sigstore public-good instance: Fulcio certificate authority",
+      "upstream_component_id": "https://fulcio.sigstore.dev",
+      "responsibility_split": {
+        "upstream_runs": "The certificate authority that issues short-lived signing certificates bound to the CI run's OIDC identity.",
+        "provider_configures": "Keyless signing in CI (cosign sign-blob), and the certificate identity and OIDC issuer every verification pins."
+      },
+      "evidence": [".github/workflows/evidence-nightly.yml (cosign sign-blob; --certificate-identity, --certificate-oidc-issuer)", "scripts/verify-published.sh (--certificate-identity, --certificate-oidc-issuer)"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::sigstore-rekor": {
+      "upstream_offering": "Sigstore public-good instance: Rekor transparency log",
+      "upstream_component_id": "https://rekor.sigstore.dev",
+      "responsibility_split": {
+        "upstream_runs": "The append-only transparency log and its inclusion proofs.",
+        "provider_configures": "Signing with transparency-log upload (cosign defaults, not disabled) and verification that checks the inclusion proof in each bundle."
+      },
+      "evidence": [".github/workflows/evidence-nightly.yml (cosign sign-blob --new-bundle-format)", "scripts/verify-published.sh (cosign verify-blob)"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::github-oidc": {
+      "upstream_offering": "GitHub Actions OIDC token issuer",
+      "upstream_component_id": "https://token.actions.githubusercontent.com",
+      "responsibility_split": {
+        "upstream_runs": "The token issuer and its signing keys (JWKS).",
+        "provider_configures": "Which workflows may request a token (permissions: id-token: write), the AWS IAM OIDC trust conditions, and the issuer pinned in cosign verification."
+      },
+      "evidence": [".github/workflows/deploy-with-opa.yml:105 (id-token: write)", "infrastructure/bootstrap/plan-role.tf, evidence-nightly.tf, main.tf (OIDC trust)", ".github/workflows/evidence-nightly.yml:118 (COSIGN_OIDC_ISSUER)"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::github-repo": {
+      "upstream_offering": "GitHub repository and GitHub Actions",
+      "upstream_component_id": "https://github.com/sam-aydlette/samaydlette.com",
+      "responsibility_split": {
+        "upstream_runs": "Repository hosting, the Actions runners, Dependabot, and secret scanning.",
+        "provider_configures": "Branch protection on main, the workflows and their permissions, the OPA gate, the SCN tag validator, and secret scanning with push protection."
+      },
+      "evidence": ["scripts/build-ksi-signal.py (ext::github-repo verification text)", ".github/workflows/"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::duo-mfa": {
+      "upstream_offering": null,
+      "upstream_component_id": null,
+      "responsibility_split": null,
+      "evidence": ["scripts/build-ksi-signal.py (ext::duo-mfa: tenant identifier intentionally not published)"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; the repository does not show the Duo edition, its identifier, or how it is configured, so nothing is drafted",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::github-advisory-db": {
+      "upstream_offering": "GitHub Advisory Database, read through Dependabot alerts",
+      "upstream_component_id": "https://github.com/advisories",
+      "responsibility_split": {
+        "upstream_runs": "The advisory database and the matching of advisories to this repository's dependencies.",
+        "provider_configures": "The fetch of open Dependabot alerts in the deploy and nightly workflows, and how a failed fetch is handled."
+      },
+      "evidence": [".github/workflows/evidence-nightly.yml:435 (dependabot/alerts)", ".github/workflows/deploy-with-opa.yml:1399"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    },
+    "ext::cisa-kev": {
+      "upstream_offering": "CISA Known Exploited Vulnerabilities catalog (JSON feed)",
+      "upstream_component_id": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "responsibility_split": {
+        "upstream_runs": "The catalog and its JSON feed.",
+        "provider_configures": "The fetch in the deploy and nightly workflows, and how a failed fetch is handled."
+      },
+      "evidence": [".github/workflows/evidence-nightly.yml:447 (KEV_URL)", ".github/workflows/deploy-with-opa.yml:1415"],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03",
+      "decided_by": null,
+      "decided_on": null
+    }
+  }
+}
