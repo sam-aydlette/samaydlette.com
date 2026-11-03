@@ -1439,6 +1439,23 @@ jobs:
           printf 'cve,epss,percentile\n' > epss-scores.csv.gz
         fi
 
+    # The signed runtime signal is the only live read a mitigation can cite
+    # (rule 1: a mitigation verified by a live read makes a finding fully
+    # mitigated). The builder verifies its signature against
+    # infrastructure/keys/runtime-signing-key.json and its age; anything short
+    # of verified and fresh voids every mitigation that needs a live read, so a
+    # failed fetch can only keep findings open, never close them.
+    - name: Fetch the signed runtime signal (live read for mitigations)
+      working-directory: infrastructure
+      run: |
+        if curl -sfL --retry 3 --retry-delay 2 -o ksi-signal-runtime.json \
+            "https://samaydlette.com/.well-known/ksi-signal-runtime.json"; then
+          echo "Runtime signal fetched: emitted $(jq -r '.emitted_at' ksi-signal-runtime.json 2>/dev/null || echo 'unreadable; the builder will reject it')"
+        else
+          echo "::warning::Could not fetch the runtime signal; mitigations that need a live read are void this run."
+          rm -f ksi-signal-runtime.json
+        fi
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -1454,6 +1471,7 @@ jobs:
           --zap ../security/zap/zap-report.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
+          --runtime-signal ksi-signal-runtime.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json

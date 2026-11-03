@@ -245,9 +245,69 @@ DISPOSITION_REGISTER_PATH = (Path(__file__).resolve().parent.parent
 # above). Mirrors vuln-gate.py's VULN_SOURCES.
 VULN_SOURCES = {"grype", "zap", "dependabot"}
 
-# Only these dispositions let a vulnerability pass the vulnerability gate, so
-# only these confer a poam_ref here. Mirrors vuln-gate.py's PASS_DISPOSITIONS.
-REGISTER_PASS_DISPOSITIONS = {"false-positive", "operational-requirement"}
+# The disposition vocabulary (REQ-DSP-3). CR26 drops Rev5's deviation-request
+# terms; the decisions behind them remain:
+#   false-positive          the reason it is not exploitable lives inside the
+#                           scanned artifact and it never was (REQ-DSP-4)
+#   mitigated               a named control, verified by a named check, protects it
+#   vendor-dependency       known, exploitable, no fix exists yet; the clock runs
+#   under-investigation     not yet known whether it applies; the clock runs
+#   operational-requirement Rev5 term for a deliberate acceptance, kept until the
+#                           POA&M is retired; equivalent to accepted
+#   accepted                will not fix; carries the acceptance explanation
+#   remediate               a fix is planned; the clock runs
+DISPOSITIONS = {"false-positive", "mitigated", "vendor-dependency", "under-investigation",
+                "operational-requirement", "accepted", "remediate"}
+
+# Only these let a vulnerability pass the vulnerability gate, and mitigated and
+# vendor-dependency pass only with their evidence (a mitigation in force; a fix
+# state of not-fixed). Mirrors vuln-gate.py's PASS_DISPOSITIONS.
+REGISTER_PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
+                              "mitigated", "vendor-dependency"}
+
+# Dispositions that close a finding for the deadline gate (G3). A vendor
+# dependency or a partial mitigation is still exploitable: past its deadline it
+# fails G3 like any open finding.
+CLOSING_DISPOSITIONS = {"false-positive", "risk-accepted", "operational-requirement", "accepted"}
+
+NOT_RECORDED = "not recorded"
+_DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
+
+
+def _decision_fields(entry):
+    """REQ-DSP-1: every decision field published; an unrecorded one says so."""
+    return {k: (entry or {}).get(k) or NOT_RECORDED for k in _DECISION_FIELDS}
+
+
+def evaluate_disposition(entry, finding, today, mitigation=None):
+    """(status, reason) for one disposition record: in-force, lapsed or invalid.
+
+    lapsed   review_by has passed: the record is treated as absent (REQ-DSP-2, T16)
+    invalid  unknown term; a false positive whose reason is a control (REQ-DSP-4,
+             T15); mitigated with no mitigation in force; a vendor dependency
+             once a fix may exist (unknown fix state counts as available)"""
+    disp = entry.get("disposition")
+    if disp not in DISPOSITIONS:
+        return "invalid", f"unknown disposition {disp!r}"
+    review_by = entry.get("review_by")
+    if review_by:
+        try:
+            if date.fromisoformat(str(review_by)) < today:
+                return "lapsed", f"review_by {review_by} has passed"
+        except ValueError:
+            return "invalid", f"review_by {review_by!r} is not a date"
+    if disp == "false-positive" and entry.get("mitigation"):
+        return "invalid", ("names a control; a finding a control protects is recorded as "
+                           "mitigated, never as a false positive")
+    if disp == "mitigated":
+        if not (mitigation and mitigation.get("valid")):
+            return "invalid", "no mitigation in force for this finding"
+        if entry.get("mitigation") and entry["mitigation"] != mitigation["id"]:
+            return "invalid", f"names {entry['mitigation']} but {mitigation['id']} covers the finding"
+    if disp == "vendor-dependency" and finding.get("fix_state") != "not-fixed":
+        return "invalid", (f"fix state {finding.get('fix_state') or 'unknown'}: a fix may be "
+                           "available, so the vendor dependency has lapsed")
+    return "in-force", None
 
 
 def load_disposition_register(path=None):
@@ -276,22 +336,203 @@ def register_vuln_id(finding):
     return finding.get("cve") or finding.get("tracking_id") or finding.get("tool_id")
 
 
-def classify_vulnerability(finding, register):
+def register_disposition(finding, register, today, mitigation=None):
+    """The register's record for an SCA/DAST finding, evaluated, or None."""
+    if finding.get("source") not in VULN_SOURCES:
+        return None
+    key = register_vuln_id(finding)
+    entry = register.get(key)
+    if not entry:
+        return None
+    status, reason = evaluate_disposition(entry, finding, today, mitigation)
+    return {"key": key, "disposition": entry.get("disposition"), "poam_ref": entry.get("poam_ref"),
+            "status": status, "reason": reason, "source": "vuln-dispositions",
+            **_decision_fields(entry)}
+
+
+def classify_vulnerability(finding, register, today=None, mitigation=None):
     """Return (disposition, poam_ref) for an SCA/DAST finding from the operator
     disposition register, or (None, None) when it is not dispositioned there.
 
-    A dispositioned entry with no poam_ref deliberately yields (None, None):
+    Only a record in force with a passing disposition confers anything. A
+    dispositioned entry with no poam_ref deliberately yields (None, None):
     the finding stays open and invariant (h) fails, which is the signal that the
     operator dispositioned a vulnerability without giving it a POA&M home. It
     must never publish as handled-but-untracked."""
-    if finding.get("source") not in VULN_SOURCES:
-        return (None, None)
-    entry = register.get(register_vuln_id(finding)) or {}
-    disposition = entry.get("disposition")
-    poam_ref = entry.get("poam_ref")
-    if disposition in REGISTER_PASS_DISPOSITIONS and poam_ref:
-        return (disposition, poam_ref)
+    rd = register_disposition(finding, register, today or date.today(), mitigation)
+    if (rd and rd["status"] == "in-force" and rd["disposition"] in REGISTER_PASS_DISPOSITIONS
+            and rd["poam_ref"]):
+        return (rd["disposition"], rd["poam_ref"])
     return (None, None)
+
+
+# =============================================================================
+# MITIGATIONS (data/mitigations.json) AND THE LIVE READ (rule 1)
+# =============================================================================
+# A mitigation names a control by inventory component ID, the control's
+# fingerprint when the decision was made, and a verifying check. It is void when
+# the control's fingerprint changes (T24), when the check stops passing or has no
+# result (T25), when the control leaves the inventory, or past review_by. A void
+# mitigation takes its clock reset with it (clock_for).
+#
+# effect:
+#   full                     fully mitigated: NLEV, lowest impact level. Rule 1:
+#                            only when the verifying check reads live state, i.e.
+#                            the signed runtime signal, verified and fresh.
+#   not-reachable            the finding is NIRV
+#   not-likely-exploitable   the finding is NLEV (never for a KEV)
+MITIGATIONS_PATH = Path(__file__).resolve().parent.parent / "data" / "mitigations.json"
+RUNTIME_PUBKEY_PATH = (Path(__file__).resolve().parent.parent / "infrastructure" / "keys"
+                       / "runtime-signing-key.json")
+MITIGATION_EFFECTS = {"full", "not-reachable", "not-likely-exploitable"}
+VERIFYING_SIGNALS = {"runtime", "deploy"}
+# The runtime emitter runs daily; two days allows one missed run. Moves to the
+# governed freshness config with the other windows.
+RUNTIME_SIGNAL_MAX_AGE_HOURS = 48
+
+
+def component_fingerprint(component):
+    """sha256 over the component's canonical JSON. Any change to the control's
+    declared configuration changes it and voids the mitigations that name it."""
+    canon = json.dumps(component, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return "sha256:" + hashlib.sha256(canon.encode("utf-8")).hexdigest()
+
+
+def load_mitigations(path=None):
+    """{id: record} from the governed mitigations file. Missing file: none. A
+    malformed record fails the build: a mitigation that silently fails to load
+    would put a finding back on an expired clock without saying why, and one
+    that loads half-formed could clear a finding it should not."""
+    p = Path(path) if path else MITIGATIONS_PATH
+    if not p.exists():
+        return {}
+    try:
+        doc = json.loads(p.read_text())
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"::error::mitigations at {p} are not valid JSON: {exc}") from exc
+    out = {}
+    for mid, m in (doc.get("mitigations") or {}).items():
+        where = f"mitigation {mid} in {p}"
+        if not isinstance(m, dict):
+            raise SystemExit(f"::error::{where} is not an object")
+        ctl, vc = m.get("control") or {}, m.get("verifying_check") or {}
+        missing = [k for k in ("finding", "justification", "decided_by", "decided_on", "review_by")
+                   if not m.get(k)]
+        missing += [f"control.{k}" for k in ("component_id", "fingerprint") if not ctl.get(k)]
+        missing += [f"verifying_check.{k}" for k in ("signal", "policy") if not vc.get(k)]
+        if missing:
+            raise SystemExit(f"::error::{where} is missing {', '.join(missing)}")
+        if m.get("effect") not in MITIGATION_EFFECTS:
+            raise SystemExit(f"::error::{where} effect {m.get('effect')!r} is not one of {sorted(MITIGATION_EFFECTS)}")
+        if vc["signal"] not in VERIFYING_SIGNALS:
+            raise SystemExit(f"::error::{where} verifying_check.signal {vc['signal']!r} is not one of {sorted(VERIFYING_SIGNALS)}")
+        for k in ("decided_on", "review_by"):
+            try:
+                date.fromisoformat(str(m[k]))
+            except ValueError as exc:
+                raise SystemExit(f"::error::{where} {k} {m[k]!r} is not a date") from exc
+        out[mid] = m
+    return out
+
+
+def load_runtime_signal(path, pubkey_path=None, now=None, max_age_hours=RUNTIME_SIGNAL_MAX_AGE_HOURS):
+    """The signed runtime signal: the only live read a mitigation can cite.
+
+    Verified against the committed P-256 key (infrastructure/keys/
+    runtime-signing-key.json) with the signer's canonical form
+    (sorted keys, compact, provenance.attestation removed). Anything short of a
+    verified, fresh signal yields no validations a full mitigation can use."""
+    now = now or datetime.now(timezone.utc)
+    out = {"verified": False, "fresh": False, "reason": None, "validations": [], "emitted_at": None}
+    p = Path(path) if path else None
+    if not p or not p.exists():
+        out["reason"] = "no runtime signal supplied"
+        return out
+    try:
+        sig = json.loads(p.read_text())
+    except json.JSONDecodeError:
+        out["reason"] = "runtime signal is not valid JSON"
+        return out
+    try:
+        import base64
+        import copy
+        from cryptography.exceptions import InvalidSignature
+        from cryptography.hazmat.primitives import hashes, serialization
+        from cryptography.hazmat.primitives.asymmetric import ec
+    except ImportError:
+        out["reason"] = "cryptography is not installed; the runtime signal cannot be verified"
+        return out
+    try:
+        key_doc = json.loads(Path(pubkey_path or RUNTIME_PUBKEY_PATH).read_text())
+        pem = key_doc["public_key_pem"].encode("ascii")
+        if hashlib.sha256(pem).hexdigest() != key_doc.get("public_key_sha256"):
+            raise ValueError("pinned key does not match its recorded sha256")
+        key = serialization.load_pem_public_key(pem)
+        raw = base64.b64decode(sig["provenance"]["attestation"]["signature"])
+        body = copy.deepcopy(sig)
+        body["provenance"].pop("attestation", None)
+        canon = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        key.verify(raw, canon, ec.ECDSA(hashes.SHA256()))
+    except (InvalidSignature, KeyError, TypeError, ValueError, OSError, AttributeError) as exc:
+        out["reason"] = f"runtime signal signature does not verify ({type(exc).__name__})"
+        return out
+    out["verified"] = True
+    out["emitted_at"] = sig.get("emitted_at")
+    emitted = _ts(sig.get("emitted_at"), None) if sig.get("emitted_at") else None
+    out["fresh"] = bool(emitted and timedelta(0) <= now - emitted <= timedelta(hours=max_age_hours))
+    if not out["fresh"]:
+        out["reason"] = f"runtime signal emitted {sig.get('emitted_at')} is outside {max_age_hours}h"
+    out["validations"] = sig.get("validations") or []
+    return out
+
+
+def mitigation_state(finding, mitigations, inventory, runtime, today):
+    """The mitigation covering this finding, evaluated, or None."""
+    keys = {register_vuln_id(finding), finding.get("tracking_id"),
+            normalize_check_id(finding.get("tool_id") or "")}
+    match = next(((mid, m) for mid, m in sorted(mitigations.items()) if m["finding"] in keys), None)
+    if match is None:
+        return None
+    mid, m = match
+    ctl, vc = m["control"], m["verifying_check"]
+    cid = ctl["component_id"]
+    out = {"id": mid, "effect": m["effect"], "valid": False, "void_reason": None,
+           "control": {"component_id": cid, "setting": ctl.get("setting")},
+           "verifying_check": {"signal": vc["signal"], "policy": vc["policy"]},
+           "justification": m["justification"],
+           "verified_on": f"{m['decided_on']}T00:00:00+00:00",
+           **_decision_fields(m)}
+
+    def void(reason):
+        out["void_reason"] = reason
+        return out
+
+    if date.fromisoformat(str(m["review_by"])) < today:
+        return void(f"review_by {m['review_by']} has passed")
+    comp = (inventory.get("components") or {}).get(cid)
+    if comp is None:
+        return void(f"control {cid} is not in the inventory")
+    if component_fingerprint(comp) != ctl["fingerprint"]:
+        return void(f"control {cid} changed since the decision (fingerprint differs)")
+    if m["effect"] == "full" and vc["signal"] != "runtime":
+        return void("a full mitigation needs a verifying check that reads live state")
+    if vc["signal"] == "runtime":
+        rt = runtime or {}
+        if not rt.get("verified"):
+            return void(f"no live read: {rt.get('reason') or 'runtime signal not verified'}")
+        if not rt.get("fresh"):
+            return void(f"no live read: {rt.get('reason') or 'runtime signal stale'}")
+        results = rt.get("validations") or []
+    else:
+        results = inventory.get("validations") or []
+    hits = [v for v in results
+            if (v.get("policy") or {}).get("id") == vc["policy"] and cid in (v.get("component_refs") or [])]
+    if not hits:
+        return void(f"verifying check {vc['policy']} has no result for {cid}")
+    if any(v.get("result") != "pass" for v in hits):
+        return void(f"verifying check {vc['policy']} does not pass for {cid}")
+    out["valid"] = True
+    return out
 
 # Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
 # the table there). Ensures the VDR report carries the same VDR-EVA-* values an
@@ -533,6 +774,17 @@ def false_positive_checks():
 DEFAULT_POAM_ITEMS = Path(__file__).resolve().parent.parent / "data" / "poam-items.json"
 
 
+def load_decision_records(path=DEFAULT_POAM_ITEMS):
+    """{POAM id: item} for the decision fields of each check-ID disposition."""
+    p = Path(path)
+    if not p.exists():
+        return {}
+    try:
+        return {i["id"]: i for i in json.loads(p.read_text()).get("items") or [] if i.get("id")}
+    except (json.JSONDecodeError, AttributeError) as exc:
+        raise SystemExit(f"::error::decision records at {p} are not readable: {exc}") from exc
+
+
 def _decision_detection_dates(path=DEFAULT_POAM_ITEMS):
     """{decision id: original detection date} from the decision records, the
     source's own detection time for a suppression (REQ-SRC-1)."""
@@ -676,6 +928,14 @@ def ingest_dependabot(path):
         adv = alert.get("security_advisory") or {}
         sev = (adv.get("severity") or "MEDIUM").upper()
         package = (alert.get("dependency") or {}).get("package") or {}
+        # The alert's patched version is the fix state. Absent key -> unknown,
+        # which counts as available (vendor dependency lapses).
+        sv = alert.get("security_vulnerability")
+        if isinstance(sv, dict) and "first_patched_version" in sv:
+            patched = (sv.get("first_patched_version") or {}).get("identifier")
+            fix_state, fix_versions = ("fixed", [patched]) if patched else ("not-fixed", [])
+        else:
+            fix_state, fix_versions = "unknown", []
         findings.append({
             "source": "dependabot",
             "tool_id": adv.get("ghsa_id") or adv.get("cve_id") or "dependabot",
@@ -689,6 +949,8 @@ def ingest_dependabot(path):
             # CVSS impact vector for the CVSS-Environmental PAIN derivation; absent
             # -> assign_pain falls back to the severity proxy.
             "cvss_vector": _extract_cvss_vector(adv.get("cvss")),
+            "fix_state": fix_state,
+            "fix_versions": fix_versions,
         })
     return findings
 
@@ -770,6 +1032,11 @@ def ingest_grype(path):
             "resource": component,
             "cve": cve,
             "cvss_vector": cvss_vector,
+            # Fix state decides whether a vendor dependency still holds: it lapses
+            # on the first scan where a fix is available, and an unknown state
+            # counts as available. Grype: fixed / not-fixed / wont-fix / unknown.
+            "fix_state": (vuln.get("fix") or {}).get("state") or "unknown",
+            "fix_versions": list((vuln.get("fix") or {}).get("versions") or []),
         })
     return findings
 
@@ -935,8 +1202,8 @@ def ingest_epss(path):
     return scores
 
 
-_LEDGER_KEYS = ("first_detected", "first_evaluated", "clock_start", "historical_pain",
-                "rating_history", "completed_reductions")
+_LEDGER_KEYS = ("first_detected", "first_evaluated", "clock_start", "clock_basis",
+                "historical_pain", "rating_history", "completed_reductions")
 
 
 def ingest_previous_ledger(path):
@@ -982,14 +1249,31 @@ def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_r
     - clock_start: first_evaluated, moved only by a verified mitigation (T34);
       any other change in evaluation re-selects the timeframe from the same
       start (T35). No disposition pauses it.
+    - clock_basis: each start and the mitigation that earned it. A mitigation
+      that is no longer in force takes its reset with it, and the finding is
+      back on the clock it had before (T24, T25).
     - accepted: past first_evaluated + VER-TFR-MAV, never reset (T14, T36)."""
     prior = prior or {}
     candidates = [x for x in (prior.get("first_detected"), f.get("detected_at"), f.get("first_detected")) if x]
     first_detected = min(candidates, key=lambda x: _ts(x, now)) if candidates else now.isoformat()
     first_evaluated = prior.get("first_evaluated") or now.isoformat()
-    clock_start = prior.get("clock_start") or first_evaluated
-    if f.get("verified_mitigation_at") and _ts(f["verified_mitigation_at"], now) > _ts(clock_start, now):
-        clock_start = f["verified_mitigation_at"]
+    basis = [dict(b) for b in (prior.get("clock_basis") or []) if isinstance(b, dict) and b.get("start")]
+    if not basis:
+        basis = [{"start": first_evaluated, "mitigation": None}]
+        if prior.get("clock_start") and prior["clock_start"] != first_evaluated:
+            # A moved start recorded before its mitigation was: kept only while
+            # some verified mitigation still covers the finding.
+            basis.append({"start": prior["clock_start"], "mitigation": "unrecorded"})
+    active = (f.get("mitigation_id") or "unrecorded") if f.get("verified_mitigation_at") else None
+    kept = [b for b in basis
+            if b.get("mitigation") is None or b["mitigation"] == active
+            or (b["mitigation"] == "unrecorded" and active)]
+    voided = [b["mitigation"] for b in basis if b not in kept]
+    basis = kept or [{"start": first_evaluated, "mitigation": None}]
+    if (active and all(b.get("mitigation") != active for b in basis)
+            and _ts(f["verified_mitigation_at"], now) > _ts(basis[-1]["start"], now)):
+        basis.append({"start": f["verified_mitigation_at"], "mitigation": active})
+    clock_start = basis[-1]["start"]
     start_dt = _ts(clock_start, now)
     due_dt = start_dt + timedelta(days=sla) if sla is not None else None
     is_overdue = bool(needs_remediation and due_dt is not None and now > due_dt)
@@ -1015,10 +1299,13 @@ def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_r
             history.append({**point, "reason": reason})
             if last.get("pain") and last["pain"] > pain:
                 reductions.append({"at": now.isoformat(), "from": last["pain"], "to": pain, "reason": reason})
+    if voided:
+        history.append({**point, "reason": f"mitigation {', '.join(voided)} void; clock returns to {clock_start}"})
     return {
         "first_detected": first_detected,
         "first_evaluated": first_evaluated,
         "clock_start": clock_start,
+        "clock_basis": basis,
         "due_at": due_dt.isoformat() if due_dt else None,
         "days_since_detected": (now - _ts(first_detected, now)).days,
         "days_since_clock_start": (now - start_dt).days,
@@ -1043,7 +1330,7 @@ _PACKAGE_TYPES = {"npm_package", "pypi_package"}
 def load_inventory(ksi_signal_path):
     """Everything resolution needs from the bound inventory: identifier -> component
     index, Terraform components, and each component's type and classification."""
-    classes, types = {}, {}
+    classes, types, components, validations = {}, {}, {}, []
     p = Path(ksi_signal_path) if ksi_signal_path else None
     if p and p.exists():
         try:
@@ -1055,9 +1342,14 @@ def load_inventory(ksi_signal_path):
             if cid:
                 classes[cid] = (comp.get("attributes") or {}).get("classification")
                 types[cid] = comp.get("type")
+                components[cid] = comp
+        validations = sig.get("validations") or []
+    # components and validations: what a mitigation's control and deploy-time
+    # verifying check are read from.
     return {"index": build_component_index(ksi_signal_path) if p else {},
             "tf": tf_components_of(ksi_signal_path) if p else [],
-            "classes": classes, "types": types}
+            "classes": classes, "types": types,
+            "components": components, "validations": validations}
 
 
 def irv_determination(finding, cid, inventory):
@@ -1588,7 +1880,8 @@ def consolidate_by_cve(report_findings, risk_accepted):
 
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
                  epss_scores=None, disposition_register=None, check_vectors=None,
-                 lev_overrides=None, inventory=None, now=None):
+                 lev_overrides=None, inventory=None, now=None, mitigations=None, runtime=None,
+                 decision_records=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
     # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
     # disposition_register: the operator vulnerability disposition register.
@@ -1605,6 +1898,12 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         disposition_register = {}
     epss_scores = epss_scores or {}
     now = now or datetime.now(timezone.utc)
+    today = now.date()
+    mitigations = mitigations or {}
+    if decision_records is None:
+        decision_records = load_decision_records()
+    lowest_level = _rules.impact_levels()[0]
+    matched_register, matched_mitigations, lapsed = set(), set(), []
     mav_days = _rules.max_accepted_days()
     margin_days = int(config["likely_overdue_margin_days"])
     report_findings = []
@@ -1626,13 +1925,28 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         f = apply_check_vector(f, check_vectors)
         cid = resolve_component(f, inv["index"], inv["tf"])
         f = {**f, "_classification": classification_for(f, inventory, index)}
-        pain = assign_pain(f, index, config)
+        # A mitigation in force changes the evaluation and moves the clock; a void
+        # one changes nothing and its earlier reset is withdrawn (clock_for).
+        mit = mitigation_state(f, mitigations, inv, runtime, today) if mitigations else None
+        if mit:
+            matched_mitigations.add(mit["id"])
+        if mit and mit["valid"]:
+            f = {**f, "verified_mitigation_at": mit["verified_on"], "mitigation_id": mit["id"]}
+            if mit["effect"] == "full":
+                f["fully_mitigated"] = True
+        fully_mitigated = bool(f.get("fully_mitigated"))
+        # A fully mitigated finding takes the scale's lowest level (REQ-PAI-1, T15).
+        pain = lowest_level if fully_mitigated else assign_pain(f, index, config)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
         irv, irv_basis = irv_determination(f, cid, inv)
+        if mit and mit["valid"] and mit["effect"] == "not-reachable":
+            irv, irv_basis = False, "mitigation"
         if cid is None:
             summary["unresolved_components"] += 1
         lev, lev_basis = lev_determination(f, epss_scores, config["epss_threshold"],
                                            is_kev=is_kev, irv=irv)
+        if mit and mit["valid"] and mit["effect"] == "not-likely-exploitable" and lev and not is_kev:
+            lev, lev_basis = False, "mitigation"
         lev, lev_override = apply_lev_override(f, lev, lev_overrides, is_kev=is_kev)
         epss_used = None
         if f.get("cve") and f["cve"] in epss_scores:
@@ -1651,10 +1965,34 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # maps. Config findings are unaffected: classify_finding runs first and
         # classify_vulnerability returns (None, None) for any non-VULN_SOURCES
         # finding.
+        # Every disposition is a decision record: past review_by it is absent
+        # (REQ-DSP-2, T16), and its decision fields are published (REQ-DSP-1).
         disposition, finding_poam_ref = classify_finding(f.get("tool_id"))
-        if disposition is None:
-            disposition, finding_poam_ref = classify_vulnerability(f, disposition_register)
-        is_suppressed = disposition is not None
+        label, record = None, None
+        if disposition is not None:
+            dec = decision_records.get(finding_poam_ref) or {}
+            status, reason = evaluate_disposition({**dec, "disposition": "accepted"}, f, today)
+            record = {"key": finding_poam_ref, "disposition": disposition, "poam_ref": finding_poam_ref,
+                      "status": status, "reason": reason, "source": "decision-record",
+                      **_decision_fields(dec)}
+            if status != "in-force":
+                disposition, finding_poam_ref = None, None
+        else:
+            record = register_disposition(f, disposition_register, today, mit)
+            if record:
+                matched_register.add(record["key"])
+                if record["status"] == "in-force":
+                    label = record["disposition"]
+                    if record["disposition"] in REGISTER_PASS_DISPOSITIONS and record["poam_ref"]:
+                        disposition, finding_poam_ref = record["disposition"], record["poam_ref"]
+        if record and record["status"] == "lapsed":
+            lapsed.append(record["key"])
+        if disposition is None and fully_mitigated:
+            disposition = "mitigated"
+        label = disposition or label
+        # Closed for the deadline gate: false positive, accepted, fully mitigated.
+        # Anything else is still exploitable and still on its clock.
+        is_suppressed = disposition in CLOSING_DISPOSITIONS or (disposition == "mitigated" and fully_mitigated)
 
         sla = class_c_sla_days(pain, lev, irv)
         tid = f["tracking_id"]
@@ -1664,8 +2002,9 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             summary["ledger_carried_forward"] += 1
         else:
             summary["ledger_newly_detected"] += 1
-        # A false positive is not a vulnerability: nothing to remediate, no clock.
-        needs_remediation = disposition != "false-positive"
+        # A false positive is not a vulnerability, and a fully mitigated finding is
+        # no longer exploitable: nothing to remediate, no clock, never accepted.
+        needs_remediation = disposition != "false-positive" and not fully_mitigated
         clk = clock_for(f, ledger.get(tid), now, pain, lev, irv, sla, mav_days, margin_days,
                         needs_remediation)
         first_detected_str = clk["first_detected"]
@@ -1689,7 +2028,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             block_this = True
             block_reason = "KEV (CISA Known Exploited Vulnerability)"
         elif is_suppressed:
-            block_this = False  # documented suppression — carries a poam_ref, never blocks
+            block_this = False  # closed: false positive, accepted, or fully mitigated
         elif pain == "N5" and lev and irv:
             block_this = True
             block_reason = "N5+LEV+IRV (most-severe Class C tier)"
@@ -1717,6 +2056,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "first_detected": first_detected_str,
             "first_evaluated": clk["first_evaluated"],
             "clock_start": clk["clock_start"],
+            "clock_basis": clk["clock_basis"],
             "days_since_first_detected": clk["days_since_detected"],
             "completed_evaluation": completed_eval,
             "pain": pain,
@@ -1737,9 +2077,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "is_kev": is_kev,
             "completed_reductions": clk["completed_reductions"],
             "next_reduction": next_reduction if needs_remediation else None,
-            "current_disposition": disposition or "open",
-            "final_disposition": disposition or "open",
+            "current_disposition": label or "open",
+            "final_disposition": disposition if is_suppressed else "open",
             "poam_ref": finding_poam_ref,
+            "disposition_record": record,
+            "fully_mitigated": fully_mitigated,
+            "mitigation": mit,
+            "fix_state": f.get("fix_state"),
+            "fix_versions": f.get("fix_versions"),
             "remediation_sla_days": sla if needs_remediation else None,
             "remediation_due_at": due_at if needs_remediation else None,
             "occurrences": f.get("occurrences", 1),
@@ -1765,6 +2110,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             summary["blocking"] += 1
             blocking.append(f["tracking_id"])
 
+    # Register hygiene: records past review_by, and records with no current
+    # finding (remediated, withdrawn advisory, or a scan that stopped seeing it).
+    summary["lapsed_dispositions"] = sorted(set(lapsed))
+    summary["unmatched_dispositions"] = sorted(set(disposition_register) - matched_register)
+    summary["unmatched_mitigations"] = sorted(set(mitigations) - matched_mitigations)
     summary["total_findings"] = sum(1 for r in report_findings if r["final_disposition"] == "open")
     summary["dispositioned_findings"] = sum(1 for r in report_findings if r["final_disposition"] != "open")
     # risk_accepted count = synthesized .checkov.yaml suppressions + scanner
@@ -1907,6 +2257,10 @@ def main():
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--check-vectors", default=None, help="Governed per-check CVSS vectors (default infrastructure/schemas/check-vectors.json).")
+    parser.add_argument("--mitigations", default=None, help="Governed mitigation records (default data/mitigations.json).")
+    parser.add_argument("--runtime-signal", default=None, help="The signed runtime signal (/.well-known/ksi-signal-runtime.json): the live read a full mitigation needs. Absent, unverified or stale: those mitigations are void.")
+    parser.add_argument("--runtime-pubkey", default=None, help="Pinned public key record the runtime signal is verified against (default infrastructure/keys/runtime-signing-key.json).")
+    parser.add_argument("--fingerprint", default=None, metavar="COMPONENT_ID", help="Print the fingerprint of one --ksi-signal component (for a new mitigation record) and exit.")
     parser.add_argument("--lev-overrides", default=None, help="LEV override decision records (default data/lev-overrides.json).")
     parser.add_argument("--epss", default=None, help="EPSS scores (FIRST epss_scores-current.csv, optionally gzipped, or JSON). Enables the EPSS likely-exploitable union (EPSS >= threshold OR active); without it, LEV falls back to the severity proxy.")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
@@ -1917,6 +2271,12 @@ def main():
     parser.add_argument("--pain-config", default=None, help="Governed PAIN classifier config (default: infrastructure/schemas/vdr-pain-config.json). Loaded and validated fail-closed; recorded in the report methodology block.")
     parser.add_argument("--vuln-dispositions", default=None, help="Operator vulnerability disposition register (default: data/vuln-dispositions.json). The same file scripts/vuln-gate.py gates on; a dispositioned SCA/DAST finding carries its disposition and poam_ref into the report.")
     args = parser.parse_args()
+    if args.fingerprint:
+        comp = load_inventory(args.ksi_signal)["components"].get(args.fingerprint)
+        if comp is None:
+            raise SystemExit(f"::error::{args.fingerprint} is not a component of {args.ksi_signal}")
+        print(component_fingerprint(comp))
+        return 0
 
     # Load the governed classifier calibration. Fails closed if absent/malformed
     # so the knobs are always present and auditable (memo s14). assign_pain
@@ -1978,7 +2338,9 @@ def main():
                                     disposition_register=disposition_register,
                                     check_vectors=check_vectors,
                                     lev_overrides=lev_overrides,
-                                    inventory=load_inventory(args.ksi_signal))
+                                    inventory=load_inventory(args.ksi_signal),
+                                    mitigations=load_mitigations(args.mitigations),
+                                    runtime=load_runtime_signal(args.runtime_signal, args.runtime_pubkey))
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can

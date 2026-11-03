@@ -1,6 +1,6 @@
 # =============================================================================
-# Vulnerability gate: any uncategorized vulnerability fails the build. Only
-# false-positive and operational-requirement pass; risk-adjustment does not.
+# Vulnerability gate: any uncategorized vulnerability fails the build. The
+# pass set and its evidence rules are in test_dispositions_mitigations.py; risk-adjustment never passes.
 # =============================================================================
 import importlib.util
 import json

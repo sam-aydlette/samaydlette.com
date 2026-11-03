@@ -101,6 +101,20 @@ def class_c_timeframes(rules_dir=RULES_DIR):
     return out
 
 
+def impact_levels(rules_dir=RULES_DIR):
+    """The impact scale the rules define, lowest first ("N1".."N5"). A fully
+    mitigated finding takes the first (REQ-PAI-1)."""
+    rules, _ = load_rules(rules_dir)
+    try:
+        table = _rule(rules, "VDR", "VDR-TFR-PVR")["varies_by_class"][CERT_CLASS]["pain_timeframes"]
+        levels = sorted(table, key=int)
+    except (KeyError, TypeError, ValueError):
+        _fail(f"VDR-TFR-PVR has no Class {CERT_CLASS.upper()} impact scale")
+    if not levels:
+        _fail("VDR-TFR-PVR Class C impact scale is empty")
+    return [f"N{n}" for n in levels]
+
+
 def _class_c_or_flat(rule, rule_id):
     cell = (rule.get("varies_by_class") or {}).get(CERT_CLASS, rule)
     return _days(cell, f"{rule_id} Class C")
