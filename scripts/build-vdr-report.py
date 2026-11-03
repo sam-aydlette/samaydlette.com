@@ -48,6 +48,10 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+# Shared helpers live next to this script; keep it runnable from any cwd.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _rules  # noqa: E402
+
 
 # =============================================================================
 # GOVERNED PAIN CLASSIFIER CONFIG (see infrastructure/schemas/vdr-pain-config.json)
@@ -58,7 +62,8 @@ from pathlib import Path
 # The memo (s14) requires these to live in GOVERNED CONFIGURATION, not as in-band
 # ad-hoc constants, so they are loaded from a versioned, schema-backed JSON file
 # and never silently defaulted. The FedRAMP VDR-TFR-PVR remediation-day matrix is
-# deliberately NOT a knob here: it stays verbatim in CLASS_C_SLA_DAYS below.
+# NOT a knob here either: it is FedRAMP's, read at build time from the pinned
+# machine-readable rules (scripts/_rules.py), never typed into code.
 #
 # The config is loaded, validated fail-closed, recorded in the report's
 # methodology block, and consumed by assign_pain's CVSS-Environmental
@@ -338,29 +343,16 @@ def _read_checkov_skip_list(yaml_path):
 # =============================================================================
 # Class C remediation timeframes from VDR-TFR-PVR (FedRAMP CR26)
 # =============================================================================
-# Days from evaluation; mitigation, full mitigation, or remediation must reduce
-# the PAIN N-rating below the threshold within these windows. Class C is
-# "Moderate" equivalent.
-# Keys: (pain_n, lev, irv) → days
-CLASS_C_SLA_DAYS = {
-    ("N5", True,  True):  2,
-    ("N5", True,  False): 4,
-    ("N5", False, False): 16,
-    ("N5", False, True):  16,   # NLEV applies regardless of IRV
-    ("N4", True,  True):  4,
-    ("N4", True,  False): 8,
-    ("N4", False, False): 64,
-    ("N4", False, True):  64,
-    ("N3", True,  True):  16,
-    ("N3", True,  False): 32,
-    ("N3", False, False): 128,
-    ("N3", False, True):  128,
-    ("N2", True,  True):  48,
-    ("N2", True,  False): 128,
-    ("N2", False, False): 192,
-    ("N2", False, True):  192,
-    # N1: VDR-TFR-RMN — mitigate during routine operations, no specific SLA.
-}
+# Days from evaluation, keyed (pain_n, lev, irv). Read from FedRAMP's pinned
+# machine-readable rules (infrastructure/schemas/fedramp-rules/), not typed in
+# (REQ-RUL-1). N1 has no timeframe (mitigate during routine operations). A
+# missing or altered rules file fails the build.
+
+
+def rules_pin():
+    """The FedRAMP rules version this report used (REQ-RUL-2)."""
+    return _rules.pin()
+
 
 # Severity → PAIN FALLBACK. Used only for findings with no CVSS impact vector
 # (IaC/config/DAST findings, which are not CVE-scored): there is no C/I/A vector
@@ -1176,8 +1168,8 @@ def assign_pain(finding, index, config):
 
 
 def class_c_sla_days(pain, lev, irv):
-    """Look up the Class C remediation SLA from VDR-TFR-PVR."""
-    return CLASS_C_SLA_DAYS.get((pain, lev, irv))
+    """Class C remediation timeframe from VDR-TFR-PVR, read from the pinned rules."""
+    return _rules.class_c_timeframes().get((pain, lev, irv))
 
 
 # =============================================================================
@@ -1432,6 +1424,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "reporting": ("FedRAMP 20x VER-RPT-VDT (per-vulnerability), VER-RPT-AVI (accepted); "
                           "human-readable rendering published per VER-TFR-MHR"),
             "kev": "VDR-TFR-KEV / CISA BOD 26-04",
+            "fedramp_rules": rules_pin(),
         },
     }
     return report, blocking
@@ -1594,6 +1587,7 @@ def main():
         "epss_scores_loaded": len(epss_scores),
         "pain_config_version": pain_config["version"],
         "pain_config_sha256": pain_config_sha256,
+        "fedramp_rules": rules_pin(),
         "reference": pain_config.get("method_reference", ""),
     }
 

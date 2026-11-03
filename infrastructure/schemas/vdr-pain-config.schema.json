@@ -22,7 +22,6 @@
     "version": {"type": "string"},
     "description": {"type": "string"},
     "method_reference": {"type": "string"},
-    "fedramp_corpus_pin": {"type": "string"},
     "pain_word_thresholds": {
       "type": "object",
       "additionalProperties": false,

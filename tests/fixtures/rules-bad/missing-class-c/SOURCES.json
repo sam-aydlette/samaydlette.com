@@ -1,0 +1,9 @@
+{
+  "description": "KNOWN-BAD FIXTURE: Class C remediation matrix removed; the build must fail.",
+  "repository": "https://github.com/FedRAMP/rules",
+  "path": "fedramp-consolidated-rules.json",
+  "commit": "64fa769510416fa75fd00a4689466094265b8083",
+  "version": "2026.11.02.01",
+  "retrieved": "2026-11-03",
+  "sha256": "a5a7211bd4e6472f67952745647037326e088b4fea62cff293cc94e36f828246"
+}

@@ -167,8 +167,10 @@ must_patch_now if {
 }
 
 # ---- 3. threshold: Class C SLA (days) keyed by (pain, lev, irv) -------------
-# Mirrors CLASS_C_SLA_DAYS in build-vdr-report.py (VDR-TFR-PVR). N1 has no fixed
-# SLA (routine ops); represented as 365 (review within a year).
+# Must equal VDR-TFR-PVR Class C in the pinned FedRAMP rules
+# (infrastructure/schemas/fedramp-rules/); tests/test_rules_as_data.py fails if
+# it drifts. N1 has no fixed SLA (routine ops); represented as 365 (review
+# within a year).
 sla_table := {
 	"N1|x|x": 365,
 	"N2|true|true": 48, "N2|true|false": 128, "N2|false|true": 192, "N2|false|false": 192,
