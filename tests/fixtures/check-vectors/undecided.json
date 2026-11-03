@@ -1,0 +1,13 @@
+{
+  "version": "0.0-fixture",
+  "description": "fixture",
+  "vectors": {
+    "CKV_AWS_18": {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+      "rationale": "Access logging off: weakens detection only.",
+      "decided_by": null,
+      "decided_on": null,
+      "review_by": "2027-11-01"
+    }
+  }
+}

@@ -95,9 +95,11 @@ def test_lev_failsafe_high_when_epss_unavailable():
     assert vdr.is_likely_exploitable(f, {}, THRESH) is True
 
 
-def test_lev_failsafe_medium_stays_nlev_when_epss_unavailable():
+def test_lev_medium_without_a_score_is_lev():
+    """Figure 7 / T9: no prediction score means LEV until one arrives, whatever
+    the severity (this replaced the old HIGH/CRITICAL-only severity proxy)."""
     f = {"cve": "CVE-2026-NOEPSS", "severity": "MEDIUM"}
-    assert vdr.is_likely_exploitable(f, {}, THRESH) is False
+    assert vdr.is_likely_exploitable(f, {}, THRESH) is True
 
 
 def test_lev_union_is_not_a_blend():

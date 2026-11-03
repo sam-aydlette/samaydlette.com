@@ -45,7 +45,8 @@ import json
 import re
 import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+import fnmatch
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
@@ -778,27 +779,45 @@ def ingest_kev(path):
     return {v.get("cveID") for v in (doc.get("vulnerabilities") or []) if v.get("cveID")}
 
 
+class EpssScores(dict):
+    """{cve: probability} plus the feed's own provenance (REQ-LEV-2): FIRST puts
+    the model version and score date on a leading '#' line."""
+    model_version = None
+    score_date = None
+
+
+def _epss_header(line, scores):
+    for part in line.lstrip("#").split(","):
+        key, _, val = part.partition(":")
+        if key.strip() == "model_version":
+            scores.model_version = val.strip() or None
+        elif key.strip() == "score_date":
+            scores.score_date = val.strip() or None
+
+
 def ingest_epss(path):
     """Load EPSS exploit-probabilities -> {cve: probability}. Accepts the FIRST
     EPSS CSV (epss_scores-current.csv, optionally gzipped) or a JSON
     {"data":[{"cve","epss"}]} form. A missing or garbled feed yields an empty map,
     so every finding then falls back to the severity proxy (no silent downgrade)."""
+    scores = EpssScores()
     if not path or not Path(path).exists():
-        return {}
+        return scores
     raw = Path(path).read_bytes()
     if raw[:2] == b"\x1f\x8b":  # gzip magic
         import gzip
         try:
             raw = gzip.decompress(raw)
         except OSError:
-            return {}
+            return scores
     text = raw.decode("utf-8", "replace")
-    scores = {}
     if text.lstrip().startswith("{"):
         try:
             doc = json.loads(text)
         except json.JSONDecodeError:
-            return {}
+            return scores
+        scores.model_version = doc.get("model_version")
+        scores.score_date = doc.get("score_date")
         for row in doc.get("data") or []:
             cve = row.get("cve")
             try:
@@ -812,7 +831,10 @@ def ingest_epss(path):
     ci, ei = 0, 1
     header_seen = False
     for row in csv.reader(io.StringIO(text)):
-        if not row or row[0].startswith("#"):
+        if not row:
+            continue
+        if row[0].startswith("#"):
+            _epss_header(",".join(row), scores)
             continue
         if not header_seen:
             header_seen = True
@@ -880,29 +902,167 @@ def is_internet_reachable(finding):
     return any(hint in haystack for hint in INTERNET_REACHABLE_RESOURCE_HINTS)
 
 
-def is_likely_exploitable(finding, epss_scores, epss_threshold, is_kev=False):
-    """VER-EVA-ELX: Likely-Exploitable by the memo's union. A finding is LEV if its
-    EPSS probability meets the governed threshold OR exploitation is observed
-    active (CISA KEV membership, or an explicit exploitation=active marker). The
-    two fire independently — whichever is true, with no blend between them.
+_VEC_METRIC_RE = re.compile(r"/([A-Z]{1,3}):([A-Z])")
 
-    Fail-safe: when EPSS is unavailable for the finding's CVE (no feed loaded, or
-    the CVE is absent from it), missing data must not lower the determination, so
-    the finding falls back to the conservative severity proxy (HIGH/CRITICAL ->
-    LEV) rather than silently dropping to NLEV. When EPSS *is* available, its real
-    signal is trusted even if that means a sub-threshold HIGH finding is NLEV —
-    that is the classifier getting more accurate, not data going missing.
-    """
+
+def parse_vector(vector):
+    """{metric: value} from a CVSS v3.x or v4.0 vector; {} when absent."""
+    return dict(_VEC_METRIC_RE.findall("/" + str(vector).split("/", 1)[-1])) if vector else {}
+
+
+def _impacts(m):
+    """(C, I, A) letters from v3 (C/I/A) or v4 (VC/VI/VA) metrics, or None."""
+    for keys in (("C", "I", "A"), ("VC", "VI", "VA")):
+        if all(k in m for k in keys):
+            return tuple(m[k] for k in keys)
+    return None
+
+
+def _no_direct_impact(m):
+    imp = _impacts(m)
+    return imp is not None and all(x == "N" for x in imp)
+
+
+def lev_determination(finding, epss_scores, epss_threshold, is_kev=False, irv=False):
+    """VER-EVA-ELX by the method's Figure 7 (REQ-LEV-1). Each check stands alone
+    and the first to fire decides. Returns (lev, basis).
+
+      1. fully mitigated            -> NLEV
+      2. known exploited (KEV)      -> LEV
+      3. exploitation observed      -> LEV
+      4. FRD-LEV floor: IRV and AV:N/PR:N/UI:N, with some direct impact -> LEV
+         (REQ-LEV-3: no prediction score overrides it)
+      5. no direct impact (C/I/A all None in a governed vector) -> NLEV
+      6. prediction score >= theta  -> LEV, else NLEV
+      7. no prediction score        -> LEV until one arrives
+
+    The floor applies to vectors with some direct impact: a vector whose C/I/A
+    are all None describes nothing to exploit, which is what step 5 records."""
+    if finding.get("fully_mitigated"):
+        return False, "fully-mitigated"
     if is_kev:
-        return True
+        return True, "known-exploited"
     if str(finding.get("exploitation", "")).lower() == "active":
-        return True
+        return True, "exploitation-observed"
+    m = parse_vector(finding.get("cvss_vector"))
+    if irv and m.get("AV") == "N" and m.get("PR") == "N" and m.get("UI") == "N" \
+            and not _no_direct_impact(m) and _impacts(m) is not None:
+        return True, "floor"
+    if _no_direct_impact(m):
+        return False, "no-direct-impact"
     cve = finding.get("cve")
-    epss_scores = epss_scores or {}
-    if cve and cve in epss_scores:
-        return epss_scores[cve] >= epss_threshold
-    sev = (finding.get("severity") or "").upper()
-    return sev in ("HIGH", "CRITICAL", "ERROR")
+    if cve and cve in (epss_scores or {}):
+        return epss_scores[cve] >= epss_threshold, "prediction"
+    return True, "no-score"
+
+
+def is_likely_exploitable(finding, epss_scores, epss_threshold, is_kev=False, irv=False):
+    """Boolean form of lev_determination."""
+    return lev_determination(finding, epss_scores, epss_threshold, is_kev=is_kev, irv=irv)[0]
+
+
+# =============================================================================
+# GOVERNED PER-CHECK VECTORS AND LEV OVERRIDES
+# =============================================================================
+# Config checks (Checkov, tfsec) carry no CVE and so no published vector. Each
+# check ID gets a CVSS vector decided once, by a named person, and reviewed on a
+# date; the pipeline applies it to every finding of that check. An entry without
+# decided_by/decided_on, or past review_by, is not in force. The vector drives
+# both PAIN (CVSS-Environmental) and LEV (floor; no direct impact).
+DEFAULT_CHECK_VECTORS = (Path(__file__).resolve().parent.parent
+                         / "infrastructure" / "schemas" / "check-vectors.json")
+DEFAULT_LEV_OVERRIDES = Path(__file__).resolve().parent.parent / "data" / "lev-overrides.json"
+_V3_REQUIRED = ("AV", "AC", "PR", "UI", "S", "C", "I", "A")
+_V3_VALUES = {"AV": "NALP", "AC": "LH", "PR": "NLH", "UI": "NR", "S": "UC", "C": "NLH", "I": "NLH", "A": "NLH"}
+
+
+def _parse_day(value, where):
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        raise SystemExit(f"::error::{where}: '{value}' is not a YYYY-MM-DD date (fail-closed)") from None
+
+
+def _valid_v31(vector):
+    if not isinstance(vector, str) or not vector.startswith("CVSS:3.1/"):
+        return False
+    m = parse_vector(vector)
+    return all(k in m and m[k] in _V3_VALUES[k] for k in _V3_REQUIRED) and len(m) == len(_V3_REQUIRED)
+
+
+def load_check_vectors(path=None, today=None):
+    """{check_id: entry} for entries in force today. Malformed file or entry fails closed."""
+    p = Path(path) if path else DEFAULT_CHECK_VECTORS
+    today = today or datetime.now(timezone.utc).date()
+    try:
+        doc = json.loads(p.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"::error::check vectors at {p} unreadable: {exc} (fail-closed)") from exc
+    if not isinstance(doc.get("vectors"), dict) or not doc.get("version"):
+        raise SystemExit(f"::error::check vectors at {p} need 'version' and a 'vectors' object (fail-closed)")
+    in_force = {}
+    for check_id, e in doc["vectors"].items():
+        where = f"check vectors {p} {check_id}"
+        if not isinstance(e, dict) or not _valid_v31(e.get("vector")):
+            raise SystemExit(f"::error::{where}: vector must be a complete CVSS:3.1 base vector (fail-closed)")
+        if not str(e.get("rationale") or "").strip():
+            raise SystemExit(f"::error::{where}: rationale is required (fail-closed)")
+        review_by = _parse_day(e.get("review_by"), where)
+        if not e.get("decided_by") or not e.get("decided_on"):
+            continue  # proposed, not decided: not in force
+        _parse_day(e["decided_on"], where)
+        if review_by < today:
+            continue  # lapsed
+        in_force[check_id] = e
+    return in_force
+
+
+def apply_check_vector(finding, vectors):
+    """Attach the governed vector to a config finding that has none of its own."""
+    if finding.get("cvss_vector") or finding.get("tool_id") not in vectors:
+        return finding
+    out = dict(finding)
+    out["cvss_vector"] = vectors[finding["tool_id"]]["vector"]
+    out["vector_source"] = "governed-check-vector"
+    return out
+
+
+def load_lev_overrides(path=None):
+    p = Path(path) if path else DEFAULT_LEV_OVERRIDES
+    if not p.exists():
+        return {}
+    try:
+        doc = json.loads(p.read_text())
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"::error::LEV overrides at {p} are not valid JSON: {exc} (fail-closed)") from exc
+    overrides = doc.get("overrides", {})
+    for oid, o in overrides.items():
+        for k in ("advisory", "selector", "lev", "justification", "decided_by", "decided_on", "review_by"):
+            if o.get(k) in (None, ""):
+                raise SystemExit(f"::error::LEV override {oid} lacks {k} (fail-closed)")
+        _parse_day(o["review_by"], f"LEV override {oid}")
+    return overrides
+
+
+def apply_lev_override(finding, lev, overrides, today=None, is_kev=False):
+    """REQ-LEV-4: a decision record may override an LEV result for one advisory
+    across components matched by a selector, minus named exclusions. It is
+    published with each finding it covers and lapses at review_by. It never
+    clears a known-exploited finding. Returns (lev, override_id or None)."""
+    if is_kev:
+        return lev, None
+    today = today or datetime.now(timezone.utc).date()
+    advisory = finding.get("cve") or finding.get("tool_id")
+    resource = str(finding.get("resource") or "")
+    for oid, o in sorted(overrides.items()):
+        if o["advisory"] != advisory or resource in (o.get("exclusions") or []):
+            continue
+        if not fnmatch.fnmatchcase(resource, o["selector"]):
+            continue
+        if _parse_day(o["review_by"], f"LEV override {oid}") < today:
+            continue
+        return bool(o["lev"]), oid
+    return lev, None
 
 
 # =============================================================================
@@ -918,7 +1078,6 @@ def is_likely_exploitable(finding, epss_scores, epss_threshold, is_kev=False):
 # the N-level its agency impact warrants, not at N1 by severity label).
 
 _CIA_LETTER = {"N": "none", "L": "low", "H": "high"}
-_CVSS_CIA_RE = re.compile(r"/([CIA]):([NLH])")
 
 # Conservative fail-safe asset classification for an unresolved asset (memo s7):
 # missing metadata must not lower PAIN, so an unknown asset scores loudly.
@@ -940,13 +1099,11 @@ def parse_cvss_cia(vector, config):
     """Extract (C, I, A) impact weights from a CVSS v3.x vector string using the
     governed impact weights. Returns None when the vector carries no C/I/A
     metrics (so the caller falls back to the severity proxy)."""
-    if not vector:
-        return None
-    found = dict(_CVSS_CIA_RE.findall(str(vector)))
-    if not {"C", "I", "A"} <= set(found):
+    imp = _impacts(parse_vector(vector))
+    if imp is None or any(x not in _CIA_LETTER for x in imp):
         return None
     w = config["cvss_impact_weights"]
-    return tuple(w[_CIA_LETTER[found[x]]] for x in ("C", "I", "A"))
+    return tuple(w[_CIA_LETTER[x]] for x in imp)
 
 
 def build_classification_index(ksi_signal_path):
@@ -1158,13 +1315,29 @@ def assign_pain(finding, index, config):
     documented severity-proxy fallback (SEVERITY_TO_PAIN)."""
     cia = parse_cvss_cia(finding.get("cvss_vector"), config)
     if cia is None:
-        sev = (finding.get("severity") or "MEDIUM").upper()
-        return SEVERITY_TO_PAIN.get(sev, "N2")
+        sev = (finding.get("severity") or "").upper()
+        if sev:
+            return SEVERITY_TO_PAIN.get(sev, "N2")
+        # REQ-PAI-7: neither a vector nor a severity -> total technical impact.
+        high = config["cvss_impact_weights"]["high"]
+        cia = (high, high, high)
     cls = resolve_classification(finding, index)
     req = requirement_triplet(cls, config)
     m = scope_flag(cls, config)
     return pain_from_environmental(cia, req, m, config,
-                                   technical_impact=finding.get("technical_impact"))
+                                   technical_impact=technical_impact(finding))
+
+
+def technical_impact(finding):
+    """REQ-PAI-7: total when the vector's confidentiality and integrity are both
+    High, partial otherwise; with no vector, the severity fallback applies
+    (partial); with neither, total. An explicit value on the finding wins."""
+    if finding.get("technical_impact"):
+        return finding["technical_impact"]
+    imp = _impacts(parse_vector(finding.get("cvss_vector")))
+    if imp is not None:
+        return "total" if imp[0] == "H" and imp[1] == "H" else "partial"
+    return "partial" if finding.get("severity") else "total"
 
 
 def class_c_sla_days(pain, lev, irv):
@@ -1221,7 +1394,8 @@ def consolidate_by_cve(report_findings, risk_accepted):
 
 
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
-                 epss_scores=None, disposition_register=None):
+                 epss_scores=None, disposition_register=None, check_vectors=None,
+                 lev_overrides=None):
     # index: inventory classification index (asset CR/IR/AR source). config: the
     # governed PAIN config. epss_scores: {cve: probability} for the LEV union.
     # disposition_register: the operator vulnerability disposition register.
@@ -1249,12 +1423,21 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     }
     blocking = []
 
+    check_vectors = check_vectors or {}
+    lev_overrides = lev_overrides or {}
     for f in findings:
+        f = apply_check_vector(f, check_vectors)
         pain = assign_pain(f, index, config)
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
-        lev = is_likely_exploitable(f, epss_scores=epss_scores,
-                                    epss_threshold=config["epss_threshold"], is_kev=is_kev)
         irv = is_internet_reachable(f)
+        lev, lev_basis = lev_determination(f, epss_scores, config["epss_threshold"],
+                                           is_kev=is_kev, irv=irv)
+        lev, lev_override = apply_lev_override(f, lev, lev_overrides, is_kev=is_kev)
+        epss_used = None
+        if f.get("cve") and f["cve"] in epss_scores:
+            epss_used = {"score": epss_scores[f["cve"]],
+                         "model_version": getattr(epss_scores, "model_version", None),
+                         "score_date": getattr(epss_scores, "score_date", None)}
 
         # Disposition: a config finding whose check is a documented suppression
         # (centralized .checkov.yaml, inline #checkov:skip=, or a tfsec/AVD
@@ -1342,6 +1525,12 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "historical_pain": pain,
             "internet_reachable": irv,
             "likely_exploitable": lev,
+            "lev_basis": "override" if lev_override else lev_basis,
+            "lev_override": lev_override,
+            "epss": epss_used,
+            "cvss_vector": f.get("cvss_vector"),
+            "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
+            "technical_impact": technical_impact(f),
             "is_kev": is_kev,
             "completed_reductions": [],
             "next_reduction": next_reduction if not is_suppressed else None,
@@ -1380,6 +1569,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     # rationale (the VER-RPT-AVI explanation field) and a POAM cross-reference.
     risk_accepted_records = []
     for s in suppressions:
+        s = apply_check_vector(s, check_vectors)
+        s_irv = s.get("internet_reachable", False)
+        s_lev, s_basis = lev_determination(s, epss_scores, config["epss_threshold"],
+                                           is_kev=s.get("is_kev", False), irv=s_irv)
+        s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
         risk_accepted_records.append({
             "tracking_id": s["tracking_id"],
             "poam_ref": s.get("poam_ref"),
@@ -1389,9 +1583,12 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "resource": s.get("resource", ""),
             "first_detected": now.isoformat(),
             "completed_evaluation": now.isoformat(),
-            "pain": s.get("pain"),
-            "internet_reachable": s.get("internet_reachable", False),
-            "likely_exploitable": s.get("likely_exploitable", False),
+            "pain": s_pain,
+            "internet_reachable": s_irv,
+            "likely_exploitable": s_lev,
+            "lev_basis": s_basis,
+            "cvss_vector": s.get("cvss_vector"),
+            "vector_source": s.get("vector_source"),
             "is_kev": s.get("is_kev", False),
             "current_disposition": s.get("current_disposition", "risk-accepted"),
             "explanation": s.get("explanation", ""),
@@ -1495,6 +1692,8 @@ def main():
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
+    parser.add_argument("--check-vectors", default=None, help="Governed per-check CVSS vectors (default infrastructure/schemas/check-vectors.json).")
+    parser.add_argument("--lev-overrides", default=None, help="LEV override decision records (default data/lev-overrides.json).")
     parser.add_argument("--epss", default=None, help="EPSS scores (FIRST epss_scores-current.csv, optionally gzipped, or JSON). Enables the EPSS likely-exploitable union (EPSS >= threshold OR active); without it, LEV falls back to the severity proxy.")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
@@ -1556,10 +1755,14 @@ def main():
     # cross-reference reconciliation invariant (h) requires.
     disposition_register = load_disposition_register(args.vuln_dispositions)
 
+    check_vectors = load_check_vectors(args.check_vectors)
+    lev_overrides = load_lev_overrides(args.lev_overrides)
     report, blocking = build_report(findings, suppressions, kev_cves, ledger,
                                     index=classification_index, config=pain_config,
                                     epss_scores=epss_scores,
-                                    disposition_register=disposition_register)
+                                    disposition_register=disposition_register,
+                                    check_vectors=check_vectors,
+                                    lev_overrides=lev_overrides)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can
@@ -1580,8 +1783,16 @@ def main():
     # is unavailable.
     report["methodology"] = {
         "pain_classifier": "cvss-environmental",
-        "pain_classifier_fallback": "severity-proxy (findings without a CVSS vector)",
-        "lev_method": "EPSS union (>= threshold) OR active-exploitation (CISA KEV); severity-proxy fallback where EPSS is unavailable",
+        "pain_classifier_fallback": ("governed per-check vector for config findings; severity-proxy "
+                                     "where neither applies; total technical impact where no severity exists"),
+        "lev_method": ("Figure 7, first match deciding: fully mitigated -> known exploited -> exploitation "
+                       "observed -> floor (IRV and AV:N/PR:N/UI:N with direct impact) -> no direct impact "
+                       "-> EPSS >= threshold -> no score = LEV"),
+        "epss_feed": {"model_version": getattr(epss_scores, "model_version", None),
+                      "score_date": getattr(epss_scores, "score_date", None)},
+        "check_vectors_in_force": len(check_vectors),
+        "check_vectors_sha256": hashlib.sha256(Path(args.check_vectors or DEFAULT_CHECK_VECTORS).read_bytes()).hexdigest(),
+        "lev_overrides_in_force": len(lev_overrides),
         "epss_threshold": pain_config["epss_threshold"],
         "epss_threshold_rationale": pain_config["epss_threshold_rationale"],
         "epss_scores_loaded": len(epss_scores),
