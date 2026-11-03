@@ -112,7 +112,7 @@ def test_checkov_address_from_snippet(tmp_path):
 
 
 def test_checkov_address_from_file_and_line(tmp_path):
-    uri = str((FIX / "main.tf").relative_to(REPO))
+    uri = str((FIX / "main.tf.fixture").relative_to(REPO))
     f = vdr.ingest_checkov(_sarif(tmp_path, uri, 6))[0]
     assert f["resource"] == "aws_s3_bucket_public_access_block.logs"
 
@@ -139,3 +139,14 @@ def test_clock_carries_over_from_the_legacy_id():
     f = one({"resource": "aws_s3_bucket.logs", "tracking_id": "checkov-CKV_X-aws_s3_bucket.logs",
              "legacy_tracking_id": "checkov-CKV_X-infrastructure/x.tf"}, ledger=ledger)
     assert f["first_detected"] == "2026-01-01T00:00:00+00:00"
+
+
+def test_no_terraform_outside_infrastructure():
+    """The SAST scans (Checkov `directory: .`, tfsec at the repo root) read every
+    .tf file in the repository, and their findings feed the published VDR. A
+    Terraform test fixture would become production findings with no POA&M
+    reference and fail reconciliation; fixtures use the .tf.fixture suffix."""
+    stray = [p.relative_to(REPO) for p in REPO.rglob("*.tf")
+             if not p.relative_to(REPO).parts[0] in ("infrastructure", ".venv", "node_modules")
+             and ".terraform" not in p.parts]
+    assert not stray, f"Terraform outside infrastructure/ is scanned into the VDR: {stray}"
