@@ -1,0 +1,10 @@
+{
+  "description": "FedRAMP Consolidated Rules for 2026, vendored verbatim from FedRAMP's machine-readable rules repository. Remediation timeframes (VDR-TFR-PVR), the maximum accepted period (VER-TFR-MAV) and the evaluation window (VER-TFR-EVU) are read from this file at build time; they are never typed into code. To move the pin, replace the file with the one at the new commit, update commit, version and sha256 here, and say why in the PR.",
+  "repository": "https://github.com/FedRAMP/rules",
+  "path": "fedramp-consolidated-rules.json",
+  "commit": "64fa769510416fa75fd00a4689466094265b8083",
+  "version": "2026.11.02.01",
+  "retrieved": "2026-11-03",
+  "sha256": "04f3ba18e1b44dddc06fcbd249f00e025e188e09832b4a84ecb4199ee0b4eb00",
+  "_note": "Test fixture: N2 IRV+LEV changed to 7 days, to show the policy reads the rules rather than a table of its own."
+}

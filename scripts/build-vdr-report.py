@@ -45,13 +45,13 @@ import json
 import re
 import sys
 import uuid
-import fnmatch
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _rules  # noqa: E402
+import _triage  # noqa: E402
 
 
 # =============================================================================
@@ -233,7 +233,7 @@ def classify_finding(tool_id):
 #     exactly — `cve or tracking_id or tool_id` — so the two gates agree on
 #     which register key a finding resolves to. If they diverged, a finding
 #     could carry a poam_ref the vulnerability gate never approved.
-#   * REGISTER_PASS_DISPOSITIONS is vuln_gate.PASS_DISPOSITIONS. A register
+#   * the policy's pass set (policies/triage.rego) is vuln_gate.PASS_DISPOSITIONS. A register
 #     entry whose disposition is not one the vulnerability gate accepts confers
 #     no poam_ref here either; that build fails at the vulnerability gate and
 #     must not look dispositioned in the VDR.
@@ -245,8 +245,9 @@ DISPOSITION_REGISTER_PATH = (Path(__file__).resolve().parent.parent
 # above). Mirrors vuln-gate.py's VULN_SOURCES.
 VULN_SOURCES = {"grype", "zap", "dependabot"}
 
-# The disposition vocabulary (REQ-DSP-3). CR26 drops Rev5's deviation-request
-# terms; the decisions behind them remain:
+# The disposition vocabulary (REQ-DSP-3), the dispositions that pass the
+# vulnerability gate, and those that close a finding for the deadline gate are
+# defined in policies/triage.rego (vocabulary), which decides with them:
 #   false-positive          the reason it is not exploitable lives inside the
 #                           scanned artifact and it never was (REQ-DSP-4)
 #   mitigated               a named control, verified by a named check, protects it
@@ -256,19 +257,12 @@ VULN_SOURCES = {"grype", "zap", "dependabot"}
 #                           POA&M is retired; equivalent to accepted
 #   accepted                will not fix; carries the acceptance explanation
 #   remediate               a fix is planned; the clock runs
-DISPOSITIONS = {"false-positive", "mitigated", "vendor-dependency", "under-investigation",
-                "operational-requirement", "accepted", "remediate"}
 
-# Only these let a vulnerability pass the vulnerability gate, and mitigated and
-# vendor-dependency pass only with their evidence (a mitigation in force; a fix
-# state of not-fixed). Mirrors vuln-gate.py's PASS_DISPOSITIONS.
-REGISTER_PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
-                              "mitigated", "vendor-dependency"}
 
-# Dispositions that close a finding for the deadline gate (G3). A vendor
-# dependency or a partial mitigation is still exploitable: past its deadline it
-# fails G3 like any open finding.
-CLOSING_DISPOSITIONS = {"false-positive", "risk-accepted", "operational-requirement", "accepted"}
+def triage_vocabulary():
+    """{"dispositions", "pass", "closing"} from the triage policy."""
+    return _triage.vocabulary()
+
 
 NOT_RECORDED = "not recorded"
 _DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
@@ -277,37 +271,6 @@ _DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
 def _decision_fields(entry):
     """REQ-DSP-1: every decision field published; an unrecorded one says so."""
     return {k: (entry or {}).get(k) or NOT_RECORDED for k in _DECISION_FIELDS}
-
-
-def evaluate_disposition(entry, finding, today, mitigation=None):
-    """(status, reason) for one disposition record: in-force, lapsed or invalid.
-
-    lapsed   review_by has passed: the record is treated as absent (REQ-DSP-2, T16)
-    invalid  unknown term; a false positive whose reason is a control (REQ-DSP-4,
-             T15); mitigated with no mitigation in force; a vendor dependency
-             once a fix may exist (unknown fix state counts as available)"""
-    disp = entry.get("disposition")
-    if disp not in DISPOSITIONS:
-        return "invalid", f"unknown disposition {disp!r}"
-    review_by = entry.get("review_by")
-    if review_by:
-        try:
-            if date.fromisoformat(str(review_by)) < today:
-                return "lapsed", f"review_by {review_by} has passed"
-        except ValueError:
-            return "invalid", f"review_by {review_by!r} is not a date"
-    if disp == "false-positive" and entry.get("mitigation"):
-        return "invalid", ("names a control; a finding a control protects is recorded as "
-                           "mitigated, never as a false positive")
-    if disp == "mitigated":
-        if not (mitigation and mitigation.get("valid")):
-            return "invalid", "no mitigation in force for this finding"
-        if entry.get("mitigation") and entry["mitigation"] != mitigation["id"]:
-            return "invalid", f"names {entry['mitigation']} but {mitigation['id']} covers the finding"
-    if disp == "vendor-dependency" and finding.get("fix_state") != "not-fixed":
-        return "invalid", (f"fix state {finding.get('fix_state') or 'unknown'}: a fix may be "
-                           "available, so the vendor dependency has lapsed")
-    return "in-force", None
 
 
 def load_disposition_register(path=None):
@@ -336,34 +299,27 @@ def register_vuln_id(finding):
     return finding.get("cve") or finding.get("tracking_id") or finding.get("tool_id")
 
 
-def register_disposition(finding, register, today, mitigation=None):
-    """The register's record for an SCA/DAST finding, evaluated, or None."""
+def register_entry(finding, register):
+    """(key, entry) from the register for an SCA/DAST finding, or None. Whether
+    the entry is in force is the triage policy's decision."""
     if finding.get("source") not in VULN_SOURCES:
         return None
     key = register_vuln_id(finding)
     entry = register.get(key)
-    if not entry:
-        return None
-    status, reason = evaluate_disposition(entry, finding, today, mitigation)
-    return {"key": key, "disposition": entry.get("disposition"), "poam_ref": entry.get("poam_ref"),
-            "status": status, "reason": reason, "source": "vuln-dispositions",
-            **_decision_fields(entry)}
+    return (key, entry) if entry else None
 
 
 def classify_vulnerability(finding, register, today=None, mitigation=None):
-    """Return (disposition, poam_ref) for an SCA/DAST finding from the operator
-    disposition register, or (None, None) when it is not dispositioned there.
-
-    Only a record in force with a passing disposition confers anything. A
-    dispositioned entry with no poam_ref deliberately yields (None, None):
-    the finding stays open and invariant (h) fails, which is the signal that the
-    operator dispositioned a vulnerability without giving it a POA&M home. It
-    must never publish as handled-but-untracked."""
-    rd = register_disposition(finding, register, today or date.today(), mitigation)
-    if (rd and rd["status"] == "in-force" and rd["disposition"] in REGISTER_PASS_DISPOSITIONS
-            and rd["poam_ref"]):
-        return (rd["disposition"], rd["poam_ref"])
-    return (None, None)
+    """(disposition, poam_ref) the triage policy gives an SCA/DAST finding from the
+    register, or (None, None). Only a record in force, with a passing disposition
+    and a decision reference, confers anything; an entry with no poam_ref leaves the
+    finding open so invariant (h) fails rather than publish handled-but-untracked."""
+    reg = register_entry(finding, register)
+    if not reg:
+        return (None, None)
+    d = _decide_one(finding, register={"key": reg[0], "entry": reg[1]}, mitigation=mitigation,
+                    today=today, kind="finding")
+    return (d["disposition"], d["poam_ref"]) if d["poam_ref"] else (None, None)
 
 
 # =============================================================================
@@ -373,7 +329,7 @@ def classify_vulnerability(finding, register, today=None, mitigation=None):
 # fingerprint when the decision was made, and a verifying check. It is void when
 # the control's fingerprint changes (T24), when the check stops passing or has no
 # result (T25), when the control leaves the inventory, or past review_by. A void
-# mitigation takes its clock reset with it (clock_for).
+# mitigation takes its clock reset with it (clock_facts).
 #
 # effect:
 #   full                     fully mitigated: NLEV, lowest impact level. Rule 1:
@@ -1240,9 +1196,8 @@ def _ts(value, fallback):
         return fallback
 
 
-def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_remediation):
-    """Clock, deadline, likely-overdue, maximum period and rating history for one
-    finding (REQ-DLN-1..3, REQ-PAI-2; T14, T34-T36).
+def clock_facts(f, prior, now):
+    """The clock a finding is on (REQ-DLN-1; T34-T36), from the ledger.
 
     - first_detected: the earliest of the ledger and the source's own time.
     - first_evaluated: carried; set on the first build that evaluated it.
@@ -1252,7 +1207,8 @@ def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_r
     - clock_basis: each start and the mitigation that earned it. A mitigation
       that is no longer in force takes its reset with it, and the finding is
       back on the clock it had before (T24, T25).
-    - accepted: past first_evaluated + VER-TFR-MAV, never reset (T14, T36)."""
+    The deadline, likely-overdue and maximum period are decided by the triage
+    policy from clock_start and first_evaluated."""
     prior = prior or {}
     candidates = [x for x in (prior.get("first_detected"), f.get("detected_at"), f.get("first_detected")) if x]
     first_detected = min(candidates, key=lambda x: _ts(x, now)) if candidates else now.isoformat()
@@ -1275,15 +1231,24 @@ def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_r
         basis.append({"start": f["verified_mitigation_at"], "mitigation": active})
     clock_start = basis[-1]["start"]
     start_dt = _ts(clock_start, now)
-    due_dt = start_dt + timedelta(days=sla) if sla is not None else None
-    is_overdue = bool(needs_remediation and due_dt is not None and now > due_dt)
-    # Governed margin, capped at half the timeframe so a short deadline is not
-    # flagged the moment it opens.
-    margin = timedelta(days=min(margin_days, sla / 2)) if sla is not None else None
-    will_be_overdue = bool(needs_remediation and due_dt is not None and not is_overdue
-                           and (due_dt - now) <= margin)
-    accepted_dt = _ts(first_evaluated, now) + timedelta(days=mav_days)
-    accepted = bool(needs_remediation and now >= accepted_dt)
+    first_eval_dt = _ts(first_evaluated, now)
+    return {
+        "first_detected": first_detected,
+        "first_evaluated": first_evaluated,
+        "clock_start": clock_start,
+        "clock_basis": basis,
+        "voided": voided,
+        "start_dt": start_dt,
+        "first_evaluated_dt": first_eval_dt,
+        "days_since_detected": (now - _ts(first_detected, now)).days,
+        "days_since_clock_start": (now - start_dt).days,
+    }
+
+
+def rating_history(f, prior, now, pain, lev, irv, clk):
+    """REQ-PAI-2: the rating history carried from the ledger, appended with the
+    time and reason of each change, and the reductions completed."""
+    prior = prior or {}
     history = list(prior.get("rating_history") or [])
     reductions = list(prior.get("completed_reductions") or [])
     point = {"at": now.isoformat(), "pain": pain, "lev": lev, "irv": irv}
@@ -1299,20 +1264,10 @@ def clock_for(f, prior, now, pain, lev, irv, sla, mav_days, margin_days, needs_r
             history.append({**point, "reason": reason})
             if last.get("pain") and last["pain"] > pain:
                 reductions.append({"at": now.isoformat(), "from": last["pain"], "to": pain, "reason": reason})
-    if voided:
-        history.append({**point, "reason": f"mitigation {', '.join(voided)} void; clock returns to {clock_start}"})
+    if clk["voided"]:
+        history.append({**point, "reason": f"mitigation {', '.join(clk['voided'])} void; "
+                                           f"clock returns to {clk['clock_start']}"})
     return {
-        "first_detected": first_detected,
-        "first_evaluated": first_evaluated,
-        "clock_start": clock_start,
-        "clock_basis": basis,
-        "due_at": due_dt.isoformat() if due_dt else None,
-        "days_since_detected": (now - _ts(first_detected, now)).days,
-        "days_since_clock_start": (now - start_dt).days,
-        "is_overdue": is_overdue,
-        "will_be_overdue": will_be_overdue,
-        "accepted": accepted,
-        "accepted_at": accepted_dt.isoformat() if accepted else None,
         "historical_pain": prior.get("historical_pain") or (history[0].get("pain") if history else pain),
         "rating_history": history,
         "completed_reductions": reductions,
@@ -1352,23 +1307,16 @@ def load_inventory(ksi_signal_path):
             "components": components, "validations": validations}
 
 
-def irv_determination(finding, cid, inventory):
-    """VER-EVA-EIR from the inventory (REQ-IRV-6). Returns (irv, basis).
-
-      observed                 an outside-in observation (DAST) reached it -> IRV
-      unresolved               no inventory component -> IRV (fail-safe, T7)
-      package-host-unrecorded  a package: its host is not yet recorded -> IRV
-      inventory                the component's declared internet_reachable"""
-    if finding.get("internet_reachable") is True:
-        return True, "observed"
-    if cid is None:
-        return True, "unresolved"
-    if inventory["types"].get(cid) in _PACKAGE_TYPES:
-        return True, "package-host-unrecorded"
-    cls = inventory["classes"].get(cid) or {}
-    if not isinstance(cls.get("internet_reachable"), bool):
-        return True, "unresolved"
-    return cls["internet_reachable"], "inventory"
+def reach_facts(finding, cid, inventory):
+    """What reachability is decided from (REQ-IRV-6): an outside-in observation
+    (DAST reached it), the resolved component, whether it is a package, and the
+    component's declared internet_reachable. The policy decides IRV."""
+    cls = (inventory["classes"].get(cid) or {}) if cid else {}
+    declared = cls.get("internet_reachable")
+    return {"observed": finding.get("internet_reachable") is True,
+            "component_id": cid,
+            "is_package": bool(cid) and inventory["types"].get(cid) in _PACKAGE_TYPES,
+            "declared": declared if isinstance(declared, bool) else None}
 
 
 def classification_for(finding, inventory, index):
@@ -1407,9 +1355,50 @@ PAIN_CLASSIFIER_DEVIATION = (
     "default decision tables. The function, its config version and sha256 are published here.")
 
 
+def triage_item(f, kind, *, pain, is_kev, epss_scores, reach, mitigation=None,
+                check_decision=None, register=None, clock=None):
+    """The facts the triage policy decides one finding from."""
+    cve = f.get("cve")
+    scores = epss_scores or {}
+    return {
+        "id": f["tracking_id"],
+        "kind": kind,
+        "pain": pain,
+        "is_kev": bool(is_kev),
+        "exploitation": f.get("exploitation"),
+        "metrics": parse_vector(f.get("cvss_vector")),
+        "epss": scores[cve] if cve and cve in scores else None,
+        "fully_mitigated": bool(f.get("fully_mitigated")),
+        "reach": reach,
+        "mitigation": ({"id": mitigation["id"], "valid": bool(mitigation["valid"]),
+                        "effect": mitigation["effect"]} if mitigation else None),
+        "check_decision": check_decision,
+        "register": register,
+        "advisory": f.get("cve") or f.get("tool_id"),
+        "resource": str(f.get("resource") or ""),
+        "fix_state": f.get("fix_state"),
+        "clock": clock,
+    }
+
+
+def _decide_one(finding, *, is_kev=False, irv=False, epss_scores=None, epss_threshold=0.1,
+                lev_overrides=None, today=None, kind="suppression", register=None, mitigation=None):
+    """The policy's decision for one finding, outside a report (unit callers)."""
+    now = datetime.combine(today or datetime.now(timezone.utc).date(), datetime.min.time(),
+                           tzinfo=timezone.utc).replace(hour=12)
+    reach = {"observed": bool(irv), "component_id": "single-finding", "is_package": False,
+             "declared": bool(irv)}
+    clock = {"start_ns": _triage.to_ns(now), "first_evaluated_ns": _triage.to_ns(now)}
+    item = triage_item({**finding, "tracking_id": "single-finding"}, kind, pain=_rules.impact_levels()[-1],
+                       is_kev=is_kev, epss_scores=epss_scores, reach=reach, clock=clock,
+                       register=register, mitigation=mitigation)
+    return _triage.decide([item], now=now, epss_threshold=epss_threshold, margin_days=0,
+                          lev_overrides=lev_overrides)[0]
+
+
 def lev_determination(finding, epss_scores, epss_threshold, is_kev=False, irv=False):
-    """VER-EVA-ELX by the method's Figure 7 (REQ-LEV-1). Each check stands alone
-    and the first to fire decides. Returns (lev, basis).
+    """VER-EVA-ELX by the method's Figure 7 (REQ-LEV-1), as decided by the triage
+    policy for one finding. Returns (lev, basis).
 
       1. fully mitigated            -> NLEV
       2. known exploited (KEV)      -> LEV
@@ -1418,26 +1407,9 @@ def lev_determination(finding, epss_scores, epss_threshold, is_kev=False, irv=Fa
          (REQ-LEV-3: no prediction score overrides it)
       5. no direct impact (C/I/A all None in a governed vector) -> NLEV
       6. prediction score >= theta  -> LEV, else NLEV
-      7. no prediction score        -> LEV until one arrives
-
-    The floor applies to vectors with some direct impact: a vector whose C/I/A
-    are all None describes nothing to exploit, which is what step 5 records."""
-    if finding.get("fully_mitigated"):
-        return False, "fully-mitigated"
-    if is_kev:
-        return True, "known-exploited"
-    if str(finding.get("exploitation", "")).lower() == "active":
-        return True, "exploitation-observed"
-    m = parse_vector(finding.get("cvss_vector"))
-    if irv and m.get("AV") == "N" and m.get("PR") == "N" and m.get("UI") == "N" \
-            and not _no_direct_impact(m) and _impacts(m) is not None:
-        return True, "floor"
-    if _no_direct_impact(m):
-        return False, "no-direct-impact"
-    cve = finding.get("cve")
-    if cve and cve in (epss_scores or {}):
-        return epss_scores[cve] >= epss_threshold, "prediction"
-    return True, "no-score"
+      7. no prediction score        -> LEV until one arrives"""
+    d = _decide_one(finding, is_kev=is_kev, irv=irv, epss_scores=epss_scores, epss_threshold=epss_threshold)
+    return d["lev"], d["lev_basis"]
 
 
 def is_likely_exploitable(finding, epss_scores, epss_threshold, is_kev=False, irv=False):
@@ -1529,24 +1501,12 @@ def load_lev_overrides(path=None):
 
 
 def apply_lev_override(finding, lev, overrides, today=None, is_kev=False):
-    """REQ-LEV-4: a decision record may override an LEV result for one advisory
-    across components matched by a selector, minus named exclusions. It is
-    published with each finding it covers and lapses at review_by. It never
-    clears a known-exploited finding. Returns (lev, override_id or None)."""
-    if is_kev:
-        return lev, None
-    today = today or datetime.now(timezone.utc).date()
-    advisory = finding.get("cve") or finding.get("tool_id")
-    resource = str(finding.get("resource") or "")
-    for oid, o in sorted(overrides.items()):
-        if o["advisory"] != advisory or resource in (o.get("exclusions") or []):
-            continue
-        if not fnmatch.fnmatchcase(resource, o["selector"]):
-            continue
-        if _parse_day(o["review_by"], f"LEV override {oid}") < today:
-            continue
-        return bool(o["lev"]), oid
-    return lev, None
+    """REQ-LEV-4, as decided by the triage policy for one finding: a decision
+    record may override an LEV result for one advisory across components matched
+    by a selector, minus named exclusions. It lapses at review_by and never clears
+    a known-exploited finding. Returns (lev, override_id or None)."""
+    d = _decide_one(finding, is_kev=is_kev, lev_overrides=overrides, today=today, kind="finding")
+    return (d["lev"], d["lev_override"]) if d["lev_override"] else (lev, None)
 
 
 # =============================================================================
@@ -1826,8 +1786,10 @@ def technical_impact(finding):
 
 
 def class_c_sla_days(pain, lev, irv):
-    """Class C remediation timeframe from VDR-TFR-PVR, read from the pinned rules."""
-    return _rules.class_c_timeframes().get((pain, lev, irv))
+    """Class C remediation timeframe from VDR-TFR-PVR, as the triage policy reads it
+    from the pinned rules (data.rules)."""
+    return _triage.evaluate("data.vdr.triage.timeframe(input.p, input.l, input.i)",
+                            {"p": pain, "l": bool(lev), "i": bool(irv), "items": []})
 
 
 # =============================================================================
@@ -1902,9 +1864,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     mitigations = mitigations or {}
     if decision_records is None:
         decision_records = load_decision_records()
-    lowest_level = _rules.impact_levels()[0]
     matched_register, matched_mitigations, lapsed = set(), set(), []
-    mav_days = _rules.max_accepted_days()
     margin_days = int(config["likely_overdue_margin_days"])
     report_findings = []
     summary = {
@@ -1921,80 +1881,42 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     lev_overrides = lev_overrides or {}
     inv = inventory or {"index": {}, "tf": [], "classes": {}, "types": {}}
     summary["unresolved_components"] = 0
+    # 1. Facts. Everything the triage policy decides from, per finding: the
+    #    resolved component and its declared reachability, the PAIN arithmetic,
+    #    KEV and EPSS, the verified state of a mitigation, the disposition and
+    #    decision records, and the clock from the ledger.
+    prepared, items = [], []
     for f in findings:
         f = apply_check_vector(f, check_vectors)
         cid = resolve_component(f, inv["index"], inv["tf"])
         f = {**f, "_classification": classification_for(f, inventory, index)}
-        # A mitigation in force changes the evaluation and moves the clock; a void
-        # one changes nothing and its earlier reset is withdrawn (clock_for).
+        # A mitigation's evidence (fingerprint, live read, signature) is checked
+        # here; what a valid one changes is the policy's decision.
         mit = mitigation_state(f, mitigations, inv, runtime, today) if mitigations else None
         if mit:
             matched_mitigations.add(mit["id"])
         if mit and mit["valid"]:
             f = {**f, "verified_mitigation_at": mit["verified_on"], "mitigation_id": mit["id"]}
-            if mit["effect"] == "full":
-                f["fully_mitigated"] = True
-        fully_mitigated = bool(f.get("fully_mitigated"))
-        # A fully mitigated finding takes the scale's lowest level (REQ-PAI-1, T15).
-        pain = lowest_level if fully_mitigated else assign_pain(f, index, config)
-        is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
-        irv, irv_basis = irv_determination(f, cid, inv)
-        if mit and mit["valid"] and mit["effect"] == "not-reachable":
-            irv, irv_basis = False, "mitigation"
         if cid is None:
             summary["unresolved_components"] += 1
-        lev, lev_basis = lev_determination(f, epss_scores, config["epss_threshold"],
-                                           is_kev=is_kev, irv=irv)
-        if mit and mit["valid"] and mit["effect"] == "not-likely-exploitable" and lev and not is_kev:
-            lev, lev_basis = False, "mitigation"
-        lev, lev_override = apply_lev_override(f, lev, lev_overrides, is_kev=is_kev)
-        epss_used = None
-        if f.get("cve") and f["cve"] in epss_scores:
-            epss_used = {"score": epss_scores[f["cve"]],
-                         "model_version": getattr(epss_scores, "model_version", None),
-                         "score_date": getattr(epss_scores, "score_date", None)}
+        is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
 
-        # Disposition: a config finding whose check is a documented suppression
-        # (centralized .checkov.yaml, inline #checkov:skip=, or a tfsec/AVD
-        # equivalent) is reclassified as risk-accepted / false-positive and
-        # carries its POA&M cross-reference — it is NOT a blocking open finding,
-        # but it stays in findings[] so the raw finding remains individually
-        # mappable to its POA&M item. Only an unmapped finding stays "open".
-        # A vulnerability (Grype/Dependabot/ZAP) carries no check ID, so it is
-        # dispositioned in data/vuln-dispositions.json rather than by the check-ID
-        # maps. Config findings are unaffected: classify_finding runs first and
-        # classify_vulnerability returns (None, None) for any non-VULN_SOURCES
-        # finding.
-        # Every disposition is a decision record: past review_by it is absent
-        # (REQ-DSP-2, T16), and its decision fields are published (REQ-DSP-1).
-        disposition, finding_poam_ref = classify_finding(f.get("tool_id"))
-        label, record = None, None
-        if disposition is not None:
-            dec = decision_records.get(finding_poam_ref) or {}
-            status, reason = evaluate_disposition({**dec, "disposition": "accepted"}, f, today)
-            record = {"key": finding_poam_ref, "disposition": disposition, "poam_ref": finding_poam_ref,
-                      "status": status, "reason": reason, "source": "decision-record",
-                      **_decision_fields(dec)}
-            if status != "in-force":
-                disposition, finding_poam_ref = None, None
+        # Disposition facts. A config finding whose check is a documented
+        # suppression (centralized .checkov.yaml, inline #checkov:skip=, or a
+        # tfsec/AVD equivalent) carries its decision record; a vulnerability
+        # (Grype/Dependabot/ZAP) carries its register entry. Whether either is in
+        # force is decided by the policy (REQ-DSP-1, REQ-DSP-2, T16).
+        check_disposition, check_ref = classify_finding(f.get("tool_id"))
+        check_decision, reg = None, None
+        if check_disposition is not None:
+            dec = decision_records.get(check_ref) or {}
+            check_decision = {"disposition": check_disposition, "poam_ref": check_ref,
+                              "record": {k: dec[k] for k in _DECISION_FIELDS if k in dec}}
         else:
-            record = register_disposition(f, disposition_register, today, mit)
-            if record:
-                matched_register.add(record["key"])
-                if record["status"] == "in-force":
-                    label = record["disposition"]
-                    if record["disposition"] in REGISTER_PASS_DISPOSITIONS and record["poam_ref"]:
-                        disposition, finding_poam_ref = record["disposition"], record["poam_ref"]
-        if record and record["status"] == "lapsed":
-            lapsed.append(record["key"])
-        if disposition is None and fully_mitigated:
-            disposition = "mitigated"
-        label = disposition or label
-        # Closed for the deadline gate: false positive, accepted, fully mitigated.
-        # Anything else is still exploitable and still on its clock.
-        is_suppressed = disposition in CLOSING_DISPOSITIONS or (disposition == "mitigated" and fully_mitigated)
+            reg = register_entry(f, disposition_register)
+            if reg:
+                matched_register.add(reg[0])
 
-        sla = class_c_sla_days(pain, lev, irv)
         tid = f["tracking_id"]
         if tid not in ledger and f.get("legacy_tracking_id") in ledger:
             tid = f["legacy_tracking_id"]  # identity changed format; keep the clock
@@ -2002,43 +1924,72 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             summary["ledger_carried_forward"] += 1
         else:
             summary["ledger_newly_detected"] += 1
-        # A false positive is not a vulnerability, and a fully mitigated finding is
-        # no longer exploitable: nothing to remediate, no clock, never accepted.
-        needs_remediation = disposition != "false-positive" and not fully_mitigated
-        clk = clock_for(f, ledger.get(tid), now, pain, lev, irv, sla, mav_days, margin_days,
-                        needs_remediation)
-        first_detected_str = clk["first_detected"]
-        days_since_detected = clk["days_since_clock_start"]
-        completed_eval = now.isoformat()
-        due_at = clk["due_at"]
+        clk = clock_facts(f, ledger.get(tid), now)
+        items.append(triage_item(
+            f, "finding", pain=assign_pain(f, index, config), is_kev=is_kev, epss_scores=epss_scores,
+            reach=reach_facts(f, cid, inv), mitigation=mit, check_decision=check_decision,
+            register=({"key": reg[0], "entry": reg[1]} if reg else None),
+            clock={"start_ns": _triage.to_ns(clk["start_dt"]),
+                   "first_evaluated_ns": _triage.to_ns(clk["first_evaluated_dt"])}))
+        prepared.append((f, cid, mit, is_kev, check_decision, reg, tid, clk))
 
-        # Blocking conditions, in priority order:
-        #   1. Any KEV-listed CVE without remediation (VDR-TFR-KEV / BOD 26-04).
-        #   2. Any N5+LEV+IRV finding (most-severe Class C tier, 2-day SLA).
-        #   3. Any finding where days_since_detected exceeds the Class C SLA
-        #      from VDR-TFR-PVR for its (PAIN, LEV, IRV) combination.
-        # KEV is tested BEFORE the suppression short-circuit: an actively-exploited
-        # CVE blocks the build even when the operator has dispositioned it, so
-        # adding a register entry can never buy a KEV out of the gate. Config
-        # findings are unaffected — they carry no CVE, so is_kev is always False
-        # for them and this branch reads exactly as it did before.
-        block_this = False
-        block_reason = None
-        if is_kev:
-            block_this = True
-            block_reason = "KEV (CISA Known Exploited Vulnerability)"
-        elif is_suppressed:
-            block_this = False  # closed: false positive, accepted, or fully mitigated
-        elif pain == "N5" and lev and irv:
-            block_this = True
-            block_reason = "N5+LEV+IRV (most-severe Class C tier)"
-        elif clk["is_overdue"]:
-            block_this = True
-            block_reason = f"past Class C SLA ({days_since_detected}d > {sla}d from {clk['clock_start']} for PAIN={pain}, LEV={lev}, IRV={irv})"
+    # Risk-accepted entries (.checkov.yaml suppressions) are decided for
+    # reachability and exploitability only: they carry no deadline.
+    sup_prepared = []
+    for s in suppressions:
+        s = apply_check_vector(s, check_vectors)
+        s_cid = resolve_component(s, inv["index"], inv["tf"])
+        s = {**s, "_classification": classification_for(s, inventory, index)}
+        s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
+        items.append(triage_item(s, "suppression", pain=s_pain, is_kev=s.get("is_kev", False),
+                                 epss_scores=epss_scores, reach=reach_facts(s, s_cid, inv)))
+        sup_prepared.append((s, s_cid, s_pain))
+
+    # 2. Decisions: one evaluation of policies/triage.rego for the whole report.
+    decisions = _triage.decide(items, now=now, epss_threshold=config["epss_threshold"],
+                               margin_days=margin_days, lev_overrides=lev_overrides)
+
+    # 3. Publish.
+    for (f, cid, mit, is_kev, check_decision, reg, tid, clk), d in zip(prepared, decisions[:len(prepared)], strict=True):
+        pain, irv, lev, sla = d["pain"], d["irv"], d["lev"], d["sla_days"]
+        disposition, finding_poam_ref = d["disposition"], d["poam_ref"]
+        is_suppressed, needs_remediation = d["closed"], d["needs_remediation"]
+        fully_mitigated = d["fully_mitigated"]
+        record = None
+        if check_decision is not None:
+            record = {"key": check_decision["poam_ref"], "disposition": check_decision["disposition"],
+                      "poam_ref": check_decision["poam_ref"], "status": d["record_status"],
+                      "reason": d["record_reason"], "source": "decision-record",
+                      **_decision_fields(check_decision["record"])}
+        elif reg:
+            record = {"key": reg[0], "disposition": reg[1].get("disposition"),
+                      "poam_ref": reg[1].get("poam_ref"), "status": d["record_status"],
+                      "reason": d["record_reason"], "source": "vuln-dispositions",
+                      **_decision_fields(reg[1])}
+        if record and record["status"] == "lapsed":
+            lapsed.append(record["key"])
+        hist = rating_history(f, ledger.get(tid), now, pain, lev, irv, clk)
+        days_since_detected = clk["days_since_clock_start"]
+        due_at = _triage.from_ns(d["due_ns"], clk["start_dt"].tzinfo) if d["due_ns"] is not None else None
+        accepted_at = (_triage.from_ns(d["accepted_ns"], clk["first_evaluated_dt"].tzinfo)
+                       if d["accepted"] else None)
+        epss_used = None
+        if f.get("cve") and f["cve"] in epss_scores:
+            epss_used = {"score": epss_scores[f["cve"]],
+                         "model_version": getattr(epss_scores, "model_version", None),
+                         "score_date": getattr(epss_scores, "score_date", None)}
+
+        block_this = d["blocking"]
+        block_reason = {
+            "kev": "KEV (CISA Known Exploited Vulnerability)",
+            "top-impact-lev-irv": f"{pain}+LEV+IRV (most-severe Class C tier)",
+            "past-deadline": (f"past Class C SLA ({days_since_detected}d > {sla}d from {clk['clock_start']} "
+                              f"for PAIN={pain}, LEV={lev}, IRV={irv})"),
+        }.get(d["block_rule"]) if block_this else None
 
         # VER-RPT-VDT per-vulnerability record fields. History and reductions come
         # from the ledger (REQ-PAI-2); the deadline runs whatever the disposition.
-        is_overdue = clk["is_overdue"]
+        is_overdue = d["is_overdue"]
         next_reduction = ({"estimated_time": due_at, "target_pain": "remediated"}
                           if sla is not None else None)
         overdue_explanation = (block_reason if block_this
@@ -2053,31 +2004,31 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "description": f.get("description", ""),
             "resource": f.get("resource", ""),
             "cve": f.get("cve"),
-            "first_detected": first_detected_str,
+            "first_detected": clk["first_detected"],
             "first_evaluated": clk["first_evaluated"],
             "clock_start": clk["clock_start"],
             "clock_basis": clk["clock_basis"],
             "days_since_first_detected": clk["days_since_detected"],
-            "completed_evaluation": completed_eval,
+            "completed_evaluation": now.isoformat(),
             "pain": pain,
             "current_pain": pain,
-            "historical_pain": clk["historical_pain"],
-            "rating_history": clk["rating_history"],
+            "historical_pain": hist["historical_pain"],
+            "rating_history": hist["rating_history"],
             "component_id": cid,
             "unresolved_component": cid is None,
             "internet_reachable": irv,
-            "irv_basis": irv_basis,
+            "irv_basis": d["irv_basis"],
             "likely_exploitable": lev,
-            "lev_basis": "override" if lev_override else lev_basis,
-            "lev_override": lev_override,
+            "lev_basis": d["lev_basis"],
+            "lev_override": d["lev_override"],
             "epss": epss_used,
             "cvss_vector": f.get("cvss_vector"),
             "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
             "technical_impact": technical_impact(f),
             "is_kev": is_kev,
-            "completed_reductions": clk["completed_reductions"],
+            "completed_reductions": hist["completed_reductions"],
             "next_reduction": next_reduction if needs_remediation else None,
-            "current_disposition": label or "open",
+            "current_disposition": d["label"] or "open",
             "final_disposition": disposition if is_suppressed else "open",
             "poam_ref": finding_poam_ref,
             "disposition_record": record,
@@ -2089,10 +2040,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "remediation_due_at": due_at if needs_remediation else None,
             "occurrences": f.get("occurrences", 1),
             "is_overdue": is_overdue,
-            "will_be_overdue": clk["will_be_overdue"],
-            "accepted": clk["accepted"],
-            "accepted_at": clk["accepted_at"],
-            "acceptance_explanation": ("not recorded" if clk["accepted"] else None),
+            "will_be_overdue": d["will_be_overdue"],
+            "accepted": d["accepted"],
+            "accepted_at": accepted_at,
+            "acceptance_explanation": ("not recorded" if d["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
                                     else f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
                                     if is_suppressed else overdue_explanation),
@@ -2125,16 +2076,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     # Risk-accepted entries are not subject to the SLA — they carry their
     # rationale (the VER-RPT-AVI explanation field) and a POAM cross-reference.
     risk_accepted_records = []
-    for s in suppressions:
-        s = apply_check_vector(s, check_vectors)
-        s_cid = resolve_component(s, inv["index"], inv["tf"])
-        s = {**s, "_classification": classification_for(s, inventory, index)}
-        s_irv, s_irv_basis = irv_determination(s, s_cid, inv)
-        s_lev, s_basis = lev_determination(s, epss_scores, config["epss_threshold"],
-                                           is_kev=s.get("is_kev", False), irv=s_irv)
-        s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
-        s_clk = clock_for(s, ledger.get(s["tracking_id"]), now, s_pain, s_lev, s_irv, None,
-                          mav_days, margin_days, False)
+    for (s, s_cid, s_pain), d in zip(sup_prepared, decisions[len(prepared):], strict=True):
+        s_clk = clock_facts(s, ledger.get(s["tracking_id"]), now)
         risk_accepted_records.append({
             "tracking_id": s["tracking_id"],
             "poam_ref": s.get("poam_ref"),
@@ -2147,10 +2090,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "completed_evaluation": now.isoformat(),
             "pain": s_pain,
             "component_id": s_cid,
-            "internet_reachable": s_irv,
-            "irv_basis": s_irv_basis,
-            "likely_exploitable": s_lev,
-            "lev_basis": s_basis,
+            "internet_reachable": d["irv"],
+            "irv_basis": d["irv_basis"],
+            "likely_exploitable": d["lev"],
+            "lev_basis": d["lev_basis"],
             "cvss_vector": s.get("cvss_vector"),
             "vector_source": s.get("vector_source"),
             "is_kev": s.get("is_kev", False),

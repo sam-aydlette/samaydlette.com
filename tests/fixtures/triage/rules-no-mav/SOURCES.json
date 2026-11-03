@@ -1,0 +1,10 @@
+{
+  "description": "FedRAMP Consolidated Rules for 2026, vendored verbatim from FedRAMP's machine-readable rules repository. Remediation timeframes (VDR-TFR-PVR), the maximum accepted period (VER-TFR-MAV) and the evaluation window (VER-TFR-EVU) are read from this file at build time; they are never typed into code. To move the pin, replace the file with the one at the new commit, update commit, version and sha256 here, and say why in the PR.",
+  "repository": "https://github.com/FedRAMP/rules",
+  "path": "fedramp-consolidated-rules.json",
+  "commit": "64fa769510416fa75fd00a4689466094265b8083",
+  "version": "2026.11.02.01",
+  "retrieved": "2026-11-03",
+  "sha256": "7e890b49b22b5726a4af3c56d0963f0ac670adb1fdea08946942616fa89d4712",
+  "_note": "Known-bad: VER-TFR-MAV removed. The triage policy must fail closed."
+}

@@ -84,9 +84,9 @@ def test_builder_lookup_uses_the_rules():
     assert vdr.class_c_sla_days("N1", True, True) is None
 
 
-def test_triage_rego_table_matches_the_rules_until_it_reads_them():
-    """policies/triage.rego still carries its own table; it must not drift from the rules."""
+def test_triage_rego_reads_the_rules_and_restates_none():
+    """policies/triage.rego reads timeframes from data.rules (T7); it carries no table of its own."""
     src = (REPO / "policies" / "triage.rego").read_text()
-    cells = dict((k, int(v)) for k, v in re.findall(r'"(N[2-5]\|(?:true|false)\|(?:true|false))":\s*(\d+)', src))
-    expected = {f"{p}|{str(lev).lower()}|{str(irv).lower()}": d for (p, lev, irv), d in _independent_matrix().items()}
-    assert cells == expected
+    assert not re.findall(r'"N[1-5]\|', src)
+    assert 'data.rules.FRR.VDR.data.all.TFR["VDR-TFR-PVR"]' in src
+    assert 'data.rules.FRR.VER.data.all.TFR["VER-TFR-MAV"]' in src

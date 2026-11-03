@@ -1,291 +1,434 @@
 # =============================================================================
-# FINDING TRIAGE ENGINE  (policy-as-code)
+# VDR TRIAGE ENGINE (policy as code; REQ-LEV-1, REQ-IRV-6, REQ-DSP-*, REQ-DLN-*)
 # =============================================================================
-# Triages a single finding (a Checkov config suppression OR a vulnerability from
-# ZAP/Grype/Dependabot) into a disposition and, when remediation is required, a
-# remediation timeline derived from the risk score through a layered policy
-# chain. Pure policy: human decisions arrive as `input.asserted` (sourced from
-# the disposition register); this module decides nothing a human must own, it
-# applies the operator's recorded decision and computes the consequences.
+# The decisions the published VDR report makes about each finding. The Python
+# builder (scripts/build-vdr-report.py) collects facts: scanner output, the
+# inventory component and its declared reachability, the verified state of a
+# mitigation (fingerprint, live read, signature), the disposition and decision
+# records, the PAIN arithmetic, the EPSS score, and the clock start from the
+# ledger. This module decides; the builder publishes what it returns.
 #
-# DISPOSITIONS (exactly one per finding):
-#   false-positive         no real risk / not applicable
-#   operational-requirement risk is accurate but accepted (tracked, not patched)
-#   risk-adjustment         risk is real but lower than the CVSS (preferred) /
-#                           scanner severity; severity is adjusted down
-#   remediate               (default for a real vulnerability) fix on a timeline
+# Timeframes, the maximum period and the impact scale are read from FedRAMP's
+# Consolidated Rules as data.rules (the vendored file, hash-checked by
+# scripts/_rules.py before it is passed in). Nothing here restates them.
 #
-# REMEDIATION-TIMELINE CHAIN (only for remediate / risk-adjustment), in order:
-#   1. contextual   PAIN from effective severity, bumped by reachability (IRV) +
-#                   exploitability (LEV)
-#   2. immutable    CISA KEV (is_kev) => must patch now, overrides thresholds
-#   3. threshold    Class C SLA table keyed by (PAIN, LEV, IRV) => days
-#   4. historical   if similar past cases set a shorter timeline, use it
-#   5. escalation   unprecedented risk or architectural change => route to human
+# Entry points:
+#   data.vdr.triage.decisions   one decision per input.items[i], in order
+#   data.vdr.triage.errors      non-empty => the builder fails closed
+#   data.vdr.triage.vocabulary  disposition terms and the sets that pass/close
 #
-# Output: data.vdr.triage.decision  (see bottom).
+# Per finding, in order:
+#   1. fully mitigated   a verified mitigation with effect "full" (rule 1)
+#   2. impact            the scale's lowest level when fully mitigated, else PAIN
+#   3. reachability      inventory (REQ-IRV-6); unresolved or package => IRV;
+#                        a verified "not-reachable" mitigation => NIRV
+#   4. exploitability    Figure 7, first match decides; then a verified
+#                        "not-likely-exploitable" mitigation; then an LEV
+#                        override in force. Neither ever clears a KEV.
+#   5. disposition       check-ID decision record, else the register entry;
+#                        a lapsed or invalid record is absent (REQ-DSP-2)
+#   6. deadline          clock start + Class C timeframe; likely overdue
+#                        inside the governed margin; accepted past VER-TFR-MAV
+#   7. blocking          KEV (even when dispositioned) > closed > top impact
+#                        level + LEV + IRV > past the deadline
 # =============================================================================
 package vdr.triage
 
-# Boolean rules default to false so they are always defined (an undefined rule
-# referenced inside `decision` would make the whole object undefined).
-default remediation_required := false
+day_ns := ((24 * 60) * 60) * 1000000000
 
-default must_patch_now := false
-
-default escalate := false
-
-default invalid_risk_adjustment := false
-
-default historical_present := false
-
-default tighter_history := false
-
-# Context flags read with defaults so a finding that omits them is still defined.
-irv := object.get(input, "internet_reachable", false)
-lev := object.get(input, "likely_exploitable", false)
-
-# ---- severity helpers -------------------------------------------------------
-sev_rank := {"NONE": 0, "LOW": 1, "MEDIUM": 2, "MODERATE": 2, "HIGH": 3, "CRITICAL": 4}
-
-# CVSS base score -> severity bucket (CVSS v3 ranges).
-cvss_severity(score) := "CRITICAL" if score >= 9.0
-
-cvss_severity(score) := "HIGH" if {
-	score >= 7.0
-	score < 9.0
+# ---- vocabulary --------------------------------------------------------------
+dispositions := {
+	"false-positive", "mitigated", "vendor-dependency", "under-investigation",
+	"operational-requirement", "accepted", "remediate",
 }
 
-cvss_severity(score) := "MEDIUM" if {
-	score >= 4.0
-	score < 7.0
+# A register record with one of these, in force and with a decision reference,
+# dispositions the finding (scripts/vuln-gate.py PASS_DISPOSITIONS is the same set).
+pass_dispositions := {"false-positive", "operational-requirement", "accepted", "mitigated", "vendor-dependency"}
+
+# Closed for the deadline gate. "mitigated" closes only when fully mitigated.
+closing_dispositions := {"false-positive", "risk-accepted", "operational-requirement", "accepted"}
+
+vocabulary := {
+	"dispositions": dispositions,
+	"pass": pass_dispositions,
+	"closing": closing_dispositions,
 }
 
-cvss_severity(score) := "LOW" if {
-	score > 0.0
-	score < 4.0
+# ---- FedRAMP rules (data.rules) -----------------------------------------------
+pvr := data.rules.FRR.VDR.data.all.TFR["VDR-TFR-PVR"].varies_by_class.c.pain_timeframes
+
+levels := [sprintf("N%d", [n]) | some n in sort([to_number(k) | some k, _ in pvr])]
+
+lowest_level := levels[0]
+
+top_level := levels[count(levels) - 1]
+
+mav_rule := data.rules.FRR.VER.data.all.TFR["VER-TFR-MAV"]
+
+mav_cell := c if {
+	c := mav_rule.varies_by_class.c
+} else := mav_rule
+
+mav_days := mav_cell.timeframe_num if {
+	mav_cell.timeframe_type == "days"
+	is_number(mav_cell.timeframe_num)
+	mav_cell.timeframe_num > 0
 }
 
-cvss_severity(score) := "NONE" if score <= 0.0
+cell_name(true, true) := "irv_lev"
 
-# Baseline anchor, in preference order:
-#   1. the CVE's base CVSS score          (preferred)
-#   2. the scanner's own numeric score    (0-10 scale)
-#   3. the scanner's severity label
-default has_cvss := false
+cell_name(true, false) := "nirv_lev"
 
-has_cvss if is_number(input.cvss)
+cell_name(false, _) := "nlev"
 
-default has_scanner_score := false
+# Days, or null for a level with no timeframe (N1: routine operations).
+timeframe(pain, lev, irv) := d if {
+	cell := pvr[substring(pain, 1, -1)][cell_name(lev, irv)]
+	cell.timeframe_type == "days"
+	d := cell.timeframe_num
+} else := null
 
-has_scanner_score if is_number(input.scanner_score)
+# ---- fail closed -------------------------------------------------------------
+errors contains "VDR-TFR-PVR Class C impact scale missing from data.rules" if count(levels) == 0
 
-base_severity := cvss_severity(input.cvss) if has_cvss
+errors contains "VER-TFR-MAV missing or not a positive number of days in data.rules" if not mav_days
 
-base_severity := cvss_severity(input.scanner_score) if {
-	not has_cvss
-	has_scanner_score
+errors contains msg if {
+	count(decisions) != count(input.items)
+	msg := sprintf("%d decisions for %d items", [count(decisions), count(input.items)])
 }
 
-base_severity := upper(object.get(input, "scanner_severity", "MEDIUM")) if {
-	not has_cvss
-	not has_scanner_score
+errors contains msg if {
+	some i, item in input.items
+	item.kind == "finding"
+	d := decisions[i]
+	d.pain != lowest_level
+	d.sla_days == null
+	msg := sprintf("%v: no Class C timeframe for %v/%v/%v in data.rules", [d.id, d.pain, d.lev, d.irv])
 }
 
-# ---- disposition ------------------------------------------------------------
-valid_dispositions := {"false-positive", "operational-requirement", "risk-adjustment", "remediate"}
-
-default disposition := "remediate"
-
-disposition := d if {
-	d := object.get(input.asserted, "disposition", null)
-	d != null
-	d in valid_dispositions
+errors contains msg if {
+	some item in input.items
+	item.kind == "finding"
+	not item.pain in levels
+	msg := sprintf("%v: impact %v is not on the rules' scale", [item.id, item.pain])
 }
 
-# ---- effective severity (what the timeline is computed against) -------------
-effective_severity := "NONE" if disposition == "false-positive"
-
-effective_severity := base_severity if {
-	disposition == "operational-requirement"
+# ---- helpers -------------------------------------------------------------------
+truthy(x) if {
+	x != null
+	x != false
+	x != ""
+	x != 0
 }
 
-# Risk adjustment may only LOWER severity, and is anchored to the base (CVSS
-# preferred). A valid adjustment uses the adjusted value; an adjustment at or
-# above the base is invalid (flagged) and falls back to the base severity.
-effective_severity := adj if {
-	disposition == "risk-adjustment"
-	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
-	sev_rank[adj] < sev_rank[base_severity]
+is_day(s) if {
+	is_string(s)
+	regex.match(`^[0-9]{4}-[0-9]{2}-[0-9]{2}$`, s)
+	time.parse_ns("2006-01-02", s)
 }
 
-effective_severity := base_severity if {
-	disposition == "risk-adjustment"
-	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
-	sev_rank[adj] >= sev_rank[base_severity]
+py_repr(s) := sprintf("'%s'", [s]) if {
+	is_string(s)
+} else := "None" if {
+	s == null
+} else := sprintf("%v", [s])
+
+mit_valid(m) if {
+	m != null
+	m.valid == true
 }
 
-effective_severity := base_severity if disposition == "remediate"
+metric(m, k) := object.get(m, k, null)
 
-# An invalid risk adjustment (tried to raise or keep severity) is flagged.
-invalid_risk_adjustment if {
-	disposition == "risk-adjustment"
-	adj := upper(object.get(input.asserted, "adjusted_severity", base_severity))
-	sev_rank[adj] >= sev_rank[base_severity]
+# (C, I, A) from v3 or v4 metrics; undefined when incomplete.
+impacts(m) := [m.C, m.I, m.A] if {
+	m.C
+	m.I
+	m.A
+} else := [m.VC, m.VI, m.VA] if {
+	m.VC
+	m.VI
+	m.VA
 }
 
-remediation_required if {
-	disposition in {"remediate", "risk-adjustment"}
+no_direct_impact(m) if {
+	imp := impacts(m)
+	every x in imp {
+		x == "N"
+	}
 }
 
-# ---- 1. contextual: PAIN rating --------------------------------------------
-pain_base := {"NONE": 1, "LOW": 1, "MEDIUM": 2, "MODERATE": 2, "HIGH": 3, "CRITICAL": 4}
-
-# Reachable AND exploitable bumps PAIN one notch (capped at N5).
-default reachable_and_exploitable := false
-
-reachable_and_exploitable if {
-	irv
-	lev
+floor_vector(m) if {
+	metric(m, "AV") == "N"
+	metric(m, "PR") == "N"
+	metric(m, "UI") == "N"
+	impacts(m)
+	not no_direct_impact(m)
 }
 
-pain_n := n if {
-	reachable_and_exploitable
-	n := min([5, pain_base[effective_severity] + 1])
+# ---- 1-2. fully mitigated, impact ------------------------------------------------
+fully_mitigated(item) if item.fully_mitigated == true
+
+fully_mitigated(item) if {
+	mit_valid(item.mitigation)
+	item.mitigation.effect == "full"
 }
 
-pain_n := pain_base[effective_severity] if {
-	not reachable_and_exploitable
+fm_bool(item) if {
+	fully_mitigated(item)
+} else := false
+
+impact(item) := lowest_level if {
+	fully_mitigated(item)
+} else := item.pain
+
+# ---- 3. reachability -------------------------------------------------------------
+reach(item) := [true, "observed"] if {
+	item.reach.observed == true
+} else := [true, "unresolved"] if {
+	item.reach.component_id == null
+} else := [true, "package-host-unrecorded"] if {
+	item.reach.is_package == true
+} else := [item.reach.declared, "inventory"] if {
+	is_boolean(item.reach.declared)
+} else := [true, "unresolved"]
+
+irv(item) := [false, "mitigation"] if {
+	mit_valid(item.mitigation)
+	item.mitigation.effect == "not-reachable"
+} else := reach(item)
+
+# ---- 4. exploitability (Figure 7) ---------------------------------------------------
+figure7(item, irv) := [false, "fully-mitigated"] if {
+	fully_mitigated(item)
+} else := [true, "known-exploited"] if {
+	item.is_kev == true
+} else := [true, "exploitation-observed"] if {
+	lower(sprintf("%v", [object.get(item, "exploitation", "")])) == "active"
+} else := [true, "floor"] if {
+	irv == true
+	floor_vector(item.metrics)
+} else := [false, "no-direct-impact"] if {
+	no_direct_impact(item.metrics)
+} else := [item.epss >= input.epss_threshold, "prediction"] if {
+	is_number(item.epss)
+} else := [true, "no-score"]
+
+after_mitigation(item, l) := [false, "mitigation"] if {
+	l[0] == true
+	not item.is_kev == true
+	mit_valid(item.mitigation)
+	item.mitigation.effect == "not-likely-exploitable"
+} else := l
+
+override_applies(o, item) if {
+	o.advisory == item.advisory
+	not item.resource in object.get(o, "exclusions", [])
+
+	# fnmatch semantics: "*" crosses every character.
+	glob.match(o.selector, ["\u0000"], item.resource)
+	o.review_by >= input.today
 }
 
-pain := sprintf("N%d", [pain_n])
+overrides := object.get(input, "lev_overrides", {})
 
-# ---- 2. immutable: CISA KEV must-patch-now ---------------------------------
-must_patch_now if {
-	remediation_required
-	input.is_kev
+# REQ-LEV-4: the first override in force, by ID. Findings only; never a KEV.
+override(item) := ids[0] if {
+	item.kind == "finding"
+	not item.is_kev == true
+	ids := [oid | some oid in sort(object.keys(overrides)); override_applies(overrides[oid], item)]
+	count(ids) > 0
 }
 
-# ---- 3. threshold: Class C SLA (days) keyed by (pain, lev, irv) -------------
-# Must equal VDR-TFR-PVR Class C in the pinned FedRAMP rules
-# (infrastructure/schemas/fedramp-rules/); tests/test_rules_as_data.py fails if
-# it drifts. N1 has no fixed SLA (routine ops); represented as 365 (review
-# within a year).
-sla_table := {
-	"N1|x|x": 365,
-	"N2|true|true": 48, "N2|true|false": 128, "N2|false|true": 192, "N2|false|false": 192,
-	"N3|true|true": 16, "N3|true|false": 32, "N3|false|true": 128, "N3|false|false": 128,
-	"N4|true|true": 4, "N4|true|false": 8, "N4|false|true": 64, "N4|false|false": 64,
-	"N5|true|true": 2, "N5|true|false": 4, "N5|false|true": 16, "N5|false|false": 16,
+lev(item, irv) := [overrides[oid].lev == true, "override", oid] if {
+	oid := override(item)
+} else := [l[0], l[1], null] if {
+	l := after_mitigation(item, figure7(item, irv))
 }
 
-sla_key := k if {
-	pain == "N1"
-	k := "N1|x|x"
+# ---- 5. disposition ------------------------------------------------------------------
+# (status, reason) for one decision record: in-force, lapsed or invalid.
+record_status(e, item) := ["invalid", sprintf("unknown disposition %s", [py_repr(object.get(e, "disposition", null))])] if {
+	not object.get(e, "disposition", null) in dispositions
+} else := ["invalid", sprintf("review_by %s is not a date", [py_repr(e.review_by)])] if {
+	truthy(object.get(e, "review_by", null))
+	not is_day(e.review_by)
+} else := ["lapsed", sprintf("review_by %v has passed", [e.review_by])] if {
+	truthy(object.get(e, "review_by", null))
+	e.review_by < input.today
+} else := ["invalid", "names a control; a finding a control protects is recorded as mitigated, never as a false positive"] if {
+	e.disposition == "false-positive"
+	truthy(object.get(e, "mitigation", null))
+} else := ["invalid", "no mitigation in force for this finding"] if {
+	e.disposition == "mitigated"
+	not mit_valid(item.mitigation)
+} else := ["invalid", sprintf("names %v but %v covers the finding", [e.mitigation, item.mitigation.id])] if {
+	e.disposition == "mitigated"
+	truthy(object.get(e, "mitigation", null))
+	e.mitigation != item.mitigation.id
+} else := ["invalid", sprintf("fix state %v: a fix may be available, so the vendor dependency has lapsed", [fix_state_word(item)])] if {
+	e.disposition == "vendor-dependency"
+	object.get(item, "fix_state", null) != "not-fixed"
+} else := ["in-force", null]
+
+fix_state_word(item) := item.fix_state if {
+	truthy(object.get(item, "fix_state", null))
+} else := "unknown"
+
+# A check-ID decision record (Checkov/tfsec map): only its own lapse applies.
+check_record(item) := record_status(object.union(item.check_decision.record, {"disposition": "accepted"}), item) if {
+	item.check_decision != null
 }
 
-sla_key := k if {
-	pain != "N1"
-	k := sprintf("%s|%v|%v", [pain, lev, irv])
+register_record(item) := record_status(item.register.entry, item) if {
+	item.check_decision == null
+	item.register != null
 }
 
-threshold_days := object.get(sla_table, sla_key, 365)
+record(item) := r if {
+	r := check_record(item)
+} else := r if {
+	r := register_record(item)
+} else := null
 
-# ---- 4. historical: similar past cases may tighten the timeline -------------
-historical_days := d if {
-	d := input.historical.median_days
-	is_number(d)
+# (disposition, decision reference, label) before the fully-mitigated default.
+disposed(item) := [item.check_decision.disposition, item.check_decision.poam_ref, item.check_decision.disposition] if {
+	check_record(item)[0] == "in-force"
+} else := [null, null, null] if {
+	item.check_decision != null
+} else := [e.disposition, e.poam_ref, e.disposition] if {
+	register_record(item)[0] == "in-force"
+	e := item.register.entry
+	e.disposition in pass_dispositions
+	truthy(object.get(e, "poam_ref", null))
+} else := [null, null, item.register.entry.disposition] if {
+	register_record(item)[0] == "in-force"
+} else := [null, null, null]
+
+final_disposition(d, fm) := "mitigated" if {
+	d == null
+	fm == true
+} else := d
+
+closes(d, _) if d in closing_dispositions
+
+closes(d, fm) if {
+	d == "mitigated"
+	fm == true
 }
 
-# ---- 5. escalation ----------------------------------------------------------
-escalate if {
-	remediation_required
-	object.get(input.asserted, "architectural_change_required", false)
+closed_bool(d, fm) if {
+	closes(d, fm)
+} else := false
+
+# A false positive is not a vulnerability; a fully mitigated finding is not
+# exploitable. Neither has a clock. Everything else does, whatever its disposition.
+needs_remediation(d, fm) if {
+	d != "false-positive"
+	fm == false
+} else := false
+
+# ---- 6. deadline -----------------------------------------------------------------------------
+past(due) if input.now_ns > due
+
+# Governed margin, capped at half the timeframe so a short deadline is not
+# flagged the moment it opens.
+within_margin(due, sla) if 2 * (due - input.now_ns) <= min([2 * input.margin_days, sla]) * day_ns
+
+overdue(needs, due) if {
+	needs == true
+	past(due)
+} else := false
+
+will_be_overdue(needs, due, sla) if {
+	needs == true
+	not past(due)
+	within_margin(due, sla)
+} else := false
+
+deadline(item, sla, needs) := {"due_ns": null, "is_overdue": false, "will_be_overdue": false} if {
+	item.kind != "finding"
+} else := {"due_ns": null, "is_overdue": false, "will_be_overdue": false} if {
+	sla == null
+} else := {"due_ns": due, "is_overdue": overdue(needs, due), "will_be_overdue": will_be_overdue(needs, due, sla)} if {
+	due := item.clock.start_ns + (sla * day_ns)
 }
 
-escalate if {
-	remediation_required
-	effective_severity == "CRITICAL"
-	not historical_present
-}
+# VER-TFR-MAV: counted from the first evaluation; no mitigation resets it.
+accepted_ns(item) := item.clock.first_evaluated_ns + (mav_days * day_ns) if {
+	item.kind == "finding"
+} else := null
 
-historical_present if {
-	is_number(input.historical.median_days)
-}
+accepted_now(needs, ns) if {
+	needs == true
+	ns != null
+	input.now_ns >= ns
+} else := false
 
-escalation_reason := "architectural change required" if {
-	object.get(input.asserted, "architectural_change_required", false)
-}
+# ---- 7. blocking ---------------------------------------------------------------------------
+# KEV is tested before the disposition: a register entry never buys a known
+# exploited vulnerability out of the gate.
+block_rule(is_kev, closed, pain, lev, irv, is_overdue) := "kev" if {
+	is_kev == true
+} else := null if {
+	closed == true
+} else := "top-impact-lev-irv" if {
+	pain == top_level
+	lev == true
+	irv == true
+} else := "past-deadline" if {
+	is_overdue == true
+} else := null
 
-escalation_reason := "unprecedented critical risk, no historical precedent" if {
-	not object.get(input.asserted, "architectural_change_required", false)
-	effective_severity == "CRITICAL"
-	not historical_present
-}
+# ---- the decision ---------------------------------------------------------------------------
+pair_or_null(rec, i) := rec[i] if {
+	rec != null
+} else := null
 
-# ---- final SLA + deciding layer --------------------------------------------
-sla_days := 0 if must_patch_now
+label_of(disposition, label) := disposition if {
+	disposition != null
+} else := label
 
-sla_days := d if {
-	not must_patch_now
-	remediation_required
-	historical_present
-	historical_days < threshold_days
-	d := historical_days
-}
-
-sla_days := threshold_days if {
-	not must_patch_now
-	remediation_required
-	not tighter_history
-}
-
-tighter_history if {
-	historical_present
-	historical_days < threshold_days
-}
-
-decided_by := "disposition" if not remediation_required
-decided_by := "immutable" if must_patch_now
-
-decided_by := "escalation" if {
-	not must_patch_now
-	remediation_required
-	escalate
-}
-
-decided_by := "historical" if {
-	not must_patch_now
-	remediation_required
-	not escalate
-	tighter_history
-}
-
-decided_by := "threshold" if {
-	not must_patch_now
-	remediation_required
-	not escalate
-	not tighter_history
-}
-
-# ---- decision ---------------------------------------------------------------
-decision := {
-	"id": object.get(input, "id", ""),
-	"disposition": disposition,
-	"effective_severity": effective_severity,
-	"remediation_required": remediation_required,
+decide(item) := {
+	"id": item.id,
+	"fully_mitigated": fm,
 	"pain": pain,
-	"must_patch_now": must_patch_now,
-	"sla_days": sla_days_out,
-	"escalate": escalate,
-	"escalation_reason": reason_out,
-	"decided_by": decided_by,
-	"invalid_risk_adjustment": invalid_risk_adjustment,
+	"irv": r[0],
+	"irv_basis": r[1],
+	"lev": l[0],
+	"lev_basis": l[1],
+	"lev_override": l[2],
+	"record_status": pair_or_null(rec, 0),
+	"record_reason": pair_or_null(rec, 1),
+	"disposition": disposition,
+	"poam_ref": dsp[1],
+	"label": label_of(disposition, dsp[2]),
+	"closed": closed,
+	"needs_remediation": needs,
+	"sla_days": sla,
+	"due_ns": dl.due_ns,
+	"is_overdue": dl.is_overdue,
+	"will_be_overdue": dl.will_be_overdue,
+	"accepted": accepted_now(needs, acc),
+	"accepted_ns": acc,
+	"blocking": rule != null,
+	"block_rule": rule,
+} if {
+	fm := fm_bool(item)
+	pain := impact(item)
+	r := irv(item)
+	l := lev(item, r[0])
+	rec := record(item)
+	dsp := disposed(item)
+	disposition := final_disposition(dsp[0], fm)
+	closed := closed_bool(disposition, fm)
+	needs := needs_remediation(disposition, fm)
+	sla := timeframe(pain, l[0], r[0])
+	dl := deadline(item, sla, needs)
+	acc := accepted_ns(item)
+	rule := block_rule(item.is_kev == true, closed, pain, l[0], r[0], dl.is_overdue)
 }
 
-# sla_days only meaningful when remediation is required.
-sla_days_out := sla_days if remediation_required
-sla_days_out := null if not remediation_required
-
-reason_out := escalation_reason if escalate
-reason_out := "" if not escalate
+decisions := [decide(item) | some item in input.items]

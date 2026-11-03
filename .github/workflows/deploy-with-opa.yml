@@ -202,7 +202,10 @@ jobs:
         opa check --strict --schema infrastructure/schemas/policy-input infrastructure/policy
         opa test --coverage --threshold 90 infrastructure/policy/ > /dev/null
         opa test infrastructure/policy/
-        opa test policies/triage.rego policies/triage_test.rego
+        opa fmt --fail --list policies/
+        opa check --strict policies/
+        opa test --coverage --threshold 90 policies/ > /dev/null
+        opa test policies/
 
     - name: Regal lint (Rego linter, pinned)
       run: |

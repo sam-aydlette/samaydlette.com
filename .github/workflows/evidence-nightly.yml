@@ -102,6 +102,11 @@ env:
   # deploy-with-opa.yml or the two VDRs will disagree for tooling reasons.
   SYFT_VERSION: v1.45.1
   GRYPE_VERSION: v0.114.0
+  # The VDR's decisions are made by policies/triage.rego, so the nightly runs the
+  # same OPA as the deploy. Refresh together with deploy-with-opa.yml;
+  # tests/test_triage_policy.py fails if the two pins differ.
+  OPA_VERSION: 1.18.2
+  OPA_SHA256: 9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8
   # The site bucket. Resolved as a literal rather than `terraform output` on
   # purpose: reading a Terraform output needs backend state access and a role
   # that can init the stack, which is exactly the blast radius this workflow
@@ -510,6 +515,17 @@ jobs:
     # --opa is deliberately not passed; see the header. Its absence leaves the
     # builder's default path pointing at a file that does not exist, which
     # ingest_opa treats as an empty finding set.
+    # The builder evaluates policies/triage.rego for every decision and fails
+    # closed without opa. Same version and SHA pin as the deploy job.
+    - name: Setup OPA (triage policy)
+      run: |
+        curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
+          -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+        echo "${{ env.OPA_SHA256 }}  opa" | sha256sum -c -
+        chmod 755 ./opa
+        sudo mv opa /usr/local/bin
+        opa version
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       id: vdr
       working-directory: infrastructure

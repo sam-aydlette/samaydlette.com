@@ -196,7 +196,7 @@ def test_config_findings_never_use_the_register():
 def test_builder_and_gate_agree_on_id_resolution_and_pass_set():
     # If these two drift, a finding could carry a poam_ref the vulnerability gate
     # never approved (or vice versa).
-    assert vdr_builder.REGISTER_PASS_DISPOSITIONS == vg.PASS_DISPOSITIONS
+    assert vdr_builder.triage_vocabulary()["pass"] == vg.PASS_DISPOSITIONS  # policies/triage.rego
     assert vdr_builder.VULN_SOURCES == vg.VULN_SOURCES
     for finding in (
         {"cve": "CVE-2026-1", "tracking_id": "grype-CVE-2026-1-pkg", "tool_id": "CVE-2026-1"},
