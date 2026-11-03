@@ -215,7 +215,12 @@ Decided 2026-11-03: implement now; OSCAL is retired and there is no separate Rev
 
 ## 5. Talk tracker
 
-Nothing is merged yet. Updated as PRs merge. Open PRs as of 2026-11-03: trunk #467 (T1) → #470 (T2) → #471 (T3) → #472 (T4) → #474 (T5) → #475 (T6), plus #466, #468 → #476, #469, #473, and this register (#465).
+Nothing is merged yet. Updated as PRs merge. The PRs are grouped into three buckets, each tested end to end and merged as a unit:
+
+- **Bucket 1, VDR decision engine (#479):** T1–T7 (#467, #470, #471, #472, #474, #475, #478), #468 and #476.
+- **Bucket 2, published evidence and trust center (#480):** #466, #469, #473. It also removes the `scuba-bundle` freshness window that #473 added and #466 makes obsolete.
+- **Bucket 3, inventory, third parties, assessor (#481, stacked on #479):** #477. It also publishes ZAP allowlist status in the VDR, which #477 alone dropped.
+- This register (#465) merges on its own.
 
 | PR | Gaps it closes on merge |
 | --- | --- |
@@ -225,6 +230,7 @@ Nothing is merged yet. Updated as PRs merge. Open PRs as of 2026-11-03: trunk #4
 | #472 T4 | G8, N-PAI-4 |
 | #474 T5 | G9, G11, G12, G13, G14 |
 | #475 T6 | G3, G15, N-VD, N-DSP-1, N-DSP-3, rule 1 |
+| #478 T7 | G17 (the triage policy decides the report; timeframes read from `data.rules`) |
 | #468 + #476 | N-DSP-6, N-DSP-4 |
 | #466 | W-2 |
 | #469 | N-QUE-1 |
