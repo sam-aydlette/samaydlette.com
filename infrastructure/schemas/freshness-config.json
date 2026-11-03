@@ -151,17 +151,6 @@
       "signed": true
     },
     {
-      "path": ".well-known/scuba-bundle.json",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "emitted_at"
-      },
-      "signed": true,
-      "signature": ".well-known/scuba-bundle.bundle"
-    },
-    {
       "path": ".well-known/ongoing-certification-report.json",
       "cadence": "deploy",
       "max_age_hours": 720,
