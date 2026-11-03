@@ -41,8 +41,8 @@ IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/depl
 #
 # Both identities are workflows in THIS repository, on `main`, so the trust
 # claim is unchanged: the evidence was produced by this repo's pinned CI, not by
-# a person with a key. Everything else — the canonical inventory, the SSP, the
-# SCuBA bundle — still verifies against the deploy identity alone.
+# a person with a key. Everything else — the canonical inventory, the SSP —
+# still verifies against the deploy identity alone.
 NIGHTLY_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
 ISSUER='https://token.actions.githubusercontent.com'
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -90,7 +90,6 @@ echo "== Fetching published evidence from $BASE =="
 for f in ksi-signal.json ksi-signal.bundle \
          oscal-ssp.json oscal-ssp.json.intoto.jsonl \
          oscal-poam.json \
-         scuba-bundle.json scuba-bundle.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
@@ -110,11 +109,6 @@ else
   bad "ksi-signal.json signature"
 fi
 
-if verify_blob_any_identity "$work/scuba-bundle.bundle" "$work/scuba-bundle.json" "$IDENTITY"; then
-  ok "scuba-bundle.json signed by the pinned workflow on main"
-else
-  bad "scuba-bundle.json signature"
-fi
 if verify_attestation_any_identity "$work/oscal-ssp.json.intoto.jsonl" "$work/oscal-ssp.json" \
      "$IDENTITY"; then
   ok "oscal-ssp.json attestation signed by the pinned workflow on main"

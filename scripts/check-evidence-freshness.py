@@ -9,7 +9,11 @@ deploy started failing, the served artifacts simply stopped moving and every gat
 stayed green — twelve days of rot, silently.
 
 This reads the artifact a third party would read, over the public URL, and fails
-loudly if its `emitted_at` is older than the threshold. It is deliberately
+loudly if its timestamp is older than the governed freshness window for that
+artifact (infrastructure/schemas/freshness-config.json, REQ-PUB-2). The window
+and the timestamp field come from that config, never from a flag: an artifact
+the config does not list cannot be checked, and a missing or invalid config is a
+failure. `--all` checks every listed artifact under a site's /.well-known/. It is deliberately
 AWS-free and dependency-free: it proves the *published* claim, not the build's
 opinion of it.
 
@@ -19,20 +23,25 @@ propagation, so one invocation answers both "did my publish reach the edge" and
 "is what the edge serves inside the freshness policy".
 
 Exit codes: 0 fresh (and matching, if --expect-sha256), 1 stale/mismatched,
-2 the artifact could not be fetched or parsed.
+2 the artifact could not be fetched or parsed, is not listed, or the config is
+missing or invalid.
 """
 
 import argparse
 import hashlib
 import json
+import os
 import sys
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _freshness import artifact_for, load_freshness_config, timestamp_of  # noqa: E402
 
 DEFAULT_URL = "https://samaydlette.com/.well-known/vdr-report.json"
-DEFAULT_MAX_AGE_HOURS = 24.0
 
 
 def fetch(url, timeout=30):
@@ -46,15 +55,23 @@ def fetch(url, timeout=30):
         "Pragma": "no-cache",
     })
     with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - fixed https/file scheme, operator-supplied
-        return resp.read()
+        return resp.read(), resp.headers.get("Last-Modified")
 
 
-def parse_emitted_at(raw):
-    """Pull `emitted_at` out of the artifact and return it as an aware datetime."""
-    doc = json.loads(raw)
-    value = doc.get("emitted_at")
+def http_date_to_iso(value):
+    """An HTTP Last-Modified date as ISO 8601, or None."""
     if not value:
-        raise ValueError("artifact carries no emitted_at")
+        return None
+    try:
+        return parsedate_to_datetime(value).astimezone(timezone.utc).isoformat()
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_timestamp(value):
+    """An ISO timestamp as an aware datetime."""
+    if not value:
+        raise ValueError("artifact carries no timestamp")
     # Both forms occur in the published set: '...Z' (KSI signal) and an
     # explicit +00:00 offset (VDR). fromisoformat only learned 'Z' in 3.11.
     if value.endswith("Z"):
@@ -65,10 +82,12 @@ def parse_emitted_at(raw):
     return emitted
 
 
-def check_once(url, max_age_hours, expect_sha256, now):
-    """One attempt. Returns (ok, message, age_hours_or_None)."""
+def check_once(url, artifact, expect_sha256, now):
+    """One attempt against the governed window for `artifact`.
+    Returns (ok, message, age_hours_or_None)."""
+    max_age_hours = artifact["max_age_hours"]
     try:
-        raw = fetch(url)
+        raw, last_modified = fetch(url)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
         return None, f"could not fetch {url}: {exc}", None
 
@@ -79,16 +98,34 @@ def check_once(url, max_age_hours, expect_sha256, now):
                            f"(built {expect_sha256[:12]}…, served {got[:12]}…)"), None
 
     try:
-        emitted = parse_emitted_at(raw)
-    except (json.JSONDecodeError, ValueError) as exc:
-        return None, f"could not read emitted_at from {url}: {exc}", None
+        emitted = parse_timestamp(timestamp_of(artifact, raw, http_date_to_iso(last_modified)))
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError, AttributeError) as exc:
+        return None, f"could not read the timestamp of {url}: {exc}", None
 
     age_hours = (now() - emitted).total_seconds() / 3600.0
+    verdict = (f"{artifact['path']} is {age_hours:.1f}h old "
+               f"(governed window: under {max_age_hours:g}h) — as of {emitted.isoformat()}")
     if age_hours > max_age_hours:
-        return False, (f"published evidence is {age_hours:.1f}h old "
-                       f"(policy: under {max_age_hours:g}h) — emitted_at {emitted.isoformat()}"), age_hours
-    return True, (f"published evidence is {age_hours:.1f}h old "
-                  f"(policy: under {max_age_hours:g}h) — emitted_at {emitted.isoformat()}"), age_hours
+        return False, verdict, age_hours
+    return True, verdict, age_hours
+
+
+def check_all(site, cfg, now):
+    """Every listed artifact under `site`, once each. Returns an exit code."""
+    stale, unreadable = [], []
+    for artifact in cfg["artifacts"]:
+        ok, message, _age = check_once(f"{site.rstrip('/')}/{artifact['path']}", artifact, None, now)
+        print(("OK: " if ok else "::error::") + message, file=sys.stdout if ok else sys.stderr)
+        if ok is False:
+            stale.append(artifact["path"])
+        elif ok is None:
+            unreadable.append(artifact["path"])
+    if stale or unreadable:
+        print(f"::error::{len(stale)} stale, {len(unreadable)} unreadable of {len(cfg['artifacts'])} "
+              f"published artifacts (config {cfg['version']})", file=sys.stderr)
+        return 2 if unreadable else 1
+    print(f"OK: all {len(cfg['artifacts'])} published artifacts inside their governed windows (config {cfg['version']})")
+    return 0
 
 
 def main(argv=None):
@@ -96,8 +133,10 @@ def main(argv=None):
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--url", default=DEFAULT_URL,
                     help=f"published artifact to check (default: {DEFAULT_URL})")
-    ap.add_argument("--max-age-hours", type=float, default=DEFAULT_MAX_AGE_HOURS,
-                    help="fail if emitted_at is older than this (default: 24)")
+    ap.add_argument("--config", default=None,
+                    help="governed freshness config (default: infrastructure/schemas/freshness-config.json)")
+    ap.add_argument("--all", metavar="SITE", default=None,
+                    help="check every listed artifact under SITE (e.g. https://samaydlette.com) instead of --url")
     ap.add_argument("--expect-sha256", default=None,
                     help="also assert the served bytes hash to this (post-publish edge check)")
     ap.add_argument("--retries", type=int, default=0,
@@ -109,11 +148,23 @@ def main(argv=None):
     def now():
         return datetime.now(timezone.utc)
 
+    try:
+        cfg = load_freshness_config(args.config)
+    except SystemExit as exc:
+        print(exc, file=sys.stderr)
+        return 2
+    if args.all:
+        return check_all(args.all, cfg, now)
+    artifact = artifact_for(cfg, args.url)
+    if artifact is None:
+        print(f"::error::{args.url} is not listed in the governed freshness config; "
+              f"it has no window to check against", file=sys.stderr)
+        return 2
+
     attempts = args.retries + 1
     ok, message, _age = None, "no attempt made", None
     for attempt in range(1, attempts + 1):
-        ok, message, _age = check_once(args.url, args.max_age_hours,
-                                       args.expect_sha256, now)
+        ok, message, _age = check_once(args.url, artifact, args.expect_sha256, now)
         if ok:
             print(f"OK: {message}")
             return 0

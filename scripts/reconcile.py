@@ -33,11 +33,8 @@
 #                        generated artifact resolves to a formal POA&M item
 #                        (or an explicitly retired ID), so a typo'd or
 #                        vanished cross-reference cannot publish silently
-#   (k) SCuBA bundle binding — when the published customer-assessment bundle
-#                        is present it binds to the same inventory signal_id
-#                        and its policy set equals the SSP's control set
-#                        (the executable CRM cannot drift from the SSP it
-#                        derives from)
+#   (k) retired       — bound a customer-assessment bundle that is no longer
+#                        published by this site; the letter is not reused
 #   (l) boundary map    — when the published boundary map is present it binds
 #                        to the same inventory signal_id and commit, places
 #                        every boundary component of the inventory (no more, no
@@ -530,42 +527,6 @@ def check_j_poam_ref_validity(signal, ssp, poam, vdr):
     return violations
 
 
-# ----------------------------------------------------------------------------
-# (k) SCuBA bundle binding + derivation (presence-gated)
-# ----------------------------------------------------------------------------
-def check_k_scuba_binding(signal, ssp, scuba):
-    """(k) The published SCuBA bundle must bind to the same inventory
-    (ksi_signal_id) and derive from the same SSP (its policy set covers
-    exactly the SSP's implemented-requirements control ids). Skipped when no
-    bundle is staged."""
-    if scuba is None:
-        return []
-    violations = []
-    sid = signal.get("signal_id")
-    if scuba.get("ksi_signal_id") != sid:
-        violations.append(
-            f"(k) scuba bundle ksi_signal_id {scuba.get('ksi_signal_id')!r} "
-            f"!= inventory signal_id {sid!r}")
-    ssp_ids = {
-        r["control-id"]
-        for r in ssp.get("system-security-plan", {})
-        .get("control-implementation", {})
-        .get("implemented-requirements", []) or []
-    }
-    bundle_ids = {p.get("control") for p in scuba.get("policies", []) or []}
-    missing = sorted(ssp_ids - bundle_ids)
-    extra = sorted(bundle_ids - ssp_ids)
-    if missing:
-        violations.append(
-            f"(k) scuba bundle missing policies for {len(missing)} SSP "
-            f"controls (first: {missing[:5]})")
-    if extra:
-        violations.append(
-            f"(k) scuba bundle carries policies for {len(extra)} controls "
-            f"not in the SSP (first: {extra[:5]})")
-    return violations
-
-
 def check_g_poam_parity(poam, poam_md_text):
     """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
     in docs/poam.md. Both registers are hand-maintained; without this check they
@@ -630,7 +591,7 @@ def check_l_boundary_map(signal, boundary_map, expected_commit=None):
 
 def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
             ckv_to_poam, poam_md_text, false_positive_ckvs,
-            live_arns=None, expected_commit=None, live_tags=None, scuba=None,
+            live_arns=None, expected_commit=None, live_tags=None,
             boundary_map=None):
     violations = []
     violations += check_d_impact(signal, ssp, poam, vdr, dashboard_html)
@@ -643,7 +604,6 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     violations += check_g_poam_parity(poam, poam_md_text)
     violations += check_h_finding_coverage(vdr, poam)
     violations += check_j_poam_ref_validity(signal, ssp, poam, vdr)
-    violations += check_k_scuba_binding(signal, ssp, scuba)
     violations += check_l_boundary_map(signal, boundary_map, expected_commit)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
@@ -711,12 +671,8 @@ def main():
         print(f"reconcile: missing artifact: {e}", file=sys.stderr)
         return 2
 
-    # Optional artifact: the SCuBA customer-assessment bundle (invariant k).
-    # Presence-gated so pre-wiring checkouts and partial local builds still
-    # reconcile; in CI the bundle is built before this gate runs.
-    scuba_path = d / "scuba-bundle.json"
-    scuba = load_json(scuba_path) if scuba_path.exists() else None
-    # Optional artifact: the boundary map (invariant l), presence-gated the same way.
+    # Optional artifact: the boundary map (invariant l). Presence-gated so
+    # partial local builds still reconcile; in CI it is built before this gate.
     map_path = d / "boundary-map.json"
     boundary_map = load_json(map_path) if map_path.exists() else None
 
@@ -754,7 +710,7 @@ def main():
         signal, ssp, poam, vdr, dashboard_html, checkov_text,
         _load_ckv_to_poam(), poam_md_text, _load_false_positives(poam_md_text),
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
-        scuba=scuba, boundary_map=boundary_map,
+        boundary_map=boundary_map,
     )
 
     if violations:
@@ -762,7 +718,7 @@ def main():
         for v in violations:
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
-    optional = (",k" if scuba is not None else "") + (",l" if boundary_map is not None else "")
+    optional = ",l" if boundary_map is not None else ""
     if live_arns is not None and live_tags is not None:
         checks = "a-j" + optional
     elif live_arns is not None:
@@ -774,7 +730,7 @@ def main():
         Path(args.report).write_text(json.dumps(build_report(
             signal, args.expect_commit,
             deferred={"a": live_arns is None, "i": live_tags is None,
-                      "k": scuba is None, "l": boundary_map is None}), indent=2) + "\n")
+                      "l": boundary_map is None}), indent=2) + "\n")
     return 0
 
 
@@ -789,7 +745,7 @@ INVARIANT_TITLES = {
     "h": "Every VDR finding resolves to a POA&M item",
     "i": "Live resource tags match the inventory's classification",
     "j": "Every POA&M reference resolves",
-    "k": "The SCuBA bundle binds to the inventory and the SSP",
+    # (k) is retired: the bundle it bound is no longer published by this site.
     "l": "The boundary map describes exactly this build's inventory",
 }
 

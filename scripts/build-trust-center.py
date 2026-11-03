@@ -24,9 +24,10 @@ import argparse
 import csv
 import importlib.util
 import json
+import os
 import re
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -34,14 +35,22 @@ from typing import Any
 SCHEMA = "trust-center/1"
 REPO = Path(__file__).resolve().parent.parent
 
-# Freshness windows. They mirror the watchdog alarms in infrastructure/watchdog.tf
-# (vdr-age > 24h, runtime-age > 26h); the trust center reports against the same
-# thresholds that page the operator.
-VDR_MAX_AGE_HOURS = 24
-RUNTIME_MAX_AGE_HOURS = 26
+# Freshness windows, from the governed config (infrastructure/schemas/
+# freshness-config.json) that the watchdog alarms and the published-evidence
+# check also read, so the trust center reports against the thresholds that page
+# the operator. Loaded at import and fail-closed: no config, no trust center.
+# FRESHNESS_CONFIG names another file (tests); it is validated the same way.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _freshness import load_freshness_config  # noqa: E402
+
+FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
+VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
+RUNTIME_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/ksi-signal-runtime.json"]
 # The independent corroboration (RAMPART on TAP) runs on the operator's machine;
 # older than this, the map is no longer independently checked.
-CORROBORATION_MAX_AGE_DAYS = 30
+CORROBORATION_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/boundary-corroboration.json"]
+CORROBORATION_MAX_AGE_DAYS = CORROBORATION_MAX_AGE_HOURS / 24
+FRESHNESS_SOURCE = "infrastructure/schemas/freshness-config.json"
 # An accepted exception this close to expiry is a renewal decision now, not later.
 EXCEPTION_WARNING_DAYS = 30
 # Days of escalation-rate history the artifact carries forward.
@@ -68,6 +77,80 @@ WHY_YOURS = {
     "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the Authorizing Official's call.",
     "vulnerability_evidence_stale": "The published vulnerability evidence is older than its freshness window, so current exposure is not known. Whether to rely on the system meanwhile is a judgment.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the Authorizing Official's call.",
+}
+
+# What the owner can do about each kind of queue item (REQ-QUE-1). Static, kept
+# beside WHY_YOURS so a new kind cannot ship without its options; published in
+# every item and in live_queue so the page can attach them to items it rebuilds.
+OPTIONS = {
+    "vdr_blocking": ["Remediate: upgrade or remove the affected package and redeploy",
+                     "Record a disposition (false positive or not affected) with its justification",
+                     "Accept the risk in a POA&M entry with a review date"],
+    "vdr_undispositioned": ["Remediate: upgrade or remove the affected package",
+                            "Record a disposition (false positive or not affected) with its justification",
+                            "Accept the risk in a POA&M entry with a review date"],
+    "poam_overdue": ["Close the item: complete the remediation and record it",
+                     "Set a new completion date, with the reason for the delay",
+                     "Accept the risk, recording who decided, when and the review date"],
+    "exception_expiring": ["Renew the exception with a new expiry and justification",
+                           "Fix the resource so the rule passes and remove the exception",
+                           "Let it expire; the policy gate will then stop deploys on the resource"],
+    "runtime_diverged": ["Restore the deployed configuration by redeploying",
+                         "Change the code to match the running system, through review",
+                         "Accept the divergence in a POA&M entry with a review date"],
+    "runtime_unassessed": ["Fix the runtime emitter so it can assess these KSIs",
+                           "Accept deploy-time evidence for them, recording the decision"],
+    "runtime_stale": ["Investigate and restore the runtime emitter",
+                      "Accept the gap for a stated period, recording the decision"],
+    "trust_root_change": ["Apply the merged trust-root change from a synced tree",
+                          "Revert the merged change"],
+    "boundary_unclassified": ["Classify the resource in docs/boundary/boundary-classification.json",
+                              "Remove the resource"],
+    "boundary_untagged": ["Add the classification tags in Terraform",
+                          "Record why the resource carries no classification"],
+    "boundary_not_inventoried": ["Add the resource or dependency to the canonical inventory",
+                                 "Remove it, or record it as outside the boundary with the reason"],
+    "scn_unverified": ["Complete the post-implementation verification and record it",
+                       "Roll the change back"],
+    "manual_setting": ["Restore the expected setting by hand",
+                       "Accept the new setting and update what this system expects, through review"],
+    "decision_review_due": ["Reaffirm the decision with a new review date",
+                            "Change the decision",
+                            "End it: remediate or close the underlying item"],
+    "vulnerability_evidence_stale": ["Investigate and rerun the nightly vulnerability scan",
+                                     "Accept reliance on the last published evidence for a stated period, recording the decision"],
+    "decision_records_incomplete": ["Record who decided, when and the review date on each record",
+                                    "Retire the decisions no one will own"],
+}
+
+# Where each kind's opening time ("since") comes from (REQ-QUE-1). It is the
+# time the condition began, from a date the records carry or an artifact's own
+# timestamp; never the time this build ran. Bases:
+#   recorded       a date recorded on the item itself
+#   derived        computed from a recorded date (an expiry less the warning window)
+#   observed       the timestamp of the artifact that observed the condition
+#   first_observed the same condition's opening time in the previous trust center,
+#                  when earlier (observed kinds only)
+# An observed kind whose artifact carries no timestamp falls back to the
+# inventory's emitted_at; with neither, the build fails rather than guess.
+SINCE_BASES = ("recorded", "derived", "observed", "first_observed")
+SINCE_SOURCE = {
+    "vdr_blocking": "The finding's first_detected; else the VDR's emitted_at (observed).",
+    "vdr_undispositioned": "The finding's first_detected; else the VDR's emitted_at (observed).",
+    "poam_overdue": "The POA&M item's scheduled completion date: the day it became overdue (recorded).",
+    "exception_expiring": "The exception's expiry less the renewal warning window: the day it entered the window (derived).",
+    "runtime_diverged": "The runtime signal's emitted_at (observed).",
+    "runtime_unassessed": "The runtime signal's emitted_at (observed).",
+    "runtime_stale": "The runtime signal's emitted_at plus its freshness window: the moment it went stale (derived).",
+    "trust_root_change": "The trust-root plan's planned_at; else the boundary map's generated_at (observed).",
+    "boundary_unclassified": "The boundary map's generated_at (observed).",
+    "boundary_untagged": "The boundary map's generated_at (observed).",
+    "boundary_not_inventoried": "The boundary map's generated_at, or the corroboration's checked_at for resources only TAP sees (observed).",
+    "scn_unverified": "The change's date_initiated in the SCN register (recorded); else the inventory's emitted_at (observed).",
+    "manual_setting": "The manual-settings check's checked_at (observed).",
+    "decision_review_due": "The decision's review_by date (recorded).",
+    "vulnerability_evidence_stale": "Raised only by the page's live re-check: the VDR's emitted_at.",
+    "decision_records_incomplete": "The inventory's emitted_at (observed).",
 }
 
 
@@ -177,7 +260,7 @@ def corroboration_verdict(report: dict[str, Any] | None, now: datetime) -> tuple
         parts.append(f"{s['relationships_tap_only']} relationship(s) the map does not draw")
     stale = days is None or days > CORROBORATION_MAX_AGE_DAYS
     when = "" if days is None else ("today" if days < 1 else f"{days:g} days ago")
-    detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS} days)." if when else ".")
+    detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS:g} days)." if when else ".")
     differs = any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
     return ("attention" if stale or differs else "ok"), detail
 
@@ -241,7 +324,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         age = _age_hours(runtime.get("emitted_at"), now)
         stale = age is None or age > RUNTIME_MAX_AGE_HOURS
         detail = f"{div.get('status', 'unknown')}: {div.get('ksis_compared', 0)} KSIs compared, {len(div.get('regressions', []))} regressed, {len(div.get('unassessed', []))} not assessed"
-        detail += f"; {age} h old (window {RUNTIME_MAX_AGE_HOURS} h)." if age is not None else "."
+        detail += f"; {age} h old (window {RUNTIME_MAX_AGE_HOURS:g} h)." if age is not None else "."
         add("runtime", "Runtime evidence (daily emitter)",
             "ok" if div.get("status") == "converged" and not stale else "attention",
             detail, runtime.get("emitted_at"), "/.well-known/ksi-signal-runtime.json")
@@ -255,7 +338,7 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
         add("vulnerability_scan", "Nightly vulnerability evidence",
             "ok" if nightly.get("result") == "success" and fresh else "attention",
             f"Last nightly run: {nightly.get('result', 'unknown')}"
-            + (f", {age} h ago (window {VDR_MAX_AGE_HOURS} h)." if age is not None else "."),
+            + (f", {age} h ago (window {VDR_MAX_AGE_HOURS:g} h)." if age is not None else "."),
             nightly.get("finished_at"), "/.well-known/vdr-status.json")
 
     add_corroboration(add, inp.get("corroboration"), now)
@@ -276,16 +359,58 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
 # 2. What is waiting on a decision?
 # ---------------------------------------------------------------------------
 
-def _decision(kind: str, id_: str, title: str, *, since: Any = None, due: Any = None,
+def _decision(kind: str, id_: str, title: str, *, since: Any = None, basis: str = "observed", due: Any = None,
               refs: list[str] | None = None) -> dict[str, Any]:
-    return {"kind": kind, "id": id_, "title": title, "why_yours": WHY_YOURS[kind],
-            "since": since, "due": due, "refs": refs or []}
+    return {"kind": kind, "id": id_, "title": title, "why_yours": WHY_YOURS[kind], "options": list(OPTIONS[kind]),
+            "since": since or None, "since_basis": basis if since else None, "due": due, "refs": refs or []}
+
+
+def _previous_since(previous: Any, now: datetime) -> dict[tuple[str, str], tuple[datetime, str]]:
+    """Opening times of observed items in the previous trust center (read back
+    from the live site: only well-formed, past timestamps are kept)."""
+    out: dict[tuple[str, str], tuple[datetime, str]] = {}
+    items = previous.get("decisions_pending") if isinstance(previous, dict) else None
+    for d in items if isinstance(items, list) else []:
+        if not isinstance(d, dict) or not isinstance(d.get("kind"), str) or not isinstance(d.get("id"), str):
+            continue
+        t = _parse_time(d.get("since"))
+        if t is not None and t <= now:
+            # Re-serialized from the parsed time: nothing from the live site is echoed verbatim.
+            out[(d["kind"], d["id"])] = (t, t.isoformat(timespec="seconds"))
+    return out
+
+
+def _settle_since(items: list[dict[str, Any]], inp: dict[str, Any], now: datetime) -> None:
+    """Give every item its opening time: an observed item without one takes the
+    inventory's emitted_at, and keeps an earlier opening time from the previous
+    trust center. Fails closed on an item whose opening time is unknown."""
+    fallback = inp["signal"].get("emitted_at") if _parse_time(inp["signal"].get("emitted_at")) else None
+    previous = _previous_since(inp.get("previous"), now)
+    for d in items:
+        if not d["since"] and fallback:
+            d["since"], d["since_basis"] = fallback, "observed"
+        if d["since_basis"] == "observed":
+            prior = previous.get((d["kind"], d["id"]))
+            current = _parse_time(d["since"])
+            if prior and current and prior[0] < current:
+                d["since"], d["since_basis"] = prior[1], "first_observed"
+        if not d["since"]:
+            sys.exit(f"build-trust-center: queue item {d['kind']}:{d['id']} has no known opening time; "
+                     "refusing to publish it stamped with the build time")
 
 
 def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
                             log_gaps: dict[str, int]) -> list[dict[str, Any]]:
+    out = _queue_items(inp, now, log, log_gaps)
+    _settle_since(out, inp, now)
+    return out
+
+
+def _queue_items(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
+                 log_gaps: dict[str, int]) -> list[dict[str, Any]]:
     today = now.date()
     out: list[dict[str, Any]] = []
+    bmap = inp["boundary_map"]
 
     for f in inp["vdr"].get("findings", []):
         if f.get("is_blocking"):
@@ -294,20 +419,25 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
             kind = "vdr_undispositioned"
         else:
             continue
-        out.append(_decision(kind, f.get("tracking_id", ""), f.get("title", ""), since=f.get("first_detected"),
+        first = f.get("first_detected")
+        out.append(_decision(kind, f.get("tracking_id", ""), f.get("title", ""),
+                             since=first or inp["vdr"].get("emitted_at"), basis="recorded" if first else "observed",
                              due=f.get("remediation_due_at"),
                              refs=[r for r in ("/.well-known/vdr-report.json", f.get("component_id")) if r]))
 
     for p in poam_items(inp["poam"]):
         due = _parse_date(p["scheduled_completion"])
         if p["status"] == "open" and due and due < today:
-            out.append(_decision("poam_overdue", p["id"], p["title"], due=due.isoformat(), refs=["/.well-known/oscal-poam.json"]))
+            out.append(_decision("poam_overdue", p["id"], p["title"], since=due.isoformat(), basis="recorded",
+                                 due=due.isoformat(), refs=["/.well-known/oscal-poam.json"]))
 
     for e in inp["exceptions"]:
         exp = _parse_date(e.get("expiry"))
         if exp and (exp - today).days <= EXCEPTION_WARNING_DAYS:
             out.append(_decision("exception_expiring", f"{e.get('rule_id')}:{e.get('resource')}",
-                                 f"Policy exception {e.get('rule_id')} on {e.get('resource')}", due=exp.isoformat(),
+                                 f"Policy exception {e.get('rule_id')} on {e.get('resource')}",
+                                 since=(exp - timedelta(days=EXCEPTION_WARNING_DAYS)).isoformat(), basis="derived",
+                                 due=exp.isoformat(),
                                  refs=[str(e.get("ticket", ""))]))
 
     runtime = inp.get("runtime")
@@ -323,22 +453,27 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
                                  since=runtime.get("emitted_at"), refs=["/.well-known/ksi-signal-runtime.json"]))
         age = _age_hours(runtime.get("emitted_at"), now)
         if age is None or age > RUNTIME_MAX_AGE_HOURS:
+            emitted = _parse_time(runtime.get("emitted_at"))
+            stale_at = (emitted + timedelta(hours=RUNTIME_MAX_AGE_HOURS)).isoformat(timespec="seconds") if emitted else None
             out.append(_decision("runtime_stale", "runtime-stale", "The runtime signal is past its freshness window",
-                                 since=runtime.get("emitted_at")))
+                                 since=stale_at, basis="derived"))
 
-    for c in inp["boundary_map"].get("trust_root_changes", []):
+    planned_at = (inp.get("trust_root_plan") or {}).get("planned_at") or bmap.get("generated_at")
+    for c in bmap.get("trust_root_changes", []):
         out.append(_decision("trust_root_change", c["address"],
-                             f"{'/'.join(c.get('actions', []))} {c['address']}",
+                             f"{'/'.join(c.get('actions', []))} {c['address']}", since=planned_at,
                              refs=[r for r in ("/.well-known/boundary-map.json", c.get("component")) if r]))
 
-    bmap = inp["boundary_map"]
+    mapped_at = bmap.get("generated_at")
     for cid in bmap.get("unclassified", []):
-        out.append(_decision("boundary_unclassified", cid, f"{cid} is not placed in the boundary", refs=[cid]))
+        out.append(_decision("boundary_unclassified", cid, f"{cid} is not placed in the boundary", since=mapped_at, refs=[cid]))
     for n in bmap.get("nodes", []):
         if "untagged" in n.get("flags", []) or "classification tags incomplete" in n.get("flags", []):
-            out.append(_decision("boundary_untagged", n["id"], f"{n.get('name', n['id'])} lacks classification tags", refs=[n["id"]]))
+            out.append(_decision("boundary_untagged", n["id"], f"{n.get('name', n['id'])} lacks classification tags",
+                                 since=mapped_at, refs=[n["id"]]))
         if n.get("kind") == "not_inventoried":
-            out.append(_decision("boundary_not_inventoried", n["id"], f"{n.get('name', n['id'])} is used but not inventoried", refs=[n["id"]]))
+            out.append(_decision("boundary_not_inventoried", n["id"], f"{n.get('name', n['id'])} is used but not inventoried",
+                                 since=mapped_at, refs=[n["id"]]))
 
     for r in (inp.get("corroboration") or {}).get("tap_only", []):
         out.append(_decision("boundary_not_inventoried", f"tap:{r.get('type')}:{r.get('name')}",
@@ -353,14 +488,16 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
 
     for row in inp["scn_register"]:
         if not SCN_VERIFIED.search(row.get("status", "")):
+            initiated = (row.get("date_initiated") or "").strip()
             out.append(_decision("scn_unverified", row.get("scn_id", ""), _brief(row.get("short_description", ""), 160),
-                                 since=row.get("date_initiated") or None, refs=["docs/scn/"]))
+                                 since=initiated if _parse_date(initiated) else None, basis="recorded", refs=["docs/scn/"]))
 
     for e in log:
         review = _parse_date(e.get("review_by"))
         # A policy exception's review date is its expiry, queued above.
         if review and review <= today and e["kind"] != "policy_exception":
-            out.append(_decision("decision_review_due", e["id"], f"Review due: {e['subject']}", due=review.isoformat(),
+            out.append(_decision("decision_review_due", e["id"], f"Review due: {e['subject']}",
+                                 since=review.isoformat(), basis="recorded", due=review.isoformat(),
                                  refs=[e["source"]]))
 
     if any(log_gaps.values()):
@@ -389,10 +526,13 @@ def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
             "about": "Numbers the automation acts on. Each is set in code and changes only in review.",
             "items": [
                 {"name": "Remediation SLA (FedRAMP Class C)", "value": "2 to 192 days by PAIN, internet reachability and exploitability; none for N1", "source": "FedRAMP machine-readable rules (VDR-TFR-PVR), pinned in infrastructure/schemas/fedramp-rules/"},
-                {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
-                {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS} hours", "source": "infrastructure/watchdog.tf"},
+                {"name": "Vulnerability evidence freshness", "value": f"{VDR_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
+                {"name": "Runtime evidence freshness", "value": f"{RUNTIME_MAX_AGE_HOURS:g} hours", "source": FRESHNESS_SOURCE},
                 {"name": "Runtime divergence pre-flight staleness", "value": "48 hours", "source": "scripts/check-runtime-divergence.py"},
-                {"name": "Independent corroboration freshness", "value": f"{CORROBORATION_MAX_AGE_DAYS} days", "source": "scripts/build-trust-center.py"},
+                {"name": "Independent corroboration freshness", "value": f"{CORROBORATION_MAX_AGE_DAYS:g} days", "source": FRESHNESS_SOURCE},
+                {"name": "Published evidence freshness (every /.well-known/ output)",
+                 "value": f"{len(FRESHNESS['windows'])} artifacts, {min(FRESHNESS['windows'].values()):g} to {max(FRESHNESS['windows'].values()):g} hours",
+                 "source": FRESHNESS_SOURCE},
                 {"name": "Exception renewal warning", "value": f"{EXCEPTION_WARNING_DAYS} days before expiry", "source": "scripts/build-trust-center.py"},
                 {"name": "Minimum TLS policy", "value": str(config.get("tls", {}).get("minimum")), "source": "infrastructure/policy/config/data.json"},
                 {"name": "Required resource tags", "value": ", ".join(config.get("required_tags", [])), "source": "infrastructure/policy/config/data.json"},
@@ -495,10 +635,60 @@ def build_escalation_rate(inp: dict[str, Any], pending: list[dict[str, Any]], no
     history.append({"date": today, "resolved_by_precedent": auto, "escalated": escalated})
     return {
         "about": "Of the vulnerability findings and policy exceptions this build encountered, how many a current recorded decision settled, and how many came to a person because no decision covered them or the one that did had lapsed.",
-        "resolved_by_precedent": auto, "escalated": escalated,
+        "resolved_by_precedent": auto, "escalated": escalated, "denominator": auto + escalated,
         "rate": round(escalated / (auto + escalated), 3) if auto + escalated else 0.0,
+        "kinds": sorted(PRECEDENT_KINDS),
+        "by_kind": escalation_by_kind(inp, pending),
+        "not_measured": {"vulnerability_evidence_stale": "Raised only by the page's live re-check of the published VDR, never by the build."},
         "history": sorted(history, key=lambda h: h["date"])[-HISTORY_DAYS:],
     }
+
+
+def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """REQ-QUE-1: for each kind of queue item the build raises, how many were
+    raised (escalated) out of the population that kind is drawn from (the
+    denominator). Kinds outside PRECEDENT_KINDS go to a person by design; their
+    rate says how much of their population needs one now."""
+    findings = inp["vdr"].get("findings", [])
+    open_poam = [p for p in poam_items(inp["poam"]) if p["status"] == "open"]
+    log, _ = build_decision_log(inp)
+    reviewable = [e for e in log if e["kind"] in ("vulnerability_disposition", "poam_risk_decision")]
+    runtime = inp.get("runtime")
+    div = (runtime or {}).get("divergence") or {}
+    bmap = inp["boundary_map"]
+    nodes = bmap.get("nodes", [])
+    tap_only = (inp.get("corroboration") or {}).get("tap_only", [])
+    components = {str(c.get("id", i)) for i, c in enumerate(inp["signal"].get("components", []))}
+    count: dict[str, int] = {}
+    for d in pending:
+        count[d["kind"]] = count.get(d["kind"], 0) + 1
+    populations: dict[str, tuple[int, str]] = {
+        "vdr_blocking": (len(findings), "vulnerability findings in this build's VDR"),
+        "vdr_undispositioned": (len(findings), "vulnerability findings in this build's VDR"),
+        "poam_overdue": (len(open_poam), "open POA&M items"),
+        "exception_expiring": (len(inp["exceptions"]), "recorded policy exceptions"),
+        "decision_review_due": (len(reviewable), "recorded vulnerability dispositions and POA&M risk decisions"),
+        "runtime_diverged": (max(int(div.get("ksis_compared") or 0), len(div.get("regressions", []))),
+                             "KSIs compared between deploy and runtime"),
+        "runtime_unassessed": (1 if runtime is not None else 0, "runtime signals read by this build"),
+        "runtime_stale": (1 if runtime is not None else 0, "runtime signals read by this build"),
+        "trust_root_change": (len(bmap.get("trust_root_changes", [])), "merged trust-root changes not yet applied"),
+        "boundary_unclassified": (len(components | {str(c) for c in bmap.get("unclassified", [])}),
+                                  "inventoried components and unplaced resources"),
+        "boundary_untagged": (len(nodes), "nodes on the boundary map"),
+        "boundary_not_inventoried": (len(nodes) + len(tap_only), "nodes on the boundary map and resources only TAP sees"),
+        "scn_unverified": (len(inp["scn_register"]), "significant changes in the SCN register"),
+        "manual_setting": (len(MANUAL_SETTINGS), "hand-applied settings this system expects"),
+        "decision_records_incomplete": (1, "the decision log"),
+    }
+    out: dict[str, dict[str, Any]] = {}
+    for kind, (den, population) in populations.items():
+        n = count.get(kind, 0)
+        if n > den:
+            sys.exit(f"build-trust-center: {n} {kind} item(s) out of a population of {den}; the denominator is wrong")
+        out[kind] = {"escalated": n, "denominator": den, "rate": round(n / den, 3) if den else None,
+                     "population": population, "precedent": kind in PRECEDENT_KINDS}
+    return out
 
 
 def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
@@ -528,13 +718,20 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         # The page re-checks the two evidence streams that change between
         # deploys (runtime signal, nightly beacon) live, against these windows.
         "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS,
-                                    "corroboration": CORROBORATION_MAX_AGE_DAYS * 24},
+                                    "corroboration": CORROBORATION_MAX_AGE_HOURS},
+        # Which governed windows this build used (REQ-GOV-1: outputs record the
+        # version of the configuration they were built under).
+        "freshness_config": {"version": FRESHNESS["version"], "sha256": FRESHNESS["sha256"], "source": FRESHNESS_SOURCE,
+                             "decided_by": FRESHNESS["decided_by"], "decided_on": FRESHNESS["decided_on"],
+                             "review_by": FRESHNESS["review_by"], "windows_hours": FRESHNESS["windows"]},
         "decisions_pending": pending,
         # What the page needs to rebuild the date-driven part of the queue live,
         # so an empty queue is true on the day it is read, not only the day it
         # was deployed. The reasons travel with the data (one source of truth).
         "live_queue": {
             "why_yours": WHY_YOURS,
+            "options": OPTIONS,
+            "since_source": SINCE_SOURCE,
             "exception_warning_days": EXCEPTION_WARNING_DAYS,
             "poam_due": [{"id": p["id"], "title": p["title"], "due": d.isoformat()}
                          for p in poam_items(inp["poam"])

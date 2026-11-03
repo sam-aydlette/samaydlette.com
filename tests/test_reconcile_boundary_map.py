@@ -61,7 +61,8 @@ def test_identifiers_fail_the_gate():
 
 
 def test_report_lists_held_and_deferred_invariants():
-    r = rec.build_report(SIGNAL, "abc", deferred={"a": True, "i": True, "k": False, "l": False})
+    r = rec.build_report(SIGNAL, "abc", deferred={"a": True, "i": True, "l": False})
     status = {i["id"]: i["status"] for i in r["invariants"]}
     assert r["result"] == "pass" and r["ksi_signal_id"] == "sig-1"
     assert status["a"] == "deferred" and status["l"] == "held" and status["e"] == "held"
+    assert "k" not in status  # retired with the bundle it bound; letter not reused
