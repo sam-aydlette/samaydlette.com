@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/.well-known/freshness-config.schema.json",
+  "title": "Published-evidence freshness configuration",
+  "description": "Governed maximum age for each artifact published under /.well-known/. Uniqueness of paths and the presence of the artifacts consumers depend on are validated in code (scripts/_common.py load_freshness_config, infrastructure/watchdog/logic.mjs parseConfig).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "decided_by",
+    "decided_on",
+    "review_by",
+    "rationale",
+    "artifacts"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "decided_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decided_on": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "review_by": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "cadence",
+          "max_age_hours",
+          "timestamp",
+          "signed"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^\\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "cadence": {
+            "enum": [
+              "nightly",
+              "runtime",
+              "deploy",
+              "operator"
+            ]
+          },
+          "max_age_hours": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 8760
+          },
+          "timestamp": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source",
+                  "field"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "json"
+                  },
+                  "field": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]+(\\.[A-Za-z0-9_-]+)*$"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source"
+                ],
+                "properties": {
+                  "source": {
+                    "const": "last_modified"
+                  }
+                }
+              }
+            ]
+          },
+          "signed": {
+            "type": "boolean"
+          },
+          "signature": {
+            "type": "string",
+            "pattern": "^\\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

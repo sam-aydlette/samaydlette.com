@@ -109,8 +109,9 @@ env:
   # terraform.tfvars as `existing_s3_bucket_name`.
   SITE_BUCKET: samaydlette.com
   SITE_ORIGIN: https://samaydlette.com
-  # The published-freshness policy, in one place.
-  MAX_EVIDENCE_AGE_HOURS: '24'
+  # The published-freshness windows live in one governed place,
+  # infrastructure/schemas/freshness-config.json (REQ-PUB-2); the freshness
+  # check below reads its window from there, not from this workflow.
   # The identity that signs the published inventory. The nightly binds its VDR to
   # an artifact it fetched over the public internet, so it verifies that artifact
   # against this pinned identity before trusting a single byte of it.
@@ -685,7 +686,7 @@ jobs:
     # Everything above verifies the build. This verifies the CLAIM: fetch the
     # artifact over the public URL exactly as a third party would, assert the
     # served bytes are the bytes just built, and assert its emitted_at is inside
-    # the 24-hour policy window. Retries ride out CDN propagation.
+    # its governed window (infrastructure/schemas/freshness-config.json). Retries ride out CDN propagation.
     #
     # Deliberately not `aws cloudfront wait invalidation-completed`: polling the
     # public edge is a stronger check than asking the CDN's control plane
@@ -701,7 +702,6 @@ jobs:
         BUILT_SHA=$(sha256sum vdr-report.json | awk '{print $1}')
         python3 ../scripts/check-evidence-freshness.py \
           --url "${SITE_ORIGIN}/.well-known/vdr-report.json" \
-          --max-age-hours "${MAX_EVIDENCE_AGE_HOURS}" \
           --expect-sha256 "${BUILT_SHA}" \
           --retries 12 --retry-delay 20
 

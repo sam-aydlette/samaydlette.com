@@ -9,10 +9,18 @@
 # disabled.
 #
 #   hourly EventBridge rule -> watchdog Lambda
-#     reads vdr-report.json, ksi-signal-runtime.json and the nightly's status
-#     beacon (vdr-status.json) straight from the site bucket
+#     reads every artifact listed in the governed freshness config
+#     (schemas/freshness-config.json: the VDR, the runtime signal, the
+#     nightly's status beacon and every other signed output under
+#     /.well-known/) straight from the site bucket
 #     -> CloudWatch metrics (Samaydlette/Evidence)
-#     -> three alarms -> SNS topic (CMK-encrypted) -> operator email
+#     -> four alarms -> SNS topic (CMK-encrypted) -> operator email
+#
+# The freshness windows are governed values (REQ-PUB-2, REQ-GOV-1). They are
+# read here with jsondecode(file(...)): the alarm thresholds, the objects the
+# role may read and the config packaged with the function all come from that
+# one file. An artifact the alarms need that the file does not list fails the
+# plan.
 #
 # The Lambda makes AWS API calls only. It has no internet egress, so the
 # "Lambda egress is to AWS APIs only" statements in the SSP and the POAM-010
@@ -22,7 +30,9 @@
 # Terraform lands in state and in the uploaded plan artifact of a public repo.
 # It is created once, out of band (docs/runbooks/evidence-sla-alarm.md).
 #
-# Cost: three standard alarms plus three custom metrics, roughly $0.80/month.
+# Cost: four standard alarms plus four custom metrics, roughly $1.60/month.
+# Every listed artifact feeds one StaleArtifacts count rather than a metric
+# each, so the cost stays flat as the list grows.
 # SNS email at this volume and 720 short invocations a month are within free
 # tiers.
 # =============================================================================
@@ -33,6 +43,10 @@ locals {
   watchdog_namespace = "Samaydlette/Evidence"
   watchdog_alerts    = "${replace(var.domain_name, ".", "-")}-evidence-alerts"
   watchdog_runbook   = "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/runbooks/evidence-sla-alarm.md"
+
+  # The governed freshness windows, {".well-known/<object>" = max_age_hours}.
+  freshness_config  = jsondecode(file("${path.module}/schemas/freshness-config.json"))
+  freshness_windows = { for a in local.freshness_config.artifacts : a.path => a.max_age_hours }
 
   watchdog_tags = {
     Environment        = var.environment
@@ -46,18 +60,23 @@ locals {
   watchdog_alarms = {
     "vdr-age" = {
       metric    = "VdrAgeHours"
-      threshold = 24
-      summary   = "The published vulnerability report (VDR) is more than 24 hours old: the reporting policy is breached."
+      threshold = local.freshness_windows[".well-known/vdr-report.json"]
+      summary   = "The published vulnerability report (VDR) is more than ${local.freshness_windows[".well-known/vdr-report.json"]} hours old: the reporting policy is breached."
     }
     "runtime-age" = {
       metric    = "RuntimeSignalAgeHours"
-      threshold = 26
-      summary   = "The daily runtime check has not published a signal in more than 26 hours."
+      threshold = local.freshness_windows[".well-known/ksi-signal-runtime.json"]
+      summary   = "The daily runtime check has not published a signal in more than ${local.freshness_windows[".well-known/ksi-signal-runtime.json"]} hours."
     }
     "nightly-failed" = {
       metric    = "NightlyFailed"
       threshold = 0
-      summary   = "The evidence nightly failed, or has not reported in more than 26 hours. The alert issue on GitHub names the gate and the findings."
+      summary   = "The evidence nightly failed, or has not reported in more than ${local.freshness_windows[".well-known/vdr-status.json"]} hours. The alert issue on GitHub names the gate and the findings."
+    }
+    "artifact-stale" = {
+      metric    = "StaleArtifacts"
+      threshold = 0
+      summary   = "At least one published /.well-known/ artifact is older than its governed freshness window, or unreadable. The watchdog's log names which."
     }
   }
 }
@@ -65,8 +84,22 @@ locals {
 data "archive_file" "evidence_watchdog" {
   count       = local.watchdog_enabled ? 1 : 0
   type        = "zip"
-  source_dir  = "${path.module}/watchdog"
   output_path = "${path.module}/evidence-watchdog.zip"
+
+  source {
+    content  = file("${path.module}/watchdog/index.mjs")
+    filename = "index.mjs"
+  }
+  source {
+    content  = file("${path.module}/watchdog/logic.mjs")
+    filename = "logic.mjs"
+  }
+  # The governed windows ship with the function, so it reads the same file the
+  # alarms were built from; the handler fails closed without it.
+  source {
+    content  = file("${path.module}/schemas/freshness-config.json")
+    filename = "freshness-config.json"
+  }
 }
 
 resource "aws_iam_role" "evidence_watchdog" {
@@ -87,12 +120,24 @@ resource "aws_iam_role" "evidence_watchdog" {
   })
 }
 
-# Least privilege: read three named objects, write metrics to one namespace,
+# Least privilege: read the named objects the freshness config lists (each one
+# directly under .well-known/, enforced below), write metrics to one namespace,
 # write its own logs, decrypt its own env, and dead-letter a failed invocation.
 resource "aws_iam_role_policy" "evidence_watchdog" {
   count = local.watchdog_enabled ? 1 : 0
   name  = "${local.watchdog_name}-policy"
   role  = aws_iam_role.evidence_watchdog[0].id
+
+  lifecycle {
+    # The read grant is built from the config: never a wildcard, never outside
+    # .well-known/, never empty.
+    precondition {
+      condition = length(local.freshness_windows) > 0 && alltrue([
+        for p in keys(local.freshness_windows) : can(regex("^\\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$", p))
+      ])
+      error_message = "schemas/freshness-config.json must list objects directly under .well-known/ only."
+    }
+  }
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -104,14 +149,10 @@ resource "aws_iam_role_policy" "evidence_watchdog" {
         Resource = "${aws_cloudwatch_log_group.evidence_watchdog[0].arn}:*"
       },
       {
-        Sid    = "ReadPublishedEvidence"
-        Effect = "Allow"
-        Action = "s3:GetObject"
-        Resource = [
-          "${data.aws_s3_bucket.website.arn}/.well-known/vdr-report.json",
-          "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json",
-          "${data.aws_s3_bucket.website.arn}/.well-known/vdr-status.json",
-        ]
+        Sid      = "ReadPublishedEvidence"
+        Effect   = "Allow"
+        Action   = "s3:GetObject"
+        Resource = [for p in keys(local.freshness_windows) : "${data.aws_s3_bucket.website.arn}/${p}"]
       },
       {
         # PutMetricData has no resource-level scoping; the namespace condition is

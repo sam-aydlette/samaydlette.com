@@ -1,0 +1,275 @@
+{
+  "$schema": "./freshness-config.schema.json",
+  "version": "1.0",
+  "description": "Governed freshness windows for every output published under /.well-known/ (REQ-PUB-2, REQ-GOV-1). The single source for the maximum age of each artifact: scripts/build-trust-center.py, scripts/check-evidence-freshness.py and the evidence SLA watchdog (infrastructure/watchdog.tf and infrastructure/watchdog/) all read it, and each fails closed if it is missing or invalid. Signatures (.bundle), schemas and the human-readable .md renderings are published with the artifact they accompany and are covered through it.",
+  "decided_by": "Operator",
+  "decided_on": "2026-11-03",
+  "review_by": "2027-11-03",
+  "rationale": "Nightly evidence (the VDR, its trend and attestation) must be under 24 hours old, the reporting policy. The runtime signal and the nightly's status beacon get 26 hours: one daily (or twice-daily) run plus one late run. Artifacts regenerated only on a deploy, which is human-initiated and human-approved, get 30 days, the monthly continuous-monitoring cadence: older than that, the inventory has not been re-derived from live state within a reporting month. The operator-run independent corroboration gets the same 30 days.",
+  "artifacts": [
+    {
+      "path": ".well-known/vdr-report.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-report.bundle"
+    },
+    {
+      "path": ".well-known/vdr-trend.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "updated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-trend.bundle"
+    },
+    {
+      "path": ".well-known/vdr-report.json.intoto.jsonl",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "note": "Provenance attestation; a DSSE envelope with no timestamp of its own, so the object's last-modified time is used."
+    },
+    {
+      "path": ".well-known/vdr-status.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "finished_at"
+      },
+      "signed": false,
+      "note": "The nightly's status beacon. Unsigned and not evidence; listed because the watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
+    },
+    {
+      "path": ".well-known/ksi-signal-runtime.json",
+      "cadence": "runtime",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "note": "Signed in-band (provenance.attestation) by the runtime Lambda, which runs daily; 26 hours tolerates one late run."
+    },
+    {
+      "path": ".well-known/ksi-signal.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ksi-signal.bundle"
+    },
+    {
+      "path": ".well-known/ksi-signal.json.intoto.jsonl",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true
+    },
+    {
+      "path": ".well-known/opa-policy-bundle.tar.gz",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/opa-policy-bundle.tar.gz.bundle"
+    },
+    {
+      "path": ".well-known/oscal-ssp.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "system-security-plan.metadata.last-modified"
+      },
+      "signed": true,
+      "signature": ".well-known/oscal-ssp.bundle"
+    },
+    {
+      "path": ".well-known/oscal-ssp.json.intoto.jsonl",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true
+    },
+    {
+      "path": ".well-known/oscal-poam.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "plan-of-action-and-milestones.metadata.last-modified"
+      },
+      "signed": true,
+      "signature": ".well-known/oscal-poam.bundle"
+    },
+    {
+      "path": ".well-known/oscal-poam.json.intoto.jsonl",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true
+    },
+    {
+      "path": ".well-known/iiw.csv",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/iiw.bundle"
+    },
+    {
+      "path": ".well-known/iiw.csv.intoto.jsonl",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true
+    },
+    {
+      "path": ".well-known/scuba-bundle.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/scuba-bundle.bundle"
+    },
+    {
+      "path": ".well-known/ongoing-certification-report.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ongoing-certification-report.bundle"
+    },
+    {
+      "path": ".well-known/certification-overview-package.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/certification-overview-package.bundle"
+    },
+    {
+      "path": ".well-known/availability.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/availability.bundle"
+    },
+    {
+      "path": ".well-known/policy-index.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/policy-index.bundle"
+    },
+    {
+      "path": ".well-known/security-decision-record.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.last_updated"
+      },
+      "signed": true,
+      "signature": ".well-known/security-decision-record.bundle"
+    },
+    {
+      "path": ".well-known/certification-package-overview.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.last_updated"
+      },
+      "signed": true,
+      "signature": ".well-known/certification-package-overview.bundle"
+    },
+    {
+      "path": ".well-known/boundary-map.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/boundary-map.bundle"
+    },
+    {
+      "path": ".well-known/reconcile-report.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/reconcile-report.bundle"
+    },
+    {
+      "path": ".well-known/trust-center.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/trust-center.bundle"
+    },
+    {
+      "path": ".well-known/boundary-corroboration.json",
+      "cadence": "operator",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "checked_at"
+      },
+      "signed": true,
+      "signature": ".well-known/boundary-corroboration.bundle",
+      "note": "Run by the operator (tools/boundary-map/corroborate.py), committed, and signed and published by the deploy."
+    }
+  ]
+}
