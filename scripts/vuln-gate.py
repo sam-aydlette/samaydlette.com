@@ -54,6 +54,10 @@ PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
 # (opa/checkov/tfsec) are governed separately via .checkov.yaml + the VDR maps.
 VULN_SOURCES = {"grype", "zap", "dependabot"}
 
+# The scanner fix state a vendor dependency needs: no fix yet. "wont-fix" (none
+# coming) is not a vendor dependency. Mirrors policies/triage.rego.
+NO_FIX_STATES = {"not-fixed"}
+
 
 def load_register(path):
     doc = json.loads(Path(path).read_text())
@@ -71,12 +75,19 @@ def vulns_from_vdr(vdr):
             continue
         vid = f.get("cve") or f.get("tracking_id") or f.get("tool_id")
         if vid:
+            # Evidence the builder evaluated: a mitigation in force, and the
+            # scanner's fix state. One ID can cover several findings (one CVE in
+            # several packages); the evidence must hold on every one of them.
+            mit = (f.get("mitigation") or {}).get("valid") is True
+            fix = f.get("fix_state")
+            prev = out.get(vid)
+            if prev:
+                mit = mit and prev["mitigation_valid"]
+                if prev["fix_state"] not in NO_FIX_STATES:
+                    fix = prev["fix_state"]
             out[vid] = {"id": vid, "severity": (f.get("severity") or "").upper(),
                         "source": f.get("source", "vdr"),
-                        # Evidence the builder evaluated: a mitigation in force,
-                        # and the scanner's fix state.
-                        "mitigation_valid": (f.get("mitigation") or {}).get("valid") is True,
-                        "fix_state": f.get("fix_state")}
+                        "mitigation_valid": mit, "fix_state": fix}
     for c in vdr.get("cve_findings", []) or []:
         vid = c.get("cve") or c.get("id") or c.get("tracking_id")
         if vid and vid not in out:
@@ -107,7 +118,7 @@ def handled(v, entry, today):
         return False
     if disp == "mitigated" and v.get("mitigation_valid") is not True:
         return False
-    if disp == "vendor-dependency" and v.get("fix_state") != "not-fixed":
+    if disp == "vendor-dependency" and v.get("fix_state") not in NO_FIX_STATES:
         return False
     return True
 

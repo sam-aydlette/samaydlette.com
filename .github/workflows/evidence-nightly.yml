@@ -508,13 +508,6 @@ jobs:
           rm -f ksi-signal-runtime.json
         fi
 
-    # -------------------------------------------------------------------------
-    # BUILD THE VDR
-    # -------------------------------------------------------------------------
-    # --ksi-signal binds the report to the published inventory (invariant e).
-    # --opa is deliberately not passed; see the header. Its absence leaves the
-    # builder's default path pointing at a file that does not exist, which
-    # ingest_opa treats as an empty finding set.
     # The builder evaluates policies/triage.rego for every decision and fails
     # closed without opa. Same version and SHA pin as the deploy job.
     - name: Setup OPA (triage policy)
@@ -526,6 +519,13 @@ jobs:
         sudo mv opa /usr/local/bin
         opa version
 
+    # -------------------------------------------------------------------------
+    # BUILD THE VDR
+    # -------------------------------------------------------------------------
+    # --ksi-signal binds the report to the published inventory (invariant e).
+    # --opa is deliberately not passed; see the header. Its absence leaves the
+    # builder's default path pointing at a file that does not exist, which
+    # ingest_opa treats as an empty finding set.
     - name: Build VDR Report (FedRAMP 20x Class C)
       id: vdr
       working-directory: infrastructure

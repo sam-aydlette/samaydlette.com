@@ -24,7 +24,8 @@
 #                        a verified "not-reachable" mitigation => NIRV
 #   4. exploitability    Figure 7, first match decides; then a verified
 #                        "not-likely-exploitable" mitigation; then an LEV
-#                        override in force. Neither ever clears a KEV.
+#                        override in force. Neither ever clears known or
+#                        observed exploitation.
 #   5. disposition       check-ID decision record, else the register entry;
 #                        a lapsed or invalid record is absent (REQ-DSP-2)
 #   6. deadline          clock start + Class C timeframe; likely overdue
@@ -196,6 +197,8 @@ reach(item) := [true, "observed"] if {
 } else := [true, "unresolved"]
 
 irv(item) := [false, "mitigation"] if {
+	# An outside-in observation this run outranks any claim it is unreachable.
+	not item.reach.observed == true
 	mit_valid(item.mitigation)
 	item.mitigation.effect == "not-reachable"
 } else := reach(item)
@@ -216,9 +219,14 @@ figure7(item, irv) := [false, "fully-mitigated"] if {
 	is_number(item.epss)
 } else := [true, "no-score"]
 
+# Known or observed exploitation: no mitigation or override clears it.
+exploited(item) if item.is_kev == true
+
+exploited(item) if lower(sprintf("%v", [object.get(item, "exploitation", "")])) == "active"
+
 after_mitigation(item, l) := [false, "mitigation"] if {
 	l[0] == true
-	not item.is_kev == true
+	not exploited(item)
 	mit_valid(item.mitigation)
 	item.mitigation.effect == "not-likely-exploitable"
 } else := l
@@ -234,10 +242,11 @@ override_applies(o, item) if {
 
 overrides := object.get(input, "lev_overrides", {})
 
-# REQ-LEV-4: the first override in force, by ID. Findings only; never a KEV.
+# REQ-LEV-4: the first override in force, by ID. Findings only; never known or
+# observed exploitation.
 override(item) := ids[0] if {
 	item.kind == "finding"
-	not item.is_kev == true
+	not exploited(item)
 	ids := [oid | some oid in sort(object.keys(overrides)); override_applies(overrides[oid], item)]
 	count(ids) > 0
 }
@@ -268,6 +277,9 @@ record_status(e, item) := ["invalid", sprintf("unknown disposition %s", [py_repr
 	e.disposition == "mitigated"
 	truthy(object.get(e, "mitigation", null))
 	e.mitigation != item.mitigation.id
+} else := ["invalid", "fix state wont-fix: the vendor will not ship a fix, so this is not a vendor dependency; record it as accepted, or remediate another way"] if {
+	e.disposition == "vendor-dependency"
+	object.get(item, "fix_state", null) == "wont-fix"
 } else := ["invalid", sprintf("fix state %v: a fix may be available, so the vendor dependency has lapsed", [fix_state_word(item)])] if {
 	e.disposition == "vendor-dependency"
 	object.get(item, "fix_state", null) != "not-fixed"
