@@ -76,6 +76,7 @@ WHY_YOURS = {
     "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
     "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the Authorizing Official's call.",
     "vulnerability_evidence_stale": "The published vulnerability evidence is older than its freshness window, so current exposure is not known. Whether to rely on the system meanwhile is a judgment.",
+    "gate_detect_recover": "A gate check running in detect-and-recover mode failed, so the run continued without it. Whether to repair, accept or return the gate to block is a judgment.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the Authorizing Official's call.",
 }
 
@@ -119,6 +120,9 @@ OPTIONS = {
                             "End it: remediate or close the underlying item"],
     "vulnerability_evidence_stale": ["Investigate and rerun the nightly vulnerability scan",
                                      "Accept reliance on the last published evidence for a stated period, recording the decision"],
+    "gate_detect_recover": ["Repair the failed check so the next run passes it",
+                            "Return the check to block mode in infrastructure/schemas/gate-modes.json",
+                            "Renew the detect-and-recover decision with a reason and review date"],
     "decision_records_incomplete": ["Record who decided, when and the review date on each record",
                                     "Retire the decisions no one will own"],
 }
@@ -151,6 +155,7 @@ SINCE_SOURCE = {
     "decision_review_due": "The decision's review_by date (recorded).",
     "vulnerability_evidence_stale": "Raised only by the page's live re-check: the VDR's emitted_at.",
     "decision_records_incomplete": "The inventory's emitted_at (observed).",
+    "gate_detect_recover": "When the run recorded the gate event (observed); the earliest such time is carried forward.",
 }
 
 
@@ -418,11 +423,33 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
     return out
 
 
+def gate_events(inp: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Detect-and-recover gate events published by this build's VDR (deploy)
+    and the nightly status beacon, one per check, earliest first."""
+    events: dict[str, dict[str, Any]] = {}
+    sources = [((inp.get("vdr") or {}).get("methodology") or {}).get("gate_events"),
+               (inp.get("vdr_status") or {}).get("gate_events")]
+    for src in sources:
+        for e in src if isinstance(src, list) else []:
+            if not isinstance(e, dict) or not isinstance(e.get("check"), str) or not _parse_time(e.get("at")):
+                continue
+            prior = events.get(e["check"])
+            if prior is None or _parse_time(e["at"]) < _parse_time(prior["at"]):  # type: ignore[operator]
+                events[e["check"]] = e
+    return events
+
+
 def _queue_items(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
                  log_gaps: dict[str, int]) -> list[dict[str, Any]]:
     today = now.date()
     out: list[dict[str, Any]] = []
     bmap = inp["boundary_map"]
+
+    for check, e in sorted(gate_events(inp).items()):
+        out.append(_decision("gate_detect_recover", check,
+                             f"{e.get('gate', '?')} {check} failed and ran in detect-and-recover: "
+                             f"{_brief(str(e.get('detail', '')), 160)}",
+                             since=e["at"], refs=["infrastructure/schemas/gate-modes.json"]))
 
     for f in inp["vdr"].get("findings", []):
         if f.get("is_blocking"):
@@ -692,6 +719,10 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
         "scn_unverified": (len(inp["scn_register"]), "significant changes in the SCN register"),
         "manual_setting": (len(MANUAL_SETTINGS), "hand-applied settings this system expects"),
         "decision_records_incomplete": (1, "the decision log"),
+        "gate_detect_recover": (len({c.get("check") for c in (((inp["vdr"].get("methodology") or {}).get("gates") or {})
+                                                            .get("checks") or []) if isinstance(c, dict)}
+                                    | set(gate_events(inp))),
+                                "gate checks in the published gate-mode register"),
     }
     out: dict[str, dict[str, Any]] = {}
     for kind, (den, population) in populations.items():

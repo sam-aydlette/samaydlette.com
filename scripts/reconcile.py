@@ -59,6 +59,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _gates  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 
 
@@ -660,6 +663,7 @@ def main():
     ap.add_argument("--poam-md", default=str(REPO / "docs" / "poam.md"),
                     help="path to docs/poam.md (overridable for hermetic tests)")
     args = ap.parse_args()
+    gates = _gates.load_gate_modes()
 
     d = Path(args.artifacts_dir)
     try:
@@ -699,9 +703,13 @@ def main():
         except RuntimeError as e:
             msg = str(e)
             if "AccessDenied" in msg or "not authorized" in msg.lower():
-                print("::warning::reconcile: tag:GetResources not permitted; invariant (i) "
-                      "classification-tag reconciliation skipped until the deploy role is "
-                      "granted it (tag:GetResources).", file=sys.stderr)
+                # A denied read is a detection failure (G7). Its mode is governed:
+                # block stops here; detect-and-recover publishes it and skips (i).
+                note = "tag:GetResources not permitted; invariant (i) could not be checked"
+                if _gates.blocks(gates, "reconcile.i.unreadable"):
+                    print(f"::error::reconcile: {note}", file=sys.stderr)
+                    return 1
+                _gates.record_event(gates, "reconcile.i.unreadable", note)
                 live_tags = None
             else:
                 raise
@@ -713,6 +721,17 @@ def main():
         boundary_map=boundary_map,
     )
 
+    # Each violation names its invariant, "(x) ..."; its check's governed mode
+    # decides whether it stops the run. An unattributable violation always does.
+    hard = []
+    for v in violations:
+        m = re.match(r"\(([a-z])\)", v)
+        check = f"reconcile.{m.group(1)}" if m else None
+        if check in _gates.CHECKS and not _gates.blocks(gates, check):
+            _gates.record_event(gates, check, v)
+        else:
+            hard.append(v)
+    violations = hard
     if violations:
         print(f"RECONCILIATION FAILED — {len(violations)} violation(s):", file=sys.stderr)
         for v in violations:

@@ -1,0 +1,4 @@
+{"signal_id": "fixture-g3", "components": [
+  {"component_id": "pkg::npm::a", "type": "package", "global_id": {"purl": "pkg:npm/a@1"}, "name": "a",
+   "attributes": {"classification": {"data_sensitivity": "public", "mission_criticality": "low",
+                                     "agency_scope": "single", "internet_reachable": false}}}]}

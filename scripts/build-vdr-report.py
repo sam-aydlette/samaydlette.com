@@ -42,6 +42,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 import uuid
@@ -50,6 +51,7 @@ from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _gates  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
 
@@ -1911,6 +1913,20 @@ def consolidate_by_cve(report_findings, risk_accepted):
     return out
 
 
+class BlockingList(list):
+    """The blocking tracking IDs, plus the triage block rule behind each one
+    (`rules`), so the caller can apply the gate's governed mode per rule."""
+
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.rules = {}
+
+
+# The triage block rule each gate check covers (infrastructure/schemas/gate-modes.json).
+BLOCK_RULE_CHECK = {"kev": "vdr.kev", "top-impact-lev-irv": "vdr.top-impact-lev-irv",
+                    "past-deadline": "vdr.past-deadline"}
+
+
 def build_report(findings, suppressions, kev_cves, ledger, index=None, config=None,
                  epss_scores=None, disposition_register=None, check_vectors=None,
                  lev_overrides=None, inventory=None, now=None, mitigations=None, runtime=None,
@@ -1946,7 +1962,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         "ledger_carried_forward": 0,
         "ledger_newly_detected": 0,
     }
-    blocking = []
+    blocking = BlockingList()
 
     check_vectors = check_vectors or {}
     lev_overrides = lev_overrides or {}
@@ -2140,6 +2156,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         if block_this:
             summary["blocking"] += 1
             blocking.append(f["tracking_id"])
+            blocking.rules[f["tracking_id"]] = d["block_rule"]
 
     # Register hygiene: records past review_by, and records with no current
     # finding (remediated, withdrawn advisory, or a scan that stopped seeing it).
@@ -2305,6 +2322,7 @@ def main():
     # so the knobs are always present and auditable (memo s14). assign_pain
     # consumes them; the methodology block records which version was used.
     pain_config, pain_config_sha256 = load_pain_config(args.pain_config)
+    gates = _gates.load_gate_modes()
 
     ksi_signal_id = None
     _sig_path = Path(args.ksi_signal)
@@ -2325,17 +2343,25 @@ def main():
     # build closed (a skipped/forgotten scan must not read as zero findings).
     if args.zap:
         if not Path(args.zap).exists():
-            print(f"::warning::No ZAP report at {args.zap}; DAST coverage is absent until a scan is committed (see security/zap/README.md).", file=sys.stderr)
+            msg = f"No ZAP report at {args.zap}; DAST coverage is absent (see security/zap/README.md)."
+            if _gates.blocks(gates, "detection.zap.missing"):
+                print(f"::error::{msg}", file=sys.stderr)
+                return 1
+            _gates.record_event(gates, "detection.zap.missing", msg)
         else:
             findings.extend(ingest_zap(args.zap, load_zap_allowlist()))
             if args.zap_max_age_days > 0:
                 age = zap_report_age_days(args.zap, datetime.now(timezone.utc))
+                stale = None
                 if age is None:
-                    print(f"::error::ZAP report at {args.zap} has no parseable @generated timestamp; regenerate it.", file=sys.stderr)
-                    return 1
-                if age > args.zap_max_age_days:
-                    print(f"::error::ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh monthly DAST scan and commit it.", file=sys.stderr)
-                    return 1
+                    stale = f"ZAP report at {args.zap} has no parseable @generated timestamp; regenerate it."
+                elif age > args.zap_max_age_days:
+                    stale = f"ZAP report is {age} days old (max {args.zap_max_age_days}); run a fresh DAST scan."
+                if stale:
+                    if _gates.blocks(gates, "detection.zap.stale"):
+                        print(f"::error::{stale}", file=sys.stderr)
+                        return 1
+                    _gates.record_event(gates, "detection.zap.stale", stale)
 
     findings = dedupe_findings(findings)
     kev_cves = ingest_kev(args.kev)
@@ -2402,7 +2428,22 @@ def main():
         "pain_config_sha256": pain_config_sha256,
         "fedramp_rules": rules_pin(),
         "reference": pain_config.get("method_reference", ""),
+        "gates": _gates.published_view(gates),
     }
+
+    # Apply each blocking finding's governed mode before writing, so a
+    # detect-and-recover event lands in the report it belongs to.
+    hard = []
+    for tid in blocking:
+        check = BLOCK_RULE_CHECK.get(blocking.rules.get(tid))
+        if check is None or _gates.blocks(gates, check):
+            hard.append(tid)
+        else:
+            _gates.record_event(gates, check, f"{tid} is blocking-tier")
+    # Detect-and-recover events from this run so far (REQ-GAT-1): published,
+    # never hidden. Empty unless the workflow collects them.
+    events_file = os.environ.get(_gates.EVENTS_ENV)
+    report["methodology"]["gate_events"] = _gates.read_events(events_file) if events_file else []
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
@@ -2414,8 +2455,10 @@ def main():
         Path(args.md_output).write_text(render_markdown(report) + "\n")
         print("vdr-report.md: human-readable rendering written")
 
-    if blocking:
-        print(f"::error::VDR build-block: {len(blocking)} finding(s) exceed Class C tolerance: {', '.join(blocking)}", file=sys.stderr)
+    # A blocking finding stops the build only if its gate check runs in block
+    # mode; a recorded detect-and-recover mode published it above.
+    if hard:
+        print(f"::error::VDR build-block: {len(hard)} finding(s) exceed Class C tolerance: {', '.join(hard)}", file=sys.stderr)
         return 1
     return 0
 

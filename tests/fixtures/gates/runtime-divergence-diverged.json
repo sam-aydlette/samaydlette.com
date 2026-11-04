@@ -1,0 +1,5 @@
+{"emitted_at": "2026-11-04T06:00:00+00:00",
+ "divergence": {"status": "diverged",
+                "compared_against": {"signal_id": "fixture", "commit": "0000000"},
+                "regressions": [{"ksi_id": "KSI-FIXTURE-01", "deploy_status": "pass", "runtime_status": "fail",
+                                 "violation_ids": ["fixture.rule"]}]}}

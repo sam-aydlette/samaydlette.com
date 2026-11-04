@@ -224,6 +224,10 @@ jobs:
     # environment's OIDC subject can assume cannot apply Terraform, cannot sync
     # the website, and cannot write outside `.well-known/vdr-*`.
     environment: evidence-nightly
+    # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
+    # appended here by scripts/_gates.py and published with this run's evidence.
+    env:
+      GATE_EVENTS_FILE: /tmp/gate-events.jsonl
     # Which gate stopped the run, handed to the alert job. A failed vulnerability
     # gate and a skipped reconciliation are different problems: the first means
     # stale evidence, the second means nothing compared the live site against its
@@ -762,7 +766,12 @@ jobs:
         PUBLISHED: ${{ steps.publish.outcome }}
       run: |
         set -euo pipefail
+        # The gate-mode register version and every detect-and-recover event this
+        # run recorded (REQ-GAT-1: a mode that does not block still publishes).
+        python3 ../scripts/_gates.py status "${GATE_EVENTS_FILE}" > gate-status.json \
+          || echo '{"gates": null, "gate_events": null}' > gate-status.json
         jq -n \
+          --slurpfile gs gate-status.json \
           --arg result "${RUN_RESULT}" \
           --arg vuln_gate "${VULN_GATE:-not reached}" \
           --arg reconcile "${RECONCILE:-not reached}" \
@@ -772,7 +781,8 @@ jobs:
           --arg commit "${SIGNAL_COMMIT:-unknown}" \
           '{schema: "vdr-status/1", result: $result, finished_at: $finished_at,
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
-            inventory_commit: $commit, run_url: $run_url}' > vdr-status.json
+            inventory_commit: $commit, run_url: $run_url,
+            gates: $gs[0].gates, gate_events: $gs[0].gate_events}' > vdr-status.json
         cat vdr-status.json
         aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
           --content-type application/json --cache-control "no-cache"

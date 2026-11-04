@@ -1,0 +1,8 @@
+{
+ "catalogVersion": "fixture",
+ "vulnerabilities": [
+  {
+   "cveID": "CVE-2099-0001"
+  }
+ ]
+}

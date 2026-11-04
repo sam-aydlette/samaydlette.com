@@ -43,6 +43,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _gates  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 
 # The only dispositions that let a vulnerability pass the build; mitigated and
@@ -137,6 +140,7 @@ def main():
     ap.add_argument("--register", default=str(REPO / "data" / "vuln-dispositions.json"))
     args = ap.parse_args()
 
+    gates = _gates.load_gate_modes()
     register = load_register(args.register)
 
     if args.vdr:
@@ -151,6 +155,11 @@ def main():
         print(f"vulnerability gate: OK — {len(vulns)} scanned, all remediated or dispositioned in force")
         return 0
 
+    if not _gates.blocks(gates, "vuln-gate.unhandled"):
+        _gates.record_event(gates, "vuln-gate.unhandled",
+                            f"{len(unhandled)} vulnerability(ies) without a passing disposition: "
+                            + ", ".join(v["id"] for v in unhandled))
+        return 0
     print(f"VULNERABILITY GATE FAILED — {len(unhandled)} uncategorized vulnerability(ies):", file=sys.stderr)
     for v in unhandled:
         sev = v.get("severity") or "?"

@@ -568,6 +568,10 @@ jobs:
       # security-events: read lets the GITHUB_TOKEN list this repo's Dependabot
       # alerts (the CVE-bearing SCA findings the VDR builder matches against KEV).
       security-events: read
+    # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
+    # appended here by scripts/_gates.py and published with this run's evidence.
+    env:
+      GATE_EVENTS_FILE: /tmp/gate-events.jsonl
     needs: [test, compliance-check, security-scan]
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'

@@ -1,0 +1,9 @@
+{
+ "findings": [
+  {
+   "tracking_id": "grype-CVE-2099-0003-pkg:npm/a@1",
+   "first_detected": "2025-01-01T00:00:00+00:00",
+   "first_evaluated": "2025-01-01T00:00:00+00:00"
+  }
+ ]
+}
