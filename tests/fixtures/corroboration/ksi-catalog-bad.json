@@ -1,0 +1,27 @@
+{
+  "_note": "Known-bad: the signal claims KSI-ZZZ-FAK, which FedRAMP's rules do not define.",
+  "signal": {
+    "ksis": [
+      {
+        "id": "KSI-CMT-LMC"
+      },
+      {
+        "id": "KSI-ZZZ-FAK"
+      }
+    ]
+  },
+  "upstream": {
+    "KSI": {
+      "CMT": {
+        "indicators": {
+          "KSI-CMT-LMC": {
+            "name": "Logging Changes"
+          },
+          "KSI-CMT-RMV": {
+            "name": "x"
+          }
+        }
+      }
+    }
+  }
+}

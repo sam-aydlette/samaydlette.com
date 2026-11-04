@@ -1,0 +1,32 @@
+{
+  "_note": "Known-bad: GitHub holds an open alert the VDR does not list. The dismissed alert is ignored; the listed one matches.",
+  "alerts": [
+    {
+      "state": "open",
+      "cve_id": "CVE-2026-0001",
+      "ghsa_id": "GHSA-aaaa-bbbb-cccc",
+      "package_name": "left-pad"
+    },
+    {
+      "state": "open",
+      "cve_id": null,
+      "ghsa_id": "GHSA-dddd-eeee-ffff",
+      "package_name": "listed"
+    },
+    {
+      "state": "dismissed",
+      "cve_id": "CVE-2026-0003",
+      "ghsa_id": null,
+      "package_name": "gone"
+    }
+  ],
+  "vdr": {
+    "findings": [
+      {
+        "cve": "GHSA-dddd-eeee-ffff",
+        "tool_id": "GHSA-dddd-eeee-ffff"
+      }
+    ],
+    "risk_accepted": []
+  }
+}

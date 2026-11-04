@@ -1,13 +1,13 @@
 {
-  "schema": "rampart-corroboration/1",
-  "checked_at": "2026-11-04T16:14:11+00:00",
-  "result": "agrees",
+  "schema": "rampart-corroboration/2",
+  "checked_at": "2026-11-04T16:29:43+00:00",
+  "result": "differs",
   "corroborated_by": {
     "name": "RAMPART on TAP (The Analogy Platform)",
     "url": "https://github.com/unified-systems-com/tap",
     "collector": "aws_core:boto3",
     "collector_version": "0.8.0",
-    "collected_at": "2026-11-04T16:14:01.936876+00:00"
+    "collected_at": "2026-11-04T16:29:19.563936+00:00"
   },
   "compared_against": {
     "ksi_signal_id": "ff030189-414f-4ff9-a13b-cf745f46d0b3",
@@ -94,5 +94,147 @@
     "metric_alarm": 4,
     "notification_topic": 1
   },
-  "scope_note": "Compared: the resource types TAP's aws_core collector covers. Types it does not collect (listed in not_covered_by_tap) rest on the deploy's own reconciliation gate."
+  "scope_note": "Compared: the resource types TAP's aws_core collector covers. Types it does not collect (listed in not_covered_by_tap) rest on the deploy's own reconciliation gate.",
+  "checks": {
+    "boundary": {
+      "status": "agrees",
+      "compared": 53,
+      "findings": [],
+      "source": "TAP aws_core (AWS APIs, read-only role) against the published map",
+      "note": "Resources, classification tags and relationships; detail in the top-level keys."
+    },
+    "signatures": {
+      "status": "agrees",
+      "compared": 21,
+      "findings": [],
+      "source": "TAP sigstore_core (sigstore-python, production trust root)",
+      "note": "Re-verifies each published signature with a verifier that is not the deploy's cosign, pinned to the workflow identity for the artifact's cadence."
+    },
+    "provenance": {
+      "status": "agrees",
+      "compared": 2,
+      "findings": [],
+      "source": "TAP github_core (GitHub Actions run records)",
+      "note": "Matches each signing run to GitHub's own record of it. Commits are published; run IDs are not.",
+      "runs_checked": [
+        {
+          "workflow": ".github/workflows/deploy-with-opa.yml",
+          "commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
+          "artifacts": 18
+        },
+        {
+          "workflow": ".github/workflows/evidence-nightly.yml",
+          "commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
+          "artifacts": 3
+        }
+      ]
+    },
+    "live_configuration": {
+      "status": "differs",
+      "compared": 29,
+      "findings": [
+        {
+          "component": "aws::iam_group::read_only",
+          "property": "members_have_mfa",
+          "claim": "ksi-signal.json aws::iam_group::read_only baseline_configuration",
+          "expected": "every member has an MFA device",
+          "observed": "2 of 2 member(s) have no MFA device"
+        },
+        {
+          "component": "aws::iam_role::deploy",
+          "property": "trusted_services",
+          "claim": "ksi-signal.json aws::iam_role::deploy baseline_configuration",
+          "expected": [
+            "lambda.amazonaws.com"
+          ],
+          "observed": []
+        },
+        {
+          "component": "aws::iam_role::evidence_nightly",
+          "property": "trusted_services",
+          "claim": "ksi-signal.json aws::iam_role::evidence_nightly baseline_configuration",
+          "expected": [
+            "lambda.amazonaws.com"
+          ],
+          "observed": []
+        },
+        {
+          "component": "aws::iam_role::plan",
+          "property": "trusted_services",
+          "claim": "ksi-signal.json aws::iam_role::plan baseline_configuration",
+          "expected": [
+            "lambda.amazonaws.com"
+          ],
+          "observed": []
+        }
+      ],
+      "source": "TAP aws_core (AWS APIs, read-only role)",
+      "note": "Compares what the published artifacts claim about live resources with what AWS reports. Only claimed properties are compared.",
+      "not_checked": [
+        {
+          "component": "aws::object_store::cloudtrail",
+          "property": "versioning",
+          "claim": "terraform.compliance pass in ksi-signal.json (infrastructure/policy/s3.rego)",
+          "why": "aws_core leaves s3_bucket.versioning empty (field declared, not populated)"
+        },
+        {
+          "component": "aws::object_store::cloudtrail",
+          "property": "encryption",
+          "claim": "terraform.compliance pass in ksi-signal.json (infrastructure/policy/s3.rego)",
+          "why": "aws_core leaves s3_bucket.encryption empty (field declared, not populated)"
+        },
+        {
+          "component": "aws::object_store::logs",
+          "property": "versioning",
+          "claim": "terraform.compliance pass in ksi-signal.json (infrastructure/policy/s3.rego)",
+          "why": "aws_core leaves s3_bucket.versioning empty (field declared, not populated)"
+        },
+        {
+          "component": "aws::object_store::logs",
+          "property": "encryption",
+          "claim": "terraform.compliance pass in ksi-signal.json (infrastructure/policy/s3.rego)",
+          "why": "aws_core leaves s3_bucket.encryption empty (field declared, not populated)"
+        },
+        {
+          "component": "aws::object_store::tfstate",
+          "property": "versioning",
+          "claim": "ksi-signal.json aws::object_store::tfstate baseline_configuration",
+          "why": "aws_core leaves s3_bucket.versioning empty (field declared, not populated)"
+        }
+      ],
+      "not_covered": [
+        "CloudFront HTTP-to-HTTPS redirect and TLS minimum (infrastructure/policy/cloudfront.rego): aws_core does not collect viewer protocol policy or the TLS security policy",
+        "S3 bucket policies (deny non-TLS, CloudTrail and log delivery grants): aws_core does not collect bucket policies",
+        "KMS module validation, DNSSEC signing, API Gateway throttling and access logging, SNS and SQS encryption, DynamoDB recovery: not collected by aws_core",
+        "IAM inline policy bodies (hashed in the inventory): not compared"
+      ]
+    },
+    "runtime_signing_key": {
+      "status": "agrees",
+      "compared": 3,
+      "findings": [],
+      "source": "AWS KMS GetPublicKey with TAP's read-only credential; published PEM; pinned key record",
+      "note": "Reads the public half of the runtime signing key from KMS, compares it with the published and pinned copies, and verifies the runtime signal with the builder's own verification code.",
+      "key_sha256": "4e09ff2a814c8f196dbc4f5de0ddc100a1414ee28bdc222576cb430a8bf09c90",
+      "runtime_signal_emitted_at": "2026-11-03T22:05:07Z"
+    },
+    "vulnerabilities": {
+      "status": "not_checked",
+      "compared": 0,
+      "findings": [],
+      "source": "TAP github_core (Dependabot alerts) against the published VDR",
+      "note": "Dependabot alerts were not readable by TAP's GitHub credential (unobservable)."
+    },
+    "ksi_catalog": {
+      "status": "agrees",
+      "compared": 46,
+      "findings": [],
+      "source": "FedRAMP/rules at upstream HEAD, read directly (TAP's KSI catalog collector fails the current schema)",
+      "note": "Every KSI the signal claims exists in FedRAMP's current rules. Unclaimed upstream KSIs are reported for information.",
+      "upstream_commit": "64fa769510416fa75fd00a4689466094265b8083",
+      "pinned_commit": "64fa769510416fa75fd00a4689466094265b8083",
+      "upstream_not_claimed": []
+    }
+  },
+  "boundary_result": "agrees"
 }

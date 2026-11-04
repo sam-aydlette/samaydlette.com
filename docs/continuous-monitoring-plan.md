@@ -24,6 +24,8 @@ Five mechanisms operate concurrently:
 
 **5. Annual structural review.** Documented in [`docs/security-review.md`](security-review.md). The review re-examines (a) cost/benefit of risk-accepted items, (b) whether the threat model still holds, (c) whether the conscious trade-offs in the README still apply. Frequency: annual, plus after any Transformative significant change per SCN.
 
+**6. Independent corroboration (operator-run, at least every 30 days).** [`tools/boundary-map/corroborate.py`](../tools/boundary-map/corroborate.py) checks the published evidence against sources the pipeline does not control: RAMPART on TAP (The Analogy Platform) reading AWS and GitHub with read-only credentials, and FedRAMP's rules read directly. It compares the boundary map with the live account, re-verifies every published signature with an independent Sigstore verifier, matches each signing run to GitHub's record of it, compares the configuration the artifacts claim with what AWS reports, checks the runtime signing key in KMS against its published and pinned copies, compares open Dependabot alerts with the VDR, and checks the claimed KSIs against FedRAMP's current catalog. A section that could not be checked is reported as such, never as agreement. The signed report is published at `/.well-known/boundary-corroboration.json`; the trust center shows each section and asks for attention on any difference, any unchecked section, or a report older than 30 days. Detail: [`tools/boundary-map/README.md`](../tools/boundary-map/README.md). Frequency: at least every 30 days.
+
 ## Reporting
 
 These artifacts are published continuously at `/.well-known/`:

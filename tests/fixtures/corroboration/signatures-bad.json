@@ -1,0 +1,101 @@
+{
+  "_note": "Known-bad: one artifact fails verification, one is signed by the nightly identity although it is a deploy artifact, one attestation's subject is not the published bytes, one is signed from a branch. The fifth is good.",
+  "artifacts": [
+    {
+      "artifact": ".well-known/a.json",
+      "kind": "bundle",
+      "bundle": ".well-known/a.bundle",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/b.json",
+      "kind": "bundle",
+      "bundle": ".well-known/b.bundle",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/c.json.intoto.jsonl",
+      "kind": "dsse",
+      "subject": ".well-known/c.json",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/d.json",
+      "kind": "bundle",
+      "bundle": ".well-known/d.bundle",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/e.json",
+      "kind": "bundle",
+      "bundle": ".well-known/e.bundle",
+      "cadence": "deploy"
+    }
+  ],
+  "facts": [
+    {
+      "artifact": ".well-known/a.json",
+      "verified": false,
+      "failure_code": "signature-invalid"
+    },
+    {
+      "artifact": ".well-known/b.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "schedule",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/222/attempts/1",
+        "workflow_path": ".github/workflows/evidence-nightly.yml"
+      }
+    },
+    {
+      "artifact": ".well-known/c.json.intoto.jsonl",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/111/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      },
+      "subject_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "subjects": [
+        {
+          "name": "c.json",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      ]
+    },
+    {
+      "artifact": ".well-known/d.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/feature",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/111/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    },
+    {
+      "artifact": ".well-known/e.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/111/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "_note": "Two unrelated P-256 public keys (private halves never kept). KMS reports key_a; the pinned record holds key_b, so the comparison must differ.",
+  "key_a": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEW13Q2TgiVQ2d6VUUlaWcRqSPTlwD\ndt1dkkaik0XSn5lIgcVMnYH0/++Klme7t9rHyo3AQSlpWM1/mDyEF41rxA==\n-----END PUBLIC KEY-----\n",
+  "key_b": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEOPNM7qEuxfumbxmvpauFelPo2wSN\nRfQrzFou9aEx7KsfUg/eDJF7zEBpI/1ekGHWglNvE/W1Psln7ZwYtKC29A==\n-----END PUBLIC KEY-----\n"
+}
