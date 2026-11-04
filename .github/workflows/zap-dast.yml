@@ -1,11 +1,22 @@
 # =============================================================================
 # ZAP DAST Scan  (SA-11(8) Dynamic Code Analysis)
 # =============================================================================
-# Monthly OWASP ZAP baseline scan against the live site, in CI. This mechanizes
+# Weekly OWASP ZAP baseline scan against the live site, in CI. This mechanizes
 # SA-11(8): a dynamic analysis tool runs on a schedule and its findings are
 # documented (the ZAP action maintains a tracking issue, which the operator
 # triages into docs/poam.md). SAST (Checkov, tfsec) and SCA (Syft, Grype) run on
 # every deploy in deploy-with-opa.yml; this adds the dynamic layer.
+#
+# Weekly, so the latest report is always inside the VDR builder's 14-day DAST
+# window (--zap-max-age-days, the Class C drift-detection cadence). The report is
+# uploaded as the `zap-dast-report` artifact, for the VDR builds to read from
+# the latest successful main-branch run (wired in a follow-up change).
+#
+# The issue title is plain words: the action finds its tracking issue with an
+# unquoted GitHub search query (`is:issue state:open repo:... <title>`), so
+# search syntax in the title breaks it. Parentheses in the title made every run since July
+# fail with "The search query contains invalid syntax" before the artifact was
+# uploaded.
 #
 # Phase 1 (here): UNAUTHENTICATED scan of the public/static surface, which
 # already satisfies "employ a dynamic analysis tool." Phase 2 (tracked
@@ -16,7 +27,7 @@ name: ZAP DAST Scan
 
 on:
   schedule:
-    - cron: '23 7 1 * *'   # 07:23 UTC on the 1st of each month
+    - cron: '23 7 * * 1'   # 07:23 UTC every Monday
   workflow_dispatch:        # allow on-demand runs
 
 permissions:
@@ -38,5 +49,5 @@ jobs:
           cmd_options: '-a'            # include alpha-quality passive rules
           fail_action: false           # informational; findings become POA&M items, not a hard gate
           allow_issue_writing: true
-          issue_title: 'ZAP DAST findings (SA-11(8))'
+          issue_title: 'ZAP DAST findings for SA-11.8'
           artifact_name: 'zap-dast-report'
