@@ -258,10 +258,13 @@ def corroboration_verdict(report: dict[str, Any] | None, now: datetime) -> tuple
         parts.append(f"{s['tag_differences']} tag difference(s)")
     if s.get("relationships_tap_only"):
         parts.append(f"{s['relationships_tap_only']} relationship(s) the map does not draw")
+    if s.get("relationships_compared") == 0:
+        parts.append("no relationship was compared")
     stale = days is None or days > CORROBORATION_MAX_AGE_DAYS
     when = "" if days is None else ("today" if days < 1 else f"{days:g} days ago")
     detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS:g} days)." if when else ".")
-    differs = any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
+    differs = (any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
+               or s.get("relationships_compared") == 0)
     return ("attention" if stale or differs else "ok"), detail
 
 

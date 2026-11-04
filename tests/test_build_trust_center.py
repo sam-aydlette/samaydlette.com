@@ -255,6 +255,12 @@ def test_independent_corroboration_is_reported_and_its_findings_queued():
     assert ("boundary_not_inventoried", "tap:dynamodb_table:lock") in kinds(doc)
 
 
+def test_a_corroboration_that_compared_no_relationship_needs_attention():
+    report = json.loads((REPO / "tests" / "fixtures" / "corroboration" / "report-zero-relationships.json").read_text())
+    report["checked_at"] = "2026-09-25T12:00:00+00:00"
+    assert picture(build(corroboration=report))["corroboration"] == "attention"
+
+
 # ---------------------------------------------------------------------------
 # REQ-QUE-1: every queue item carries kind, subject, opening time, why it is a
 # person's call, and the options; the escalation rate is published per kind

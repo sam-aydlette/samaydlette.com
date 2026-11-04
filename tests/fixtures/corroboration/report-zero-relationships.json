@@ -1,0 +1,15 @@
+{
+  "schema": "rampart-corroboration/1",
+  "checked_at": "2026-09-25T12:00:00+00:00",
+  "result": "agrees",
+  "summary": {
+    "in_scope": 3,
+    "agree": 3,
+    "map_only": 0,
+    "tap_only": 0,
+    "tag_differences": 0,
+    "relationships_compared": 0,
+    "relationships_tap_only": 0
+  },
+  "tap_only": []
+}

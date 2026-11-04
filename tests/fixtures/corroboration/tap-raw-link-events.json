@@ -1,0 +1,46 @@
+{
+  "finished_at": "2026-11-04T16:00:00+00:00",
+  "events": {
+    "e1": [
+      "create"
+    ],
+    "e2": [
+      "create"
+    ],
+    "r1": [
+      "link"
+    ],
+    "held": []
+  },
+  "entities": [
+    {
+      "id": "e1",
+      "type": "lambda",
+      "fields": {
+        "function_arn": "arn:aws:lambda:us-east-2:123456789012:function:app"
+      }
+    },
+    {
+      "id": "e2",
+      "type": "cloudwatch_log_group",
+      "fields": {
+        "log_group_arn": "arn:aws:logs:us-east-2:123456789012:log-group:/aws/lambda/app:*"
+      }
+    },
+    {
+      "id": "held",
+      "type": "s3_bucket",
+      "fields": {
+        "bucket_arn": "arn:aws:s3:::held-from-an-earlier-run"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "r1",
+      "type": "WRITES_LOGS__aws_core",
+      "from": "e1",
+      "to": "e2"
+    }
+  ]
+}

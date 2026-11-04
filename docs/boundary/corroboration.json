@@ -1,13 +1,13 @@
 {
   "schema": "rampart-corroboration/1",
-  "checked_at": "2026-11-04T14:55:57+00:00",
+  "checked_at": "2026-11-04T16:14:11+00:00",
   "result": "agrees",
   "corroborated_by": {
     "name": "RAMPART on TAP (The Analogy Platform)",
     "url": "https://github.com/unified-systems-com/tap",
     "collector": "aws_core:boto3",
-    "collector_version": "0.5.0",
-    "collected_at": "2026-11-04T14:55:51.021813+00:00"
+    "collector_version": "0.8.0",
+    "collected_at": "2026-11-04T16:14:01.936876+00:00"
   },
   "compared_against": {
     "ksi_signal_id": "ff030189-414f-4ff9-a13b-cf745f46d0b3",

@@ -30,7 +30,7 @@ Commit the report; the next deploy signs and publishes it at
 Usage (from the repo root, with the TAP session up):
 
     python3 tools/boundary-map/corroborate.py --collect
-    python3 tools/boundary-map/corroborate.py --tap-container tap_rampart-web-1
+    python3 tools/boundary-map/corroborate.py --tap-container tap_corroborate-web-1
 """
 
 from __future__ import annotations
@@ -88,10 +88,13 @@ REDACTION_CHECKS = {
     "email address": re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 }
 
-# Runs inside the TAP web container (manage.py shell). Read-only: it reads the latest
-# successful aws_core job and the entities and edges that job observed.
+# Runs inside the TAP web container (manage.py shell). Read-only: it returns the latest
+# successful aws_core job's batch events, plus the aws_core entities and the edges
+# between them. observed() then keeps what that job actually saw. The filtering runs
+# here, not in the container, so it is unit-tested.
 READ_TAP = r'''
 import json
+from collections import defaultdict
 from django.apps import apps
 from tap_grid.models import Edge, BaseModel, BatchEvent
 from tap_cares.models import Collector, CollectionJob
@@ -103,25 +106,49 @@ last = (CollectionJob.objects
                 status="SUCCESSFUL", run_mode="full")
         .order_by("-finished_at").first())
 batches = list(Edge.objects.filter(from_entity=last.entity, edge_type="PRODUCED_BATCH").values_list("to_entity_id", flat=True))
-seen = set(BatchEvent.objects.filter(batch__entity_id__in=batches, event_type__in=["create", "update"])
-           .values_list("entity_id", flat=True))
-out = {"finished_at": last.finished_at.isoformat(), "entities": [], "edges": []}
+events = defaultdict(list)
+for eid, kind in BatchEvent.objects.filter(batch__entity_id__in=batches).values_list("entity_id", "event_type"):
+    events[str(eid)].append(kind)
+out = {"finished_at": last.finished_at.isoformat(), "events": events, "entities": [], "edges": []}
 ids = set()
 for et, M in sorted(T.items()):
     if et in ("aws_core__aws_az", "aws_core__aws_region", "aws_core__aws_account"):
         continue
     for r in M.objects.all():
-        if r.entity_id not in seen:
-            continue  # held from an earlier run, not observed by the latest one
         ids.add(r.entity_id)
         out["entities"].append({"id": str(r.entity_id), "type": et.replace("aws_core__aws_", ""),
             "fields": {f.name: getattr(r, f.name) for f in M._meta.concrete_fields
                        if f.name not in ("id", "batch_id", "flip_map", "entity", "configuration", "email")}})
 for e in Edge.objects.filter(from_entity_id__in=ids, to_entity_id__in=ids):
-    if e.entity_id in seen:
-        out["edges"].append({"type": e.edge_type, "from": str(e.from_entity_id), "to": str(e.to_entity_id)})
+    out["edges"].append({"id": str(e.entity_id), "type": e.edge_type, "from": str(e.from_entity_id), "to": str(e.to_entity_id)})
 print("@@TAP@@" + json.dumps(out, default=str))
 '''
+
+# Batch events that mean "this run observed it". aws_core before 0.8 recorded
+# relationships as create/update; 0.8 and later record them as link.
+ENTITY_EVENTS = {"create", "update"}
+EDGE_EVENTS = {"create", "update", "link"}
+
+
+def observed(raw: dict[str, Any]) -> dict[str, Any]:
+    """The entities and relationships the latest run observed, not ones held from earlier runs."""
+    ev = raw.get("events") or {}
+    seen = {e["id"] for e in raw.get("entities", []) if ENTITY_EVENTS & set(ev.get(e["id"], []))}
+    return {"finished_at": raw.get("finished_at"),
+            "entities": [e for e in raw.get("entities", []) if e["id"] in seen],
+            "edges": [e for e in raw.get("edges", [])
+                      if EDGE_EVENTS & set(ev.get(e["id"], [])) and e["from"] in seen and e["to"] in seen]}
+
+
+def assert_comparable(report: dict[str, Any], bmap: dict[str, Any]) -> None:
+    """Refuse a report that would read as agreement while comparing nothing."""
+    s = report["summary"]
+    if not s.get("agree") and not s.get("tap_only") and not s.get("provider_managed"):
+        sys.exit("corroborate: TAP's collection observed nothing; refusing to write a report")
+    if bmap.get("edges") and not s.get("relationships_compared"):
+        sys.exit("corroborate: the map draws relationships but no relationship was compared "
+                 "(has TAP's batch-event shape changed?); refusing to write a report")
+
 
 # Runs inside the TAP web container: one aws_core run, awaited.
 COLLECT_TAP = r'''
@@ -146,8 +173,12 @@ def tap_shell(container: str, code: str) -> str:
 
 
 def tap_version(container: str) -> str:
-    out = subprocess.run(["podman", "exec", container, "/app/.venv/bin/python", "-c",
-                          "import importlib.metadata as m; print(m.version('tap-plugin-aws-core'))"],
+    # The package was renamed from tap-plugin-aws-core to aws-core-tap (aws_core 0.6+).
+    code = ("import importlib.metadata as m\n"
+            "for n in ('aws-core-tap', 'tap-plugin-aws-core'):\n"
+            "    try:\n        print(m.version(n)); break\n"
+            "    except m.PackageNotFoundError:\n        pass\n")
+    out = subprocess.run(["podman", "exec", container, "/app/.venv/bin/python", "-c", code],
                          capture_output=True, text=True, timeout=60)
     return out.stdout.strip() or "unknown"
 
@@ -157,7 +188,7 @@ def read_tap(container: str) -> dict[str, Any]:
     line = next((ln for ln in out.splitlines() if ln.startswith("@@TAP@@")), None)
     if line is None:
         sys.exit("corroborate: TAP returned no collection (has aws_core run successfully?)")
-    return json.loads(line[len("@@TAP@@"):])
+    return observed(json.loads(line[len("@@TAP@@"):]))
 
 
 def collect(container: str) -> None:
@@ -294,7 +325,7 @@ def check_redaction(text: str) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Corroborate the published boundary map with RAMPART on TAP.")
-    ap.add_argument("--tap-container", default="tap_rampart-web-1")
+    ap.add_argument("--tap-container", default="tap_corroborate-web-1")
     ap.add_argument("--collect", action="store_true", help="run TAP's aws_core collector first")
     ap.add_argument("--signal", default=f"{SITE}/ksi-signal.json")
     ap.add_argument("--map", default=f"{SITE}/boundary-map.json")
@@ -304,8 +335,10 @@ def main() -> None:
     if a.collect:
         print("corroborate: running TAP's aws_core collector…", file=sys.stderr)
         collect(a.tap_container)
-    report = compare(read_tap(a.tap_container), fetch_json(a.signal), fetch_json(a.map),
+    bmap = fetch_json(a.map)
+    report = compare(read_tap(a.tap_container), fetch_json(a.signal), bmap,
                      datetime.now(timezone.utc), tap_version(a.tap_container))
+    assert_comparable(report, bmap)
     text = json.dumps(report, indent=2) + "\n"
     check_redaction(text)
     Path(a.output).write_text(text)
