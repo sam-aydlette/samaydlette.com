@@ -1,18 +1,18 @@
 {
   "schema": "rampart-corroboration/2",
-  "checked_at": "2026-11-04T16:56:40+00:00",
-  "result": "differs",
+  "checked_at": "2026-11-04T19:24:52+00:00",
+  "result": "incomplete",
   "corroborated_by": {
     "name": "RAMPART on TAP (The Analogy Platform)",
     "url": "https://github.com/unified-systems-com/tap",
     "collector": "aws_core:boto3",
     "collector_version": "0.8.0",
-    "collected_at": "2026-11-04T16:56:00.524796+00:00"
+    "collected_at": "2026-11-04T19:24:21.498224+00:00"
   },
   "compared_against": {
-    "ksi_signal_id": "ff030189-414f-4ff9-a13b-cf745f46d0b3",
-    "map_commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
-    "map_generated_at": "2026-11-03T22:02:43+00:00"
+    "ksi_signal_id": "9d3edff1-c01a-430d-8f7f-b1dccf5ea3c4",
+    "map_commit": "d2a0e9fc602d2072df1509606edce5daad8271de",
+    "map_generated_at": "2026-11-04T19:17:34+00:00"
   },
   "summary": {
     "in_scope": 32,
@@ -119,48 +119,20 @@
       "runs_checked": [
         {
           "workflow": ".github/workflows/deploy-with-opa.yml",
-          "commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
+          "commit": "d2a0e9fc602d2072df1509606edce5daad8271de",
           "artifacts": 18
         },
         {
           "workflow": ".github/workflows/evidence-nightly.yml",
-          "commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
+          "commit": "d2a0e9fc602d2072df1509606edce5daad8271de",
           "artifacts": 3
         }
       ]
     },
     "live_configuration": {
-      "status": "differs",
-      "compared": 29,
-      "findings": [
-        {
-          "component": "aws::iam_role::deploy",
-          "property": "trusted_services",
-          "claim": "ksi-signal.json aws::iam_role::deploy baseline_configuration",
-          "expected": [
-            "lambda.amazonaws.com"
-          ],
-          "observed": []
-        },
-        {
-          "component": "aws::iam_role::evidence_nightly",
-          "property": "trusted_services",
-          "claim": "ksi-signal.json aws::iam_role::evidence_nightly baseline_configuration",
-          "expected": [
-            "lambda.amazonaws.com"
-          ],
-          "observed": []
-        },
-        {
-          "component": "aws::iam_role::plan",
-          "property": "trusted_services",
-          "claim": "ksi-signal.json aws::iam_role::plan baseline_configuration",
-          "expected": [
-            "lambda.amazonaws.com"
-          ],
-          "observed": []
-        }
-      ],
+      "status": "not_checked",
+      "compared": 32,
+      "findings": [],
       "source": "TAP aws_core (AWS APIs, read-only role)",
       "note": "Compares what the published artifacts claim about live resources with what AWS reports. Only claimed properties are compared.",
       "not_checked": [
@@ -209,7 +181,7 @@
       "source": "AWS KMS GetPublicKey with TAP's read-only credential; published PEM; pinned key record",
       "note": "Reads the public half of the runtime signing key from KMS, compares it with the published and pinned copies, and verifies the runtime signal with the builder's own verification code.",
       "key_sha256": "4e09ff2a814c8f196dbc4f5de0ddc100a1414ee28bdc222576cb430a8bf09c90",
-      "runtime_signal_emitted_at": "2026-11-04T16:50:50Z"
+      "runtime_signal_emitted_at": "2026-11-04T19:19:45Z"
     },
     "vulnerabilities": {
       "status": "agrees",
