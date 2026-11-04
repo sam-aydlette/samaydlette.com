@@ -179,10 +179,10 @@ jobs:
         output_format: sarif
         output_file_path: checkov-out
 
-    # Mirrors the deploy workflow's locate-or-fallback step: a scanner that
-    # produced nothing must yield a valid empty document, never a missing file,
-    # so a tooling failure cannot masquerade as "no findings" downstream.
-    - name: Locate or create SARIF and tfsec files
+    # Copies the SARIF to a predictable path. A scanner that produced nothing
+    # leaves no file: no empty stand-in is written, so the detection gate (G7)
+    # in the refresh job fails the run rather than publishing "no findings".
+    - name: Locate SARIF and tfsec files
       if: always()
       run: |
         SARIF_FOUND=$(find checkov-out -name "*.sarif" -type f 2>/dev/null | head -n1 || true)
@@ -190,14 +190,12 @@ jobs:
           cp "$SARIF_FOUND" checkov-results.sarif
           echo "Located Checkov SARIF at $SARIF_FOUND ($(wc -c < checkov-results.sarif) bytes)"
         else
-          echo "::warning::No SARIF produced by Checkov; creating empty fallback."
-          printf '%s' '{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Checkov","version":"fallback"}},"results":[]}]}' > checkov-results.sarif
+          echo "::warning::No SARIF produced by Checkov; the detection gate will fail the run."
         fi
-        if [ ! -f tfsec-results.json ]; then
-          echo "::warning::No tfsec output; creating empty fallback."
-          echo '{"results": []}' > tfsec-results.json
-        else
+        if [ -f tfsec-results.json ]; then
           echo "tfsec JSON size: $(wc -c < tfsec-results.json) bytes"
+        else
+          echo "::warning::No tfsec output; the detection gate will fail the run."
         fi
 
     - name: Upload SAST artifacts for VDR aggregation
@@ -235,15 +233,17 @@ jobs:
     outputs:
       vuln_gate: ${{ steps.vulngate.outcome }}
       vuln_findings: ${{ steps.vulngate.outputs.findings }}
+      detection: ${{ steps.detection.outcome }}
       reconcile: ${{ steps.reconcile.outcome }}
     permissions:
       contents: read
       # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
       # AWS role assumption. No AWS long-lived key.
       id-token: write
-      # Lets GITHUB_TOKEN list this repo's Dependabot alerts (the CVE-bearing
-      # SCA findings the VDR builder cross-references against KEV).
-      security-events: read
+      # Lets GITHUB_TOKEN download the weekly ZAP DAST artifact. Dependabot
+      # alerts are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN
+      # cannot read them.
+      actions: read
 
     steps:
     # -------------------------------------------------------------------------
@@ -398,82 +398,54 @@ jobs:
     - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
       run: |
-        set +e   # SCA findings must never fail this step; the VDR gate does that
+        set +e   # neither findings nor a failed scan fail this step: the detection gate and the VDR gate do
         curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
           | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
         curl -sSfL "https://raw.githubusercontent.com/anchore/grype/${GRYPE_VERSION}/install.sh" \
           | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
         syft version && grype version
-        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python     || true
-        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript || true
-        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript || true
-        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript || true
-        grype sbom:sbom-python.json -o json > grype-python.json || true
-        grype sbom:sbom-js.json     -o json > grype-js.json     || true
-        grype sbom:sbom-lambda.json -o json > grype-lambda.json || true
-        grype sbom:sbom-a11y.json   -o json > grype-a11y.json   || true
-        # Any file that is missing/invalid/lacking .matches becomes an empty
-        # match set, so the merge cannot fail and ingest_grype always gets a
-        # valid top-level .matches[] array.
-        for f in grype-python.json grype-js.json grype-lambda.json grype-a11y.json; do
-          jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
-        done
-        jq -s '{matches: (map(.matches) | add)}' \
-          grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json
-        echo "grype.json: $(jq '.matches | length' grype.json) match(es)"
-        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)  a11y: $(jq '.matches | length' grype-a11y.json)"
-
-    # -------------------------------------------------------------------------
-    # THREAT-INTELLIGENCE INPUTS (all public, all non-blocking on fetch failure)
-    # -------------------------------------------------------------------------
-    - name: Fetch previous VDR report (first-detected ledger)
-      working-directory: infrastructure
-      run: |
-        if curl -sfL -o previous-vdr-report.json "${SITE_ORIGIN}/.well-known/vdr-report.json"; then
-          echo "Previous VDR fetched ($(wc -c < previous-vdr-report.json) bytes); using as first-detected ledger."
+        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python
+        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript
+        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript
+        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript
+        grype sbom:sbom-python.json -o json > grype-python.json
+        grype sbom:sbom-js.json     -o json > grype-js.json
+        grype sbom:sbom-lambda.json -o json > grype-lambda.json
+        grype sbom:sbom-a11y.json   -o json > grype-a11y.json
+        # No empty stand-ins: a scan that failed leaves its file missing or
+        # without .matches, and the detection gate (G7) checks each per-tree
+        # file, including the database age Grype reports in it.
+        if jq -s '{matches: (map(.matches) | add)}' \
+            grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json 2>/dev/null; then
+          echo "grype.json: $(jq '.matches | length' grype.json) match(es)"
         else
-          echo "::warning::Could not fetch previous VDR report; the SLA clock restarts for every finding this run."
-          echo '{"findings":[]}' > previous-vdr-report.json
+          rm -f grype.json
+          echo "::warning::At least one Grype scan did not complete; the detection gate will fail the run."
         fi
 
-    - name: Fetch Dependabot alerts (SCA / CVE source)
+    # -------------------------------------------------------------------------
+    # DETECTION INPUTS AND G7
+    # -------------------------------------------------------------------------
+    # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
+    # the latest weekly DAST report. A failed fetch leaves <file>.error, never
+    # an empty stand-in; the detection gate below fails the run on it (T52).
+    - name: Fetch detection feeds
       working-directory: infrastructure
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        if gh api -H "Accept: application/vnd.github+json" \
-            "/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
-            > dependabot-alerts.json 2>/dev/null \
-            && jq -e 'type == "array"' dependabot-alerts.json >/dev/null 2>&1; then
-          echo "Dependabot alerts fetched: $(jq 'length' dependabot-alerts.json) open."
-        else
-          echo "::warning::Could not fetch Dependabot alerts; proceeding with an empty SCA set."
-          echo '[]' > dependabot-alerts.json
-        fi
+        DEPENDABOT_TOKEN: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
+        ACTIONS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: bash ../scripts/fetch-detection-feeds.sh
 
-    - name: Fetch CISA KEV catalog
+    - name: Detection gate (G7)
+      id: detection
       working-directory: infrastructure
       run: |
-        KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
-        if curl -sfL --retry 3 --retry-delay 2 -o kev-catalog.json "$KEV_URL" \
-            && jq -e '.vulnerabilities | length > 0' kev-catalog.json >/dev/null 2>&1; then
-          echo "CISA KEV catalog: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length' kev-catalog.json) CVEs."
-        else
-          echo "::warning::Could not fetch a valid CISA KEV catalog; no KEV flagging this run."
-          echo '{"vulnerabilities":[]}' > kev-catalog.json
-        fi
-
-    - name: Fetch FIRST EPSS scores
-      working-directory: infrastructure
-      run: |
-        EPSS_URL="https://epss.cyentia.com/epss_scores-current.csv.gz"
-        if curl -sfL --retry 3 --retry-delay 2 -o epss-scores.csv.gz "$EPSS_URL" \
-            && [ -s epss-scores.csv.gz ]; then
-          echo "EPSS scores fetched ($(stat -c%s epss-scores.csv.gz) bytes gzipped)."
-        else
-          echo "::warning::Could not fetch EPSS scores; LEV falls back to the severity proxy this run."
-          printf 'cve,epss,percentile\n' > epss-scores.csv.gz
-        fi
+        python3 ../scripts/detection-gate.py \
+          --kev kev-catalog.json --epss epss-scores.csv.gz \
+          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
+          --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
+          --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --output detection.json
 
     # -------------------------------------------------------------------------
     # GATE INPUTS — built, never signed, never published
@@ -543,9 +515,10 @@ jobs:
           --previous-vdr previous-vdr-report.json \
           --dependabot dependabot-alerts.json \
           --grype grype.json \
-          --zap ../security/zap/zap-report.json \
+          --zap zap-report.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
+          --detection detection.json \
           --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
           --output vdr-report.json
@@ -770,8 +743,11 @@ jobs:
         # run recorded (REQ-GAT-1: a mode that does not block still publishes).
         python3 ../scripts/_gates.py status "${GATE_EVENTS_FILE}" > gate-status.json \
           || echo '{"gates": null, "gate_events": null}' > gate-status.json
+        # What G7 found about each detection input, when the gate got that far.
+        [ -s detection.json ] || echo 'null' > detection.json
         jq -n \
           --slurpfile gs gate-status.json \
+          --slurpfile det detection.json \
           --arg result "${RUN_RESULT}" \
           --arg vuln_gate "${VULN_GATE:-not reached}" \
           --arg reconcile "${RECONCILE:-not reached}" \
@@ -782,7 +758,8 @@ jobs:
           '{schema: "vdr-status/1", result: $result, finished_at: $finished_at,
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
             inventory_commit: $commit, run_url: $run_url,
-            gates: $gs[0].gates, gate_events: $gs[0].gate_events}' > vdr-status.json
+            gates: $gs[0].gates, gate_events: $gs[0].gate_events,
+            detection: $det[0]}' > vdr-status.json
         cat vdr-status.json
         aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
           --content-type application/json --cache-control "no-cache"
@@ -839,6 +816,7 @@ jobs:
         VULN_GATE: ${{ needs.refresh.outputs.vuln_gate }}
         VULN_FINDINGS: ${{ needs.refresh.outputs.vuln_findings }}
         RECONCILE: ${{ needs.refresh.outputs.reconcile }}
+        DETECTION: ${{ needs.refresh.outputs.detection }}
       with:
         script: |
           const TITLE = 'Evidence nightly failed — published compliance reporting is going stale';
@@ -847,7 +825,11 @@ jobs:
           // the job never reached the step.
           const vulnGate = process.env.VULN_GATE || 'not reached';
           const reconcile = process.env.RECONCILE || 'not reached';
+          const detection = process.env.DETECTION || 'not reached';
           const causes = [];
+          if (detection === 'failure') {
+            causes.push(`**Detection failed (G7).** A scanner or feed the VDR depends on was missing, malformed or stale, so nothing was built or published. The "Detection gate (G7)" step names each input and why; the status beacon's \`detection\` block records it.`);
+          }
           if (reconcile === 'failure') {
             causes.push(`**The live reconciliation found drift.** The live site and its published documentation disagree. The "Reconciliation gate" step names the failing invariant.`);
           } else if (reconcile !== 'success') {
@@ -893,6 +875,7 @@ jobs:
             `| Commit | ${context.sha} |`,
             `| SAST job | \`${process.env.SAST_RESULT}\` |`,
             `| Refresh job | \`${process.env.REFRESH_RESULT}\` |`,
+            `| Detection gate (G7) | \`${detection}\` |`,
             `| Vulnerability gate | \`${vulnGate}\` |`,
             `| Reconciliation gate (live drift check) | \`${reconcile}\` |`,
             ``,

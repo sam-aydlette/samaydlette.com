@@ -565,9 +565,10 @@ jobs:
       # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
       # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
       id-token: write
-      # security-events: read lets the GITHUB_TOKEN list this repo's Dependabot
-      # alerts (the CVE-bearing SCA findings the VDR builder matches against KEV).
-      security-events: read
+      # actions: read lets GITHUB_TOKEN download the weekly ZAP DAST artifact.
+      # Dependabot alerts are read with the DEPENDABOT_ALERTS_TOKEN secret:
+      # GITHUB_TOKEN cannot read them.
+      actions: read
     # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
@@ -976,7 +977,7 @@ jobs:
     - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
       run: |
-        set +e   # SCA findings must never fail the build; the VDR gate does that
+        set +e   # neither findings nor a failed scan fail this step: the detection gate (G7) and the VDR gate do
         # Install Syft + Grype from the official anchore install.sh, pinned to the
         # same tag as the tool version (mirrors the SHA/version-pinned OPA install).
         curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
@@ -992,36 +993,35 @@ jobs:
         # esbuild's embedded Go runtime under node_modules), which would
         # otherwise flood the VDR and the inventory with out-of-boundary
         # golang/stdlib findings that are in neither the Lambda nor the browser.
-        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python     || true
-        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript || true
+        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python
+        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript
         # The compliance Lambda's own tree. node_modules is present because the
         # "Install Lambda dependencies" step above ran `npm ci --omit=dev` in this
         # same job. It has no devDependencies, so the installed tree and the
         # lockfile the canonical inventory reads are the same set — the scan
         # covers exactly the components the inventory names, not a superset.
-        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript || true
+        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript
         # The accessibility scanner. Build tooling, so it never deploys, but its
         # output is policy input to the deploy gate and it is inventoried as a
         # build-time component — anything the inventory names should be scannable
         # against the same database on the same day.
-        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript || true
-        # Grype each SBOM. `|| true` so a scan error still leaves a file behind.
-        grype sbom:sbom-python.json -o json > grype-python.json || true
-        grype sbom:sbom-js.json     -o json > grype-js.json     || true
-        grype sbom:sbom-lambda.json -o json > grype-lambda.json || true
-        grype sbom:sbom-a11y.json   -o json > grype-a11y.json   || true
-        # Normalize: any file that is missing/invalid/lacking .matches becomes an
-        # empty match set so the merge below cannot fail and ingest_grype always
-        # gets a valid top-level .matches[] array.
-        for f in grype-python.json grype-js.json grype-lambda.json grype-a11y.json; do
-          jq -e '.matches' "$f" >/dev/null 2>&1 || echo '{"matches":[]}' > "$f"
-        done
-        # Merge the two scans into one grype.json (single .matches[] array) that
-        # --grype reads. The aggregator is what classifies and gates them.
-        jq -s '{matches: (map(.matches) | add)}' \
-          grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json
-        echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Silk Reeling Python + JS and the compliance Lambda"
-        echo "  silk-python: $(jq '.matches | length' grype-python.json)  silk-js: $(jq '.matches | length' grype-js.json)  lambda: $(jq '.matches | length' grype-lambda.json)  a11y: $(jq '.matches | length' grype-a11y.json)"
+        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript
+        # Grype each SBOM. A failed scan leaves its file missing or without
+        # .matches; the detection gate (G7) checks each file and the database age.
+        grype sbom:sbom-python.json -o json > grype-python.json
+        grype sbom:sbom-js.json     -o json > grype-js.json
+        grype sbom:sbom-lambda.json -o json > grype-lambda.json
+        grype sbom:sbom-a11y.json   -o json > grype-a11y.json
+        # Merge the scans into one grype.json (single .matches[] array) that
+        # --grype reads. No empty stand-ins: if any scan is missing or invalid the
+        # merge fails, and the detection gate names which one.
+        if jq -s '{matches: (map(.matches) | add)}' \
+            grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json 2>/dev/null; then
+          echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Silk Reeling Python + JS and the compliance Lambda"
+        else
+          rm -f grype.json
+          echo "::warning::At least one Grype scan did not complete; the detection gate will fail the deploy."
+        fi
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
@@ -1101,16 +1101,43 @@ jobs:
     # `terraform apply` it would be too late to stop, and the reconciliation gate
     # (which runs post-apply, pre-publish) answers a different question.
     #
-    # It blocks ONLY on status=diverged with a fresh signal. An unreadable,
-    # missing, stale, or degraded signal warns and proceeds — a gate that can
-    # only be cleared by deploying must not be wedgeable by the absence of its
-    # own input. See the script header for the full rationale.
+    # It blocks on status=diverged with a fresh signal. An unreadable, missing,
+    # stale, or degraded signal is an observer fault, recorded in
+    # infrastructure/schemas/gate-modes.json as detect-and-recover: a gate that
+    # can only be cleared by deploying must not be wedgeable by the absence of
+    # its own input. See the script header for the full rationale.
     #
     # Break glass when the deploy IS the fix:
     #   --allow-divergence "reason"
     # -------------------------------------------------------------------------
     - name: Runtime divergence pre-flight (stop the line)
       run: python3 scripts/check-runtime-divergence.py
+
+    # -------------------------------------------------------------------------
+    # DETECTION INPUTS AND G7 — before anything is applied
+    # -------------------------------------------------------------------------
+    # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
+    # the latest weekly DAST report, fetched here (not after apply) so that a
+    # detection failure stops the deploy before it mutates anything (T52: G7
+    # blocks every team). A failed fetch leaves <file>.error, never an empty
+    # stand-in. The SAST files come from the security-scan job, Grype from above.
+    - name: Fetch detection feeds
+      working-directory: infrastructure
+      env:
+        SITE_ORIGIN: https://samaydlette.com
+        DEPENDABOT_TOKEN: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
+        ACTIONS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: bash ../scripts/fetch-detection-feeds.sh
+
+    - name: Detection gate (G7)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/detection-gate.py \
+          --kev kev-catalog.json --epss epss-scores.csv.gz \
+          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
+          --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
+          --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --output detection.json
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
@@ -1379,76 +1406,8 @@ jobs:
     # finding exceeds the Class C tolerance per VDR-TFR-PVR, this step exits
     # non-zero and the build fails — the report becomes the block.
     # -------------------------------------------------------------------------
-    # Fetch the previous published VDR report to use as the first-detected
-    # ledger; the SLA clock (VDR-TFR-PVR) only ticks if first_detected is
-    # preserved across builds. If the live URL is unreachable (first deploy,
-    # or transient failure), the script falls back to treating all findings
-    # as newly detected — safe default.
-    - name: Fetch previous VDR report (first-detected ledger)
-      working-directory: infrastructure
-      run: |
-        if curl -sfL -o previous-vdr-report.json \
-            "https://samaydlette.com/.well-known/vdr-report.json"; then
-          echo "Previous VDR report fetched ($(wc -c < previous-vdr-report.json) bytes); using as first-detected ledger."
-        else
-          echo "::warning::Could not fetch previous VDR report; first-detected ledger will be empty (all findings will be treated as newly detected)."
-          echo '{"findings":[]}' > previous-vdr-report.json
-        fi
-
-    # Fetch this repo's Dependabot alerts — the SCA / CVE-bearing findings the
-    # VDR builder cross-references against the CISA KEV catalog. Without these,
-    # KEV matching has nothing to act on (IaC scanners emit no CVEs). Non-blocking:
-    # if Dependabot is disabled or the token lacks access, fall back to an empty
-    # list (ingest_dependabot treats [] as "no SCA findings").
-    - name: Fetch Dependabot alerts (SCA / CVE source)
-      working-directory: infrastructure
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        if gh api -H "Accept: application/vnd.github+json" \
-            "/repos/${{ github.repository }}/dependabot/alerts?state=open&per_page=100" \
-            > dependabot-alerts.json 2>/dev/null \
-            && jq -e 'type == "array"' dependabot-alerts.json >/dev/null 2>&1; then
-          echo "Dependabot alerts fetched: $(jq 'length' dependabot-alerts.json) open ($(jq '[.[] | select(.security_advisory.cve_id != null)] | length' dependabot-alerts.json) with a CVE)."
-        else
-          echo "::warning::Could not fetch Dependabot alerts (feature disabled or no access); proceeding with an empty SCA set."
-          echo '[]' > dependabot-alerts.json
-        fi
-
-    # Fetch the live CISA KEV catalog so the VDR builder can flag any finding
-    # whose CVE is a Known Exploited Vulnerability (these block the build). If
-    # CISA is unreachable (transient), fall back to an empty catalog — ingest_kev
-    # treats a missing/empty file as "no KEVs", so the build still completes.
-    - name: Fetch CISA KEV catalog
-      working-directory: infrastructure
-      run: |
-        KEV_URL="https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
-        if curl -sfL --retry 3 --retry-delay 2 -o kev-catalog.json "$KEV_URL" \
-            && jq -e '.vulnerabilities | length > 0' kev-catalog.json >/dev/null 2>&1; then
-          echo "CISA KEV catalog fetched: version $(jq -r '.catalogVersion' kev-catalog.json), $(jq '.vulnerabilities | length' kev-catalog.json) CVEs."
-        else
-          echo "::warning::Could not fetch a valid CISA KEV catalog; proceeding with an empty catalog (no KEV flagging this run)."
-          echo '{"vulnerabilities":[]}' > kev-catalog.json
-        fi
-
-    # Fetch the daily FIRST EPSS scores so the VDR builder can resolve the
-    # Likely-Exploitable axis as the real EPSS union (EPSS >= threshold OR active)
-    # rather than the severity proxy. Non-blocking: if the feed is unreachable,
-    # fall back to an empty file — ingest_epss then returns no scores and LEV
-    # degrades safely to the conservative severity proxy, so the build still
-    # completes and nothing is silently downgraded.
-    - name: Fetch FIRST EPSS scores
-      working-directory: infrastructure
-      run: |
-        EPSS_URL="https://epss.cyentia.com/epss_scores-current.csv.gz"
-        if curl -sfL --retry 3 --retry-delay 2 -o epss-scores.csv.gz "$EPSS_URL" \
-            && [ -s epss-scores.csv.gz ]; then
-          echo "EPSS scores fetched ($(stat -c%s epss-scores.csv.gz) bytes gzipped)."
-        else
-          echo "::warning::Could not fetch EPSS scores; LEV falls back to the severity proxy this run."
-          printf 'cve,epss,percentile\n' > epss-scores.csv.gz
-        fi
-
+    # The detection inputs (previous VDR, Dependabot, KEV, EPSS, DAST) were
+    # fetched and checked by the detection gate (G7) before apply.
     # The signed runtime signal is the only live read a mitigation can cite
     # (rule 1: a mitigation verified by a live read makes a finding fully
     # mitigated). The builder verifies its signature against
@@ -1478,9 +1437,10 @@ jobs:
           --previous-vdr previous-vdr-report.json \
           --dependabot dependabot-alerts.json \
           --grype grype.json \
-          --zap ../security/zap/zap-report.json \
+          --zap zap-report.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
+          --detection detection.json \
           --runtime-signal ksi-signal-runtime.json \
           --output vdr-report.json
         echo "VDR summary:"
@@ -2086,8 +2046,10 @@ jobs:
         output_file_path: checkov-out
 
     # Locate the SARIF file Checkov produced and copy it to a predictable path.
-    # Fall back to a minimal empty SARIF if the action produced nothing.
-    - name: Locate or create SARIF and tfsec files
+    # No empty stand-in: a scanner that produced nothing leaves no file, so the
+    # upload below and the deploy's detection gate (G7) fail instead of
+    # recording "no findings".
+    - name: Locate SARIF and tfsec files
       if: always()
       run: |
         SARIF_FOUND=$(find checkov-out -name "*.sarif" -type f 2>/dev/null | head -n1 || true)
@@ -2095,30 +2057,12 @@ jobs:
           cp "$SARIF_FOUND" checkov-results.sarif
           echo "Located Checkov SARIF at $SARIF_FOUND, copied to checkov-results.sarif ($(wc -c < checkov-results.sarif) bytes)"
         else
-          echo "No SARIF produced by Checkov; creating empty fallback..."
-          cat > checkov-results.sarif << 'EOF'
-        {
-          "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-          "version": "2.1.0",
-          "runs": [
-            {
-              "tool": {
-                "driver": {
-                  "name": "Checkov",
-                  "version": "fallback"
-                }
-              },
-              "results": []
-            }
-          ]
-        }
-        EOF
+          echo "::error::No SARIF produced by Checkov."
         fi
-        if [ ! -f tfsec-results.json ]; then
-          echo "Creating fallback tfsec JSON file..."
-          echo '{"results": []}' > tfsec-results.json
-        else
+        if [ -f tfsec-results.json ]; then
           echo "tfsec JSON size: $(wc -c < tfsec-results.json) bytes"
+        else
+          echo "::error::No tfsec output."
         fi
 
     # Upload results to GitHub Security tab

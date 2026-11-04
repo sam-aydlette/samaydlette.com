@@ -1,0 +1,9 @@
+{
+ "catalogVersion": "2026.11.03",
+ "dateReleased": "2026-11-03T17:00:00.000Z",
+ "vulnerabilities": [
+  {
+   "cveID": "CVE-2099-0001"
+  }
+ ]
+}

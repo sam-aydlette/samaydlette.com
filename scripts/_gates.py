@@ -64,6 +64,13 @@ CHECKS = {
     "runtime-divergence.observer-fault": "G7",
     "detection.zap.missing": "G7",
     "detection.zap.stale": "G7",
+    "detection.kev": "G7",
+    "detection.epss": "G7",
+    "detection.grype": "G7",
+    "detection.dependabot": "G7",
+    "detection.previous-vdr": "G7",
+    "detection.checkov": "G7",
+    "detection.tfsec": "G7",
 }
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}

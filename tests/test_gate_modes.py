@@ -77,7 +77,7 @@ def test_an_entry_without_its_decision_fields_fails(tmp_path, field):
 
 def test_a_lapsed_deviation_fails(tmp_path):
     cfg = good()
-    e = entry(cfg, "detection.zap.missing")
+    e = entry(cfg, "runtime-divergence.observer-fault")
     assert e["mode"] == "detect-and-recover"
     e["review_by"] = "2026-11-01"
     with pytest.raises(SystemExit, match="lapsed on 2026-11-01"):
@@ -122,9 +122,10 @@ def test_events_are_recorded_for_the_status_beacon(tmp_path, monkeypatch):
     reg = _gates.load_gate_modes(REGISTER, today=TODAY)
     events = tmp_path / "events.jsonl"
     monkeypatch.setenv(_gates.EVENTS_ENV, str(events))
-    _gates.record_event(reg, "detection.zap.missing", "no report", now=datetime(2026, 11, 4, tzinfo=timezone.utc))
-    assert _gates.read_events(events) == [{"check": "detection.zap.missing", "gate": "G7", "mode": "detect-and-recover",
-                                           "detail": "no report", "at": "2026-11-04T00:00:00+00:00"}]
+    _gates.record_event(reg, "runtime-divergence.observer-fault", "stale", now=datetime(2026, 11, 4, tzinfo=timezone.utc))
+    assert _gates.read_events(events) == [{"check": "runtime-divergence.observer-fault", "gate": "G7",
+                                           "mode": "detect-and-recover", "detail": "stale",
+                                           "at": "2026-11-04T00:00:00+00:00"}]
 
 
 # ---- G1, G2, G3 through the VDR builder ----------------------------------------------

@@ -2296,6 +2296,7 @@ def main():
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
+    parser.add_argument("--detection", default=None, help="The detection gate's summary (scripts/detection-gate.py --output): recorded in the methodology so the report says what its inputs were and how old.")
     parser.add_argument("--check-vectors", default=None, help="Governed per-check CVSS vectors (default infrastructure/schemas/check-vectors.json).")
     parser.add_argument("--mitigations", default=None, help="Governed mitigation records (default data/mitigations.json).")
     parser.add_argument("--runtime-signal", default=None, help="The signed runtime signal (/.well-known/ksi-signal-runtime.json): the live read a full mitigation needs. Absent, unverified or stale: those mitigations are void.")
@@ -2343,7 +2344,9 @@ def main():
     # build closed (a skipped/forgotten scan must not read as zero findings).
     if args.zap:
         if not Path(args.zap).exists():
-            msg = f"No ZAP report at {args.zap}; DAST coverage is absent (see security/zap/README.md)."
+            err = Path(f"{args.zap}.error")
+            why = err.read_text(errors="replace").strip()[:200] if err.is_file() else "no file"
+            msg = f"No ZAP report at {args.zap} ({why}); DAST coverage is absent (see security/zap/README.md)."
             if _gates.blocks(gates, "detection.zap.missing"):
                 print(f"::error::{msg}", file=sys.stderr)
                 return 1
@@ -2444,6 +2447,9 @@ def main():
     # never hidden. Empty unless the workflow collects them.
     events_file = os.environ.get(_gates.EVENTS_ENV)
     report["methodology"]["gate_events"] = _gates.read_events(events_file) if events_file else []
+    # G7: what each detection input was when this report was built (T52).
+    report["methodology"]["detection"] = (json.loads(Path(args.detection).read_text())
+                                          if args.detection else None)
 
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
