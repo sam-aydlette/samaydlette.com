@@ -28,6 +28,7 @@
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import uuid
@@ -402,17 +403,19 @@ IIW_DEFAULTS = {
         "iiw_asset_type": "Event Schedule (EventBridge)",
     },
     "iam_role": {
-        "function": "IAM role assumed by the runtime KSI emitter Lambda",
-        "diagram_label": "IAM — Lambda role",
+        # Only for a role whose trust policy could not be read: no claim about
+        # who it trusts. Readable roles get text from iam_role_text().
+        "function": "IAM role",
+        "diagram_label": "IAM role",
         "public": False,
-        "baseline_configuration": "Trust policy bound to lambda.amazonaws.com; inline policy hashed in attributes (body in infrastructure/main.tf)",
+        "baseline_configuration": "Trust policy hashed in attributes (trust_policy_sha256)",
         "iiw_asset_type": "IAM Role",
     },
     "iam_policy": {
-        "function": "Inline policy attached to the Lambda role",
-        "diagram_label": "IAM — Lambda policy",
+        "function": "Inline IAM role policy",
+        "diagram_label": "IAM — inline policy",
         "public": False,
-        "baseline_configuration": "Inline policy on the Lambda role; body hashed in attributes (body in infrastructure/main.tf for full review)",
+        "baseline_configuration": "Inline role policy; body hashed in attributes (policy_document_sha256)",
         "iiw_asset_type": "IAM Policy",
     },
     "audit_log_trail": {
@@ -496,7 +499,7 @@ IIW_DEFAULTS = {
         "function": "IAM group for the human operator(s); holds IAM administration privileges (POAM-026)",
         "diagram_label": "IAM — operators group",
         "public": False,
-        "baseline_configuration": "Bootstrap module; group-attached managed policies; members authenticate with MFA (POAM-025). Broad IAM admin tracked as POAM-026.",
+        "baseline_configuration": "Bootstrap module; group-attached managed policies; human members (console password) authenticate with MFA (POAM-025); machine members authenticate with access keys and have no console password. Broad IAM admin tracked as POAM-026.",
         "iiw_asset_type": "IAM Group",
     },
     "oidc_provider": {
@@ -533,6 +536,25 @@ IIW_OVERRIDES = {
     ("iam_role", "evidence_watchdog"): {
         "function": "IAM role assumed by the evidence SLA watchdog Lambda",
     },
+    ("iam_role", "lambda_opa"): {
+        "function": "IAM role assumed by the runtime KSI emitter Lambda",
+    },
+    # The read-only group shares the group type with operators; without this it
+    # inherited the operators' "IAM administration" text.
+    ("iam_group", "read_only"): {
+        "function": "IAM group granting read-only access (ReadOnlyAccess, with denies on secret values and CMK decryption)",
+        "diagram_label": "IAM — read-only group",
+        "baseline_configuration": "Bootstrap module; group-attached ReadOnlyAccess plus explicit denies; human members (console password) authenticate with MFA; machine members authenticate with access keys and have no console password.",
+    },
+    ("iam_role", "deploy"): {
+        "function": "CI deploy role (reviewer-gated prod environment)",
+    },
+    ("iam_role", "plan"): {
+        "function": "Read-only plan role for pull-request and main-branch checks",
+    },
+    ("iam_role", "evidence_nightly"): {
+        "function": "Nightly evidence workflow role",
+    },
     ("object_store", "logs"): {
         "function": "Access-log bucket for the site bucket and CDN",
         "diagram_label": "S3 access-log bucket",
@@ -554,6 +576,68 @@ IIW_OVERRIDES = {
         "function": "CloudWatch log group for the Silk Reeling API Gateway access logs",
     },
 }
+
+
+GITHUB_OIDC_HOST = "token.actions.githubusercontent.com"
+
+
+def trusted_principals(trust_policy):
+    """The principals an IAM role's trust policy allows, without ARNs or account
+    numbers: "service:<service>", "federated:<OIDC provider host or SAML name>",
+    "aws-account" or "any". None when the policy cannot be read."""
+    try:
+        doc = json.loads(trust_policy) if isinstance(trust_policy, str) else trust_policy
+        stmts = doc["Statement"]
+    except (TypeError, ValueError, KeyError):
+        return None
+    out = set()
+    for st in stmts if isinstance(stmts, list) else [stmts]:
+        if not isinstance(st, dict) or st.get("Effect") != "Allow":
+            continue
+        pr = st.get("Principal")
+        if pr == "*":
+            out.add("any")
+            continue
+        if not isinstance(pr, dict):
+            return None
+        for kind, vals in pr.items():
+            for v in vals if isinstance(vals, list) else [vals]:
+                v = str(v)
+                if kind == "Service":
+                    out.add(f"service:{v}")
+                elif kind == "Federated":
+                    out.add("federated:" + re.sub(r"^arn:aws[a-z-]*:iam::[0-9]*:(oidc-provider|saml-provider)/", "", v))
+                elif kind == "AWS":
+                    out.add("any" if v == "*" else "aws-account")
+                else:
+                    return None
+    return sorted(out) or None
+
+
+def iam_role_text(principals, module_dir):
+    """IIW text for a role, from what its trust policy says."""
+    if principals == [f"federated:{GITHUB_OIDC_HOST}"]:
+        return {"function": "IAM role assumed by GitHub Actions through OIDC",
+                "diagram_label": "IAM — GitHub Actions role",
+                "baseline_configuration": f"Trust policy bound to the GitHub OIDC provider ({GITHUB_OIDC_HOST}); "
+                                          f"audience and subject restricted by condition; no AWS service principal; "
+                                          f"inline policies hashed in attributes (bodies in {module_dir})"}
+    if principals and len(principals) == 1 and principals[0].startswith("service:"):
+        svc = principals[0].split(":", 1)[1]
+        text = {"baseline_configuration": f"Trust policy bound to {svc}; inline policy hashed in attributes "
+                                          f"(body in {module_dir})"}
+        if svc == "lambda.amazonaws.com":
+            text.update(function="IAM role assumed by a Lambda function", diagram_label="IAM — Lambda role")
+        return text
+    return {}
+
+
+def apply_derived_text(component, derived):
+    """Derived text fills what a per-resource override does not set."""
+    override = IIW_OVERRIDES.get((component["type"], component["attributes"].get("tf_name")), {})
+    for key, value in derived.items():
+        if key not in override:
+            component["attributes"].setdefault(key, value)
 
 
 def apply_iiw_defaults(component):
@@ -820,8 +904,11 @@ def component_id_for_html(rel_path):
 # =============================================================================
 
 
-def build_cloud_components(tf_state, tf_outputs):
+def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main.tf"):
     """Walk Terraform state into normalized cloud components.
+
+    module_dir names where this state's resources are declared; the IAM text
+    points reviewers there for the hashed policy bodies.
 
     Resources with their own slot in the schema's type enum become components.
     Resources in ATTRIBUTE_PARENTS get folded into the parent's attributes so
@@ -904,11 +991,16 @@ def build_cloud_components(tf_state, tf_outputs):
         # canonical inventory directly; only their SHA-256 hash. The full body
         # is reviewable in infrastructure/main.tf for anyone with repo access.
         # Same treatment for IAM role trust policies.
+        derived_text = {}
         if normalized == "iam_role":
             trust_policy = values.get("assume_role_policy")
             if trust_policy is not None:
                 body_str = trust_policy if isinstance(trust_policy, str) else json.dumps(trust_policy, sort_keys=True)
                 attrs["trust_policy_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
+                principals = trusted_principals(trust_policy)
+                if principals:
+                    attrs["trusted_principals"] = principals
+                derived_text = iam_role_text(principals, module_dir)
             attrs["role_name"] = values.get("name")
         if normalized == "iam_policy":
             policy_body = values.get("policy")
@@ -917,6 +1009,10 @@ def build_cloud_components(tf_state, tf_outputs):
                 attrs["policy_document_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
             attrs["policy_name"] = values.get("name")
             attrs["attached_to_role"] = values.get("role") or values.get("role_name")
+            if attrs["attached_to_role"]:
+                derived_text = {"function": f"Inline policy on role {attrs['attached_to_role']}",
+                                "baseline_configuration": f"Inline policy on role {attrs['attached_to_role']}; body "
+                                                          f"hashed in attributes (body in {module_dir})"}
 
         component = {
             "component_id": cid,
@@ -927,6 +1023,7 @@ def build_cloud_components(tf_state, tf_outputs):
         if native_id:
             component["native_id"] = native_id
         apply_mas_defaults(component)
+        apply_derived_text(component, derived_text)
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
         components_by_id[cid] = component
@@ -985,7 +1082,7 @@ def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
         print(f"info: no bootstrap state at {bootstrap_dir}/; CI/CD identity-plane "
               f"components not added this run", file=sys.stderr)
         return []
-    comps = build_cloud_components(state, {})
+    comps = build_cloud_components(state, {}, module_dir="infrastructure/bootstrap")
     # A resource both stacks know about (the CloudFront distribution: managed
     # here, read by the application module as a data source) must appear once,
     # or the inventory gate's native_id-uniqueness check fails. Keep the entry
