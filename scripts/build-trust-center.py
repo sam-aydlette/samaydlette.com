@@ -258,10 +258,22 @@ def corroboration_verdict(report: dict[str, Any] | None, now: datetime) -> tuple
         parts.append(f"{s['tag_differences']} tag difference(s)")
     if s.get("relationships_tap_only"):
         parts.append(f"{s['relationships_tap_only']} relationship(s) the map does not draw")
+    if s.get("relationships_compared") == 0:
+        parts.append("no relationship was compared")
     stale = days is None or days > CORROBORATION_MAX_AGE_DAYS
     when = "" if days is None else ("today" if days < 1 else f"{days:g} days ago")
     detail = "; ".join(parts) + (f"; checked {when} (window {CORROBORATION_MAX_AGE_DAYS:g} days)." if when else ".")
-    differs = any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
+    differs = (any(s.get(k) for k in ("tap_only", "map_only", "tag_differences", "relationships_tap_only"))
+               or s.get("relationships_compared") == 0)
+    # rampart-corroboration/2: one line per section. Anything short of agreement,
+    # including a section that could not be checked, needs attention.
+    sections = report.get("checks") or {}
+    if sections:
+        lines = [f"{name.replace('_', ' ')}: {sec.get('status', 'missing').replace('_', ' ')}"
+                 + (f" ({len(sec.get('findings') or [])} difference(s))" if sec.get("status") == "differs" else "")
+                 for name, sec in sections.items()]
+        detail += " Sections: " + "; ".join(lines) + "."
+        differs = differs or any(sec.get("status") != "agrees" for sec in sections.values())
     return ("attention" if stale or differs else "ok"), detail
 
 

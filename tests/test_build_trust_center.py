@@ -255,6 +255,28 @@ def test_independent_corroboration_is_reported_and_its_findings_queued():
     assert ("boundary_not_inventoried", "tap:dynamodb_table:lock") in kinds(doc)
 
 
+def test_a_corroboration_that_compared_no_relationship_needs_attention():
+    report = json.loads((REPO / "tests" / "fixtures" / "corroboration" / "report-zero-relationships.json").read_text())
+    report["checked_at"] = "2026-09-25T12:00:00+00:00"
+    assert picture(build(corroboration=report))["corroboration"] == "attention"
+
+
+def test_a_corroboration_with_a_section_not_checked_needs_attention_and_lists_each_section():
+    report = json.loads((REPO / "tests" / "fixtures" / "corroboration" / "report-section-not-checked.json").read_text())
+    report["checked_at"] = "2026-09-25T12:00:00+00:00"
+    doc = build(corroboration=report)
+    assert picture(doc)["corroboration"] == "attention"
+    item = next(i for i in doc["picture"] if i["id"] == "corroboration")
+    for name in ("boundary: agrees", "signatures: agrees", "vulnerabilities: not checked", "ksi catalog: agrees"):
+        assert name in item["detail"]
+    for sec in report["checks"].values():
+        sec["status"] = "agrees"
+    assert picture(build(corroboration=report))["corroboration"] == "ok"
+    report["checks"]["live_configuration"] = {"status": "differs", "findings": [{}, {}]}
+    doc = build(corroboration=report)
+    assert picture(doc)["corroboration"] == "attention"
+    assert "live configuration: differs (2 difference(s))" in next(i for i in doc["picture"] if i["id"] == "corroboration")["detail"]
+
 # ---------------------------------------------------------------------------
 # REQ-QUE-1: every queue item carries kind, subject, opening time, why it is a
 # person's call, and the options; the escalation rate is published per kind

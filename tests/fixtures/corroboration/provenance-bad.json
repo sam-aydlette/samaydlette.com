@@ -1,0 +1,71 @@
+{
+  "_note": "Known-bad: GitHub records run 111 at another commit; run 222 under another workflow and concluded failure; run 333 is outside TAP's window.",
+  "facts": [
+    {
+      "artifact": ".well-known/a.json",
+      "verified": true,
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/111/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    },
+    {
+      "artifact": ".well-known/b.json",
+      "verified": true,
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/222/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    },
+    {
+      "artifact": ".well-known/c.json",
+      "verified": true,
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/333/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    },
+    {
+      "artifact": ".well-known/x.json",
+      "verified": false,
+      "cert": {
+        "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "ref": "refs/heads/main",
+        "event": "push",
+        "run_uri": "https://github.com/sam-aydlette/samaydlette.com/actions/runs/444/attempts/1",
+        "workflow_path": ".github/workflows/deploy-with-opa.yml"
+      }
+    }
+  ],
+  "runs": [
+    {
+      "run_id": "111",
+      "workflow_id": "1",
+      "event": "push",
+      "conclusion": "success",
+      "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "head_branch": "main"
+    },
+    {
+      "run_id": "222",
+      "workflow_id": "2",
+      "event": "push",
+      "conclusion": "failure",
+      "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "head_branch": "main"
+    }
+  ],
+  "workflows": {
+    "1": ".github/workflows/deploy-with-opa.yml",
+    "2": ".github/workflows/zap-dast.yml"
+  }
+}

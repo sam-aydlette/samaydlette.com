@@ -1,0 +1,158 @@
+{
+  "_note": "Known-bad: every claimed property is contradicted by the live value, except the one the collector did not read.",
+  "signal": {
+    "components": [
+      {
+        "component_id": "aws::object_store::data",
+        "type": "object_store",
+        "attributes": {
+          "tf_type": "aws_s3_bucket",
+          "baseline_configuration": "AWS S3; versioning, SSE-S3 and public access block"
+        }
+      },
+      {
+        "component_id": "aws::object_store::site",
+        "type": "object_store",
+        "attributes": {
+          "tf_type": "aws_s3_bucket",
+          "baseline_configuration": "AWS S3 default + bucket policy enforcing OAC + public access block"
+        }
+      },
+      {
+        "component_id": "aws::log_group::app",
+        "type": "log_group",
+        "attributes": {
+          "tf_type": "aws_cloudwatch_log_group",
+          "baseline_configuration": "AWS CloudWatch; 365-day retention"
+        }
+      },
+      {
+        "component_id": "aws::identity_provider::users",
+        "type": "identity_provider",
+        "attributes": {
+          "baseline_configuration": "AWS Cognito user pool; MFA ON (software-token/TOTP)"
+        }
+      },
+      {
+        "component_id": "aws::audit_log_trail::management",
+        "type": "audit_log_trail",
+        "attributes": {
+          "baseline_configuration": "Account-managed; default management-event capture"
+        }
+      },
+      {
+        "component_id": "aws::iam_role::deploy",
+        "type": "iam_role",
+        "attributes": {
+          "tf_type": "aws_iam_role",
+          "baseline_configuration": "Trust policy bound to lambda.amazonaws.com"
+        }
+      },
+      {
+        "component_id": "aws::iam_group::ops",
+        "type": "iam_group",
+        "attributes": {
+          "baseline_configuration": "members authenticate with MFA"
+        }
+      },
+      {
+        "component_id": "aws::iam_role::ci",
+        "type": "iam_role",
+        "attributes": {
+          "tf_type": "aws_iam_role",
+          "baseline_configuration": "Trust policy bound to the GitHub OIDC provider (token.actions.githubusercontent.com); audience and subject restricted by condition; no AWS service principal; inline policies hashed in attributes (bodies in infrastructure/bootstrap)"
+        }
+      }
+    ],
+    "validations": [
+      {
+        "policy": {
+          "id": "terraform.compliance"
+        },
+        "result": "pass",
+        "component_refs": [
+          "aws::object_store::data"
+        ]
+      }
+    ]
+  },
+  "tag_config": {
+    "required_tags": [
+      "Environment",
+      "CostCenter",
+      "DataClassification",
+      "Owner"
+    ],
+    "governance_tag_types": [
+      "aws_s3_bucket"
+    ],
+    "required_classification_tags": [
+      "DataSensitivity",
+      "MissionCriticality",
+      "InternetReachable",
+      "AgencyScope",
+      "OwnerRole",
+      "Archetype"
+    ],
+    "taggable_types": [
+      "aws_s3_bucket"
+    ]
+  },
+  "live": {
+    "aws::object_store::data": {
+      "name": "data",
+      "versioning": "Suspended",
+      "encryption": "",
+      "public_access_blocked": false,
+      "tags": {
+        "Environment": "prod",
+        "CostCenter": "x",
+        "DataClassification": "x",
+        "DataSensitivity": "x",
+        "MissionCriticality": "x",
+        "InternetReachable": "x",
+        "AgencyScope": "x",
+        "OwnerRole": "x"
+      }
+    },
+    "aws::object_store::site": {
+      "name": "site",
+      "public_access_blocked": true,
+      "served_through_oac": false
+    },
+    "aws::log_group::app": {
+      "retention_in_days": 30
+    },
+    "aws::identity_provider::users": {
+      "mfa_configuration": "OPTIONAL"
+    },
+    "aws::audit_log_trail::management": {
+      "is_logging": false
+    },
+    "aws::iam_role::deploy": {
+      "trusted_services": []
+    },
+    "aws::iam_role::ci": {
+      "trusted_services": [
+        "ec2.amazonaws.com"
+      ],
+      "trusts_wildcard_principal": true
+    }
+  },
+  "group_members": {
+    "aws::iam_group::ops": [
+      {
+        "console": true,
+        "mfa_enabled": true
+      },
+      {
+        "console": true,
+        "mfa_enabled": false
+      },
+      {
+        "console": false,
+        "mfa_enabled": false
+      }
+    ]
+  }
+}

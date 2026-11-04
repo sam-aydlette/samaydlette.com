@@ -103,3 +103,46 @@ def test_the_committed_report_is_safe_to_publish():
     corr.check_redaction(text)
     doc = json.loads(text)
     assert doc["schema"] == corr.SCHEMA and doc["checked_at"] and doc["corroborated_by"]["collected_at"]
+
+
+# --- TAP's batch-event shapes (aws_core >= 0.8 records relationships as "link") ---
+
+FIX = REPO / "tests" / "fixtures" / "corroboration"
+SIGNAL_APP = {"signal_id": "sig", "components": SIGNAL["components"][:2]}
+MAP_APP = {**MAP, "nodes": [{"id": c["component_id"]} for c in SIGNAL_APP["components"]]}
+
+
+def test_relationships_recorded_as_link_events_are_compared():
+    tap = corr.observed(json.loads((FIX / "tap-raw-link-events.json").read_text()))
+    assert [e["id"] for e in tap["entities"]] == ["e1", "e2"]  # "held" was not observed by this run
+    assert len(tap["edges"]) == 1
+    r = corr.compare(tap, SIGNAL_APP, MAP_APP, NOW)
+    assert r["summary"]["relationships_compared"] == 1 and r["result"] == "agrees"
+
+
+def test_a_comparison_that_checked_no_relationship_is_refused():
+    tap = corr.observed(json.loads((FIX / "tap-raw-no-relationships.json").read_text()))
+    r = corr.compare(tap, SIGNAL_APP, MAP_APP, NOW)
+    with pytest.raises(SystemExit, match="no relationship"):
+        corr.assert_comparable(r, MAP_APP)
+
+
+def test_a_collection_with_nothing_observed_is_refused():
+    with pytest.raises(SystemExit, match="observed nothing"):
+        corr.assert_comparable(run(tap={"finished_at": "x", "entities": [], "edges": []}), MAP)
+
+
+def test_the_collector_version_is_read_under_either_package_name(monkeypatch):
+    calls = []
+
+    class P:
+        def __init__(self, out):
+            self.stdout = out
+
+    def fake_run(cmd, **k):
+        calls.append(cmd[-1])
+        return P("0.8.0\n" if "aws-core-tap" in cmd[-1] else "")
+
+    monkeypatch.setattr(corr.subprocess, "run", fake_run)
+    assert corr.tap_version("c") == "0.8.0"
+    assert "aws-core-tap" in calls[0] and "tap-plugin-aws-core" in calls[0]

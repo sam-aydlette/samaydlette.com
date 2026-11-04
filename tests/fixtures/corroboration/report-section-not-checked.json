@@ -1,0 +1,67 @@
+{
+  "schema": "rampart-corroboration/2",
+  "checked_at": "2026-09-25T12:00:00+00:00",
+  "result": "incomplete",
+  "summary": {
+    "in_scope": 3,
+    "agree": 3,
+    "map_only": 0,
+    "tap_only": 0,
+    "tag_differences": 0,
+    "relationships_compared": 3,
+    "relationships_tap_only": 0
+  },
+  "tap_only": [],
+  "_note": "Known-bad: the boundary agrees, but one section could not be checked; the corroboration must not read as ok.",
+  "checks": {
+    "boundary": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    },
+    "signatures": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    },
+    "provenance": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    },
+    "live_configuration": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    },
+    "runtime_signing_key": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    },
+    "vulnerabilities": {
+      "status": "not_checked",
+      "compared": 0,
+      "findings": [],
+      "source": "s",
+      "note": "not readable"
+    },
+    "ksi_catalog": {
+      "status": "agrees",
+      "compared": 1,
+      "findings": [],
+      "source": "s",
+      "note": ""
+    }
+  }
+}
