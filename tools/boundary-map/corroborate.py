@@ -223,9 +223,16 @@ except Exception as exc:
 iam = s.client("iam")
 for cid, name in req["groups"].items():
     try:
-        users = iam.get_group(GroupName=name)["Users"]
-        out["groups"][cid] = [{"mfa_enabled": bool(iam.list_mfa_devices(UserName=u["UserName"])["MFADevices"])}
-                              for u in users]
+        members = []
+        for u in iam.get_group(GroupName=name)["Users"]:
+            try:
+                iam.get_login_profile(UserName=u["UserName"])
+                console = True
+            except iam.exceptions.NoSuchEntityException:
+                console = False
+            members.append({"console": console,
+                            "mfa_enabled": bool(iam.list_mfa_devices(UserName=u["UserName"])["MFADevices"])})
+        out["groups"][cid] = members
     except Exception as exc:
         out["groups"][cid] = None
 print("@@FACTS@@" + json.dumps(out))

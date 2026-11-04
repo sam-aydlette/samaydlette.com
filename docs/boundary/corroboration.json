@@ -1,13 +1,13 @@
 {
   "schema": "rampart-corroboration/2",
-  "checked_at": "2026-11-04T16:29:43+00:00",
+  "checked_at": "2026-11-04T16:56:40+00:00",
   "result": "differs",
   "corroborated_by": {
     "name": "RAMPART on TAP (The Analogy Platform)",
     "url": "https://github.com/unified-systems-com/tap",
     "collector": "aws_core:boto3",
     "collector_version": "0.8.0",
-    "collected_at": "2026-11-04T16:29:19.563936+00:00"
+    "collected_at": "2026-11-04T16:56:00.524796+00:00"
   },
   "compared_against": {
     "ksi_signal_id": "ff030189-414f-4ff9-a13b-cf745f46d0b3",
@@ -134,13 +134,6 @@
       "compared": 29,
       "findings": [
         {
-          "component": "aws::iam_group::read_only",
-          "property": "members_have_mfa",
-          "claim": "ksi-signal.json aws::iam_group::read_only baseline_configuration",
-          "expected": "every member has an MFA device",
-          "observed": "2 of 2 member(s) have no MFA device"
-        },
-        {
           "component": "aws::iam_role::deploy",
           "property": "trusted_services",
           "claim": "ksi-signal.json aws::iam_role::deploy baseline_configuration",
@@ -216,14 +209,14 @@
       "source": "AWS KMS GetPublicKey with TAP's read-only credential; published PEM; pinned key record",
       "note": "Reads the public half of the runtime signing key from KMS, compares it with the published and pinned copies, and verifies the runtime signal with the builder's own verification code.",
       "key_sha256": "4e09ff2a814c8f196dbc4f5de0ddc100a1414ee28bdc222576cb430a8bf09c90",
-      "runtime_signal_emitted_at": "2026-11-03T22:05:07Z"
+      "runtime_signal_emitted_at": "2026-11-04T16:50:50Z"
     },
     "vulnerabilities": {
-      "status": "not_checked",
+      "status": "agrees",
       "compared": 0,
       "findings": [],
       "source": "TAP github_core (Dependabot alerts) against the published VDR",
-      "note": "Dependabot alerts were not readable by TAP's GitHub credential (unobservable)."
+      "note": "Open alerts only; dismissed and fixed alerts are not compared."
     },
     "ksi_catalog": {
       "status": "agrees",

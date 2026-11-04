@@ -235,6 +235,9 @@ def live_claims(signal: dict[str, Any], tag_config: dict[str, Any]) -> list[dict
         m = re.search(r"Trust policy bound to ([a-z0-9.-]+\.amazonaws\.com)", base)
         if c.get("type") == "iam_role" and m:
             add(cid, "trusted_services", [m.group(1)], cite)
+        if c.get("type") == "iam_role" and re.search(r"GitHub OIDC provider.*no AWS service principal", base):
+            add(cid, "trusted_services", [], cite)
+            add(cid, "trusts_wildcard_principal", False, cite)
         if c.get("type") == "iam_group" and re.search(r"authenticate with MFA", base):
             add(cid, "members_have_mfa", True, cite)
     return claims
@@ -270,12 +273,18 @@ def judge_live(claims: list[dict[str, Any]], live: dict[str, dict[str, Any]],
             if members is None:
                 unchecked.append({**base, "why": "group membership was not read"})
                 continue
+            # MFA is required of human members, i.e. those with a console password.
+            # Machine members authenticate with access keys and have no password.
+            # Member names are not published (some are email addresses).
+            if any("console" not in u for u in members):
+                unchecked.append({**base, "why": "console sign-in was not read for every member"})
+                continue
             compared += 1
-            without = sum(1 for u in members if u.get("mfa_enabled") is not True)
+            humans = [u for u in members if u["console"]]
+            without = sum(1 for u in humans if u.get("mfa_enabled") is not True)
             if without:
-                # Member names are not published (some are email addresses).
-                findings.append({**base, "expected": "every member has an MFA device",
-                                 "observed": f"{without} of {len(members)} member(s) have no MFA device"})
+                findings.append({**base, "expected": "every member with a console password has an MFA device",
+                                 "observed": f"{without} of {len(humans)} console member(s) have no MFA device"})
             continue
         if prop in ("tags_present", "classification_tags_present"):
             tags = f.get("tags")

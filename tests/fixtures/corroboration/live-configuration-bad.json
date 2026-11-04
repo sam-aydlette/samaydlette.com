@@ -54,6 +54,14 @@
         "attributes": {
           "baseline_configuration": "members authenticate with MFA"
         }
+      },
+      {
+        "component_id": "aws::iam_role::ci",
+        "type": "iam_role",
+        "attributes": {
+          "tf_type": "aws_iam_role",
+          "baseline_configuration": "Trust policy bound to the GitHub OIDC provider (token.actions.githubusercontent.com); audience and subject restricted by condition; no AWS service principal; inline policies hashed in attributes (bodies in infrastructure/bootstrap)"
+        }
       }
     ],
     "validations": [
@@ -123,14 +131,26 @@
     },
     "aws::iam_role::deploy": {
       "trusted_services": []
+    },
+    "aws::iam_role::ci": {
+      "trusted_services": [
+        "ec2.amazonaws.com"
+      ],
+      "trusts_wildcard_principal": true
     }
   },
   "group_members": {
     "aws::iam_group::ops": [
       {
+        "console": true,
         "mfa_enabled": true
       },
       {
+        "console": true,
+        "mfa_enabled": false
+      },
+      {
+        "console": false,
         "mfa_enabled": false
       }
     ]

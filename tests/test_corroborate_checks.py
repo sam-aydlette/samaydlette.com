@@ -101,6 +101,8 @@ def test_known_bad_live_configuration_differs_on_every_claimed_property():
     assert got == [
         ("aws::audit_log_trail::management", "is_logging"),
         ("aws::iam_group::ops", "members_have_mfa"),
+        ("aws::iam_role::ci", "trusted_services"),
+        ("aws::iam_role::ci", "trusts_wildcard_principal"),
         ("aws::iam_role::deploy", "trusted_services"),
         ("aws::identity_provider::users", "mfa_configuration"),
         ("aws::log_group::app", "retention_in_days"),
@@ -135,11 +137,28 @@ def test_live_claims_cite_their_source():
 def test_group_members_are_counted_never_named():
     f = fx("live-configuration-bad.json")
     claims = [c for c in ck.live_claims(f["signal"], f["tag_config"]) if c["property"] == "members_have_mfa"]
-    members = {"aws::iam_group::ops": [{"mfa_enabled": False, "UserName": "someone@example.com"}]}
+    members = {"aws::iam_group::ops": [{"console": True, "mfa_enabled": False, "UserName": "someone@example.com"}]}
     s = ck.judge_live(claims, {}, members)
-    assert s["findings"][0]["observed"] == "1 of 1 member(s) have no MFA device"
+    assert s["findings"][0]["observed"] == "1 of 1 console member(s) have no MFA device"
     assert "example.com" not in json.dumps(s)
     assert ck.judge_live(claims, {}, {"aws::iam_group::ops": None})["status"] == "not_checked"
+
+
+def test_machine_members_without_a_console_password_need_no_mfa():
+    f = fx("live-configuration-bad.json")
+    claims = [c for c in ck.live_claims(f["signal"], f["tag_config"]) if c["property"] == "members_have_mfa"]
+    machine = {"aws::iam_group::ops": [{"console": False, "mfa_enabled": False}, {"console": True, "mfa_enabled": True}]}
+    assert ck.judge_live(claims, {}, machine)["status"] == "agrees"
+    unknown = {"aws::iam_group::ops": [{"mfa_enabled": False}]}  # console sign-in not read: never assumed machine
+    assert ck.judge_live(claims, {}, unknown)["status"] == "not_checked"
+
+
+def test_a_github_oidc_role_claim_agrees_only_with_no_service_and_no_wildcard():
+    f = fx("live-configuration-bad.json")
+    claims = [c for c in ck.live_claims(f["signal"], f["tag_config"]) if c["component"] == "aws::iam_role::ci"]
+    assert {c["property"] for c in claims} == {"trusted_services", "trusts_wildcard_principal"}
+    good = {"aws::iam_role::ci": {"trusted_services": [], "trusts_wildcard_principal": False}}
+    assert ck.judge_live(claims, good, {})["status"] == "agrees"
 
 
 def test_oac_is_derived_from_the_distribution_origins():
@@ -274,9 +293,10 @@ def test_assemble_keeps_the_boundary_keys_and_adds_sections():
     assert out["result"] == "incomplete"
 
 
-def test_the_container_reader_returns_mfa_as_a_boolean_per_member_only():
-    # Member names never leave the container: each member is {"mfa_enabled": bool}.
-    assert '[{"mfa_enabled": bool(iam.list_mfa_devices(UserName=u["UserName"])["MFADevices"])}' in corr.READ_FACTS
+def test_the_container_reader_returns_booleans_per_member_only():
+    # Member names never leave the container: each member is {"console": bool, "mfa_enabled": bool}.
+    assert 'members.append({"console": console,' in corr.READ_FACTS
+    assert '"mfa_enabled": bool(iam.list_mfa_devices(UserName=u["UserName"])["MFADevices"])})' in corr.READ_FACTS
 
 
 def test_the_committed_v2_report_is_safe_and_complete():
