@@ -1,26 +1,26 @@
 {
   "schema": "rampart-corroboration/1",
-  "checked_at": "2026-10-02T16:16:30+00:00",
+  "checked_at": "2026-11-04T14:55:57+00:00",
   "result": "agrees",
   "corroborated_by": {
     "name": "RAMPART on TAP (The Analogy Platform)",
     "url": "https://github.com/unified-systems-com/tap",
     "collector": "aws_core:boto3",
     "collector_version": "0.5.0",
-    "collected_at": "2026-10-02T16:16:21.236913+00:00"
+    "collected_at": "2026-11-04T14:55:51.021813+00:00"
   },
   "compared_against": {
-    "ksi_signal_id": "a48e3275-f48f-4ad9-b8a0-11f1494d0506",
-    "map_commit": "c0788149eae2069e3f9963f963f06efda5b8e110",
-    "map_generated_at": "2026-10-02T16:02:45+00:00"
+    "ksi_signal_id": "ff030189-414f-4ff9-a13b-cf745f46d0b3",
+    "map_commit": "f794ab763dd31412c31c5889a6acb5cb8fa6455e",
+    "map_generated_at": "2026-11-03T22:02:43+00:00"
   },
   "summary": {
-    "in_scope": 33,
-    "agree": 33,
+    "in_scope": 32,
+    "agree": 32,
     "map_only": 0,
     "tap_only": 0,
     "tag_differences": 0,
-    "relationships_compared": 22,
+    "relationships_compared": 21,
     "relationships_tap_only": 0,
     "provider_managed": 6
   },
@@ -56,7 +56,6 @@
     "aws::object_store::tfstate",
     "aws::object_store::website",
     "aws::oidc_provider::github",
-    "aws::secrets_manager::silk_anthropic",
     "aws::tls_certificate::website"
   ],
   "map_only": [],
@@ -92,7 +91,7 @@
   "not_covered_by_tap": {
     "iam_group": 2,
     "iam_policy": 17,
-    "metric_alarm": 3,
+    "metric_alarm": 4,
     "notification_topic": 1
   },
   "scope_note": "Compared: the resource types TAP's aws_core collector covers. Types it does not collect (listed in not_covered_by_tap) rest on the deploy's own reconciliation gate."
