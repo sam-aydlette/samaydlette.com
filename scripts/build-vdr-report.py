@@ -1913,6 +1913,23 @@ def consolidate_by_cve(report_findings, risk_accepted):
     return out
 
 
+def load_conformance(path):
+    """{profile_version, conformance_sha256, summary} from a conformance-results
+    file. Fails closed: GOV-2 requires every output to carry them."""
+    p = Path(path)
+    if not p.is_file():
+        raise SystemExit(f"::error::conformance results not found at {path} (REQ-GOV-2)")
+    raw = p.read_bytes()
+    try:
+        doc = json.loads(raw)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise SystemExit(f"::error::conformance results at {path} are not JSON: {exc}") from exc
+    if doc.get("schema") != "conformance-results/1" or not isinstance(doc.get("profile_version"), str):
+        raise SystemExit(f"::error::{path} is not a conformance-results/1 document")
+    return {"profile_version": doc["profile_version"], "conformance_sha256": hashlib.sha256(raw).hexdigest(),
+            "conformance_generated_at": doc.get("generated_at"), "summary": doc.get("summary")}
+
+
 class BlockingList(list):
     """The blocking tracking IDs, plus the triage block rule behind each one
     (`rules`), so the caller can apply the gate's governed mode per rule."""
@@ -2296,6 +2313,7 @@ def main():
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
+    parser.add_argument("--conformance", default=None, help="Signed conformance results (scripts/build-conformance.py): the report names their profile version and sha256 (REQ-GOV-2). Given but missing or invalid: the build fails.")
     parser.add_argument("--detection", default=None, help="The detection gate's summary (scripts/detection-gate.py --output): recorded in the methodology so the report says what its inputs were and how old.")
     parser.add_argument("--check-vectors", default=None, help="Governed per-check CVSS vectors (default infrastructure/schemas/check-vectors.json).")
     parser.add_argument("--mitigations", default=None, help="Governed mitigation records (default data/mitigations.json).")
@@ -2447,6 +2465,9 @@ def main():
     # never hidden. Empty unless the workflow collects them.
     events_file = os.environ.get(_gates.EVENTS_ENV)
     report["methodology"]["gate_events"] = _gates.read_events(events_file) if events_file else []
+    # REQ-GOV-2: the profile this report conforms to, and the results of that
+    # profile's conformance tests it was built under.
+    report["methodology"]["profile"] = load_conformance(args.conformance) if args.conformance else None
     # G7: what each detection input was when this report was built (T52).
     report["methodology"]["detection"] = (json.loads(Path(args.detection).read_text())
                                           if args.detection else None)

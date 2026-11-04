@@ -1,0 +1,492 @@
+{
+  "$comment": "Known-bad (REQ-GOV-2): T1 claims implemented with no test behind it. build-conformance.py must refuse it.",
+  "profile_version": "vdr-method/2026-11-04.1",
+  "method": {
+    "path": "website/research/vulnerability-evidence.html",
+    "appendix": "B"
+  },
+  "decided_by": "Sam Aydlette",
+  "decided_on": "2026-11-04",
+  "review_by": "2027-01-20",
+  "tests": {
+    "T1": {
+      "status": "implemented",
+      "pytest": []
+    },
+    "T2": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No outside-in reachability probe of declared-internal components. Planned in T10."
+    },
+    "T3": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No public-edge declarations, two-observer path finding or over-declaration queue. Planned in T10."
+    },
+    "T4": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No public-backed exposure intent and no declared-flow model used for IRV. Planned in T10."
+    },
+    "T5": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "Declared flows are not checked against exposure intent under G5. Planned in T10."
+    },
+    "T6": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No exposure_intent field; the nearest check is the G6 zone placement (reconcile invariant l). Planned in T10."
+    },
+    "T7": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_resolution_identity.py::test_t7_unresolved_finding_is_irv_failsafe_and_flagged",
+        "tests/test_resolution_identity.py::test_unresolved_finding_gets_failsafe_pain_not_a_substring_match",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ],
+      "reason": "Implemented, except that 'queued' is a published unresolved_components count, not a queue item."
+    },
+    "T8": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_t8_irv_network_noauth_nointeraction_low_score_is_lev",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T9": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_t9_nirv_no_score_medium_severity_is_lev",
+        "tests/test_lev_epss.py::test_lev_medium_without_a_score_is_lev",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T10": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_fully_mitigated_kev_still_blocks",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ],
+      "reason": "A mitigated KEV finding still blocks (G1), but the KEV catalog dueDate is never read or checked."
+    },
+    "T11": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_gate_modes.py::test_known_bad_input_is_rejected_for_its_gate",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T12": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_vendor_dependency_lapses_when_a_fix_may_exist",
+        "tests/test_dispositions_mitigations.py::test_overdue_vendor_dependency_fails_the_deadline_gate",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ],
+      "reason": "A fix lapses the vendor-dependency record and an overdue finding blocks, but no single test combines a fix with a passed deadline."
+    },
+    "T13": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_vendor_dependency_lapses_when_a_fix_may_exist",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T14": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_clock.py::test_t14_past_maximum_period_is_reported_accepted_with_unrecorded_explanation",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T15": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_t15_false_positive_naming_a_control_is_refused",
+        "tests/test_dispositions_mitigations.py::test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T16": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_t16_lapsed_disposition_is_absent_in_the_report",
+        "tests/test_dispositions_mitigations.py::test_t16_lapsed_disposition_fails_the_vulnerability_gate",
+        "tests/test_dispositions_mitigations.py::test_t16_lapsed_decision_record_voids_a_config_suppression",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged",
+        "tests/test_build_trust_center.py::test_poam_decision_props_fill_the_record_and_due_reviews_are_queued"
+      ]
+    },
+    "T17": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_verify_attestation.py::test_fails_on_tampered_inventory_digest",
+        "tests/test_reconcile.py::test_e_binding_catches_mismatched_signal_id",
+        "tests/test_build_trust_center.py::test_artifacts_bound_to_another_inventory_fail_closed",
+        "tests/test_reconcile_boundary_map.py::test_binding_and_freshness",
+        "tests/test_corroborate.py::test_a_map_bound_to_another_inventory_is_refused"
+      ],
+      "reason": "A mismatched inventory binding is refused by each builder tested; 'nothing is published' is not asserted across all outputs end to end."
+    },
+    "T18": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_freshness_config.py::test_a_missing_or_unparseable_config_fails_closed",
+        "tests/test_freshness_config.py::test_each_invalid_config_fails_closed",
+        "tests/test_freshness_config.py::test_the_known_bad_fixture_is_rejected_by_the_loader_and_the_schema",
+        "tests/test_freshness_config.py::test_the_trust_center_fails_closed_on_an_invalid_config",
+        "tests/test_pain_config.py::test_loader_fails_closed_on_missing_file",
+        "tests/test_pain_config.py::test_loader_fails_closed_on_missing_required_key",
+        "tests/test_gate_modes.py::test_missing_register_fails",
+        "tests/test_detection_gate.py::test_a_missing_or_invalid_config_fails_closed",
+        "tests/test_evidence_freshness.py::test_an_invalid_or_missing_config_fails_closed",
+        "tests/test_rules_as_data.py::test_hash_mismatch_fails_closed"
+      ]
+    },
+    "T19": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_triage_policy.py::test_timeframe_comes_from_data_rules",
+        "tests/test_triage_policy.py::test_maximum_period_and_scale_come_from_data_rules",
+        "tests/test_triage_policy.py::test_impact_off_the_rules_scale_fails_closed",
+        "tests/test_triage_policy.py::test_rules_missing_a_timeframe_cell_fail_closed",
+        "tests/test_rules_as_data.py::test_t19_timeframes_equal_the_pinned_rules",
+        "tests/test_rules_as_data.py::test_t19_no_timeframe_matrix_is_typed_into_the_builder"
+      ],
+      "reason": "Scale and timeframes come from the rules; no test adds a level to the rules and checks the build fails until the governed mapping covers it."
+    },
+    "T20": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "Integrity failures fail closed (T17); nothing keeps the last good outputs up with a status record naming the failure."
+    },
+    "T21": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_gate_modes.py::test_a_recorded_detect_and_recover_mode_publishes_instead_of_blocking",
+        "tests/test_gate_modes.py::test_trust_center_queues_each_gate_event_once_with_its_opening_time",
+        "tests/test_gate_modes.py::test_events_are_recorded_for_the_status_beacon"
+      ],
+      "reason": "The build proceeds and publishes the finding and a queue item with its opening time; the recovery deadline is not checked end to end."
+    },
+    "T22": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No build-stage versus runtime-image distinction for package findings."
+    },
+    "T23": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_t23_mitigation_names_its_control",
+        "tests/test_dispositions_mitigations.py::test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level"
+      ],
+      "reason": "Tested with a WAF setting as the named control; a runtime feature flag with the code still in the image is not modelled."
+    },
+    "T24": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_t24_control_change_voids_the_mitigation_and_restores_the_old_clock",
+        "tests/test_dispositions_mitigations.py::test_t24_valid_mitigation_keeps_its_clock"
+      ]
+    },
+    "T25": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_dispositions_mitigations.py::test_t25_failing_live_check_voids_the_mitigation",
+        "tests/test_dispositions_mitigations.py::test_t25_control_missing_from_the_inventory_voids_the_mitigation"
+      ],
+      "reason": "The observer is the signed runtime validation, not an outside-in re-test of the payload."
+    },
+    "T26": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No full and public publication tiers."
+    },
+    "T27": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_runtime_divergence_gate.py::test_fresh_divergence_blocks",
+        "tests/test_divergence.py::test_genuine_drift_is_a_regression",
+        "tests/test_gate_modes.py::test_divergence_gate_rejects_its_known_bad_input"
+      ],
+      "reason": "Runtime drift blocks under G4 as generic KSI drift; no ingress rule, exposure intent or published undeclared exposure (T10)."
+    },
+    "T28": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_lev_override_applies_and_is_published_then_lapses"
+      ],
+      "reason": "The override lapses and LEV returns, but the base LEV is supplied rather than derived from a missing score."
+    },
+    "T29": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No penetration-test report ingestion."
+    },
+    "T30": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No findings opened from Rev5 control status changes (T11)."
+    },
+    "T31": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No findings against control statements; manual-setting drift is only queued."
+    },
+    "T32": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No process (non-machine) findings (T11)."
+    },
+    "T33": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "SDR entries do not list findings (T11)."
+    },
+    "T34": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_clock.py::test_t34_verified_mitigation_starts_a_new_clock",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ]
+    },
+    "T35": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_clock.py::test_t35_evaluation_change_without_mitigation_keeps_the_clock_start"
+      ],
+      "reason": "The evaluation change comes from a prior rating, not from a prediction-score drop."
+    },
+    "T36": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_clock.py::test_t36_mitigations_never_reset_the_maximum_period",
+        "tests/test_dispositions_mitigations.py::test_fully_mitigated_is_not_accepted_at_the_maximum_period"
+      ]
+    },
+    "T37": {
+      "status": "not-applicable",
+      "pytest": [],
+      "reason": "No autoscaled instances or launch templates in this system (register row IRV-7)."
+    },
+    "T38": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_resolution_identity.py::test_t7_unresolved_finding_is_irv_failsafe_and_flagged",
+        "tests/test_resolution_identity.py::test_unresolved_finding_gets_failsafe_pain_not_a_substring_match"
+      ],
+      "reason": "The generic unresolved path is covered; there is no short-lived-resource or template-label concept."
+    },
+    "T39": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No flow telemetry ingestion."
+    },
+    "T40": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No narrowing records or call-graph reachability."
+    },
+    "T41": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "Exposure-intent changes do not trigger an evaluation (T10)."
+    },
+    "T42": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_zap_allowlist.py::test_allowlisted_only_when_every_location_was",
+        "tests/test_zap_allowlist.py::test_allowlist_status_is_published_in_the_report",
+        "tests/test_zap_allowlist.py::test_empty_allowlist_means_not_allowlisted"
+      ],
+      "reason": "Allowlisting is keyed by URL prefix of the governed edge allowlist, not by source address."
+    },
+    "T43": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No exposure intent; a missing classification takes the fail-safe value instead of failing G5 (T10)."
+    },
+    "T44": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_failsafe_scope.py::test_t44_missing_scope_is_multi_agency",
+        "tests/test_failsafe_scope.py::test_failsafe_is_multi_agency_mission_critical"
+      ]
+    },
+    "T45": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No PII-carrying flow declarations (T10)."
+    },
+    "T46": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No metadata-only flow declarations (T10)."
+    },
+    "T47": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No flow telemetry or provisional PII classification."
+    },
+    "T48": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No test of an availability-only flaw on a CUI, non-mission-critical component at Medium AR."
+    },
+    "T49": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_lev_override_applies_and_is_published_then_lapses",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ],
+      "reason": "The override applies to a single component; the review date carried per finding is not asserted."
+    },
+    "T50": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_lev_override_exclusion",
+        "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+      ],
+      "reason": "Selector match and exclusion are tested; a component appearing after the override is not."
+    },
+    "T51": {
+      "status": "not-applicable",
+      "pytest": [],
+      "reason": "One owner and one deploy path; there are no teams whose deploys could be held separately (register row GAT-3)."
+    },
+    "T52": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_detection_gate.py::test_t52_each_failed_input_fails_the_gate_for_its_reason",
+        "tests/test_detection_gate.py::test_every_detection_feed_has_a_governed_mode"
+      ],
+      "reason": "A stale vulnerability database fails G7 and blocks the deploy and the nightly. With one team, failing the run fails every team."
+    },
+    "T53": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_gate_modes.py::test_t53_mode_changed_without_a_decision_record_fails_the_build",
+        "tests/test_gate_modes.py::test_the_builder_refuses_an_undecided_register",
+        "tests/test_gate_modes.py::test_an_entry_without_its_decision_fields_fails"
+      ]
+    },
+    "T54": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No record of who classified data (T10)."
+    },
+    "T55": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T56": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T57": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T58": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T59": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay and no penetration-test ingestion."
+    },
+    "T60": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T61": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_pain_environmental.py::test_example3_availability_dos_on_high_AR_is_n4"
+      ],
+      "reason": "Availability-only on High AR gives N4, but single-agency and without partial technical impact."
+    },
+    "T62": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_figure7_lev.py::test_pai7_total_when_c_and_i_high"
+      ],
+      "reason": "technical_impact is 'total' on C:H/I:H; there is no SSVC overlay to carry it."
+    },
+    "T63": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No public-backed exposure intent (T10)."
+    },
+    "T64": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No ingestion of upstream providers' findings; none publishes linkable findings today."
+    },
+    "T65": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "Mitigations cannot name upstream controls."
+    },
+    "T66": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No upstream full-tier access model."
+    },
+    "T67": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "This system publishes its profile and signed results; it does not yet consume another product's."
+    },
+    "T68": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No SSVC overlay."
+    },
+    "T69": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No VEX ingestion."
+    },
+    "T70": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No VEX ingestion."
+    },
+    "T71": {
+      "status": "not-implemented",
+      "pytest": [],
+      "reason": "No VEX ingestion."
+    },
+    "T72": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_runtime_divergence_gate.py::test_fresh_divergence_blocks",
+        "tests/test_divergence.py::test_genuine_drift_is_a_regression"
+      ],
+      "reason": "Hand drift is caught by the runtime sweep and blocks under G4; no security-group scenario and no change or cleanup log."
+    },
+    "T73": {
+      "status": "partial",
+      "pytest": [
+        "tests/test_evidence_watchdog.py::test_a_missing_or_stale_beacon_is_a_failure_not_a_pass"
+      ],
+      "reason": "A missing nightly beacon pages; no per-slot missed-run record is published (T9)."
+    },
+    "T74": {
+      "status": "implemented",
+      "pytest": [
+        "tests/test_assessor_records.py::test_t74_output_text_differing_from_the_signed_record_fails",
+        "tests/test_assessor_records.py::test_t74_output_carrying_an_unsigned_assessor_entry_fails",
+        "tests/test_assessor_records.py::test_t74_output_dropping_a_signed_record_fails"
+      ]
+    }
+  }
+}

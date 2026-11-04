@@ -1425,6 +1425,16 @@ jobs:
           rm -f ksi-signal-runtime.json
         fi
 
+    # REQ-GOV-2: run the method's conformance tests (data/method-profile.json
+    # maps Appendix B T1-T74 to the tests that implement them) and record the
+    # results. Signed and published below; every VDR-family output names the
+    # profile version and the sha256 of these results. A failing mapped test,
+    # or a mapped test that does not exist, stops the deploy here.
+    - name: Run the conformance suite (REQ-GOV-2)
+      run: |
+        python3 -m pip install --user --quiet pytest jsonschema pyyaml cryptography
+        python3 scripts/build-conformance.py --output infrastructure/conformance-results.json
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -1441,6 +1451,7 @@ jobs:
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
+          --conformance conformance-results.json \
           --runtime-signal ksi-signal-runtime.json \
           --output vdr-report.json
         echo "VDR summary:"
@@ -1682,6 +1693,7 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle boundary-map.bundle boundary-map.json
         cosign sign-blob --yes --new-bundle-format --bundle reconcile-report.bundle reconcile-report.json
         cosign sign-blob --yes --new-bundle-format --bundle trust-center.bundle trust-center.json
+        cosign sign-blob --yes --new-bundle-format --bundle conformance-results.bundle conformance-results.json
         if [ -f boundary-corroboration.json ]; then
           cosign sign-blob --yes --new-bundle-format --bundle boundary-corroboration.bundle boundary-corroboration.json
         fi
@@ -1729,7 +1741,7 @@ jobs:
         done
         # Trust center: the generated boundary map, the gate's own report (it exists
         # only because the gate above passed) and the trust center's data.
-        for a in boundary-map reconcile-report trust-center boundary-corroboration; do
+        for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1821,6 +1833,7 @@ jobs:
         check boundary-map.json .well-known/boundary-map.json
         check reconcile-report.json .well-known/reconcile-report.json
         check trust-center.json .well-known/trust-center.json
+        check conformance-results.json .well-known/conformance-results.json
         if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
         for a in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json iiw.csv; do

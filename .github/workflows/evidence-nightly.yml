@@ -487,6 +487,20 @@ jobs:
 
     # The builder evaluates policies/triage.rego for every decision and fails
     # closed without opa. Same version and SHA pin as the deploy job.
+    # REQ-GOV-2: the VDR names the conformance results of the profile it was
+    # built under: the ones the last deploy signed and published, verified
+    # against the deploy's identity like the inventory above.
+    - name: Fetch and verify the published conformance results
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        curl -sfL --retry 3 --retry-delay 5 -o conformance-results.json "${SITE_ORIGIN}/.well-known/conformance-results.json"
+        curl -sfL --retry 3 --retry-delay 5 -o conformance-results.bundle "${SITE_ORIGIN}/.well-known/conformance-results.bundle"
+        cosign verify-blob --bundle conformance-results.bundle \
+          --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
+          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" conformance-results.json
+        jq -c '{profile_version, summary}' conformance-results.json
+
     - name: Setup OPA (triage policy)
       run: |
         curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
@@ -519,6 +533,7 @@ jobs:
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
+          --conformance conformance-results.json \
           --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
           --output vdr-report.json
@@ -745,9 +760,12 @@ jobs:
           || echo '{"gates": null, "gate_events": null}' > gate-status.json
         # What G7 found about each detection input, when the gate got that far.
         [ -s detection.json ] || echo 'null' > detection.json
+        if [ -s conformance-results.json ]; then cp conformance-results.json conformance-status.json; else echo 'null' > conformance-status.json; fi
         jq -n \
           --slurpfile gs gate-status.json \
           --slurpfile det detection.json \
+          --slurpfile prof conformance-status.json \
+          --arg profsha "$(sha256sum conformance-results.json 2>/dev/null | cut -d' ' -f1)" \
           --arg result "${RUN_RESULT}" \
           --arg vuln_gate "${VULN_GATE:-not reached}" \
           --arg reconcile "${RECONCILE:-not reached}" \
@@ -759,7 +777,8 @@ jobs:
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
             inventory_commit: $commit, run_url: $run_url,
             gates: $gs[0].gates, gate_events: $gs[0].gate_events,
-            detection: $det[0]}' > vdr-status.json
+            detection: $det[0],
+            profile: (if $prof[0] then {profile_version: $prof[0].profile_version, conformance_sha256: $profsha} else null end)}' > vdr-status.json
         cat vdr-status.json
         aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
           --content-type application/json --cache-control "no-cache"

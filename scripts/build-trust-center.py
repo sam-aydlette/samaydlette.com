@@ -361,6 +361,21 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
 
     add_corroboration(add, inp.get("corroboration"), now)
 
+    # REQ-GOV-2: the method profile this build conforms to, and how much of its
+    # conformance suite is implemented and passing. Read from the VDR it built.
+    prof = ((inp["vdr"].get("methodology") or {}).get("profile")) or None
+    if not prof or not isinstance(prof.get("summary"), dict):
+        add("conformance", "Method conformance", "not_observed",
+            "The VDR names no conformance results.")
+    else:
+        sm = prof["summary"]
+        whole = sm.get("failed", 0) == 0 and sm.get("partial", 0) == 0 and sm.get("not-implemented", 0) == 0
+        add("conformance", "Method conformance", "ok" if whole else "attention",
+            f"Profile {prof.get('profile_version')}: {sm.get('implemented', 0)} conformance tests implemented, "
+            f"{sm.get('partial', 0)} partly, {sm.get('not-implemented', 0)} not yet, "
+            f"{sm.get('not-applicable', 0)} not applicable; {sm.get('failed', 0)} failing.",
+            prof.get("conformance_generated_at"), "/.well-known/conformance-results.json")
+
     manual = inp.get("manual_settings") or {}
     observed = {c.get("id"): c for c in manual.get("checks", [])}
     for id_, label in MANUAL_SETTINGS.items():
@@ -761,6 +776,8 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
         "picture": build_picture(inp, now),
+        # REQ-GOV-2: the profile and conformance results this build conforms to.
+        "profile": (inp["vdr"].get("methodology") or {}).get("profile"),
         # The page re-checks the two evidence streams that change between
         # deploys (runtime signal, nightly beacon) live, against these windows.
         "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS,
