@@ -61,16 +61,19 @@ resource "aws_cloudfront_origin_access_control" "website" {
 # Security headers delivered at the edge to the static site: HSTS, X-Frame-Options,
 # X-Content-Type-Options, Referrer-Policy, X-XSS-Protection, and an enforcing
 # Content-Security-Policy. The CSP was rolled out report-only first and verified
-# clean (headless, no violations across the dynamic pages) before enforcing; its
-# frame-src allows the YouTube embed on activities.html (the only framed player;
-# the podcasts play through the native audio element, below).
+# clean (headless, no violations across the dynamic pages) before enforcing. It
+# allows no frames: the one video on activities.html is a linked thumbnail, and
+# the podcasts play through the native audio element, below.
 # media-src allows the podcast audio the activities page plays natively:
 # ochelli.com, and libsyn's stable episode URL (traffic.libsyn.com), which
 # redirects to a signed, expiring URL on content.libsyn.com. CSP checks every
 # redirect hop, so both libsyn hosts are needed.
 # Permissions-Policy turns off powerful browser features the static pages never
 # use, and COOP/CORP keep the pages out of other origins' windows and no-cors
-# loads. No COEP: require-corp would break the YouTube embed.
+# loads. COEP is credentialless rather than require-corp: the podcast audio is a
+# cross-origin no-cors load whose hosts send no CORP header; credentialless lets
+# it load without cookies. Any cross-origin frame would need its own COEP, so the
+# site embeds none.
 # style-src is 'self' only: no page carries a <style> block or style="" attribute,
 # and Cytoscape's injected container rule is pre-empted (boundary-map.css; the
 # stylesheet <link> carries the id Cytoscape checks for). Styles set through the
@@ -107,7 +110,6 @@ resource "aws_cloudfront_response_headers_policy" "website" {
         "img-src 'self' data:",
         "font-src 'self'",
         "media-src 'self' https://ochelli.com https://traffic.libsyn.com https://content.libsyn.com",
-        "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
         "connect-src 'self'",
         "frame-ancestors 'none'",
         "base-uri 'self'",
@@ -137,6 +139,11 @@ resource "aws_cloudfront_response_headers_policy" "website" {
     items {
       header   = "Cross-Origin-Resource-Policy"
       value    = "same-origin"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Embedder-Policy"
+      value    = "credentialless"
       override = true
     }
   }
