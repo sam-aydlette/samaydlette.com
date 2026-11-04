@@ -1,0 +1,68 @@
+{
+  "_note": "Known-bad for the IAM inventory text: before the fix, the GitHub OIDC role and its inline policy were described as a Lambda role and the Lambda role's policy, and the unparseable trust policy was claimed to be bound to lambda.amazonaws.com. Account is the AWS documentation example.",
+  "values": {
+    "root_module": {
+      "resources": [
+        {
+          "type": "aws_iam_role",
+          "name": "lambda_opa",
+          "address": "aws_iam_role.lambda_opa",
+          "values": {
+            "arn": "arn:aws:iam::123456789012:role/samaydlette-com-lambda-opa-role",
+            "name": "samaydlette-com-lambda-opa-role",
+            "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Service\": \"lambda.amazonaws.com\"}, \"Action\": \"sts:AssumeRole\"}]}"
+          }
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "deploy",
+          "address": "aws_iam_role.deploy",
+          "values": {
+            "arn": "arn:aws:iam::123456789012:role/github-actions-deploy-oidc",
+            "name": "github-actions-deploy-oidc",
+            "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Federated\": \"arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com\"}, \"Action\": \"sts:AssumeRoleWithWebIdentity\", \"Condition\": {\"StringEquals\": {\"token.actions.githubusercontent.com:aud\": \"sts.amazonaws.com\"}}}]}"
+          }
+        },
+        {
+          "type": "aws_iam_role",
+          "name": "mystery",
+          "address": "aws_iam_role.mystery",
+          "values": {
+            "arn": "arn:aws:iam::123456789012:role/mystery",
+            "name": "mystery",
+            "assume_role_policy": "not json"
+          }
+        },
+        {
+          "type": "aws_iam_role_policy",
+          "name": "lambda_opa",
+          "address": "aws_iam_role_policy.lambda_opa",
+          "values": {
+            "name": "opa-inline",
+            "role": "samaydlette-com-lambda-opa-role",
+            "policy": "{\"Statement\":[]}"
+          }
+        },
+        {
+          "type": "aws_iam_role_policy",
+          "name": "reconcile_reads",
+          "address": "aws_iam_role_policy.reconcile_reads",
+          "values": {
+            "name": "reconcile-reads",
+            "role": "github-actions-deploy-oidc",
+            "policy": "{\"Statement\":[]}"
+          }
+        },
+        {
+          "type": "aws_iam_group",
+          "name": "read_only",
+          "address": "aws_iam_group.read_only",
+          "values": {
+            "arn": "arn:aws:iam::123456789012:group/read-only",
+            "name": "read-only"
+          }
+        }
+      ]
+    }
+  }
+}
