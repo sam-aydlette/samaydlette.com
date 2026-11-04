@@ -12,8 +12,9 @@
 # uploaded as the `zap-dast-report` artifact, for the VDR builds to read from
 # the latest successful main-branch run (wired in a follow-up change).
 #
-# The issue title has no parentheses: the action finds its tracking issue with a
-# GitHub search query, and parentheses in the title made every run since July
+# The issue title is plain words: the action finds its tracking issue with an
+# unquoted GitHub search query (`is:issue state:open repo:... <title>`), so
+# search syntax in the title breaks it. Parentheses in the title made every run since July
 # fail with "The search query contains invalid syntax" before the artifact was
 # uploaded.
 #
@@ -48,5 +49,5 @@ jobs:
           cmd_options: '-a'            # include alpha-quality passive rules
           fail_action: false           # informational; findings become POA&M items, not a hard gate
           allow_issue_writing: true
-          issue_title: 'ZAP DAST findings - SA-11.8'
+          issue_title: 'ZAP DAST findings for SA-11.8'
           artifact_name: 'zap-dast-report'
