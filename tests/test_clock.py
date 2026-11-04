@@ -94,7 +94,7 @@ def test_t34_verified_mitigation_starts_a_new_clock():
 
 
 def test_no_disposition_pauses_the_clock():
-    reg = {"CVE-0000-0100": {"disposition": "operational-requirement", "poam_ref": "POAM-1"}}
+    reg = {"CVE-0000-0100": {"disposition": "operational-requirement", "decision_id": "DEC-001"}}
     f = {**finding(), "tracking_id": "grype-CVE-0000-0100-pkg:npm/a@1", "tool_id": "CVE-0000-0100"}
     report, _ = vdr.build_report([f], [], set(), {f["tracking_id"]: entry(iso(400), iso(400))}, config=CFG,
                                  now=NOW, disposition_register=reg)
@@ -197,10 +197,16 @@ def test_risk_accepted_record_keeps_its_dates():
 
 
 def test_suppression_detection_time_comes_from_its_decision_record(tmp_path):
-    poam = vdr.POAM_BY_CHECK_ID["CKV_AWS_68"]
+    reg = json.loads((REPO / "data" / "decisions.json").read_text())
+    dec_id = vdr.RISK_ACCEPTED_BY_CHECK_ID["CKV_AWS_68"]
+    next(r for r in reg["decisions"] if r["id"] == dec_id)["original_detection_date"] = "2026-05-01"
     rec = tmp_path / "decisions.json"
-    rec.write_text(json.dumps({"items": [{"id": poam, "original_detection_date": "2026-05-01"}]}))
-    sup = {s["tool_id"]: s for s in vdr.ingest_suppressions(str(REPO / ".checkov.yaml"), rec)}
+    rec.write_text(json.dumps(reg))
+    vdr.use_decisions(rec)
+    try:
+        sup = {s["tool_id"]: s for s in vdr.ingest_suppressions(str(REPO / ".checkov.yaml"))}
+    finally:
+        vdr.use_decisions(REPO / "data" / "decisions.json")
     assert sup["CKV_AWS_68"]["detected_at"] == "2026-05-01T00:00:00+00:00"
 
 

@@ -80,10 +80,10 @@ new resources, and review the generated VDR.
 > closed by the Cognito migration, and the basic-auth secret has been removed.
 > SCN-2026-006 removes the Anthropic key and interconnection; POAM-019 and
 > POAM-020 will be retired once that deploy is verified live.
-> `docs/poam.md` is the current record.
+> `data/decisions.json` is the current record (DEC-019 to DEC-021).
 
-> Status: **POAM-019, POAM-020, and POAM-021 are all finalized** in
-> `docs/poam.md`. The checkov scan confirmed POAM-019 (`CKV2_AWS_57`), now
+> Status: **POAM-019, POAM-020, and POAM-021 were all finalized** in the
+> POA&M, since retired; they are DEC-019 to DEC-021 in `data/decisions.json`. The checkov scan confirmed POAM-019 (`CKV2_AWS_57`), now
 > suppressed in `.checkov.yaml`. The scan also surfaced **`CKV2_AWS_64`** (KMS
 > key policy not defined), which was **fixed** in `silk-reeling.tf` with an
 > explicit least-privilege key policy rather than accepted. Snippets below are
@@ -98,7 +98,7 @@ Add to `.checkov.yaml` `skip-check:` (verify the exact CKV id against your run):
   - CKV2_AWS_57
 ```
 
-Add to the `docs/poam.md` configuration-findings table:
+Historical: the rows that went into the (retired) POA&M configuration-findings table:
 
 ```
 | POAM-019 | SC-12, SC-28 | Secrets Manager automatic rotation not enabled | Checkov | CKV2_AWS_57 | aws-secretsmanager::silk-reeling | N2 | Moderate | Low | Yes | Risk-accepted |

@@ -1,0 +1,30 @@
+{
+  "_note": "Frozen from scripts/build-vdr-report.py at the commit before the decision register: the check-ID maps the POA&M migration must preserve.",
+  "risk_accepted": {
+    "CKV2_AWS_10": "POAM-032",
+    "CKV2_AWS_56": "POAM-026",
+    "CKV_AWS_117": "POAM-010",
+    "CKV_AWS_252": "POAM-032",
+    "CKV_AWS_310": "POAM-009",
+    "CKV_AWS_68": "POAM-007",
+    "CKV_AWS_86": "POAM-009"
+  },
+  "false_positive": {
+    "CKV2_AWS_47": "POAM-008",
+    "CKV2_AWS_62": "POAM-004",
+    "CKV_AWS_115": "POAM-012",
+    "CKV_AWS_119": "POAM-029",
+    "CKV_AWS_144": "POAM-003",
+    "CKV_AWS_145": "POAM-029",
+    "CKV_AWS_174": "POAM-008",
+    "CKV_AWS_18": "POAM-028",
+    "CKV_AWS_23": "POAM-004",
+    "CKV_AWS_272": "POAM-015",
+    "CKV_AWS_287": "POAM-027",
+    "CKV_AWS_35": "POAM-029",
+    "CKV_AWS_355": "POAM-027",
+    "CKV_AWS_356": "POAM-027",
+    "CKV_AWS_374": "POAM-030",
+    "CKV_AWS_50": "POAM-014"
+  }
+}

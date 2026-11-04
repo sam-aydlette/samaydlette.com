@@ -18,7 +18,7 @@ Risk assessment is continuous and automated. Three sources feed the running risk
   - N2 + NLEV: 192 days
 - **Threat modeling:** STRIDE-style review documented in [`architecture-decisions.md`](../architecture-decisions.md) under the Threat Modeling section.
 
-Vulnerabilities not fully mitigated within 192 days of evaluation are categorized as Accepted (`VER-TFR-MAV`) and tracked in [`poam.md`](../poam.md) with the `VER-RPT-AVI` fields.
+Vulnerabilities not fully mitigated within 192 days of evaluation are categorized as Accepted (`VER-TFR-MAV`) and reported as Accepted in the VDR report (`VER-RPT-AVI`); the acceptance explanation is an `accepted` decision in [`data/decisions.json`](../../data/decisions.json).
 
 KEVs (CISA Known Exploited Vulnerabilities) are remediated according to the BOD 26-04 due dates (`VDR-TFR-KEV`).
 

@@ -1,10 +1,10 @@
 # Checkov configuration.
 # =============================================================================
-# Each suppression is tracked as a Risk-Accepted POA&M entry in docs/poam.md
-# (POAM-003 through POAM-018, excluding POAM-016 which is an architectural
-# decision not surfaced by Checkov). The rationale for each entry is in the
-# corresponding POA&M item; this file's role is to make the suppression
-# effective at scan-time so the published VDR report does not surface a
+# Each suppression is a decision record in data/decisions.json (DEC-NNN; the
+# POAM-NNN numbers below are the records' former IDs, kept as `former_id`).
+# The rationale for each is in its record; reconciliation invariant (c) fails
+# the build on a suppression with no in-force record. This file's role is to
+# make the suppression effective at scan-time so the published VDR report does not surface a
 # finding that is already documented as accepted.
 #
 # Top-of-file `#checkov:skip=` annotations in main.tf do not work because
@@ -52,7 +52,7 @@ skip-check:
   # (DoS), but the compliance monitor is a daily EventBridge-triggered internal
   # function with no DoS exposure (SC-5 met at the boundary via CloudFront/API
   # Gateway throttling + Shield); the check is N/A here (and moot — the account is
-  # hard-capped at 10 concurrency). See the False Positives register in poam.md.
+  # hard-capped at 10 concurrency). False positive: DEC-012 in data/decisions.json.
   - CKV_AWS_115
 
   # POAM-013 CLOSED (Task 8b) — the compliance Lambda now has an SQS dead-letter
@@ -66,7 +66,7 @@ skip-check:
   # integrity is met via the Sigstore source-signing chain (deploy-time KSI signal
   # Sigstore-signed + anchored in Rekor; Wasm policy bytes verify against the
   # canonical inventory hash) + the OIDC/GitOps chain of custody (no out-of-band
-  # code path). See the False Positives register in poam.md.
+  # code path). False positive: DEC-015 in data/decisions.json.
   - CKV_AWS_272
 
   # POAM-017 CLOSED (Task 7) — every log group now has 365-day retention (AU-11);

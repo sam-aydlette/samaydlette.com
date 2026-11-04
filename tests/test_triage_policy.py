@@ -166,7 +166,7 @@ def test_no_decision_code_remains_in_the_builder():
 
 
 def test_kev_blocks_even_when_dispositioned_false_positive():
-    reg = {"key": "CVE-0000-0001", "entry": {"disposition": "false-positive", "poam_ref": "POAM-1"}}
+    reg = {"key": "CVE-0000-0001", "entry": {"disposition": "false-positive", "decision_id": "POAM-1"}}
     d = decide([item(is_kev=True, register=reg)])[0]
     assert d["closed"] is True and d["blocking"] is True and d["block_rule"] == "kev"
 

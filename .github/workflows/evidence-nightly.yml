@@ -29,7 +29,7 @@
 #   - The canonical inventory. This binds to the PUBLISHED ksi-signal.json
 #     (signature-verified against the deploy workflow's pinned identity) rather
 #     than rebuilding it, which is what satisfies reconciliation invariant (e)
-#     without touching the SSP/POA&M/IIW. A changed inventory means changed
+#     without touching the SSP/IIW. A changed inventory means changed
 #     infrastructure, and that belongs on the reviewed deploy path.
 #   - The OPA gate axis. `validations.json` is produced by `terraform plan`,
 #     which this workflow has neither the state access nor the IAM rights to run.
@@ -38,18 +38,14 @@
 #     blocks the deploy first. So its absence changes no published value. It does
 #     mean the nightly VDR is an SAST+SCA+DAST report re-verified against today's
 #     threat data, not a re-evaluation of the infrastructure plan.
-#   - The SSP, POA&M, IIW, OCR, CDS and provenance attestations. The SSP
-#     and POA&M ARE rebuilt here, but only as inputs to the reconciliation gate
-#     (it loads all four artifacts); they are never signed and never published.
-#     Rebuilding them from the published inventory keeps the gate evaluating one
-#     coherent version instead of mixing a 12-day-old published POA&M against
-#     today's docs/poam.md — a mismatch that would fail invariant (g) every time
-#     a POA&M item was merged but not yet deployed.
+#   - The SSP, IIW, OCR, CDS and provenance attestations. The SSP IS rebuilt
+#     here, but only as an input to the reconciliation gate; it is never signed
+#     and never published.
 #
 # A GENUINELY NEW CVE CANNOT AUTO-PUBLISH. Invariant (h) requires every VDR
-# finding to carry a poam_ref and (g) requires OSCAL POA&M parity with
-# docs/poam.md, a human-authored git file. A new finding therefore breaks this
-# workflow until a human dispositions it. That is the gate working, and it is
+# finding to carry a decision_id that resolves to an in-force record in the
+# decision register (data/decisions.json), a human-authored git file. A new
+# finding therefore breaks this workflow until a human records a decision. That is the gate working, and it is
 # exactly why the alert job below has to be reliable.
 # =============================================================================
 
@@ -450,23 +446,16 @@ jobs:
     # -------------------------------------------------------------------------
     # GATE INPUTS — built, never signed, never published
     # -------------------------------------------------------------------------
-    # scripts/reconcile.py loads four artifacts (signal, SSP, POA&M, VDR) and
-    # will not run without all of them. These two are rebuilt from the published
-    # inventory purely so the gate has a coherent set to evaluate. They are not
-    # signed and are not in the publish step below; the published SSP and POA&M
-    # keep whatever the last reviewed deploy put there.
-    #
-    # Rebuilding rather than fetching them is what keeps invariant (g) — OSCAL
-    # POA&M parity with docs/poam.md — meaningful. docs/poam.md moves on `main`
-    # ahead of deploys; comparing today's docs/poam.md against a POA&M generated
-    # from an older commit would fail nightly for a reason that is not a defect.
-    - name: Build reconciliation inputs (OSCAL SSP + POA&M, unpublished)
+    # scripts/reconcile.py loads the signal, SSP and VDR and reads the decision
+    # register from the checkout. The SSP is rebuilt from the published
+    # inventory purely so the gate has a coherent set to evaluate. It is not
+    # signed and is not in the publish step below; the published SSP keeps
+    # whatever the last reviewed deploy put there.
+    - name: Build reconciliation inputs (OSCAL SSP, unpublished)
       working-directory: infrastructure
       run: |
         set -euo pipefail
         python3 ../scripts/build-oscal-ssp.py
-        python3 ../scripts/build-oscal-poam.py --ksi-signal ksi-signal.json --output oscal-poam.json
-        echo "POA&M items: $(jq '.["plan-of-action-and-milestones"]["poam-items"] | length' oscal-poam.json)"
 
     # The signed runtime signal is the only live read a mitigation can cite
     # (rule 1: a mitigation verified by a live read makes a finding fully
@@ -541,7 +530,7 @@ jobs:
 
     # Unchanged gate, new schedule. Fails the build on any scanner-reported
     # vulnerability that is not remediated or dispositioned false-positive /
-    # operational-requirement in data/vuln-dispositions.json. When a newly
+    # operational-requirement in data/decisions.json. When a newly
     # disclosed CVE lands, THIS is what stops it publishing, and the alert job
     # is what tells a human to disposition it.
     #
@@ -554,7 +543,7 @@ jobs:
       working-directory: infrastructure
       run: |
         set +e
-        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json > vuln-gate.out 2>&1
+        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/decisions.json > vuln-gate.out 2>&1
         rc=$?
         set -e
         cat vuln-gate.out
@@ -597,7 +586,7 @@ jobs:
     # Running it anyway does not weaken either gate. The job still fails, and
     # every sign and publish step below keeps its default success() condition, so
     # nothing is published unless BOTH gates pass. It only needs its inputs: the
-    # VDR and the rebuilt SSP and POA&M, which exist whenever the VDR step
+    # VDR and the rebuilt SSP, which exist whenever the VDR step
     # succeeded.
     - name: Reconciliation gate (fail closed on drift)
       id: reconcile
@@ -876,7 +865,7 @@ jobs:
               ``,
               ...(lines.length ? lines : ['- (the run log\'s "Vulnerability gate" step names them)']),
               ``,
-              `Fix each (a Dependabot PR plus a deploy clears it: the nightly scans the *published* commit), or disposition it with a POA&M entry. Remediation clocks run from first detection. Runbook: ${runbook}`,
+              `Fix each (a Dependabot PR plus a deploy clears it: the nightly scans the *published* commit), or record a decision for it in data/decisions.json. Remediation clocks run from first detection. Runbook: ${runbook}`,
             ].join('\n'));
           }
           if (causes.length === 0) {

@@ -3,13 +3,11 @@
 # pass set and its evidence rules are in test_dispositions_mitigations.py; risk-adjustment never passes.
 # =============================================================================
 import importlib.util
-import json
-import re
+import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-REGISTER_PATH = REPO / "data" / "vuln-dispositions.json"
-POAM_MD_PATH = REPO / "docs" / "poam.md"
+REGISTER_PATH = REPO / "data" / "decisions.json"
 
 
 def _module(name, filename):
@@ -96,35 +94,22 @@ def test_zap_finding_must_be_categorized():
 
 
 # =============================================================================
-# The REAL register: data/vuln-dispositions.json.
+# The REAL register: data/decisions.json, read the way the gate reads it.
 #
-# The register has no schema and no fixture. A dispositioned vulnerability with
-# no poam_ref — or one pointing at a POA&M id that does not exist — makes the
-# vulnerability gate pass and the reconciliation gate fail closed on invariant
-# (h) instead, i.e. it trades one red gate for another, at deploy time, in CI.
-# These tests move that failure to the unit suite.
+# A dispositioned vulnerability whose decision_id does not resolve to an
+# in-force record makes the vulnerability gate pass and the reconciliation gate
+# fail closed on invariant (h) instead, at deploy time, in CI. These tests move
+# that failure to the unit suite.
 # =============================================================================
 
 
 def _real_register():
-    return json.loads(REGISTER_PATH.read_text())
-
-
-def _formal_poam_ids():
-    """POA&M ids docs/poam.md tracks as formal items: section headers and table
-    rows. Mirrors scripts/reconcile.py::_formal_poam_ids_in_md, which is what
-    invariant (g) parity is measured against."""
-    ids = set()
-    for line in POAM_MD_PATH.read_text().splitlines():
-        m = (re.match(r"\s*#{1,6}\s*(POAM-\d{3})\b", line)
-             or re.match(r"\s*\|\s*(POAM-\d{3})\b", line))
-        if m:
-            ids.add(m.group(1))
-    return ids
+    return vg.load_register(REGISTER_PATH)
 
 
 def test_register_entries_are_well_formed():
-    reg = _real_register()["dispositions"]
+    reg = _real_register()
+    assert reg
     for key, entry in reg.items():
         assert entry.get("disposition") in vg.PASS_DISPOSITIONS, (
             f"{key}: disposition {entry.get('disposition')!r} does not pass the gate")
@@ -133,44 +118,42 @@ def test_register_entries_are_well_formed():
         assert entry.get("decided_on"), f"{key}: no decided_on"
 
 
-def test_every_register_entry_resolves_to_a_poam_item():
-    reg = _real_register()["dispositions"]
-    formal = _formal_poam_ids()
-    unresolved = {k: v.get("poam_ref") for k, v in reg.items()
-                  if v.get("poam_ref") not in formal}
-    assert not unresolved, (
-        f"register entries whose poam_ref is missing or not a formal POA&M item in "
-        f"docs/poam.md: {unresolved}")
+def test_every_register_entry_resolves_to_an_in_force_record():
+    sys.path.insert(0, str(REPO / "scripts"))
+    import _decisions
+    in_force = {r["id"] for r in _decisions.in_force(_decisions.load(REGISTER_PATH))}
+    unresolved = {k: v.get("decision_id") for k, v in _real_register().items()
+                  if v.get("decision_id") not in in_force}
+    assert not unresolved, f"register entries without an in-force decision record: {unresolved}"
 
 
-def test_register_example_documents_the_poam_ref_field():
-    # The _example block is the register's only schema; if it does not show
-    # poam_ref, the next operator writes an entry without one.
-    example = _real_register()["_example"]
-    assert all(e.get("poam_ref") for e in example.values()), (
-        "the register's _example must carry a poam_ref so the required shape is "
-        "self-documenting")
+def test_the_ingested_zap_alerts_have_their_decisions():
+    # The two alerts the first scheduled DAST report raised that are false
+    # positives (SQL text in article prose; a Server header with no version).
+    reg = _real_register()
+    assert reg["zap-10099"]["disposition"] == reg["zap-10036-2"]["disposition"] == "false-positive"
+    assert reg["zap-10099"]["decision_id"] == "DEC-039" and reg["zap-10036-2"]["decision_id"] == "DEC-040"
 
 
 def test_register_dispositions_reach_the_vdr_builder():
     # End-to-end for the generator half: a real register entry must produce the
-    # disposition AND poam_ref on a finding shaped like the one ingest_grype
+    # disposition AND decision_id on a finding shaped like the one ingest_grype
     # emits. The register key is what vuln-gate.py resolves for that finding.
-    reg = _real_register()["dispositions"]
+    reg = _real_register()
     for key, entry in reg.items():
         finding = {"source": "grype", "tracking_id": key, "cve": None, "tool_id": None}
         assert vdr_builder.register_vuln_id(finding) == key
-        disposition, poam_ref = vdr_builder.classify_vulnerability(finding, reg)
+        disposition, decision_id = vdr_builder.classify_vulnerability(finding, reg)
         assert disposition == entry["disposition"], key
-        assert poam_ref == entry["poam_ref"], key
+        assert decision_id == entry["decision_id"], key
 
 
-def test_undispositioned_vulnerability_gets_no_poam_ref():
+def test_undispositioned_vulnerability_gets_no_decision_id():
     finding = {"source": "grype", "tracking_id": "grype-CVE-2099-0001-pkg:npm/x@1.0.0"}
     assert vdr_builder.classify_vulnerability(finding, {}) == (None, None)
 
 
-def test_disposition_without_poam_ref_confers_nothing():
+def test_disposition_without_decision_id_confers_nothing():
     # Fail closed: a disposition with no POA&M home must leave the finding open
     # so invariant (h) catches it, never publish as handled-but-untracked.
     reg = {"grype-x": {"disposition": "false-positive", "justification": "x"}}
@@ -179,7 +162,7 @@ def test_disposition_without_poam_ref_confers_nothing():
 
 
 def test_non_passing_disposition_confers_nothing():
-    reg = {"grype-x": {"disposition": "risk-adjustment", "poam_ref": "POAM-034"}}
+    reg = {"grype-x": {"disposition": "risk-adjustment", "decision_id": "DEC-034"}}
     finding = {"source": "grype", "tracking_id": "grype-x"}
     assert vdr_builder.classify_vulnerability(finding, reg) == (None, None)
 
@@ -187,14 +170,14 @@ def test_non_passing_disposition_confers_nothing():
 def test_config_findings_never_use_the_register():
     # Checkov/tfsec/OPA findings stay on classify_finding; the register path must
     # not become a second, ungoverned suppression route for config scanners.
-    reg = {"CKV_AWS_999": {"disposition": "false-positive", "poam_ref": "POAM-034"}}
+    reg = {"CKV_AWS_999": {"disposition": "false-positive", "decision_id": "DEC-034"}}
     for source in ("checkov", "tfsec", "opa"):
         finding = {"source": source, "tracking_id": "CKV_AWS_999", "tool_id": "CKV_AWS_999"}
         assert vdr_builder.classify_vulnerability(finding, reg) == (None, None), source
 
 
 def test_builder_and_gate_agree_on_id_resolution_and_pass_set():
-    # If these two drift, a finding could carry a poam_ref the vulnerability gate
+    # If these two drift, a finding could carry a decision_id the vulnerability gate
     # never approved (or vice versa).
     assert vdr_builder.triage_vocabulary()["pass"] == vg.PASS_DISPOSITIONS  # policies/triage.rego
     assert vdr_builder.VULN_SOURCES == vg.VULN_SOURCES
@@ -209,7 +192,7 @@ def test_builder_and_gate_agree_on_id_resolution_and_pass_set():
 
 def test_kev_still_blocks_a_dispositioned_vulnerability():
     # A register entry must never buy an actively-exploited CVE out of the gate.
-    reg = {"CVE-2026-7777": {"disposition": "false-positive", "poam_ref": "POAM-034"}}
+    reg = {"CVE-2026-7777": {"disposition": "false-positive", "decision_id": "DEC-034"}}
     finding = {
         "source": "grype", "tool_id": "CVE-2026-7777", "cve": "CVE-2026-7777",
         "tracking_id": "grype-CVE-2026-7777-pkg:npm/x@1.0.0",
@@ -220,7 +203,7 @@ def test_kev_still_blocks_a_dispositioned_vulnerability():
     assert blocking == ["grype-CVE-2026-7777-pkg:npm/x@1.0.0"]
     assert report["findings"][0]["is_blocking"] is True
     # It still carries its POA&M home — blocking and untracked are different things.
-    assert report["findings"][0]["poam_ref"] == "POAM-034"
+    assert report["findings"][0]["decision_id"] == "DEC-034"
 
 
 if __name__ == "__main__":

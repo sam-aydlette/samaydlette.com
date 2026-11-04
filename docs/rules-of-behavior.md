@@ -23,7 +23,7 @@ By operating this system, the operator commits to the following:
 **Authentication.**
 - Multi-factor authentication is enforced via Duo on AWS root and on the GitHub account. The operator does not disable MFA.
 - Long-lived credentials (AWS access keys, GitHub PATs) are not generated unless required, and when required they are stored only in GitHub Actions encrypted secrets.
-- The deployer's long-lived AWS access key is rotated every 90 days per the procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md) as a compensating control while [POAM-001](poam.md) (OIDC migration) remains open. Each rotation event is logged in [`docs/security-review.md`](security-review.md).
+- The deployer's long-lived AWS access key is rotated every 90 days per the procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md) as a compensating control while [POAM-001](../data/decisions.json) (OIDC migration) remains open. Each rotation event is logged in [`docs/security-review.md`](security-review.md).
 - The operator does not share credentials, sessions, or MFA devices with any other person.
 
 **Access discipline.**

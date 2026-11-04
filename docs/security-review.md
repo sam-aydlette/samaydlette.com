@@ -84,7 +84,7 @@ See README "Conscious Trade-offs for Budget Reality." Excluded controls (WAF, mu
 
 - Continue current control set
 - Verify runtime emitter has produced at least one drift signal event in a controlled test (deliberately misconfigure a non-production resource and confirm the daily Lambda flags it)
-- Close [POAM-001](poam.md) by completing the GitHub OIDC migration; until then, hold to the 90-day key-rotation cadence below
+- Close [POAM-001](../data/decisions.json) by completing the GitHub OIDC migration; until then, hold to the 90-day key-rotation cadence below
 - Consider whether OSCAL artifact should be signed independently or covered by the same Sigstore bundle as the KSI signal
 - Cost target: maintain recurring overhead on the order of $30/year (KMS key, Secrets Manager, Route 53; serverless compute within the free tier)
 
@@ -104,7 +104,7 @@ Per CR26 `CCM-QTR-MTG`, the operator records a quarterly review of the runtime K
 
 ## AWS access key rotation log
 
-Rotation cadence: 90 days. Active compensating control while [POAM-001](poam.md) remains open. Procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md). Emergency rotations (suspected compromise) are logged here too with the trigger noted.
+Rotation cadence: 90 days. Active compensating control while [POAM-001](../data/decisions.json) remains open. Procedure in the [Secure Configuration Guide](policies/secure-configuration-guide.md). Emergency rotations (suspected compromise) are logged here too with the trigger noted.
 
 | Rotation date | Trigger | Outcome | Notes |
 | --- | --- | --- | --- |

@@ -128,7 +128,7 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 | [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-RIS | Annual security review template + first entry |
 | [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-SCR-MIT, KSI-SCR-MON | SCRM with Dependabot config in `.github/dependabot.yml` |
 | [`docs/training-log.md`](docs/training-log.md) | KSI-CED-RAT | Self-attested training log |
-| [`docs/poam.md`](docs/poam.md) | (cross-cutting — meta) | Plan of Action & Milestones for tracked security gaps with remediation plans (kept in sync with `/.well-known/oscal-poam.json`) |
+| [`data/decisions.json`](data/decisions.json) | (cross-cutting — meta) | The decision register: every decision about a finding (false positive, accepted risk, operational requirement, remediation history), with who decided, when, and the review date. Replaced the POA&M under CR26 |
 | [`docs/policies/`](docs/policies/) | NIST 800-53 Rev 5 *-1 controls (AC-1, AT-1, ... SR-1, PT-1) | Per-family policy and procedures docs, plus the FedRAMP 20x Secure Configuration Guide. Each file integrates the relevant 20x rules (SCN, VDR, MAS, SCG, CCM, ICP, FSI, UCM) and cites AWS authorization package AGENCYAMAZONEW for inherited families |
 | [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, annual review) |
 | [`docs/privacy-threshold-analysis.md`](docs/privacy-threshold-analysis.md) | PT-1 (negative determination) | PTA: no PII processed; full PIA not required |
@@ -168,9 +168,9 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 - **Multi-Region Deployment:** Active-passive failover configuration
 - **Advanced Security Monitoring:** Integration with AWS Security Hub
 
-### Tracked POA&M items
+### Recorded decisions
 
-The authoritative register is [`docs/poam.md`](docs/poam.md), kept in sync with the machine-readable OSCAL POA&M published at [`/.well-known/oscal-poam.json`](https://samaydlette.com/.well-known/oscal-poam.json) on every deploy. The register currently runs POAM-001 through POAM-031 (POAM-016 was retired): a mix of closed remediations, documented false positives, and open risk acceptances, each with its rationale and — where open — a review trigger.
+The authoritative register is [`data/decisions.json`](data/decisions.json). Under CR26 the POA&M is retired (2026-11-04): open findings and their deadlines are in the published VDR report, and every human decision about a finding is a record in the register. Records carried over from the POA&M keep their number (POAM-007 is DEC-007) and their old ID in `former_id`; POAM-016 was retired before the migration. The register holds closed remediations, documented false positives, and in-force risk acceptances, each with its rationale and a review date.
 
 Two early items this README used to track as open are now closed:
 
@@ -235,7 +235,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ├── scripts/                        # the artifact generators — 25 live
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
-│   ├── build-oscal-ssp.py build-oscal-poam.py build-vdr-report.py build-iiw.py
+│   ├── build-oscal-ssp.py build-vdr-report.py build-iiw.py
 │   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py
@@ -248,7 +248,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ├── data/                           # vendored NIST/FedRAMP source data + PROVENANCE.md
 │   ├── catalogs/ profiles/ mappings/ baselines/ schemas/oscal/
 ├── policies/triage.rego            # vulnerability triage policy
-├── docs/                           # poam.md (+ False Positives), policies/, scn/, assessment/
+├── docs/                           # policies/, scn/, runbooks/, assessment/
 ├── tools/                          # both are CI gates, not optional tooling
 │   ├── a11y/                       # pa11y; renders every page and emits the facts
 │   │                               #   policy.accessibility decides over. Installed by
@@ -426,14 +426,14 @@ over the served bytes. Anyone can run it.
 
 ### Conscious Trade-offs for Budget Reality
 
-| Feature | Security Benefit | Annual Cost | Decision | POA&M |
+| Feature | Security Benefit | Annual Cost | Decision | Record |
 |---------|------------------|-------------|----------|-------|
-| CloudFront WAF | DDoS/attack protection | +$120 | **Risk-accepted** — managed interfaces + Shield Standard + throttling cover SC-7/SC-5; WAF's incremental layer-7 filtering is the documented residual | [POAM-007](docs/poam.md) |
-| Lambda in VPC | Network isolation | +$540 | **Risk-accepted** — no sensitive data processing | [POAM-010](docs/poam.md) |
-| S3 access logging | Detailed audit trail | ~$0 at current traffic | **Implemented** (2026-06-18) — S3 server-access + CloudFront logs delivered to a dedicated locked-down log bucket | [POAM-005](docs/poam.md) (closed) |
+| CloudFront WAF | DDoS/attack protection | +$120 | **Risk-accepted** — managed interfaces + Shield Standard + throttling cover SC-7/SC-5; WAF's incremental layer-7 filtering is the documented residual | [DEC-007](data/decisions.json) |
+| Lambda in VPC | Network isolation | +$540 | **Risk-accepted** — no sensitive data processing | [DEC-010](data/decisions.json) |
+| S3 access logging | Detailed audit trail | ~$0 at current traffic | **Implemented** (2026-06-18) — S3 server-access + CloudFront logs delivered to a dedicated locked-down log bucket | [DEC-005](data/decisions.json) (closed) |
 | Multi-region active-passive | Regional failover | +$300 | **Risk-accepted** — declared 21-day RTO accommodates regional failure ([recovery plan](docs/recovery-plan.md)) | POAM-016 (retired) |
 
-The full register of dispositions — closed remediations, documented false positives, and open risk acceptances, including the scanner suppressions carried with inline rationale — lives in [`docs/poam.md`](docs/poam.md). This table is the budget-context summary; the POA&M is the authoritative register.
+The full register of dispositions — closed remediations, documented false positives, and open risk acceptances, including the scanner suppressions carried with inline rationale — lives in [`data/decisions.json`](data/decisions.json). This table is the budget-context summary; the register is authoritative.
 
 ## When Things Break (And They Will)
 

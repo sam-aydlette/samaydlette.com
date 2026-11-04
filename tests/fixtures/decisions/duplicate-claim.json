@@ -1,0 +1,40 @@
+{
+  "_note": "Known-bad: one check claimed by two in-force records, so a finding would resolve to two decisions. The build stops.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-002",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "false-positive",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    }
+  ]
+}

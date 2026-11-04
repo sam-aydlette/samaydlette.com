@@ -88,15 +88,6 @@
       "review_by": "2027-11-04"
     },
     {
-      "check": "reconcile.g",
-      "gate": "G5",
-      "mode": "block",
-      "method_default": "block",
-      "decided_by": "Sam Aydlette",
-      "decided_on": "2026-11-04",
-      "review_by": "2027-11-04"
-    },
-    {
       "check": "reconcile.h",
       "gate": "G5",
       "mode": "block",

@@ -86,7 +86,7 @@ def test_page_renders_data_as_text_only():
 # The live queue: date-driven items are rebuilt when the page is read, so an
 # empty queue cannot outlive the deploy that published it.
 
-WHY = {k: f"why {k}" for k in ("decision_review_due", "exception_expiring", "poam_overdue", "runtime_diverged",
+WHY = {k: f"why {k}" for k in ("decision_review_due", "exception_expiring", "decision_overdue", "runtime_diverged",
                                "runtime_unassessed", "runtime_stale", "vulnerability_evidence_stale")}
 
 
@@ -103,16 +103,16 @@ def doc(**over) -> dict:
     d = {
         "freshness_windows_hours": {"runtime": 26, "vulnerability_scan": 24},
         "decisions_pending": [{"kind": "trust_root_change", "id": "aws_iam_role.x", "title": "t", "why_yours": "w"},
-                              {"kind": "poam_overdue", "id": "POAM-STALE", "title": "deploy-time copy", "why_yours": "w"}],
+                              {"kind": "decision_overdue", "id": "DEC-STALE", "title": "deploy-time copy", "why_yours": "w"}],
         "decision_log": [
-            {"kind": "poam_risk_decision", "id": "POAM-010", "subject": "Lambda VPC", "review_by": "2026-09-01", "source": "/.well-known/oscal-poam.json"},
-            {"kind": "poam_risk_decision", "id": "POAM-011", "subject": "Later", "review_by": "2027-06-01", "source": "/.well-known/oscal-poam.json"},
-            {"kind": "policy_exception", "id": "a11y_error:page.html", "subject": "a11y_error on page.html", "review_by": "2026-10-20", "ticket": "POAM-033"},
+            {"kind": "decision", "id": "DEC-010", "subject": "Lambda VPC", "review_by": "2026-09-01", "source": "data/decisions.json"},
+            {"kind": "decision", "id": "DEC-011", "subject": "Later", "review_by": "2027-06-01", "source": "data/decisions.json"},
+            {"kind": "policy_exception", "id": "a11y_error:page.html", "subject": "a11y_error on page.html", "review_by": "2026-10-20", "ticket": "DEC-033"},
             {"kind": "significant_change", "id": "SCN-1", "subject": "s", "review_by": None},
         ],
         "live_queue": {"why_yours": WHY, "exception_warning_days": 30,
-                       "poam_due": [{"id": "POAM-020", "title": "Due soon", "due": "2026-09-29"},
-                                    {"id": "POAM-021", "title": "Not yet", "due": "2026-12-01"}]},
+                       "decision_due": [{"id": "DEC-020", "title": "Due soon", "due": "2026-09-29"},
+                                        {"id": "DEC-021", "title": "Not yet", "due": "2026-12-01"}]},
     }
     d.update(over)
     return d
@@ -124,11 +124,11 @@ def kinds(items: list[dict]) -> set[tuple[str, str]]:
 
 def test_dates_are_judged_when_the_page_is_read(tmp_path):
     k = kinds(queue(tmp_path, doc()))
-    assert ("decision_review_due", "POAM-010") in k          # review date passed since the deploy
-    assert ("decision_review_due", "POAM-011") not in k
+    assert ("decision_review_due", "DEC-010") in k          # review date passed since the deploy
+    assert ("decision_review_due", "DEC-011") not in k
     assert ("exception_expiring", "a11y_error:page.html") in k  # 20 days left
-    assert ("poam_overdue", "POAM-020") in k and ("poam_overdue", "POAM-021") not in k
-    assert ("poam_overdue", "POAM-STALE") not in k           # the deploy-time copy is replaced, not duplicated
+    assert ("decision_overdue", "DEC-020") in k and ("decision_overdue", "DEC-021") not in k
+    assert ("decision_overdue", "DEC-STALE") not in k           # the deploy-time copy is replaced, not duplicated
     assert ("trust_root_change", "aws_iam_role.x") in k      # deploy-only kinds are kept
     assert all(i["why_yours"] for i in queue(tmp_path, doc()))
 

@@ -18,8 +18,8 @@ report as the `zap-dast-report` artifact.
   scan never reads as "0 findings".
 - Every ZAP alert above informational then flows into the VDR as a
   vulnerability. The **vulnerability gate** (`scripts/vuln-gate.py`) fails the
-  build unless each one is fixed or dispositioned in
-  `data/vuln-dispositions.json`. Allowlisted alerts are recorded in
+  build unless each one is fixed or covered by an in-force decision in
+  `data/decisions.json`. Allowlisted alerts are recorded in
   `allowlist.json`.
 
 ## Running a scan by hand

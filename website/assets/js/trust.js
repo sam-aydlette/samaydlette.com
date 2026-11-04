@@ -13,9 +13,8 @@ const STATUS = {
 };
 
 const KIND_LABELS = {
-    vulnerability_disposition: 'Vulnerability disposition',
+    decision: 'Recorded decision',
     policy_exception: 'Policy exception',
-    poam_risk_decision: 'POA&M risk decision',
     significant_change: 'Significant change',
 };
 
@@ -25,7 +24,6 @@ const ARTIFACTS = [
     ['reconcile-report.json', 'The reconciliation gate’s report for this deploy'],
     ['ksi-signal.json', 'The canonical inventory and KSI results'],
     ['oscal-ssp.json', 'System Security Plan (NIST OSCAL)'],
-    ['oscal-poam.json', 'Plan of Action and Milestones (NIST OSCAL)'],
     ['vdr-report.json', 'Vulnerability Detection and Response report'],
     ['ksi-signal-runtime.json', 'The daily runtime re-validation (KMS-signed; key in runtime-signing-pubkey.pem)'],
 ];
@@ -190,7 +188,7 @@ function renderPicture(doc) {
 // on the day it is read. Everything else (a pending trust-root change, a
 // drifted setting, an unclassified resource) only changes with a deploy.
 
-const DATE_KINDS = ['decision_review_due', 'exception_expiring', 'poam_overdue'];
+const DATE_KINDS = ['decision_review_due', 'exception_expiring', 'decision_overdue'];
 const RUNTIME_KINDS = ['runtime_diverged', 'runtime_unassessed', 'runtime_stale'];
 const DAY = 24 * HOUR;
 
@@ -204,8 +202,8 @@ export function liveQueue(doc, now, live = {}) {
     const out = deployed.filter((d) => !rebuilt.has(d.kind));
     const item = (kind, id, title, extra = {}) => ({ kind, id, title, why_yours: lq.why_yours[kind], since: null, due: null, refs: [], ...extra });
 
-    for (const p of lq.poam_due || []) {
-        if (p.due < today) out.push(item('poam_overdue', p.id, p.title, { due: p.due, refs: ['/.well-known/oscal-poam.json'] }));
+    for (const p of lq.decision_due || []) {
+        if (p.due < today) out.push(item('decision_overdue', p.id, p.title, { due: p.due, refs: ['data/decisions.json'] }));
     }
     for (const e of doc.decision_log || []) {
         if (!e.review_by) continue;
@@ -360,13 +358,9 @@ function renderPolicy(doc) {
         el('ul', {}, ...gates.map((g) => el('li', {}, el('strong', { text: g.name }), `: stops ${g.stops}; decided by ${g.decided_by}.`)))));
 }
 
-// The register key of a vulnerability disposition or exception is long; show
-// the advisory or rule it concerns (the full key is in the title and subject).
+// The register key of an exception is long; show the rule it concerns (the
+// full key is in the title and subject).
 function shortId(e) {
-    if (e.kind === 'vulnerability_disposition') {
-        const m = e.id.match(/(CVE-\d{4}-\d+|GHSA(?:-[a-z0-9]{4}){3})/i);
-        if (m) return m[1];
-    }
     if (e.kind === 'policy_exception') return e.id.split(':')[0];
     return e.id;
 }

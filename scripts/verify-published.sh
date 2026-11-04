@@ -20,7 +20,8 @@
 #      inventory (sha256 + signal_id), the generator, and a commit.
 #   3. Cross-artifact consistency — AWS-free. reconcile.py (without --live) checks
 #      the published set is internally consistent and bound to one inventory and
-#      one commit (invariants b–h).
+#      one commit, and every VDR finding resolves to the decision register at
+#      that commit (invariants b–j).
 #
 # Honest scope: the live-state invariants — (a) live-resource completeness and
 # (i) live-tag reconciliation — require AWS credentials and CANNOT be reproduced
@@ -89,7 +90,6 @@ bad() { echo "  FAIL  $1"; fail=1; }
 echo "== Fetching published evidence from $BASE =="
 for f in ksi-signal.json ksi-signal.bundle \
          oscal-ssp.json oscal-ssp.json.intoto.jsonl \
-         oscal-poam.json \
          vdr-report.json vdr-report.json.intoto.jsonl \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
@@ -166,9 +166,17 @@ for art in oscal-ssp.json vdr-report.json; do
 done
 
 echo ""
-echo "== 3. Cross-artifact consistency (AWS-free reconciliation, invariants b–h) =="
-if python3 "$SCRIPTS/reconcile.py" --artifacts-dir "$work" >/dev/null 2>&1; then
-  ok "published set reconciles: one inventory, one commit, POA&M/VDR coherent"
+echo "== 3. Cross-artifact consistency (AWS-free reconciliation, invariants b–j) =="
+# The decision register is not a published artifact; it is data/decisions.json
+# at the commit the (signature-verified) inventory names. Read it from this
+# clone at that commit, never from the working copy, which may be any version.
+commit=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["provenance"]["source"]["commit"])' "$work/ksi-signal.json" 2>/dev/null || true)
+if ! printf '%s' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
+  bad "the published inventory names no source commit"
+elif ! git -C "$SCRIPTS/.." show "$commit:data/decisions.json" > "$work/decisions.json" 2>/dev/null; then
+  bad "decision register at the published commit $commit is not in this clone (git fetch origin main)"
+elif python3 "$SCRIPTS/reconcile.py" --artifacts-dir "$work" --decisions "$work/decisions.json" >/dev/null 2>&1; then
+  ok "published set reconciles: one inventory, one commit, VDR and decision register coherent"
 else
   bad "cross-artifact reconciliation"
 fi

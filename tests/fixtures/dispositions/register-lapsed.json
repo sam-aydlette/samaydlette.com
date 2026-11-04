@@ -1,7 +1,9 @@
 {
-  "_note": "Known-bad: a disposition past review_by (REQ-DSP-2, T16). The gate and the builder must treat it as absent.",
-  "dispositions": {
-    "CVE-0000-0200": {"disposition": "false-positive", "justification": "fixture", "poam_ref": "POAM-003",
-                      "decided_by": "Fixture", "decided_on": "2025-01-01", "review_by": "2026-01-01"}
-  }
+  "_note": "Known-bad: an in-force decision past its review_by (REQ-DSP-2, T16). The gate and the builder must treat it as absent.",
+  "schema": "decisions/1",
+  "decisions": [
+    {"id": "DEC-003", "title": "fixture", "status": "in-force", "disposition": "false-positive", "justification": "fixture",
+     "decided_by": "Fixture", "decided_on": "2025-01-01", "review_by": "2026-01-01",
+     "applies_to": {"check_ids": [], "vuln_ids": ["CVE-0000-0200"], "resources": []}}
+  ]
 }

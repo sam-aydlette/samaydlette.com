@@ -20,7 +20,7 @@ These policies reference operational documents elsewhere in `docs/`:
 - [`supply-chain.md`](../supply-chain.md) — SR procedures
 - [`training-log.md`](../training-log.md) — AT records
 - [`architecture-decisions.md`](../architecture-decisions.md) — system design rationale, threat model
-- [`poam.md`](../poam.md) — POA&M tracking
+- [`data/decisions.json`](../../data/decisions.json) — the decision register (replaced the POA&M under CR26)
 - [`ksi-signal.md`](../ksi-signal.md) — KSI signal generation and OSCAL SSP
 
 ## Review

@@ -124,7 +124,7 @@ check-full: check require-artifacts
 
 require-artifacts:
 	@missing=""; \
-	for f in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json; do \
+	for f in ksi-signal.json oscal-ssp.json vdr-report.json; do \
 	  [ -f "infrastructure/$$f" ] || missing="$$missing infrastructure/$$f"; \
 	done; \
 	if [ -n "$$missing" ]; then \

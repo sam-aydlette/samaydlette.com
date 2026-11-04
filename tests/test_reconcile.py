@@ -1,9 +1,10 @@
 # =============================================================================
 # Task 1 keystone: reconciliation gate unit tests.
-# One test per invariant (a-f), driven by a hermetic clean fixture set that is
+# One test per invariant, driven by a hermetic clean fixture set that is
 # then mutated to trigger each violation. Also asserts the committed broken
 # fixture under tests/fixtures/broken/ fails the gate (the Done-check).
 # =============================================================================
+import copy
 import importlib.util
 from pathlib import Path
 
@@ -29,6 +30,15 @@ ACCOUNT = "123456789012"
 ARN_LAMBDA = f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:app"
 ARN_BUCKET = "arn:aws:s3:::samaydlette.com"
 
+REGISTER = {"schema": "decisions/1", "decisions": [
+    {"id": "DEC-005", "former_id": "POAM-005", "title": "fixed", "status": "closed", "disposition": "remediated",
+     "justification": "fixed", "applies_to": {"check_ids": [], "vuln_ids": [], "resources": []}},
+    {"id": "DEC-007", "former_id": "POAM-007", "title": "CloudFront WAF not attached", "status": "in-force",
+     "disposition": "risk-accepted", "justification": "SC-7 met via managed interfaces", "decided_by": "Operator",
+     "decided_on": "2026-01-01", "review_by": "2027-01-01",
+     "applies_to": {"check_ids": ["CKV_AWS_68"], "vuln_ids": [], "resources": []}},
+]}
+
 
 def clean_set():
     """A minimal artifact set that satisfies every invariant."""
@@ -49,23 +59,16 @@ def clean_set():
         "system-characteristics": {"security-sensitivity-level": "moderate"},
         "system-implementation": {"components": [{"type": "this-system", "title": "whole system"}]},
     }}
-    poam = {"plan-of-action-and-milestones": {
-        "metadata": {"props": [
-            {"name": "impact-level", "value": "moderate"},
-            {"name": "ksi-signal-id", "value": SIGNAL_ID},
-        ]},
-        "poam-items": [{"props": [{"name": "poam-id", "value": "POAM-007"}]}],
-    }}
     vdr = {"impact_level": "Moderate", "class": "C", "ksi_signal_id": SIGNAL_ID,
-           "risk_accepted": [{"tracking_id": "CKV_AWS_68", "poam_ref": "POAM-007"}]}
+           "risk_accepted": [{"tracking_id": "CKV_AWS_68", "decision_id": "DEC-007"}]}
     dashboard = "<h3>FedRAMP Rev 5 Moderate</h3>"
     checkov = "skip-check:\n  - CKV_AWS_68\n"
-    ckv_to_poam = {"CKV_AWS_68": "POAM-007"}
-    poam_md = "| POAM-007 | SC-7 | CloudFront WAF not attached | Checkov | CKV_AWS_68 | asset | N2 | Moderate | Low | Yes | Open (risk-accepted) |"
-    fps = set()
-    return dict(signal=signal, ssp=ssp, poam=poam, vdr=vdr, dashboard_html=dashboard,
-                checkov_text=checkov, ckv_to_poam=ckv_to_poam, poam_md_text=poam_md,
-                false_positive_ckvs=fps)
+    return dict(signal=signal, ssp=ssp, vdr=vdr, dashboard_html=dashboard, checkov_text=checkov,
+                register=copy.deepcopy(REGISTER))
+
+
+def _record(s, rid):
+    return next(r for r in s["register"]["decisions"] if r["id"] == rid)
 
 
 def test_clean_set_passes_all():
@@ -102,121 +105,114 @@ def test_a_completeness_still_tolerates_log_group_wildcard():
     assert rc.check_a_completeness(signal, {base + ":*"}) == []
 
 
-def test_b_referential_catches_unresolved_poam_asset():
+def test_b_referential_catches_unresolved_ssp_component():
     s = clean_set()
-    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
-        {"props": [{"name": "aws-arn", "value": f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:ghost"}]}
-    ]
-    v = rc.check_b_referential(s["signal"], s["ssp"], s["poam"])
+    s["ssp"]["system-security-plan"]["system-implementation"]["components"].append(
+        {"type": "service", "title": "ghost",
+         "props": [{"name": "aws-arn", "value": f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:ghost"}]})
+    v = rc.check_b_referential(s["signal"], s["ssp"])
     assert any("does not resolve" in x for x in v)
 
 
 def test_c_uncategorized_suppression_fails():
     s = clean_set()
-    s["checkov_text"] = "skip-check:\n  - CKV_AWS_68\n  - CKV_AWS_999\n"  # 999 unmapped
-    v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]),
-                                s["ckv_to_poam"], s["poam_md_text"], s["vdr"],
-                                s["false_positive_ckvs"])
+    s["checkov_text"] = "skip-check:\n  - CKV_AWS_68\n  - CKV_AWS_999\n"  # 999 has no record
+    v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]), s["register"], s["vdr"])
     assert any("CKV_AWS_999" in x and "uncategorized" in x for x in v)
 
 
-def test_c_risk_accepted_needs_vdr_poam_ref():
+def test_c_a_suppression_whose_record_is_closed_is_uncategorized():
     s = clean_set()
-    s["vdr"]["risk_accepted"] = []  # POAM-007 no longer has a poam_ref in the VDR
-    v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]),
-                                s["ckv_to_poam"], s["poam_md_text"], s["vdr"],
-                                s["false_positive_ckvs"])
-    assert any("no non-null poam_ref" in x for x in v)
+    rec = _record(s, "DEC-007")
+    rec.update(status="closed", disposition="remediated")
+    v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]), s["register"], s["vdr"])
+    assert any("CKV_AWS_68" in x and "uncategorized" in x for x in v)
+
+
+def test_c_risk_accepted_needs_vdr_decision_id():
+    s = clean_set()
+    s["vdr"]["risk_accepted"] = []  # DEC-007 no longer has a decision_id in the VDR
+    v = rc.check_c_suppressions(rc.parse_checkov_skips(s["checkov_text"]), s["register"], s["vdr"])
+    assert any("no non-null decision_id" in x for x in v)
 
 
 def test_d_impact_catches_low_ssp():
     s = clean_set()
     s["ssp"]["system-security-plan"]["system-characteristics"]["security-sensitivity-level"] = "low"
-    v = rc.check_d_impact(s["signal"], s["ssp"], s["poam"], s["vdr"], s["dashboard_html"])
+    v = rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"])
     assert any("ssp" in x and "low" in x for x in v)
 
 
 def test_d_impact_reads_the_trust_center_page():
     s = clean_set()
     s["dashboard_html"] = (REPO / "website" / "trust" / "index.html").read_text()
-    assert rc.check_d_impact(s["signal"], s["ssp"], s["poam"], s["vdr"], s["dashboard_html"]) == []
+    assert rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"]) == []
 
 
 def test_d_impact_catches_low_dashboard():
     s = clean_set()
     s["dashboard_html"] = "<h3>FIPS-199 Low</h3>"
-    v = rc.check_d_impact(s["signal"], s["ssp"], s["poam"], s["vdr"], s["dashboard_html"])
+    v = rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"])
     assert any("dashboard" in x for x in v)
 
 
 def test_e_binding_catches_mismatched_signal_id():
     s = clean_set()
     s["vdr"]["ksi_signal_id"] = "99999999-9999-4999-8999-999999999999"
-    v = rc.check_e_binding(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    v = rc.check_e_binding(s["signal"], s["ssp"], s["vdr"])
     assert any("vdr" in x and "!=" in x for x in v)
 
 
 def test_f_freshness_catches_stale_commit():
     s = clean_set()
-    v = rc.check_f_freshness(s["signal"], s["ssp"], s["poam"], s["vdr"], expected_commit="different")
+    v = rc.check_f_freshness(s["signal"], s["vdr"], expected_commit="different")
     assert any("commit" in x for x in v)
 
 
-def test_g_poam_parity_catches_md_item_missing_from_oscal():
-    s = clean_set()
-    # docs/poam.md tracks a formal item (table row) the OSCAL POA&M omits — the
-    # exact drift that hid POAM-019..025 from the published artifact.
-    s["poam_md_text"] = "| POAM-042 | SC-7 | Weakness | Checkov | CKV_X | asset | N1 | Low | - | No | Risk-accepted |"
-    v = rc.check_g_poam_parity(s["poam"], s["poam_md_text"])
-    assert any("POAM-042" in x and "absent from the OSCAL POA&M" in x for x in v)
-
-
-def test_g_poam_parity_catches_oscal_item_not_in_md():
-    s = clean_set()
-    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
-        {"props": [{"name": "poam-id", "value": "POAM-099"}]}
-    ]
-    v = rc.check_g_poam_parity(s["poam"], s["poam_md_text"])
-    assert any("POAM-099" in x and "not a formal item" in x for x in v)
-
-
-def test_g_poam_parity_ignores_prose_cross_references():
-    s = clean_set()
-    # A prose "see POAM-016" reference is NOT a formal item; it must not be required.
-    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = []
-    s["poam_md_text"] = "Single S3 origin; multi-origin would need multi-region storage (see POAM-016)."
-    assert rc.check_g_poam_parity(s["poam"], s["poam_md_text"]) == []
-
-
-def test_h_finding_without_poam_ref_fails():
-    # An open finding with no poam_ref is exactly the audit's failure mode.
+def test_h_finding_without_decision_id_fails():
+    # An open finding with no decision_id is exactly the audit's failure mode.
     s = clean_set()
     s["vdr"]["findings"] = [{"tracking_id": "checkov-CKV_AWS_356-r1", "current_disposition": "open"}]
-    v = rc.check_h_finding_coverage(s["vdr"], s["poam"])
-    assert any("checkov-CKV_AWS_356-r1" in x and "no poam_ref" in x for x in v)
+    v = rc.check_h_finding_coverage(s["vdr"], s["register"])
+    assert any("checkov-CKV_AWS_356-r1" in x and "no decision_id" in x for x in v)
 
 
-def test_h_finding_with_unknown_poam_ref_fails():
+def test_h_finding_with_unknown_decision_id_fails():
     s = clean_set()
-    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_X", "poam_ref": "POAM-404"}]
-    v = rc.check_h_finding_coverage(s["vdr"], s["poam"])
-    assert any("POAM-404" in x and "not a POA&M item" in x for x in v)
+    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_X", "decision_id": "DEC-404"}]
+    v = rc.check_h_finding_coverage(s["vdr"], s["register"])
+    assert any("DEC-404" in x and "not in the decision register" in x for x in v)
+
+
+def test_h_finding_resolving_to_a_closed_decision_fails():
+    # A remediated record is history, not a decision in force: a finding that
+    # still cites it is an undecided finding.
+    s = clean_set()
+    s["vdr"]["findings"] = [{"tracking_id": "f1", "current_disposition": "false-positive", "decision_id": "DEC-005"}]
+    v = rc.check_h_finding_coverage(s["vdr"], s["register"])
+    assert any("f1" in x and "a closed decision" in x for x in v)
+
+
+def test_h_a_former_poam_id_is_not_a_decision_id():
+    # Findings carry the record's own ID; the former ID only resolves narrative text (j).
+    s = clean_set()
+    s["vdr"]["findings"] = [{"tracking_id": "f1", "current_disposition": "risk-accepted", "decision_id": "POAM-007"}]
+    assert rc.check_h_finding_coverage(s["vdr"], s["register"])
 
 
 def test_h_passes_when_every_finding_resolves():
     s = clean_set()
-    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_AWS_68", "poam_ref": "POAM-007"}]
-    assert rc.check_h_finding_coverage(s["vdr"], s["poam"]) == []
+    s["vdr"]["false_positives"] = [{"tracking_id": "CKV_AWS_68", "decision_id": "DEC-007"}]
+    assert rc.check_h_finding_coverage(s["vdr"], s["register"]) == []
 
 
-def test_g_poam_parity_passes_when_sets_match():
-    s = clean_set()
-    s["poam_md_text"] = "### POAM-001 — A weakness\n| POAM-007 | SC-7 | ... |"
-    s["poam"]["plan-of-action-and-milestones"]["poam-items"] = [
-        {"props": [{"name": "poam-id", "value": "POAM-001"}]},
-        {"props": [{"name": "poam-id", "value": "POAM-007"}]},
-    ]
-    assert rc.check_g_poam_parity(s["poam"], s["poam_md_text"]) == []
+def test_g_is_retired_with_the_poam_it_kept_in_parity():
+    # (g) compared two copies of the POA&M; the register is one copy. It leaves
+    # the runner, the titles and the gate-mode register together.
+    assert "g" not in rc.INVARIANT_TITLES and not hasattr(rc, "check_g_poam_parity")
+    import json
+    modes = json.loads((REPO / "infrastructure" / "schemas" / "gate-modes.json").read_text())
+    assert "reconcile.g" not in json.dumps(modes)
 
 
 def test_committed_broken_fixture_fails_via_main(monkeypatch, capsys):
@@ -227,7 +223,8 @@ def test_committed_broken_fixture_fails_via_main(monkeypatch, capsys):
         pytest.skip("broken fixture dir not present")
     monkeypatch.setattr(sys, "argv", ["reconcile.py", "--artifacts-dir", str(broken),
                                        "--dashboard", str(broken / "viewer.html"),
-                                       "--checkov", str(broken / ".checkov.yaml"), "--poam-md", str(broken / "poam.md")])
+                                       "--checkov", str(broken / ".checkov.yaml"),
+                                       "--decisions", str(broken / "decisions.json")])
     assert rc.main() == 1
 
 
@@ -244,7 +241,8 @@ def test_committed_clean_fixture_passes_via_main(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["reconcile.py", "--artifacts-dir", str(clean),
                                        "--dashboard", str(clean / "viewer.html"),
                                        "--live-fixture", str(clean / "live-arns.json"),
-                                       "--checkov", str(clean / ".checkov.yaml"), "--poam-md", str(clean / "poam.md")])
+                                       "--checkov", str(clean / ".checkov.yaml"),
+                                       "--decisions", str(clean / "decisions.json")])
     assert rc.main() == 0
 
 
@@ -257,27 +255,33 @@ def test_state_backend_bucket_excluded_from_live_sweep():
     assert rc.is_state_backend_bucket("") is False
 
 
-if __name__ == "__main__":
-    raise SystemExit(pytest.main([__file__, "-q"]))
-
-
-def test_j_unknown_poam_reference_fails():
+def test_j_unknown_decision_reference_fails():
     s = clean_set()
     s["signal"]["components"][0]["baseline_configuration"] = "hardened per POAM-999"
-    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
     assert any("POAM-999" in x and "(j)" in x for x in v)
 
 
 def test_j_retired_id_is_referenceable():
     s = clean_set()
     s["ssp"]["system-security-plan"]["metadata"]["remarks"] = "multi-region declined; see POAM-016 (retired)"
-    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
     assert v == [], v
 
 
 def test_j_register_items_and_valid_refs_pass():
     s = clean_set()
-    s["signal"]["components"][0]["baseline_configuration"] = "throttled (POAM-007)"
-    v = rc.check_j_poam_ref_validity(s["signal"], s["ssp"], s["poam"], s["vdr"])
+    s["signal"]["components"][0]["baseline_configuration"] = "throttled (POAM-007; now DEC-007)"
+    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
     assert v == [], v
 
+
+def test_j_unknown_dec_reference_fails():
+    s = clean_set()
+    s["vdr"]["note"] = "see DEC-999"
+    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
+    assert any("DEC-999" in x for x in v)
+
+
+if __name__ == "__main__":
+    raise SystemExit(pytest.main([__file__, "-q"]))

@@ -916,7 +916,7 @@ def build_metadata(signal):
             "is published to demonstrate an architectural pattern (canonical-inventory-"
             "derived OSCAL artifacts) aligned with FedRAMP NTC-0009. Treat all "
             "implementation statements as the operator's self-attestation. Companion "
-            "artifacts: ksi-signal.json, oscal-poam.json, vdr-report.json, iiw.csv at "
+            "artifacts: ksi-signal.json, vdr-report.json, iiw.csv at "
             "https://samaydlette.com/.well-known/. See "
             "https://samaydlette.com/trust/index.html for context."
         ),
@@ -1021,7 +1021,7 @@ def build_system_characteristics(signal):
     # The SSP previously hardcoded "low" across every objective — a direct
     # contradiction of the Moderate baseline it is built against. Read the
     # authoritative FIPS-199 levels from data/system-profile.json so the SSP,
-    # KSI signal, POA&M, VDR, and dashboard all assert the same impact level.
+    # KSI signal, VDR, and dashboard all assert the same impact level.
     _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
     _f199 = _profile["fips_199"]
     _sens = _f199["high_water_mark"]  # "moderate"
@@ -1712,17 +1712,17 @@ def build_back_matter(signal):
                 ],
             },
             {
-                "uuid": stable_uuid("resource:poam"),
-                "title": "Plan of Action and Milestones (POA&M)",
+                "uuid": stable_uuid("resource:decisions"),
+                "title": "Decision register",
                 "description": (
-                    "Tracked security weaknesses with remediation plans. The "
-                    "POA&M is the single Rev 5 register; risk-accepted items "
-                    "are carried with status 'Risk-accepted'. The OSCAL "
-                    "machine-readable form is the authoritative copy."
+                    "Every decision about a finding (false positive, accepted "
+                    "risk, operational requirement, remediation history), with "
+                    "who decided, when, and when it is reviewed. Replaces the "
+                    "POA&M under CR26; open findings are in the VDR report."
                 ),
                 "rlinks": [
-                    {"href": "https://samaydlette.com/.well-known/oscal-poam.json", "media-type": "application/oscal+json"},
-                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/poam.md", "media-type": "text/markdown"},
+                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/data/decisions.json", "media-type": "application/json"},
+                    {"href": "https://samaydlette.com/.well-known/vdr-report.json", "media-type": "application/json"},
                 ],
             },
             {

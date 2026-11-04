@@ -17,15 +17,15 @@
      "pkg:npm/a@1"
     ],
     "cve": "CVE-0000-1001",
+    "decision_ids": [
+     "DEC-901"
+    ],
     "dispositions": [
      "false-positive"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": true,
     "pain": "N2",
-    "poam_refs": [
-     "POAM-901"
-    ],
     "scanners": [
      "grype"
     ]
@@ -35,13 +35,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1002",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -51,13 +51,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1003",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -67,13 +67,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1004",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -83,13 +83,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1005",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -99,13 +99,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1006",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -115,13 +115,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1007",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -131,13 +131,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1008",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -147,13 +147,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1009",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -163,13 +163,13 @@
      "nowhere"
     ],
     "cve": "CVE-0000-1010",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N5",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -179,13 +179,13 @@
      "pkg:npm/a@1"
     ],
     "cve": "CVE-0000-1011",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -195,13 +195,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1012",
+    "decision_ids": [],
     "dispositions": [
      "mitigated"
     ],
     "first_detected": "2026-10-14T12:00:00+00:00",
     "is_kev": false,
     "pain": "N1",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -211,13 +211,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1013",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -227,13 +227,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1014",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -243,13 +243,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1015",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": true,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -259,13 +259,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1016",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-10-04T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -275,13 +275,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1017",
+    "decision_ids": [],
     "dispositions": [
      "mitigated"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N1",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -291,15 +291,15 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1020",
+    "decision_ids": [
+     "DEC-902"
+    ],
     "dispositions": [
      "mitigated"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [
-     "POAM-902"
-    ],
     "scanners": [
      "grype"
     ]
@@ -309,13 +309,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1021",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -325,13 +325,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1022",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -341,15 +341,15 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1023",
+    "decision_ids": [
+     "DEC-905"
+    ],
     "dispositions": [
      "mitigated"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N1",
-    "poam_refs": [
-     "POAM-905"
-    ],
     "scanners": [
      "grype"
     ]
@@ -359,13 +359,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1024",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -375,13 +375,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1025",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -391,15 +391,15 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1026",
+    "decision_ids": [
+     "DEC-908"
+    ],
     "dispositions": [
      "vendor-dependency"
     ],
     "first_detected": "2026-07-26T12:00:00+00:00",
     "is_kev": false,
     "pain": "N3",
-    "poam_refs": [
-     "POAM-908"
-    ],
     "scanners": [
      "grype"
     ]
@@ -409,13 +409,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1027",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -425,13 +425,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1028",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -441,13 +441,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1029",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -457,13 +457,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1030",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -473,13 +473,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1031",
+    "decision_ids": [],
     "dispositions": [
      "under-investigation"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -489,15 +489,15 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1032",
+    "decision_ids": [
+     "DEC-914"
+    ],
     "dispositions": [
      "operational-requirement"
     ],
     "first_detected": "2025-09-29T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [
-     "POAM-914"
-    ],
     "scanners": [
      "grype"
     ]
@@ -507,13 +507,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1033",
+    "decision_ids": [],
     "dispositions": [
      "accepted"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -523,15 +523,15 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1034",
+    "decision_ids": [
+     "DEC-915"
+    ],
     "dispositions": [
      "false-positive"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N3",
-    "poam_refs": [
-     "POAM-915"
-    ],
     "scanners": [
      "grype"
     ]
@@ -541,15 +541,15 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1035",
+    "decision_ids": [
+     "DEC-916"
+    ],
     "dispositions": [
      "operational-requirement"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [
-     "POAM-916"
-    ],
     "scanners": [
      "grype"
     ]
@@ -559,13 +559,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1036",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N3",
-    "poam_refs": [],
     "scanners": [
      "checkov"
     ]
@@ -575,13 +575,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1040",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-02T12:00:00+00:00",
     "is_kev": false,
     "pain": "N3",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -591,13 +591,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1041",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-06-06T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -607,13 +607,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1042",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-04-17T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -623,13 +623,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1043",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-04-29T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -639,13 +639,13 @@
      "aws_s3_bucket.public"
     ],
     "cve": "CVE-0000-1044",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-10-20T12:00:00+00:00",
     "is_kev": false,
     "pain": "N3",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -655,13 +655,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1045",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-09-04T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -671,13 +671,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1046",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-09-24T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -689,13 +689,13 @@
      "aws_s3_bucket.internal"
     ],
     "cve": "CVE-0000-1050",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N5",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -705,13 +705,13 @@
      "pkg:npm/c@1"
     ],
     "cve": "CVE-0000-1051",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N5",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -721,13 +721,13 @@
      "pkg:npm/d@1"
     ],
     "cve": "CVE-0000-1052",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": true,
     "pain": "N5",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -737,13 +737,13 @@
      "pkg:npm/e@1"
     ],
     "cve": "CVE-0000-1053",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N1",
-    "poam_refs": [],
     "scanners": [
      "grype"
     ]
@@ -753,18 +753,19 @@
      "https://example.test"
     ],
     "cve": "ZAP-1",
+    "decision_ids": [],
     "dispositions": [
      "open"
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
     "pain": "N2",
-    "poam_refs": [],
     "scanners": [
      "zap"
     ]
    }
   ],
+  "decision_register": "data/decisions.json",
   "emitted_at": "2026-11-03T12:00:00+00:00",
   "findings": [
    {
@@ -787,16 +788,17 @@
     "cve": "CVE-0000-1001",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": "DEC-901",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-901",
      "disposition": "false-positive",
      "key": "CVE-0000-1001",
-     "poam_ref": "POAM-901",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": {
@@ -824,7 +826,6 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N2",
-    "poam_ref": "POAM-901",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -867,6 +868,7 @@
     "cve": "CVE-0000-1002",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -897,7 +899,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -940,6 +941,7 @@
     "cve": "CVE-0000-1003",
     "cvss_vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:N/VA:N/SC:N/SI:N/SA:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -970,7 +972,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1013,6 +1014,7 @@
     "cve": "CVE-0000-1004",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1043,7 +1045,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1086,6 +1087,7 @@
     "cve": null,
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1109,7 +1111,6 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1152,6 +1153,7 @@
     "cve": "CVE-0000-1005",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1182,7 +1184,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1225,6 +1226,7 @@
     "cve": "CVE-0000-1006",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1255,7 +1257,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1298,6 +1299,7 @@
     "cve": "CVE-0000-1007",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1328,7 +1330,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1371,6 +1372,7 @@
     "cve": "CVE-0000-1008",
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1397,7 +1399,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1440,6 +1441,7 @@
     "cve": "CVE-0000-1009",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1470,7 +1472,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1513,6 +1514,7 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1536,7 +1538,6 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1579,6 +1580,7 @@
     "cve": "ZAP-1",
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1605,7 +1607,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1648,6 +1649,7 @@
     "cve": "CVE-0000-1010",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1678,7 +1680,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
     "pain": "N5",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1721,6 +1722,7 @@
     "cve": "CVE-0000-1011",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -1751,7 +1753,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1794,6 +1795,7 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1820,7 +1822,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1863,6 +1864,7 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1889,7 +1891,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1936,6 +1937,7 @@
     "cve": "CVE-0000-1012",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 20,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -1970,7 +1972,6 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (mitigated); tracked as None",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2013,6 +2014,7 @@
     "cve": "CVE-0000-1013",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -2054,7 +2056,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2097,6 +2098,7 @@
     "cve": "CVE-0000-1014",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -2138,7 +2140,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2181,6 +2182,7 @@
     "cve": "CVE-0000-1015",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -2222,7 +2224,6 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2272,6 +2273,7 @@
     "cve": "CVE-0000-1016",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 30,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -2314,7 +2316,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 30d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-10-04T12:00:00+00:00",
@@ -2371,6 +2372,7 @@
     "cve": "CVE-0000-1017",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -2394,7 +2396,6 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (mitigated); tracked as None",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2437,16 +2438,17 @@
     "cve": "CVE-0000-1020",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": "DEC-902",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-902",
      "disposition": "mitigated",
      "key": "CVE-0000-1020",
-     "poam_ref": "POAM-902",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": {
@@ -2488,7 +2490,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": "POAM-902",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2531,16 +2532,17 @@
     "cve": "CVE-0000-1021",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-903",
      "disposition": "mitigated",
      "key": "CVE-0000-1021",
-     "poam_ref": "POAM-903",
      "reason": "no mitigation in force for this finding",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -2567,7 +2569,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2610,16 +2611,17 @@
     "cve": "CVE-0000-1022",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-904",
      "disposition": "mitigated",
      "key": "CVE-0000-1022",
-     "poam_ref": "POAM-904",
      "reason": "names MIT-99 but MIT-7 covers the finding",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -2657,7 +2659,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2700,16 +2701,17 @@
     "cve": "CVE-0000-1023",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": "DEC-905",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-905",
      "disposition": "mitigated",
      "key": "CVE-0000-1023",
-     "poam_ref": "POAM-905",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -2742,9 +2744,8 @@
     },
     "next_reduction": null,
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (mitigated); tracked as POAM-905",
+    "overdue_explanation": "documented suppression (mitigated); tracked as DEC-905",
     "pain": "N1",
-    "poam_ref": "POAM-905",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2787,16 +2788,17 @@
     "cve": "CVE-0000-1024",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-906",
      "disposition": "false-positive",
      "key": "CVE-0000-1024",
-     "poam_ref": "POAM-906",
      "reason": "names a control; a finding a control protects is recorded as mitigated, never as a false positive",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -2823,7 +2825,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2866,16 +2867,17 @@
     "cve": "CVE-0000-1025",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-01-01",
+     "decision_id": "DEC-907",
      "disposition": "operational-requirement",
      "key": "CVE-0000-1025",
-     "poam_ref": "POAM-907",
      "reason": "review_by 2026-10-01 has passed",
      "review_by": "2026-10-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "lapsed"
     },
     "epss": null,
@@ -2902,7 +2904,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2945,16 +2946,17 @@
     "cve": "CVE-0000-1026",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     "days_since_first_detected": 100,
+    "decision_id": "DEC-908",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-908",
      "disposition": "vendor-dependency",
      "key": "CVE-0000-1026",
-     "poam_ref": "POAM-908",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": {
@@ -2985,7 +2987,6 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (100d > 32d from 2026-07-26T12:00:00+00:00 for PAIN=N3, LEV=True, IRV=False)",
     "pain": "N3",
-    "poam_ref": "POAM-908",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3028,16 +3029,17 @@
     "cve": "CVE-0000-1027",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-909",
      "disposition": "vendor-dependency",
      "key": "CVE-0000-1027",
-     "poam_ref": "POAM-909",
      "reason": "fix state fixed: a fix may be available, so the vendor dependency has lapsed",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -3066,7 +3068,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3109,16 +3110,17 @@
     "cve": "CVE-0000-1028",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-910",
      "disposition": "vendor-dependency",
      "key": "CVE-0000-1028",
-     "poam_ref": "POAM-910",
      "reason": "fix state unknown: a fix may be available, so the vendor dependency has lapsed",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -3145,7 +3147,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3188,16 +3189,17 @@
     "cve": "CVE-0000-1029",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-911",
      "disposition": "wont-fix",
      "key": "CVE-0000-1029",
-     "poam_ref": "POAM-911",
      "reason": "unknown disposition 'wont-fix'",
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -3224,7 +3226,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3267,16 +3268,17 @@
     "cve": "CVE-0000-1030",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "not recorded",
      "decided_on": "not recorded",
+     "decision_id": "DEC-912",
      "disposition": "accepted",
      "key": "CVE-0000-1030",
-     "poam_ref": "POAM-912",
      "reason": "review_by 'soon' is not a date",
      "review_by": "soon",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "invalid"
     },
     "epss": null,
@@ -3303,7 +3305,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3346,16 +3347,17 @@
     "cve": "CVE-0000-1031",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-913",
      "disposition": "under-investigation",
      "key": "CVE-0000-1031",
-     "poam_ref": "POAM-913",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -3382,7 +3384,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3425,16 +3426,17 @@
     "cve": "CVE-0000-1032",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 400,
+    "decision_id": "DEC-914",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-914",
      "disposition": "operational-requirement",
      "key": "CVE-0000-1032",
-     "poam_ref": "POAM-914",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -3459,9 +3461,8 @@
      "target_pain": "remediated"
     },
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (operational-requirement); tracked as POAM-914",
+    "overdue_explanation": "documented suppression (operational-requirement); tracked as DEC-914",
     "pain": "N2",
-    "poam_ref": "POAM-914",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3504,16 +3505,17 @@
     "cve": "CVE-0000-1033",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": null,
      "disposition": "accepted",
      "key": "CVE-0000-1033",
-     "poam_ref": null,
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -3540,7 +3542,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3583,16 +3584,17 @@
     "cve": "CVE-0000-1034",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     "days_since_first_detected": 0,
+    "decision_id": "DEC-915",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-915",
      "disposition": "false-positive",
      "key": "CVE-0000-1034",
-     "poam_ref": "POAM-915",
      "reason": null,
      "review_by": "2027-04-01",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -3614,9 +3616,8 @@
     "mitigation": null,
     "next_reduction": null,
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-915",
+    "overdue_explanation": "documented suppression (false-positive); tracked as DEC-915",
     "pain": "N3",
-    "poam_ref": "POAM-915",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3659,16 +3660,17 @@
     "cve": "CVE-0000-1035",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": "DEC-916",
     "description": "",
     "disposition_record": {
      "decided_by": "not recorded",
      "decided_on": "not recorded",
+     "decision_id": "DEC-916",
      "disposition": "operational-requirement",
      "key": "CVE-0000-1035",
-     "poam_ref": "POAM-916",
      "reason": null,
      "review_by": "not recorded",
-     "source": "vuln-dispositions",
+     "source": "decisions",
      "status": "in-force"
     },
     "epss": null,
@@ -3693,9 +3695,8 @@
      "target_pain": "remediated"
     },
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (operational-requirement); tracked as POAM-916",
+    "overdue_explanation": "documented suppression (operational-requirement); tracked as DEC-916",
     "pain": "N2",
-    "poam_ref": "POAM-916",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3738,6 +3739,7 @@
     "cve": "CVE-0000-1036",
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -3764,7 +3766,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 32d allowed",
     "pain": "N3",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3807,13 +3808,14 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 90,
+    "decision_id": "DEC-007",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-007",
      "disposition": "risk-accepted",
-     "key": "POAM-007",
-     "poam_ref": "POAM-007",
+     "key": "DEC-007",
      "reason": null,
      "review_by": "2027-04-01",
      "source": "decision-record",
@@ -3841,9 +3843,8 @@
      "target_pain": "remediated"
     },
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (risk-accepted); tracked as POAM-007",
+    "overdue_explanation": "documented suppression (risk-accepted); tracked as DEC-007",
     "pain": "N2",
-    "poam_ref": "POAM-007",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3886,13 +3887,14 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2025-01-01",
+     "decision_id": "DEC-009",
      "disposition": "risk-accepted",
-     "key": "POAM-009",
-     "poam_ref": "POAM-009",
+     "key": "DEC-009",
      "reason": "review_by 2026-06-01 has passed",
      "review_by": "2026-06-01",
      "source": "decision-record",
@@ -3922,7 +3924,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3965,13 +3966,14 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": "DEC-010",
     "description": "",
     "disposition_record": {
      "decided_by": "not recorded",
      "decided_on": "not recorded",
+     "decision_id": "DEC-010",
      "disposition": "risk-accepted",
-     "key": "POAM-010",
-     "poam_ref": "POAM-010",
+     "key": "DEC-010",
      "reason": null,
      "review_by": "not recorded",
      "source": "decision-record",
@@ -3999,9 +4001,8 @@
      "target_pain": "remediated"
     },
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (risk-accepted); tracked as POAM-010",
+    "overdue_explanation": "documented suppression (risk-accepted); tracked as DEC-010",
     "pain": "N2",
-    "poam_ref": "POAM-010",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4044,13 +4045,14 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": "DEC-003",
     "description": "",
     "disposition_record": {
      "decided_by": "Operator",
      "decided_on": "2026-10-01",
+     "decision_id": "DEC-003",
      "disposition": "false-positive",
-     "key": "POAM-003",
-     "poam_ref": "POAM-003",
+     "key": "DEC-003",
      "reason": null,
      "review_by": "2027-04-01",
      "source": "decision-record",
@@ -4075,9 +4077,8 @@
     "mitigation": null,
     "next_reduction": null,
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-003",
+    "overdue_explanation": "documented suppression (false-positive); tracked as DEC-003",
     "pain": "N2",
-    "poam_ref": "POAM-003",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4120,13 +4121,14 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": "DEC-004",
     "description": "",
     "disposition_record": {
      "decided_by": "not recorded",
      "decided_on": "not recorded",
+     "decision_id": "DEC-004",
      "disposition": "false-positive",
-     "key": "POAM-004",
-     "poam_ref": "POAM-004",
+     "key": "DEC-004",
      "reason": null,
      "review_by": "not recorded",
      "source": "decision-record",
@@ -4151,9 +4153,8 @@
     "mitigation": null,
     "next_reduction": null,
     "occurrences": 1,
-    "overdue_explanation": "documented suppression (false-positive); tracked as POAM-004",
+    "overdue_explanation": "documented suppression (false-positive); tracked as DEC-004",
     "pain": "N2",
-    "poam_ref": "POAM-004",
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4196,6 +4197,7 @@
     "cve": "CVE-0000-1040",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     "days_since_first_detected": 1,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -4222,7 +4224,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 1d of 16d allowed",
     "pain": "N3",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4265,6 +4266,7 @@
     "cve": "CVE-0000-1041",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 150,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4295,7 +4297,6 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (150d > 128d from 2026-06-06T12:00:00+00:00 for PAIN=N2, LEV=True, IRV=False)",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4338,6 +4339,7 @@
     "cve": "CVE-0000-1042",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 200,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4368,7 +4370,6 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (200d > 192d from 2026-04-17T12:00:00+00:00 for PAIN=N2, LEV=False, IRV=False)",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4411,6 +4412,7 @@
     "cve": "CVE-0000-1043",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 188,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4441,7 +4443,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 188d of 192d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4484,6 +4485,7 @@
     "cve": "CVE-0000-1044",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
     "days_since_first_detected": 14,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -4510,7 +4512,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 14d of 16d allowed",
     "pain": "N3",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4553,6 +4554,7 @@
     "cve": null,
     "cvss_vector": null,
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -4576,7 +4578,6 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4619,6 +4620,7 @@
     "cve": "CVE-0000-1045",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 60,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -4645,7 +4647,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 60d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4688,6 +4689,7 @@
     "cve": "CVE-0000-1046",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 40,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": null,
@@ -4714,7 +4716,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4757,6 +4758,7 @@
     "cve": "CVE-0000-1050",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4787,7 +4789,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
     "pain": "N5",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4830,6 +4831,7 @@
     "cve": "CVE-0000-1051",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4860,7 +4862,6 @@
     "occurrences": 1,
     "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
     "pain": "N5",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4903,6 +4904,7 @@
     "cve": "CVE-0000-1050",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -4933,7 +4935,6 @@
     "occurrences": 1,
     "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
     "pain": "N5",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4976,6 +4977,7 @@
     "cve": "CVE-0000-1052",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -5006,7 +5008,6 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N5",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5049,6 +5050,7 @@
     "cve": "CVE-0000-1050",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -5079,7 +5081,6 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5122,6 +5123,7 @@
     "cve": "CVE-0000-1053",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
     "days_since_first_detected": 0,
+    "decision_id": null,
     "description": "",
     "disposition_record": null,
     "epss": {
@@ -5149,7 +5151,6 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
-    "poam_ref": null,
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5175,14 +5176,14 @@
   ],
   "impact_level": "Moderate",
   "ksi_signal_ref": "/.well-known/ksi-signal.json",
-  "poam_ref": "docs/poam.md",
-  "report_version": "1.2.0",
+  "report_version": "2.0.0",
   "risk_accepted": [
    {
     "completed_evaluation": "2026-11-03T12:00:00+00:00",
     "component_id": null,
     "current_disposition": "risk-accepted",
     "cvss_vector": null,
+    "decision_id": "DEC-007",
     "explanation": "",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
@@ -5192,7 +5193,6 @@
     "lev_basis": "no-score",
     "likely_exploitable": true,
     "pain": "N2",
-    "poam_ref": "POAM-007",
     "resource": ".checkov.yaml",
     "source": "checkov-suppression",
     "title": "",
@@ -5205,6 +5205,7 @@
     "component_id": "cmp-int",
     "current_disposition": "risk-accepted",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+    "decision_id": null,
     "explanation": "",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
@@ -5214,7 +5215,6 @@
     "lev_basis": "no-direct-impact",
     "likely_exploitable": false,
     "pain": "N1",
-    "poam_ref": null,
     "resource": "aws_s3_bucket.internal",
     "source": "checkov-suppression",
     "title": "",
@@ -5249,7 +5249,7 @@
    "kev": 2,
    "lapsed_dispositions": [
     "CVE-0000-1025",
-    "POAM-009"
+    "DEC-009"
    ],
    "ledger_carried_forward": 11,
    "ledger_newly_detected": 47,

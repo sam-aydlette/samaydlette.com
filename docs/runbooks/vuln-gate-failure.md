@@ -1,6 +1,6 @@
 # Runbook: the vulnerability gate failed
 
-The vulnerability gate (`scripts/vuln-gate.py`) fails a run when a scanner reports a vulnerability that is neither fixed nor dispositioned in `data/vuln-dispositions.json`. It runs on every deploy and every night in `evidence-nightly.yml`. When it fails on the nightly, the published VDR stops refreshing, and the 24-hour reporting policy is breached one day later.
+The vulnerability gate (`scripts/vuln-gate.py`) fails a run when a scanner reports a vulnerability that is neither fixed nor covered by an in-force decision in `data/decisions.json`, the decision register. It runs on every deploy and every night in `evidence-nightly.yml`. When it fails on the nightly, the published VDR stops refreshing, and the 24-hour reporting policy is breached one day later.
 
 A failing gate is not an outage. It is the system refusing to publish evidence that is out of date with respect to a known vulnerability. The job is to make the finding go away honestly: fix it, or record why it does not apply.
 
@@ -22,38 +22,45 @@ The alert issue lists each finding the gate named, for example
 - The fix reaches the nightly only once it is **deployed**. The nightly scans the published inventory's commit, so a merged-but-undeployed fix keeps failing. Approve the deploy.
 - Sometimes a parent upgrade removes the vulnerable package entirely: pa11y 10 dropped js-yaml and extract-zip. That counts as fixed.
 
-### False positive: the finding does not apply
+### Record a decision: the finding does not apply, or cannot be fixed yet
 
-The vulnerable code path is unreachable, the component is outside the authorization boundary, or the scanner misidentified the package. Add an entry to `data/vuln-dispositions.json`, keyed by the exact id the gate printed:
+Add a record to `data/decisions.json` with the next free `DEC-NNN` ID. Put the exact ID the gate printed in `applies_to.vuln_ids`:
 
 ```json
-"grype-GHSA-xxxx-xxxx-xxxx-pkg:npm/example@1.2.3": {
+{
+  "id": "DEC-0NN",
+  "title": "One line naming the finding",
+  "status": "in-force",
   "disposition": "false-positive",
   "justification": "Why it does not apply, specifically enough that a reviewer could check it.",
-  "poam_ref": "POAM-0NN",
   "decided_by": "Sam Aydlette",
-  "decided_on": "YYYY-MM-DD"
+  "decided_on": "YYYY-MM-DD",
+  "review_by": "YYYY-MM-DD (one year later)",
+  "original_detection_date": "YYYY-MM-DD",
+  "applies_to": {"check_ids": [], "vuln_ids": ["grype-GHSA-xxxx-xxxx-xxxx-pkg:npm/example@1.2.3"], "resources": []}
 }
 ```
 
-### Operational requirement: it applies, but it cannot be fixed yet
+The dispositions that pass the gate (`PASS_DISPOSITIONS` in `scripts/vuln-gate.py`):
 
-There is no upstream fix, and the component is needed. Use `"disposition": "operational-requirement"`, with a justification that names the compensating controls and the condition that will close it.
+- `false-positive`: the reason it is not exploitable lies inside the scanned artifact. A false positive whose reason is a control elsewhere is refused; record it as `mitigated`.
+- `mitigated`: a control protects it. Name the mitigation record from `data/mitigations.json` in `vuln_fields.mitigation`.
+- `vendor-dependency`: the fix has to come from upstream. It lapses when a fix appears.
+- `operational-requirement`: it applies and the component is needed. The justification names the compensating controls and the condition that will close it.
+- `accepted`: it will not be fixed. The justification is the acceptance explanation.
 
-### Either disposition needs a POA&M entry
+`under-investigation` and `remediate` are recorded but do not pass.
 
-Both dispositions need a `poam_ref`. Add the item to `docs/poam.md` and mirror it in `scripts/build-oscal-poam.py`. The reconciliation gate checks that the two agree (invariant g) and that every dispositioned finding is covered (invariant h). Change both together.
-
-Plain risk acceptance does **not** pass the gate. Only `false-positive` and `operational-requirement` do.
+The loader (`scripts/_decisions.py`) refuses an in-force record without `decided_by`, `decided_on` and `review_by`, and an ID claimed by two in-force records. A record past `review_by` is lapsed: the VDR builder and the gate treat it as absent. The VDR finding carries the record's ID as `decision_id`, and reconciliation invariant (h) fails any finding whose `decision_id` does not resolve to an in-force record.
 
 ## 3. Mind the clock
 
-Remediation timeframes follow FedRAMP 20x VDR-TFR-PVR for Class C, encoded in `CLASS_C_SLA_DAYS` in `scripts/build-vdr-report.py` and summarized in `docs/continuous-monitoring-plan.md`. The clock runs from first detection, which the VDR's first-detected ledger records. A KEV-listed or internet-reachable high-PAIN finding has days, not weeks.
+Remediation timeframes come from FedRAMP's machine-readable rules (VDR-TFR-PVR, Class C), read by `scripts/_rules.py`, and are summarized in `docs/continuous-monitoring-plan.md`. The clock runs from first detection, which the VDR's first-detected ledger records. A KEV-listed or internet-reachable high-PAIN finding has days, not weeks.
 
 ## 4. Close the loop
 
 - Once a nightly passes, close the alert issue.
-- When a fix removes a package that had a disposition, delete the now-dead entry from `data/vuln-dispositions.json` and close its POA&M item, so the register describes the system as it is.
+- When a fix removes a package that had a disposition, close its record in `data/decisions.json` (`status: closed`, `disposition: remediated`, `closed_on`), so the register describes the system as it is.
 
 ## Why the drift check still ran
 
