@@ -75,6 +75,14 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # here as one JSON line, and the nightly status beacon publishes them.
 EVENTS_ENV = "GATE_EVENTS_FILE"
 
+# An event's detail can carry scanner, AWS or signal text and is printed into a
+# GitHub Actions log, which parses `::` commands: strip line breaks and `::`.
+_SANITIZE = str.maketrans({"\r": " ", "\n": " ", "\x00": ""})
+
+
+def _clean(text, limit=500):
+    return str(text).translate(_SANITIZE).replace("::", ":")[:limit]
+
 
 def _fail(where, msg):
     raise SystemExit(f"::error::gate-mode register {where}: {msg} (fail-closed; a gate's mode is a decision record, REQ-GAT-4)")
@@ -137,9 +145,19 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
     return seen
 
 
+def _override():
+    """GATE_MODES_FILE points the loader at another register, for tests only. In
+    CI the committed register is always used: a mode cannot be changed by an
+    environment variable that bypasses the reviewed decision record."""
+    p = os.environ.get("GATE_MODES_FILE")
+    if p and os.environ.get("GITHUB_ACTIONS") == "true":
+        _fail(p, "GATE_MODES_FILE is not honored in CI; edit infrastructure/schemas/gate-modes.json")
+    return p
+
+
 def load_gate_modes(path=None, today=None):
     """Load and validate the register. Returns {version, sha256, checks: {check: entry}}."""
-    p = Path(path or os.environ.get("GATE_MODES_FILE") or DEFAULT_PATH)
+    p = Path(path or _override() or DEFAULT_PATH)
     if not p.is_file():
         _fail(p, "not found")
     raw = p.read_bytes()
@@ -166,7 +184,7 @@ def record_event(register, check, detail, now=None):
     workflow asks for it, append the event for the status beacon to publish."""
     entry = register["checks"][check]
     event = {"check": check, "gate": entry["gate"], "mode": entry["mode"],
-             "detail": str(detail)[:500],
+             "detail": _clean(detail),
              "at": (now or datetime.now(timezone.utc)).replace(microsecond=0).isoformat()}
     print(f"::warning::{entry['gate']} {check} ({entry['mode']}): {event['detail']}", file=sys.stderr)
     path = os.environ.get(EVENTS_ENV)
@@ -194,7 +212,8 @@ def read_events(path):
         if line:
             ev = json.loads(line)
             if isinstance(ev, dict) and ev.get("check") in CHECKS:
-                out.append({k: ev.get(k) for k in ("check", "gate", "mode", "detail", "at")})
+                out.append({"check": ev["check"], "gate": CHECKS[ev["check"]], "mode": _clean(ev.get("mode"), 40),
+                            "detail": _clean(ev.get("detail", "")), "at": _clean(ev.get("at"), 40)})
     return out
 
 

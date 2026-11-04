@@ -42,6 +42,7 @@ REPO = Path(__file__).resolve().parent.parent
 # FRESHNESS_CONFIG names another file (tests); it is validated the same way.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _freshness import load_freshness_config  # noqa: E402
+import _gates  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
 VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
@@ -431,7 +432,9 @@ def gate_events(inp: dict[str, Any]) -> dict[str, dict[str, Any]]:
                (inp.get("vdr_status") or {}).get("gate_events")]
     for src in sources:
         for e in src if isinstance(src, list) else []:
-            if not isinstance(e, dict) or not isinstance(e.get("check"), str) or not _parse_time(e.get("at")):
+            # Read back from published JSON: only checks the register knows, with a real time.
+            if (not isinstance(e, dict) or e.get("check") not in _gates.CHECKS
+                    or not _parse_time(e.get("at"))):
                 continue
             prior = events.get(e["check"])
             if prior is None or _parse_time(e["at"]) < _parse_time(prior["at"]):  # type: ignore[operator]

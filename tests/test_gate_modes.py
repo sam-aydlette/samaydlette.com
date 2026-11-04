@@ -133,7 +133,7 @@ def _build(tmp_path, case, register=None):
     work = tmp_path / case
     shutil.copytree(FIX / case, work)
     sig = "ksi-signal.json" if (work / "ksi-signal.json").exists() else "absent.json"
-    env = {**os.environ}
+    env = {k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"}
     if register:
         env["GATE_MODES_FILE"] = str(register)
     r = subprocess.run([sys.executable, str(REPO / "scripts" / "build-vdr-report.py"),
@@ -182,7 +182,8 @@ def test_the_builder_refuses_an_undecided_register(tmp_path):
                         "--kev", "kev.json", "--ksi-signal", "absent.json", "--checkov-yaml", "absent.yaml",
                         "--opa", "absent.json", "--md-output", "", "--output", "out.json"],
                        cwd=work, capture_output=True, text=True,
-                       env={**os.environ, "GATE_MODES_FILE": str(FIX / "gate-modes-undecided.json")})
+                       env={**{k: v for k, v in os.environ.items() if k != "GITHUB_ACTIONS"},
+                            "GATE_MODES_FILE": str(FIX / "gate-modes-undecided.json")})
     assert r.returncode != 0 and "differs from the method default with no reason" in r.stderr
     assert not (work / "out.json").exists()
 
@@ -212,6 +213,7 @@ def test_divergence_observer_fault_follows_its_recorded_mode(tmp_path, monkeypat
     cfg = good()
     entry(cfg, "runtime-divergence.observer-fault").update(mode="block")
     entry(cfg, "runtime-divergence.observer-fault").pop("reason")
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("GATE_MODES_FILE", str(write(tmp_path, cfg)))
     assert rd.evaluate(signal, 48, now=now)[0] == rd.BLOCK
 
@@ -253,3 +255,19 @@ def test_trust_center_queues_each_gate_event_once_with_its_opening_time():
     assert events["detection.zap.missing"]["at"] == "2026-11-03T08:00:00+00:00"
     assert tc.OPTIONS["gate_detect_recover"] and tc.WHY_YOURS["gate_detect_recover"]
     assert "gate_detect_recover" in tc.SINCE_SOURCE
+
+
+def test_ci_never_honors_a_register_override(monkeypatch):
+    monkeypatch.setenv("GATE_MODES_FILE", str(FIX / "gate-modes-undecided.json"))
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    with pytest.raises(SystemExit, match="not honored in CI"):
+        _gates.load_gate_modes(today=TODAY)
+
+
+def test_event_detail_cannot_forge_a_workflow_command(tmp_path, monkeypatch, capsys):
+    reg = _gates.load_gate_modes(REGISTER, today=TODAY)
+    monkeypatch.setenv(_gates.EVENTS_ENV, str(tmp_path / "e.jsonl"))
+    _gates.record_event(reg, "detection.zap.missing", "x\n::error::forged\r\n")
+    err = capsys.readouterr().err
+    assert err.count("\n") == 1 and "::error::forged" not in err
+    assert "\n" not in _gates.read_events(tmp_path / "e.jsonl")[0]["detail"]
