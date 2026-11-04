@@ -485,8 +485,6 @@ jobs:
           rm -f ksi-signal-runtime.json
         fi
 
-    # The builder evaluates policies/triage.rego for every decision and fails
-    # closed without opa. Same version and SHA pin as the deploy job.
     # REQ-GOV-2: the VDR names the conformance results of the profile it was
     # built under: the ones the last deploy signed and published, verified
     # against the deploy's identity like the inventory above.
@@ -501,6 +499,8 @@ jobs:
           --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" conformance-results.json
         jq -c '{profile_version, summary}' conformance-results.json
 
+    # The builder evaluates policies/triage.rego for every decision and fails
+    # closed without opa. Same version and SHA pin as the deploy job.
     - name: Setup OPA (triage policy)
       run: |
         curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \

@@ -15,6 +15,8 @@ from pathlib import Path
 
 import pytest
 
+yaml = pytest.importorskip("yaml")
+
 REPO = Path(__file__).resolve().parent.parent
 PROFILE = REPO / "data" / "method-profile.json"
 FIX = REPO / "tests" / "fixtures" / "conformance"
@@ -128,7 +130,15 @@ def test_the_deploy_publishes_signed_results_and_both_workflows_pass_them_to_the
     nightly = (REPO / ".github" / "workflows" / "evidence-nightly.yml").read_text()
     assert "scripts/build-conformance.py" in deploy
     assert "--bundle conformance-results.bundle conformance-results.json" in deploy
-    assert deploy.index("Run the conformance suite") < deploy.index("name: Build VDR Report")
+    # The suite runs in the credential-less test job, never in the deploy job,
+    # which downloads its results before the VDR build.
+    jobs = yaml.safe_load(deploy)["jobs"]
+    steps = {job: [s.get("name", "") for s in jobs[job]["steps"]] for job in ("test", "deploy")}
+    assert "Run the conformance suite (REQ-GOV-2)" in steps["test"]
+    assert not any("conformance suite" in s for s in steps["deploy"])
+    assert "test" in jobs["deploy"]["needs"]
+    assert steps["deploy"].index("Download the conformance results") < steps["deploy"].index(
+        "Build VDR Report (FedRAMP 20x Class C)")
     for wf in (deploy, nightly):
         assert "--conformance conformance-results.json" in wf
     assert "verify-blob --bundle conformance-results.bundle" in nightly

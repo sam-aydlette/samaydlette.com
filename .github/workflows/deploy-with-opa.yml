@@ -191,6 +191,23 @@ jobs:
     - name: Python unit tests
       run: python3 -m pytest tests/ -q
 
+    # REQ-GOV-2: run the method's conformance tests (data/method-profile.json
+    # maps Appendix B T1-T74 to the tests that implement them) and record the
+    # results. Runs here, in the job with no AWS credentials, rather than in
+    # the deploy job: it executes the test suite and its unpinned test tools.
+    # The deploy downloads, signs and publishes the results; every VDR-family
+    # output names the profile version and their sha256. A failing mapped
+    # test, or one that does not exist, fails this job, and the deploy needs it.
+    - name: Run the conformance suite (REQ-GOV-2)
+      run: python3 scripts/build-conformance.py --output conformance-results.json
+
+    - name: Upload the conformance results
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: conformance-results
+        path: conformance-results.json
+        if-no-files-found: error
+
     # The policy suite is an exhibit: format is enforced, strict compilation
     # with the input schema is enforced, coverage has a floor, and every eval
     # path uses --strict-builtin-errors so a broken builtin (the class of bug
@@ -658,6 +675,14 @@ jobs:
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: sast-results
+        path: infrastructure/
+
+    # Conformance results from the test job (REQ-GOV-2): signed and published
+    # below, and named by the VDR.
+    - name: Download the conformance results
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: conformance-results
         path: infrastructure/
 
     # -------------------------------------------------------------------------
@@ -1424,16 +1449,6 @@ jobs:
           echo "::warning::Could not fetch the runtime signal; mitigations that need a live read are void this run."
           rm -f ksi-signal-runtime.json
         fi
-
-    # REQ-GOV-2: run the method's conformance tests (data/method-profile.json
-    # maps Appendix B T1-T74 to the tests that implement them) and record the
-    # results. Signed and published below; every VDR-family output names the
-    # profile version and the sha256 of these results. A failing mapped test,
-    # or a mapped test that does not exist, stops the deploy here.
-    - name: Run the conformance suite (REQ-GOV-2)
-      run: |
-        python3 -m pip install --user --quiet pytest jsonschema pyyaml cryptography
-        python3 scripts/build-conformance.py --output infrastructure/conformance-results.json
 
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
