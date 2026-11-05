@@ -1155,6 +1155,62 @@
       "source": {
         "detector": "OWASP ZAP baseline scan"
       }
+    },
+    {
+      "id": "DEC-165",
+      "title": "Agency access to the certification package: decided by the operator, denials notified to FedRAMP within 5 business days, inventory supplied on request",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator decides every agency access request and records it in data/agency-access.json (agencies and systems, never people); notifies FedRAMP of every denial within 5 business days; and supplies the access inventory and its history to FedRAMP on request (docs/procedures/agency-access.md). The package itself is public, so access needs no provisioning. The deploy fails when a denial notice is late or overdue, and exercises the procedure with fictional agencies on every run. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ac-21",
+        "ca-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-166",
+      "title": "Public sharing of the certification package: disclosure standard and determination of no likely adverse effect",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Reviewed annually and when a new kind of artifact is published. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ac-22"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-167",
+      "title": "Verification and validation use full populations, never representative samples",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator does not use representative samples in verification or validation: every check runs over its full population (every inventoried component, every live in-boundary resource, every SBOM, every rule record and every test it cites), and the simulated assessor re-checks every rule and KSI. The assessor guide states this (IVV-CSO-DUS). Any future use of sampling would be documented there and this record revised. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ca-2",
+        "ca-7"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
     }
   ]
 }
