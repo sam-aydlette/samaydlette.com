@@ -287,6 +287,18 @@
       "signed": true,
       "signature": ".well-known/conformance-results.bundle",
       "note": "The conformance suite's results for the method profile (REQ-GOV-2), run, signed and published by the deploy."
+    },
+    {
+      "path": ".well-known/access-summary.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/access-summary.bundle",
+      "note": "Monthly aggregate counts of access to the certification data (CDS-TRC-ACL), rebuilt from the CloudFront access records on every deploy."
     }
   ]
 }
