@@ -46,6 +46,7 @@ import _scn  # noqa: E402
 
 REPO = _scn.REPO
 GENESIS_PATH = "scripts/build-scn.py"
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 MERGE_RE = re.compile(r"^Merge pull request #(\d+) from ")
 RUN_ID_RE = re.compile(r"(actions/runs/|run )\d{6,}")
 
@@ -129,7 +130,10 @@ def evaluation_entry(commit, subject, body, merged_on, author, lookup):
 def collect(previous_entries, root=REPO, lookup=gh_pull, head="HEAD"):
     """Entries for the first-parent commits after the last one logged."""
     if previous_entries:
-        last = previous_entries[-1]["commit"]
+        last = previous_entries[-1].get("commit", "")
+        # Read from the published log: a full SHA or nothing, never an option.
+        if not SHA_RE.match(last):
+            raise SystemExit("::error::SCN log: the published log's last entry has no valid commit (fail-closed)")
         try:
             _git("merge-base", "--is-ancestor", last, head, root=root)
         except subprocess.CalledProcessError:
