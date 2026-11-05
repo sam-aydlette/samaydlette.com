@@ -621,7 +621,11 @@ jobs:
       if: ${{ !cancelled() && steps.vdr.outcome == 'success' }}
       working-directory: infrastructure
       run: |
-        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}"
+        # --runtime-signal adds invariant (m): every machine component has an
+        # assessed runtime validation under 72h (VDR-TFR-MVX). A runtime signal
+        # that failed to fetch was removed above, which fails (m), never skips it.
+        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}" \
+          --runtime-signal ksi-signal-runtime.json
 
     # -------------------------------------------------------------------------
     # SIGN — only the artifacts this workflow publishes

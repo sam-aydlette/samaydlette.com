@@ -1,0 +1,38 @@
+{
+  "version": "1.0",
+  "description": "Governed scope of runtime verification and validation (VDR-TFR-MVX, VDR-TFR-PDD, FRC-CSX-VVK). Every inventory component type is either a machine type, which the runtime emitter (infrastructure/lambda) must re-validate live against the deploy gate's policy within max_age_hours, or an excluded type with the reason another mechanism covers it. Reconciliation invariant (m) in scripts/reconcile.py reads this file, fails closed on any component type it does not classify, and is run by evidence-nightly.yml against the published inventory and runtime signal.",
+  "decided_by": "Operator",
+  "decided_on": "2026-11-05",
+  "review_by": "2027-11-05",
+  "rationale": "VDR-TFR-MVX requires machine-based resources to be verified and validated at least every 3 days, so a machine component counts as validated only by an assessed runtime validation (no unread attribute) younger than 72 hours. VDR-TFR-PDD requires drift detection at least every 14 days on resources likely to drift; every machine type is re-validated daily, so the likely-to-drift set is recorded for the drift report and the 14-day window is met with margin. Software packages and site pages are not machine resources in this sense: their state is fixed by the deployed artifact, which is re-scanned (Syft and Grype, twice daily) and re-hashed (every deploy), and the runtime package-integrity check proves the deployed code is still that artifact.",
+  "max_age_hours": 72,
+  "drift_window_days": 14,
+  "machine_types": {
+    "object_store": {"likely_to_drift": true, "why": "Bucket encryption, versioning, public-access block and tags can be changed in the console or by any principal with bucket rights."},
+    "cdn_distribution": {"likely_to_drift": true, "why": "Managed by the operator-applied bootstrap stack and editable in the console; protocol policy and TLS floor can change outside the deploy."},
+    "function": {"likely_to_drift": true, "why": "Code and configuration can be updated directly (UpdateFunctionCode/Configuration) outside the deploy; the package-integrity check compares the live code hash with the inventoried one."},
+    "iam_role": {"likely_to_drift": true, "why": "Trust and attached policies are the highest-value change an intruder or a hurried operator makes outside Terraform."},
+    "iam_policy": {"likely_to_drift": true, "why": "Inline policies can be edited in the console; privilege creep is the drift that matters most."},
+    "iam_group": {"likely_to_drift": true, "why": "The operator groups carry hand-attached managed policies (bootstrap stack, applied by hand)."},
+    "oidc_provider": {"likely_to_drift": true, "why": "Audience list changes would widen who can federate into the deploy roles."},
+    "identity_provider": {"likely_to_drift": true, "why": "MFA, password and sign-up settings of the user pool are console-editable."},
+    "api_gateway": {"likely_to_drift": true, "why": "Routes, authorizers, throttling and access logging are console-editable and govern the app's exposure."},
+    "kms_key": {"likely_to_drift": true, "why": "Keys can be disabled, scheduled for deletion or have rotation turned off."},
+    "secrets_manager": {"likely_to_drift": true, "why": "Rotation lapses with time even when nobody touches the secret."},
+    "tls_certificate": {"likely_to_drift": true, "why": "Validity runs out with time; renewal can fail silently."},
+    "dns_zone": {"likely_to_drift": true, "why": "DNSSEC signing can stop (key state, registrar) without any Terraform change."},
+    "audit_log_trail": {"likely_to_drift": true, "why": "Logging can be stopped with one API call (StopLogging), a classic intruder step."},
+    "log_group": {"likely_to_drift": false, "why": "Created and changed only by Terraform; retention and key are still re-validated daily."},
+    "event_schedule": {"likely_to_drift": false, "why": "Created and changed only by Terraform; a disabled schedule is still caught daily."},
+    "notification_topic": {"likely_to_drift": false, "why": "Created and changed only by Terraform; encryption is still re-validated daily."},
+    "metric_alarm": {"likely_to_drift": false, "why": "Created and changed only by Terraform; disabled actions are still caught daily."},
+    "message_queue": {"likely_to_drift": false, "why": "Created and changed only by Terraform; encryption is still re-validated daily."},
+    "kv_table": {"likely_to_drift": false, "why": "The state-lock table is created by the bootstrap stack and not otherwise touched; point-in-time recovery is still re-validated daily."}
+  },
+  "excluded_types": {
+    "npm_package": "Software, not a machine resource: its content is fixed by the lockfile integrity hash in the deployed artifact. Covered by Syft and Grype twice daily (evidence-nightly.yml) and by the runtime package-integrity check of the function that ships it.",
+    "pypi_package": "Software, not a machine resource: fixed by the deployed artifact. Covered by Syft and Grype twice daily and by the runtime package-integrity check of the function that ships it.",
+    "html_artifact": "Static content, not a machine resource: hashed into the inventory and scanned for accessibility on every deploy; the bucket that serves it is a machine component.",
+    "external_service": "A third party outside the boundary (Sigstore, GitHub, the vulnerability feeds, the MFA provider): this system cannot read its configuration. Tracked in data/third-party-components.json."
+  }
+}
