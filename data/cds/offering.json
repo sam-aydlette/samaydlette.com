@@ -7,6 +7,19 @@
   "uei": "<not assigned — no SAM.gov registration>",
   "sales_contact": { "name": "Sam Aydlette", "url": "https://samaydlette.com/pages/contact.html" },
   "security_contact": { "name": "Sam Aydlette", "email": "sam.aydlette@gmail.com", "source": "/.well-known/security.txt" },
+  "fedramp_security_inbox": {
+    "_note": "The FedRAMP Security Inbox (AFC-CSO-INB): the one place this address is written. infrastructure/fedramp-inbox.tf receives mail for it, the CPO publishes it, and scripts/check-fsi-notice.py fails any change to it that does not record notifying FedRAMP (AFC-CSO-NOC). To change it: add a history entry with fedramp_notified, then change address.",
+    "address": "fedramp-security@samaydlette.com",
+    "runbook": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/runbooks/fedramp-security-inbox.md",
+    "history": [
+      {
+        "address": "fedramp-security@samaydlette.com",
+        "since": "2026-11-05",
+        "fedramp_notified": null,
+        "basis": "Established. No earlier FedRAMP Security Inbox or Marketplace Security Email is on file with FedRAMP for this unsponsored system, so there was no prior address to change from."
+      }
+    ]
+  },
   "product_website": "https://samaydlette.com",
   "logo_url": "https://samaydlette.com/assets/images/brand/logo.png",
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",

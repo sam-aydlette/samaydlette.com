@@ -5,82 +5,206 @@
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no auto-responder.",
-      "evidence": [],
-      "gap": "No prompt automatic acknowledgment of FedRAMP messages. To close: Configure an auto-acknowledgment for mail from @fedramp.gov/@gsa.gov (e.g. SES receipt rule -> Lambda reply, or provider auto-reply rule) and include it in the nightly configuration check.",
+      "status": "Partially Implemented",
+      "implementation": "The inbox function acknowledges every message from @fedramp.gov or @gsa.gov automatically on receipt, through SES from the inbox address (Easy DKIM, custom MAIL FROM with SPF, DMARC; infrastructure/fedramp-inbox.tf), once per message even when SES retries, never to auto-replies, bulk mail, bounces, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged), with headers inbound content cannot inject. A failed acknowledgement is recorded and pages through fsi-overdue; the SES sandbox is reported by the hourly check.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_acknowledgement_marks_itself_automatic_and_threads_to_the_message"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_nothing_from_the_inbound_message_can_inject_a_header"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_retry_does_not_acknowledge_twice"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_sandbox_rejection_of_the_acknowledgement_is_recorded_not_hidden"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy, and SES production access in us-east-2 (the account is presumed to be in the SES sandbox, where SES sends only to verified addresses).",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-CRA",
-      "status": "Not Implemented",
-      "implementation": "No FSI, no Emergency/Emergency Test handling runbook in docs/incident-response.md or ir-policy.md.",
-      "evidence": [],
-      "gap": "No procedure to recognize Emergency / Emergency Test designated messages, extract the required actions and timeframe, and complete them; no record of completion. To close: Write an FSI runbook (classify by designation, open a tracked item with the message's deadline, complete, reply with completion) and wire Emergency-designated mail to page the operator; keep a completion log. Rehearse with a self-generated Emergency Test.",
+      "status": "Partially Implemented",
+      "implementation": "Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; receipt day counts, holidays not skipped, both erring earlier), replaced at triage by the timeframe the message states (scripts/fsi.py triage). The fsi-overdue alarm pages while an item is past its deadline and not closed; scripts/fsi.py close records the outcome and whether it was late. Procedure: docs/runbooks/fedramp-security-inbox.md.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_class_c_default_deadline_is_3pm_eastern_on_the_second_business_day"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_emergency_records_carry_a_deadline_and_important_ones_ask_for_the_messages_own"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_unacknowledged_and_unpaged_items"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_is_registered_acknowledged_and_pages_the_security_official"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy; completing a real message's required actions is an operator act that only a received message can show.",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-EMR",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No routing of Emergency-designated messages to a senior security official; no mailbox configuration or automated validation (both artifacts missing). To close: Add a mail rule that routes subject-designated 'Emergency' FedRAMP messages to the senior security official (the accountable official in the CPO, plus SNS page), and include it in the nightly mailbox-configuration check.",
+      "status": "Partially Implemented",
+      "implementation": "Emergency-designated messages page the senior security official, the accountable official named in the CPO (the operator), through the evidence-alert SNS topic on receipt, with sender, subject, designation and deadline (never the body); an Emergency from an address other than fedramp_security@ (AFC-FRP-UFS) is flagged, not demoted. Configuration settings: infrastructure/fedramp-inbox.tf; automated validation: the hourly check (fsi-config alarm).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_is_registered_acknowledged_and_pages_the_security_official"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_from_an_address_other_than_fedramp_security_is_flagged_not_demoted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_each_drift_that_could_lose_or_delay_fedramp_mail_is_a_problem"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy; the page reaches the official only through the alert topic's email subscription, which is created out of band.",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-IMA",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no handling procedure for Important-designated messages.",
-      "evidence": [],
-      "gap": "No procedure to complete actions in Important messages within their stated timeframe. To close: Extend the FSI runbook to Important messages with tracked deadlines (same tracker as CRA).",
+      "status": "Partially Implemented",
+      "implementation": "Important-designated messages page the operator and open a register item that cannot be triaged without recording the timeframe the message states (scripts/fsi.py triage --respond-by); fsi-overdue pages while it is untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_important_message_pages_and_opens_a_tracked_item"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_unacknowledged_and_unpaged_items"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_cli.py::test_important_messages_cannot_be_triaged_without_their_timeframe"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy.",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-INB",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No dedicated FedRAMP Security Inbox address exists or is designated; the required artifact (an email address to receive messages from FedRAMP) cannot be produced. To close: Create a dedicated address on the system's domain (e.g. fedramp-security@samaydlette.com: MX record in dns.tf plus SES inbound or a mail provider, with SPF/DKIM/DMARC), document it as the FSI in the CPO certification_data (security_contact block) and trust center, and monitor it (alarm on delivery failure).",
+      "status": "Partially Implemented",
+      "implementation": "The FedRAMP Security Inbox is fedramp-security@samaydlette.com, a role address on the system's own domain (not a personal mailbox), declared once in data/cds/offering.json (fedramp_security_inbox) and published in the CPO's certification_data. infrastructure/fedramp-inbox.tf receives it: MX to SES receiving in us-east-2, one receipt rule for the address, messages stored CMK-encrypted in the inbox bucket and handed to the inbox function; the hourly check and three alarms page through the evidence-alert topic. Handling: docs/runbooks/fedramp-security-inbox.md.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_inbox_address_has_one_source_of_truth"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_cpo_publishes_the_inbox_address_from_its_one_source"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_receipt_rule_stores_then_hands_off_and_has_nothing_that_drops_mail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_mail_bucket_is_cmk_encrypted_private_and_tls_only"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy.",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-NOC",
-      "status": "Not Implemented",
-      "implementation": "No FSI exists, so no change-notification process exists; nothing in docs/incident-response.md or docs/policies/ir-policy.md covers notifying FedRAMP of an inbox change.",
-      "evidence": [],
-      "gap": "No process (manual or automated) to notify FedRAMP when the FSI address changes. To close: Make the FSI address a single value in the canonical inventory and add a CI check that fails a change to it unless the commit carries a 'FedRAMP notified on <date> via <channel>' record; document the runbook step (email FedRAMP from the old and new address) in ir-policy.md.",
-      "closes_with": [
-        "W9"
+      "status": "Implemented",
+      "implementation": "The inbox address has one source (data/cds/offering.json, fedramp_security_inbox) with an append-only history. scripts/check-fsi-notice.py, run in the unit-test job on every pull request and push, fails a change to the address unless a new history entry carries a dated fedramp_notified marker naming the channel (FedRAMP's '[CSP] Notification of Changes' form), and fails a rewritten history against the merge base. Known-bad fixtures in tests/fixtures/fsi/. The procedure (notify before changing, then re-run the exercise) is in docs/runbooks/fedramp-security-inbox.md. The inbox was established 2026-11-05 with no earlier address on file with FedRAMP, so there has been no change to notify.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_an_address_change_without_the_fedramp_notified_marker_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_an_address_change_without_a_history_entry_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_rewriting_history_fails_against_the_base"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox change notice (AFC-CSO-NOC)"
+        }
       ]
     },
     {
       "frr_id": "AFC-CSO-RCV",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "Nothing receives FedRAMP mail without disruption (no inbox, no anti-spam allowlisting, no monitoring, no backup reader for a one-person operation). To close: After INB/TFG: allowlist FedRAMP senders, add delivery-failure and unread-age alarms (SNS to operator, reusing the watchdog path), and name a backup reader or an out-of-office auto-forward so a single absent operator does not disrupt receipt. Provider half is fully buildable; only an actual FedRAMP message demonstrates it end-to-end.",
+      "status": "Partially Implemented",
+      "implementation": "Nothing is asked of FedRAMP: no CAPTCHA, portal or challenge; TLS is accepted, not required; the receipt rule stores every message before anything else runs and has no bounce, stop or drop action; spam and virus verdicts are recorded only. Disruption pages: fsi-config (live configuration differs from Terraform, including the SES sandbox, or the hourly check stopped reporting), fsi-overdue (an item untriaged or past its deadline, or an acknowledgement or page failed) and fsi-errors (the function failed; SES retries and failed events reach the DLQ), all through the evidence-alert topic.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_receipt_rule_stores_then_hands_off_and_has_nothing_that_drops_mail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_rule_ahead_of_the_inbox_rule_that_matches_every_address_is_a_problem"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_hourly_check_counts_overdue_register_items"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_page_that_fails_is_recorded_and_raised_so_ses_retries"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy. Residual for a one-person operation: no backup reader; an absent operator's pages wait, visible through the repeating overdue alarm (named in the runbook).",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {
       "frr_id": "AFC-CSO-TFG",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No mailbox configuration treating @fedramp.gov / @gsa.gov senders as FedRAMP, and no automated validation of that configuration (both listed artifacts missing). To close: In the FSI mail rules, tag/route all mail from @fedramp.gov and @gsa.gov as FedRAMP (never spam-filtered/quarantined); export the rule set as code and add a nightly check (evidence-nightly.yml) that reads the live rules and compares them with the expected configuration, published to the trust center like check-manual-settings.py does for GitHub settings.",
+      "status": "Partially Implemented",
+      "implementation": "Mailbox configuration as code: the inbox function (infrastructure/fedramp-inbox/logic.mjs, classify) treats mail whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov as FedRAMP, whatever its spam or virus verdict or SPF/DKIM/DMARC result; failed authentication is shown in the page so the operator can confirm the sender, and the operator closes a message confirmed not to be from FedRAMP as not-fedramp. The receipt rule has no action that can bounce, stop or drop mail. Automated validation: the function's hourly check compares the live active rule set, rule, identity and MX record with the declared configuration and pages through the fsi-config alarm on any difference.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_fedramp_senders_are_fedramp_even_when_flagged_as_spam_or_unauthenticated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_look_alike_domains_and_display_name_spoofs_are_not_fedramp"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_each_drift_that_could_lose_or_delay_fedramp_mail_is_a_problem"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_hourly_check_counts_drift_and_unreadable_settings"
+        }
+      ],
+      "gap": "Built, not yet live or exercised: needs the bootstrap apply (the deploy role's SES, inbox-bucket and inbox-role grants), a deploy, and the dated end-to-end exercise (scripts/fsi.py exercise, docs/runbooks/fedramp-security-inbox.md) run by the operator after deploy.",
       "closes_with": [
-        "W9"
+        "sam"
       ]
     },
     {

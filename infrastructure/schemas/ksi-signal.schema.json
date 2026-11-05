@@ -271,7 +271,8 @@
             "notification_topic",
             "metric_alarm",
             "message_queue",
-            "kv_table"
+            "kv_table",
+            "mail_receiver"
           ]
         },
         "resource_type": {

@@ -82,6 +82,19 @@ resource "aws_s3_bucket_policy" "logs" {
         }
       },
       {
+        # Server access logs for the FedRAMP Security Inbox bucket
+        # (fedramp-inbox.tf), under their own prefix.
+        Sid       = "FsiMailAccessLogsWrite"
+        Effect    = "Allow"
+        Principal = { Service = "logging.s3.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.logs.arn}/s3-access-fsi/*"
+        Condition = {
+          StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+          ArnLike      = { "aws:SourceArn" = "arn:aws:s3:::${local.fsi_bucket}" }
+        }
+      },
+      {
         Sid       = "CloudFrontStandardLogDelivery"
         Effect    = "Allow"
         Principal = { Service = "delivery.logs.amazonaws.com" }

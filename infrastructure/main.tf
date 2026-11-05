@@ -481,7 +481,11 @@ resource "aws_iam_role_policy" "lambda_opa" {
           # The Terraform state bucket belongs to the bootstrap stack, so it is
           # named by convention rather than referenced. Configuration metadata
           # only: the Lambda can never read the state itself.
-          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate"
+          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate",
+          # The FedRAMP Security Inbox bucket (fedramp-inbox.tf) is created
+          # conditionally, so it too is named rather than referenced.
+          # Configuration metadata only: never a message.
+          "arn:aws:s3:::${local.fsi_bucket}"
         ]
       },
       {
@@ -558,6 +562,7 @@ resource "aws_kms_key" "at_rest" {
             "kms:EncryptionContext:aws:logs:arn" = [
               "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-opa-compliance",
               "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-evidence-watchdog",
+              "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${replace(var.domain_name, ".", "-")}-fedramp-inbox",
               "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/route53/${var.domain_name}",
             ]
           }
@@ -576,6 +581,23 @@ resource "aws_kms_key" "at_rest" {
         Condition = {
           ArnLike      = { "aws:SourceArn" = "arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${replace(var.domain_name, ".", "-")}-evidence-watchdog-*" }
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+        }
+      },
+      {
+        # The FedRAMP Security Inbox bucket (fedramp-inbox.tf) default-encrypts
+        # with this key, so SES's PutObject of an inbound message needs to use
+        # it. Scoped to S3 in this region acting on that one bucket (the
+        # encryption context S3 sets with a bucket key).
+        Sid       = "AllowSesToStoreInboundMail"
+        Effect    = "Allow"
+        Principal = { Service = "ses.amazonaws.com" }
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey*"]
+        Resource  = "*"
+        Condition = {
+          StringEquals = {
+            "kms:ViaService"                   = "s3.${var.aws_region}.amazonaws.com"
+            "kms:EncryptionContext:aws:s3:arn" = "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-fsi-mail"
+          }
         }
       },
     ]

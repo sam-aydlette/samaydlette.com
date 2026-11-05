@@ -101,6 +101,10 @@ TYPE_BY_TF_TYPE = {
     # The Terraform state lock (bootstrap stack). Found missing from the inventory
     # by the independent corroboration (RAMPART on TAP), 2026-10-01.
     "aws_dynamodb_table": "kv_table",
+    # The FedRAMP Security Inbox's receiving interface (infrastructure/
+    # fedramp-inbox.tf): an internet-facing SMTP endpoint, so inventoried as a
+    # component of its own. Its rule, activation and sending identity fold in.
+    "aws_ses_receipt_rule_set": "mail_receiver",
 }
 
 # Authoritative, external type vocabulary: each normalized component.type maps
@@ -131,6 +135,7 @@ CFN_TYPE_BY_NORMALIZED = {
     "metric_alarm": "AWS::CloudWatch::Alarm",
     "message_queue": "AWS::SQS::Queue",
     "kv_table": "AWS::DynamoDB::Table",
+    "mail_receiver": "AWS::SES::ReceiptRuleSet",
 }
 
 # Resource types that fold into a parent component as attributes. The mapping
@@ -154,6 +159,12 @@ ATTRIBUTE_PARENTS = {
     "aws_cognito_user_pool_domain": "identity_provider",
     # The topic's access policy is a facet of the topic.
     "aws_sns_topic_policy": "notification_topic",
+    # The inbox's receipt rule, its activation, and the domain identity that
+    # signs the acknowledgement are facets of the receiving interface.
+    "aws_ses_receipt_rule": "mail_receiver",
+    "aws_ses_active_receipt_rule_set": "mail_receiver",
+    "aws_sesv2_email_identity": "mail_receiver",
+    "aws_sesv2_email_identity_mail_from_attributes": "mail_receiver",
 }
 
 # =============================================================================
@@ -296,6 +307,18 @@ MAS_DEFAULTS = {
     "external_service": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
         "information_flow": [],
+    },
+    # The FedRAMP Security Inbox: mail from FedRAMP is not public, so
+    # confidentiality is moderate; it is stored in the inbox bucket and handed
+    # to the inbox function, and the acknowledgement goes back out.
+    "mail_receiver": {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "public-internet", "channel": "smtp-starttls-optional", "data_class": "fedramp-correspondence"},
+            {"direction": "outbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "fedramp-correspondence"},
+            {"direction": "outbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "message-metadata"},
+            {"direction": "outbound", "counterparty": "public-internet", "channel": "smtp-starttls", "data_class": "acknowledgement"},
+        ],
     },
     "api_gateway": {
         "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"},
@@ -461,6 +484,13 @@ IIW_DEFAULTS = {
         "baseline_configuration": "AWS DynamoDB; on-demand capacity; point-in-time recovery; AWS-owned-key encryption at rest; lock-item access granted to the CI plan and deploy roles and the operators group",
         "iiw_asset_type": "Key-Value Table (DynamoDB)",
     },
+    "mail_receiver": {
+        "function": "FedRAMP Security Inbox receiving interface (SES receipt rule set: stores each message, hands it to the inbox function)",
+        "diagram_label": "SES — FedRAMP Security Inbox",
+        "public": True,
+        "baseline_configuration": "AWS SES receiving; one rule for the inbox address only; spam/virus scan recorded, never used to drop; TLS optional; Easy DKIM, custom MAIL FROM, DMARC (fedramp-inbox.tf)",
+        "iiw_asset_type": "Mail Receiver (SES)",
+    },
     "external_service": {
         "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
         "diagram_label": "External service",
@@ -530,6 +560,21 @@ IIW_OVERRIDES = {
     },
     ("event_schedule", "evidence_watchdog"): {
         "function": "Hourly trigger for the evidence SLA watchdog Lambda",
+    },
+    ("function", "fedramp_inbox"): {
+        "function": "FedRAMP Security Inbox function: classifies FedRAMP mail, acknowledges it, pages the operator, tracks deadlines; hourly configuration check",
+        "diagram_label": "Lambda — FedRAMP Security Inbox",
+    },
+    ("event_schedule", "fedramp_inbox"): {
+        "function": "Hourly trigger for the FedRAMP Security Inbox configuration and deadline check",
+    },
+    ("iam_role", "fedramp_inbox"): {
+        "function": "IAM role assumed by the FedRAMP Security Inbox function",
+    },
+    ("object_store", "fsi_mail"): {
+        "function": "FedRAMP Security Inbox bucket: raw inbound messages (written by SES) and the deadline register",
+        "diagram_label": "S3 FedRAMP Security Inbox bucket",
+        "baseline_configuration": "AWS S3; versioning, SSE-KMS with the at-rest CMK and a bucket key, public access block, ACLs disabled; bucket policy admits only SES for this account's inbox rule and denies non-TLS access; server access logs to the log bucket",
     },
     ("iam_role", "silk_reeling"): {
         "function": "IAM role assumed by the Silk Reeling app Lambda",
@@ -665,6 +710,26 @@ def apply_iiw_defaults(component):
 # for both stacks rather than public site content, so its confidentiality is
 # MODERATE and it talks to CI and the operator, not the CDN.
 MAS_OVERRIDES = {
+    # FedRAMP correspondence is not public content: the inbox bucket holds the
+    # messages and the function handles their metadata.
+    ("object_store", "fsi_mail"): {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "mail_receiver", "channel": "aws-internal-tls", "data_class": "fedramp-correspondence"},
+            {"direction": "inbound", "counterparty": "function", "channel": "aws-internal-tls", "data_class": "message-metadata"},
+            {"direction": "outbound", "counterparty": "operator", "channel": "tls-1.2", "data_class": "fedramp-correspondence"},
+        ],
+    },
+    ("function", "fedramp_inbox"): {
+        "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
+        "information_flow": [
+            {"direction": "inbound", "counterparty": "mail_receiver", "channel": "aws-internal-tls", "data_class": "message-metadata"},
+            {"direction": "inbound", "counterparty": "eventbridge", "channel": "aws-internal-tls", "data_class": "configuration"},
+            {"direction": "outbound", "counterparty": "object_store", "channel": "aws-internal-tls", "data_class": "message-metadata"},
+            {"direction": "outbound", "counterparty": "notification_topic", "channel": "aws-internal-tls", "data_class": "message-metadata"},
+            {"direction": "outbound", "counterparty": "aws-service-api", "channel": "aws-internal-tls", "data_class": "configuration"},
+        ],
+    },
     ("object_store", "tfstate"): {
         "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"},
         "information_flow": [
@@ -756,6 +821,7 @@ CLASSIFICATION_DEFAULTS = {
     "metric_alarm":        (False,              "security-tooling"),
     "message_queue":       (False,              "security-tooling"),
     "kv_table":            (False,              "platform-foundation"),
+    "mail_receiver":       (True,               "public-edge"),
     "oidc_provider":       (False,              "identity-secrets"),
     "iam_group":           (False,              "identity-secrets"),
 }
@@ -778,6 +844,10 @@ CLASSIFICATION_OVERRIDES = {
     # The evidence SLA watchdog is EventBridge-only security tooling, like
     # opa_compliance; it reads the site bucket over the AWS API, not the web.
     ("function", "evidence_watchdog"): {"internet_reachable": False, "archetype": "security-tooling"},
+    # The FedRAMP Security Inbox function is reached by internet mail (through
+    # SES), so it is reachable; it is security tooling by role.
+    ("function", "fedramp_inbox"): {"internet_reachable": True, "archetype": "security-tooling"},
+    ("object_store", "fsi_mail"): {"archetype": "security-tooling"},
     # The log and CloudTrail-delivery buckets are security-tooling by role,
     # unlike the site bucket which serves public content under the
     # object_store default.

@@ -117,5 +117,7 @@ Single-tier. Author → author. External escalations:
 - **GitHub Support** — if the issue is GitHub-side (account, repo, workflow infrastructure)
 - The mailbox in `security.txt` for acknowledging external reporters
 
-There is no actual FedRAMP authorization in scope, so the FedRAMP Security Inbox (FSI) and Incident Communications Procedures (ICP) do not apply.
+- **FedRAMP Security Inbox (FSI)** — the address in `data/cds/offering.json` (`fedramp_security_inbox`) receives FedRAMP's messages (AFC-CSO-INB). Mail from @fedramp.gov or @gsa.gov is acknowledged automatically and pages the operator; Emergency and Emergency Test messages carry a tracked deadline. Handling is in [`runbooks/fedramp-security-inbox.md`](runbooks/fedramp-security-inbox.md).
+
+There is no actual FedRAMP authorization in scope, so the Incident Communications Procedures (ICP) do not apply.
 

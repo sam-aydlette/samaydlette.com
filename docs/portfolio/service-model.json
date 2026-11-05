@@ -78,6 +78,14 @@
       "features": []
     },
     {
+      "key": "fsi",
+      "name": "FedRAMP Security Inbox",
+      "group": "fsi",
+      "owner_domain": "observability",
+      "consumed_by": ["website", "silk-reeling"],
+      "features": []
+    },
+    {
       "key": "audit",
       "name": "Audit trail and shared keys",
       "group": "audit",

@@ -15,6 +15,8 @@
      "match": ["aws::event_schedule::opa_compliance", "aws::function::opa_compliance", "aws::log_group::opa_compliance", "aws::iam_role::lambda_opa", "aws::iam_policy::lambda_opa", "aws::message_queue::compliance_dlq", "aws::kms_key::runtime_signing"]},
     {"key": "watchdog", "zone": "system", "label": "Evidence-freshness watchdog and alerting",
      "match": ["aws::*::evidence_watchdog", "aws::metric_alarm::evidence*", "aws::notification_topic::evidence_alerts"]},
+    {"key": "fsi", "zone": "system", "label": "FedRAMP Security Inbox (AFC-CSO-INB)",
+     "match": ["aws::mail_receiver::*", "aws::*::fedramp_inbox", "aws::object_store::fsi_mail", "aws::metric_alarm::fsi*"]},
     {"key": "app", "zone": "system", "label": "Application sub-system (Silk Reeling)",
      "match": ["aws::api_gateway::silk_reeling", "aws::identity_provider::silk_reeling", "aws::function::silk_reeling", "aws::iam_role::silk_reeling", "aws::iam_policy::silk_reeling", "aws::log_group::silk_*", "aws::secrets_manager::silk_*", "aws::kms_key::silk_reeling"]},
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
@@ -34,7 +36,9 @@
     {"key": "operator", "label": "Operator (dev machine)", "zone": "outside", "kind": "actor",
      "why": "Out per Rule of Thumb #4: development environment, no federal information."},
     {"key": "operator-email", "label": "Operator email and SaaS", "zone": "outside", "kind": "actor",
-     "why": "Out per Rule of Thumb #3; receives the evidence-alarm email (flow I), which carries alarm metadata only."},
+     "why": "Out per Rule of Thumb #3; receives the evidence-alarm email (flow I), which carries alarm metadata only, and the FedRAMP Security Inbox page (flow M), which carries a FedRAMP message's sender, subject, designation and deadline, never its body."},
+    {"key": "fedramp", "label": "FedRAMP (@fedramp.gov, @gsa.gov senders)", "zone": "outside", "kind": "actor",
+     "why": "The program office writing to the FedRAMP Security Inbox (AFC-CSO-INB); its mail is treated as FedRAMP by default (AFC-CSO-TFG)."},
     {"key": "public", "label": "Public Internet (readers, verifiers)", "zone": "outside", "kind": "actor",
      "why": "Anonymous consumers of the site and the /.well-known/ evidence."},
     {"key": "app-users", "label": "App users (Silk Reeling)", "zone": "outside", "kind": "actor",
@@ -44,7 +48,7 @@
     "package_id": "AGENCYAMAZONEW",
     "name": "AWS East/West",
     "status": "FedRAMP Certified Class C",
-    "services": ["VPC networking", "KMS HSM", "IAM control plane", "S3", "CloudFront edge", "Lambda", "API Gateway", "Cognito", "Secrets Manager", "EventBridge", "ACM", "CloudTrail", "CloudWatch", "SNS", "SQS", "Route 53"],
+    "services": ["VPC networking", "KMS HSM", "IAM control plane", "S3", "CloudFront edge", "Lambda", "API Gateway", "Cognito", "Secrets Manager", "EventBridge", "ACM", "CloudTrail", "CloudWatch", "SNS", "SQS", "Route 53", "SES"],
     "why": "Per Key Concept #6: the underlying infrastructure is inherited from the AWS package under the customer responsibility matrix."
   },
   "flows": [
@@ -69,6 +73,12 @@
     {"id": "J", "label": "Evidence Nightly → S3 (.well-known/vdr-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::evidence_nightly"}, {"component": "aws::object_store::website"}],
      "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/vdr-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Refreshed VDR and trend (Sigstore-signed)"},
     {"id": "K", "label": "Watchdog → S3 (evidence freshness read)", "path": [{"component": "aws::event_schedule::evidence_watchdog"}, {"component": "aws::function::evidence_watchdog"}, {"component": "aws::object_store::website"}],
-     "protocol": "AWS-internal", "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only", "encryption": "In transit: TLS", "data": "Published evidence timestamps; results go out as CloudWatch metrics that drive flow I's alarms"}
+     "protocol": "AWS-internal", "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only", "encryption": "In transit: TLS", "data": "Published evidence timestamps; results go out as CloudWatch metrics that drive flow I's alarms"},
+    {"id": "L", "label": "FedRAMP → SES receiving → inbox bucket", "path": [{"declared": "fedramp"}, {"component": "aws::mail_receiver::fsi"}, {"component": "aws::object_store::fsi_mail"}],
+     "protocol": "SMTP 25 (STARTTLS when the sender offers it; not required, AFC-CSO-RCV)", "auth": "None required of the sender; SPF, DKIM and DMARC verdicts recorded and shown to the operator", "encryption": "In transit: opportunistic TLS; at rest: SSE-KMS (at-rest CMK)", "data": "FedRAMP messages, full content"},
+    {"id": "M", "label": "Inbox function → SNS topic → operator email (out)", "path": [{"component": "aws::mail_receiver::fsi"}, {"component": "aws::function::fedramp_inbox"}, {"component": "aws::notification_topic::evidence_alerts"}, {"declared": "operator-email"}],
+     "protocol": "AWS-internal (SES async invoke, SNS publish); then email (SMTP)", "auth": "Inbox Lambda role: sns:Publish on the alert topic only", "encryption": "At rest: CMK · email not end-to-end encrypted", "data": "Message metadata only (sender, subject, designation, deadline); never the body"},
+    {"id": "N", "label": "Inbox function → SES → FedRAMP (acknowledgement)", "path": [{"component": "aws::function::fedramp_inbox"}, {"component": "aws::mail_receiver::fsi"}, {"declared": "fedramp"}],
+     "protocol": "SES send (DKIM-signed, custom MAIL FROM); SMTP with TLS", "auth": "Inbox Lambda role: ses:SendRawEmail as the inbox address only", "encryption": "In transit: TLS", "data": "Automatic acknowledgement naming the received subject and a reference"}
   ]
 }

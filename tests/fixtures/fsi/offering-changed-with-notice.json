@@ -1,0 +1,21 @@
+{
+  "fedramp_security_inbox": {
+    "address": "fsi@samaydlette.com",
+    "history": [
+      {
+        "address": "fedramp-security@samaydlette.com",
+        "since": "2026-11-05",
+        "fedramp_notified": null,
+        "basis": "Established. No earlier FedRAMP Security Inbox or Marketplace Security Email is on file with FedRAMP for this unsponsored system, so there was no prior address to change from."
+      },
+      {
+        "address": "fsi@samaydlette.com",
+        "since": "2026-12-01",
+        "fedramp_notified": {
+          "on": "2026-11-30",
+          "channel": "help.fedramp.gov [CSP] Notification of Changes form"
+        }
+      }
+    ]
+  }
+}

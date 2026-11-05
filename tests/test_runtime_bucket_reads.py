@@ -48,9 +48,13 @@ def _buckets(directory: Path) -> list[tuple[str, str, str]]:
 
 def test_every_application_bucket_is_readable():
     resources = _config_read_resources()
-    for kind, name, _ in _buckets(INFRA):
+    for kind, name, expr in _buckets(INFRA):
         ref = f"aws_s3_bucket.{name}.arn" if kind == "resource" else f"data.aws_s3_bucket.{name}.arn"
-        assert ref in resources, f"{ref} is inventoried but the runtime Lambda cannot read its configuration"
+        # A conditionally created bucket (count) is named by its local, the
+        # way the bootstrap buckets are: "arn:aws:s3:::${local.<name>}".
+        local = re.fullmatch(r"local\.(\w+)", expr)
+        by_name = local is not None and f'"arn:aws:s3:::${{local.{local.group(1)}}}"' in resources
+        assert ref in resources or by_name, f"{ref} is inventoried but the runtime Lambda cannot read its configuration"
 
 
 def test_every_bootstrap_bucket_is_readable_by_name():

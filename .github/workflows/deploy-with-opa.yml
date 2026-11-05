@@ -243,6 +243,24 @@ jobs:
     - name: Exception register expiry check
       run: python3 scripts/check-exceptions.py
 
+    # AFC-CSO-NOC: the FedRAMP Security Inbox address (data/cds/offering.json)
+    # cannot change without a history entry recording that FedRAMP was
+    # notified. Compared with the merge base on a pull request and with the
+    # previous commit on a push, so the history is also append-only.
+    - name: FedRAMP Security Inbox change notice (AFC-CSO-NOC)
+      env:
+        BASE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || '' }}
+        BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
+      run: |
+        base=""
+        if [ -n "$BASE_REF" ] && git fetch --no-tags --depth=1 origin "$BASE_REF"; then
+          git show FETCH_HEAD:data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        elif [ -n "$BEFORE_SHA" ] && git fetch --no-tags --depth=1 origin "$BEFORE_SHA"; then
+          git show "$BEFORE_SHA":data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        fi
+        # shellcheck disable=SC2086  # $base is an optional flag pair
+        python3 scripts/check-fsi-notice.py $base
+
     # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
     # banned at lint time; the parity test catches what the corpus exercises,
     # this catches the rest before it exists. It also requires every sprintf

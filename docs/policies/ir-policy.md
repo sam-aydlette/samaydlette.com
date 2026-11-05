@@ -6,7 +6,7 @@ External communication paths:
 
 - **Public reporter:** [`/.well-known/security.txt`](../../website/.well-known/security.txt) is the published vulnerability-reporting mailbox.
 - **Incident Communications Procedures (ICP, 20x):** the ICP rules apply at the procedure-documented level even though the system has no actual FedRAMP-customer reporting obligation. The runbook describes what would be communicated and to whom for a real FedRAMP-certified service.
-- **FedRAMP Security Inbox (FSI, 20x):** the system is not FedRAMP-certified; no actual FSI obligation applies. Notification path is documented in the runbook for reference.
+- **FedRAMP Security Inbox (FSI, 20x AFC):** the address in `data/cds/offering.json` (`fedramp_security_inbox`), received by SES and handled by `infrastructure/fedramp-inbox.tf`. FedRAMP mail is acknowledged automatically; Emergency and Important messages page the operator, the senior security official, and carry a tracked deadline; the hourly configuration check and the overdue check page through the evidence-alert topic. A change of address is blocked in CI until the change records that FedRAMP was notified (AFC-CSO-NOC). Procedure: [`fedramp-security-inbox.md`](../runbooks/fedramp-security-inbox.md).
 
 **20x rule integration.** KSI-INR (Incident Response), ICP (Incident Communications Procedures), FSI (FedRAMP Security Inbox).
 

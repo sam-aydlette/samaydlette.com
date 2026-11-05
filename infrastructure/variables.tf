@@ -183,6 +183,16 @@ variable "create_evidence_watchdog" {
   default     = true
 }
 
+# Whether to create the FedRAMP Security Inbox (SES receiving, the inbox bucket,
+# the inbox function and its alarms). See fedramp-inbox.tf. It pages through the
+# watchdog's alert topic and needs the site's DNS records, so it is also off
+# when the watchdog or manage_dns is off.
+variable "create_fedramp_inbox" {
+  description = "Whether to create the FedRAMP Security Inbox (AFC-CSO-INB)"
+  type        = bool
+  default     = true
+}
+
 # Whether to create automatic schedules for compliance monitoring
 variable "create_eventbridge_rules" {
   description = "Whether to create EventBridge rules for compliance monitoring"

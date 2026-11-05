@@ -229,6 +229,7 @@ data "aws_iam_policy_document" "compliance_logs" {
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-silk-reeling*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/${local.domain_dashed}-silk-reeling*",
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-evidence-watchdog*",
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${local.domain_dashed}-fedramp-inbox*",
     ]
   }
   statement {
@@ -561,6 +562,93 @@ resource "aws_iam_role_policy" "evidence_watchdog_management" {
   policy = data.aws_iam_policy_document.evidence_watchdog_management.json
 }
 
+# FedRAMP Security Inbox (infrastructure/fedramp-inbox.tf; AFC-CSO-INB): what
+# the deploy role needs to create and maintain SES receiving for the inbox
+# address, the domain identity that signs the acknowledgement, the inbox bucket,
+# and the inbox function's role and hourly schedule. The function itself is
+# covered by the existing grants on samaydlette-com-* functions, its log group
+# by compliance-logs-management above, its alarms by ManageEvidenceAlarms (they
+# are named under the watchdog prefix) and its DNS records by ManageSiteRecords.
+data "aws_iam_policy_document" "fedramp_inbox_management" {
+  # checkov:skip=CKV_AWS_356:SES v1 receipt-rule actions have no resource type, so Resource "*" is required; they are limited to this stack's region by aws:RequestedRegion. Every other statement is ARN-scoped. Documented exception.
+  statement {
+    sid    = "ManageInboxFunctionRole"
+    effect = "Allow"
+    actions = [
+      "iam:CreateRole", "iam:GetRole", "iam:DeleteRole", "iam:UpdateRole",
+      "iam:UpdateAssumeRolePolicy", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags",
+      "iam:PutRolePolicy", "iam:GetRolePolicy", "iam:DeleteRolePolicy", "iam:ListRolePolicies",
+      "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole",
+    ]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.domain_dashed}-fedramp-inbox-role"]
+  }
+  statement {
+    sid       = "PassInboxRoleToLambdaOnly"
+    effect    = "Allow"
+    actions   = ["iam:PassRole"]
+    resources = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${local.domain_dashed}-fedramp-inbox-role"]
+    condition {
+      test     = "StringEquals"
+      variable = "iam:PassedToService"
+      values   = ["lambda.amazonaws.com"]
+    }
+  }
+  statement {
+    sid    = "ManageInboxSchedule"
+    effect = "Allow"
+    actions = [
+      "events:PutRule", "events:DescribeRule", "events:DeleteRule", "events:EnableRule",
+      "events:DisableRule", "events:PutTargets", "events:RemoveTargets", "events:ListTargetsByRule",
+      "events:TagResource", "events:UntagResource", "events:ListTagsForResource",
+    ]
+    resources = ["arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:rule/${local.domain_dashed}-fedramp-inbox"]
+  }
+  statement {
+    # Same shape as ManageLogBucket, plus server access logging.
+    sid    = "ManageInboxBucket"
+    effect = "Allow"
+    actions = [
+      "s3:CreateBucket", "s3:Get*", "s3:ListBucket",
+      "s3:PutBucketPublicAccessBlock", "s3:PutBucketOwnershipControls",
+      "s3:PutEncryptionConfiguration", "s3:PutBucketVersioning", "s3:PutLifecycleConfiguration",
+      "s3:PutBucketPolicy", "s3:PutBucketTagging", "s3:PutBucketLogging",
+    ]
+    resources = ["arn:aws:s3:::${local.domain_dashed}-fsi-mail"]
+  }
+  statement {
+    sid    = "ManageDomainIdentity"
+    effect = "Allow"
+    actions = [
+      "ses:CreateEmailIdentity", "ses:GetEmailIdentity", "ses:DeleteEmailIdentity",
+      "ses:PutEmailIdentityMailFromAttributes", "ses:PutEmailIdentityDkimAttributes",
+      "ses:TagResource", "ses:UntagResource", "ses:ListTagsForResource",
+    ]
+    resources = ["arn:aws:ses:${var.aws_region}:${data.aws_caller_identity.current.account_id}:identity/${var.domain_name}"]
+  }
+  statement {
+    sid    = "ManageReceiving"
+    effect = "Allow"
+    actions = [
+      "ses:CreateReceiptRuleSet", "ses:DeleteReceiptRuleSet", "ses:DescribeReceiptRuleSet",
+      "ses:SetActiveReceiptRuleSet", "ses:DescribeActiveReceiptRuleSet",
+      "ses:CreateReceiptRule", "ses:UpdateReceiptRule", "ses:DeleteReceiptRule", "ses:DescribeReceiptRule",
+    ]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:RequestedRegion"
+      values   = [var.aws_region]
+    }
+  }
+}
+
+resource "aws_iam_role_policy" "fedramp_inbox_management" {
+  # checkov:skip=CKV_AWS_356:SES receipt-rule actions cannot be resource-scoped; region-conditioned. Documented exception.
+  name   = "fedramp-inbox-management"
+  role   = aws_iam_role.deploy.id
+  policy = data.aws_iam_policy_document.fedramp_inbox_management.json
+}
+
 output "github_actions_role_arn" {
   value       = aws_iam_role.deploy.arn
   description = "Set as the workflow's aws-actions/configure-aws-credentials role-to-assume."
@@ -680,6 +768,65 @@ resource "aws_iam_group_policy" "operators_evidence_alerts" {
           "cloudwatch:EnableAlarmActions", "cloudwatch:DescribeAlarms",
         ]
         Resource = "arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${local.domain_dashed}-evidence-watchdog-*"
+      },
+    ]
+  })
+}
+
+# Operators work the FedRAMP Security Inbox (docs/runbooks/fedramp-security-inbox.md,
+# scripts/fsi.py): read messages and the register, triage and close register
+# items, check the receiving configuration, and run the dated exercise. Scoped
+# to the inbox bucket, the at-rest key (by alias), and sending as the exercise
+# address only. Invoking the inbox function is already covered by
+# AWSLambda_FullAccess above.
+resource "aws_iam_group_policy" "operators_fedramp_inbox" {
+  # checkov:skip=CKV_AWS_355:ses:GetAccount and ses:DescribeActiveReceiptRuleSet are account-level reads, and KMS alias scoping needs Resource "*" with a kms:ResourceAliases condition; every other statement is ARN-scoped.
+  name  = "fedramp-inbox-operator"
+  group = aws_iam_group.operators.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ListInbox"
+        Effect   = "Allow"
+        Action   = "s3:ListBucket"
+        Resource = "arn:aws:s3:::${local.domain_dashed}-fsi-mail"
+      },
+      {
+        Sid      = "ReadMessagesAndRegister"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = ["arn:aws:s3:::${local.domain_dashed}-fsi-mail/inbound/*", "arn:aws:s3:::${local.domain_dashed}-fsi-mail/register/*"]
+      },
+      {
+        Sid      = "TriageAndCloseRegisterItems"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:DeleteObject"]
+        Resource = "arn:aws:s3:::${local.domain_dashed}-fsi-mail/register/*"
+      },
+      {
+        Sid      = "DecryptInboxObjects"
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource = "*"
+        Condition = {
+          "ForAnyValue:StringEquals" = { "kms:ResourceAliases" = "alias/${local.domain_dashed}-at-rest" }
+        }
+      },
+      {
+        Sid      = "CheckReceivingConfiguration"
+        Effect   = "Allow"
+        Action   = ["ses:GetAccount", "ses:DescribeActiveReceiptRuleSet", "ses:GetEmailIdentity"]
+        Resource = "*"
+      },
+      {
+        # The exercise's SMTP leg: one real message into the inbox, sent as the
+        # exercise address only.
+        Sid       = "SendExerciseMessage"
+        Effect    = "Allow"
+        Action    = ["ses:SendEmail"]
+        Resource  = "arn:aws:ses:${var.aws_region}:${data.aws_caller_identity.current.account_id}:identity/${var.domain_name}"
+        Condition = { StringEquals = { "ses:FromAddress" = "fsi-exercise@${var.domain_name}" } }
       },
     ]
   })
