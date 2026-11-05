@@ -23,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _frr  # noqa: E402
+import _offering  # noqa: E402
 
 SCHEMA = "frr-evidence/1"
 
@@ -99,7 +100,7 @@ def main(argv=None):
     records = _frr.load(a.records)
     per, failures = evaluate(records, junit_outcomes(a.junit))
     cited = sum(len(v["tests"]) for v in per.values())
-    doc = {"schema": SCHEMA, "generated_at": datetime.now(timezone.utc).isoformat(), "commit": a.commit,
+    doc = {"schema": SCHEMA, "fedRampId": _offering.fedramp_id(), "generated_at": datetime.now(timezone.utc).isoformat(), "commit": a.commit,
            "explanation": "Each FedRAMP rule record's cited tests and whether they passed in the unit-test run "
                           "of the build that published this file (scripts/check-frr-evidence.py). The build "
                           "fails when any cited test fails, errors, is skipped or does not run.",

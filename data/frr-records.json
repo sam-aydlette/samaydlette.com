@@ -482,7 +482,7 @@
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Partially Implemented",
-      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another.",
+      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another. The trust-center, scope and assessor files also carry it at top level (trust-center.json, trust-manifest.json, availability.json, policy-index.json, assessor-guide.json, simulated-assessment.json, agency-access-exercise.json, frr-evidence.json, and the independent availability feed as the deploy reads it), and are in REPORTS; a file named to the gate without a top-level fedRampId fails.",
       "evidence": [
         {
           "kind": "test",
@@ -503,9 +503,13 @@
         {
           "kind": "decision",
           "ref": "DEC-100"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_trust.py::test_known_bad_a_site_file_without_a_fedramp_id_fails"
         }
       ],
-      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, the availability feed, the policy index, the trust-center data, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
+      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
       "closes_with": [
         "W2",
         "W5",
@@ -620,8 +624,8 @@
     },
     {
       "frr_id": "CDS-CSO-PUB",
-      "status": "Partially Implemented",
-      "implementation": "The CPO (JSON and Markdown) publishes the FedRAMP ID (simulated fallback), service and deployment model, business categories, a UEI (simulated, flagged sam-gov), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its own security category, the next OCR date from the fixed calendar, the documentation overview and the current assessment service (none).",
+      "status": "Implemented",
+      "implementation": "The CPO (JSON and Markdown, public under /.well-known/) publishes every listed item that applies: the FedRAMP ID (FedRAMP's fallback, flagged simulated), service and deployment model, business categories, a UEI (simulated, flagged sam-gov: no SAM.gov registration), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its security category, the secure configuration guidance link, the documentation overview, the trust center landing page (https://samaydlette.com/trust/index.html) with access instructions, the next OCR date from the fixed calendar, and the current independent assessment service: none FedRAMP Recognized, stated as such, with the simulated assessor named. It is rebuilt on every deploy and daily by the package maintainer.",
       "evidence": [
         {
           "kind": "step",
@@ -642,13 +646,20 @@
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_trust_center_entry_is_the_landing_page_with_access_instructions"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_secure_configuration_guidance_links_the_published_guide"
         }
       ],
-      "gap": "Group 5 adds the secure configuration guidance and the trust-center entry to the CPO and the assessor fields.",
-      "closes_with": [
-        "W8",
-        "W10"
-      ]
+      "simulated": {
+        "counterparty": "sam-gov",
+        "how": "No SAM.gov registration exists, so the UEI is a plainly fake placeholder from data/cds/offering.json, flagged under providerExtensions.simulated in the published CPO. Nothing is registered or sent; every other item is real."
+      }
     },
     {
       "frr_id": "CDS-CSO-RIS",
@@ -1089,22 +1100,67 @@
     },
     {
       "frr_id": "CPO-CSO-OSA",
-      "status": "Not Implemented",
-      "implementation": "certification-package-overview.json independent_assessment.status = 'N/A ... no FedRAMP Recognized independent assessment service engaged' (build-cpo.py:97-102).",
-      "evidence": [],
-      "gap": "No independent assessment, so no assessor-supplied overall summary. To close: Engage a FedRAMP Recognized assessment service, receive its IVV-IAS-OSA summary (signed assessor record, as _assessor.py already supports), and embed it unmodified in the CPO.",
-      "closes_with": [
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "The CPO (certification-package-overview.json and .md) carries the assessor's overall summary (IVV-IAS-OSA) under providerExtensions.independentAssessment.overallSummary, quoted verbatim from the signed assessment set: rule and KSI pass, observation and fail counts, failures, areas of dispute and observations. scripts/build-cpo.py requires the set, verifies it (scripts/_assessor.load_assessment) and fails without a summary; the daily package maintainer rebuilds the CPO from the same published set. The schema's `assessor` object is left out because the simulated assessor has no FedRAMP assessor ID, and none is invented.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_overall_summary_is_the_assessors_record_verbatim"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_known_bad_an_assessment_without_a_summary_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_cpo_refuses_to_build_without_the_assessment"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_deploy_and_the_maintainer_give_the_cpo_the_assessment"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "The overall summary is written on every deploy by Totally Real Assessment Services, LLC (simulated), a reusable workflow in this repository (simulated-assessor.yml) that signs its set keylessly under its own pinned workflow identity. build-cpo.py quotes the summary record only after the set's signature verifies against that identity and every record's hash matches, and refuses to build without it. It is not a FedRAMP Recognized assessment service and the CPO says so; only the assessor is simulated."
+      }
     },
     {
       "frr_id": "CPO-CSO-OVR",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-cpo.py writes the CPO in FedRAMP's 2026-06-24 schema through write_validated: serviceIdentification, serviceProperties (with the package's repositories and the next OCR date), contactInformation, certifiedServices and metadata, with the services, cycle dates and simulated values under providerExtensions. It replaces certification-overview-package.json, which is retired.",
+      "status": "Implemented",
+      "implementation": "scripts/build-cpo.py writes the CPO in FedRAMP's 2026-06-24 schema through write_validated, with JSON and Markdown from the same data, carrying what each listed rule requires: metadata (CPO-CSO-MTD); the public information (CDS-CSO-PUB) including the trust center and secure configuration guidance; each service and its security category (CDS-CSO-SVC); the policy and procedure index (CDS-CSO-IRP), the KSI signal inventory and the Minimum Assessment Scope (MAS-CSO-IIR, MAS-CSO-FLO) as repositories; thirdPartyInformationResources (MAS-CSO-TPR); the cryptographic modules (CMU-CSO-CMD); and the assessment results with the assessor's overall summary (IVV-CSO-ICP, CPO-CSO-OSA). The simulated package submission refuses a CPO missing the trust center, secure configuration guidance, third-party resources or assessor summary.",
       "evidence": [
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_cpo_with_group_5_fields_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_third_party_resources_are_the_decided_records"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
         },
         {
           "kind": "step",
@@ -1118,11 +1174,6 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ],
-      "gap": "Group 5 adds the remaining required content: the assessor's overall summary (CPO-CSO-OSA), serviceProperties.secureConfigurationGuidance (SCG), thirdPartyInformationResources (MAS-CSO-TPR) and the trust-center repository entry.",
-      "closes_with": [
-        "W8",
-        "W10"
       ]
     },
     {
@@ -1220,8 +1271,8 @@
     },
     {
       "frr_id": "FRC-CSO-JSN",
-      "status": "Partially Implemented",
-      "implementation": "The CPO, SDR and OCR, like the VDR family, are written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 FedRAMP schemas: a document that fails is not written and the deploy stops. The package submission re-validates all three.",
+      "status": "Implemented",
+      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. SCN and incident JSON are not yet emitted; their builders must use write_validated when they are (SCN-CSO-HRM).",
       "evidence": [
         {
           "kind": "test",
@@ -1238,11 +1289,23 @@
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_known_bad_fixture_fails_for_missing_cors"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_well_known_behaviour_sends_read_only_cors_and_nosniff"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_deploy_checks_the_headers_before_the_sdr"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
         }
-      ],
-      "gap": "CORS and nosniff on public JSON: group 5.",
-      "closes_with": [
-        "W8"
       ]
     },
     {
@@ -1278,8 +1341,8 @@
     },
     {
       "frr_id": "FRC-CSO-PKG",
-      "status": "Partially Implemented",
-      "implementation": "scripts/submit-package.py checks the package (CPO, SDR and OCR each valid against FedRAMP's schema, every applicable rule in the SDR exactly once, one FedRAMP ID, certificationType 20x) and supplies it to a simulated FedRAMP intake: a function in the repository that returns a receipt. Nothing is sent. Each content change appends a signed entry to /.well-known/package-submission-log.json.",
+      "status": "Implemented",
+      "implementation": "scripts/submit-package.py checks the package on every deploy: the CPO (complete per CPO-CSO-OVR, including the trust center, secure configuration guidance, third-party resources and assessor summary), the SDR with every applicable rule exactly once, and the OCR, each valid against FedRAMP's schema, one FedRAMP ID across them and certificationType 20x. It then supplies the package to a simulated FedRAMP intake and appends a signed entry to /.well-known/package-submission-log.json for each content change. Nothing is sent.",
       "evidence": [
         {
           "kind": "test",
@@ -1298,10 +1361,10 @@
           "ref": ".well-known/package-submission-log.json"
         }
       ],
-      "gap": "The package is not complete until the CPO is (CPO-CSO-OVR: group 5's assessor summary, secure configuration guidance, third-party resources and trust-center entry). The submission mechanism is in place; the record moves to Implemented, simulated fedramp, when the CPO does.",
-      "closes_with": [
-        "W8"
-      ]
+      "simulated": {
+        "counterparty": "fedramp",
+        "how": "FedRAMP is simulated: the package goes to simulated_fedramp_intake() in scripts/submit-package.py, a function that never touches the network and returns an obviously fake receipt. The only trace is the signed, published submission log; any unexpected outcome fails the deploy."
+      }
     },
     {
       "frr_id": "FRC-CSO-POP",
@@ -1789,7 +1852,7 @@
     {
       "frr_id": "MAS-CSO-TPR",
       "status": "Implemented",
-      "implementation": "Each of the 11 third-party information resources (Sigstore Fulcio and Rekor, GitHub repository and Actions, GitHub OIDC, the operator's MFA authenticator, the GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database, jsDelivr, Google Cloud Storage) has a decided record in data/third-party-components.json with its general usage and configuration, justification for use, mitigation measures and compensating controls. The inventory builder fails when a decided record lacks any of the four, and scripts/build-mas.py fails the deploy when an inventoried external service has no decided record. Machine-readable output: the external_service components in .well-known/ksi-signal.json and the third-party section of .well-known/minimum-assessment-scope.json; the human-readable derivation is in its Markdown twin; the code is scripts/build-ksi-signal.py and scripts/build-mas.py.",
+      "implementation": "Each of the 11 third-party information resources (Sigstore Fulcio and Rekor, GitHub repository and Actions, GitHub OIDC, the operator's MFA authenticator, the GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database, jsDelivr, Google Cloud Storage) has a decided record in data/third-party-components.json with its general usage and configuration, justification for use, mitigation measures and compensating controls. The inventory builder fails when a decided record lacks any of the four, and scripts/build-mas.py fails the deploy when an inventoried external service has no decided record. Machine-readable output: the external_service components in .well-known/ksi-signal.json and the third-party section of .well-known/minimum-assessment-scope.json; the human-readable derivation is in its Markdown twin; the code is scripts/build-ksi-signal.py and scripts/build-mas.py. The CPO lists each, none FedRAMP certified, in thirdPartyInformationResources.nonCertified (scripts/_tpr.py).",
       "evidence": [
         {
           "kind": "test",
@@ -1814,6 +1877,10 @@
         {
           "kind": "artifact",
           "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_third_party_resources_are_the_decided_records"
         }
       ]
     },

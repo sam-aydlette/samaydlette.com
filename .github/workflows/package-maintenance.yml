@@ -122,6 +122,10 @@ jobs:
           fetch "$a.json"; fetch "$a.bundle"; verify "$a.json" "$a.bundle" "$ID_DEPLOY"
         done
         fetch iiw.csv; fetch iiw.bundle; verify iiw.csv iiw.bundle "$ID_DEPLOY"
+        # The simulated assessor's signed set: verified by the builders below
+        # (scripts/_assessor.py) against the pinned assessor identity.
+        fetch simulated-assessment.json || rm -f simulated-assessment.json
+        fetch simulated-assessment.bundle || rm -f simulated-assessment.bundle
         # The issue index exists once this workflow has run; before that, none.
         # Only a definite "not there" starts a new one; any other failure stops
         # the run rather than rebuild the index without its earlier issues.
@@ -159,21 +163,32 @@ jobs:
         set -euo pipefail
         W=../work
         mkdir -p out
+        # The simulated assessor's set, for the SDR, the T74 re-check and the
+        # CPO summary. A deployed commit from before the assessor existed has
+        # builders that take no such argument; it is rebuilt as it was deployed.
+        # shellcheck disable=SC2086  # $ASSESSMENT is a word list by design
+        ASSESSMENT=""
+        if grep -q -- '--assessment-bundle' ../scripts/build-cpo.py; then
+          ASSESSMENT="--assessment $W/simulated-assessment.json --assessment-bundle $W/simulated-assessment.bundle"
+        fi
         cp "$W/ksi-signal.json" "$W/vdr-report.json" .
         [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json --vdr vdr-report.json --profile ../data/system-profile.json \
           --previous-sdr "$W/security-decision-record.json" \
-          --output out/security-decision-record.json --md-output out/security-decision-record.md
-        python3 ../scripts/_assessor.py --sdr out/security-decision-record.json
+          --output out/security-decision-record.json --md-output out/security-decision-record.md \
+          $ASSESSMENT
+        python3 ../scripts/_assessor.py --sdr out/security-decision-record.json \
+          $ASSESSMENT
         python3 ../scripts/build-ocr.py --vdr vdr-report.json --decisions ../data/decisions.json \
           --ksi-signal ksi-signal.json --scn-register ../docs/scn/scn-register.csv \
           --previous "$W/ongoing-certification-report.json" \
           --output out/ongoing-certification-report.json --md-output out/ongoing-certification-report.md
         python3 ../scripts/build-cpo.py --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --ksi-signal ksi-signal.json --previous-cpo "$W/certification-package-overview.json" \
-          --output out/certification-package-overview.json --md-output out/certification-package-overview.md
+          --output out/certification-package-overview.json --md-output out/certification-package-overview.md \
+          $ASSESSMENT
         python3 ../scripts/_ccm.py --ics out/quarterly-review.ics
 
     # The snapshot is the package as published at issue time: the verified

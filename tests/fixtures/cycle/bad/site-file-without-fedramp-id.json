@@ -1,0 +1,5 @@
+{
+  "$comment": "Known bad: a trust-center site file named to the FedRAMP ID gate with no top-level fedRampId.",
+  "manifest_type": "fedramp-certification-data-manifest",
+  "artifacts": []
+}

@@ -31,6 +31,9 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 SITE = "https://samaydlette.com"
 COGNITO_UI = "https://samaydlette-com-silk-reeling.auth.us-east-2.amazoncognito.com/"
 # (key, service, url, statuses that mean "up")
@@ -127,6 +130,7 @@ def build(previous, sample, now):
     window_start = _iso(now - timedelta(days=WINDOW_DAYS))
     return {
         "feed_type": "availability-status",
+        "fedRampId": _offering.fedramp_id(),
         "rules": ["CDS-CSO-AVR", "CDS-TRC-USH"],
         "generated_at": sample["t"],
         "monitor": "GitHub Actions (.github/workflows/availability-probe.yml), outside AWS: it keeps "

@@ -20,6 +20,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
+import _assessor  # noqa: E402
 import _ccm  # noqa: E402
 import _decisions  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
@@ -32,6 +33,16 @@ NOW = datetime(2026, 11, 5, 12, tzinfo=timezone.utc)
 ISSUE_DAY = datetime(2026, 11, 24, 12, tzinfo=timezone.utc)
 SIGNAL = json.loads((REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json").read_text())
 PROFILE = json.loads((REPO / "data" / "system-profile.json").read_text())
+# The simulated assessor's signed set (signature check stubbed; tested in test_simulated_assessor.py).
+def _assessment():
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        s = Path(d) / "simulated-assessment.json"
+        s.write_text((REPO / "tests" / "fixtures" / "assessor" / "simulated-set.json").read_text())
+        return _assessor.load_assessment(s, s, verifier=lambda *_a: True)
+
+
+ASSESSMENT = _assessment()
 
 
 def _load(name, script):
@@ -63,7 +74,8 @@ def _off(path=_offering.OFFERING_PATH):
 
 
 def _cpo(off=None, prev=None, now=NOW):
-    return cpo.build(off or _off(), PROFILE, SIGNAL, _cal(now.date()), prev or {}, now, cpo.boundary_groups())
+    return cpo.build(off or _off(), PROFILE, SIGNAL, _cal(now.date()), prev or {}, now, cpo.boundary_groups(),
+                     ASSESSMENT)
 
 
 def _ocr(now=NOW, issue=None, incidents=None, feedback=None, scn_rows=(), prev=None, decisions=None):
@@ -156,7 +168,8 @@ def test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated(built_cp
     assert off["provider_name"] in si["fedRampPackageId"] and off["service_acronym"] in si["fedRampPackageId"]
     assert "NOT-A-REAL" in si["fedRampPackageId"] and "NOT-A-REAL" in si["ueiNumber"]
     sim = {s["field"]: s["counterparty"] for s in built_cpo["providerExtensions"]["simulated"]}
-    assert sim == {"serviceIdentification.fedRampPackageId": "fedramp", "serviceIdentification.ueiNumber": "sam-gov"}
+    assert sim == {"serviceIdentification.fedRampPackageId": "fedramp", "serviceIdentification.ueiNumber": "sam-gov",
+                   "providerExtensions.independentAssessment.overallSummary": "assessor"}
 
 
 @pytest.mark.parametrize("fixture,reason", [
@@ -419,6 +432,7 @@ def test_a_complete_package_is_logged_once_per_content_change():
 @pytest.mark.parametrize("over,rules,reason", [
     ({"cpo": "../../cr26/bad/cpo-no-sales-contact.json"}, PKG_RULES, "does not validate against FedRAMP's schema"),
     ({"cpo": "cpo-rev5-program.json"}, PKG_RULES, "FRC-CSO-POP"),
+    ({"cpo": "cpo-without-assessment-summary.json"}, PKG_RULES, "CPO-CSO-OVR"),
     ({"sdr": "sdr-repeats-a-rule.json"}, PKG_RULES, "every applicable FedRAMP rule exactly once"),
     ({}, PKG_RULES + ["CCM-OCR-AVL"], "every applicable FedRAMP rule exactly once"),
     ({"ocr": "ocr-other-fedramp-id.json"}, PKG_RULES, "CDS-CSO-FID"),
@@ -438,8 +452,8 @@ def test_a_malformed_previous_log_is_not_overwritten():
 # --- the FedRAMP ID gate (CDS-CSO-FID) -------------------------------------------------
 
 def test_the_gate_covers_the_three_reports_by_default():
-    assert fid_gate.REPORTS == ("certification-package-overview.json", "security-decision-record.json",
-                                "ongoing-certification-report.json")
+    assert fid_gate.REPORTS[:3] == ("certification-package-overview.json", "security-decision-record.json",
+                                    "ongoing-certification-report.json")
     step = _step("deploy-with-opa.yml", "FedRAMP ID in every FedRAMP report (CDS-CSO-FID)")
     assert "check-fedramp-id.py" in step
 
@@ -530,7 +544,9 @@ def _resolves(url):
     if url.startswith(site + "/.well-known/"):
         name = url[len(site + "/.well-known/"):]
         governed = {a["path"] for a in _json(REPO / "infrastructure" / "schemas" / "freshness-config.json")["artifacts"]}
-        return f".well-known/{name}" in governed or (REPO / "website" / ".well-known" / name).is_file()
+        twin = name[:-3] + ".json" if name.endswith(".md") else name  # a governed artifact's Markdown twin
+        return (f".well-known/{name}" in governed or f".well-known/{twin}" in governed
+                or (REPO / "website" / ".well-known" / name).is_file())
     if url in (site, site + "/"):
         return (REPO / "website" / "index.html").is_file()
     if url.startswith(site + "/"):
@@ -545,7 +561,9 @@ def _resolves(url):
 
 
 def test_every_link_in_the_cpo_and_ocr_resolves(built_cpo, rolling):
-    for doc in (built_cpo, rolling):
+    # Third-party resources' own websites (MAS-CSO-TPR) are outside this site by design.
+    cpo_own = {k: v for k, v in built_cpo.items() if k != "thirdPartyInformationResources"}
+    for doc in (cpo_own, rolling):
         urls = set(re.findall(r"https://[^\s\"')<>]+", json.dumps(doc)))
         assert urls
         bad = sorted(u.rstrip(".,") for u in urls if not _resolves(u.rstrip(".,")))

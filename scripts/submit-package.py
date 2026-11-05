@@ -59,11 +59,34 @@ def simulated_fedramp_intake(manifest):
 PROGRAM = "20x"  # FRC-CSO-POP: one program sought (DEC-107)
 
 
+# CPO-CSO-OVR content the schema leaves optional but the rules require here:
+# the trust center and secure configuration guidance (CDS-CSO-PUB), the
+# third-party resources (MAS-CSO-TPR) and the assessor's overall summary
+# (CPO-CSO-OSA).
+CPO_REQUIRED = (("serviceProperties", "trustCenter"), ("serviceProperties", "secureConfigurationGuidance"),
+                ("thirdPartyInformationResources",),
+                ("providerExtensions", "independentAssessment", "overallSummary"))
+
+
+def cpo_gaps(cpo):
+    out = []
+    for path in CPO_REQUIRED:
+        node = cpo
+        for k in path:
+            node = node.get(k) if isinstance(node, dict) else None
+        if not node:
+            out.append(".".join(path))
+    return out
+
+
 def check_components(docs, applicable, fedramp_id):
     for kind, doc in docs.items():
         errs = fs.validate(doc, kind)
         if errs:
             _fail(f"the {kind.upper()} does not validate against FedRAMP's schema: {errs[0]}")
+    missing = cpo_gaps(docs["cpo"])
+    if missing:
+        _fail(f"the CPO is incomplete (CPO-CSO-OVR): no {', '.join(missing)}")
     if docs["cpo"]["serviceIdentification"]["certificationType"] != PROGRAM:
         _fail(f"the CPO's certificationType is not {PROGRAM}: this offering seeks one program only (FRC-CSO-POP)")
     ids = [r["frrID"] for r in docs["sdr"]["fedRampRequirements"]]

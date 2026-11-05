@@ -30,6 +30,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location(
     "availability_probe", Path(__file__).resolve().parent / "availability-probe.py")
 assert _spec is not None and _spec.loader is not None
@@ -62,6 +65,7 @@ def daily(samples, now, days=probe.WINDOW_DAYS):
 def build(feed, signal_id, now):
     return {
         "feed_type": "availability",
+        "fedRampId": _offering.fedramp_id(),
         "rules": ["CDS-CSO-AVR", "CDS-TRC-USH"],
         "emitted_at": now.isoformat(),
         "ksi_signal_id": signal_id,

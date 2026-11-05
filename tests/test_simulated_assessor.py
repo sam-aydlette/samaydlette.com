@@ -147,7 +147,7 @@ def _guide(**art):
     chk = {"url": f"{SITE}/.well-known/security-decision-record.json",
            "bundle_url": f"{SITE}/.well-known/security-decision-record.bundle", "identities": ["deploy"],
            "timestamp": {"source": "json", "field": "emitted_at"}, "max_age_hours": 720, **art}
-    return {"site": SITE,
+    return {"site": SITE, "fedRampId": "Example Provider (EXD)",
             "identities": {"deploy": "D", "nightly": "N", "assessor": "A", "oidc_issuer": "I"},
             "rules": [{"rule_id": "SDR-CSO-FRR", "force": "MUST", "status": "Implemented", "evidence": [
                 {"kind": "test", "ref": "tests/t.py::test_a", "check": {"pytest": "tests/t.py::test_a"}},
@@ -315,3 +315,12 @@ def test_the_assessor_workflow_pins_the_same_opa_as_the_deploy():
 def test_the_assessor_fetches_only_https_from_the_providers_site(url):
     with pytest.raises(SystemExit, match="refusing to fetch"):
         assess.http_get(url)
+
+
+def test_the_set_names_the_offering_and_a_guide_without_an_id_fails(tmp_path):
+    g = _guide()
+    doc = assess.build_set(g, *_run(g), NOW, "0" * 40, "f" * 64)
+    assert doc["fedRampId"] == "Example Provider (EXD)"
+    del g["fedRampId"]
+    with pytest.raises(SystemExit, match="CDS-CSO-FID"):
+        assess.build_set(g, *_run(g), NOW, "0" * 40, "f" * 64)

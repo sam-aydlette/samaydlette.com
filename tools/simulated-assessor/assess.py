@@ -333,7 +333,11 @@ def build_set(guide, rule_results, ksi_results, now, commit, guide_sha):
                f"observation, {kc['fail']} fail. Failures: {', '.join(fails) or 'none'}. Areas of dispute: none. "
                f"Observations: {' | '.join(sorted(set(obs))) or 'none'}. {DISCLAIMER}")
     records.append(_record(f"TRAS-{tag}-SUMMARY", "summary", summary, issued))
+    if not isinstance(guide.get("fedRampId"), str) or not guide["fedRampId"]:
+        raise SystemExit("::error::simulated assessor: the provider's guide names no FedRAMP ID (CDS-CSO-FID)")
     return {"assessment_type": "simulated-independent-assessment", "schema_version": "1",
+            # The offering under assessment, as the provider's guide names it (CDS-CSO-FID).
+            "fedRampId": guide["fedRampId"],
             "simulated": True, "fedramp_recognized": False, "assessor_id": "NOT-A-REAL-ASSESSOR-ID",
             "disclaimer": DISCLAIMER, "assessor": {"organization": ORG, "key_id": KEY_ID},
             "issued_at": issued,

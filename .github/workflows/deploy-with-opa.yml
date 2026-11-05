@@ -1751,7 +1751,8 @@ jobs:
           || echo '{}' > previous-cpo.json
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-          --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json
+          --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json \
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
 
     # CDS-CSO-FRC: every FedRAMP Certification Report received is published
     # unmodified (its sha256 is checked against the register) with the days
@@ -1777,12 +1778,6 @@ jobs:
           || rm -f previous-package-submission-log.json
         python3 ../scripts/submit-package.py --previous previous-package-submission-log.json \
           --output package-submission-log.json --commit "$GITHUB_SHA"
-
-    # CDS-CSO-FID: every FedRAMP report this deploy publishes carries the
-    # offering's FedRAMP ID (scripts/check-fedramp-id.py REPORTS lists them).
-    - name: FedRAMP ID in every FedRAMP report (CDS-CSO-FID)
-      working-directory: infrastructure
-      run: python3 ../scripts/check-fedramp-id.py
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -1897,6 +1892,14 @@ jobs:
         python3 ../scripts/build-trust-manifest.py --dir . --policy-index policy-index.json --commit "$GITHUB_SHA" \
           --output trust-manifest.json --md-output trust-manifest.md
         python3 ../scripts/build-human-views.py trust-manifest.json --list published-docs.txt
+
+    # CDS-CSO-FID: every FedRAMP report this deploy publishes carries the
+    # offering's FedRAMP ID (scripts/check-fedramp-id.py REPORTS lists them).
+    # Runs once every listed file is built (the trust center and manifest are
+    # the last), and before anything is published.
+    - name: FedRAMP ID in every FedRAMP report (CDS-CSO-FID)
+      working-directory: infrastructure
+      run: python3 ../scripts/check-fedramp-id.py
 
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure

@@ -26,7 +26,15 @@
       "repositoryDescription": "All certification data.",
       "authenticationRequired": false
     },
-    "nextOngoingCertificationReportDate": "2027-02-01"
+    "nextOngoingCertificationReportDate": "2027-02-01",
+    "secureConfigurationGuidance": {
+      "repositoryType": [
+        "Secure Configuration Guidance"
+      ],
+      "url": "https://example.com/scg",
+      "repositoryDescription": "The secure configuration guide.",
+      "authenticationRequired": false
+    }
   },
   "contactInformation": [
     {
@@ -45,8 +53,24 @@
       "serviceDescription": "Renders uploads."
     }
   ],
+  "thirdPartyInformationResources": {
+    "nonCertified": [
+      {
+        "name": "Example CDN",
+        "provider": "Example Co",
+        "useCase": "Serves static files."
+      }
+    ]
+  },
   "providerExtensions": {
     "fedRampId": "Example Provider (EXD)",
-    "contentSha256": "98b0de339ac1bf2eae4bc307716cd57c3078aaf9cfbc8e23fb3c966323ac3366"
+    "contentSha256": "98b0de339ac1bf2eae4bc307716cd57c3078aaf9cfbc8e23fb3c966323ac3366",
+    "independentAssessment": {
+      "overallSummary": {
+        "record_id": "X-SUMMARY",
+        "kind": "summary",
+        "text": "Overall summary (simulated)."
+      }
+    }
   }
 }

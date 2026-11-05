@@ -5,9 +5,10 @@ FedRAMP ID (CDS-CSO-FID).
 For each file named: a report in a FedRAMP schema ($schema under
 https://fedramp.gov/schemas/) must carry providerExtensions.fedRampId equal to
 data/cds/offering.json's fedramp_id, and the CPO also in
-serviceIdentification.fedRampPackageId; any other JSON that has a top-level
-fedRampId (the issue index, logs, snapshot manifests) must carry the same
-value. A file that cannot be read fails. Exit 0 pass, 1 fail.
+serviceIdentification.fedRampPackageId; any other JSON (the issue index, logs,
+snapshot manifests, the trust-center data) must carry the same value at top
+level, `fedRampId`. A file named here without one fails, as does a file that
+cannot be read. Exit 0 pass, 1 fail.
 
   check-fedramp-id.py             # every file in REPORTS, in the current directory
   check-fedramp-id.py FILE...     # these files
@@ -28,6 +29,18 @@ REPORTS = (
     "certification-package-overview.json",
     "security-decision-record.json",
     "ongoing-certification-report.json",
+    # Trust center, scope and assessor (group 5): site files, top-level fedRampId.
+    "trust-center.json",
+    "trust-manifest.json",
+    "availability.json",
+    "policy-index.json",
+    "assessor-guide.json",
+    "simulated-assessment.json",
+    "agency-access-exercise.json",
+    "frr-evidence.json",
+    # The independent monitor's feed as this deploy read it (availability-status.json
+    # from the availability-status branch; it is built by scripts/availability-probe.py).
+    "availability-probe.json",
 )
 FEDRAMP_SCHEMAS = ("https://fedramp.gov/schemas/", "https://www.fedramp.gov/schemas/")
 
@@ -42,8 +55,8 @@ def problems(name, doc, fid):
         si = doc.get("serviceIdentification")
         if si is not None and si.get("fedRampPackageId") != fid:
             out.append(f"{name}: serviceIdentification.fedRampPackageId is not the offering's FedRAMP ID")
-    elif "fedRampId" in doc and doc["fedRampId"] != fid:
-        out.append(f"{name}: fedRampId is not the offering's FedRAMP ID")
+    elif doc.get("fedRampId") != fid:
+        out.append(f"{name}: top-level fedRampId is missing or not the offering's FedRAMP ID")
     return out
 
 

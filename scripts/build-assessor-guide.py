@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
 import _frr  # noqa: E402
+import _offering  # noqa: E402
 import _rules  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -107,7 +108,7 @@ def build(records, applicable, catalog, fresh, now, commit=None):
                                   "deploy identity; the SDR's keySecurityIndicators entry gives its measures"),
              "check": {"ksi_in_signal": i["id"]}}
             for f in catalog["KSI"].values() for i in f["indicators"]]
-    return {"schema": SCHEMA, "generated_at": now.isoformat(), "commit": commit, "site": SITE,
+    return {"schema": SCHEMA, "fedRampId": _offering.fedramp_id(), "generated_at": now.isoformat(), "commit": commit, "site": SITE,
             "repository": REPO_URL, "how_to_use": HOW_TO_USE, "sampling": SAMPLING,
             "identities": {**IDENTITIES, "oidc_issuer": ISSUER},
             "summary": {"rules": len(rules), "ksis": len(ksis),

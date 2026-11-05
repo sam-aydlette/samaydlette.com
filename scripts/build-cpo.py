@@ -20,6 +20,11 @@
 #   metadata                version (semver on a content hash), lastUpdated,
 #                           updateSource, accountable official (CPO-CSO-MTD)
 #
+#   serviceProperties.trustCenter / .secureConfigurationGuidance, the
+#   thirdPartyInformationResources and the assessor's overall summary under
+#   providerExtensions.independentAssessment: one small function each (group 5:
+#   CDS-CSO-PUB/UTC, SCG-CSO-AUP, MAS-CSO-TPR, CPO-CSO-OSA).
+#
 # Simulated values are flagged under providerExtensions.simulated, naming the
 # outside party they stand in for. Each top-level section is one small function,
 # so a field can be added without touching the others. Validated against the
@@ -36,9 +41,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _assessor  # noqa: E402
 import _ccm  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _offering  # noqa: E402
+import _tpr  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 BOUNDARY = REPO / "docs" / "boundary" / "boundary-classification.json"
@@ -90,10 +97,74 @@ def repositories():
              "authenticationRequired": False} for f, types, desc in PACKAGE]
 
 
+# --- group 5's fields: one small function each ---------------------------------------
+
+TRUST_CENTER = "https://samaydlette.com/trust/index.html"
+
+
+def trust_center():
+    """serviceProperties.trustCenter (CDS-CSO-PUB, CDS-CSO-UTC): the landing
+    page, with how to access what it holds."""
+    return {"repositoryType": ["Trust Center", "Assessment Reports", "Policies and Procedures"],
+            "url": TRUST_CENTER,
+            "repositoryDescription": "The FedRAMP-compatible trust center: every piece of certification data, "
+                                     "indexed by the signed trust manifest (" + BASE + "trust-manifest.json).",
+            "authenticationRequired": False,
+            "accessRequestInstructions": "No access request is needed: everything is public. Fetch any artifact "
+                                         "with an HTTPS GET; the trust manifest lists each one with its signature "
+                                         "and signer. An agency that wants to be on record files the agency access "
+                                         "form linked from the trust center (Request access)."}
+
+
+def secure_configuration_guidance():
+    """serviceProperties.secureConfigurationGuidance (SCG-CSO-RSC/AUP)."""
+    return {"repositoryType": ["Secure Configuration Guidance"],
+            "url": BASE + "secure-configuration-guide.md",
+            "repositoryDescription": "The Secure Configuration Guide: how to obtain, use and change the "
+                                     "security-relevant settings, with recommended defaults. Machine-readable and "
+                                     "signed: " + BASE + "secure-configuration-guide.json.",
+            "authenticationRequired": False}
+
+
+def third_party_information_resources():
+    """thirdPartyInformationResources (MAS-CSO-TPR), from the decided records."""
+    return _tpr.cpo_third_party_information_resources()
+
+
+def independent_assessment(off, assessment):
+    """providerExtensions.independentAssessment (CPO-CSO-OSA, CDS-CSO-PUB): the
+    current service, and the assessor's overall summary (IVV-IAS-OSA) carried
+    verbatim from its signed set. The schema's `assessor` object needs a
+    FedRAMP assessor ID; the simulated assessor has none, so it is left out
+    rather than given an ID-shaped value."""
+    summary = _assessor.overall_summary(assessment)
+    if summary is None:
+        _fail("the assessment carries no overall summary (CPO-CSO-OSA)")
+    return {"currentService": off.get("current_independent_assessment_service"),
+            "overallSummary": summary,
+            "assessmentSet": BASE + "simulated-assessment.json",
+            "simulated": True}
+
+
+ASSESSMENT_REPOSITORIES = [
+    ("simulated-assessment.json", ["Assessment Reports"],
+     "The simulated assessor's signed results for every rule and KSI, with its overall summary (IVV-CSO-ICP). "
+     "Simulated: not a FedRAMP independent assessment."),
+    ("assessor-guide.json", ["Assessment Reports"], "How to verify and validate each rule and KSI (IVV-CSO-STE)."),
+    ("minimum-assessment-scope.json", ["Minimum Assessment Scope"],
+     "Information resources, flows and third parties in scope (MAS-CSO-IIR/FLO/TPR)."),
+    ("trust-manifest.json", ["Trust Center"], "Signed index of all certification data (CDS-TRC-PAC)."),
+]
+
+
 def service_properties(off, dates):
     return {"serviceType": off["service_model"], "deploymentModel": off["deployment_model"],
             "businessCategory": off["business_category"],
-            "additionalRepositories": repositories(),
+            "trustCenter": trust_center(),
+            "secureConfigurationGuidance": secure_configuration_guidance(),
+            "additionalRepositories": repositories() + [
+                {"repositoryType": t, "url": BASE + f, "repositoryDescription": d, "authenticationRequired": False}
+                for f, t, d in ASSESSMENT_REPOSITORIES],
             "nextOngoingCertificationReportDate": dates["nextOngoingCertificationReportDate"]}
 
 
@@ -155,10 +226,13 @@ def simulated(off):
     """The values that stand in for an outside party, and which party."""
     return [{"field": "serviceIdentification.fedRampPackageId", "counterparty": "fedramp",
              "how": off["fedramp_id_simulated"]},
-            {"field": "serviceIdentification.ueiNumber", "counterparty": "sam-gov", "how": off["uei_simulated"]}]
+            {"field": "serviceIdentification.ueiNumber", "counterparty": "sam-gov", "how": off["uei_simulated"]},
+            {"field": "providerExtensions.independentAssessment.overallSummary", "counterparty": "assessor",
+             "how": "Written and signed on every deploy by Totally Real Assessment Services, LLC (simulated), a "
+                    "workflow in this repository; not a FedRAMP Recognized assessment service."}]
 
 
-def provider_extensions(off, prof, signal, dates, groups):
+def provider_extensions(off, prof, signal, dates, groups, assessment):
     components = signal.get("components", []) if signal else []
     return {
         "fedRampId": off["fedramp_id"],
@@ -176,12 +250,12 @@ def provider_extensions(off, prof, signal, dates, groups):
             "boundaryMap": BASE + "boundary-map.json",
             "authorizationBoundary": "https://samaydlette.com/research/authorization-boundary.html"},
         "cryptographicModules": off.get("cryptographic_modules", []),
-        "independentAssessment": off.get("current_independent_assessment_service"),
+        "independentAssessment": independent_assessment(off, assessment),
         "documentationOverview": off.get("documentation_overview_url"),
     }
 
 
-def build(off, prof, signal, cal, prev, now, groups):
+def build(off, prof, signal, cal, prev, now, groups, assessment):
     dates = _ccm.dates_summary(cal, now.date())
     ao = off["accountable_official"]
     doc = {
@@ -190,8 +264,9 @@ def build(off, prof, signal, cal, prev, now, groups):
         "serviceProperties": service_properties(off, dates),
         "contactInformation": contacts(off),
         "certifiedServices": certified_services(off),
+        "thirdPartyInformationResources": third_party_information_resources(),
         "metadata": {"accountableOfficial": {"name": ao["name"], "title": ao["title"], "contact": ao["contact"]}},
-        "providerExtensions": provider_extensions(off, prof, signal, dates, groups),
+        "providerExtensions": provider_extensions(off, prof, signal, dates, groups, assessment),
     }
     return _offering.stamp_version(doc, prev, now, "Automated: scripts/build-cpo.py, from data/cds/offering.json, "
                                    "the system profile, the CCM calendar and the KSI signal")
@@ -210,6 +285,11 @@ def main(argv=None):
     ap.add_argument("--previous-cpo", default=None)
     ap.add_argument("--output", default="certification-package-overview.json")
     ap.add_argument("--md-output", default="certification-package-overview.md")
+    # The simulated assessor's keyless-signed set, verified against the pinned
+    # assessor identity before its summary is quoted (CPO-CSO-OSA). Required.
+    ap.add_argument("--assessment", required=True)
+    ap.add_argument("--assessment-bundle", default=None)
+    ap.add_argument("--assessor-identity", default=str(_assessor.IDENTITY_PATH))
     a = ap.parse_args(argv)
 
     now = datetime.now(timezone.utc)
@@ -224,7 +304,9 @@ def main(argv=None):
             prev = json.loads(Path(a.previous_cpo).read_text())
         except json.JSONDecodeError:
             prev = {}
-    doc = build(off, prof, signal, _ccm.load(a.calendar, now.date()), prev, now, boundary_groups())
+    assessment = _assessor.load_assessment(a.assessment, a.assessment_bundle or a.assessment[:-5] + ".bundle",
+                                           a.assessor_identity)
+    doc = build(off, prof, signal, _ccm.load(a.calendar, now.date()), prev, now, boundary_groups(), assessment)
     fs.write_validated(doc, "cpo", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(doc) + "\n")
@@ -291,7 +373,18 @@ def render_markdown(c):
     for mod in pe["cryptographicModules"]:
         out.append(f"| {_cell(mod.get('module', ''))} | {_cell(mod.get('validation', ''))} | "
                    f"{_cell(mod.get('role', ''))} |")
-    out += ["", "## Independent assessment", "", str(pe["independentAssessment"]), "",
+    ia = pe["independentAssessment"]
+    out += ["", "## Trust center and secure configuration", "",
+            f"- **Trust center:** {sp['trustCenter']['url']} ({sp['trustCenter']['accessRequestInstructions']})",
+            f"- **Secure configuration guidance:** {sp['secureConfigurationGuidance']['url']}", "",
+            "## Third-party information resources (MAS-CSO-TPR)", "",
+            "None is FedRAMP certified.", "", "| Resource | Provider | Use |", "|---|---|---|"]
+    for r in c["thirdPartyInformationResources"]["nonCertified"]:
+        out.append(f"| {_cell(r['name'])} | {_cell(r['provider'])} | {_cell(r['useCase'])} |")
+    out += ["", "## Independent assessment", "", f"- **Current service:** {ia['currentService']}",
+            f"- **Signed results:** {ia['assessmentSet']}", "",
+            "**Overall summary (IVV-IAS-OSA), quoted verbatim from the assessor's signed record "
+            f"`{ia['overallSummary']['record_id']}`:**", "", "> " + _cell(ia["overallSummary"]["text"]), "",
             "---", "_Source of truth: the signed `certification-package-overview.json` (CPO-CSO-OVR)._"]
     return "\n".join(out)
 

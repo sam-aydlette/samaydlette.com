@@ -22,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
+import _offering  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SITE = "https://samaydlette.com"
@@ -112,6 +113,7 @@ def build(fresh, d, policy_index, now, commit=None):
     policies = [{"name": e["name"], "kind": e["kind"], "url": e["url"], "media_type": MEDIA[".md"],
                  "version": e["version"], "last_updated": e["last_updated"]} for e in policy_index["entries"]]
     return {"manifest_type": "fedramp-certification-data-manifest", "schema_version": "1",
+            "fedRampId": _offering.fedramp_id(),
             "generated_at": now.isoformat(), "commit": commit,
             "trust_center": f"{SITE}/trust/", "access": ACCESS,
             "signers": {**SIGNERS, "oidc_issuer": ISSUER},

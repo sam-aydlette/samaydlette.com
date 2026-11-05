@@ -30,6 +30,9 @@ import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 REGISTER = REPO / "data" / "agency-access.json"
 SCENARIO = REPO / "data" / "agency-access-exercise.json"
@@ -256,7 +259,7 @@ def main(argv=None):
         print(f"::error::agency access exercise: {m}")
     if mismatches:
         _fail("the exercise did not produce the expected outcomes")
-    log = {"log_type": "agency-access-exercise", "simulated": True, "counterparty": "agency",
+    log = {"log_type": "agency-access-exercise", "fedRampId": _offering.fedramp_id(), "simulated": True, "counterparty": "agency",
            "generated_at": datetime.now(timezone.utc).isoformat(), "as_of": today.isoformat(),
            "disclaimer": scenario["disclaimer"], "procedure": "docs/procedures/agency-access.md",
            "notice_window_business_days": NOTICE_DAYS,
