@@ -130,6 +130,7 @@ violations contains violation if {
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudwatch_metric_alarm"
+	gate.attribute_read_ok(r, "alarm_actions")
 	not gate.planned_unknown(r, "alarm_actions")
 	not alarm_actionable(r)
 	violation := gate.make_violation(

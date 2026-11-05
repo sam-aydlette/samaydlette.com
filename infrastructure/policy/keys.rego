@@ -5,7 +5,11 @@
 # (issued, not about to expire) and the hosted zone's DNSSEC signing status.
 #
 # Runtime-only facts, written by the emitter where Terraform has no attribute:
-#   aws_acm_certificate.values.not_after   (DescribeCertificate NotAfter)
+#   aws_acm_certificate.values.days_to_expiry  (whole days from the run to
+#                                              DescribeCertificate NotAfter;
+#                                              the reader derives it because
+#                                              the Wasm host has no time
+#                                              builtins)
 #   aws_route53_zone.values.dnssec_status  (GetDNSSEC Status.ServeSignature)
 # The plan carries the certificate and zone as data sources without these
 # facts, so those two rules bite only on live state.
@@ -14,12 +18,6 @@
 package policy.terraform.keys
 
 import data.policy.gate
-
-ns_per_day := 86400000000000
-
-# The evaluation time is data (data.runtime.evaluated_at), never time.now_ns(),
-# so the Go and Wasm evaluators agree; without it no expiry is computed.
-evaluated_at_ns := time.parse_rfc3339_ns(data.runtime.evaluated_at)
 
 # METADATA
 # title: Symmetric KMS keys rotate
@@ -92,8 +90,8 @@ violations contains violation if {
 # title: TLS certificate is not about to expire
 # description: >-
 #   The certificate must stay valid for at least
-#   data.config.gate.tls.min_days_to_expiry days past the evaluation time
-#   (ACM renews 60 days ahead, so a shorter horizon means renewal failed).
+#   data.config.gate.tls.min_days_to_expiry more days (ACM renews 60 days
+#   ahead, so a shorter horizon means renewal failed).
 # custom:
 #   id: certificate_expiring
 #   category: infrastructure
@@ -103,8 +101,9 @@ violations contains violation if {
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_acm_certificate"
-	not_after := time.parse_rfc3339_ns(gate.value(r, "not_after", null))
-	not_after - evaluated_at_ns < data.config.gate.tls.min_days_to_expiry * ns_per_day
+	days := gate.value(r, "days_to_expiry", null)
+	days != null
+	days < data.config.gate.tls.min_days_to_expiry
 	violation := gate.make_violation(
 		rego.metadata.rule().custom,
 		r.name,

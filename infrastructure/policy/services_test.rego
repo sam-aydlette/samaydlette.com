@@ -72,9 +72,8 @@ test_kms_disabled_fails if {
 test_certificate_issued_and_valid_passes if {
 	count(keys.violations) == 0 with input as _res(
 		"aws_acm_certificate",
-		{"status": "ISSUED", "not_after": "2027-04-29T23:59:59Z"},
+		{"status": "ISSUED", "days_to_expiry": 175},
 	)
-		with data.runtime.evaluated_at as "2026-11-05T00:00:00Z"
 }
 
 test_certificate_not_issued_fails if {
@@ -84,9 +83,8 @@ test_certificate_not_issued_fails if {
 test_certificate_expiring_fails if {
 	"certificate_expiring" in ids(keys.violations) with input as _res(
 		"aws_acm_certificate",
-		{"status": "ISSUED", "not_after": "2026-11-20T00:00:00Z"},
+		{"status": "ISSUED", "days_to_expiry": 15},
 	)
-		with data.runtime.evaluated_at as "2026-11-05T00:00:00Z"
 }
 
 test_dnssec_signing_passes if {
@@ -192,6 +190,11 @@ test_alarm_without_action_fails if {
 		"aws_cloudwatch_metric_alarm",
 		{"alarm_actions": []},
 	)
+}
+
+test_alarm_unreadable_reports_only_read_error if {
+	res := {"type": "aws_cloudwatch_metric_alarm", "name": "x", "values": {}, "read_errors": ["alarm_actions"]}
+	count(logging.violations) == 0 with input as {"resource": res}
 }
 
 test_schedule_enabled_passes if {
