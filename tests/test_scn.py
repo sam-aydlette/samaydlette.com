@@ -375,6 +375,8 @@ def test_collect_logs_every_first_parent_commit_from_the_builder_onward(history)
 def test_collect_fails_when_the_last_logged_commit_left_history(history):
     with pytest.raises(SystemExit, match="not an ancestor"):
         build.collect([{"commit": "f" * 40}], root=history, lookup=_lookup)
+    with pytest.raises(SystemExit, match="no valid commit"):
+        build.collect([{"commit": "--output=/tmp/x"}], root=history, lookup=_lookup)
 
 
 def test_free_text_is_scrubbed_before_it_is_published():
