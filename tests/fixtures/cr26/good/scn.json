@@ -1,0 +1,10 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-significant-change-notifications-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "changeType": "Adaptive",
+  "changeDescription": "Rotate the TLS certificate authority.",
+  "planAndTimeline": {
+    "summary": "Done in one deploy.",
+    "plannedStart": "2026-11-01"
+  }
+}

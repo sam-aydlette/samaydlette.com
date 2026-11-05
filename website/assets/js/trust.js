@@ -26,6 +26,9 @@ const ARTIFACTS = [
     ['security-decision-record.json', 'Security Decision Record: how each KSI and each Rev5 control is met (replaces the SSP)'],
     ['certification-package-overview.json', 'Certification Package Overview'],
     ['vdr-report.json', 'Vulnerability Detection and Response report'],
+    ['vdr-detail-report.json', 'Vulnerability Detail Report (CR26 VER-RPT-VDT): findings not accepted'],
+    ['vdr-accepted-vulnerabilities.json', 'Accepted Vulnerability Info (CR26 VER-RPT-AVI): accepted findings and why'],
+    ['vdr-history.json', 'Historical vulnerability activity (CR26 VER-TFR-MRH)'],
     ['ksi-signal-runtime.json', 'The daily runtime re-validation (KMS-signed; key in runtime-signing-pubkey.pem)'],
 ];
 

@@ -1,0 +1,91 @@
+{
+  "_note": "CR26 vulnerability-report fixture register: one record per disposition the builder sorts.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-101",
+      "title": "Risk-accepted IaC finding",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "Single origin; failover would need a second region.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_310"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-102",
+      "title": "Operational requirement",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "justification": "The public bucket must serve the site; public read is the product.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_20"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-103",
+      "title": "False positive",
+      "status": "in-force",
+      "disposition": "false-positive",
+      "justification": "The rule matches article prose, not code.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "zap-10099"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-104",
+      "title": "Suppressed check, accepted",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "Cost trade-off; Shield Standard is the baseline.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-105",
+      "title": "Mitigated by a verified control",
+      "status": "in-force",
+      "disposition": "mitigated",
+      "justification": "The vulnerable path is unreachable behind the authorizer.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "CVE-2099-0002"
+        ],
+        "resources": []
+      }
+    }
+  ]
+}

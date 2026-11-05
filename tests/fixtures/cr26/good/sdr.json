@@ -1,0 +1,53 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-security-decision-record-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "metadata": {
+    "version": "1",
+    "lastUpdated": "2026-11-05T00:00:00Z",
+    "updateSource": "pipeline"
+  },
+  "fedRampRequirements": [
+    {
+      "frrID": "VDR-CSO-DET",
+      "frrImplementationStatus": "Implemented",
+      "frrImplementation": [
+        "Scanners run on every deploy."
+      ]
+    }
+  ],
+  "keySecurityIndicators": [
+    {
+      "ksiId": "KSI-CNA-01",
+      "ksiImplementation": [
+        "x"
+      ],
+      "ksiValidation": [
+        "y"
+      ],
+      "ksiAssessment": [
+        "z"
+      ],
+      "ksiTests": [
+        "t"
+      ],
+      "ksiEvidence": [
+        {
+          "evidenceType": "Report",
+          "evidenceLocation": "https://example.com/e.json"
+        }
+      ]
+    }
+  ],
+  "securityControls": [
+    {
+      "controlId": "AC-2",
+      "controlImplementationStatus": "Implemented",
+      "parameterValues": [
+        {
+          "parameterId": "ac-02_odp.01",
+          "parameterValue": "30 days"
+        }
+      ]
+    }
+  ]
+}

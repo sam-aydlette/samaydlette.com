@@ -1,0 +1,48 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-certification-package-overview-schema-2026-06-24.json",
+  "serviceIdentification": {
+    "providerName": "Example Provider",
+    "serviceName": "Example Docs",
+    "serviceAcronym": "EXD",
+    "serviceDescription": "A document service.",
+    "certificationType": "20x",
+    "fedRampPackageId": "Example Provider (EXD)",
+    "website": "https://example.com",
+    "logo": "https://example.com/logo.png"
+  },
+  "serviceProperties": {
+    "serviceType": [
+      "SaaS"
+    ],
+    "deploymentModel": "Public Cloud",
+    "businessCategory": [
+      "Collaboration"
+    ],
+    "trustCenter": {
+      "repositoryType": [
+        "Trust Center"
+      ],
+      "url": "https://example.com/trust",
+      "repositoryDescription": "All certification data.",
+      "authenticationRequired": false
+    },
+    "nextOngoingCertificationReportDate": "2027-02-01"
+  },
+  "contactInformation": [
+    {
+      "contactType": "Security",
+      "contactName": "Sec Team",
+      "contactEmail": "security@example.com"
+    },
+    {
+      "contactType": "Sales",
+      "contactName": "Sales Team"
+    }
+  ],
+  "certifiedServices": [
+    {
+      "serviceName": "File preview",
+      "serviceDescription": "Renders uploads."
+    }
+  ]
+}
