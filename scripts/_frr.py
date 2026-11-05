@@ -17,10 +17,13 @@ The register is only allowed to claim what the repository can show:
     step      <workflow>.yml#<step name>          a step in .github/workflows/
     artifact  .well-known/<name>                  a published, freshness-governed artifact
     decision  DEC-NNN                             an in-force decision record
-- Anything short of implemented states its gap and what closes it: a
-  workstream (W2..W10), "sam" (an act only the operator can perform, such as an
-  application, a registration or engaging an assessor), or "optional" (a MAY
-  rule not exercised; refused for any other force).
+- "Not Applicable" states why (not_applicable) and is allowed only where
+  FedRAMP's own scoping makes the rule conditional on something the provider
+  is not doing (a subset in CONDITIONAL_SUBSETS, such as seeking a Marketplace
+  listing) or the rule is a MAY permission not exercised.
+- Anything else short of implemented states its gap and what closes it: a
+  workstream (W2..W10) or "sam" (an act only the operator can perform, such as
+  a registration or engaging an assessor).
 - Every MAY rule says why it was or wasn't exercised (may_rationale); no
   other rule carries one.
 - No record text may carry an AWS account ID, or an email address outside the
@@ -50,13 +53,20 @@ SCHEMA_PATH = REPO / "infrastructure" / "schemas" / "frr-records.schema.json"
 WORKFLOWS = REPO / ".github" / "workflows"
 TESTS = REPO / "tests"
 
-STATUSES = ("Implemented", "Partially Implemented", "Not Implemented")
+STATUSES = ("Implemented", "Partially Implemented", "Not Implemented", "Not Applicable")
+# Subsets FedRAMP scopes to a provider act, in the subset description: the rules
+# apply once the provider takes that step, and not before.
+CONDITIONAL_SUBSETS = {
+    ("MKT", "CSO"): "providers seeking a listing in the FedRAMP Marketplace",
+    ("FRC", "APP"): "providers who have met all other relevant rules and are ready to apply",
+}
 WORKSTREAMS = tuple(f"W{n}" for n in range(2, 11))
-CLOSERS = (*WORKSTREAMS, "sam", "optional")
+CLOSERS = (*WORKSTREAMS, "sam")
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
 
 TOP_KEYS = {"$comment", "schema", "basis", "records"}
-RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with", "may_rationale"}
+RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with", "may_rationale",
+               "not_applicable"}
 EVIDENCE_KEYS = {"kind", "ref"}
 
 TEST_RE = re.compile(r"^(tests/[A-Za-z0-9_/]+\.py)::([A-Za-z_][A-Za-z0-9_]*)(?:::([A-Za-z_][A-Za-z0-9_]*))?(?:\[[^\]]*\])?$")
@@ -211,15 +221,21 @@ def validate(doc, applicable, resolve, where="data/frr-records.json"):
             if rec.get("gap") is not None or closes is not None:
                 _fail(f"{rid}: an Implemented record has no gap and nothing closing it")
             continue
+        if status == "Not Applicable":
+            rule = applicable[rid]
+            if rule["force"] != "MAY" and (rule["family"], rule.get("subset")) not in CONDITIONAL_SUBSETS:
+                _fail(f"{rid}: cannot be Not Applicable: FedRAMP scopes it to every 20x Class C provider "
+                      f"(force {rule['force']})")
+            _text(rec, "not_applicable", rid)
+            if rec.get("gap") is not None or closes is not None:
+                _fail(f"{rid}: a Not Applicable record has no gap and nothing closing it")
+            continue
+        if "not_applicable" in rec:
+            _fail(f"{rid}: not_applicable is for Not Applicable records only")
         _text(rec, "gap", rid)
         if not isinstance(closes, list) or not closes or len(set(closes)) != len(closes) \
                 or any(c not in CLOSERS for c in closes):
             _fail(f"{rid}: closes_with must be a non-empty list drawn from {list(CLOSERS)}")
-        if "optional" in closes:
-            if applicable[rid]["force"] != "MAY":
-                _fail(f"{rid}: only a MAY rule can be left as optional (Class C force is {applicable[rid]['force']})")
-            if len(closes) != 1:
-                _fail(f"{rid}: an optional rule is closed by nothing else")
     missing = sorted(set(applicable) - seen)
     if missing:
         _fail(f"no record for {len(missing)} applicable rule(s): {', '.join(missing)}")
@@ -246,11 +262,9 @@ def summary(doc, applicable):
     for r in doc["records"]:
         f = applicable[r["frr_id"]]["force"]
         by_force.setdefault(f, Counter())[r["status"]] += 1
-    optional = sum(1 for r in doc["records"] if r.get("closes_with") == ["optional"])
     return {"rules": len(doc["records"]),
             "by_status": {s: by_status.get(s, 0) for s in STATUSES},
-            "by_force": {f: {s: c.get(s, 0) for s in STATUSES} for f, c in sorted(by_force.items())},
-            "optional_not_exercised": optional}
+            "by_force": {f: {s: c.get(s, 0) for s in STATUSES} for f, c in sorted(by_force.items())}}
 
 
 def main(argv=None):

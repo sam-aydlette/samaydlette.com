@@ -320,13 +320,10 @@
     },
     {
       "frr_id": "CDS-CSO-PSM",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Permissive (MAY). Checked: no per-service materials are supplied; nothing in the rule requires them.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised. Could split package views per service (website, Silk Reeling).",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence."
     },
     {
@@ -535,63 +532,45 @@
     },
     {
       "frr_id": "FRC-APP-AFC",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Checked: no application form completed or drafted in the repo.",
       "evidence": [],
-      "gap": "Form not completed. Completing it 'in full' depends on prerequisites not met (Marketplace listing, fresh independent assessment, UEI). To close: After the prerequisites, the operator completes and submits the FedRAMP Certification Application Form personally; keep a copy in the package.",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-FCP",
-      "status": "Partially Implemented",
+      "status": "Not Applicable",
       "implementation": "Package artifacts regenerate on every deploy (deploy-with-opa.yml build steps ~L1558-1600) and the runtime emitter re-validates daily (trust-center.json 'runtime' check).",
       "evidence": [],
-      "gap": "Freshness is not bounded at 7 days: deploys are irregular (gaps 2026-08-27→09-24, 10-05→10-20 in the SDR metric history) and the governed freshness window for ksi-signal/OCR/COP/policy-index is 720h (infrastructure/schemas/freshness-config.json); the package is also incomplete (see FRC-CSO-PKG). To close: Rebuild and re-verify the full package on a schedule (at least weekly, e.g. a cron job reusing the deploy build) and set package freshness windows to <=168h so the watchdog alarms on staleness.",
-      "closes_with": [
-        "W4"
-      ]
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-FIA",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "certification-package-overview.json independent_assessment: none engaged; SDR assessor_records.status 'no assessor record'.",
       "evidence": [],
-      "gap": "No independent assessment by a FedRAMP Recognized assessment service, let alone within 3 months. To close: Engage a FedRAMP Recognized assessor, complete the assessment, and apply within 3 months of its completion.",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-MLF",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Not listed in the FedRAMP Marketplace (stated in docs/cr26-applicability.md and COP).",
       "evidence": [],
-      "gap": "No listing; MKT-CSO-MLR depends on CDS-CSO-PUB (partial); MKT-CSO-PML request not sent; MKT-IIP-AGU agency use case and MKT-IIP-DCP continuous progress not shown. To close: Finish CDS-CSO-PUB, document an agency use case within FedRAMP scope, submit the Marketplace Provider Listing Request Form, and publish continuous-progress evidence.",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-NTP",
-      "status": "Partially Implemented",
+      "status": "Not Applicable",
       "implementation": "No application exists, and the CPO names the operator as the accountable official, the person who would apply.",
       "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. To close: Operator applies personally; do not let the assessor or an advisor submit.",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-USA",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Permissive (MAY). Checked: no initial assessment exists, so there is nothing stale to freshen.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised.",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
       "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen."
     },
     {
@@ -779,13 +758,10 @@
     },
     {
       "frr_id": "IVV-CSO-RAA",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "No assessor engaged.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised.",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised while no assessor is engaged. When one is, advice will be accepted where it improves the security posture or the evidence, and recorded with the assessment."
     },
     {
@@ -822,13 +798,10 @@
     },
     {
       "frr_id": "IVV-CSO-USR",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "No sampling in use.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised.",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample."
     },
     {
@@ -873,13 +846,10 @@
     },
     {
       "frr_id": "MAS-CSO-SUP",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Permissive (MAY). Checked: the package supplies no supplement; CPO package_contents lists only in-scope artifacts.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised. If coverage material for other frameworks (CMMC, GovRAMP, TX-RAMP on the trust page) is ever put in the package, mark it as supplemental.",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources."
     },
     {
@@ -894,23 +864,17 @@
     },
     {
       "frr_id": "MKT-CSO-MLR",
-      "status": "Partially Implemented",
+      "status": "Not Applicable",
       "implementation": "CDS-CSO-PUB data exists (see CDS-CSO-PUB).",
       "evidence": [],
-      "gap": "CDS-CSO-PUB is only partial (no UEI, no FedRAMP ID, a receding OCR date, no assessor) and no listing application or update request exists. Not applying is the operator's decision of 2026-11-05 (build to apply, don't apply).",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "MKT-CSO-PML",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Checked: no listing request sent (docs/cr26-applicability.md records MKT as N/A).",
       "evidence": [],
-      "gap": "Marketplace Provider Listing Request Form not submitted. To close: Operator submits the FedRAMP Marketplace Provider Listing Request Form once PUB data and an agency use case are ready.",
-      "closes_with": [
-        "sam"
-      ]
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "SCG-CSO-AUP",
@@ -1319,13 +1283,10 @@
     },
     {
       "frr_id": "VDR-CSO-SIR",
-      "status": "Not Implemented",
+      "status": "Not Applicable",
       "implementation": "Checked: no sampling is used. Grype scans every SBOM'd dependency tree, Checkov/tfsec scan all Terraform, and the runtime emitter validates each object store and the distribution individually (live ksi-signal-runtime.json: 5 validations, one per component).",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised. Note that coverage gaps are a DET/MVX matter, not sampling.",
-      "closes_with": [
-        "optional"
-      ],
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain."
     },
     {

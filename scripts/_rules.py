@@ -183,7 +183,7 @@ def applicable_provider_rules(rules_dir=RULES_DIR):
                         _fail(f"{rid} has no Class {CERT_CLASS.upper()} statement and force")
                     if rid in out:
                         _fail(f"{rid} appears twice in the corpus")
-                    out[rid] = {"family": fam_id, "name": rule.get("name", ""),
+                    out[rid] = {"family": fam_id, "subset": subset, "name": rule.get("name", ""),
                                 "statement": statement, "force": force}
     if not out:
         _fail("no provider rules apply; the applicability metadata has changed shape")

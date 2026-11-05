@@ -111,8 +111,6 @@ def test_summary_counts_add_up(applicable):
     s = _frr.summary(_committed(), applicable)
     assert s["rules"] == 154 == sum(s["by_status"].values())
     assert sum(sum(c.values()) for c in s["by_force"].values()) == 154
-    assert s["optional_not_exercised"] == sum(
-        1 for r in _committed()["records"] if r.get("closes_with") == ["optional"])
 
 
 # --- known-bad: each invariant fails for its own reason ----------------------------
@@ -143,7 +141,8 @@ def test_known_bad_fixture_covers_every_check():
     for fragment in ("no record for", "is not a rule that applies", "duplicate record",
                      "Implemented needs evidence", "names no test function", "does not exist",
                      "no step named", "freshness-governed", "in-force decision", "has no gap",
-                     "gap must be", "closes_with must be", "only a MAY rule", "is not one of",
+                     "gap must be", "closes_with must be", "cannot be Not Applicable", "is not one of",
+                     "not_applicable must be", "a Not Applicable record has no gap", "for Not Applicable records only",
                      "unknown field", "AWS account ID", "email address outside",
                      "may_rationale must be", "for MAY rules only"):
         assert fragment in expects, fragment
@@ -200,3 +199,17 @@ def test_the_system_and_fedramp_addresses_are_allowed(applicable, resolve):
 def test_every_may_rule_says_why(applicable):
     for r in _committed()["records"]:
         assert ("may_rationale" in r) is (applicable[r["frr_id"]]["force"] == "MAY"), r["frr_id"]
+
+
+def test_not_applicable_only_where_fedramp_scopes_it_out(applicable):
+    for r in _committed()["records"]:
+        if r["status"] == "Not Applicable":
+            rule = applicable[r["frr_id"]]
+            assert rule["force"] == "MAY" or (rule["family"], rule["subset"]) in _frr.CONDITIONAL_SUBSETS, r["frr_id"]
+
+
+def test_conditional_subsets_say_so_in_the_corpus():
+    """The scoping that makes a subset conditional is FedRAMP's text, not ours."""
+    rules, _ = _rules.load_rules()
+    for (fam, subset), phrase in _frr.CONDITIONAL_SUBSETS.items():
+        assert phrase in rules["FRR"][fam]["info"]["subsets"][subset]["description"]
