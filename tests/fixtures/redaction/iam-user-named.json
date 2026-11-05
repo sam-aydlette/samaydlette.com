@@ -1,0 +1,1 @@
+{"decisionId": "DEC-999", "affectedResources": ["aws-account::root", "aws-iam-user::example-operator"]}

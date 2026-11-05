@@ -2342,7 +2342,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "tool_id": s.get("tool_id"),
             "title": s.get("title", ""),
             "resource": s.get("resource", ""),
-            **({"affected_resources": s["affected_resources"]} if s.get("affected_resources") else {}),
+            **({"affected_resources": _redact.withhold_iam_users(s["affected_resources"])}
+               if s.get("affected_resources") else {}),
             "first_detected": s_clk["first_detected"],
             "first_evaluated": s_clk["first_evaluated"],
             "completed_evaluation": now.isoformat(),

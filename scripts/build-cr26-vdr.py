@@ -76,6 +76,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+import _redact  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 
 HISTORY_DAYS = 366
@@ -360,7 +361,7 @@ def detail(f, recs=None, accepted=False):
         ext["kevDateAdded"] = f.get("kev_date_added")
         ext["kevOverdue"] = bool(f.get("kev_overdue"))
     if f.get("affected_resources"):
-        ext["affectedResources"] = list(f["affected_resources"])
+        ext["affectedResources"] = _redact.withhold_iam_users(f["affected_resources"])
     if projection_basis:
         ext["projectionBasis"] = projection_basis
     # VER-RPT-VDT asks for the historical and current ratings; the schema has a
@@ -629,7 +630,7 @@ def _backfill(d, now):
     ext = {"decisionId": d["id"], "disposition": "remediated", "backfilledFromDecision": True,
            "remediatedOn": d.get("closed_on"), "detectedAtBasis": basis,
            "dispositionBasis": f"{d['id']} closed as remediated on {d.get('closed_on', 'a date not recorded')}",
-           "affectedResources": list((d.get("applies_to") or {}).get("resources") or [])}
+           "affectedResources": _redact.withhold_iam_users((d.get("applies_to") or {}).get("resources"))}
     if d.get("former_id"):
         ext["formerId"] = d["former_id"]
     if d.get("remediation_plan"):

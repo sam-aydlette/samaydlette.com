@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publication gate: no published artifact carries an AWS account ID.
+"""Publication gate: no published artifact carries an AWS account ID or an IAM user name.
 
 Run immediately before a workflow uploads to /.well-known/, over the directory
 the artifacts were built in:
@@ -63,6 +63,9 @@ def violations(paths):
             where = "; ".join(re.sub(r"[0-9]", "#", text[max(0, m.start() - 30):m.start()]).replace("\n", " ")
                               for m in hits[:3])
             found.append(f"{p.name}: {len(hits)} account ID(s), e.g. after '{where}'")
+        users = _redact.find_iam_users(text)
+        if users:
+            found.append(f"{p.name}: {users} IAM user name(s) after 'aws-iam-user::'")
     return found
 
 
@@ -91,7 +94,7 @@ def main(argv=None):
         for b in bad:
             print(f"  ✗ {b}", file=sys.stderr)
         return 1
-    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID")
+    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID or IAM user name")
     return 0
 
 
