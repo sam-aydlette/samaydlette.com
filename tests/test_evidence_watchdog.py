@@ -55,6 +55,7 @@ def fresh_objects():
             node[leaf] = FRESH
         objects[a["path"]] = doc
     objects[".well-known/vdr-status.json"] = status()
+    objects[".well-known/incident-reports.json"]["obligations_due"] = []
     return objects
 
 
@@ -287,3 +288,39 @@ def test_alarm_thresholds_and_reads_come_from_the_governed_config():
     # No window is a literal in the watchdog any more.
     assert "MAX_BEACON_AGE_HOURS" not in logic
     assert not re.search(r"threshold\s*=\s*(24|26)\b", tf)
+
+
+# ---- incident report deadlines (IEC-CSO-IIR/OIR/FIR) --------------------------------
+
+def _incident_log(*due):
+    return {"emitted_at": FRESH, "obligations_due": [{"incident": "INC-2026-009", "report": "Ongoing",
+                                                       "due_at": d} for d in due]}
+
+
+def test_no_report_due_pages_nobody():
+    out = compute(fresh_objects())
+    assert out["metrics"]["IncidentReportsOverdue"] == 0
+
+
+def test_a_report_past_its_deadline_pages_even_while_the_log_is_fresh():
+    objects = fresh_objects()
+    # NOW is 12:00. One report due at 11:00 has not been issued; one due at 13:00 is not late yet.
+    objects[".well-known/incident-reports.json"] = _incident_log("2026-09-25T11:00:00Z", "2026-09-25T13:00:00Z")
+    out = compute(objects)
+    assert out["metrics"]["IncidentReportsOverdue"] == 1
+    assert out["metrics"]["StaleArtifacts"] == 0
+
+
+def test_a_missing_or_malformed_incident_log_is_a_breach_not_zero():
+    objects = fresh_objects()
+    objects[".well-known/incident-reports.json"] = {"emitted_at": FRESH}
+    assert compute(objects)["metrics"]["IncidentReportsOverdue"] == 1
+    objects[".well-known/incident-reports.json"] = _incident_log("not a date")
+    assert compute(objects)["metrics"]["IncidentReportsOverdue"] == 1
+    del objects[".well-known/incident-reports.json"]
+    assert compute(objects)["metrics"]["IncidentReportsOverdue"] == 1
+
+
+def test_the_incident_alarm_pages_on_the_first_overdue_report():
+    tf = (REPO / "infrastructure" / "watchdog.tf").read_text()
+    assert 'metric    = "IncidentReportsOverdue"\n      threshold = 0' in tf

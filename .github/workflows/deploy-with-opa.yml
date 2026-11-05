@@ -1532,6 +1532,23 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
 
+    # Incident reports (IEC-CSO-IIR/OIR/FIR) and the incident log, from the
+    # incident register and this build's VDR (VER-TFR-IRI/NRI triggers). The
+    # same builder runs unattended in incident-reports.yml on every change to
+    # the register; the deploy republishes them so a deploy never serves a log
+    # older than the register it was built from. Each report is validated
+    # against FedRAMP's schema before it is written. No clock check here: an
+    # overdue report must not block the deploy that may be the fix; the
+    # incident-reports workflow and the evidence watchdog alarm on it.
+    - name: Build incident reports (IIR, OIR, FIR)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-incident-report.py --incidents ../data/incidents.json --vdr vdr-report.json --out-dir .
+        for f in incident-*.json; do
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done
+
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
     # -------------------------------------------------------------------------
@@ -1726,6 +1743,8 @@ jobs:
           [ -f "$a.json" ] || continue
           files="$files $a.json"
         done
+        # Incident log and reports (built every deploy, so the glob always matches).
+        for f in incident-*.json incident-*.md; do files="$files $f"; done
         # shellcheck disable=SC2086  # a word list by design
         python3 ../scripts/check-published-redaction.py $files
 
@@ -1787,6 +1806,14 @@ jobs:
           [ -f "$a.json" ] || continue
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+        done
+        # Incident log (IEC-CSO-EFR) + every Initial/Ongoing/Final report + signatures
+        aws s3 cp incident-reports.json "s3://$BUCKET_NAME/.well-known/incident-reports.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-reports.bundle "s3://$BUCKET_NAME/.well-known/incident-reports.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-reports.md "s3://$BUCKET_NAME/.well-known/incident-reports.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        for f in incident-INC-*.json; do
+          aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "${f%.json}.bundle" "s3://$BUCKET_NAME/.well-known/${f%.json}.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
@@ -1877,6 +1904,7 @@ jobs:
         check trust-center.json .well-known/trust-center.json
         check conformance-results.json .well-known/conformance-results.json
         if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
+        for f in incident-*.json; do check "$f" ".well-known/$f"; done
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
         for a in ksi-signal.json security-decision-record.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"

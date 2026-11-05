@@ -25,6 +25,9 @@
 //                          missing, or is too old to trust; else 0
 //   StaleArtifacts         how many listed artifacts are past their governed
 //                          window, unreadable, or without a usable timestamp
+//   IncidentReportsOverdue how many incident reports the published incident
+//                          log lists as due whose Class C deadline has passed
+//                          (1 if the log is missing or unreadable)
 //
 // A missing or invalid config fails the run before anything is published; the
 // alarms read the missing data as a breach and page.

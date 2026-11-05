@@ -556,6 +556,9 @@ IIW_OVERRIDES = {
     ("iam_role", "evidence_nightly"): {
         "function": "Nightly evidence workflow role",
     },
+    ("iam_role", "incident_reports"): {
+        "function": "Incident reports workflow role (unattended IIR/OIR/FIR publication)",
+    },
     ("object_store", "logs"): {
         "function": "Access-log bucket for the site bucket and CDN",
         "diagram_label": "S3 access-log bucket",

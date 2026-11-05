@@ -658,72 +658,163 @@
     },
     {
       "frr_id": "IEC-CSO-AIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No automation exists for incident reporting; nothing exists to automate. To close: Once the incident register and report builder exist, run them from a workflow (workflow_dispatch + on push to the incident register) that validates, signs, publishes and sends IIR/OIR/FIR automatically, and pages through the existing watchdog/SNS when a report deadline is near or missed.",
+      "status": "Partially Implemented",
+      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Incident report clocks (fail when a report is due and missing)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_air_workflow_validates_builds_signs_publishes_and_checks_the_clock_in_order"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
+      ],
+      "gap": "Not yet running: the role in infrastructure/bootstrap/incident-reports.tf is operator-applied, and the incident-reports GitHub Environment and AWS_INCIDENT_REPORTS_ROLE_ARN variable must be set. Reporting reaches no affected party automatically because delivery is publish-only by the operator's choice. To close: apply the bootstrap role and set the environment and variable; then the operator's delivery decision (IEC-CSO-IIR).",
       "closes_with": [
-        "W6"
+        "sam"
       ]
     },
     {
       "frr_id": "IEC-CSO-DPR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "Nothing assigns a PAIN rating to an incident, so there is no default-to-N5 behaviour and no record of whether a prompt estimate replaced it. The VDR PAIN classifier (scripts/build-vdr-report.py:1730 assign_pain) rates vulnerabilities, not incidents. To close: In the incident register, set pain=5 with basis 'default (IEC-CSO-DPR)' when a record becomes reportable, and allow it to drop only through an EFI estimate record (rating, reason, estimated_at). Drive the IIR/OIR/FIR clocks from the effective rating. Test both paths and show them in the simulated-incident log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A reportable incident is rated at the default the IEC-CSO-DPR text states (N5, read from the rule) until an IEC-CSO-EFI estimate record exists, and the report clocks use the rating in force at each start time. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFI",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Incident Rating step: nothing estimates likely adverse impact on agency customers for an incident or assigns N1-N5 using the minimal/narrow/disruptive/debilitating x 1 or >1 agency scale. The required artifact (an incident log showing the evaluation and its reason) does not exist. To close: Add an EFI record type to the incident register: rating N1-N5, the customer-effect word, single or multiple agencies, reason, estimated_at. Document the rubric in docs/incident-response.md (it can reuse the VDR effect words from infrastructure/schemas/vdr-pain-config.json). Exercise it in the simulated incidents.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). An estimate record carries rating, customer effect (minimal/narrow/disruptive/debilitating), one or several agencies, reason and time; the loader refuses a rating that is not the one the IEC-CSO-EFI bullets give for that effect and agency count (the rubric is parsed from the rule text). Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_rating_scale_and_default_come_from_the_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. docs/policies/ir-policy.md:15 only restates the trigger.",
-      "evidence": [],
-      "gap": "No step that evaluates each incident for effect (actual or likely) on confidentiality/integrity of federal customer data, no recorded determination with its reason, and no incident log. The required artifact (an incident log showing one or more real or simulated incidents evaluated, with the reason for the determination) does not exist. The runbook explicitly scopes federal-data incidents out, so it can't make the determination the rule asks for. To close: Add an incident register (e.g. data/incidents.json + schema) whose records carry detected_at, evaluated_at, reportable (bool), reason, and the federal-customer-data types considered. Add an 'Evaluate FedRAMP reportability' step to docs/incident-response.md triage (before Contain), define the data types that would be federal customer data for this offering, and fail a check if any incident record lacks an evaluation. Exercise it with at least two simulated incidents (one reportable, one not) and publish the log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Every incident record must carry an evaluation (evaluated_at, reportable true/false, basis, reason, the federal customer data considered); a record without one does not load. docs/incident-response.md triage now evaluates reportability before containment. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. The published incident log is the artifact the rule asks for.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_logs_a_not_reportable_evaluation_with_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-FIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. A schema test fixture (tests/fixtures/cr26/good/incident.json, reportType Final, CVE-2099-0142) checks the validator only; it is not an incident.",
-      "evidence": [],
-      "gap": "No Final Incident Report generation on resolution/recovery, no final updates to all previously reported items, no clock (Class C: within 6 hours for N3-N5, 1 business day for N1-N2, after recovery), no delivery. No sample FIR. To close: Add reportType=Final generation when the incident record gets resolved_at and recovery_complete_at, with final values for every earlier IIR/OIR field. Alarm on the FIR deadline. Close the simulated incident with a FIR and link it from the incident log and the Ongoing Certification Report.",
+      "status": "Partially Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_the_final_report_is_due_after_recovery_and_ongoing_reports_stop"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
+      ],
+      "gap": "Published, not delivered (see IEC-CSO-IIR). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
       "closes_with": [
-        "W6"
+        "sam"
       ]
     },
     {
       "frr_id": "IEC-CSO-IIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. The vendored schema infrastructure/schemas/fedramp-2026-06-24/fedramp-incident-report-schema-2026-06-24.json (reportType Initial/Ongoing/Final, federalIncidentCoordinator, timeline, potentialImpact, functionalImpact, recoveryPlan, affectedAgencies) and its validator are in place, but nothing produces a report.",
-      "evidence": [],
-      "gap": "No Initial Incident Report generator, no delivery to all affected parties (FedRAMP + affected agencies), and no clock (Class C: within 1 hour for N3-N5, 24 hours for N2, 1 business day for N1). None of the 8 items exists in any record: federal incident response coordinator contact, tracking ID, description, timeline (start, detection time/source, evaluation time, milestones), historical/current PAIN with EFI explanation, functional impact incl. C/I and federal data types, recovery plan/milestones, likely affected agencies. No sample IIR exists, real or simulated. To close: Build scripts/build-incident-report.py that renders an IIR from the incident register into the vendored schema (validated before write) plus a human-readable version; name the federal incident response coordinator contact; add a delivery step (e.g. signed publication to a restricted location plus email to a configured recipient list holding FedRAMP's incident address and each agency's contact) that starts on 'reportable' and is alarmed against the PAIN-based deadline (watchdog). Run a timed simulated incident end to end and keep the IIR.",
+      "status": "Partially Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_runs_initial_ongoing_final_all_on_time"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_every_report_validates_against_fedramps_schema_and_is_listed_with_its_hash"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
+      ],
+      "gap": "Reports are published, not delivered: nothing notifies FedRAMP or an agency, and the operator has not decided to send. The unattended publisher needs infrastructure/bootstrap/incident-reports.tf applied and the AWS_INCIDENT_REPORTS_ROLE_ARN variable and incident-reports environment set before it runs. To close: the operator decides the delivery channel (e.g. SES from the system's domain to FedRAMP's incident address) and it is built behind that decision.",
       "closes_with": [
-        "W6"
+        "sam"
       ]
     },
     {
       "frr_id": "IEC-CSO-OIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Ongoing Incident Report mechanism or cadence (Class C: every 6 hours for N3-N5, 24 hours for N2, 1 business day for N1), no 'updates or lack of updates' logic, and none of the additional items recorded: observed activity, IOCs, related CVE, root cause, response/recovery activities. No sample OIR. To close: Extend the incident report builder for reportType=Ongoing: diff against the previous report so every earlier item is restated (changed or 'no update'), add the 5 OIR fields to the incident record, and schedule/alarm the next OIR from the effective PAIN. Produce OIRs in the simulated exercise.",
+      "status": "Partially Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_reports_are_due_every_oir_period_until_resolved"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
+      ],
+      "gap": "Published, not delivered (see IEC-CSO-IIR). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
       "closes_with": [
-        "W6"
+        "sam"
       ]
     },
     {
@@ -1552,12 +1643,25 @@
     },
     {
       "frr_id": "VER-TFR-IRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: policies/triage.rego block_rule 'top-impact-lev-irv' (G2) blocks only N5+LEV+IRV, as a pipeline block; docs/policies/ir-policy.md:13 states the IRI rule in prose.",
-      "evidence": [],
-      "gap": "Nothing treats an internet-reachable likely exploitable vulnerability at N4 or N5 as a FedRAMP Reportable Incident: no incident record is opened, no IIR/OIR/FIR clocks start, and nothing ends that status when it's partially mitigated to N3 or below. N4 IRV+LEV isn't even flagged beyond its 4-day deadline. Depends on the missing IEC machinery. To close: In triage.rego add an 'incident' decision (IRV and LEV and PAIN > N3) and in the builder open/update an incident record in the incident register (see IEC-CSO-EFR) with default PAIN-5 treatment, closing it when a verified partial mitigation brings it to N3 or below. Test with a synthetic finding.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego (incident_triggers) names every VDR finding that is internet-reachable, likely exploitable and above the N-rating the VER-TFR-IRI Class C text states (read from the rule; a changed text fails closed), unless it is a false positive or fully mitigated; once partially mitigated to N3 or below it no longer triggers. scripts/build-incident-report.py publishes each trigger in the incident log and, while no unresolved incident in data/incidents.json names it, puts an Initial report due from the finding's first evaluation at the default N5 clock: the incident-reports workflow fails and the evidence watchdog pages when that passes. Opening the incident record is the operator's act; its reports then follow IEC-CSO-IIR/OIR/FIR. Reconciliation invariant (m) fails a build whose open incident names a finding the VDR does not carry. Adopted in data/incidents.json policy.adopted_vulnerability_rules.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_irv_lev_n4_finding_with_no_incident_is_due_an_initial_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_a_partially_mitigated_finding_at_n3_is_no_longer_an_incident"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_reconcile_m_fails_the_known_bad_register"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
@@ -1592,12 +1696,21 @@
     },
     {
       "frr_id": "VER-TFR-NRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: docs/policies/ir-policy.md:13 adopts NRI in prose ('non-internet-reachable likely-exploitable vulnerabilities at PAIN N5 are reportable until N4 or below per VER-TFR-NRI'); no code implements it.",
-      "evidence": [],
-      "gap": "MAY rule: optional, but the published policy claims it's adopted and nothing implements it. NLEV-IRV N5 findings never open an incident. To close: Either implement alongside IRI (NIRV and LEV and PAIN = N5 -> incident until a partial mitigation brings it to N4) or remove the claim from ir-policy.md and record the decision not to use the MAY.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "Adopted (docs/policies/ir-policy.md; data/incidents.json policy.adopted_vulnerability_rules). policies/triage.rego names every likely exploitable, not internet-reachable VDR finding at the N-rating the VER-TFR-NRI Class C text states (N5), until partially mitigated to N4 or below; the incident log and clocks treat it exactly as VER-TFR-IRI does. An unadopted rule's triggers are still shown but start no clock.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_nirv_lev_n5_finding_opens_under_nri_and_n4_does_not"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unadopted_rule_is_shown_but_starts_no_clock"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ],
       "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
     }

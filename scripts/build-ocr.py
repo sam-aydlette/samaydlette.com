@@ -30,6 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+import _incidents  # noqa: E402
 
 QUARTER_DAYS = 91
 
@@ -50,7 +51,22 @@ def _scn_rows(path):
         return list(csv.DictReader(f))
 
 
-def build_ocr(vdr, decisions, scn_rows, signal_id, now):
+def incident_summary(incidents, period_start):
+    """CCM-OCR-AVL item 7, from the incident register: the FedRAMP Reportable
+    Incidents detected this period, or an attestation of none. Exercises are
+    not incidents and are never counted."""
+    log = "The incident log, /.well-known/incident-reports.json, records every incident evaluated, exercises included."
+    real = [i for i in (incidents or {}).get("incidents", [])
+            if not i["exercise"] and i["evaluation"]["reportable"] and i["detected_at"][:10] >= period_start]
+    if real:
+        return (f"{len(real)} FedRAMP Reportable Incident(s) this period: "
+                + "; ".join(f"{i['id']} ({_incidents.status(i)})" for i in real) + f". {log}")
+    return ("No FedRAMP Reportable Incidents occurred during this reporting period. The system holds "
+            "no federal customer data, so the IEC-CSO-EFR trigger does not apply; this is an "
+            f"attestation of none, not an omission. {log}")
+
+
+def build_ocr(vdr, decisions, scn_rows, signal_id, now, incidents=None):
     period_start = (now - timedelta(days=QUARTER_DAYS)).date().isoformat()
     period_end = now.date().isoformat()
 
@@ -97,10 +113,7 @@ def build_ocr(vdr, decisions, scn_rows, signal_id, now):
                 "No new customer recommendations this period; the Secure Configuration "
                 "Guidance at /.well-known/ remains current."],
             "agencies_using_product": [],                                  # 6 (none)
-            "reportable_incidents_or_attestation":                         # 7
-                "No FedRAMP Reportable Incidents occurred during this reporting period. "
-                "The system holds no federal customer data, so the IEC-CSO-EFR trigger "
-                "does not apply; this is an attestation of none, not an omission.",
+            "reportable_incidents_or_attestation": incident_summary(incidents, period_start),  # 7
             "lessons_learned_from_incidents": [],                          # 8 (none)
         },
         "relationship_obligations_status": (
@@ -162,6 +175,7 @@ def main():
     ap.add_argument("--vdr", default="vdr-report.json")
     ap.add_argument("--decisions", default="../data/decisions.json")
     ap.add_argument("--scn-register", default="../docs/scn/scn-register.csv")
+    ap.add_argument("--incidents", default="../data/incidents.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--output", default="ongoing-certification-report.json")
     ap.add_argument("--md-output", default="ongoing-certification-report.md")
@@ -174,7 +188,7 @@ def main():
     signal_id = sig.get("signal_id") if sig else None
     scn_rows = _scn_rows(a.scn_register)
 
-    report = build_ocr(vdr, decisions, scn_rows, signal_id, now)
+    report = build_ocr(vdr, decisions, scn_rows, signal_id, now, _incidents.load(a.incidents))
     Path(a.output).write_text(json.dumps(report, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(report) + "\n")

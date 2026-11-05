@@ -33,6 +33,7 @@ REQUIRED = (
     ".well-known/vdr-report.json",
     ".well-known/ksi-signal-runtime.json",
     ".well-known/vdr-status.json",
+    ".well-known/incident-reports.json",
     ".well-known/boundary-corroboration.json",
 )
 

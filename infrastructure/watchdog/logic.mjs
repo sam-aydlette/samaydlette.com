@@ -13,10 +13,11 @@ export const KEYS = {
     vdr: '.well-known/vdr-report.json',
     runtime: '.well-known/ksi-signal-runtime.json',
     status: '.well-known/vdr-status.json',
+    incidents: '.well-known/incident-reports.json',
 };
 
 // Every artifact a metric below depends on. The config must list them.
-export const REQUIRED = [KEYS.vdr, KEYS.runtime, KEYS.status, '.well-known/boundary-corroboration.json'];
+export const REQUIRED = [KEYS.vdr, KEYS.runtime, KEYS.status, KEYS.incidents, '.well-known/boundary-corroboration.json'];
 
 // Reported when an artifact cannot be read or has no usable timestamp. Far past
 // any threshold, so it reads as a breach on every alarm.
@@ -98,6 +99,22 @@ export function nightlyFailed(status, maxBeaconAgeHours, now = Date.now()) {
     return status.result === 'success' ? 0 : 1;
 }
 
+// How many incident reports are past their Class C deadline and not issued
+// (IEC-CSO-IIR/OIR/FIR). The incident log lists each report still due with its
+// deadline (scripts/build-incident-report.py, obligations_due); this counts the
+// ones whose time has passed on AWS's clock, so a missed one-hour Initial
+// report pages within the hour even if nothing republishes the log. A log that
+// is missing, unreadable or has no list is a breach (1), never zero.
+export function incidentReportsOverdue(log, now = Date.now()) {
+    if (!log || typeof log !== 'object' || !Array.isArray(log.obligations_due)) return 1;
+    let overdue = 0;
+    for (const d of log.obligations_due) {
+        const due = Date.parse(d && d.due_at);
+        if (Number.isNaN(due) || due < now) overdue += 1;
+    }
+    return overdue;
+}
+
 // Every listed artifact past its window, or unreadable, or without a usable
 // timestamp. One metric for all of them keeps the cost flat as the list grows;
 // the log line names which.
@@ -123,12 +140,13 @@ export function computeMetrics(config, readings, now = Date.now()) {
             RuntimeSignalAgeHours: age(KEYS.runtime),
             NightlyFailed: nightlyFailed(parsedBody(readings[KEYS.status]), config.windows[KEYS.status], now),
             StaleArtifacts: stale.length,
+            IncidentReportsOverdue: incidentReportsOverdue(parsedBody(readings[KEYS.incidents]), now),
         },
         stale,
     };
 }
 
-const COUNTS = new Set(['NightlyFailed', 'StaleArtifacts']);
+const COUNTS = new Set(['NightlyFailed', 'StaleArtifacts', 'IncidentReportsOverdue']);
 
 export function metricData(metrics, now) {
     return Object.entries(metrics).map(([MetricName, Value]) => ({

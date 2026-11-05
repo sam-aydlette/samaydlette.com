@@ -42,6 +42,10 @@
 #                        every boundary component of the inventory (no more, no
 #                        fewer), leaves none unclassified, and carries no ARN,
 #                        account ID or email address
+#   (m) incident findings — every finding or CVE an unresolved incident in the
+#                        incident register (data/incidents.json) names is in
+#                        this build's VDR report; exercises are exempt (their
+#                        findings are simulated)
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -64,6 +68,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _incidents  # noqa: E402
 import _redact  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -525,9 +530,26 @@ def check_l_boundary_map(signal, boundary_map, expected_commit=None):
     return violations
 
 
+def check_m_incident_findings(vdr, incidents):
+    """(m) Every finding an unresolved, non-exercise incident names (a VDR
+    tracking ID or a CVE ID) is in this build's VDR report. An incident about a
+    vulnerability the VDR does not carry is reporting on something the
+    vulnerability evidence says is not there: one of the two is wrong."""
+    if incidents is None:
+        return []
+    ids, cves = set(), set()
+    for f in _all_vdr_findings(vdr):
+        ids.add(f.get("tracking_id"))
+        if f.get("cve"):
+            cves.add(f["cve"])
+    return [f"(m) incident {inc_id} names {ref!r}, which is not in the VDR report"
+            for ref, inc_id in sorted(_incidents.open_findings(incidents).items())
+            if ref not in ids and ref not in cves]
+
+
 def run_all(signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
             live_arns=None, expected_commit=None, live_tags=None,
-            boundary_map=None):
+            boundary_map=None, incidents=None):
     violations = []
     violations += check_d_impact(signal, sdr, cpo, vdr, dashboard_html)
     violations += check_e_binding(signal, sdr, cpo, vdr)
@@ -537,6 +559,7 @@ def run_all(signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
     violations += check_h_finding_coverage(vdr, register)
     violations += check_j_decision_id_validity(signal, sdr, cpo, vdr, register)
     violations += check_l_boundary_map(signal, boundary_map, expected_commit)
+    violations += check_m_incident_findings(vdr, incidents)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     if live_tags is not None:
@@ -562,6 +585,8 @@ def main():
                     help="path to .checkov.yaml (overridable for hermetic tests)")
     ap.add_argument("--decisions", default=str(_decisions.DEFAULT_PATH),
                     help="the decision register (overridable for hermetic tests); missing or invalid fails closed")
+    ap.add_argument("--incidents", default=str(_incidents.DEFAULT_PATH),
+                    help="the incident register (overridable for hermetic tests); missing or invalid fails closed")
     args = ap.parse_args()
     gates = _gates.load_gate_modes()
 
@@ -583,6 +608,7 @@ def main():
     dashboard_html = Path(args.dashboard).read_text() if Path(args.dashboard).exists() else None
     checkov_text = Path(args.checkov).read_text()
     register = _decisions.load(args.decisions)
+    incidents = _incidents.load(args.incidents)
 
     live_arns = None
     live_tags = None
@@ -617,7 +643,7 @@ def main():
     violations = run_all(
         signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
-        boundary_map=boundary_map,
+        boundary_map=boundary_map, incidents=incidents,
     )
 
     # Each violation names its invariant, "(x) ..."; its check's governed mode
@@ -638,12 +664,12 @@ def main():
         return 1
     optional = ",l" if boundary_map is not None else ""
     if live_arns is not None and live_tags is not None:
-        checks = "a-f,h-j" + optional
+        checks = "a-f,h-j" + optional + ",m"
     elif live_arns is not None:
-        checks = "a-f,h,j" + optional + " (i deferred: no live tags)"
+        checks = "a-f,h,j" + optional + ",m (i deferred: no live tags)"
     else:
-        checks = "b-f,h,j" + optional + " (a,i deferred: no --live)"
-    print(f"reconciliation OK — invariants {checks} hold across signal/VDR/SDR/CPO/decisions/dashboard")
+        checks = "b-f,h,j" + optional + ",m (a,i deferred: no --live)"
+    print(f"reconciliation OK — invariants {checks} hold across signal/VDR/SDR/CPO/decisions/incidents/dashboard")
     if args.report:
         Path(args.report).write_text(json.dumps(build_report(
             signal, args.expect_commit,
@@ -666,6 +692,7 @@ INVARIANT_TITLES = {
     "j": "Every decision reference resolves",
     # (k) is retired: the bundle it bound is no longer published by this site.
     "l": "The boundary map describes exactly this build's inventory",
+    "m": "Every finding an open incident names is in the VDR report",
 }
 
 

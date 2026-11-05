@@ -254,3 +254,105 @@ test_observed_reachability_beats_not_reachable_mitigation if {
 	})
 	d.irv_basis == "observed"
 }
+
+# ---- VER-TFR-IRI / VER-TFR-NRI: vulnerabilities treated as incidents ------------------
+iri_text := concat(" ", [
+	"Providers with Class C Certifications SHOULD treat internet-reachable likely exploitable vulnerabilities",
+	"where Potential Agency Impact N-rating > 3 as a FedRAMP Reportable Incident",
+	"until they are partially mitigated vulnerabilities at N3 or below.",
+])
+
+nri_text := concat(" ", [
+	"Providers with Class C Certifications MAY treat likely exploitable vulnerabilities that are NOT internet-reachable",
+	"where Potential Agency Impact N-rating = 5 as a FedRAMP Reportable Incident",
+	"until they are partially mitigated vulnerabilities at N4 or below.",
+])
+
+ver_rules(iri, nri) := {"FRR": {"VER": {"data": {"all": {"TFR": {
+	"VER-TFR-IRI": {"varies_by_class": {"c": {"statement": iri}}},
+	"VER-TFR-NRI": nri,
+}}}}}}
+
+good_ver := ver_rules(iri_text, {"varies_by_class": {"c": {"statement": nri_text}}})
+
+vf := {
+	"tracking_id": "t1", "cve": "CVE-2099-0001", "pain": "N4", "internet_reachable": true,
+	"likely_exploitable": true, "fully_mitigated": false, "final_disposition": "open",
+	"first_evaluated": "2026-11-01T00:00:00+00:00",
+}
+
+triggers(patch, r) := ts if {
+	ts := triage.incident_triggers with data.rules as r
+		with input as {"findings": [object.union(vf, patch)]}
+}
+
+ierrs(findings, r) := es if {
+	es := triage.incident_errors with data.rules as r with input as {"findings": findings}
+}
+
+test_iri_opens_above_n3 if {
+	ts := triggers({}, good_ver)
+	ts == [{
+		"tracking_id": "t1", "cve": "CVE-2099-0001", "rule": "VER-TFR-IRI", "pain": "N4",
+		"first_evaluated": "2026-11-01T00:00:00+00:00",
+	}]
+	triggers({"pain": "N5"}, good_ver)[0].rule == "VER-TFR-IRI"
+}
+
+test_iri_ends_at_n3_or_below if {
+	triggers({"pain": "N3"}, good_ver) == []
+	triggers({"pain": "N1"}, good_ver) == []
+}
+
+test_nri_opens_only_at_n5 if {
+	triggers({"internet_reachable": false, "pain": "N5"}, good_ver)[0].rule == "VER-TFR-NRI"
+	triggers({"internet_reachable": false, "pain": "N4"}, good_ver) == []
+}
+
+test_not_likely_exploitable_never_triggers if {
+	triggers({"likely_exploitable": false, "pain": "N5"}, good_ver) == []
+	triggers({"likely_exploitable": false, "internet_reachable": false, "pain": "N5"}, good_ver) == []
+}
+
+test_false_positive_and_fully_mitigated_never_trigger if {
+	triggers({"final_disposition": "false-positive", "pain": "N5"}, good_ver) == []
+	triggers({"fully_mitigated": true, "pain": "N5"}, good_ver) == []
+}
+
+test_accepted_still_triggers if {
+	triggers({"final_disposition": "accepted", "pain": "N5"}, good_ver)[0].rule == "VER-TFR-IRI"
+}
+
+test_missing_cve_is_null if {
+	ts := triage.incident_triggers with data.rules as good_ver
+		with input as {"findings": [object.remove(vf, ["cve", "first_evaluated"])]}
+	ts[0].cve == null
+	ts[0].first_evaluated == null
+}
+
+test_rules_read_cleanly if {
+	ierrs([vf], good_ver) == set()
+}
+
+test_changed_iri_text_fails_closed if {
+	es := ierrs([vf], ver_rules("treat them as incidents", {"statement": nri_text}))
+	"VER-TFR-IRI Class C statement no longer reads 'N-rating > n ... at Nn or below'" in es
+}
+
+test_changed_nri_text_fails_closed if {
+	es := ierrs([vf], ver_rules(iri_text, {"statement": "treat them as incidents"}))
+	"VER-TFR-NRI Class C statement no longer reads 'N-rating = n ... at Nn or below'" in es
+}
+
+test_non_complement_fails_closed if {
+	bad_iri := replace(iri_text, "at N3 or below", "at N2 or below")
+	bad_nri := replace(nri_text, "at N4 or below", "at N3 or below")
+	es := ierrs([vf], ver_rules(bad_iri, {"statement": bad_nri}))
+	"VER-TFR-IRI: the trigger and the 'until' level are not complements" in es
+	"VER-TFR-NRI: the trigger and the 'until' level are not complements" in es
+}
+
+test_bad_rating_fails_closed if {
+	es := ierrs([object.union(vf, {"pain": "high"})], good_ver)
+	"t1: impact high is not an N-rating" in es
+}

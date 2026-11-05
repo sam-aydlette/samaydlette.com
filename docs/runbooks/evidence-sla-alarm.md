@@ -7,11 +7,12 @@ The evidence SLA watchdog (`infrastructure/watchdog.tf`) emails the operator thr
 | `nightly-failed` | the evidence nightly's last run failed, or no run has reported in 26h | a gate failed; or the cron is disabled or stuck |
 | `vdr-age` | the published VDR is more than 24h old | the reporting policy is breached; nightly runs have failed or stopped |
 | `runtime-age` | the runtime signal is more than 26h old | the daily runtime-check Lambda has failed or stopped |
+| `incident-report-overdue` | an incident report listed as due in `/.well-known/incident-reports.json` is past its Class C deadline, or the incident log is missing or unreadable | an Initial, Ongoing or Final incident report was not issued in time; or a vulnerability that is a FedRAMP Reportable Incident (VER-TFR-IRI/NRI) has no incident opened |
 | `artifact-stale` | any artifact listed in `infrastructure/schemas/freshness-config.json` is past its window, missing, or has no readable timestamp | no deploy within the deploy-cadence window; the corroboration was not re-run; or one of the above |
 
 The windows are governed values in `infrastructure/schemas/freshness-config.json`; the thresholds above are read from it. Change a window there, through review, never in the alarm.
 
-Any alarm also fires if the watchdog stops publishing metrics, because missing data counts as a breach. If all four fire together, check the watchdog itself first (a missing or invalid freshness config stops it before it publishes anything).
+Any alarm also fires if the watchdog stops publishing metrics, because missing data counts as a breach. If all five fire together, check the watchdog itself first (a missing or invalid freshness config stops it before it publishes anything).
 
 ## `nightly-failed`
 
@@ -30,6 +31,10 @@ The policy is already breached, so treat this as the priority. It usually follow
 
 Check the compliance Lambda (`samaydlette-com-opa-compliance`): its CloudWatch logs, its EventBridge rule, and the shared dead-letter queue `samaydlette-com-opa-compliance-dlq` for failed invocations.
 
+## `incident-report-overdue`
+
+The published incident log (`/.well-known/incident-reports.json`, `obligations_due`) names each report still due, for which incident or finding, and its deadline. Follow [`docs/incident-response.md`](../incident-response.md#reporting-fedramp-reportable-incidents-iec): record the report (or, for a finding with no incident, open the incident) in `data/incidents.json` and push it; the **Incident Reports** workflow validates, builds, signs and publishes within minutes, and the alarm clears once the republished log no longer lists the report as due. If the log itself is missing or unreadable, run the workflow by hand and check its publish step.
+
 ## `artifact-stale`
 
 The watchdog's log line for the run lists the stale artifacts under `stale`. To see the same from outside, run `python3 scripts/check-evidence-freshness.py --all https://samaydlette.com`.
@@ -38,7 +43,7 @@ The watchdog's log line for the run lists the stale artifacts under `stale`. To 
 - **`boundary-corroboration.json`:** re-run `tools/boundary-map/corroborate.py`, commit the result, and deploy.
 - **Nightly artifacts** (`vdr-*`): follow `nightly-failed` / `vdr-age` above.
 
-## All four at once
+## All five at once
 
 Check the watchdog: its log group `/aws/lambda/samaydlette-com-evidence-watchdog`, the dead-letter queue, and its EventBridge rule. Each run logs one JSON line with the values it published, the config version, and the stale artifacts.
 
