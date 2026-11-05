@@ -1927,6 +1927,8 @@ jobs:
 
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
+      env:
+        VDR_SIGNER: https://github.com/${{ github.workflow_ref }}
       run: |
         echo "Building the Security Decision Record (FedRAMP schema): every applicable rule, KSI and Moderate control..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
@@ -1936,7 +1938,7 @@ jobs:
           --runtime-signal ksi-signal-runtime.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
           --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
-          --vdr-bundle vdr-report.bundle --vdr-identity "https://github.com/${{ github.workflow_ref }}"
+          --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER"
         # FRC-CSX-VVK: a KSI short of two automated methods is reported here; the
         # package-maintainer job that follows rebuilds the SDR against the runtime
         # signal this deploy's emitter run produces and fails the run on it.
