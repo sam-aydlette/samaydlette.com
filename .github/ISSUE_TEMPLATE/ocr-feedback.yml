@@ -1,0 +1,25 @@
+name: Ongoing Certification Report feedback
+description: Ask a question or give feedback about one Ongoing Certification Report (CCM-OCR-FBM). This is public; for anything sensitive, use the security contact in /.well-known/security.txt instead.
+title: "OCR feedback: "
+labels: ["ocr-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Questions and feedback about an Ongoing Certification Report. Reports are listed at https://samaydlette.com/.well-known/ocr-issues.json.
+        This channel is public. Each quarter the operator publishes an anonymized summary of the questions and answers in the next report (CCM-OCR-AFS): names, agencies and anything identifying are removed.
+        Do not include sensitive information here. For anything sensitive, use the security contact in https://samaydlette.com/.well-known/security.txt.
+  - type: input
+    id: ocr
+    attributes:
+      label: Report issue date
+      description: The issue date of the report you are asking about (YYYY-MM-DD). Links from a report fill this in.
+      placeholder: "2026-11-24"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Question or feedback
+    validations:
+      required: true

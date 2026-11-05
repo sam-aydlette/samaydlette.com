@@ -47,10 +47,13 @@ infrastructure/cmmc-out.json
 # and published to /.well-known/; never committed — same policy as the OSCAL artifacts above)
 infrastructure/ongoing-certification-report.json
 infrastructure/ongoing-certification-report.md
-infrastructure/certification-overview-package.json
-infrastructure/certification-overview-package.md
 infrastructure/certification-package-overview.json
 infrastructure/certification-package-overview.md
+infrastructure/quarterly-review.ics
+infrastructure/ocr-issues.json
+infrastructure/fedramp-certification-reports.json
+infrastructure/fedramp-certification-reports/
+infrastructure/package-submission-log.json
 infrastructure/security-decision-record.json
 infrastructure/security-decision-record.md
 infrastructure/availability.json

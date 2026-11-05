@@ -51,8 +51,11 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import _assessor  # noqa: E402
 import _controls  # noqa: E402
+import _decisions  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
+import _freshness  # noqa: E402
 import _frr  # noqa: E402
+import _offering  # noqa: E402
 import _rules  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -125,6 +128,33 @@ def _evidence_line(ev):
     return f"{EVIDENCE_WORDS[ev['kind']]} `{ev['ref']}`"
 
 
+def evidence_context(freshness_path=None, decisions_path=None):
+    """What a rule's evidence lines say about cycle and authority: the freshness
+    entry of each published artifact and the in-force decision records."""
+    cfg = _freshness.load_freshness_config(freshness_path)
+    decs = _decisions.in_force(_decisions.load(decisions_path or REPO / "data" / "decisions.json"))
+    return {"artifacts": {a["path"]: a for a in cfg["artifacts"]}, "decisions": {d["id"]: d for d in decs}}
+
+
+def _evidence_validation(ev, ctx):
+    """IVV-CSO-SEI/SEE: what one piece of evidence verifies, and on what cycle."""
+    kind, ref = ev["kind"], ev["ref"]
+    if kind == "test":
+        return (f"Verified by the test `{ref}`, run on every pull request and before every deploy "
+                "(the deploy's unit-test job); the deploy does not proceed if it fails.")
+    if kind == "step":
+        return (f"Exercised by the workflow step `{ref}` each time that workflow runs; the run fails if the "
+                "step does.")
+    if kind == "artifact":
+        a = (ctx or {}).get("artifacts", {}).get(ref)
+        cyc = (f", refreshed on its {a['cadence']} cadence and alarmed past {a['max_age_hours']} hours by the "
+               "evidence watchdog") if a else ""
+        return f"Shown by the published artifact `{ref}`{' (signed)' if a and a.get('signed') else ''}{cyc}."
+    d = (ctx or {}).get("decisions", {}).get(ref)
+    when = f", decided by {d.get('decided_by')} on {d.get('decided_on')}, review by {d.get('review_by')}" if d else ""
+    return f"Attested by the decision record {ref}{when}: {d.get('title') if d else 'in force'}."
+
+
 def _assessment(rule_id, assessor_by_rule):
     entries = assessor_by_rule.get(rule_id) or []
     if not entries:
@@ -132,7 +162,7 @@ def _assessment(rule_id, assessor_by_rule):
     return [f"Assessor record {e['record_id']} ({e['kind']}): {e['text']}" for e in entries]
 
 
-def build_requirements(records, applicable, assessor_by_rule):
+def build_requirements(records, applicable, assessor_by_rule, evidence_ctx=None):
     out = []
     for r in records["records"]:
         rid, status = r["frr_id"], r["status"]
@@ -144,6 +174,9 @@ def build_requirements(records, applicable, assessor_by_rule):
         val = []
         if r.get("evidence"):
             val.append("Evidence: " + "; ".join(_evidence_line(e) for e in r["evidence"]) + ".")
+            val += [_evidence_validation(e, evidence_ctx) for e in r["evidence"]]
+        if r.get("simulated"):
+            val.append(f"Simulated counterparty ({r['simulated']['counterparty']}): {r['simulated']['how']}")
         val.append("Checked on every build by scripts/_frr.py: the rule set matches the pinned FedRAMP "
                    "rules and every piece of evidence cited resolves.")
         if r.get("gap"):
@@ -158,6 +191,8 @@ def build_requirements(records, applicable, assessor_by_rule):
         rec["providerExtensions"] = {"status": status, "force": applicable[rid]["force"],
                                      "evidence": r.get("evidence", []),
                                      "closesWith": r.get("closes_with", [])}
+        if r.get("simulated"):
+            rec["providerExtensions"]["simulated"] = r["simulated"]
         out.append(rec)
     return out
 
@@ -173,6 +208,60 @@ def ksi_status(k):
     if k.get("method") == "policy-validation" and (k.get("evidence") or {}).get("validation_ids"):
         return "Implemented"
     return "Partially Implemented"
+
+
+def _names(items, n=6):
+    items = sorted(items)
+    return ", ".join(f"`{i}`" for i in items[:n]) + (f" and {len(items) - n} more" if len(items) > n else "")
+
+
+def ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok):
+    """SDR-CSX-KSI, written for this KSI from its own measures, components and
+    results: (implementation lines, validation lines) covering the measures and
+    their objective (or the reason there are none, and the risk), their cycle,
+    verification that they demonstrate the KSI and that the automation is
+    accurate, and validation that they are in place and working."""
+    stmt = cat["statement"]
+    impl = [stmt]
+    if rules:
+        impl.append(f"Measures ({len(rules)}), each an OPA rule annotated with {kid}: "
+                    + "; ".join(f"{r['title']} (`{r['file']}#{r['id']}`)" for r in rules)
+                    + f". Objective: together they show that {stmt[0].lower() + stmt[1:]}")
+        impl.append(f"Cycle: on every deploy, before apply, against the Terraform plan for {len(comps)} "
+                    f"component(s) ({_names(comps)})"
+                    + (f"; and daily at runtime against the live configuration of {len(rt)} of them." if rt else "."))
+    else:
+        impl.append(f"No automated measure is annotated with {kid} in this build. Evidence is "
+                    f"{k.get('method')}" + (f" over {len(comps)} inventory component(s) ({_names(comps)})" if comps
+                                            else "") + ". Reason: no policy rule checks this KSI yet. Risk to "
+                    "customers: a regression against the KSI would not stop a deploy and would surface only "
+                    "when the inventory or the documentation is reviewed.")
+        impl.append("Cycle: the inventory behind it is re-derived from live state on every deploy; there is no "
+                    "persistent check.")
+    val = []
+    if rules:
+        files = sorted({r["file"] for r in rules})
+        val.append(f"Verification that the measures demonstrate {kid}: each rule carries {kid} in its "
+                   "custom.ksi_ids annotation, and scripts/check-policy-annotations.py fails CI when an "
+                   "annotation and the KSI catalog disagree. Verification that the automation is accurate: "
+                   f"the rules' own tests ({', '.join(f'infrastructure/policy/{f[:-5]}_test.rego' for f in files)}) "
+                   "run with a coverage floor on every pull request, and the parity test checks that the CLI and "
+                   "the compiled Wasm the runtime uses decide alike.")
+    if plan_ok:
+        val.append(f"Validation on this deploy: {nval} validation(s) of these measures against the plan, "
+                   f"{nfail} failing; the deploy stops on a violation.")
+    if rt:
+        val.append(f"Re-validated daily at runtime: the signed runtime signal re-evaluates the same compiled "
+                   f"policy against live configuration for {len(rt)} of these components.")
+    elif runtime_reason:
+        val.append(f"Runtime re-validation not counted for this build: {runtime_reason}.")
+    if not rules:
+        val.append(f"Verification: none automated for {kid}; the inventory attestation is checked only for "
+                   "completeness by the reconciliation gate. The reason for having no measure is not accepted: no "
+                   "decision record accepts it, so the KSI is reported at the status its evidence supports.")
+        val.append("Validation: there is no measure to validate as in place and working; the reason (no policy rule "
+                   "yet) is valid for this build and is removed by annotating a rule with the KSI.")
+    return impl, val
 
 
 def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_by_rule):
@@ -193,21 +282,8 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         plan_ok = bool(ev.get("validation_ids"))
         methods = int(plan_ok) + int(bool(rt))
         rules = rules_by_ksi.get(kid, [])
-        impl = [cat["statement"]]
-        if rules:
-            impl.append("Measures: " + "; ".join(f"{r['title']} (`{r['file']}#{r['id']}`)" for r in rules) + ".")
-        impl.append(f"Measured by {k.get('method')}: {len(comps)} inventory component(s), "
-                    f"{len(ev.get('validation_ids') or [])} deploy-time validation(s), "
-                    f"{len(ev.get('failed_validation_ids') or [])} failing.")
-        val = []
-        if plan_ok:
-            val.append("Verified on every deploy: OPA evaluates the Terraform plan against the measures above "
-                       "before apply, and the deploy stops on a violation.")
-        if rt:
-            val.append(f"Re-validated daily at runtime: the signed runtime signal re-evaluates the same compiled "
-                       f"policy against live configuration for {len(rt)} of these components.")
-        elif runtime_reason:
-            val.append(f"Runtime re-validation not counted for this build: {runtime_reason}.")
+        nval, nfail = len(ev.get("validation_ids") or []), len(ev.get("failed_validation_ids") or [])
+        impl, val = ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok)
         val.append(f"Automated methods in place: {methods} (FRC-CSX-VVK requires 2 for Class C).")
         if st != "Implemented":
             val.append("Status is not Implemented because "
@@ -232,7 +308,10 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
             "ksiTests": [f"infrastructure/policy/{r['file']}#{r['id']}" for r in rules],
             "ksiEvidence": evidence,
             "providerExtensions": {"method": k.get("method"), "automatedMethods": methods,
-                                   "controls": [c["control_id"] for c in cat["controls"]]},
+                                   "controls": [c["control_id"] for c in cat["controls"]],
+                                   "measures": [f"{r['file']}#{r['id']}" for r in rules],
+                                   "components": len(comps), "validations": nval, "failingValidations": nfail,
+                                   "runtimeComponents": len(rt)},
         })
     return out, status
 
@@ -332,8 +411,43 @@ def policy_documents(policy_dir=POLICIES):
 
 # --- metrics, version -----------------------------------------------------------------
 
-def build_metrics(counts, vdr, signal, history, now):
-    """SDR-CSX-KMT: today's point and daily history toward one year."""
+KSI_CODES = {"Implemented": "I", "Partially Implemented": "P", "Not Implemented": "N"}
+
+
+def ksi_point(ksis):
+    """Today's per-KSI metric data (SDR-CSX-KMT): status code (I/P/N), deploy-time
+    validations and failures, automated methods, and whether the runtime signal
+    re-validated it (the status of persistent validation)."""
+    return {k["ksiId"]: {"s": KSI_CODES.get(k["ksiImplementationStatus"], "N"),
+                         "v": k["providerExtensions"]["validations"],
+                         "f": k["providerExtensions"]["failingValidations"],
+                         "m": k["providerExtensions"]["automatedMethods"],
+                         "r": int(k["providerExtensions"]["runtimeComponents"] > 0)} for k in ksis}
+
+
+def ksi_summaries(history):
+    """Per KSI: a summary of each metric over the past 30 days and up to the
+    past year, from the days that carry per-KSI data."""
+    def summ(window, kid):
+        pts = [h["ksis"][kid] for h in window if isinstance(h.get("ksis"), dict) and kid in h["ksis"]]
+        if not pts:
+            return {"days": 0}
+        return {"days": len(pts), "daysImplemented": sum(p["s"] == "I" for p in pts),
+                "daysNotImplemented": sum(p["s"] == "N" for p in pts),
+                "maxFailingValidations": max(p["f"] for p in pts),
+                "minAutomatedMethods": min(p["m"] for p in pts),
+                "daysRuntimeValidated": sum(p["r"] for p in pts),
+                "current": KSI_NAMES[pts[-1]["s"]]}
+    kids = sorted({kid for h in history if isinstance(h.get("ksis"), dict) for kid in h["ksis"]})
+    return {kid: {"summary_30d": summ(history[-30:], kid), "summary_1y": summ(history, kid)} for kid in kids}
+
+
+KSI_NAMES = {v: k for k, v in KSI_CODES.items()}
+
+
+def build_metrics(counts, vdr, signal, history, now, ksis_today=None):
+    """SDR-CSX-KMT: today's point and daily history toward one year, with
+    per-KSI data and summaries."""
     sig_vals = signal.get("validations", []) if signal else []
     vsum = (vdr or {}).get("summary", {})
     today = now.date().isoformat()
@@ -342,6 +456,8 @@ def build_metrics(counts, vdr, signal, history, now):
              "signal_failing": sum(1 for v in sig_vals if v.get("result") == "fail"),
              "vdr_total": vsum.get("total_findings", 0), "vdr_blocking": vsum.get("blocking", 0),
              "vdr_accepted": vsum.get("risk_accepted", 0), "vdr_kev": vsum.get("kev", 0)}
+    if ksis_today is not None:
+        point["ksis"] = ksis_today
     history = [h for h in history if h.get("date") != today] + [point]
     history = sorted(history, key=lambda h: h.get("date", ""))[-HISTORY_DAYS:]
 
@@ -351,6 +467,10 @@ def build_metrics(counts, vdr, signal, history, now):
                 "max_failing_validations": max(h.get("signal_failing", 0) for h in window),
                 "current_accepted": window[-1].get("vdr_accepted", 0)}
     return {"current": point, "summary_30d": summ(history[-30:]), "summary_1y": summ(history),
+            "ksi_summaries": ksi_summaries(history),
+            "daily_metric_keys": {"ksis": "per KSI: s status (I Implemented, P Partially, N Not), v deploy-time "
+                                          "validations, f failing, m automated methods, r runtime re-validated "
+                                          "(1/0)"},
             "daily_metric_data": history}
 
 
@@ -393,15 +513,28 @@ def _tally(items, key):
     return dict(sorted(out.items()))
 
 
+def simulated_summary(reqs):
+    """How many rule records rely on a simulated outside party, and which."""
+    by = {}
+    for r in reqs:
+        sim = r["providerExtensions"].get("simulated")
+        if sim:
+            by[sim["counterparty"]] = by.get(sim["counterparty"], 0) + 1
+    return {"records": sum(by.values()), "of": len(reqs), "byCounterparty": dict(sorted(by.items())),
+            "statement": f"{sum(by.values())} of {len(reqs)} rule records rely on a simulated counterparty "
+                         "(an assessor, FedRAMP, an agency, an incident recipient, the mail system or SAM.gov): "
+                         "the mechanism is real and runs on every deploy; only the outside party is simulated."}
+
+
 def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, runtime, runtime_reason,
-          assessor_records, prof, prev, vdr, now, policies):
+          assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None):
     ids = [r["frr_id"] for r in records["records"]] + sorted(
         i["id"] for f in catalog["KSI"].values() for i in f["indicators"])
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ids]
     block = _assessor.attach(pseudo, assessor_records)
     by_rule = {p["rule_id"]: p["assessor_comment_responses"] for p in pseudo if p["assessor_comment_responses"]}
 
-    reqs = build_requirements(records, applicable, by_rule)
+    reqs = build_requirements(records, applicable, by_rule, evidence_ctx)
     ksis, ksi_st = build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, by_rule)
     controls = build_controls(irs, catalog, ksi_st, applicable, records, moderate, policies)
     in_mod = [c for c in controls if c["providerExtensions"]["inModerateBaseline"]]
@@ -419,18 +552,20 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
         "keySecurityIndicators": ksis,
         "securityControls": controls,
         "providerExtensions": {
+            "fedRampId": fedramp_id or _offering.fedramp_id(),
             "certification": "FedRAMP 20x, Program path, Class C",
             "class": prof.get("fedramp_class"),
             "impact_level": prof.get("impact_level"),
             "ksi_signal_id": signal.get("signal_id"),
             "rules": _rules.pin(),
             "summary": {"fedRampRequirements": _tally(reqs, "status"),
+                        "simulatedCounterparties": simulated_summary(reqs),
                         "keySecurityIndicators": dict(sorted(ksi_counts.items())),
                         "securityControlsModerate": _tally(in_mod, "status"),
                         "securityControlsBeyondModerate": _tally(beyond, "status")},
             "assessorRecords": block,
             "assessorCommentResponses": by_rule,
-            "metrics": build_metrics(counts, vdr, signal, previous_history(prev), now),
+            "metrics": build_metrics(counts, vdr, signal, previous_history(prev), now, ksi_point(ksis)),
         },
     }
     digest = content_hash(doc)
@@ -475,7 +610,7 @@ def main(argv=None):
     runtime, reason = runtime_validations(a.runtime_signal)
     assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
     doc = build(catalog, signal, records, applicable, irs, moderate_ids(), policy_rules(), runtime, reason,
-                assessor_records, prof, prev, vdr, now, policy_documents())
+                assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context())
     _assessor.verify_output(doc, assessor_records)  # T74
     fs.write_validated(doc, "sdr", a.output)
     if a.md_output:
@@ -519,12 +654,14 @@ def render_markdown(doc):
     out = ["# Security Decision Record", "",
            f"_{pe['certification']}. Every applicable FedRAMP rule, every Key Security Indicator, and every "
            "NIST 800-53 Rev5 control in the Moderate baseline, with how 20x evidence meets it._", "",
+           f"- **FedRAMP ID:** {pe.get('fedRampId')} (simulated: no FedRAMP ID has been assigned)",
            f"- **Version:** {m['version']} | **Last updated:** {m['lastUpdated']}",
            f"- **Source:** {m['updateSource']}",
            f"- **Bound to inventory signal:** `{pe['ksi_signal_id']}`",
            f"- **FedRAMP rules (pinned):** {pe['rules']['version']} at `{pe['rules']['commit'][:12]}`",
            "", "## Summary", "",
            f"- FedRAMP rules ({len(doc['fedRampRequirements'])}): {_summary_line(s['fedRampRequirements'])}",
+           f"- {(s.get('simulatedCounterparties') or {}).get('statement', 'No rule record relies on a simulated counterparty.')}",
            f"- Key Security Indicators ({len(doc['keySecurityIndicators'])}): "
            f"{_summary_line(s['keySecurityIndicators'])}",
            f"- Rev5 Moderate controls ({sum(s['securityControlsModerate'].values())}): "
@@ -537,7 +674,8 @@ def render_markdown(doc):
         x = r["providerExtensions"]
         gap = next((v for v in r["frrValidation"] if v.startswith("Gap: ")), "")
         closes = next((v for v in r["frrValidation"] if v.startswith("Closes with: ")), "")
-        out.append(f"| `{r['frrID']}` | {x['status']} | {_cell(' '.join(r['frrImplementation']))} | "
+        sim = f" (simulated {x['simulated']['counterparty']})" if x.get("simulated") else ""
+        out.append(f"| `{r['frrID']}` | {x['status']}{sim} | {_cell(' '.join(r['frrImplementation']))} | "
                    f"{_cell((gap + ' ' + closes).strip()) or '—'} |")
     out += ["", "## Key Security Indicators", "",
             "| KSI | Status | Automated methods | Measures |", "|---|---|---|---|"]

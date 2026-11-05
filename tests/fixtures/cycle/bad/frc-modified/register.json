@@ -1,0 +1,12 @@
+{
+  "schema": "fedramp-certification-reports/1",
+  "reports": [
+    {
+      "file": "report.json",
+      "received_on": "2026-11-05",
+      "from": "Simulated FedRAMP",
+      "simulated": true,
+      "sha256": "eb933c3c8bcc9c86d05a46a1d1a4660d198cab25c1e21bc01151f7672f09d5cc"
+    }
+  ]
+}

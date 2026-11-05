@@ -1,0 +1,17 @@
+{
+  "account-id": {
+    "summary": "Applied to account 123456789012 in us-east-1."
+  },
+  "email": {
+    "summary": "Asked by jane.doe@example.org about the review."
+  },
+  "ipv4": {
+    "summary": "Origin 10.20.30.40 was blocked."
+  },
+  "aws-key": {
+    "summary": "Rotated AKIAIOSFODNN7EXAMPLE after the drill."
+  },
+  "handle": {
+    "summary": "Question from @some-reviewer answered."
+  }
+}
