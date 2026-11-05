@@ -534,3 +534,17 @@ def test_the_markdown_reports_carry_the_activity_and_link_the_runtime_results(tm
         text = (tmp_path / name).read_text()
         assert "## Activity this period" in text and "| OWASP ZAP dynamic scan (weekly) |" in text
         assert "(https://samaydlette.com/.well-known/ksi-signal-runtime.json)" in text
+
+
+def test_every_report_carries_the_offerings_fedramp_id(tmp_path):
+    want = json.loads((REPO / "data" / "cds" / "offering.json").read_text())["fedramp_id"]
+    vdt, avi, mrh = _build()
+    for doc in (vdt, avi, mrh):
+        assert doc["providerExtensions"]["fedRampId"] == want
+
+
+def test_a_missing_fedramp_id_stops_the_build(tmp_path):
+    p = tmp_path / "offering.json"
+    p.write_text("{}")
+    with pytest.raises(SystemExit, match="fedramp_id is missing"):
+        mod.fedramp_id(p)

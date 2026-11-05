@@ -99,6 +99,22 @@ SCAN_FEEDS = {"grype": "Grype software composition scan", "dependabot": "Dependa
               "checkov": "Checkov IaC scan", "tfsec": "tfsec IaC scan",
               "kev": "CISA KEV catalog", "epss": "FIRST EPSS scores"}
 
+OFFERING = Path(__file__).resolve().parent.parent / "data" / "cds" / "offering.json"
+
+
+def fedramp_id(path=OFFERING):
+    """The offering's FedRAMP ID (CDS-CSO-FID), stamped on every report as
+    providerExtensions.fedRampId. Reads the same field as _offering.fedramp_id()
+    (feat/sdr-schema); missing or empty stops the build."""
+    try:
+        v = json.loads(Path(path).read_text(encoding="utf-8")).get("fedramp_id")
+    except (OSError, json.JSONDecodeError) as exc:
+        _fail(f"{path}: unreadable ({exc.__class__.__name__})")
+    if not isinstance(v, str) or not v.strip():
+        _fail(f"{path}: fedramp_id is missing")
+    return v
+
+
 VDT_OUT = "vdr-detail-report.json"
 AVI_OUT = "vdr-accepted-vulnerabilities.json"
 MRH_OUT = "vdr-history.json"
@@ -489,7 +505,7 @@ def build(vdr, register, previous_vdt, previous_avi, previous_mrh, now):
     cpo = {"certificationPackageOverviewUri": fs.CPO_URI}
     # REQ-GOV-2: like every VDR-family output, each names the method profile and
     # conformance results of the VDR report it came from.
-    ext = {"source": "vdr-report.json", "vdrReportId": vdr.get("report_id"),
+    ext = {"fedRampId": fedramp_id(), "source": "vdr-report.json", "vdrReportId": vdr.get("report_id"),
            "ksiSignalId": vdr.get("ksi_signal_id"), "profile": (vdr.get("methodology") or {}).get("profile")}
     vdt = {"$schema": fs.stamp("vdt"), **cpo,
            "reportPeriod": {"from": _period_start(previous_vdt, earliest), "to": to},
