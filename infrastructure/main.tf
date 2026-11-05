@@ -20,8 +20,8 @@
 #
 # tfsec exclusions live in .tfsec/config.yml at the repo root.
 #
-# Each suppression is tracked as a Risk-Accepted POA&M entry in
-# docs/poam.md (POAM-003 through POAM-018) with full rationale.
+# Each suppression is a decision record in data/decisions.json (former IDs
+# POAM-003 through POAM-018) with full rationale.
 # =============================================================================
 
 # =============================================================================
@@ -600,7 +600,7 @@ resource "aws_kms_alias" "at_rest" {
 # the published public key instead of trusting the well-known URL. ECC NIST P-256
 # / SIGN_VERIFY; asymmetric keys do not support automatic rotation (rotation is a
 # manual new-key + re-publish-pubkey operation, recorded as a residual in
-# docs/poam.md). Key policy is root-enabled / IAM-governed; the Lambda role holds
+# data/decisions.json). Key policy is root-enabled / IAM-governed; the Lambda role holds
 # kms:Sign + kms:GetPublicKey (above).
 resource "aws_kms_key" "runtime_signing" {
   description              = "Asymmetric key for signing the runtime KSI signal (POAM-002)"

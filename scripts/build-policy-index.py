@@ -94,7 +94,7 @@ def main():
                    if p.name != "README.md")
     for extra in ("docs/continuous-monitoring-plan.md", "docs/incident-response.md",
                   "docs/recovery-plan.md", "docs/security-review.md", "docs/supply-chain.md",
-                  "docs/privacy-threshold-analysis.md", "docs/rules-of-behavior.md", "docs/poam.md"):
+                  "docs/privacy-threshold-analysis.md", "docs/rules-of-behavior.md"):
         if (REPO / extra).exists():
             files.append(extra)
 

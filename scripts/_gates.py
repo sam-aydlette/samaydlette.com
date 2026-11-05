@@ -53,7 +53,6 @@ CHECKS = {
     "reconcile.b": "G5",
     "reconcile.c": "G5",
     "reconcile.d": "G5",
-    "reconcile.g": "G5",
     "reconcile.h": "G5",
     "reconcile.i": "G5",
     "reconcile.j": "G5",

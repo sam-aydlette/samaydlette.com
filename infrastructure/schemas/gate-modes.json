@@ -1,6 +1,6 @@
 {
   "$schema": "./gate-modes.schema.json",
-  "version": "2026-11-04.2",
+  "version": "2026-11-04.3",
   "description": "The mode each gate check runs in, and the decision behind it (REQ-GAT-1, REQ-GAT-4). The method's default is block. A detect-and-recover check publishes its failure, queues it and starts a recovery clock instead of stopping the run. Read by scripts/_gates.py, which fails the build on a missing decision field, a non-default mode with no reason or a lapsed review date, or an unrecorded check.",
   "method_reference": "website/research/vulnerability-evidence.html#gates",
   "checks": [
@@ -37,8 +37,6 @@
     {"check": "reconcile.c", "gate": "G5", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},
     {"check": "reconcile.d", "gate": "G5", "mode": "block", "method_default": "block",
-     "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},
-    {"check": "reconcile.g", "gate": "G5", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},
     {"check": "reconcile.h", "gate": "G5", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},

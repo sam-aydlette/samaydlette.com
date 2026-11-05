@@ -1475,11 +1475,11 @@ jobs:
     # Vulnerability gate (Task T): fail the build on any scanner-reported
     # vulnerability (Grype SCA, ZAP DAST, Dependabot) that is not remediated or
     # dispositioned false-positive / operational-requirement in
-    # data/vuln-dispositions.json. Risk-adjustment does not pass.
+    # data/decisions.json. Risk-adjustment does not pass.
     - name: Vulnerability gate (fix or categorize every vuln)
       working-directory: infrastructure
       run: |
-        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/vuln-dispositions.json
+        python3 ../scripts/vuln-gate.py --vdr vdr-report.json --register ../data/decisions.json
 
     # Append this run's CVE-keyed summary to the rolling vuln trend ledger
     # (RA-5(6)). Fetch the published ledger first so history persists across
@@ -1539,31 +1539,13 @@ jobs:
         echo "Signing iiw.csv with cosign keyless..."
         cosign sign-blob --yes --new-bundle-format --bundle iiw.bundle iiw.csv
 
-    # -------------------------------------------------------------------------
-    # BUILD THE OSCAL POA&M  (published after the reconciliation gate)
-    # -------------------------------------------------------------------------
-    # NIST OSCAL Plan of Action and Milestones format. Imports the OSCAL SSP
-    # at /.well-known/oscal-ssp.json so a consumer can navigate from a poam
-    # item to the system component it concerns. Fields align with FedRAMP
-    # Rev 5 Appendix O via FedRAMP-namespaced props.
-    # -------------------------------------------------------------------------
-    - name: Build OSCAL POA&M
-      working-directory: infrastructure
-      run: |
-        echo "Building OSCAL POA&M..."
-        python3 ../scripts/build-oscal-poam.py \
-          --ksi-signal ksi-signal.json \
-          --output oscal-poam.json
-        echo "POA&M items:"
-        jq '.["plan-of-action-and-milestones"]["poam-items"] | length' oscal-poam.json
-
     - name: Build Ongoing Certification Report (CCM)
       working-directory: infrastructure
       run: |
         echo "Building Ongoing Certification Report (CCM-OCR-AVL: quarterly human-readable summary)..."
         python3 ../scripts/build-ocr.py \
           --vdr vdr-report.json \
-          --poam oscal-poam.json \
+          --decisions ../data/decisions.json \
           --ksi-signal ksi-signal.json \
           --scn-register ../docs/scn/scn-register.csv \
           --output ongoing-certification-report.json \
@@ -1632,8 +1614,9 @@ jobs:
 
     # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
     # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
-    # SSP/POA&M references resolve to inventory, every Checkov suppression is
-    # categorized consistently, one identical impact level everywhere, all
+    # SSP references resolve to inventory, every Checkov suppression is
+    # categorized by an in-force decision record, every VDR finding resolves
+    # to one, one identical impact level everywhere, all
     # artifacts bound to one signal_id, and the staged artifacts carry this run's
     # commit. Runs after all artifacts are built and signed but BEFORE anything is
     # published (Task 1.5): nothing reaches /.well-known/ until this passes, so a
@@ -1679,12 +1662,6 @@ jobs:
           --previous trust-center-previous.json --manual-settings manual-settings.json \
           --corroboration boundary-corroboration.json \
           --commit "$GITHUB_SHA" --output trust-center.json
-
-    - name: Sign OSCAL POA&M
-      working-directory: infrastructure
-      run: |
-        echo "Signing oscal-poam.json with cosign keyless..."
-        cosign sign-blob --yes --new-bundle-format --bundle oscal-poam.bundle oscal-poam.json
 
     - name: Sign Ongoing Certification Report
       working-directory: infrastructure
@@ -1741,9 +1718,13 @@ jobs:
         aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
         aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
 
-        # OSCAL POA&M
-        aws s3 cp oscal-poam.json "s3://$BUCKET_NAME/.well-known/oscal-poam.json" --content-type application/oscal+json --cache-control "public, max-age=300"
-        aws s3 cp oscal-poam.bundle "s3://$BUCKET_NAME/.well-known/oscal-poam.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Retired artifacts (CR26): the OSCAL POA&M was replaced by the decision
+        # register (data/decisions.json) on 2026-11-04. Its published copies
+        # are deleted rather than left to go stale unwatched; the round-trip
+        # step below asserts they are gone.
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl; do
+          aws s3 rm "s3://$BUCKET_NAME/.well-known/$retired"
+        done
         # Ongoing Certification Report (CCM-OCR-AVL) + human-readable rendering
         aws s3 cp ongoing-certification-report.json "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1809,7 +1790,6 @@ jobs:
         # artifacts is one attest() line each (tracked follow-on).
         attest ksi-signal.json scripts/build-ksi-signal.py
         attest oscal-ssp.json  scripts/build-oscal-ssp.py
-        attest oscal-poam.json scripts/build-oscal-poam.py
         attest vdr-report.json scripts/build-vdr-report.py
         attest iiw.csv         scripts/build-iiw.py
         echo "✅ SLSA/in-toto provenance attestations published for the core compliance artifacts"
@@ -1837,7 +1817,6 @@ jobs:
         check opa-policy-bundle.tar.gz .well-known/opa-policy-bundle.tar.gz
         check oscal-ssp.json .well-known/oscal-ssp.json
         check vdr-report.json .well-known/vdr-report.json
-        check oscal-poam.json .well-known/oscal-poam.json
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
         check certification-overview-package.json .well-known/certification-overview-package.json
         check availability.json .well-known/availability.json
@@ -1851,8 +1830,19 @@ jobs:
         check conformance-results.json .well-known/conformance-results.json
         if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
-        for a in ksi-signal.json oscal-ssp.json oscal-poam.json vdr-report.json iiw.csv; do
+        for a in ksi-signal.json oscal-ssp.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
+        done
+        # Retired artifacts must be gone from the origin. Only a 404 counts as
+        # gone: any other error (e.g. AccessDenied) fails rather than passing.
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl; do
+          if head_err=$(aws s3api head-object --bucket "$BUCKET_NAME" --key ".well-known/$retired" 2>&1 >/dev/null); then
+            echo "::error::retired artifact still published: .well-known/$retired"; fail=1
+          elif printf '%s' "$head_err" | grep -q '(404)'; then
+            echo "gone: .well-known/$retired"
+          else
+            echo "::error::could not confirm .well-known/$retired is gone"; fail=1
+          fi
         done
         if [ "$fail" -ne 0 ]; then
           echo "Post-publish round-trip FAILED — served artifacts do not match the build."; exit 1

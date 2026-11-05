@@ -84,7 +84,7 @@ def build(findings, register=None, mitigations=None, inv=None, rt=None, ledger=N
     return report, blocking
 
 
-REG_MITIGATED = {"CVE-0000-0300": {"disposition": "mitigated", "mitigation": "MIT-1", "poam_ref": "POAM-003",
+REG_MITIGATED = {"CVE-0000-0300": {"disposition": "mitigated", "mitigation": "MIT-1", "decision_id": "DEC-003",
                                    "justification": "edge rule", "decided_by": "Operator",
                                    "decided_on": "2026-10-01", "review_by": "2027-10-01"}}
 
@@ -92,17 +92,17 @@ REG_MITIGATED = {"CVE-0000-0300": {"disposition": "mitigated", "mitigation": "MI
 # --- T16 / REQ-DSP-2: past review_by is absent ---------------------------------------
 
 def test_t16_lapsed_disposition_is_absent_in_the_report():
-    reg = json.loads((FIX / "register-lapsed.json").read_text())["dispositions"]
+    reg = vg.load_register(FIX / "register-lapsed.json")
     f = finding(tracking_id="grype-CVE-0000-0200-pkg:npm/a@1", cve="CVE-0000-0200", tool_id="CVE-0000-0200")
     report, _ = build([f], register=reg)
     r = report["findings"][0]
-    assert r["current_disposition"] == "open" and r["poam_ref"] is None
+    assert r["current_disposition"] == "open" and r["decision_id"] is None
     assert r["disposition_record"]["status"] == "lapsed"
     assert report["summary"]["lapsed_dispositions"] == ["CVE-0000-0200"]
 
 
 def test_t16_lapsed_disposition_fails_the_vulnerability_gate():
-    reg = json.loads((FIX / "register-lapsed.json").read_text())["dispositions"]
+    reg = vg.load_register(FIX / "register-lapsed.json")
     v = {"id": "CVE-0000-0200", "severity": "HIGH", "source": "grype"}
     assert vg.find_unhandled([v], reg, today=TODAY) == [v]
 
@@ -110,7 +110,7 @@ def test_t16_lapsed_disposition_fails_the_vulnerability_gate():
 def test_t16_lapsed_decision_record_voids_a_config_suppression():
     f = {"tracking_id": "checkov-CKV_AWS_18-aws_s3_bucket.logs", "source": "checkov", "tool_id": "CKV_AWS_18",
          "resource": "aws_s3_bucket.logs", "severity": "LOW"}
-    records = {"POAM-028": {"decided_by": "Operator", "decided_on": "2025-01-01", "review_by": "2026-01-01"}}
+    records = {"DEC-028": {"decided_by": "Operator", "decided_on": "2025-01-01", "review_by": "2026-01-01"}}
     report, _ = vdr.build_report([f], [], set(), {}, config=CFG, now=NOW, decision_records=records)
     r = report["findings"][0]
     assert r["current_disposition"] == "open"
@@ -120,7 +120,7 @@ def test_t16_lapsed_decision_record_voids_a_config_suppression():
 # --- REQ-DSP-1: unrecorded fields are published as "not recorded" ------------------
 
 def test_dsp1_unrecorded_fields_are_published():
-    reg = {"CVE-0000-0300": {"disposition": "operational-requirement", "poam_ref": "POAM-003"}}
+    reg = {"CVE-0000-0300": {"disposition": "operational-requirement", "decision_id": "DEC-003"}}
     r = build([finding()], register=reg)[0]["findings"][0]
     rec = r["disposition_record"]
     assert rec["status"] == "in-force"
@@ -130,7 +130,7 @@ def test_dsp1_unrecorded_fields_are_published():
 # --- T15 / REQ-DSP-4: control-protected means mitigated, never a false positive -----
 
 def test_t15_false_positive_naming_a_control_is_refused():
-    reg = json.loads((FIX / "register-fp-names-control.json").read_text())["dispositions"]
+    reg = vg.load_register(FIX / "register-fp-names-control.json")
     f = finding(tracking_id="grype-CVE-0000-0201-pkg:npm/a@1", cve="CVE-0000-0201", tool_id="CVE-0000-0201")
     r = build([f], register=reg)[0]["findings"][0]
     assert r["current_disposition"] == "open"
@@ -283,7 +283,7 @@ def test_runtime_signal_stale_is_not_fresh():
 
 # --- Vendor dependency ----------------------------------------------------------------
 
-REG_VD = {"CVE-0000-0300": {"disposition": "vendor-dependency", "poam_ref": "POAM-003", "justification": "no fix",
+REG_VD = {"CVE-0000-0300": {"disposition": "vendor-dependency", "decision_id": "DEC-003", "justification": "no fix",
                             "decided_by": "Operator", "decided_on": "2026-10-01", "review_by": "2027-10-01"}}
 
 

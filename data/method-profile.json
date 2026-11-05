@@ -116,7 +116,7 @@
         "tests/test_dispositions_mitigations.py::test_t16_lapsed_disposition_fails_the_vulnerability_gate",
         "tests/test_dispositions_mitigations.py::test_t16_lapsed_decision_record_voids_a_config_suppression",
         "tests/test_triage_policy.py::test_golden_report_is_unchanged",
-        "tests/test_build_trust_center.py::test_poam_decision_props_fill_the_record_and_due_reviews_are_queued"
+        "tests/test_build_trust_center.py::test_decision_records_fill_the_log_and_due_reviews_are_queued"
       ]
     },
     "T17": {

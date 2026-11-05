@@ -2,7 +2,7 @@
 """Validate the exceptions-as-code register and fail CI on expired entries.
 
 infrastructure/policy/exceptions/data.json is the machine-readable register
-of accepted findings (POA&M-as-code; see docs/poam.md). Every entry must
+of accepted findings (each ticket names its record in data/decisions.json). Every entry must
 carry: resource, rule_id, justification, expiry (YYYY-MM-DD), ticket. An
 entry past its expiry no longer suppresses anything at eval time (the policy
 is fail-safe), and this script additionally FAILS CI so the register cannot

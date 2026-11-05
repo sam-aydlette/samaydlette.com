@@ -1,0 +1,21 @@
+{
+  "_note": "Known-bad: review_by misspelt. An unknown field is refused rather than read as an absent review date.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "reviewby": "2027-01-01"
+    }
+  ]
+}

@@ -23,11 +23,16 @@ NOW = datetime(2026, 9, 29, 12, 0, tzinfo=timezone.utc)
 SIG = "sig-1"
 
 
-def poam_item(pid: str, status: str, disposition: str, scheduled: str, **decision: str) -> dict:
-    props = {"poam-id": pid, "status": status, "disposition": disposition, "scheduled-completion-date": scheduled,
-             "point-of-contact": "Operator", "status-date": "2026-05-08", **decision}
-    return {"title": f"{pid} title", "description": f"{pid} rationale",
-            "props": [{"name": k, "value": v} for k, v in props.items()]}
+def dec(did: str, status: str, disposition: str, planned: str | None = None, *, checks=(), vulns=(),
+        **decision: str) -> dict:
+    """A data/decisions.json record. The builder is handed records the loader
+    has not validated, so a record without decision fields still reads as gaps."""
+    rec = {"id": did, "title": f"{did} title", "justification": f"{did} rationale", "status": status,
+           "disposition": disposition,
+           "applies_to": {"check_ids": list(checks), "vuln_ids": list(vulns), "resources": []}, **decision}
+    if planned:
+        rec["planned_completion"] = planned
+    return rec
 
 
 def inputs(**overrides):
@@ -40,11 +45,13 @@ def inputs(**overrides):
             {"tracking_id": "f-open", "title": "open", "is_blocking": False, "final_disposition": "open", "component_id": "aws::function::app"},
             {"tracking_id": "f-done", "title": "done", "is_blocking": False, "final_disposition": "false-positive"},
         ]},
-        "poam": {"plan-of-action-and-milestones": {"poam-items": [
-            poam_item("POAM-001", "open", "risk-accepted", "2026-09-01"),  # overdue
-            poam_item("POAM-002", "open", "operational-requirement", "TBD (pending procurement)"),  # not a date
-            poam_item("POAM-003", "closed", "remediated", "2026-01-01"),  # closed: neither overdue nor a decision
-        ]}},
+        "decisions": [
+            dec("DEC-001", "in-force", "risk-accepted", "2026-09-01"),  # overdue
+            dec("DEC-002", "in-force", "operational-requirement", "TBD (pending procurement)"),  # not a date
+            dec("DEC-003", "closed", "remediated", "2026-01-01"),  # closed: neither overdue nor a decision
+            dec("DEC-034", "in-force", "false-positive", vulns=["CVE-1"],
+                decided_by="Operator", decided_on="2026-08-24", review_by="2027-08-24"),
+        ],
         "reconcile": {"result": "pass", "ksi_signal_id": SIG, "generated_at": "2026-09-29T11:30:00Z",
                       "invariants": [{"id": "a", "status": "held"}, {"id": "b", "status": "deferred"}]},
         "boundary_map": {"ksi_signal_id": SIG, "health": {"unclassified": 0, "untagged": 1},
@@ -58,10 +65,8 @@ def inputs(**overrides):
             "status": "diverged", "ksis_compared": 2, "regressions": [{"ksi_id": "KSI-A"}], "unassessed": [{"ksi_id": "KSI-B"}]}},
         "vdr_status": {"result": "success", "finished_at": "2026-09-29T00:00:00Z"},
         "previous": None,
-        "dispositions": {"CVE-1": {"disposition": "false-positive", "justification": "unreachable", "poam_ref": "POAM-034",
-                                   "decided_by": "Operator", "decided_on": "2026-08-24"}},
-        "exceptions": [{"resource": "page.html", "rule_id": "a11y_error", "justification": "decorative", "expiry": "2026-10-10", "ticket": "POAM-033"},
-                       {"resource": "other.html", "rule_id": "a11y_error", "justification": "later", "expiry": "2027-06-01", "ticket": "POAM-033"}],
+        "exceptions": [{"resource": "page.html", "rule_id": "a11y_error", "justification": "decorative", "expiry": "2026-10-10", "ticket": "DEC-033"},
+                       {"resource": "other.html", "rule_id": "a11y_error", "justification": "later", "expiry": "2027-06-01", "ticket": "DEC-033"}],
         "policy_config": {"gate": {"tls": {"minimum": "TLSv1.2_2021"}, "required_tags": ["Owner"]}},
         "rules": [{"path": "policy.terraform.s3.violations", "title": "Versioning", "custom": {"id": "versioning_disabled", "severity": "MEDIUM", "ksi_ids": ["KSI-RPL-ABO"]}}],
         "scn_register": [
@@ -127,8 +132,8 @@ def test_the_queue_holds_only_what_precedent_cannot_settle():
     k = kinds(build())
     assert ("vdr_blocking", "f-block") in k and ("vdr_undispositioned", "f-open") in k
     assert not any(i == "f-done" for _, i in k)
-    assert ("poam_overdue", "POAM-001") in k
-    assert not any(i in ("POAM-002", "POAM-003") for _, i in k)  # free-text dates and closed items are not overdue
+    assert ("decision_overdue", "DEC-001") in k
+    assert not any(i in ("DEC-002", "DEC-003") for _, i in k)  # free-text dates and closed items are not overdue
     assert ("exception_expiring", "a11y_error:page.html") in k
     assert ("exception_expiring", "a11y_error:other.html") not in k
     assert ("runtime_diverged", "KSI-A") in k and ("runtime_unassessed", "runtime-unassessed") in k
@@ -140,17 +145,18 @@ def test_the_queue_holds_only_what_precedent_cannot_settle():
 
 def test_missing_decision_fields_are_gaps_never_guesses():
     doc = build()
-    poam = next(e for e in doc["decision_log"] if e["id"] == "POAM-001")
-    assert poam["decided_by"] is None and poam["decided_on"] is None
-    assert set(poam["gaps"]) == {"decided_by", "decided_on", "review_by"}
-    assert poam["point_of_contact"] == "Operator"  # recorded, but not presented as the decider
-    cve = next(e for e in doc["decision_log"] if e["id"] == "CVE-1")
-    assert cve["decided_by"] == "Operator" and cve["gaps"] == ["review_by"]
+    rec = next(e for e in doc["decision_log"] if e["id"] == "DEC-001")
+    assert rec["decided_by"] is None and rec["decided_on"] is None
+    assert set(rec["gaps"]) == {"decided_by", "decided_on", "review_by"}
+    cve = next(e for e in doc["decision_log"] if e["id"] == "DEC-034")
+    assert cve["kind"] == "decision" and cve["applies_to"] == ["CVE-1"]
+    assert cve["decided_by"] == "Operator" and cve["gaps"] == []
+    assert not any(e["id"] == "DEC-003" for e in doc["decision_log"])  # closed: history, not a decision in force
     exc = next(e for e in doc["decision_log"] if e["kind"] == "policy_exception")
     assert exc["review_by"] == "2026-10-10" and "review_by" not in exc["gaps"]
     scn = next(e for e in doc["decision_log"] if e["id"] == "SCN-1")
     assert scn["gaps"] == [] and scn["verified"] is True  # an SCN is not reviewed on a cadence
-    assert doc["decision_log_gaps"]["decided_by"] == 4  # two open POA&M decisions and two exceptions
+    assert doc["decision_log_gaps"]["decided_by"] == 4  # two in-force records without fields, two exceptions
     assert ("decision_records_incomplete", "decision-record-gaps") in kinds(doc)
 
 
@@ -193,7 +199,7 @@ def test_redaction_fails_closed():
 
 def test_checkov_skips_are_read_from_the_config(tmp_path):
     cfg = tmp_path / ".checkov.yaml"
-    cfg.write_text("framework: terraform\nskip-check:\n  # POAM-003 reason\n  - CKV_AWS_144\n  - CKV2_AWS_57\nquiet: true\n")
+    cfg.write_text("framework: terraform\nskip-check:\n  # DEC-003 reason\n  - CKV_AWS_144\n  - CKV2_AWS_57\nquiet: true\n")
     assert btc.read_checkov_skips(cfg) == ["CKV_AWS_144", "CKV2_AWS_57"]
 
 
@@ -220,25 +226,25 @@ def test_hand_applied_settings_are_reported_as_observed():
     assert ("manual_setting", "github_settings") not in kinds(doc)
 
 
-def test_poam_decision_props_fill_the_record_and_due_reviews_are_queued():
-    poam = {"plan-of-action-and-milestones": {"poam-items": [
-        poam_item("POAM-010", "open", "risk-accepted", "n/a",
-                  **{"decided-by": "Operator", "decided-on": "2025-09-01", "review-by": "2026-09-01"}),  # past review
-        poam_item("POAM-011", "open", "false-positive", "n/a",
-                  **{"decided-by": "Operator", "decided-on": "2026-06-01", "review-by": "2027-06-01"}),
-    ]}}
-    doc = build(poam=poam)
+def test_decision_records_fill_the_log_and_due_reviews_are_queued():
+    decisions = [
+        dec("DEC-010", "in-force", "risk-accepted", checks=["CKV_AWS_117"],
+            decided_by="Operator", decided_on="2025-09-01", review_by="2026-09-01", former_id="POAM-010"),  # past review
+        dec("DEC-011", "in-force", "false-positive", vulns=["CVE-1"],
+            decided_by="Operator", decided_on="2026-06-01", review_by="2027-06-01"),
+    ]
+    doc = build(decisions=decisions)
     entries = {e["id"]: e for e in doc["decision_log"]}
-    assert entries["POAM-011"]["decided_by"] == "Operator" and entries["POAM-011"]["gaps"] == []
-    assert ("decision_review_due", "POAM-010") in kinds(doc)
-    assert ("decision_review_due", "POAM-011") not in kinds(doc)
-    assert ("decision_review_due", "CVE-1") not in kinds(doc)  # no review date recorded: a gap, not due
+    assert entries["DEC-011"]["decided_by"] == "Operator" and entries["DEC-011"]["gaps"] == []
+    assert entries["DEC-010"]["former_id"] == "POAM-010" and entries["DEC-010"]["applies_to"] == ["CKV_AWS_117"]
+    assert ("decision_review_due", "DEC-010") in kinds(doc)
+    assert ("decision_review_due", "DEC-011") not in kinds(doc)
 
 
 def test_live_queue_carries_its_inputs():
     live = build()["live_queue"]
     assert live["exception_warning_days"] == 30
-    assert live["poam_due"] == [{"id": "POAM-001", "title": "POAM-001 title", "due": "2026-09-01"}]
+    assert live["decision_due"] == [{"id": "DEC-001", "title": "DEC-001 title", "due": "2026-09-01"}]
     assert "decision_review_due" in live["why_yours"] and "vulnerability_evidence_stale" in live["why_yours"]
 
 
@@ -287,7 +293,7 @@ def test_every_queue_item_has_options_and_an_opening_time():
     doc = build(manual_settings={"checked_at": "2026-09-29T11:00:00+00:00",
                                  "checks": [{"id": "dnssec", "status": "attention", "detail": "x"}]})
     assert {d["kind"] for d in doc["decisions_pending"]} >= {
-        "vdr_blocking", "vdr_undispositioned", "poam_overdue", "exception_expiring", "runtime_diverged",
+        "vdr_blocking", "vdr_undispositioned", "decision_overdue", "exception_expiring", "runtime_diverged",
         "runtime_unassessed", "trust_root_change", "boundary_untagged", "boundary_not_inventoried",
         "manual_setting", "scn_unverified", "decision_records_incomplete"}
     for d in doc["decisions_pending"]:
@@ -313,23 +319,23 @@ def _item(doc, kind, id_):
 
 
 def test_since_is_when_the_condition_began_never_the_build_time():
-    poam = {"plan-of-action-and-milestones": {"poam-items": [
-        poam_item("POAM-001", "open", "risk-accepted", "2026-09-01"),
-        poam_item("POAM-010", "open", "risk-accepted", "n/a",
-                  **{"decided-by": "Operator", "decided-on": "2025-09-01", "review-by": "2026-09-15"}),
-    ]}}
+    decisions = [
+        dec("DEC-001", "in-force", "risk-accepted", "2026-09-01"),
+        dec("DEC-010", "in-force", "risk-accepted", decided_by="Operator", decided_on="2025-09-01",
+            review_by="2026-09-15"),
+    ]
     vdr = {"emitted_at": "2026-09-29T09:00:00Z", "findings": [
         {"tracking_id": "f-block", "title": "b", "is_blocking": True, "final_disposition": "open",
          "first_detected": "2026-09-20T00:00:00Z"},
         {"tracking_id": "f-nodate", "title": "n", "is_blocking": False, "final_disposition": "open"},
     ]}
-    doc = build(poam=poam, vdr=vdr,
+    doc = build(decisions=decisions, vdr=vdr,
                 runtime={"emitted_at": "2026-09-27T00:00:00Z", "divergence": {"status": "converged"}},
                 boundary_map={**inputs()["boundary_map"], "generated_at": "2026-09-29T11:10:00Z"})
     # The due date passed: the condition began on the due date.
-    assert _item(doc, "poam_overdue", "POAM-001")["since"] == "2026-09-01"
+    assert _item(doc, "decision_overdue", "DEC-001")["since"] == "2026-09-01"
     # A review came due on its review_by date.
-    assert _item(doc, "decision_review_due", "POAM-010")["since"] == "2026-09-15"
+    assert _item(doc, "decision_review_due", "DEC-010")["since"] == "2026-09-15"
     # An exception enters the queue when it enters the warning window.
     assert _item(doc, "exception_expiring", "a11y_error:page.html")["since"] == "2026-09-10"
     # A finding opened when it was first detected; without a detection date, the
@@ -351,7 +357,7 @@ def test_an_observed_item_keeps_its_earliest_opening_time_across_deploys():
         {"kind": "boundary_untagged", "id": "aws::iam_role::x", "since": "2026-09-01T00:00:00+00:00"},
         {"kind": "trust_root_change", "id": "aws_iam_group_policy.ops", "since": "2027-01-01T00:00:00+00:00"},  # future: ignored
         {"kind": "boundary_not_inventoried", "id": "declared:vendor", "since": "<script>"},  # malformed: ignored
-        {"kind": "poam_overdue", "id": "POAM-001", "since": "2020-01-01"},  # intrinsic kinds are not carried
+        {"kind": "decision_overdue", "id": "DEC-001", "since": "2020-01-01"},  # intrinsic kinds are not carried
         "junk",
     ]}
     doc = build(previous=prev, boundary_map={**inputs()["boundary_map"], "generated_at": "2026-09-29T11:10:00Z"})
@@ -359,7 +365,7 @@ def test_an_observed_item_keeps_its_earliest_opening_time_across_deploys():
     assert _item(doc, "boundary_untagged", "aws::iam_role::x")["since_basis"] == "first_observed"
     assert _item(doc, "trust_root_change", "aws_iam_group_policy.ops")["since"] == "2026-09-29T11:00:00Z"
     assert _item(doc, "boundary_not_inventoried", "declared:vendor")["since"] == "2026-09-29T11:10:00Z"
-    assert _item(doc, "poam_overdue", "POAM-001")["since"] == "2026-09-01"
+    assert _item(doc, "decision_overdue", "DEC-001")["since"] == "2026-09-01"
 
 
 def test_a_queue_item_with_no_known_opening_time_fails_closed():
@@ -367,7 +373,7 @@ def test_a_queue_item_with_no_known_opening_time_fails_closed():
     bad.pop("_about")
     with pytest.raises(SystemExit, match="opening time"):
         btc.build(inputs(**bad, runtime=None, trust_root_plan=None, vdr={"findings": []},
-                         poam={"plan-of-action-and-milestones": {"poam-items": []}}, exceptions=[], dispositions={},
+                         decisions=[], exceptions=[],
                          scn_register=[]), "c0ffee", NOW)
 
 
@@ -385,8 +391,8 @@ def test_escalation_rate_is_published_per_kind_with_its_denominator():
     # Three findings: one blocking, one undispositioned.
     assert (by["vdr_blocking"]["escalated"], by["vdr_blocking"]["denominator"]) == (1, 3)
     assert (by["vdr_undispositioned"]["escalated"], by["vdr_undispositioned"]["denominator"]) == (1, 3)
-    # Two open POA&M items, one overdue; two exceptions, one expiring.
-    assert (by["poam_overdue"]["escalated"], by["poam_overdue"]["denominator"]) == (1, 2)
+    # Three in-force decision records, one overdue; two exceptions, one expiring.
+    assert (by["decision_overdue"]["escalated"], by["decision_overdue"]["denominator"]) == (1, 3)
     assert (by["exception_expiring"]["escalated"], by["exception_expiring"]["denominator"]) == (1, 2)
     assert (by["manual_setting"]["escalated"], by["manual_setting"]["denominator"]) == (0, 3)
     assert (by["scn_unverified"]["escalated"], by["scn_unverified"]["denominator"]) == (1, 2)

@@ -8,11 +8,13 @@ a new record must carry them from the start.
 from __future__ import annotations
 
 import json
+import sys
 from datetime import date
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-DECISIONS = {"false-positive", "configuration", "interconnection", "operational-requirement"}
+sys.path.insert(0, str(REPO / "scripts"))
+import _decisions  # noqa: E402
 
 
 def _date(value: str) -> date:
@@ -24,22 +26,16 @@ def _annual(decided_on: str, review_by: str) -> bool:
     return _date(review_by) == d.replace(year=d.year + 1)
 
 
-def test_every_open_poam_decision_is_attributed_and_reviewed_annually():
-    items = json.loads((REPO / "data" / "poam-items.json").read_text())["items"]
-    decisions = [i for i in items if i.get("category") in DECISIONS]
-    assert decisions
-    for i in decisions:
+def test_every_in_force_decision_is_attributed_and_reviewed_annually():
+    # Configuration suppressions and vulnerability dispositions alike: one register.
+    records = _decisions.in_force(_decisions.load())
+    assert records
+    for r in records:
         for field in ("decided_by", "decided_on", "review_by"):
-            assert i.get(field), f"{i['id']} lacks {field}"
-        assert _annual(i["decided_on"], i["review_by"]), f"{i['id']}: review_by is not one year after decided_on"
-
-
-def test_every_vulnerability_disposition_is_attributed_and_reviewed_annually():
-    register = json.loads((REPO / "data" / "vuln-dispositions.json").read_text())["dispositions"]
-    for key, d in register.items():
-        for field in ("decided_by", "decided_on", "review_by"):
-            assert d.get(field), f"{key} lacks {field}"
-        assert _annual(d["decided_on"], d["review_by"]), key
+            assert r.get(field), f"{r['id']} lacks {field}"
+        assert _annual(r["decided_on"], r["review_by"]), f"{r['id']}: review_by is not one year after decided_on"
+    assert any(r["applies_to"].get("vuln_ids") for r in records)
+    assert any(r["applies_to"].get("check_ids") for r in records)
 
 
 def test_every_policy_exception_is_attributed():

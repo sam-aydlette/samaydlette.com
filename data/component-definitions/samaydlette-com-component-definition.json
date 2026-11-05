@@ -758,7 +758,7 @@
               {
                 "uuid": "fad19340-2974-5b47-917c-98a3f625225c",
                 "control-id": "ca-5",
-                "description": "Plan of Action and Milestones is documented in `docs/poam.md`. Two open POA&M items are tracked: POAM-001 (migrate the deployer from long-lived AWS access keys to GitHub OIDC role assumption) and POAM-002 (sign the runtime KSI signal cryptographically). Each carries a target close date, severity, compensating controls, and remediation plan.",
+                "description": "Under the FedRAMP Consolidated Rules for 2026 the plan of action is carried by two records instead of a POA&M. Open findings, with their remediation deadlines and blocking status, are in the VDR report (`/.well-known/vdr-report.json`), rebuilt nightly and on every deploy. Every decision about a finding (false positive, accepted risk, operational requirement, remediation history) is a record in `data/decisions.json` with who decided, when, its justification and an annual review date; a record past its review date confers nothing. The build fails on a finding without an in-force decision (reconciliation invariant h).",
                 "props": [
                   {
                     "name": "implementation-status",

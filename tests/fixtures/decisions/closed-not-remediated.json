@@ -1,0 +1,21 @@
+{
+  "_note": "Known-bad: a closed record whose disposition is an acceptance. Closing a decision means the finding was remediated; an acceptance stays in force until it lapses. The build stops.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "closed",
+      "disposition": "risk-accepted",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    }
+  ]
+}

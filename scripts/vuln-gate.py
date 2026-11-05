@@ -6,11 +6,11 @@
 # severity (Critical/High/Medium/Low) fails the build unless it is handled.
 # A vulnerability is handled only if it is:
 #   - remediated  (no longer reported by the scanner — it simply isn't here), or
-#   - dispositioned in data/vuln-dispositions.json, in force (review_by not
-#     passed), as one of:
+#   - decided by an in-force record in data/decisions.json that names it in
+#     applies_to.vuln_ids (review_by not passed), with one of:
 #       false-positive          (the reason lives in the scanned artifact; a
 #                                false positive naming a control does not pass)
-#       operational-requirement (Rev5 term: real risk, deliberately accepted)
+#       operational-requirement (real risk, deliberately accepted)
 #       accepted                (will not fix, with the acceptance explanation)
 #       mitigated               (only with a mitigation the VDR shows in force)
 #       vendor-dependency       (only while the VDR shows fix state not-fixed;
@@ -25,13 +25,14 @@
 # either fix it, prove it is a false positive, or accept it as an operational
 # requirement. The gate forces that choice on every build.
 #
-# Config-scanner suppressions (Checkov) are governed separately (.checkov.yaml +
-# the VDR maps + the reconciliation gate); this gate is for vulnerabilities only.
+# Config-scanner suppressions (Checkov/tfsec) are governed separately (.checkov.yaml
+# + the register's check_ids + the reconciliation gate); this gate is for
+# vulnerabilities only.
 #
 # Usage:
 #   vuln-gate.py --vdr infrastructure/vdr-report.json        # read VDR CVEs
 #   vuln-gate.py --findings findings.json                    # raw list (tests)
-#   [--register data/vuln-dispositions.json]
+#   [--register data/decisions.json]
 #
 # Exit 0 if every vulnerability is handled; exit 1 (with a remediate-or-
 # categorize report) if any is not.
@@ -44,6 +45,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _decisions  # noqa: E402
 import _gates  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -63,8 +65,9 @@ NO_FIX_STATES = {"not-fixed"}
 
 
 def load_register(path):
-    doc = json.loads(Path(path).read_text())
-    return doc.get("dispositions", {})
+    """{vuln_id: entry} from the decision register; fails closed when it is
+    missing or invalid (scripts/_decisions.py)."""
+    return _decisions.vuln_register(_decisions.load(path))
 
 
 def vulns_from_vdr(vdr):
@@ -137,7 +140,7 @@ def main():
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--vdr", help="VDR report JSON; vulnerabilities read from cve_findings")
     src.add_argument("--findings", help="JSON array of {id, severity, source} (tests/manual)")
-    ap.add_argument("--register", default=str(REPO / "data" / "vuln-dispositions.json"))
+    ap.add_argument("--register", default=str(_decisions.DEFAULT_PATH))
     args = ap.parse_args()
 
     gates = _gates.load_gate_modes()
@@ -165,8 +168,8 @@ def main():
         sev = v.get("severity") or "?"
         print(f"  ✗ {v['id']} [{sev}] (source: {v.get('source','?')})", file=sys.stderr)
     print("", file=sys.stderr)
-    print("Each must be either fixed (so the scanner stops reporting it) or added to", file=sys.stderr)
-    print(f"  {Path(args.register).name}  with a passing disposition in force (review_by not", file=sys.stderr)
+    print("Each must be either fixed (so the scanner stops reporting it) or named in", file=sys.stderr)
+    print(f"  {Path(args.register).name} by a record with a passing disposition in force (review_by not", file=sys.stderr)
     print("  passed): false-positive, accepted, operational-requirement, mitigated (with a", file=sys.stderr)
     print("  mitigation in force) or vendor-dependency (only while no fix exists).", file=sys.stderr)
     print("  Risk-adjustment, under-investigation and remediate do NOT pass.", file=sys.stderr)

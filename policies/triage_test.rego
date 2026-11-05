@@ -137,42 +137,42 @@ test_override_never_clears_kev if run([object.union(base, {"is_kev": true})], ov
 reg(entry) := {"key": "CVE-1", "entry": entry}
 
 test_register_in_force_closes if {
-	d := one({"register": reg({"disposition": "operational-requirement", "poam_ref": "P1", "review_by": "2027-01-01"})})
+	d := one({"register": reg({"disposition": "operational-requirement", "decision_id": "P1", "review_by": "2027-01-01"})})
 	d.record_status == "in-force"
 	d.closed == true
-	d.poam_ref == "P1"
+	d.decision_id == "P1"
 }
 
 test_lapsed_record_is_absent if {
-	d := one({"register": reg({"disposition": "accepted", "poam_ref": "P1", "review_by": "2026-11-02"})})
+	d := one({"register": reg({"disposition": "accepted", "decision_id": "P1", "review_by": "2026-11-02"})})
 	d.record_status == "lapsed"
 	d.disposition == null
 	d.closed == false
 }
 
 test_false_positive_naming_a_control_is_invalid if {
-	d := one({"register": reg({"disposition": "false-positive", "poam_ref": "P1", "mitigation": "M"})})
+	d := one({"register": reg({"disposition": "false-positive", "decision_id": "P1", "mitigation": "M"})})
 	d.record_status == "invalid"
 }
 
 test_vendor_dependency_lapses_without_not_fixed if {
-	d := one({"register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
+	d := one({"register": reg({"disposition": "vendor-dependency", "decision_id": "P1"})})
 	d.record_status == "invalid"
 }
 
 test_vendor_dependency_in_force_stays_on_the_clock if {
-	d := one({"fix_state": "not-fixed", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
+	d := one({"fix_state": "not-fixed", "register": reg({"disposition": "vendor-dependency", "decision_id": "P1"})})
 	d.record_status == "in-force"
 	d.closed == false
 }
 
 test_unknown_term_is_invalid if {
-	d := one({"register": reg({"disposition": "risk-adjustment", "poam_ref": "P1"})})
+	d := one({"register": reg({"disposition": "risk-adjustment", "decision_id": "P1"})})
 	d.record_reason == "unknown disposition 'risk-adjustment'"
 }
 
 test_check_decision_lapses if {
-	cd := {"disposition": "risk-accepted", "poam_ref": "P7", "record": {"review_by": "2026-01-01"}}
+	cd := {"disposition": "risk-accepted", "decision_id": "P7", "record": {"review_by": "2026-01-01"}}
 	d := one({"check_decision": cd})
 	d.record_status == "lapsed"
 	d.disposition == null
@@ -207,13 +207,13 @@ test_maximum_period if {
 test_top_level_lev_irv_blocks if one({"pain": "N5"}).block_rule == "top-impact-lev-irv"
 
 test_kev_blocks_through_a_false_positive if {
-	d := one({"is_kev": true, "register": reg({"disposition": "false-positive", "poam_ref": "P1"})})
+	d := one({"is_kev": true, "register": reg({"disposition": "false-positive", "decision_id": "P1"})})
 	d.closed == true
 	d.block_rule == "kev"
 }
 
 test_dispositioned_finding_still_has_a_deadline if {
-	d := one({"register": reg({"disposition": "operational-requirement", "poam_ref": "P1"})})
+	d := one({"register": reg({"disposition": "operational-requirement", "decision_id": "P1"})})
 	d.sla_days == 48
 	d.needs_remediation == true
 }
@@ -231,7 +231,7 @@ test_vocabulary_has_pass_within_dispositions if {
 
 # ---- pre-merge review (#479) -----------------------------------------------------------
 test_wont_fix_lapses_vendor_dependency_with_its_own_reason if {
-	d := one({"fix_state": "wont-fix", "register": reg({"disposition": "vendor-dependency", "poam_ref": "P1"})})
+	d := one({"fix_state": "wont-fix", "register": reg({"disposition": "vendor-dependency", "decision_id": "P1"})})
 	d.record_status == "invalid"
 	contains(d.record_reason, "will not ship a fix")
 }

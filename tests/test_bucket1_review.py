@@ -50,7 +50,7 @@ def decide(it, overrides=None):
 
 
 # 1 ---------------------------------------------------------------------------------
-VD = {"key": "CVE-0000-0001", "entry": {"disposition": "vendor-dependency", "poam_ref": "P1"}}
+VD = {"key": "CVE-0000-0001", "entry": {"disposition": "vendor-dependency", "decision_id": "P1"}}
 
 
 def test_wont_fix_lapses_with_a_true_reason():
@@ -62,7 +62,7 @@ def test_wont_fix_lapses_with_a_true_reason():
 
 
 def test_gate_agrees_on_fix_states():
-    entry = {"disposition": "vendor-dependency", "poam_ref": "P1"}
+    entry = {"disposition": "vendor-dependency", "decision_id": "P1"}
     assert vg.handled({"fix_state": "not-fixed"}, entry, date(2026, 11, 3))
     assert not vg.handled({"fix_state": "wont-fix"}, entry, date(2026, 11, 3))
     assert not vg.handled({"fix_state": "fixed"}, entry, date(2026, 11, 3))
@@ -139,7 +139,7 @@ def test_gate_needs_the_evidence_on_every_finding_under_one_id():
     ]}
     for order in (report["findings"], list(reversed(report["findings"]))):
         vulns = vg.vulns_from_vdr({"findings": order})
-        reg = {"CVE-X": {"disposition": "vendor-dependency", "poam_ref": "P1"}}
+        reg = {"CVE-X": {"disposition": "vendor-dependency", "decision_id": "P1"}}
         assert [v["id"] for v in vg.find_unhandled(vulns, reg, date(2026, 11, 3))] == ["CVE-X"]
 
 
@@ -147,7 +147,7 @@ def test_gate_mitigated_needs_every_finding_mitigated():
     vulns = vg.vulns_from_vdr({"findings": [
         {"source": "grype", "cve": "CVE-X", "mitigation": {"valid": True}},
         {"source": "grype", "cve": "CVE-X", "mitigation": None}]})
-    reg = {"CVE-X": {"disposition": "mitigated", "poam_ref": "P1"}}
+    reg = {"CVE-X": {"disposition": "mitigated", "decision_id": "P1"}}
     assert vg.find_unhandled(vulns, reg, date(2026, 11, 3))
 
 
@@ -171,7 +171,7 @@ def test_void_mitigation_does_not_hide_a_valid_one(monkeypatch):
 def test_accepted_finding_publishes_the_recorded_justification():
     f = {"tracking_id": "t1", "source": "grype", "cve": "CVE-0000-0001", "tool_id": "CVE-0000-0001",
          "resource": "pkg:npm/a@1", "severity": "HIGH", "fix_state": "not-fixed"}
-    reg = {"CVE-0000-0001": {"disposition": "vendor-dependency", "poam_ref": "P1",
+    reg = {"CVE-0000-0001": {"disposition": "vendor-dependency", "decision_id": "P1",
                              "justification": "No upstream fix; tracked with the vendor."}}
     led = {"t1": {"first_detected": "2026-01-01T00:00:00+00:00", "first_evaluated": "2026-01-01T00:00:00+00:00"}}
     r = vdr.build_report([f], [], set(), led, now=NOW, disposition_register=reg)[0]["findings"][0]

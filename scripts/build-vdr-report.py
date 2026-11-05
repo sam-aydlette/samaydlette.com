@@ -24,7 +24,7 @@
 #   --kev PATH                CISA KEV catalog JSON (cisa.gov format)
 #   --checkov-yaml PATH       Path to .checkov.yaml; the skip-check list is
 #                             read and each entry becomes a risk-accepted entry
-#                             with POAM cross-references (VER-RPT-AVI fields
+#                             with decision cross-references (VER-RPT-AVI fields
 #                             populated).
 #   --previous-vdr PATH       Path to the previous VDR report; used as the
 #                             first-detected ledger so SLA clocks (Class C
@@ -51,6 +51,7 @@ from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _decisions  # noqa: E402
 import _gates  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
@@ -131,59 +132,28 @@ def load_pain_config(path=None):
 
 
 # =============================================================================
-# CHECKOV CHECK ID → POAM CROSS-REFERENCE
+# CHECKOV/TFSEC CHECK ID → DECISION (data/decisions.json)
 # =============================================================================
-# Maps the inline #checkov:skip= annotations in infrastructure/main.tf to their
-# canonical POA&M entries in docs/poam.md. New suppressions added without a
-# POAM entry will surface in the risk_accepted output without a poam_ref;
-# the policy is to back every suppression with a POAM entry.
-POAM_BY_CHECK_ID = {
-    "CKV_AWS_68":  "POAM-007",
-    "CKV_AWS_86":  "POAM-009",
-    "CKV_AWS_117": "POAM-010",
-    "CKV_AWS_310": "POAM-009",  # CloudFront origin failover (current checkov id; supersedes CKV_AWS_86 on the now-managed distribution)
-    # CKV2_AWS_32 (POAM-031) closed: a response-headers policy is now attached to
-    # the distribution's default behavior (bootstrap/cloudfront.tf), so the check
-    # passes on its own and the suppression mapping is removed.
-    "CKV2_AWS_56": "POAM-026",  # operator IAM admin group (inline skip, bootstrap/main.tf)
-    "CKV2_AWS_10": "POAM-032",  # CloudTrail CloudWatch Logs integration declined (inline skip, cloudtrail.tf)
-    "CKV_AWS_252": "POAM-032",  # CloudTrail SNS delivery notifications declined (inline skip, cloudtrail.tf)
-    # CKV_AWS_173 (POAM-011) closed under Task 6 — suppression removed from
-    # .checkov.yaml; every Lambda env block is now customer-CMK encrypted.
-    # CKV_AWS_338 (POAM-017) + CKV_AWS_158 (POAM-018) closed — suppressions removed
-    # from .checkov.yaml (Task 7 retention; Task 6 CMK encryption).
-    # CKV2_AWS_57 (was POAM-019) no longer applies: the app's only secret was
-    # removed under SCN-2026-006, so the skip and its mapping are gone.
-    # CKV_AWS_76 (POAM-024) closed under Task 7 — HTTP API access logging enabled.
-}
+# Every suppressed configuration check resolves to one in-force record in the
+# decision register (CR26; it replaced the POA&M): risk-accepted (a real
+# weakness, accepted) or false-positive (the scanner is wrong). A suppression
+# with no record surfaces with decision_id null, and reconciliation fails on it.
+# Loaded once, fail-closed: an unreadable register stops the build.
+DECISIONS_PATH = _decisions.DEFAULT_PATH
+DECISIONS = _decisions.load(DECISIONS_PATH)
+RISK_ACCEPTED_BY_CHECK_ID, FALSE_POSITIVE_BY_CHECK_ID = _decisions.check_maps(DECISIONS)
 
-# False-positive checks → their POA&M item. Under the disposition model every
-# suppressed finding — false-positive included — is a formal, OPEN POA&M item
-# carrying a poam_ref, so no scanner finding is ever orphaned. This covers the
-# centrally-suppressed (.checkov.yaml) FP checks AND the inline #checkov:skip=
-# checks in infrastructure/bootstrap/main.tf and infrastructure/logging.tf that
-# were previously unmapped (the audit's orphaned-open findings).
-FALSE_POSITIVE_BY_CHECK_ID = {
-    "CKV_AWS_144": "POAM-003",  # S3 cross-region replication
-    "CKV_AWS_23":  "POAM-004",  # S3 event notifications (website bucket)
-    "CKV2_AWS_62": "POAM-004",  # S3 event notifications (log bucket, inline)
-    "CKV_AWS_174": "POAM-008",  # Log4j-specific WAF rule
-    "CKV2_AWS_47": "POAM-008",  # CloudFront Log4j WAF AMR (current checkov id; supersedes CKV_AWS_174 on the now-managed distribution)
-    "CKV_AWS_374": "POAM-030",  # CloudFront geo restriction not enabled (N/A for a public, globally-reachable site)
-    "CKV_AWS_115": "POAM-012",  # Lambda reserved concurrency
-    "CKV_AWS_50":  "POAM-014",  # Lambda X-Ray tracing
-    "CKV_AWS_272": "POAM-015",  # Lambda AWS Signer
-    "CKV_AWS_355": "POAM-027",  # bootstrap read-only assessment IAM (inline)
-    "CKV_AWS_287": "POAM-027",  # bootstrap metadata-only Secrets reads (inline)
-    "CKV_AWS_356": "POAM-027",  # bootstrap account-level enumeration IAM (inline)
-    "CKV_AWS_18":  "POAM-028",  # log-target bucket self-logging (inline)
-    "CKV_AWS_145": "POAM-029",  # SSE-S3 vs CMK: log bucket + tfstate bucket (inline)
-    "CKV_AWS_119": "POAM-029",  # DynamoDB lock table default SSE vs CMK (inline)
-    "CKV_AWS_35":  "POAM-029",  # CloudTrail log files SSE-S3 vs CMK (inline, cloudtrail.tf)
-}
+
+def use_decisions(path):
+    """Rebind the register (main's --decisions)."""
+    global DECISIONS_PATH, DECISIONS, RISK_ACCEPTED_BY_CHECK_ID, FALSE_POSITIVE_BY_CHECK_ID
+    DECISIONS_PATH = Path(path)
+    DECISIONS = _decisions.load(DECISIONS_PATH)
+    RISK_ACCEPTED_BY_CHECK_ID, FALSE_POSITIVE_BY_CHECK_ID = _decisions.check_maps(DECISIONS)
+
 
 # tfsec (Aqua AVD-*) rule IDs → their Checkov equivalent, so a tfsec finding for
-# the same condition routes to the same POA&M as the Checkov check. Without this
+# the same condition routes to the same decision as the Checkov check. Without this
 # tfsec findings have no suppression path and surface as orphaned-open (the
 # AVD-AWS-0089 / AVD-AWS-0132 log-bucket findings in the audit).
 TFSEC_TO_CHECKOV = {
@@ -200,47 +170,31 @@ def normalize_check_id(tool_id):
 
 
 def classify_finding(tool_id):
-    """Return (disposition, poam_ref) for a config-scanner finding.
+    """Return (disposition, decision_id) for a config-scanner finding.
 
     disposition is "risk-accepted" or "false-positive" for a documented
     suppression, else (None, None) for a genuinely-open finding that must be
-    remediated or given a new POA&M item (the reconciliation gate fails closed
-    on any VDR finding left without a poam_ref)."""
+    remediated or given a decision record (the reconciliation gate fails closed
+    on any VDR finding left without a decision_id)."""
     cid = normalize_check_id(tool_id or "")
-    if cid in POAM_BY_CHECK_ID:
-        return ("risk-accepted", POAM_BY_CHECK_ID[cid])
+    if cid in RISK_ACCEPTED_BY_CHECK_ID:
+        return ("risk-accepted", RISK_ACCEPTED_BY_CHECK_ID[cid])
     if cid in FALSE_POSITIVE_BY_CHECK_ID:
         return ("false-positive", FALSE_POSITIVE_BY_CHECK_ID[cid])
     return (None, None)
 
 
 # =============================================================================
-# VULNERABILITY DISPOSITION REGISTER (data/vuln-dispositions.json)
+# VULNERABILITY DECISIONS (data/decisions.json, applies_to.vuln_ids)
 # =============================================================================
-# The check-ID maps above only speak Checkov/tfsec. A vulnerability from an SCA
-# or DAST scanner (Grype/Dependabot/ZAP) has no check ID — its tool_id is a
-# CVE/GHSA/alert reference — so classify_finding returns (None, None) for it and
-# the finding publishes with poam_ref: null, which reconciliation invariant (h)
-# fails closed on. Those findings are dispositioned by the operator in
-# data/vuln-dispositions.json, which scripts/vuln-gate.py already gates on but
-# which nothing previously fed back into the VDR. This reads the same register
-# so a dispositioned vulnerability carries its disposition and its POA&M
-# cross-reference into the published report.
-#
-# Kept deliberately in lockstep with vuln-gate.py:
-#   * DISPOSITION_REGISTER_PATH is the same default file.
-#   * VULN_SOURCES is the same source set (config scanners stay on
-#     classify_finding; this path never touches them).
-#   * register_vuln_id() mirrors vuln_gate.vulns_from_vdr's id resolution
-#     exactly — `cve or tracking_id or tool_id` — so the two gates agree on
-#     which register key a finding resolves to. If they diverged, a finding
-#     could carry a poam_ref the vulnerability gate never approved.
-#   * the policy's pass set (policies/triage.rego) is vuln_gate.PASS_DISPOSITIONS. A register
-#     entry whose disposition is not one the vulnerability gate accepts confers
-#     no poam_ref here either; that build fails at the vulnerability gate and
-#     must not look dispositioned in the VDR.
-DISPOSITION_REGISTER_PATH = (Path(__file__).resolve().parent.parent
-                             / "data" / "vuln-dispositions.json")
+# A vulnerability from an SCA or DAST scanner (Grype/Dependabot/ZAP) has no
+# check ID; it is decided by a record in the decision register that names it in
+# applies_to.vuln_ids. The vulnerability gate reads the same register through
+# scripts/_decisions.py, and resolves a finding's key exactly as
+# register_vuln_id() does (cve, else tracking_id, else tool_id), so the two
+# gates cannot disagree about which decision a finding resolves to. Whether a
+# record is in force, and whether its disposition passes, is the triage
+# policy's decision (policies/triage.rego).
 
 # Scanner sources whose findings are vulnerabilities (governed by the register)
 # rather than configuration findings (governed by .checkov.yaml + the maps
@@ -256,7 +210,7 @@ VULN_SOURCES = {"grype", "zap", "dependabot"}
 #   vendor-dependency       known, exploitable, no fix exists yet; the clock runs
 #   under-investigation     not yet known whether it applies; the clock runs
 #   operational-requirement Rev5 term for a deliberate acceptance, kept until the
-#                           POA&M is retired; equivalent to accepted
+#                           Rev5 term kept for existing records; equivalent to accepted
 #   accepted                will not fix; carries the acceptance explanation
 #   remediate               a fix is planned; the clock runs
 
@@ -276,24 +230,10 @@ def _decision_fields(entry):
 
 
 def load_disposition_register(path=None):
-    """Load data/vuln-dispositions.json -> {vuln_id: entry}.
-
-    A missing register is not an error: the VDR still builds and every
-    vulnerability simply stays open (poam_ref null), which the vulnerability and
-    reconciliation gates then fail on. A malformed register IS an error — a
-    register that silently reads as empty would turn "dispositioned" into
-    "open" without saying so, so it fails closed like the PAIN config does."""
-    reg_path = Path(path) if path else DISPOSITION_REGISTER_PATH
-    if not reg_path.exists():
-        print(f"::warning::No vulnerability disposition register at {reg_path}; "
-              "SCA/DAST findings will carry no poam_ref.", file=sys.stderr)
-        return {}
-    try:
-        doc = json.loads(reg_path.read_text())
-    except json.JSONDecodeError as exc:
-        raise SystemExit(f"::error::vulnerability disposition register at {reg_path} "
-                         f"is not valid JSON: {exc}") from exc
-    return doc.get("dispositions", {}) or {}
+    """{vuln_id: entry} from the decision register (default: the one loaded).
+    Fails closed on a missing or invalid register (scripts/_decisions.py)."""
+    reg = _decisions.load(path) if path else DECISIONS
+    return _decisions.vuln_register(reg)
 
 
 def register_vuln_id(finding):
@@ -312,16 +252,16 @@ def register_entry(finding, register):
 
 
 def classify_vulnerability(finding, register, today=None, mitigation=None):
-    """(disposition, poam_ref) the triage policy gives an SCA/DAST finding from the
+    """(disposition, decision_id) the triage policy gives an SCA/DAST finding from the
     register, or (None, None). Only a record in force, with a passing disposition
-    and a decision reference, confers anything; an entry with no poam_ref leaves the
+    and a decision reference, confers anything; an entry with no decision_id leaves the
     finding open so invariant (h) fails rather than publish handled-but-untracked."""
     reg = register_entry(finding, register)
     if not reg:
         return (None, None)
     d = _decide_one(finding, register={"key": reg[0], "entry": reg[1]}, mitigation=mitigation,
                     today=today, kind="finding")
-    return (d["disposition"], d["poam_ref"]) if d["poam_ref"] else (None, None)
+    return (d["disposition"], d["decision_id"]) if d["decision_id"] else (None, None)
 
 
 # =============================================================================
@@ -499,9 +439,7 @@ def _mitigation_state_one(mid, m, inventory, runtime, today):
     out["valid"] = True
     return out
 
-# Per-suppression PAIN/IRV/LEV evaluations from docs/poam.md (kept in sync with
-# the table there). Ensures the VDR report carries the same VDR-EVA-* values an
-# auditor would see in the POA&M.
+# Per-suppression PAIN fallbacks.
 # Only the PAIN fallback is kept here, for a suppression whose check has no
 # governed vector in force. IRV comes from the inventory (a central suppression
 # names no resource, so it is unresolved and IRV) and LEV from Figure 7.
@@ -516,13 +454,13 @@ SUPPRESSION_EVALUATION = {
 }
 
 # Rationale per suppressed check, mirrored from .checkov.yaml comments and the
-# corresponding POA&M items. Used to populate VER-RPT-AVI explanation field.
+# corresponding decision records. Used to populate VER-RPT-AVI explanation field.
 SUPPRESSION_RATIONALE = {
     "CKV_AWS_68":  "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
     "CKV_AWS_86":  "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage.",
     "CKV_AWS_310": "The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair; an origin group would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
-    "CKV_AWS_35":  "CloudTrail log files use SSE-S3, consistent with the POAM-029 decision family: service-written control-plane records about this account's own infrastructure; a CMK adds key sprawl and a decrypt dependency for every consumer without a confidentiality benefit.",
+    "CKV_AWS_35":  "CloudTrail log files use SSE-S3, consistent with the DEC-029 decision family: service-written control-plane records about this account's own infrastructure; a CMK adds key sprawl and a decrypt dependency for every consumer without a confidentiality benefit.",
     "CKV2_AWS_10": "CloudWatch Logs integration declined: it duplicates every management event into paid log-group storage to enable metric filters this single-operator system reviews quarterly instead (KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.",
     "CKV_AWS_252": "SNS delivery notifications declined: no consumer exists for a per-delivery notification; the quarterly review reads the bucket directly.",
 }
@@ -733,55 +671,21 @@ def ingest_checkov(path):
 
 
 def false_positive_checks():
-    """CKV ids dismissed as false positives, read from the docs/poam.md False
-    Positives register (the single source the reconciliation gate also reads).
-    A suppressed check listed there is the scanner being wrong, not an accepted
-    risk, so it carries no poam_ref and is reported separately."""
-    poam = Path(__file__).resolve().parent.parent / "docs" / "poam.md"
-    if not poam.exists():
-        return set()
-    text = poam.read_text()
-    fp, in_fp = set(), False
-    for line in text.splitlines():
-        low = line.lower()
-        if line.lstrip().startswith("#") and "false positive" in low:
-            in_fp = True
-            continue
-        if in_fp and line.lstrip().startswith("#") and "false positive" not in low:
-            in_fp = False
-        if in_fp:
-            fp.update(re.findall(r"CKV[_A-Z0-9]+", line))
-    return fp
+    """Check IDs suppressed as false positives: the in-force false-positive
+    records of the decision register. A suppressed check listed there is the
+    scanner being wrong, not an accepted risk, and is reported separately."""
+    return set(FALSE_POSITIVE_BY_CHECK_ID)
 
 
-DEFAULT_POAM_ITEMS = Path(__file__).resolve().parent.parent / "data" / "poam-items.json"
+def load_decision_records(path=None):
+    """{DEC id: {decided_by, decided_on, review_by}} for each in-force record."""
+    return _decisions.decision_fields(_decisions.load(path) if path else DECISIONS)
 
 
-def load_decision_records(path=DEFAULT_POAM_ITEMS):
-    """{POAM id: item} for the decision fields of each check-ID disposition."""
-    p = Path(path)
-    if not p.exists():
-        return {}
-    try:
-        return {i["id"]: i for i in json.loads(p.read_text()).get("items") or [] if i.get("id")}
-    except (json.JSONDecodeError, AttributeError) as exc:
-        raise SystemExit(f"::error::decision records at {p} are not readable: {exc}") from exc
-
-
-def _decision_detection_dates(path=DEFAULT_POAM_ITEMS):
-    """{decision id: original detection date} from the decision records, the
-    source's own detection time for a suppression (REQ-SRC-1)."""
-    try:
-        doc = json.loads(Path(path).read_text())
-    except (OSError, json.JSONDecodeError):
-        return {}
-    items = doc if isinstance(doc, list) else next((v for v in doc.values() if isinstance(v, list)), [])
-    out = {}
-    for i in items:
-        d = i.get("original_detection_date")
-        if i.get("id") and isinstance(d, str) and re.match(r"^\d{4}-\d{2}-\d{2}$", d):
-            out[i["id"]] = f"{d}T00:00:00+00:00"
-    return out
+def _decision_detection_dates():
+    """{DEC id: original detection date}, the source's own detection time for a
+    suppression (REQ-SRC-1)."""
+    return _decisions.detection_dates(DECISIONS)
 
 
 def dedupe_findings(findings):
@@ -798,12 +702,12 @@ def dedupe_findings(findings):
     return list(seen.values())
 
 
-def ingest_suppressions(checkov_yaml, decision_records=DEFAULT_POAM_ITEMS):
+def ingest_suppressions(checkov_yaml):
     """Read .checkov.yaml's skip-check list and emit risk-accepted entries.
 
     Each entry becomes a risk-accepted record with VER-RPT-AVI fields populated
     (PAIN/IRV/LEV from SUPPRESSION_EVALUATION, explanation from
-    SUPPRESSION_RATIONALE, POAM cross-reference from POAM_BY_CHECK_ID). Checks
+    SUPPRESSION_RATIONALE, decision cross-reference from RISK_ACCEPTED_BY_CHECK_ID). Checks
     dismissed as false positives are excluded here and reported by
     ingest_false_positives instead.
     """
@@ -819,22 +723,22 @@ def ingest_suppressions(checkov_yaml, decision_records=DEFAULT_POAM_ITEMS):
         print(f"warning: could not read {p}: {exc}", file=sys.stderr)
         return suppressions
     fp = false_positive_checks()
-    detected = _decision_detection_dates(decision_records)
+    detected = _decision_detection_dates()
     for check_id in ids:
         if check_id in fp:
             continue  # false positive — handled by ingest_false_positives
         evaluation = SUPPRESSION_EVALUATION.get(check_id, {"pain": "N1"})
-        rationale = SUPPRESSION_RATIONALE.get(check_id, "Suppressed in .checkov.yaml; see corresponding POA&M entry for rationale.")
+        rationale = SUPPRESSION_RATIONALE.get(check_id, "Suppressed in .checkov.yaml; see the corresponding decision record for rationale.")
         suppressions.append({
             "tracking_id": check_id,
-            "poam_ref": POAM_BY_CHECK_ID.get(check_id),
+            "decision_id": RISK_ACCEPTED_BY_CHECK_ID.get(check_id),
             "source": "checkov-suppression",
             "tool_id": check_id,
             "title": f"{check_id} suppressed",
             "description": rationale,
             "resource": ".checkov.yaml",
             "current_disposition": "risk-accepted",
-            "detected_at": detected.get(POAM_BY_CHECK_ID.get(check_id)),
+            "detected_at": detected.get(RISK_ACCEPTED_BY_CHECK_ID.get(check_id)),
             "pain": evaluation["pain"],
             "is_kev": False,
             "explanation": rationale,
@@ -844,9 +748,9 @@ def ingest_suppressions(checkov_yaml, decision_records=DEFAULT_POAM_ITEMS):
 
 def ingest_false_positives(checkov_yaml):
     """Emit the false-positive records: suppressed checks listed in the
-    docs/poam.md False Positives register AND centrally suppressed in
-    .checkov.yaml. Disposition is 'false-positive'; each carries its poam_ref so
-    the finding stays tracked as an open POA&M item (never dropped). Inline
+    decision register as false positives AND centrally suppressed in
+    .checkov.yaml. Disposition is 'false-positive'; each carries its decision_id so
+    the finding stays tracked by its decision record (never dropped). Inline
     #checkov:skip= FP checks are not synthesized here — they arrive as real
     scanner findings and are classified in build_report()."""
     fp = false_positive_checks()
@@ -861,13 +765,13 @@ def ingest_false_positives(checkov_yaml):
         return []
     return [{
         "tracking_id": c,
-        "poam_ref": FALSE_POSITIVE_BY_CHECK_ID.get(c),
+        "decision_id": FALSE_POSITIVE_BY_CHECK_ID.get(c),
         "source": "checkov-suppression",
         "tool_id": c,
         "title": f"{c} false positive",
         "resource": ".checkov.yaml",
         "current_disposition": "false-positive",
-        "explanation": "Investigated; tracked as an open false-positive POA&M item. See docs/poam.md False Positives register.",
+        "explanation": "Investigated; recorded as a false positive in the decision register.",
     } for c in ids if c in fp]
 
 
@@ -1878,7 +1782,7 @@ def consolidate_by_cve(report_findings, risk_accepted):
     entry carries the earliest first_detected, the affected assets (PURL / ARN /
     URL drawn from each finding's resource), the scanners that saw it, the worst
     PAIN, KEV status, and disposition(s). Config findings (no CVE) are not
-    consolidated here: they are configuration weaknesses on a separate POA&M tab.
+    consolidated here: they are configuration weaknesses, reported separately.
     """
     groups = {}
     for rec in list(report_findings) + list(risk_accepted):
@@ -1889,7 +1793,7 @@ def consolidate_by_cve(report_findings, risk_accepted):
         if g is None:
             g = groups[cve] = {"cve": cve, "assets": [], "scanners": [],
                                "pain": rec.get("pain"), "first_detected": rec.get("first_detected"),
-                               "is_kev": False, "dispositions": set(), "poam_refs": set()}
+                               "is_kev": False, "dispositions": set(), "decision_ids": set()}
         asset = rec.get("resource") or ""
         if asset and asset not in g["assets"]:
             g["assets"].append(asset)
@@ -1903,12 +1807,12 @@ def consolidate_by_cve(report_findings, risk_accepted):
             g["pain"] = rec["pain"]
         g["is_kev"] = g["is_kev"] or bool(rec.get("is_kev"))
         g["dispositions"].add(rec.get("current_disposition", "open"))
-        if rec.get("poam_ref"):
-            g["poam_refs"].add(rec["poam_ref"])
+        if rec.get("decision_id"):
+            g["decision_ids"].add(rec["decision_id"])
     out = []
     for cve, g in sorted(groups.items()):
         g["dispositions"] = sorted(g["dispositions"])
-        g["poam_refs"] = sorted(g["poam_refs"])
+        g["decision_ids"] = sorted(g["decision_ids"])
         out.append(g)
     return out
 
@@ -2014,7 +1918,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         check_decision, reg = None, None
         if check_disposition is not None:
             dec = decision_records.get(check_ref) or {}
-            check_decision = {"disposition": check_disposition, "poam_ref": check_ref,
+            check_decision = {"disposition": check_disposition, "decision_id": check_ref,
                               "record": {k: dec[k] for k in _DECISION_FIELDS if k in dec}}
         else:
             reg = register_entry(f, disposition_register)
@@ -2056,19 +1960,19 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     # 3. Publish.
     for (f, cid, mit, is_kev, check_decision, reg, tid, clk), d in zip(prepared, decisions[:len(prepared)], strict=True):
         pain, irv, lev, sla = d["pain"], d["irv"], d["lev"], d["sla_days"]
-        disposition, finding_poam_ref = d["disposition"], d["poam_ref"]
+        disposition, finding_decision_id = d["disposition"], d["decision_id"]
         is_suppressed, needs_remediation = d["closed"], d["needs_remediation"]
         fully_mitigated = d["fully_mitigated"]
         record = None
         if check_decision is not None:
-            record = {"key": check_decision["poam_ref"], "disposition": check_decision["disposition"],
-                      "poam_ref": check_decision["poam_ref"], "status": d["record_status"],
+            record = {"key": check_decision["decision_id"], "disposition": check_decision["disposition"],
+                      "decision_id": check_decision["decision_id"], "status": d["record_status"],
                       "reason": d["record_reason"], "source": "decision-record",
                       **_decision_fields(check_decision["record"])}
         elif reg:
             record = {"key": reg[0], "disposition": reg[1].get("disposition"),
-                      "poam_ref": reg[1].get("poam_ref"), "status": d["record_status"],
-                      "reason": d["record_reason"], "source": "vuln-dispositions",
+                      "decision_id": reg[1].get("decision_id"), "status": d["record_status"],
+                      "reason": d["record_reason"], "source": "decisions",
                       **_decision_fields(reg[1])}
         if record and record["status"] == "lapsed":
             lapsed.append(record["key"])
@@ -2138,7 +2042,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "next_reduction": next_reduction if needs_remediation else None,
             "current_disposition": d["label"] or "open",
             "final_disposition": disposition if is_suppressed else "open",
-            "poam_ref": finding_poam_ref,
+            "decision_id": finding_decision_id,
             "disposition_record": record,
             "fully_mitigated": fully_mitigated,
             "mitigation": mit,
@@ -2158,7 +2062,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
                  if reg and d["record_status"] == "in-force" else NOT_RECORDED)
                 if d["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
-                                    else f"documented suppression ({disposition}); tracked as {finding_poam_ref}"
+                                    else f"documented suppression ({disposition}); tracked as {finding_decision_id}"
                                     if is_suppressed else overdue_explanation),
             "supplementary_info": "",
             "is_blocking": block_this,
@@ -2183,18 +2087,18 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     summary["total_findings"] = sum(1 for r in report_findings if r["final_disposition"] == "open")
     summary["dispositioned_findings"] = sum(1 for r in report_findings if r["final_disposition"] != "open")
     # risk_accepted count = synthesized .checkov.yaml suppressions + scanner
-    # findings classified risk-accepted (e.g. inline CKV2_AWS_56 → POAM-026).
+    # findings classified risk-accepted (e.g. inline CKV2_AWS_56 → DEC-026).
     summary["risk_accepted"] = len(suppressions) + sum(
         1 for r in report_findings if r["final_disposition"] == "risk-accepted")
 
     # Risk-accepted entries are not subject to the SLA — they carry their
-    # rationale (the VER-RPT-AVI explanation field) and a POAM cross-reference.
+    # rationale (the VER-RPT-AVI explanation field) and a decision cross-reference.
     risk_accepted_records = []
     for (s, s_cid, s_pain), d in zip(sup_prepared, decisions[len(prepared):], strict=True):
         s_clk = clock_facts(s, ledger.get(s["tracking_id"]), now)
         risk_accepted_records.append({
             "tracking_id": s["tracking_id"],
-            "poam_ref": s.get("poam_ref"),
+            "decision_id": s.get("decision_id"),
             "source": s["source"],
             "tool_id": s.get("tool_id"),
             "title": s.get("title", ""),
@@ -2222,12 +2126,12 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     # Single source of truth for categorization (assessment F-2 / Decision 1).
     _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
     report = {
-        "report_version": "1.2.0",
+        "report_version": "2.0.0",
         "report_id": str(uuid.uuid4()),
         "emitted_at": now.isoformat(),
         "system_id": "urn:samaydlette:website-prod",
         "ksi_signal_ref": "/.well-known/ksi-signal.json",
-        "poam_ref": "docs/poam.md",
+        "decision_register": "data/decisions.json",
         "class": "C",
         "impact_level": _profile["impact_level"],
         "summary": summary,
@@ -2289,11 +2193,11 @@ def render_markdown(report):
     ra = report.get("risk_accepted", [])
     out += ["", f"## Risk-accepted ({len(ra)})", ""]
     if ra:
-        out.append("| Tracking ID | PAIN | POA&M | Explanation |")
+        out.append("| Tracking ID | PAIN | Decision | Explanation |")
         out.append("|---|---|---|---|")
         for r in ra:
-            out.append("| {tid} | {pain} | {poam} | {ex} |".format(
-                tid=r.get("tracking_id", ""), pain=r.get("pain", ""), poam=r.get("poam_ref") or "—",
+            out.append("| {tid} | {pain} | {dec} | {ex} |".format(
+                tid=r.get("tracking_id", ""), pain=r.get("pain", ""), dec=r.get("decision_id") or "—",
                 ex=(r.get("explanation", "") or "").replace("|", "\\|")[:160]))
     else:
         out.append("_None._")
@@ -2328,8 +2232,10 @@ def main():
     parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
     parser.add_argument("--pain-config", default=None, help="Governed PAIN classifier config (default: infrastructure/schemas/vdr-pain-config.json). Loaded and validated fail-closed; recorded in the report methodology block.")
-    parser.add_argument("--vuln-dispositions", default=None, help="Operator vulnerability disposition register (default: data/vuln-dispositions.json). The same file scripts/vuln-gate.py gates on; a dispositioned SCA/DAST finding carries its disposition and poam_ref into the report.")
+    parser.add_argument("--decisions", default=None, help="Decision register (default: data/decisions.json). The same file scripts/vuln-gate.py and reconciliation read; a decided finding carries its disposition and decision_id into the report. Missing or invalid: the build fails.")
     args = parser.parse_args()
+    if args.decisions:
+        use_decisions(args.decisions)
     if args.fingerprint:
         comp = load_inventory(args.ksi_signal)["components"].get(args.fingerprint)
         if comp is None:
@@ -2395,10 +2301,10 @@ def main():
     # finding's CR/IR/AR in the CVSS-Environmental derivation.
     classification_index = build_classification_index(args.ksi_signal)
 
-    # Operator dispositions for SCA/DAST vulnerabilities — the same register the
-    # vulnerability gate reads, so a finding it accepts publishes with the POA&M
-    # cross-reference reconciliation invariant (h) requires.
-    disposition_register = load_disposition_register(args.vuln_dispositions)
+    # Decisions for SCA/DAST vulnerabilities — the same register the
+    # vulnerability gate reads, so a finding it accepts publishes with the
+    # decision_id reconciliation invariant (h) requires.
+    disposition_register = load_disposition_register()
 
     check_vectors = load_check_vectors(args.check_vectors)
     lev_overrides = load_lev_overrides(args.lev_overrides)

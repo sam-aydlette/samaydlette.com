@@ -200,7 +200,7 @@ python-test:
 # Reconciliation gate (assessment keystone): fails closed if any cross-artifact
 # invariant breaks (completeness, referential, suppressions, impact level,
 # inventory binding, publish freshness). Run from infrastructure/ after the
-# signal/SSP/POA&M/VDR are built. RECONCILE_FLAGS="--live" enumerates live AWS
+# signal/SSP/VDR are built. RECONCILE_FLAGS="--live" enumerates live AWS
 # for the completeness invariant in CI.
 reconcile:
 	@echo "Running reconciliation gate..."
@@ -267,7 +267,7 @@ security-scan:
 # Local infrastructure pipeline: set up, validate, plan, apply. Stops there.
 #
 # This is NOT the full compliance pipeline and never was — it does not build the
-# POA&M, VDR, IIW, SDR, CPO or CDS artifacts, does not sign
+# VDR, IIW, SDR, CPO or CDS artifacts, does not sign
 # anything with cosign, and does not run the reconciliation gate. That whole
 # sequence is .github/workflows/deploy-with-opa.yml. Run `make reconcile` and
 # `make gate` locally for the offline half.
