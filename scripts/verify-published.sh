@@ -219,8 +219,29 @@ for art in vdr-detail-report vdr-accepted-vulnerabilities; do
 done
 
 echo ""
+echo "== 5. No AWS account ID in anything published =="
+# Every artifact the governed freshness config lists, plus its Markdown
+# rendering, fetched fresh and scanned by the same gate the deploy runs before
+# it uploads. A listed artifact that is not published (the operator-run
+# corroboration, say) is skipped here, never passed.
+mkdir -p "$work/scan"
+for f in $(python3 -c 'import json,sys
+for a in json.load(open(sys.argv[1]))["artifacts"]:
+    n = a["path"].rsplit("/", 1)[-1]
+    if n.endswith((".intoto.jsonl", ".bundle", ".tar.gz")): continue
+    print(n)
+    if n.endswith(".json"): print(n[:-5] + ".md")' "$SCRIPTS/../infrastructure/schemas/freshness-config.json"); do
+  curl -fsS --max-time 30 -o "$work/scan/$f" "$BASE/$f" 2>/dev/null || rm -f "$work/scan/$f"
+done
+if python3 "$SCRIPTS/check-published-redaction.py" --root "$work/scan" >/dev/null 2>&1; then
+  ok "no published artifact carries an AWS account ID ($(ls "$work/scan" | wc -l) files scanned)"
+else
+  bad "a published artifact carries an AWS account ID (run scripts/check-published-redaction.py --root on them for the masked detail)"
+fi
+
+echo ""
 echo "== Scope =="
-echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity); CR26 schema conformance."
+echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity); CR26 schema conformance; no AWS account ID published."
 echo "  Verified via public code : cross-artifact reconciliation (this repo, invariants b–j and l)."
 echo "  NOT externally verifiable: live-state invariants (a completeness, i tag-match) need AWS."
 

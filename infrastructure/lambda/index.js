@@ -48,6 +48,7 @@ const {
 } = require('@aws-sdk/client-secrets-manager');
 const { canonicalize } = require('./canonical');
 const { computeDivergence } = require('./divergence');
+const { accountOf, withAccount } = require('./account');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
@@ -296,7 +297,7 @@ async function evaluateSecretRotation(sm, secretArn) {
     }
 }
 
-async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion) {
+async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion, invokedFunctionArn) {
     const components = deploySignal.components ?? [];
     const validations = [];
     let validationIdx = 0;
@@ -347,7 +348,7 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
     // component the inventory carries.
     for (const secret of components.filter((c) => c.type === 'secrets_manager')) {
         if (!secret.native_id) continue;
-        const result = await evaluateSecretRotation(sm, secret.native_id);
+        const result = await evaluateSecretRotation(sm, withAccount(secret.native_id, accountOf(invokedFunctionArn)));
         validations.push({
             validation_id: `r-${String(validationIdx++).padStart(4, '0')}`,
             policy: { id: 'secret.rotation.sc-12', version: `cadence-${SECRET_ROTATION_MAX_AGE_DAYS}d` },
@@ -481,7 +482,10 @@ exports.handler = async (event, context) => {
         };
     }
 
-    let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion);
+    // The inventory names resources with ACCOUNT in place of the account ID;
+    // this Lambda's own ARN supplies it wherever a callable ARN is needed (account.js).
+    let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion,
+        context?.invokedFunctionArn);
 
     // Sign the signal (POAM-002) and publish the verifying public key. The signing
     // key is resolved by its stable alias, derived from the bucket/domain

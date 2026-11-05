@@ -64,6 +64,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _redact  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -98,8 +99,13 @@ def arn_key(arn):
     un-inventoried '<prefix>-logs-archive' bucket was silently accepted whenever
     '<prefix>-logs' was in the inventory. See test_a_completeness_rejects_arn_that
     _extends_an_inventoried_one.
+
+    The published inventory carries ACCOUNT in place of the account ID
+    (scripts/_redact.py), so both sides are redacted the same way first. Every
+    live ARN is read with this account's credentials, so the comparison stays
+    exact for everything but the twelve digits both sides share.
     """
-    return (arn or "").rstrip(":*")
+    return _redact.redact_text(arn or "").rstrip(":*")
 
 
 def inventory_native_ids(signal):
@@ -197,7 +203,8 @@ def enumerate_live_arns(region_primary="us-east-2", region_edge="us-east-1"):
 def check_a_completeness(signal, live_arns):
     """Every live ARN must appear as a native_id in the inventory."""
     have = {arn_key(nid) for nid in inventory_native_ids(signal)}
-    return [f"(a) live resource not in inventory: {arn}"
+    # The message goes to a public Actions log: name the resource, not the account.
+    return [f"(a) live resource not in inventory: {_redact.redact_text(arn)}"
             for arn in sorted(live_arns) if arn_key(arn) not in have]
 
 

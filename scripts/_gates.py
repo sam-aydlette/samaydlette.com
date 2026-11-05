@@ -34,6 +34,9 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import _redact  # noqa: E402
+
 DEFAULT_PATH = Path(__file__).resolve().parent.parent / "infrastructure" / "schemas" / "gate-modes.json"
 
 BLOCK = "block"
@@ -87,7 +90,9 @@ _SANITIZE = str.maketrans({"\r": " ", "\n": " ", "\x00": ""})
 
 
 def _clean(text, limit=500):
-    return str(text).translate(_SANITIZE).replace("::", ":")[:limit]
+    # Events are published (vdr-status.json, the trust center), and a failed AWS
+    # call's text names the account: redact it here, at the source.
+    return _redact.redact_text(str(text).translate(_SANITIZE).replace("::", ":"))[:limit]
 
 
 def _fail(where, msg):

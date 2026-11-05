@@ -53,6 +53,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _redact  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
 
@@ -1620,7 +1621,11 @@ def resolve_component(finding, index, tf_components=()):
     for c in (finding.get("resource"), finding.get("tool_id"), finding.get("cve")):
         if c and str(c) in index:
             return index[str(c)]
-    res = str(finding.get("resource") or "")
+        # The inventory publishes ARNs with ACCOUNT in place of the account ID
+        # (scripts/_redact.py); a finding that names a full ARN matches it so.
+        if c and _redact.redact_text(str(c)) in index:
+            return index[_redact.redact_text(str(c))]
+    res = _redact.redact_text(str(finding.get("resource") or ""))
     m = _TF_ADDRESS.match(res)
     if m:
         rtype, rname = m.group(1), m.group(2)
@@ -1667,7 +1672,9 @@ def resolve_classification(finding, index):
     for c in (finding.get("resource"), finding.get("tool_id"), finding.get("cve")):
         if c and str(c) in index:
             return index[str(c)]
-    res = str(finding.get("resource") or "")
+        if c and _redact.redact_text(str(c)) in index:  # see resolve_component
+            return index[_redact.redact_text(str(c))]
+    res = _redact.redact_text(str(finding.get("resource") or ""))
     if res:
         matches = [(key, cls) for key, cls in index.items()
                    if len(key) >= 4 and (key in res or res in key)]

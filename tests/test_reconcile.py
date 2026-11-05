@@ -80,7 +80,9 @@ def test_a_completeness_catches_missing_live_resource():
     s = clean_set()
     extra = f"arn:aws:secretsmanager:us-east-2:{ACCOUNT}:secret:zzz"
     v = rc.check_a_completeness(s["signal"], {ARN_LAMBDA, ARN_BUCKET, extra})
-    assert any("not in inventory" in x and extra in x for x in v)
+    # Named with ACCOUNT in place of the account ID: the message goes to a public log.
+    assert any("not in inventory" in x and extra.replace(ACCOUNT, "ACCOUNT") in x for x in v)
+    assert not any(ACCOUNT in x for x in v)
 
 
 def test_a_completeness_rejects_arn_that_extends_an_inventoried_one():
