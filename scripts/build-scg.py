@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _decisions  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -273,7 +274,7 @@ def main(argv=None):
         signal = json.loads(Path(a.ksi_signal).read_text())
     except (OSError, json.JSONDecodeError) as exc:
         _fail(f"cannot read an input: {exc}")
-    doc = build(src, crypto, signal, datetime.now(timezone.utc))
+    doc = _offering.stamp_fedramp_id(build(src, crypto, signal, datetime.now(timezone.utc)))  # CDS-CSO-FID
     Path(a.output).write_text(json.dumps(doc, indent=2) + "\n")
     Path(a.md_output).write_text(render_markdown(doc) + "\n")
     v = sum(1 for m in doc["cryptographic_modules"]["services"] if m["validated"])

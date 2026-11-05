@@ -19,6 +19,7 @@ from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _decisions  # noqa: E402
 import _nonmachine  # noqa: E402
 
@@ -36,7 +37,7 @@ def main(argv=None):
     today = date.fromisoformat(a.today) if a.today else date.today()
     st = _nonmachine.status(doc, reg, today)
     if a.out:
-        Path(a.out).write_text(json.dumps(st, indent=2) + "\n", encoding="utf-8")
+        Path(a.out).write_text(json.dumps(_offering.stamp_fedramp_id(st), indent=2) + "\n", encoding="utf-8")
     print(f"Non-machine V&V (VDR-TFR-NMV): {len(st['resources'])} resources, oldest verification "
           f"{st['verifiedAt'][:10]}, next due by {st['nextDueBy']}: {st['status']}")
     for p in st["problems"]:

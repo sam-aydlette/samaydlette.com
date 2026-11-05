@@ -52,6 +52,7 @@ from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _codeql  # noqa: E402
 import _decisions  # noqa: E402
 import _evaluation  # noqa: E402
@@ -2692,6 +2693,7 @@ def main():
     report["methodology"]["detection"] = (json.loads(Path(args.detection).read_text())
                                           if args.detection else None)
 
+    report = _offering.stamp_fedramp_id(report)  # CDS-CSO-FID
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
     print(f"vdr-report.json: {report['summary']['total_findings']} findings, {report['summary']['blocking']} blocking, {report['summary']['risk_accepted']} risk-accepted")

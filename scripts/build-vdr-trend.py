@@ -16,7 +16,11 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 
 
 # The published point shape. Exported so backfill-vdr-trend.py reconstructs
@@ -71,6 +75,7 @@ def main():
     # REQ-GOV-2: the profile and conformance results of the report this point came from.
     trend["profile"] = (rpt.get("methodology") or {}).get("profile")
     trend["points"] = points
+    trend = _offering.stamp_fedramp_id(trend)  # CDS-CSO-FID
     tp.write_text(json.dumps(trend, indent=2) + "\n")
     print(f"vdr-trend: {len(points)} point(s); latest {date} "
           f"open_cves={point['open_cves']} blocking={point['blocking']} kev={point['kev']}")

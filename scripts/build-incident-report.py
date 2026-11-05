@@ -46,6 +46,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _incidents  # noqa: E402
 import _rules  # noqa: E402
@@ -209,7 +210,8 @@ def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR):
         reports = []
         for k, r in enumerate(inc["reports"]):
             name = f"incident-{inc['id']}-{k + 1:02d}-{r['type'].lower()}.json"
-            fs.write_validated(report_document(inc, k, policy, default), "incident", out_dir / name, registry)
+            fs.write_validated(_offering.stamp_fedramp_id(report_document(inc, k, policy, default)), "incident",
+                               out_dir / name, registry)
             reports.append({"type": r["type"], "issued_at": r["at"], "file": name,
                             "sha256": hashlib.sha256((out_dir / name).read_bytes()).hexdigest(),
                             "changes": _changes(inc, k)})
@@ -277,6 +279,7 @@ def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR):
         },
         "incidents": incidents,
     }
+    log = _offering.stamp_fedramp_id(log)  # CDS-CSO-FID
     (out_dir / INDEX).write_text(json.dumps(log, indent=2) + "\n")
     (out_dir / INDEX_MD).write_text(render_markdown(log, out_dir) + "\n")
     return log

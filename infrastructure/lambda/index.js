@@ -574,6 +574,8 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
         emitter: 'runtime',
         csp: deploySignal.csp || 'aws',
         system_id: deploySignal.system_id,
+        // CDS-CSO-FID: the offering's FedRAMP ID, as the deploy signal carries it.
+        ...(deploySignal.fedRampId ? { fedRampId: deploySignal.fedRampId } : {}),
         provenance,
         components,
         validations,

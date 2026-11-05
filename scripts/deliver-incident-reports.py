@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 
 FEDRAMP = "FedRAMP Incident Desk (simulated): accepts every report, replies to none, and has never heard of this system"
@@ -117,7 +118,7 @@ def main(argv=None) -> int:
         print(f"incident report delivery: {len(problems)} problem(s); nothing delivered, nothing written")
         return 1
     target = a.output or (a.dir / "incident-deliveries.json")
-    target.write_text(json.dumps(out, indent=2) + "\n")
+    target.write_text(json.dumps(_offering.stamp_fedramp_id(out), indent=2) + "\n")
     print(f"incident report delivery (SIMULATED, nothing sent): {out['summary']['reports_delivered']} report(s) to "
           f"{out['summary']['recipients_reached']} simulated recipient(s); wrote {target}")
     return 0

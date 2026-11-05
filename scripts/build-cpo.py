@@ -76,7 +76,7 @@ PACKAGE = [
     ("package-submission-log.json", ["Package Submission"],
      "Log of each submission of this package to FedRAMP (FRC-CSO-PKG). Simulated: nothing is sent."),
     ("significant-change-notifications.json", ["Significant Change Notifications"],
-     "Significant Change Notifications in FedRAMP's SCN schema (SCN-CSO-HIS, SCN-CSO-HRM)."),
+     "Every Significant Change Notification, each in FedRAMP's SCN schema (SCN-CSO-HIS, SCN-CSO-HRM)."),
     ("significant-change-notifications.atom", ["Significant Change Notifications"],
      "Atom feed of the notifications (SCN-CSO-NOM)."),
     ("scn-evaluations.json", ["Significant Change Notifications"],

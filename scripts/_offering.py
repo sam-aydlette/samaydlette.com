@@ -47,6 +47,24 @@ def fedramp_id(path=OFFERING_PATH):
     return load(path)["fedramp_id"]
 
 
+FEDRAMP_SCHEMA_BASES = ("https://fedramp.gov/schemas/", "https://www.fedramp.gov/schemas/")
+
+
+def stamp_fedramp_id(doc, path=OFFERING_PATH):
+    """`doc` carrying the offering's FedRAMP ID (CDS-CSO-FID): under
+    providerExtensions.fedRampId on a report in a FedRAMP schema, otherwise as
+    a top-level `fedRampId` placed first (after any $schema). Returns the
+    document to write."""
+    fid = fedramp_id(path)
+    if str(doc.get("$schema", "")).startswith(FEDRAMP_SCHEMA_BASES):
+        doc.setdefault("providerExtensions", {})["fedRampId"] = fid
+        return doc
+    rest = {k: v for k, v in doc.items() if k != "fedRampId"}
+    if "$schema" in rest:  # keep $schema first
+        return {"$schema": rest.pop("$schema"), "fedRampId": fid, **rest}
+    return {"fedRampId": fid, **rest}
+
+
 # --- versioning (CPO-CSO-MTD, and the OCR alike) --------------------------------------
 
 def content_hash(doc, volatile=("metadata",), volatile_ext=("contentSha256",)):

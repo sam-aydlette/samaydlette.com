@@ -75,6 +75,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
 import _incidents  # noqa: E402
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -813,7 +814,7 @@ INVARIANT_TITLES = {
 def build_report(signal, commit, deferred):
     """Written only when the gate passes; nothing is published otherwise, so a
     published report is itself evidence that every listed invariant held."""
-    return {
+    return _offering.stamp_fedramp_id({
         "schema": "reconcile-report/1",
         "result": "pass",
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -823,7 +824,7 @@ def build_report(signal, commit, deferred):
             {"id": k, "title": t, "status": "deferred" if deferred.get(k) else "held"}
             for k, t in INVARIANT_TITLES.items()
         ],
-    }
+    })
 
 
 if __name__ == "__main__":

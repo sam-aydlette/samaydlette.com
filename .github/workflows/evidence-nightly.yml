@@ -774,6 +774,15 @@ jobs:
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
         vdr-non-machine-vv.json vdr-monthly.json
 
+    # CDS-CSO-FID: every report this run republishes carries the offering's
+    # FedRAMP ID (the same gate the deploy runs over its REPORTS list).
+    - name: FedRAMP ID in every republished report (CDS-CSO-FID)
+      working-directory: infrastructure
+      run: >-
+        python3 ../scripts/check-fedramp-id.py
+        vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
+        vdr-non-machine-vv.json vdr-monthly.json
+
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
       run: >-
@@ -902,7 +911,11 @@ jobs:
         # What G7 found about each detection input, when the gate got that far.
         [ -s detection.json ] || echo 'null' > detection.json
         if [ -s conformance-results.json ]; then cp conformance-results.json conformance-status.json; else echo 'null' > conformance-status.json; fi
+        # CDS-CSO-FID: the offering's FedRAMP ID. The beacon publishes whatever
+        # failed, so an unreadable offering gives null rather than no beacon.
+        fid=$(python3 -c 'import sys; sys.path.insert(0, "../scripts"); import _offering; print(_offering.fedramp_id())' 2>/dev/null || true)
         jq -n \
+          --arg fid "$fid" \
           --slurpfile gs gate-status.json \
           --slurpfile det detection.json \
           --slurpfile prof conformance-status.json \
@@ -914,7 +927,8 @@ jobs:
           --arg finished_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
           --arg commit "${SIGNAL_COMMIT:-unknown}" \
-          '{schema: "vdr-status/1", result: $result, finished_at: $finished_at,
+          '{schema: "vdr-status/1", fedRampId: (if $fid == "" then null else $fid end),
+            result: $result, finished_at: $finished_at,
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
             inventory_commit: $commit, run_url: $run_url,
             gates: $gs[0].gates, gate_events: $gs[0].gate_events,

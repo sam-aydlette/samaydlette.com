@@ -36,6 +36,7 @@ from email.parser import Parser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _fsi  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -211,6 +212,7 @@ def main(argv=None) -> int:
         "retry_pass": retry,
         "register_check": register_check,
     }
+    report = _offering.stamp_fedramp_id(report, a.offering)  # CDS-CSO-FID
     a.output.write_text(json.dumps(report, indent=2) + "\n")
     print(f"FedRAMP Security Inbox simulation: {len(cases)} synthetic messages, all outcomes as expected; "
           f"wrote {a.output} (SIMULATION: nothing received or sent)")

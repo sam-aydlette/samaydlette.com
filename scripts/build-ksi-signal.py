@@ -39,6 +39,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import sha256_file  # noqa: E402
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 
 # =============================================================================
@@ -2013,6 +2014,9 @@ def main():
     # configuration value is published with ACCOUNT in its place, and the
     # publication gate fails the deploy on any twelve-digit number that remains.
     signal = _redact.redact(signal)
+    # CDS-CSO-FID: the offering's FedRAMP ID; the runtime emitter copies it
+    # from this signal into the runtime signal.
+    signal = _offering.stamp_fedramp_id(signal)
     output_path.write_text(json.dumps(signal, indent=2) + "\n")
     print(
         f"Wrote {output_path} "

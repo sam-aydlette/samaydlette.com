@@ -57,6 +57,11 @@
       "type": "string",
       "minLength": 1
     },
+    "fedRampId": {
+      "description": "The offering's FedRAMP ID (CDS-CSO-FID), from data/cds/offering.json. Until FedRAMP assigns one, FedRAMP's fallback: the provider name and acronym, marked as not real. The runtime signal copies it from the deploy signal.",
+      "type": "string",
+      "minLength": 1
+    },
     "categorization": {
       "type": "object",
       "description": "Single-source system categorization (assessment F-2 / Decision 1). Identical impact_level must appear across the SSP, POA&M, VDR, and dashboard; the reconciliation gate enforces it.",

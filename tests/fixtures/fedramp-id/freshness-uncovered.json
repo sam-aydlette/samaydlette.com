@@ -1,0 +1,10 @@
+{
+  "_note": "Known bad (CDS-CSO-FID coverage): a published JSON artifact the FedRAMP ID gate neither checks nor exempts, and one exempt artifact with an empty reason.",
+  "artifacts": [
+    {"path": ".well-known/security-decision-record.json"},
+    {"path": ".well-known/new-unstamped-report.json"},
+    {"path": ".well-known/iiw.csv"}
+  ],
+  "exempt": {"boundary-corroboration.json": ""},
+  "exempt_artifact": ".well-known/boundary-corroboration.json"
+}

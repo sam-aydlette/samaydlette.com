@@ -41,6 +41,7 @@ from xml.sax.saxutils import escape
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _fedramp_schema  # noqa: E402
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 import _scn  # noqa: E402
 
@@ -171,7 +172,7 @@ def build_log(previous, new_entries, now, commit):
     errors = _scn.append_only_errors(prev, entries, "commit")
     if errors:
         raise SystemExit("::error::SCN evaluation log is append-only: " + "; ".join(errors))
-    return {
+    return _offering.stamp_fedramp_id({
         "$comment": "SCN-CSO-MAR: the significant-change evaluation of every change merged to main, one entry per "
                     "first-parent commit. Append-only: each deploy adds the commits since the last entry, and "
                     "a deploy that would drop or rewrite an entry fails. Built by scripts/build-scn.py.",
@@ -181,7 +182,7 @@ def build_log(previous, new_entries, now, commit):
         "access": ACCESS,
         "entries": entries,
         "unrecorded": sum(1 for e in entries if e["problem"]),
-    }
+    })
 
 
 def render_log_md(log):
@@ -201,8 +202,10 @@ def render_log_md(log):
 # --- notifications -------------------------------------------------------------------
 
 def _fedramp_id(row):
+    """The register's ID when FedRAMP has assigned one; until then the
+    offering's (CDS-CSO-FID: FedRAMP's fallback, marked not real)."""
     v = row["fedramp_id"]
-    return None if not v or v.startswith("<") else v
+    return _offering.fedramp_id() if not v or v.startswith("<") else v
 
 
 def scn_document(row, previous_notices, today):
@@ -215,8 +218,9 @@ def scn_document(row, previous_notices, today):
         "certificationPackageOverviewUri": _fedramp_schema.CPO_URI,
         "scnId": row["scn_id"],
         "serviceOfferingFedrampId": _fedramp_id(row),
-        "serviceOfferingFedrampIdNote": None if _fedramp_id(row) else
-            "No FedRAMP ID: the offering is not FedRAMP certified (a self-attested demonstration).",
+        "serviceOfferingFedrampIdNote": None if _fedramp_id(row) != _offering.fedramp_id() else
+            "Simulated: no FedRAMP ID has been assigned (the offering is not FedRAMP certified). This is "
+            "FedRAMP's fallback, the provider name and acronym, marked so nobody mistakes it for a real ID.",
         "assessorName": row["assessor_name"],
         "relatedVulnerability": row["related_vulnerability"],
         "changeType": row["scn_type"].capitalize(),
@@ -263,7 +267,7 @@ def build_index(rows, previous_index, now, commit, out_dir):
     scn_dir.mkdir(parents=True, exist_ok=True)
     docs = []
     for row in rows:
-        doc = scn_document(row, prev.get(row["scn_id"]), now.date())
+        doc = _offering.stamp_fedramp_id(scn_document(row, prev.get(row["scn_id"]), now.date()))
         path = scn_dir / f"{row['scn_id']}.json"
         _fedramp_schema.write_validated(doc, "scn", path)
         docs.append(json.loads(path.read_text()))
@@ -288,7 +292,7 @@ def build_index(rows, previous_index, now, commit, out_dir):
     errors = _scn.retention_errors(previous_index, index)
     if errors:
         raise SystemExit("::error::SCN notifications are retained (SCN-CSO-HIS): " + "; ".join(errors))
-    return index
+    return _offering.stamp_fedramp_id(index)
 
 
 def render_index_md(index):
@@ -343,6 +347,7 @@ def render_feed(index):
     out = ['<?xml version="1.0" encoding="utf-8"?>',
            '<feed xmlns="http://www.w3.org/2005/Atom">',
            "  <title>samaydlette.com Significant Change Notifications</title>",
+           f"  <subtitle>FedRAMP ID: {escape(index['fedRampId'])}</subtitle>",
            "  <id>tag:samaydlette.com,2026:significant-change-notifications</id>",
            f"  <updated>{updated}</updated>",
            f'  <link rel="self" href="{_scn.BASE}{_scn.FEED_NAME}"/>',

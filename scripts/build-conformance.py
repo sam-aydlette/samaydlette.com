@@ -31,6 +31,9 @@ import xml.etree.ElementTree as ET  # noqa: S405 (parses pytest's own junit outp
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_PROFILE = REPO / "data" / "method-profile.json"
 IDS = [f"T{i}" for i in range(1, 75)]
@@ -149,6 +152,7 @@ def main(argv=None):
     doc, missing = build(profile, outcome, args.commit, datetime.now(timezone.utc))
     if missing:
         _fail(f"mapped tests that pytest did not run: {missing}")
+    doc = _offering.stamp_fedramp_id(doc)  # CDS-CSO-FID
     Path(args.output).write_text(json.dumps(doc, indent=2) + "\n")
     s = doc["summary"]
     print(f"conformance ({doc['profile_version']}): {s['implemented']} implemented, {s['partial']} partial, "

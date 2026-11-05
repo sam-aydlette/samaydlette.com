@@ -17,6 +17,7 @@ REPORTS is the one list of what the deploy checks: a group that publishes a
 FedRAMP report adds its file here, one line.
 """
 
+import fnmatch
 import json
 import sys
 from pathlib import Path
@@ -25,10 +26,37 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _offering  # noqa: E402
 
 # Every FedRAMP report the deploy publishes, by built file name. Add a line per report.
+# A name with "*" is a glob over the build directory (each match is checked).
 REPORTS = (
     "certification-package-overview.json",
     "security-decision-record.json",
     "ongoing-certification-report.json",
+    # Vulnerability detection and response (group 4): the VDR report and its
+    # trend ledger at top level; FedRAMP's VDT, AVI and history reports under
+    # providerExtensions; the monthly activity report and non-machine V&V status.
+    "vdr-report.json",
+    "vdr-trend.json",
+    "vdr-detail-report.json",
+    "vdr-accepted-vulnerabilities.json",
+    "vdr-history.json",
+    "vdr-monthly.json",
+    "vdr-non-machine-vv.json",
+    # The canonical inventory (the runtime emitter copies the ID from it).
+    "ksi-signal.json",
+    # Certification cycle (group 2): the FedRAMP Certification Reports index and
+    # the simulated package submission log.
+    "fedramp-certification-reports.json",
+    "package-submission-log.json",
+    # Notifications (group 3): the SCN index (each notification also under its
+    # providerExtensions), the evaluation log, the incident log, every
+    # Initial/Ongoing/Final report (FedRAMP's incident schema), the simulated
+    # deliveries and the simulated FedRAMP Security Inbox run.
+    "significant-change-notifications.json",
+    "scn-evaluations.json",
+    "incident-reports.json",
+    "incident-deliveries.json",
+    "incident-INC-*.json",
+    "fedramp-inbox-simulation.json",
     # Trust center, scope and assessor (group 5): site files, top-level fedRampId.
     "trust-center.json",
     "trust-manifest.json",
@@ -38,11 +66,34 @@ REPORTS = (
     "simulated-assessment.json",
     "agency-access-exercise.json",
     "frr-evidence.json",
+    "minimum-assessment-scope.json",
+    "secure-configuration-guide.json",
+    "security-settings.json",
+    "access-summary.json",
+    "boundary-map.json",
+    "reconcile-report.json",
+    "conformance-results.json",
     # The independent monitor's feed as this deploy read it (availability-status.json
     # from the availability-status branch; it is built by scripts/availability-probe.py).
     "availability-probe.json",
 )
-FEDRAMP_SCHEMAS = ("https://fedramp.gov/schemas/", "https://www.fedramp.gov/schemas/")
+
+# Published JSON that this deploy step does not check, and why. Every
+# freshness-governed JSON artifact is in REPORTS or here
+# (tests/test_fedramp_id_trust.py holds that).
+EXEMPT = {
+    "ksi-signal-runtime.json": "Written and KMS-signed by the runtime emitter Lambda after the deploy, not by a "
+                               "deploy builder; it copies fedRampId from the deploy's KSI signal "
+                               "(infrastructure/lambda/index.js), which this gate checks.",
+    "vdr-status.json": "The nightly's unsigned status beacon, written by evidence-nightly.yml whatever the run's "
+                       "outcome; it is stamped there (null only if the offering cannot be read).",
+    "ocr-issues.json": "Issued by package-maintenance.yml (scripts/issue-ocr.py), which runs this gate over it "
+                       "and the frozen reports before publishing.",
+    "boundary-corroboration.json": "The independent corroboration (RAMPART on TAP), committed by the operator and "
+                                   "published exactly as the corroborating tool wrote it; stamping it would alter "
+                                   "another party's record. The boundary map it corroborates carries the ID.",
+}
+FEDRAMP_SCHEMAS = _offering.FEDRAMP_SCHEMA_BASES
 
 
 def problems(name, doc, fid):
@@ -60,8 +111,32 @@ def problems(name, doc, fid):
     return out
 
 
+def uncovered(artifact_paths, reports=REPORTS, exempt=EXEMPT):
+    """Published JSON (freshness-config paths, e.g. ".well-known/x.json") that
+    neither REPORTS nor EXEMPT accounts for, plus any exemption without a
+    reason or also listed in REPORTS."""
+    out = []
+    for path in artifact_paths:
+        name = path.rsplit("/", 1)[-1]
+        if not name.endswith(".json"):
+            continue
+        listed = any(fnmatch.fnmatchcase(name, r) for r in reports)
+        if listed and name in exempt:
+            out.append(f"{name} is both checked and exempt")
+        elif not listed and not str(exempt.get(name) or "").strip():
+            out.append(f"{name} is published but neither checked for the FedRAMP ID nor exempt with a reason")
+    return out
+
+
+def _expand(names, root="."):
+    out = []
+    for n in names:
+        out += sorted(str(p) for p in Path(root).glob(n)) if "*" in n else [n]
+    return out
+
+
 def main(argv=None):
-    files = (sys.argv[1:] if argv is None else argv) or list(REPORTS)
+    files = (sys.argv[1:] if argv is None else argv) or _expand(REPORTS)
     fid = _offering.fedramp_id()
     bad = []
     for f in files:

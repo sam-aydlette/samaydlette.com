@@ -35,6 +35,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import _offering  # noqa: E402
 import _decisions  # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("cr26_for_monthly", HERE / "build-cr26-vdr.py")
@@ -347,6 +348,7 @@ def main(argv=None):
                 _read(a.non_machine, "non-machine status"),
                 _read(a.runtime_runs, "runtime runs") if a.runtime_runs else None,
                 _read(a.previous, "previous monthly report") if a.previous else None, now)
+    doc = _offering.stamp_fedramp_id(doc)  # CDS-CSO-FID
     out = Path(a.out_dir)
     (out / JSON_OUT).write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
     (out / MD_OUT).write_text(render(doc), encoding="utf-8")

@@ -41,6 +41,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 
 SCHEMA = "samaydlette-boundary-map/1"
@@ -503,6 +504,7 @@ def main() -> None:
         load(a.offering, required=False) or {}, load(a.vdr, required=False),
         load(a.trust_root_plan, required=False), a.commit, now,
     )
+    graph = _offering.stamp_fedramp_id(graph)  # CDS-CSO-FID
     text = json.dumps(graph, indent=1, ensure_ascii=False) + "\n"
     check_redaction(text)
     Path(a.output).write_text(text)

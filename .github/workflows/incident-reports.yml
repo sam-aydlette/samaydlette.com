@@ -142,6 +142,12 @@ jobs:
     - name: Deliver incident reports (simulated recipients; nothing sent)
       run: python3 scripts/deliver-incident-reports.py --dir out
 
+    # CDS-CSO-FID: the log, every report and the delivery log carry the
+    # offering's FedRAMP ID (the deploy runs the same gate).
+    - name: FedRAMP ID in every incident report (CDS-CSO-FID)
+      working-directory: out
+      run: python3 ../scripts/check-fedramp-id.py incident-*.json
+
     - name: Sign incident reports
       working-directory: out
       run: |

@@ -34,6 +34,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 REPO = Path(__file__).resolve().parent.parent
 INPUTS = REPO / "data" / "minimum-assessment-scope.json"
 THIRD_PARTY = REPO / "data" / "third-party-components.json"
@@ -411,6 +414,7 @@ def main(argv=None):
         for p in problems:
             print(f"::error::MAS: {p}")
         _fail(f"{len(problems)} gap(s) in the Minimum Assessment Scope")
+    doc = _offering.stamp_fedramp_id(doc)  # CDS-CSO-FID
     Path(a.output).write_text(json.dumps(doc, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(doc) + "\n")
