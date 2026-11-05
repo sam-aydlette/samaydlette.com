@@ -114,23 +114,51 @@ def test_vdr_markdown_counts_agree_with_its_table():
 
 # --- policy dates ---------------------------------------------------------------
 
+def _git(cwd, *args, date=None):
+    env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@example.invalid",
+           "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@example.invalid",
+           "HOME": str(cwd), "PATH": "/usr/bin:/bin"}
+    if date:
+        env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = date
+    return subprocess.run(["git", *args], cwd=cwd, env=env, capture_output=True, text=True, check=True).stdout
+
+
+def _policy_repo(tmp_path):
+    """A small repository with two policies last changed on known dates, so the
+    test does not depend on how deep the CI checkout of this one is."""
+    repo = tmp_path / "repo"
+    (repo / "scripts").mkdir(parents=True)
+    (repo / "docs" / "policies").mkdir(parents=True)
+    shutil.copy(REPO / "scripts" / "build-policy-index.py", repo / "scripts" / "build-policy-index.py")
+    _git(repo, "init", "-q")
+    (repo / "docs" / "policies" / "ac-policy.md").write_text("# AC\n\nFirst.\n")
+    (repo / "docs" / "policies" / "sc-policy.md").write_text("# SC\n\nFirst.\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "one", date="2026-01-02T12:00:00Z")
+    (repo / "docs" / "policies" / "sc-policy.md").write_text("# SC\n\nSecond.\n")
+    _git(repo, "commit", "-q", "-am", "two", date="2026-03-04T12:00:00Z")
+    _git(repo, "commit", "-q", "--allow-empty", "-m", "deploy", date="2026-11-05T12:00:00Z")
+    return repo
+
+
 def test_policy_index_dates_each_policy_by_its_own_last_commit(tmp_path):
+    repo = _policy_repo(tmp_path)
     out = tmp_path / "pi.json"
-    subprocess.run(["python3", str(REPO / "scripts" / "build-policy-index.py"), "--output", str(out),
-                    "--md-output", ""], check=True, capture_output=True, cwd=REPO)
-    entries = json.loads(out.read_text())["entries"]
-    for e in entries:
-        want = subprocess.run(["git", "log", "-1", "--format=%cs %H", "--", e["file"]], cwd=REPO,
-                              capture_output=True, text=True, check=True).stdout.split()
-        assert [e["last_updated"], e["version"]] == [want[0], f"git:{want[1][:12]}"], e["file"]
+    subprocess.run(["python3", str(repo / "scripts" / "build-policy-index.py"), "--output", str(out),
+                    "--md-output", ""], check=True, capture_output=True, cwd=repo)
+    got = {e["file"]: (e["last_updated"], e["version"]) for e in json.loads(out.read_text())["entries"]}
+    first = _git(repo, "rev-list", "--max-parents=0", "HEAD").strip()
+    second = _git(repo, "rev-parse", "HEAD~1").strip()
+    assert got == {"docs/policies/ac-policy.md": ("2026-01-02", f"git:{first[:12]}"),
+                   "docs/policies/sc-policy.md": ("2026-03-04", f"git:{second[:12]}")}
 
 
 def test_policy_index_refuses_a_shallow_clone(tmp_path):
-    """The failure that published the deploy date for every policy."""
+    """The failure that published the deploy date for every policy: in a
+    one-commit clone both policies would read 2026-11-05."""
+    repo = _policy_repo(tmp_path)
     clone = tmp_path / "shallow"
-    subprocess.run(["git", "clone", "-q", "--depth", "1", f"file://{REPO}", str(clone)], check=True)
-    # The builder under test, not the one in the cloned commit.
-    shutil.copy(REPO / "scripts" / "build-policy-index.py", clone / "scripts" / "build-policy-index.py")
+    subprocess.run(["git", "clone", "-q", "--depth", "1", f"file://{repo}", str(clone)], check=True)
     r = subprocess.run(["python3", str(clone / "scripts" / "build-policy-index.py"),
                         "--output", str(tmp_path / "x.json"), "--md-output", ""],
                        capture_output=True, text=True, cwd=clone)
