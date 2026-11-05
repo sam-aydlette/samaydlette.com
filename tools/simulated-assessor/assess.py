@@ -42,6 +42,7 @@ import subprocess  # nosec B404: runs pytest and cosign with fixed argument list
 import sys
 import tempfile
 import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET  # nosec B405: parses the JUnit file this run's own pytest wrote
 from datetime import datetime, timezone
@@ -113,8 +114,16 @@ def decision_in_force(repo, dec_id):
     return any(d.get("id") == dec_id and d.get("status") == "in-force" for d in doc.get("decisions", []))
 
 
+ALLOWED_HOST = "samaydlette.com"
+
+
 def http_get(url):
-    """(status, body bytes, headers). 404 is a status, not an exception."""
+    """(status, body bytes, headers). 404 is a status, not an exception. Only
+    HTTPS on the provider's own site: a guide entry naming another scheme (such
+    as file://) or another host is refused rather than fetched."""
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" or parts.hostname != ALLOWED_HOST:
+        raise SystemExit(f"::error::simulated assessor: refusing to fetch {url!r} (only https://{ALLOWED_HOST})")
     req = urllib.request.Request(url, headers={"User-Agent": "totally-real-assessor/1 (simulated)"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:  # nosec B310: https URLs from the guide

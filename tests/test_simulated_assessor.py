@@ -295,7 +295,23 @@ def test_the_assessor_workflow_holds_no_cloud_credentials_and_signs_as_itself():
     assert "cosign sign-blob" in wf and "cosign verify-blob" in wf
 
 
+def test_only_the_job_that_installs_nothing_but_cosign_can_sign():
+    wf = (WF / "simulated-assessor.yml").read_text()
+    assess_job, sign_job = wf.split("\n  assess:\n", 1)[1].split("\n  sign:\n", 1)
+    assert "id-token: write" not in assess_job
+    assert "pip install" not in sign_job and "id-token: write" in sign_job
+    assert "cosign sign-blob" in sign_job and "cosign sign-blob" not in assess_job
+    assert "needs: [assess]" in sign_job
+
+
 def test_the_assessor_workflow_pins_the_same_opa_as_the_deploy():
     def pins(text):
         return {k: re.search(rf"^\s*{k}: (\S+)", text, re.M).group(1) for k in ("OPA_VERSION", "OPA_SHA256")}
     assert pins((WF / "simulated-assessor.yml").read_text()) == pins(_deploy())
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "http://samaydlette.com/.well-known/x.json",
+                                 "https://example.org/.well-known/x.json"])
+def test_the_assessor_fetches_only_https_from_the_providers_site(url):
+    with pytest.raises(SystemExit, match="refusing to fetch"):
+        assess.http_get(url)
