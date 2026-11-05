@@ -26,6 +26,11 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 FIX_SIGNAL = REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json"
 CATALOG = REPO / "infrastructure" / "schemas" / "ksi-catalog.json"
+# The KSI catalog as it stood when the SSP was retired (FedRAMP's mappings before
+# its 2026-10-13 revision). The parity test runs the projection on it, so the
+# projection's code stays pinned to the SSP it replaced; the current catalog is
+# FedRAMP's current mapping (tests/test_ksi_catalog_corpus.py).
+CATALOG_AT_RETIREMENT = REPO / "tests" / "fixtures" / "migration" / "ksi-catalog-2026-11-05.json"
 FROZEN = REPO / "tests" / "fixtures" / "migration" / "ssp-control-status-2026-11-05.json"
 
 sys.path.insert(0, str(REPO / "scripts"))
@@ -48,7 +53,7 @@ def _projection():
 
 def test_the_projection_matches_the_last_ssp_control_for_control():
     frozen = json.loads(FROZEN.read_text())
-    irs = _projection()
+    irs = _controls.load(FIX_SIGNAL, CATALOG_AT_RETIREMENT)
     assert len(irs) == frozen["implemented_requirements"] == 333
     got = {cid: list(v) for cid, v in _controls.status_map(irs).items()}
     assert got == frozen["controls"]

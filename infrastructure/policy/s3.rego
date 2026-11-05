@@ -25,7 +25,7 @@ import data.policy.gate
 #   id: versioning_disabled
 #   category: infrastructure
 #   severity: MEDIUM
-#   nist_controls: [cp-9, cp-10, si-12]
+#   nist_controls: [cp-9, cp-10]
 #   ksi_ids: [KSI-RPL-ABO]
 violations contains violation if {
 	some r in gate.resources
