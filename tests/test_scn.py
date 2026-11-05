@@ -276,6 +276,13 @@ def test_the_published_outputs_are_listed_signed_and_governed():
     sign = sign[:sign.index("\n    - name:")]
     assert "for a in significant-change-notifications scn-evaluations" in sign
     assert "significant-change-notifications.atom.bundle significant-change-notifications.atom" in sign
+    # A successful deploy means they are out: the build step has no `|| true`
+    # escape, and the post-publish round-trip compares the served bytes.
+    assert "|| true" not in step[:step.index("\n    - name:")] and "continue-on-error" not in step[:step.index("\n    - name:")]
+    rt = deploy[deploy.index("- name: Post-publish round-trip verify"):]
+    rt = rt[:rt.index("\n    - name:")]
+    for f in ("significant-change-notifications.json", "significant-change-notifications.atom", "scn-evaluations.json"):
+        assert f"check {f} .well-known/{f}" in rt
     cfg = {a["path"] for a in json.loads((REPO / "infrastructure" / "schemas" / "freshness-config.json")
                                          .read_text())["artifacts"]}
     assert {".well-known/significant-change-notifications.json", ".well-known/significant-change-notifications.atom",
