@@ -70,10 +70,13 @@ def evaluate(query, input_doc, rules_dir=_rules.RULES_DIR, policy=POLICY):
         _fail(f"{query} is undefined")
 
 
-def decide(items, *, now, epss_threshold, margin_days, lev_overrides, rules_dir=_rules.RULES_DIR):
-    """One decision per item, in order."""
+def decide(items, *, now, epss_threshold, margin_days, lev_overrides, rules_dir=_rules.RULES_DIR,
+           evaluation_days=None):
+    """One decision per item, in order. evaluation_days: VER-TFR-EVU, read from
+    the rules by the caller (_rules.evaluation_days); None skips the check."""
     doc = {"now_ns": to_ns(now), "today": now.date().isoformat(), "epss_threshold": epss_threshold,
-           "margin_days": margin_days, "lev_overrides": lev_overrides or {}, "items": items}
+           "margin_days": margin_days, "lev_overrides": lev_overrides or {}, "items": items,
+           **({"evaluation_days": evaluation_days} if evaluation_days is not None else {})}
     out = evaluate('{"decisions": data.vdr.triage.decisions, "errors": data.vdr.triage.errors}',
                    doc, rules_dir)
     if out.get("errors"):

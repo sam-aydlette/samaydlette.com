@@ -236,10 +236,11 @@ jobs:
       # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
       # AWS role assumption. No AWS long-lived key.
       id-token: write
-      # Lets GITHUB_TOKEN download the weekly ZAP DAST artifact. Dependabot
-      # alerts are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN
-      # cannot read them.
+      # Lets GITHUB_TOKEN download the ZAP DAST artifacts (actions) and read
+      # the CodeQL code-scanning alerts (security-events). Dependabot alerts are
+      # read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN cannot.
       actions: read
+      security-events: read
 
     steps:
     # -------------------------------------------------------------------------
@@ -423,7 +424,7 @@ jobs:
     # DETECTION INPUTS AND G7
     # -------------------------------------------------------------------------
     # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
-    # the latest weekly DAST report. A failed fetch leaves <file>.error, never
+    # the latest DAST reports and CodeQL alerts. A failed fetch leaves <file>.error, never
     # an empty stand-in; the detection gate below fails the run on it (T52).
     - name: Fetch detection feeds
       working-directory: infrastructure
@@ -441,6 +442,7 @@ jobs:
           --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
           --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --codeql codeql-alerts.json --zap-api zap-api-report.json \
           --output detection.json
 
     # -------------------------------------------------------------------------
@@ -523,6 +525,19 @@ jobs:
     # --opa is deliberately not passed; see the header. Its absence leaves the
     # builder's default path pointing at a file that does not exist, which
     # ingest_opa treats as an empty finding set.
+    # VDR-CSO-FAV: runs of the pipeline that a block-mode check stopped. The
+    # next report lists each one (no run IDs or URLs are kept). A failed query
+    # fails the step: no list cannot read as "no failures".
+    - name: Collect failed pipeline runs (VDR-CSO-FAV)
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        gh run list --repo "${{ github.repository }}" --branch main --status failure --limit 100 \
+          --json workflowName,createdAt,updatedAt,event,headBranch > failed-runs.json
+        jq length failed-runs.json
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       id: vdr
       working-directory: infrastructure
@@ -536,12 +551,16 @@ jobs:
           --dependabot dependabot-alerts.json \
           --grype grype.json \
           --zap zap-report.json \
+          --zap-max-age-days 3 \
+          --zap-api zap-api-report.json \
+          --codeql codeql-alerts.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
           --conformance conformance-results.json \
           --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
+          --failed-runs failed-runs.json \
           --output vdr-report.json
         jq '{summary, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
 
@@ -610,7 +629,11 @@ jobs:
       if: ${{ !cancelled() && steps.vdr.outcome == 'success' }}
       working-directory: infrastructure
       run: |
-        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}"
+        # --runtime-signal adds invariant (m): every machine component has an
+        # assessed runtime validation under 72h (VDR-TFR-MVX). A runtime signal
+        # that failed to fetch was removed above, which fails (m), never skips it.
+        python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}" \
+          --runtime-signal ksi-signal-runtime.json
 
     # -------------------------------------------------------------------------
     # SIGN — only the artifacts this workflow publishes
@@ -657,6 +680,45 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
+
+    # VDR-TFR-NMV: the non-machine V&V status, published with the VDR. Not
+    # enforced here (a lapsed quarterly review must not stop the nightly
+    # evidence); the deploy enforces it, and the published verifiedAt has a
+    # 92-day freshness window, so the watchdog alarms when it lapses.
+    - name: Non-machine verification and validation status (VDR-TFR-NMV)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/check-non-machine-vv.py --out vdr-non-machine-vv.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
+
+    # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
+    # in human-readable form, listing every kind of detection and response
+    # activity ("none this period" when nothing happened). The previous published
+    # report carries the month's earlier runs forward, read only if its signature
+    # verifies against this workflow or the other publisher.
+    - name: Build monthly VDR activity report (VER-TFR-MHR)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        prev=()
+        if curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.json "${SITE_ORIGIN}/.well-known/vdr-monthly.json"; then
+          curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.bundle "${SITE_ORIGIN}/.well-known/vdr-monthly.bundle"
+          ok=0
+          for identity in "${DEPLOY_SIGNER_IDENTITY}" \
+              "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
+            if cosign verify-blob --bundle previous-vdr-monthly.bundle --certificate-identity "$identity" \
+                 --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" previous-vdr-monthly.json 2>/dev/null; then ok=1; break; fi
+          done
+          [ "$ok" -eq 1 ] || { echo "::error::previous vdr-monthly.json does not verify; refusing to carry it forward"; exit 1; }
+          prev=(--previous previous-vdr-monthly.json)
+        else
+          echo "No previous vdr-monthly.json published; the month starts with this build's runs."
+        fi
+        python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
+          --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
+          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
 
     # The published VDR carries a SLSA/in-toto provenance attestation, and that
     # attestation binds to the artifact's sha256. Republishing vdr-report.json
@@ -710,6 +772,7 @@ jobs:
       run: >-
         python3 ../scripts/build-human-views.py
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
+        vdr-non-machine-vv.json vdr-monthly.json
 
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
@@ -717,9 +780,11 @@ jobs:
         python3 ../scripts/check-published-redaction.py
         vdr-report.json vdr-report.md vdr-trend.json
         vdr-detail-report.json vdr-detail-report.md vdr-accepted-vulnerabilities.json
-        vdr-accepted-vulnerabilities.md vdr-history.json
+        vdr-accepted-vulnerabilities.md vdr-history.json vdr-non-machine-vv.json
+        vdr-monthly.json vdr-monthly.md
         vdr-report.view.md vdr-trend.view.md vdr-detail-report.view.md
         vdr-accepted-vulnerabilities.view.md vdr-history.view.md
+        vdr-non-machine-vv.view.md vdr-monthly.view.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -749,9 +814,16 @@ jobs:
         put vdr-detail-report.md            "text/markdown; charset=utf-8"
         put vdr-accepted-vulnerabilities.md "text/markdown; charset=utf-8"
         # The complete human-readable views, rebuilt with the JSON above.
-        for a in vdr-report vdr-trend vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+        for a in vdr-report vdr-trend vdr-detail-report vdr-accepted-vulnerabilities vdr-history vdr-non-machine-vv vdr-monthly; do
           put "$a.view.md" "text/markdown; charset=utf-8"
         done
+        # Non-machine V&V status (VDR-TFR-NMV).
+        put vdr-non-machine-vv.json   "application/json"
+        put vdr-non-machine-vv.bundle "application/json"
+        # Monthly activity report (VER-TFR-MHR).
+        put vdr-monthly.json   "application/json"
+        put vdr-monthly.bundle "application/json"
+        put vdr-monthly.md     "text/markdown; charset=utf-8"
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"

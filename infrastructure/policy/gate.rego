@@ -234,6 +234,12 @@ required_config_paths := {
 	["gate", "tls", "minimum"],
 	["gate", "tls", "order"],
 	["gate", "accessibility", "fail_on"],
+	["gate", "iam", "github_oidc_audience"],
+	["gate", "iam", "github_oidc_subject_prefix"],
+	["gate", "identity", "min_password_length"],
+	["gate", "logging", "min_retention_days"],
+	["gate", "api", "protected_route_prefixes"],
+	["gate", "tls", "min_days_to_expiry"],
 }
 
 # =============================================================================
@@ -271,6 +277,7 @@ resource_base(rc) := {
 	"tags": tags_of(rc.change.after, "tags"),
 	"tags_all": tags_of(rc.change.after, "tags_all"),
 	"values": rc.change.after,
+	"unknown": object.get(rc.change, "after_unknown", {}),
 }
 
 # --- S3 sub-resource joins (hashicorp/aws >= 4.x splits bucket security
@@ -347,6 +354,31 @@ plan_resources contains r if {
 	not rc.type in {"aws_s3_bucket", "aws_cloudfront_distribution"}
 	r := resource_base(rc)
 }
+
+# A plan attribute computed at apply time (e.g. a KMS key ARN for a key created
+# in the same apply) is absent from `values` and marked in after_unknown. Rules
+# that require an attribute skip it only when the plan says it is unknown; the
+# runtime emitter re-evaluates the applied value daily, so an unknown is
+# deferred to the live check, never assumed good. Runtime input carries no
+# `unknown`, so there the attribute rule always applies.
+planned_unknown(r, path) if {
+	flag := object.get(r, array.concat(["unknown"], as_list(path)), null)
+	flag == true
+}
+
+# Resource attribute by Terraform attribute path (`values`), with a default.
+# The runtime emitter writes live facts under the same Terraform attribute
+# names, so one rule reads a plan and a live API response alike.
+# A null (Terraform's "unset") reads as the default, like an absent key.
+value(r, path, default_value) := v if {
+	v := object.get(r, array.concat(["values"], as_list(path)), null)
+	v != null
+} else := default_value
+
+# A single value or a list of values, as a list (IAM documents allow both).
+as_list(x) := x if is_array(x)
+
+else := [x]
 
 # The evaluated resource set, whatever the input shape.
 default resources := set()

@@ -1,0 +1,13 @@
+{
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2099-9999"
+      },
+      "artifact": {
+        "name": "leftpad",
+        "version": "1.0.0"
+      }
+    }
+  ]
+}

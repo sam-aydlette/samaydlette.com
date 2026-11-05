@@ -147,6 +147,17 @@ def test_in_force_vector_is_applied_and_drives_lev_and_pain():
     assert lev(f, irv=True) == (False, "no-direct-impact")
 
 
+def test_known_bad_decided_vector_without_a_decision_record_fails_closed():
+    with pytest.raises(SystemExit, match="is not a decision record in force"):
+        vdr.load_check_vectors(FIX / "decided-without-record.json", today=date(2026, 11, 3))
+
+
+def test_the_committed_vectors_are_in_force_through_their_decision():
+    vec = vdr.load_check_vectors(REPO / "infrastructure" / "schemas" / "check-vectors.json",
+                                 today=date(2026, 11, 5))
+    assert vec and {e["decision"] for e in vec.values()} == {"DEC-180"}
+
+
 def test_the_committed_vector_file_loads():
     vdr.load_check_vectors(REPO / "infrastructure" / "schemas" / "check-vectors.json", today=date.today())
 

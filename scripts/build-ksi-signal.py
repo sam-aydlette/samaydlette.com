@@ -955,6 +955,13 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         for key in ("region", "runtime", "function_name", "id", "domain_name"):
             if key in values and values[key] is not None:
                 attrs[key] = values[key]
+        # The deployed code's hash as AWS reported it at apply. The runtime
+        # emitter compares the live CodeSha256 with it daily, so code changed
+        # outside the deploy (and never inventoried or scanned) is detected.
+        if normalized == "function":
+            code_hash = values.get("code_sha256") or values.get("source_code_hash")
+            if code_hash:
+                attrs["code_sha256"] = code_hash
 
         # Per-resource ARN first: each resource's identity comes from its OWN
         # state block (values["arn"]), never from a shared whole-stack output —
@@ -1173,7 +1180,7 @@ def build_live_log_groups(existing_components, region="us-east-2"):
 
 
 def build_npm_components(lock_path, function=None, lifecycle="runtime",
-                         existing_components=None):
+                         existing_components=None, deployed_in=None):
     """Read package-lock.json (lockfileVersion 3) and emit npm components.
 
     lifecycle distinguishes what a package is doing here. "runtime" means it
@@ -1189,6 +1196,10 @@ def build_npm_components(lock_path, function=None, lifecycle="runtime",
     package@version can appear in more than one lockfile and the inventory holds
     one component per PURL. Earlier callers win, so a package that is both
     shipped and used at build time keeps its runtime classification.
+
+    deployed_in names the function component whose deployment package holds
+    this tree, so the runtime emitter's package-integrity check can name the
+    packages it vouches for.
     """
     if not lock_path.exists():
         return []
@@ -1235,11 +1246,13 @@ def build_npm_components(lock_path, function=None, lifecycle="runtime",
         component["attributes"]["lifecycle"] = lifecycle
         if function:
             component["attributes"]["function"] = function
+        if deployed_in:
+            component["attributes"]["deployed_in"] = deployed_in
         components.append(component)
     return components
 
 
-def build_sbom_components(sbom_path, existing_components=None):
+def build_sbom_components(sbom_path, existing_components=None, deployed_in=None):
     """Read a CycloneDX JSON SBOM and emit software components for the inventory.
 
     Used to ingest the Silk Reeling app's dependency trees — the Python (PyPI)
@@ -1319,6 +1332,8 @@ def build_sbom_components(sbom_path, existing_components=None):
                 "function": role,
             },
         }
+        if deployed_in:
+            component["attributes"]["deployed_in"] = deployed_in
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
@@ -1561,11 +1576,39 @@ def build_validations(validations_doc, components):
         if c["type"] == "html_artifact"
     }
     by_cloud_name = {}
+    names_seen = set()
     for c in components:
-        if c["type"] in {"object_store", "cdn_distribution", "function"}:
+        if c["type"] in PLAN_VALIDATED_TYPES:
             tf_name = c.get("attributes", {}).get("tf_name")
             if tf_name:
-                by_cloud_name[(c["type"], tf_name)] = c["component_id"]
+                key = (c["type"], tf_name)
+                if key in names_seen:
+                    # Two components share a type and Terraform name (e.g. one
+                    # from each stack): a plan result cannot be attributed to
+                    # either, so neither is credited.
+                    by_cloud_name.pop(key, None)
+                    continue
+                names_seen.add(key)
+                by_cloud_name[key] = c["component_id"]
+    by_type = {}
+    for c in components:
+        by_type.setdefault(c["type"], []).append(c["component_id"])
+    # The plan address (e.g. aws_cloudwatch_metric_alarm.evidence["vdr-age"])
+    # names one instance exactly, where the Terraform name alone is shared by
+    # every count/for_each instance. Ambiguous addresses are not credited.
+    by_address = {}
+    addresses_seen = set()
+    for c in components:
+        if c["type"] not in PLAN_VALIDATED_TYPES:
+            continue
+        addr = c.get("attributes", {}).get("tf_address")
+        if not addr:
+            continue
+        if addr in addresses_seen:
+            by_address.pop(addr, None)
+            continue
+        addresses_seen.add(addr)
+        by_address[addr] = c["component_id"]
 
     validations = []
     skipped = 0
@@ -1581,11 +1624,25 @@ def build_validations(validations_doc, components):
             tf_name = result.get("resource_name")
             normalized = TYPE_BY_TF_TYPE.get(tf_type)
             if normalized:
-                cid = by_cloud_name.get((normalized, tf_name))
+                address = result.get("address")
+                if address and address in by_address:
+                    cid = by_address[address]
+                else:
+                    cid = by_cloud_name.get((normalized, tf_name))
                 if cid:
                     refs = [cid]
-            # Resources outside the schema's component vocabulary (IAM, log
-            # groups, attribute-only resources) are intentionally skipped.
+            elif tf_type in PLAN_VALIDATED_CHILD_TYPES:
+                # A sub-resource the policy evaluates (an API stage or route)
+                # is evidence about the component it folds into: the parent of
+                # the same Terraform name, else the only parent of that type.
+                parent = PLAN_VALIDATED_CHILD_TYPES[tf_type]
+                cid = by_cloud_name.get((parent, tf_name))
+                if not cid and len(by_type.get(parent, [])) == 1:
+                    cid = by_type[parent][0]
+                if cid:
+                    refs = [cid]
+            # Results no component can be credited with (types no rule
+            # evaluates, attribute-only resources, ambiguous names) are skipped.
             if not refs:
                 skipped += 1
                 continue
@@ -1632,6 +1689,27 @@ def build_validations(validations_doc, components):
     if skipped:
         print(f"info: skipped {skipped} OPA results that did not map to schema component types", file=sys.stderr)
     return validations
+
+
+# Component types whose plan results become validations. Only types at least
+# one policy rule evaluates are listed, so a "pass" always means a rule looked
+# (tests/test_validation_mapping.py checks each against infrastructure/policy).
+# The remaining cloud types (DNS zone, certificate, groups, OIDC provider, the
+# lock table) are bootstrap resources or data sources with no plan-time rule;
+# the runtime emitter validates them live.
+PLAN_VALIDATED_TYPES = {
+    "object_store", "cdn_distribution", "function", "iam_role", "iam_policy",
+    "log_group", "api_gateway", "secrets_manager", "kms_key", "identity_provider",
+    "notification_topic", "metric_alarm", "message_queue", "event_schedule",
+    "audit_log_trail",
+}
+
+# Sub-resources the policy evaluates, credited to the component they fold into
+# (ATTRIBUTE_PARENTS).
+PLAN_VALIDATED_CHILD_TYPES = {
+    "aws_apigatewayv2_stage": "api_gateway",
+    "aws_apigatewayv2_route": "api_gateway",
+}
 
 
 # KSI family (the middle token of KSI-XXX-YYY) → the inventory component types
@@ -1825,7 +1903,10 @@ def main():
     # reconciliation gate's live completeness check enforces nothing else is
     # missed.
     components.extend(build_live_log_groups(components))
-    components.extend(build_npm_components(lambda_lock))
+    # The compliance Lambda's zip is `npm ci --omit=dev` of this lockfile, and
+    # the Silk Reeling zip is the Python tree Syft read (sbom-python.json); the
+    # SPA's npm tree is a build input bundled into JS, so it is not linked.
+    components.extend(build_npm_components(lambda_lock, deployed_in="aws::function::opa_compliance"))
     # The accessibility scanner is build tooling: it never deploys and holds no
     # data. It is inventoried anyway because it is not inert. Its own manifest
     # calls it a "fact-producer for the OPA gate" — pa11y emits the facts that
@@ -1843,7 +1924,8 @@ def main():
     # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and
     # SPA (npm) packages, not just the compliance Lambda's npm packages. Each
     # call dedupes by PURL against components already collected.
-    components.extend(build_sbom_components(sbom_python, components))
+    components.extend(build_sbom_components(sbom_python, components,
+                                            deployed_in="aws::function::silk_reeling"))
     components.extend(build_sbom_components(sbom_js, components))
     components.extend(build_html_components(website_root))
     components.extend(build_external_components())

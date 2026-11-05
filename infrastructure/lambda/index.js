@@ -46,9 +46,28 @@ const {
     SecretsManagerClient,
     DescribeSecretCommand,
 } = require('@aws-sdk/client-secrets-manager');
+const { IAMClient, GetRoleCommand, ListAttachedRolePoliciesCommand, GetRolePolicyCommand,
+    ListGroupPoliciesCommand, GetGroupPolicyCommand, ListAttachedGroupPoliciesCommand,
+    GetOpenIDConnectProviderCommand } = require('@aws-sdk/client-iam');
+const { LambdaClient, GetFunctionConfigurationCommand, GetFunctionUrlConfigCommand } = require('@aws-sdk/client-lambda');
+const { CloudWatchLogsClient, DescribeLogGroupsCommand } = require('@aws-sdk/client-cloudwatch-logs');
+const { ApiGatewayV2Client, GetStagesCommand, GetRoutesCommand } = require('@aws-sdk/client-apigatewayv2');
+const { CognitoIdentityProviderClient, DescribeUserPoolCommand } = require('@aws-sdk/client-cognito-identity-provider');
+const { DescribeKeyCommand, GetKeyRotationStatusCommand } = require('@aws-sdk/client-kms');
+const { SNSClient, GetTopicAttributesCommand } = require('@aws-sdk/client-sns');
+const { SQSClient, GetQueueAttributesCommand } = require('@aws-sdk/client-sqs');
+const { CloudWatchClient, DescribeAlarmsCommand } = require('@aws-sdk/client-cloudwatch');
+const { EventBridgeClient, DescribeRuleCommand } = require('@aws-sdk/client-eventbridge');
+const { CloudTrailClient, GetTrailCommand, GetTrailStatusCommand } = require('@aws-sdk/client-cloudtrail');
+const { DynamoDBClient, DescribeContinuousBackupsCommand } = require('@aws-sdk/client-dynamodb');
+const { Route53Client, GetDNSSECCommand } = require('@aws-sdk/client-route-53');
+const { ACMClient, DescribeCertificateCommand } = require('@aws-sdk/client-acm');
+const { ResourceGroupsTaggingAPIClient, GetResourcesCommand } = require('@aws-sdk/client-resource-groups-tagging-api');
 const { canonicalize } = require('./canonical');
 const { computeDivergence } = require('./divergence');
 const { accountOf, withAccount } = require('./account');
+const { validateComponents } = require('./describers');
+const { nextRunHistory, verifySignal } = require('./history');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
@@ -69,9 +88,16 @@ const SECRET_ROTATION_MAX_AGE_DAYS = 395;
 // invocations within the container's lifetime.
 let cachedPolicy = null;
 let cachedPolicyVersion = null;
+let cachedPolicyData = null;
 
 async function getPolicy() {
-    if (cachedPolicy) return { policy: cachedPolicy, version: cachedPolicyVersion };
+    if (cachedPolicy) {
+        // A warm container reuses the module but must not reuse the clock:
+        // exception expiry reads evaluated_at.
+        cachedPolicyData.runtime = { evaluated_at: new Date().toISOString() };
+        cachedPolicy.setData(cachedPolicyData);
+        return { policy: cachedPolicy, version: cachedPolicyVersion, data: cachedPolicyData };
+    }
     const wasmPath = path.join(__dirname, 'policy.wasm');
     const wasmBytes = fs.readFileSync(wasmPath);
     cachedPolicy = await loadPolicy(wasmBytes);
@@ -87,10 +113,11 @@ async function getPolicy() {
     // timestamp no exception is active — fail-safe, never fail-open.
     policyData.runtime = { evaluated_at: new Date().toISOString() };
     cachedPolicy.setData(policyData);
+    cachedPolicyData = policyData;
     // Use a stable hash of the wasm + data bytes as the policy version. Two
     // Lambda containers running the same policy produce the same version.
     cachedPolicyVersion = crypto.createHash('sha256').update(wasmBytes).update(dataBytes).digest('hex').slice(0, 12);
-    return { policy: cachedPolicy, version: cachedPolicyVersion };
+    return { policy: cachedPolicy, version: cachedPolicyVersion, data: cachedPolicyData };
 }
 
 // =============================================================================
@@ -219,6 +246,152 @@ async function buildCloudFrontResourceInput(cf, distributionId, tfName) {
 }
 
 // =============================================================================
+// AWS ADAPTER FOR THE COMPONENT READERS (describers.js)
+// =============================================================================
+// Read-only Get/Describe/List calls, one client per service and region. The
+// readers see plain async functions, so they are tested without the SDK.
+// Every call here is matched by a grant in aws_iam_role_policy.lambda_opa
+// scoped to this system's resources (tests/test_runtime_grants.py).
+// =============================================================================
+
+function makeAws(defaultRegion) {
+    const clients = new Map();
+    const client = (Ctor, region) => {
+        const key = `${Ctor.name}:${region || defaultRegion}`;
+        if (!clients.has(key)) clients.set(key, new Ctor({ region: region || defaultRegion }));
+        return clients.get(key);
+    };
+    // IAM and Route 53 are global; their endpoints are served from us-east-1.
+    const iam = () => client(IAMClient, 'us-east-1');
+    return {
+        iam: {
+            getRole: async (name) => (await iam().send(new GetRoleCommand({ RoleName: name }))).Role,
+            listAttachedRolePolicies: async (name) =>
+                ((await iam().send(new ListAttachedRolePoliciesCommand({ RoleName: name }))).AttachedPolicies || [])
+                    .map((a) => a.PolicyArn),
+            getRolePolicy: async (role, name) =>
+                (await iam().send(new GetRolePolicyCommand({ RoleName: role, PolicyName: name }))).PolicyDocument,
+            listGroupPolicies: async (name) =>
+                (await iam().send(new ListGroupPoliciesCommand({ GroupName: name }))).PolicyNames || [],
+            getGroupPolicy: async (group, name) =>
+                (await iam().send(new GetGroupPolicyCommand({ GroupName: group, PolicyName: name }))).PolicyDocument,
+            listAttachedGroupPolicies: async (name) =>
+                ((await iam().send(new ListAttachedGroupPoliciesCommand({ GroupName: name }))).AttachedPolicies || [])
+                    .map((a) => a.PolicyArn),
+            getOpenIDConnectProvider: async (arn) =>
+                iam().send(new GetOpenIDConnectProviderCommand({ OpenIDConnectProviderArn: arn })),
+        },
+        lambda: {
+            getFunctionConfiguration: async (name) =>
+                client(LambdaClient).send(new GetFunctionConfigurationCommand({ FunctionName: name })),
+            getFunctionUrlConfig: async (name) =>
+                client(LambdaClient).send(new GetFunctionUrlConfigCommand({ FunctionName: name })),
+        },
+        logs: {
+            describeLogGroup: async (name, region) => {
+                const out = await client(CloudWatchLogsClient, region)
+                    .send(new DescribeLogGroupsCommand({ logGroupNamePrefix: name }));
+                return (out.logGroups || []).find((g) => g.logGroupName === name);
+            },
+        },
+        apigw: {
+            getStages: async (apiId, region) =>
+                (await client(ApiGatewayV2Client, region).send(new GetStagesCommand({ ApiId: apiId }))).Items || [],
+            getRoutes: async (apiId, region) =>
+                (await client(ApiGatewayV2Client, region).send(new GetRoutesCommand({ ApiId: apiId }))).Items || [],
+        },
+        cognito: {
+            describeUserPool: async (id, region) =>
+                (await client(CognitoIdentityProviderClient, region).send(new DescribeUserPoolCommand({ UserPoolId: id })))
+                    .UserPool,
+        },
+        kms: {
+            describeKey: async (arn, region) =>
+                (await client(KMSClient, region).send(new DescribeKeyCommand({ KeyId: arn }))).KeyMetadata,
+            getKeyRotationStatus: async (arn, region) =>
+                (await client(KMSClient, region).send(new GetKeyRotationStatusCommand({ KeyId: arn }))).KeyRotationEnabled,
+        },
+        sns: {
+            getTopicAttributes: async (arn, region) =>
+                (await client(SNSClient, region).send(new GetTopicAttributesCommand({ TopicArn: arn }))).Attributes || {},
+        },
+        sqs: {
+            getQueueAttributes: async (url, region) =>
+                (await client(SQSClient, region).send(new GetQueueAttributesCommand({
+                    QueueUrl: url, AttributeNames: ['SqsManagedSseEnabled', 'KmsMasterKeyId'],
+                }))).Attributes || {},
+        },
+        cloudwatch: {
+            describeAlarm: async (name, region) =>
+                ((await client(CloudWatchClient, region).send(new DescribeAlarmsCommand({ AlarmNames: [name] })))
+                    .MetricAlarms || [])[0],
+        },
+        events: {
+            describeRule: async (name, region) =>
+                client(EventBridgeClient, region).send(new DescribeRuleCommand({ Name: name })),
+        },
+        cloudtrail: {
+            getTrail: async (arn, region) =>
+                (await client(CloudTrailClient, region).send(new GetTrailCommand({ Name: arn }))).Trail,
+            getTrailStatus: async (arn, region) =>
+                client(CloudTrailClient, region).send(new GetTrailStatusCommand({ Name: arn })),
+        },
+        dynamodb: {
+            describeContinuousBackups: async (table, region) =>
+                (await client(DynamoDBClient, region).send(new DescribeContinuousBackupsCommand({ TableName: table })))
+                    .ContinuousBackupsDescription?.PointInTimeRecoveryDescription?.PointInTimeRecoveryStatus,
+        },
+        route53: {
+            getDnssecStatus: async (zoneId) =>
+                (await client(Route53Client, 'us-east-1').send(new GetDNSSECCommand({ HostedZoneId: zoneId })))
+                    .Status?.ServeSignature,
+        },
+        acm: {
+            describeCertificate: async (arn, region) =>
+                (await client(ACMClient, region).send(new DescribeCertificateCommand({ CertificateArn: arn }))).Certificate,
+        },
+        tagging: {
+            // Every tagged resource in a region, ARN -> {key: value}. Paginated.
+            sweep: async (region) => {
+                // Bounded: a pagination token that never ends must not spin
+                // until the Lambda timeout. Throwing leaves the region's tags
+                // unread, which the readers report as unassessed (fail closed).
+                const tags = new Map();
+                let token;
+                let pages = 0;
+                do {
+                    if (++pages > 200) throw Object.assign(new Error('tag sweep exceeded 200 pages'), { name: 'TagSweepUnbounded' });
+                    const out = await client(ResourceGroupsTaggingAPIClient, region)
+                        .send(new GetResourcesCommand({ PaginationToken: token }));
+                    for (const m of out.ResourceTagMappingList || []) {
+                        const t = {};
+                        for (const kv of m.Tags || []) t[kv.Key] = kv.Value;
+                        tags.set(m.ResourceARN, t);
+                    }
+                    token = out.PaginationToken || undefined;
+                } while (token);
+                return tags;
+            },
+        },
+    };
+}
+
+// Tags for every resource the readers may need, from both regions this system
+// uses. A failed sweep leaves the map empty: each taggable resource then
+// reports its tags as unread (unassessed), never as missing.
+async function sweepTags(aws, regions) {
+    const all = new Map();
+    for (const region of regions) {
+        try {
+            for (const [arn, t] of await aws.tagging.sweep(region)) all.set(arn, t);
+        } catch (err) {
+            console.warn(`Tag sweep failed in ${region}: ${err.name}`);
+        }
+    }
+    return all;
+}
+
+// =============================================================================
 // POLICY EVALUATION
 // =============================================================================
 // One Rego evaluation per cloud component. The `compliance_report` rule in
@@ -248,6 +421,17 @@ async function streamToString(stream) {
     const chunks = [];
     for await (const chunk of stream) chunks.push(chunk);
     return Buffer.concat(chunks).toString('utf-8');
+}
+
+// The previous runtime signal, or null when there is none or it is unreadable.
+async function readPreviousRuntimeSignal(s3, bucketName) {
+    try {
+        const out = await s3.send(new GetObjectCommand({ Bucket: bucketName, Key: '.well-known/ksi-signal-runtime.json' }));
+        return JSON.parse(await streamToString(out.Body));
+    } catch (err) {
+        console.warn(`No previous runtime signal carried forward: ${err.name}`);
+        return null;
+    }
 }
 
 async function readDeploySignal(s3, bucketName) {
@@ -297,7 +481,7 @@ async function evaluateSecretRotation(sm, secretArn) {
     }
 }
 
-async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion, invokedFunctionArn) {
+async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion, invokedFunctionArn, readers) {
     const components = deploySignal.components ?? [];
     const validations = [];
     let validationIdx = 0;
@@ -356,6 +540,17 @@ async function buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersio
             component_refs: [secret.component_id],
             violations: result.violations,
         });
+    }
+
+    // Every other machine component type: the readers in describers.js read
+    // the live configuration and the same compiled policy judges it.
+    if (readers) {
+        const evaluate = (input) => evaluateResource(policy, input);
+        const nextId = () => `r-${String(validationIdx++).padStart(4, '0')}`;
+        validations.push(...await validateComponents(
+            { ...readers, components, account: accountOf(invokedFunctionArn) },
+            components, evaluate, 'terraform.compliance', `wasm-${policyVersion}`, nextId,
+        ));
     }
 
     const provenance = {
@@ -464,7 +659,7 @@ exports.handler = async (event, context) => {
     const cf = new CloudFrontClient({ region: 'us-east-1' });
     const sm = new SecretsManagerClient({ region });
 
-    const { policy, version: policyVersion } = await getPolicy();
+    const { policy, version: policyVersion, data: policyData } = await getPolicy();
     console.log(`Loaded compiled Rego policy (sha256:${policyVersion}...)`);
 
     let deploySignal;
@@ -484,8 +679,15 @@ exports.handler = async (event, context) => {
 
     // The inventory names resources with ACCOUNT in place of the account ID;
     // this Lambda's own ARN supplies it wherever a callable ARN is needed (account.js).
+    const aws = makeAws(region);
+    const readers = {
+        aws,
+        region,
+        tags: await sweepTags(aws, [...new Set([region, 'us-east-1'])]),
+        taggableTypes: policyData?.config?.gate?.taggable_types || [],
+    };
     let runtimeSignal = await buildRuntimeSignal(deploySignal, s3, cf, sm, policy, policyVersion,
-        context?.invokedFunctionArn);
+        context?.invokedFunctionArn, readers);
 
     // Sign the signal (POAM-002) and publish the verifying public key. The signing
     // key is resolved by its stable alias, derived from the bucket/domain
@@ -498,8 +700,20 @@ exports.handler = async (event, context) => {
     // published without the key needed to verify it: if either step fails, the
     // signal stays unsigned (the catch leaves runtimeSignal unmodified).
     const signingKeyAlias = 'alias/' + bucketName.replace(/\./g, '-') + '-runtime-signing';
+    const kms = new KMSClient({ region });
+
+    // Run history (VER-RPT-PER): carried forward from the previous signal only
+    // if it verifies against this emitter's key, then signed with the rest.
+    let publicKeyPem = null;
     try {
-        const kms = new KMSClient({ region });
+        publicKeyPem = derToPem((await kms.send(new GetPublicKeyCommand({ KeyId: signingKeyAlias }))).PublicKey);
+    } catch (err) {
+        console.warn(`Could not read the signing public key: ${err.name}`);
+    }
+    const previous = await readPreviousRuntimeSignal(s3, bucketName);
+    runtimeSignal.run_history = nextRunHistory(previous, verifySignal(previous, publicKeyPem), runtimeSignal);
+
+    try {
         await publishPublicKey(kms, s3, bucketName, signingKeyAlias);
         runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyAlias);
         console.log(`Public key published; runtime signal signed with ${signingKeyAlias}`);
@@ -532,3 +746,6 @@ exports.handler = async (event, context) => {
         }),
     };
 };
+
+// For local verification and tests only; the Lambda runtime calls `handler`.
+exports.internals = { makeAws, sweepTags, buildRuntimeSignal, getPolicy };

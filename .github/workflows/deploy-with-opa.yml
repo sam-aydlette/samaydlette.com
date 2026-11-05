@@ -614,10 +614,11 @@ jobs:
       # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
       # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
       id-token: write
-      # actions: read lets GITHUB_TOKEN download the weekly ZAP DAST artifact.
-      # Dependabot alerts are read with the DEPENDABOT_ALERTS_TOKEN secret:
-      # GITHUB_TOKEN cannot read them.
+      # actions: read lets GITHUB_TOKEN download the ZAP DAST artifacts, and
+      # security-events: read the CodeQL code-scanning alerts. Dependabot alerts
+      # are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN cannot.
       actions: read
+      security-events: read
     # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
@@ -1209,10 +1210,27 @@ jobs:
     # DETECTION INPUTS AND G7 — before anything is applied
     # -------------------------------------------------------------------------
     # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
-    # the latest weekly DAST report, fetched here (not after apply) so that a
+    # the latest DAST reports and CodeQL alerts, fetched here (not after apply) so that a
     # detection failure stops the deploy before it mutates anything (T52: G7
     # blocks every team). A failed fetch leaves <file>.error, never an empty
     # stand-in. The SAST files come from the security-scan job, Grype from above.
+    # The authenticated DAST of the Silk Reeling API (zap-dast.yml) signs in with
+    # these; without them the API scan fails and, 72 hours later, so does every
+    # VDR build. Stop here instead, before anything is applied or published.
+    - name: Require the DAST scanner credentials
+      env:
+        SILK_DAST_USERNAME: ${{ secrets.SILK_DAST_USERNAME }}
+        SILK_DAST_PASSWORD: ${{ secrets.SILK_DAST_PASSWORD }}
+        SILK_DAST_TOTP_SECRET: ${{ secrets.SILK_DAST_TOTP_SECRET }}
+        SILK_DAST_USER_POOL_ID: ${{ secrets.SILK_DAST_USER_POOL_ID }}
+      run: |
+        missing=""
+        for k in SILK_DAST_USERNAME SILK_DAST_PASSWORD SILK_DAST_TOTP_SECRET SILK_DAST_USER_POOL_ID; do
+          [ -n "${!k:-}" ] || missing="$missing $k"
+        done
+        [ -z "$missing" ] || { echo "::error::repository secret(s) not set:$missing (docs/runbooks/dast-scanner-user.md)"; exit 1; }
+        echo "DAST scanner credentials present."
+
     - name: Fetch detection feeds
       working-directory: infrastructure
       env:
@@ -1229,7 +1247,18 @@ jobs:
           --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
           --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --codeql codeql-alerts.json --zap-api zap-api-report.json \
           --output detection.json
+
+    # VDR-CSO-AKE: nothing with a known exploited vulnerability is activated.
+    # Runs before the plan, the apply and the website sync (G1 in the VDR build
+    # runs after them).
+    - name: KEV gate before apply (VDR-CSO-AKE)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/kev-gate.py --kev kev-catalog.json \
+          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
+          --dependabot dependabot-alerts.json
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
@@ -1492,6 +1521,19 @@ jobs:
           rm -f ksi-signal-runtime.json
         fi
 
+    # VDR-CSO-FAV: runs of the pipeline that a block-mode check stopped. The
+    # next report lists each one (no run IDs or URLs are kept). A failed query
+    # fails the step: no list cannot read as "no failures".
+    - name: Collect failed pipeline runs (VDR-CSO-FAV)
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        gh run list --repo "${{ github.repository }}" --branch main --status failure --limit 100 \
+          --json workflowName,createdAt,updatedAt,event,headBranch > failed-runs.json
+        jq length failed-runs.json
+
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
@@ -1505,11 +1547,15 @@ jobs:
           --dependabot dependabot-alerts.json \
           --grype grype.json \
           --zap zap-report.json \
+          --zap-max-age-days 3 \
+          --zap-api zap-api-report.json \
+          --codeql codeql-alerts.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
           --conformance conformance-results.json \
           --runtime-signal ksi-signal-runtime.json \
+          --failed-runs failed-runs.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
@@ -1616,6 +1662,48 @@ jobs:
         for f in incident-*.json; do
           cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
         done
+    # VDR-TFR-NMV: every non-machine resource (policies, procedures, plans, the
+    # operator role, records, registers) verified and validated within 92 days,
+    # each under an in-force decision record (data/non-machine-resources.json).
+    # The deploy stops otherwise, before anything is published; the status is
+    # published with the VDR, and its freshness window lapses with it.
+    - name: Non-machine verification and validation (VDR-TFR-NMV)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/check-non-machine-vv.py --enforce --out vdr-non-machine-vv.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
+
+    # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
+    # in human-readable form, listing every kind of detection and response
+    # activity ("none this period" when nothing happened). The previous published
+    # report carries the month's earlier runs forward, read only if its signature
+    # verifies against this workflow or the other publisher.
+    - name: Build monthly VDR activity report (VER-TFR-MHR)
+      working-directory: infrastructure
+      env:
+        SITE: https://${{ vars.DOMAIN_NAME || 'samaydlette.com' }}/.well-known
+      run: |
+        set -euo pipefail
+        prev=()
+        if curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.json "$SITE/vdr-monthly.json"; then
+          curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.bundle "$SITE/vdr-monthly.bundle"
+          ok=0
+          for identity in \
+              "https://github.com/${{ github.repository }}/.github/workflows/deploy-with-opa.yml@refs/heads/main" \
+              "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
+            if cosign verify-blob --bundle previous-vdr-monthly.bundle --certificate-identity "$identity" \
+                 --certificate-oidc-issuer https://token.actions.githubusercontent.com previous-vdr-monthly.json 2>/dev/null; then ok=1; break; fi
+          done
+          [ "$ok" -eq 1 ] || { echo "::error::previous vdr-monthly.json does not verify; refusing to carry it forward"; exit 1; }
+          prev=(--previous previous-vdr-monthly.json)
+        else
+          echo "No previous vdr-monthly.json published; the month starts with this build's runs."
+        fi
+        python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
+          --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
+          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
 
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
@@ -2035,6 +2123,7 @@ jobs:
         files="ksi-signal.json schemas/ksi-signal.schema.json vdr-report.json vdr-report.md vdr-trend.json iiw.csv"
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
+        files="$files vdr-non-machine-vv.json vdr-monthly.json vdr-monthly.md"
         files="$files ongoing-certification-report.json ongoing-certification-report.md fedramp-inbox-simulation.json"
         for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
         for a in access-summary; do files="$files $a.json $a.md"; done
@@ -2085,6 +2174,13 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do
           aws s3 cp "$a.md" "s3://$BUCKET_NAME/.well-known/$a.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
+        # Non-machine V&V status (VDR-TFR-NMV) + bundle.
+        aws s3 cp vdr-non-machine-vv.json "s3://$BUCKET_NAME/.well-known/vdr-non-machine-vv.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-non-machine-vv.bundle "s3://$BUCKET_NAME/.well-known/vdr-non-machine-vv.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Monthly activity report (VER-TFR-MHR) + bundle + human-readable rendering.
+        aws s3 cp vdr-monthly.json "s3://$BUCKET_NAME/.well-known/vdr-monthly.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-monthly.bundle "s3://$BUCKET_NAME/.well-known/vdr-monthly.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-monthly.md "s3://$BUCKET_NAME/.well-known/vdr-monthly.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # IIW
         aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
         aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -2260,6 +2356,8 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
           check "$a.json" ".well-known/$a.json"
         done
+        check vdr-non-machine-vv.json .well-known/vdr-non-machine-vv.json
+        check vdr-monthly.json .well-known/vdr-monthly.json
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
         check fedramp-inbox-simulation.json .well-known/fedramp-inbox-simulation.json
         check availability.json .well-known/availability.json

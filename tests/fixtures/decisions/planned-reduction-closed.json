@@ -1,0 +1,28 @@
+{
+  "_note": "Known-bad: a closed record that still plans a reduction. A closed (remediated) decision has nothing left to reduce; the build stops.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "closed",
+      "disposition": "remediated",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "CVE-2099-0001"
+        ],
+        "resources": []
+      },
+      "closed_on": "2026-06-01",
+      "planned_reduction": {
+        "date": "2026-12-01",
+        "target_pain": "N1"
+      }
+    }
+  ]
+}

@@ -74,6 +74,10 @@ CHECKS = {
     "detection.previous-vdr": "G7",
     "detection.checkov": "G7",
     "detection.tfsec": "G7",
+    "detection.codeql": "G7",
+    "detection.zap-api": "G7",
+    "vdr.coverage": "G7",
+    "vdr.unresolved-component": "G7",
 }
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}

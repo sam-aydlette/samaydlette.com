@@ -19,7 +19,7 @@
 #
 # Per finding, in order:
 #   1. fully mitigated   a verified mitigation with effect "full" (rule 1)
-#   2. impact            the scale's lowest level when fully mitigated, else PAIN
+#   2. impact            N0 when fully mitigated (VER-EVA-EPA), else PAIN
 #   3. reachability      inventory (REQ-IRV-6); unresolved or package => IRV;
 #                        a verified "not-reachable" mitigation => NIRV
 #   4. exploitability    Figure 7, first match decides; then a verified
@@ -29,9 +29,15 @@
 #   5. disposition       check-ID decision record, else the register entry;
 #                        a lapsed or invalid record is absent (REQ-DSP-2)
 #   6. deadline          clock start + Class C timeframe; likely overdue
-#                        inside the governed margin; accepted past VER-TFR-MAV
-#   7. blocking          KEV (even when dispositioned) > closed > top impact
-#                        level + LEV + IRV > past the deadline
+#                        inside the governed margin; accepted past VER-TFR-MAV,
+#                        or earlier when the projected remediation is past it
+#   7. grouping          VER-EVA-GRV: findings sharing a group are evaluated at
+#                        their most exposed member; the group's clock starts at
+#                        its earliest member and its deadline binds every member
+#   8. evaluation time   VER-TFR-EVU: evaluated later than the rules allow after
+#                        detection, or still resting on a default after it
+#   9. blocking          KEV (even when dispositioned) > closed > top impact
+#                        level + LEV + IRV > past the deadline (own or group's)
 # =============================================================================
 package vdr.triage
 
@@ -64,6 +70,21 @@ levels := [sprintf("N%d", [n]) | some n in sort([to_number(k) | some k, _ in pvr
 lowest_level := levels[0]
 
 top_level := levels[count(levels) - 1]
+
+# VER-EVA-EPA added N0 (October 2026) for an impact removed entirely: a fully
+# mitigated finding takes it. N0 has no timeframe in VDR-TFR-PVR. Read from the
+# rule's own scale; a rules file without N0 keeps the timeframe table's lowest.
+epa_rule := object.get(data.rules.FRR.VER.data.all, ["EVA", "VER-EVA-EPA"], {})
+
+mitigated_level := "N0" if {
+	some b in object.get(epa_rule, "following_information_bullets", [])
+	startswith(b, "**N0**")
+} else := lowest_level
+
+level_index(p) := i if {
+	some i, l in levels
+	l == p
+} else := -1
 
 mav_rule := data.rules.FRR.VER.data.all.TFR["VER-TFR-MAV"]
 
@@ -104,7 +125,7 @@ errors contains msg if {
 	some i, item in input.items
 	item.kind == "finding"
 	d := decisions[i]
-	d.pain != lowest_level
+	not d.pain in {lowest_level, mitigated_level}
 	d.sla_days == null
 	msg := sprintf("%v: no Class C timeframe for %v/%v/%v in data.rules", [d.id, d.pain, d.lev, d.irv])
 }
@@ -181,7 +202,7 @@ fm_bool(item) if {
 	fully_mitigated(item)
 } else := false
 
-impact(item) := lowest_level if {
+impact(item) := mitigated_level if {
 	fully_mitigated(item)
 } else := item.pain
 
@@ -379,6 +400,42 @@ accepted_now(needs, ns) if {
 	input.now_ns >= ns
 } else := false
 
+# VER-TFR-MAV "will not be": a finding whose projected remediation (a decision's
+# planned date, passed in as projected_ns) falls after the maximum period is
+# accepted now, not when the period runs out.
+projected_past(needs, item, ns) if {
+	needs == true
+	ns != null
+	p := object.get(item, "projected_ns", null)
+	is_number(p)
+	p > ns
+} else := false
+
+accepted_basis(needs, item, ns) := "maximum-period-passed" if {
+	accepted_now(needs, ns)
+} else := "projected-past-maximum-period" if {
+	projected_past(needs, item, ns)
+} else := null
+
+# ---- 8. evaluation time (VER-TFR-EVU) ------------------------------------------------------
+# input.evaluation_days is read from the rules by scripts/_rules.py. A finding
+# is late when its first evaluation came more than that many days after the
+# source detected it, or when, that long after detection, it is still open on a
+# default (no exploit-prediction score and no vector: Figure 7's last step).
+evaluation_late(item, l, needs) := "evaluated-late" if {
+	is_number(object.get(input, "evaluation_days", null))
+	d := object.get(item, "detected_ns", null)
+	is_number(d)
+	object.get(item, "evaluated_ns", item.clock.first_evaluated_ns) - d > input.evaluation_days * day_ns
+} else := "default-after-evaluation-window" if {
+	is_number(object.get(input, "evaluation_days", null))
+	needs == true
+	l[1] == "no-score"
+	object.get(item, "default_evaluation", false) == true
+	d := object.get(item, "detected_ns", item.clock.first_evaluated_ns)
+	input.now_ns - d > input.evaluation_days * day_ns
+} else := null
+
 # ---- 7. blocking ---------------------------------------------------------------------------
 # KEV is tested before the disposition: a register entry never buys a known
 # exploited vulnerability out of the gate.
@@ -403,7 +460,7 @@ label_of(disposition, label) := disposition if {
 	disposition != null
 } else := label
 
-decide(item) := {
+base(item) := {
 	"id": item.id,
 	"fully_mitigated": fm,
 	"pain": pain,
@@ -423,10 +480,12 @@ decide(item) := {
 	"due_ns": dl.due_ns,
 	"is_overdue": dl.is_overdue,
 	"will_be_overdue": dl.will_be_overdue,
-	"accepted": accepted_now(needs, acc),
+	"accepted": accepted_basis(needs, item, acc) != null,
+	"accepted_basis": accepted_basis(needs, item, acc),
 	"accepted_ns": acc,
-	"blocking": rule != null,
-	"block_rule": rule,
+	"evaluation_late": evaluation_late(item, l, needs),
+	"start_ns": field_or_null(item.clock, "start_ns"),
+	"is_kev": item.is_kev == true,
 } if {
 	fm := fm_bool(item)
 	pain := impact(item)
@@ -440,10 +499,88 @@ decide(item) := {
 	sla := timeframe(pain, l[0], r[0])
 	dl := deadline(item, sla, needs)
 	acc := accepted_ns(item)
-	rule := block_rule(item.is_kev == true, closed, pain, l[0], r[0], dl.is_overdue)
 }
 
-decisions := [decide(item) | some item in input.items]
+base_decisions := [base(item) | some item in input.items]
+
+# ---- 7. grouping (VER-EVA-GRV) -----------------------------------------------------------
+# input.items[i].group names the finding's group (a CVE, a decision record, or a
+# check ID); a finding without one is its own group. The group is evaluated at
+# its most exposed open member: the highest impact, LEV if any member is, IRV if
+# any member is, the clock from its earliest member. The group's deadline binds
+# each open member, so a new instance of an old group does not get a new clock.
+group_key(i) := g if {
+	g := input.items[i].group
+	is_string(g)
+	g != ""
+} else := sprintf("item:%d", [i])
+
+open_members(g) := [j |
+	some j, it in input.items
+	it.kind == "finding"
+	group_key(j) == g
+	base_decisions[j].needs_remediation == true
+	level_index(base_decisions[j].pain) >= 0
+]
+
+group_eval(g) := {
+	"pain": levels[max([level_index(base_decisions[j].pain) | some j in m])],
+	"lev": any_true([base_decisions[j].lev | some j in m]),
+	"irv": any_true([base_decisions[j].irv | some j in m]),
+	"start_ns": min([base_decisions[j].start_ns | some j in m]),
+	"members": count(m),
+} if {
+	m := open_members(g)
+	count(m) > 0
+} else := null
+
+field_or_null(o, k) := o[k] if {
+	is_object(o)
+} else := null
+
+past_bool(due) if {
+	past(due)
+} else := false
+
+any_true(xs) if {
+	some x in xs
+	x == true
+} else := false
+
+group_deadline(ge) := {"due_ns": null, "is_overdue": false} if {
+	ge == null
+} else := {"due_ns": null, "is_overdue": false} if {
+	timeframe(ge.pain, ge.lev, ge.irv) == null
+} else := {"due_ns": due, "is_overdue": past_bool(due)} if {
+	due := ge.start_ns + (timeframe(ge.pain, ge.lev, ge.irv) * day_ns)
+}
+
+own_or_group_overdue(b, gd) if {
+	b.is_overdue == true
+} else if {
+	b.needs_remediation == true
+	gd.is_overdue == true
+} else := false
+
+decide(i) := object.union(b, {
+	"group": g,
+	"group_pain": field_or_null(ge, "pain"),
+	"group_lev": field_or_null(ge, "lev"),
+	"group_irv": field_or_null(ge, "irv"),
+	"group_due_ns": gd.due_ns,
+	"is_overdue": is_overdue,
+	"blocking": rule != null,
+	"block_rule": rule,
+}) if {
+	b := base_decisions[i]
+	g := group_key(i)
+	ge := group_eval(g)
+	gd := group_deadline(ge)
+	is_overdue := own_or_group_overdue(b, gd)
+	rule := block_rule(b.is_kev, b.closed, b.pain, b.lev, b.irv, is_overdue)
+}
+
+decisions := [decide(i) | some i, _ in input.items]
 
 # =============================================================================
 # VULNERABILITIES TREATED AS FEDRAMP REPORTABLE INCIDENTS (VER-TFR-IRI, -NRI)

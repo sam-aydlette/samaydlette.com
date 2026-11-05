@@ -35,6 +35,22 @@
         "closed_on": {"$ref": "#/$defs/date"},
         "original_detection_date": {"$ref": "#/$defs/date"},
         "planned_completion": {"type": "string"},
+        "planned_reduction": {
+          "type": "object",
+          "description": "The next planned reduction in Potential Agency Impact (VER-RPT-VDT): the date it is expected and the rating it brings the finding to. Published as the finding's projectedNextReduction in place of the remediation deadline. In-force records only.",
+          "required": ["date", "target_pain"],
+          "properties": {"date": {"$ref": "#/$defs/date"}, "target_pain": {"type": "string", "pattern": "^N[0-5]$"}},
+          "additionalProperties": false
+        },
+        "automatable": {
+          "type": "object",
+          "description": "VER-EVA-AIA: whether exploitation of the findings this record covers can be automated. Exploitation is assumed automatable; only a record carrying the evidence sets it to no.",
+          "required": ["value"],
+          "properties": {"value": {"enum": ["yes", "no"]}, "evidence": {"type": "string"}},
+          "additionalProperties": false,
+          "if": {"properties": {"value": {"const": "no"}}},
+          "then": {"required": ["value", "evidence"], "properties": {"evidence": {"minLength": 1}}}
+        },
         "remediation_plan": {"type": "string"},
         "vendor_dependency": {"type": ["string", "boolean", "object"]},
         "point_of_contact": {"type": "string"},
@@ -57,7 +73,8 @@
          "then": {"required": ["decided_by", "decided_on", "review_by"],
                   "properties": {"disposition": {"not": {"const": "remediated"}}}}},
         {"if": {"properties": {"status": {"const": "closed"}}},
-         "then": {"properties": {"disposition": {"const": "remediated"}}}}
+         "then": {"properties": {"disposition": {"const": "remediated"}},
+                  "not": {"required": ["planned_reduction"]}}}
       ]
     }
   }

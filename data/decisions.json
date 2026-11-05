@@ -207,7 +207,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-008",
@@ -268,7 +269,8 @@
         "identifier": "CKV_AWS_86; CKV_AWS_310",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-010",
@@ -286,7 +288,9 @@
         ],
         "vuln_ids": [],
         "resources": [
-          "aws-lambda::compliance-monitor"
+          "aws::function::opa_compliance",
+          "aws::function::evidence_watchdog",
+          "aws::function::silk_reeling"
         ]
       },
       "decided_by": "Sam Aydlette",
@@ -297,7 +301,8 @@
         "identifier": "CKV_AWS_117",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-011",
@@ -1501,6 +1506,93 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-180",
+      "title": "Governed CVSS vectors for the configuration checks in infrastructure/schemas/check-vectors.json",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
+      "controls": [
+        "ra-3",
+        "ra-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "infrastructure/schemas/check-vectors.json"
+        ]
+      }
+    },
+    {
+      "id": "DEC-181",
+      "title": "Exploitation assessment of detected vulnerabilities (VDR-CSO-RES)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+      "controls": [
+        "ra-5",
+        "si-4",
+        "ir-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-182",
+      "title": "Responsible disclosure of vulnerability information (VER-RPT-NID, VER-RPT-RPD)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. The provider discloses its vulnerability reports publicly (VER-RPT-RPD) and determines per finding that doing so will not likely lead to exploitation, recorded as public_disclosure on each finding. An open finding that is internet-reachable, likely exploitable and rated N3 or above is published in summary until it is remediated, fully mitigated or dispositioned: tracking ID, ratings, reachability, exploitability, dates, deadline and status stay public, so any party can make a risk-based decision; the description, observed locations, fixed versions and supplementary detail are withheld from the public artifacts (VDR report, detail report, accepted-vulnerability report and their renderings). Every other finding is disclosed in full: a dispositioned or lower-rated finding, or configuration already readable in the public source repository, gives an attacker nothing it would not otherwise have. Necessary parties (FedRAMP, agency customers) receive the withheld detail from the provider on request through the security contact in /.well-known/security.txt.",
+      "controls": [
+        "ra-5",
+        "si-5",
+        "ir-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-190",
+      "title": "Quarterly verification and validation of non-machine resources, 2026-Q4 (VDR-TFR-NMV)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that on 2026-11-05 he verified and validated each non-machine resource listed in data/non-machine-resources.json against current practice, as each entry's 'verifies' states: the family policies, the runbooks, the incident response and recovery procedures, the continuous monitoring plan, the rules of behavior, the operator role and training record, the supply chain and significant change procedures, the privacy threshold analysis, this decision register and the governance domain registry. This replaces the overdue 2026-Q2 review (2026-05-08, next due 2026-08-08) in docs/security-review.md. Anything found out of date is recorded as its own decision or fixed in the resource. scripts/check-non-machine-vv.py fails the deploy when any entry is older than 92 days; the next verification is due by 2027-02-05 and is recorded as a new decision record.",
+      "controls": [
+        "ca-7",
+        "pl-2",
+        "pm-31"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "data/non-machine-resources.json"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)"
+      }
     }
   ]
 }

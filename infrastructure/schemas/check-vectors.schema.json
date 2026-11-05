@@ -58,6 +58,11 @@
           "review_by": {
             "type": "string",
             "format": "date"
+          },
+          "decision": {
+            "type": "string",
+            "pattern": "^DEC-\\d{3}$",
+            "description": "The decision record that adopted the vector; required once decided."
           }
         }
       }

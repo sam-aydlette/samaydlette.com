@@ -1,0 +1,25 @@
+{
+ "@version": "2.17.0",
+ "@generated": "Wed, 4 Nov 2026 06:00:00",
+ "site": [
+  {
+   "@name": "https://samaydlette.com",
+   "@host": "samaydlette.com",
+   "alerts": [
+    {
+     "pluginid": "10021",
+     "alertRef": "10021",
+     "alert": "X-Content-Type-Options Header Missing",
+     "riskcode": "1",
+     "desc": "fixture",
+     "instances": [
+      {
+       "uri": "https://samaydlette.com/silk-reeling/api/exercises",
+       "method": "GET"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

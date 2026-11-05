@@ -1,0 +1,132 @@
+# =============================================================================
+# CodeQL (SAST of first-party code; VDR-CSO-DET, VDR-CSO-DAC, VDR-TFR-PSD)
+# =============================================================================
+# Static analysis of the code this system ships and runs, uploaded to GitHub
+# code scanning (free on a public repository):
+#
+#   repo          this repository: Python (the generators and gates in scripts/,
+#                 tools/), JavaScript (the runtime Lambda, the watchdog, the
+#                 CloudFront functions, the site and trust-center JS) and the
+#                 GitHub Actions workflows themselves.
+#   silk-reeling  the Silk Reeling app as deployed: its Python API Lambda and
+#                 its SPA. Its source lives in a private repository with no code
+#                 scanning of its own, so it is analysed here, from the same ref
+#                 the deploy builds (vars.SILK_REELING_REF, default main).
+#
+# When: on every push and pull request to main (changed code is analysed before
+# and as it merges), after every successful deploy to main (the Silk Reeling
+# code the deploy just shipped), and daily (new queries over unchanged code).
+#
+# The VDR builds read the open CodeQL alerts on main through the code-scanning
+# API (scripts/fetch-detection-feeds.sh); the detection gate fails the run when
+# any category below has no error-free analysis on main in the last 72 hours
+# (detection.codeql, infrastructure/schemas/detection-feeds.json, which lists the
+# categories this file produces; tests/test_detect_wiring.py keeps them equal).
+# =============================================================================
+name: CodeQL
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '41 5 * * *'   # 05:41 UTC daily
+  workflow_dispatch:
+  # After every deploy to main; the job conditions drop deploy runs that did not
+  # succeed or came from a pull request.
+  workflow_run:
+    workflows: [Deploy Website with OPA Compliance]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: false
+
+jobs:
+  repo:
+    name: CodeQL (${{ matrix.language }})
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write   # upload the results to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript, actions]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:${{ matrix.language }}
+
+  silk-reeling:
+    name: CodeQL Silk Reeling (${{ matrix.language }})
+    # Needs the private-source token, which pull requests do not get; the
+    # app's code does not change in this repository's pull requests anyway.
+    if: >-
+      github.event_name != 'pull_request' &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write   # upload the results to code scanning
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The app's source only, without its git metadata (which would carry the
+      # token in the remote URL).
+      - name: Fetch the Silk Reeling source (the ref the deploy builds)
+        env:
+          SILK_REELING_REF: ${{ vars.SILK_REELING_REF || 'main' }}
+          SILK_REELING_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ -n "${SILK_REELING_REPO_TOKEN}" ] || { echo "::error::SILK_REELING_REPO_TOKEN is not set"; exit 1; }
+          git clone --quiet --depth 1 --branch "$SILK_REELING_REF" \
+            "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" silk-reeling
+          rm -rf silk-reeling/.git
+          ls silk-reeling/backend silk-reeling/frontend > /dev/null
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          source-root: silk-reeling
+
+      # The results (rule, file path, line, message) go to this repository's code
+      # scanning; the database, which holds the private source, is not uploaded.
+      - name: Analyze
+        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /silk-reeling/language:${{ matrix.language }}
+          upload-database: false

@@ -201,7 +201,7 @@
     ],
     "first_detected": "2026-10-14T12:00:00+00:00",
     "is_kev": false,
-    "pain": "N1",
+    "pain": "N0",
     "scanners": [
      "grype"
     ]
@@ -281,7 +281,7 @@
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
-    "pain": "N1",
+    "pain": "N0",
     "scanners": [
      "grype"
     ]
@@ -349,7 +349,7 @@
     ],
     "first_detected": "2026-11-03T12:00:00+00:00",
     "is_kev": false,
-    "pain": "N1",
+    "pain": "N0",
     "scanners": [
      "grype"
     ]
@@ -806,13 +806,75 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "known-exploited",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it; exploited elsewhere (CISA KEV), which the policy treats as likely exploitable (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": true
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "irv-package"
+      ],
+      "mitigations": [],
+      "open": 1
+     },
+     "reachability": {
+      "basis": "package-host-unrecorded",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "false-positive",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1001",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "package-host-unrecorded",
     "is_blocking": true,
@@ -826,6 +888,11 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -876,13 +943,85 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1002",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -899,6 +1038,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -949,13 +1093,85 @@
      "score": 0.0,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.0,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1003",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -972,6 +1188,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1022,13 +1243,112 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-05-14T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1004",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1045,6 +1365,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1091,13 +1416,76 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-direct-impact",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-lapsed",
+       "c-ra-tfsec",
+       "cfg-noscore",
+       "informational",
+       "irv-inventory-true"
+      ],
+      "mitigations": [],
+      "open": 4
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "check:checkov:CKV_AWS_999",
+    "group_irv": true,
+    "group_lev": false,
+    "group_pain": "N1",
     "historical_pain": "N1",
+    "impact_rationale": "N1, minimal customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1111,6 +1499,11 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1161,13 +1554,112 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1005",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1184,6 +1676,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1234,13 +1731,112 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-05-14T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1006",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1257,6 +1853,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1307,13 +1908,112 @@
      "score": 0.1,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.1,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1007",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1330,6 +2030,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1376,13 +2081,108 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1008",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1399,6 +2199,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1449,13 +2254,112 @@
      "score": 0.0,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "exploitation-observed",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "reported by the source",
+      "value": "active"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.0,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1009",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1472,6 +2376,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1518,13 +2427,76 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-lapsed",
+       "c-ra-tfsec",
+       "informational",
+       "irv-inventory-true",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 4
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "check:checkov:CKV_AWS_998",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N1",
     "historical_pain": "N1",
+    "impact_rationale": "N1, minimal customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1538,6 +2510,11 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1584,13 +2561,69 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "found by an unauthenticated outside-in scan",
+      "value": "observed-outside-in"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "observed",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "cve:ZAP-1",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "observed",
     "is_blocking": false,
@@ -1607,6 +2640,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1657,13 +2695,73 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 0,
+      "findings": 1,
+      "inventory_share": 0.0
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-19T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1010",
+    "group_irv": true,
+    "group_lev": false,
+    "group_pain": "N5",
     "historical_pain": "N5",
+    "impact_rationale": "N5, a debilitating effect on more than one agency: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": false,
@@ -1680,6 +2778,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
     "pain": "N5",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1730,13 +2833,75 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "kev-fp"
+      ],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "package-host-unrecorded",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-05-14T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1011",
+    "group_irv": true,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "package-host-unrecorded",
     "is_blocking": false,
@@ -1753,6 +2918,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1799,13 +2969,108 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "check:checkov:CKV_AWS_997",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1822,6 +3087,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1868,13 +3138,76 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-lapsed",
+       "c-ra-tfsec",
+       "cfg-noscore",
+       "informational",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 4
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "check:checkov:CKV_AWS_996",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1891,6 +3224,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -1933,7 +3271,7 @@
     "completed_reductions": [],
     "component_id": "cmp-pub",
     "current_disposition": "mitigated",
-    "current_pain": "N1",
+    "current_pain": "N0",
     "cve": "CVE-0000-1012",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 20,
@@ -1941,13 +3279,81 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "fully-mitigated",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-nirv",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 6
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "mitigated",
     "first_detected": "2026-10-14T12:00:00+00:00",
     "first_evaluated": "2026-10-14T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": true,
-    "historical_pain": "N1",
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1012",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
+    "historical_pain": "N0",
+    "impact_rationale": "Fully mitigated: the impact has been removed (N0).",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -1971,13 +3377,18 @@
     "next_reduction": null,
     "occurrences": 1,
     "overdue_explanation": "documented suppression (mitigated); tracked as None",
-    "pain": "N1",
+    "pain": "N0",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
       "irv": true,
       "lev": false,
-      "pain": "N1",
+      "pain": "N0",
       "reason": "first evaluation"
      }
     ],
@@ -2022,13 +3433,85 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "mitigation",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-05-14T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1013",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "mitigation",
     "is_blocking": false,
@@ -2056,6 +3539,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2106,13 +3594,112 @@
      "score": 0.9,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "mitigation",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.9,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-05-14T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1014",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2140,6 +3727,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2190,13 +3782,112 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "known-exploited",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it; exploited elsewhere (CISA KEV), which the policy treats as likely exploitable (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": true
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1015",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": true,
@@ -2224,6 +3915,11 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2281,13 +3977,85 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-10-04T12:00:00+00:00",
     "first_evaluated": "2026-10-04T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-21T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1016",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N3",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2316,6 +4084,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 30d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-10-04T12:00:00+00:00",
@@ -2368,7 +4141,7 @@
     "completed_reductions": [],
     "component_id": "cmp-pub",
     "current_disposition": "mitigated",
-    "current_pain": "N1",
+    "current_pain": "N0",
     "cve": "CVE-0000-1017",
     "cvss_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
     "days_since_first_detected": 0,
@@ -2376,13 +4149,81 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "fully-mitigated",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 6
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "mitigated",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": true,
-    "historical_pain": "N1",
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1017",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
+    "historical_pain": "N0",
+    "impact_rationale": "Fully mitigated: the impact has been removed (N0).",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2395,13 +4236,18 @@
     "next_reduction": null,
     "occurrences": 1,
     "overdue_explanation": "documented suppression (mitigated); tracked as None",
-    "pain": "N1",
+    "pain": "N0",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
       "irv": true,
       "lev": false,
-      "pain": "N1",
+      "pain": "N0",
       "reason": "first evaluation"
      }
     ],
@@ -2456,13 +4302,112 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "mitigation",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1020",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "mitigation",
     "is_blocking": false,
@@ -2490,6 +4435,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2546,13 +4496,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1021",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2569,6 +4614,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2625,13 +4675,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "mitigation",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1022",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "mitigation",
     "is_blocking": false,
@@ -2659,6 +4804,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2697,7 +4847,7 @@
     "completed_reductions": [],
     "component_id": "cmp-int",
     "current_disposition": "mitigated",
-    "current_pain": "N1",
+    "current_pain": "N0",
     "cve": "CVE-0000-1023",
     "cvss_vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:H/I:L/A:N",
     "days_since_first_detected": 0,
@@ -2715,13 +4865,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "fully-mitigated",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 28
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "mitigated",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": true,
-    "historical_pain": "N1",
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1023",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
+    "historical_pain": "N0",
+    "impact_rationale": "Fully mitigated: the impact has been removed (N0).",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2745,13 +4990,18 @@
     "next_reduction": null,
     "occurrences": 1,
     "overdue_explanation": "documented suppression (mitigated); tracked as DEC-905",
-    "pain": "N1",
+    "pain": "N0",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
       "irv": false,
       "lev": false,
-      "pain": "N1",
+      "pain": "N0",
       "reason": "first evaluation"
      }
     ],
@@ -2802,13 +5052,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1024",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2825,6 +5170,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2881,13 +5231,108 @@
      "status": "lapsed"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1025",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -2904,6 +5349,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -2964,13 +5414,112 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-07-26T12:00:00+00:00",
     "first_evaluated": "2026-07-26T12:00:00+00:00",
     "fix_state": "not-fixed",
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-08-27T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1026",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N3",
     "historical_pain": "N3",
+    "impact_rationale": "N3, a disruptive effect on one agency: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": true,
@@ -2987,6 +5536,11 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (100d > 32d from 2026-07-26T12:00:00+00:00 for PAIN=N3, LEV=True, IRV=False)",
     "pain": "N3",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3043,6 +5597,95 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
@@ -3051,7 +5694,13 @@
      "2.0.0"
     ],
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1027",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3068,6 +5717,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3124,13 +5778,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1028",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3147,6 +5896,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3203,13 +5957,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1029",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3226,6 +6075,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3282,13 +6136,108 @@
      "status": "invalid"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1030",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3305,6 +6254,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3361,13 +6315,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1031",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3384,6 +6433,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3410,6 +6464,7 @@
     "acceptance_explanation": "not recorded",
     "accepted": true,
     "accepted_at": "2026-04-09T12:00:00+00:00",
+    "accepted_basis": "maximum-period-passed",
     "block_reason": null,
     "clock_basis": [
      {
@@ -3440,13 +6495,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 28
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "operational-requirement",
     "first_detected": "2025-09-29T12:00:00+00:00",
     "first_evaluated": "2025-09-29T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-02-04T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1032",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3463,6 +6613,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (operational-requirement); tracked as DEC-914",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3519,13 +6674,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1033",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3542,6 +6792,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3598,13 +6853,81 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "n5-block"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 6
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "false-positive",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1034",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
     "historical_pain": "N3",
+    "impact_rationale": "N3, a disruptive effect on one agency: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3618,6 +6941,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (false-positive); tracked as DEC-915",
     "pain": "N3",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3674,13 +7002,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 28
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "operational-requirement",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1035",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3697,6 +7120,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (operational-requirement); tracked as DEC-916",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3743,13 +7171,108 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1036",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N3",
     "historical_pain": "N3",
+    "impact_rationale": "N3, a disruptive effect on one agency: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3766,6 +7289,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 32d allowed",
     "pain": "N3",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3822,13 +7350,76 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra-lapsed",
+       "c-ra-tfsec",
+       "cfg-noscore",
+       "informational",
+       "irv-inventory-true",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": "default-after-evaluation-window",
     "final_disposition": "risk-accepted",
     "first_detected": "2026-08-05T12:00:00+00:00",
     "first_evaluated": "2026-08-05T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-09-22T12:00:00+00:00",
+    "group_id": "decision:DEC-007",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3845,6 +7436,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (risk-accepted); tracked as DEC-007",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3901,13 +7497,76 @@
      "status": "lapsed"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-tfsec",
+       "cfg-noscore",
+       "informational",
+       "irv-inventory-true",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 4
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "decision:DEC-009",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -3924,6 +7583,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 48d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -3980,13 +7644,76 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-lapsed",
+       "cfg-noscore",
+       "informational",
+       "irv-inventory-true",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "risk-accepted",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-12-21T12:00:00+00:00",
+    "group_id": "decision:DEC-010",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4003,6 +7730,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (risk-accepted); tracked as DEC-010",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4059,13 +7791,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 28
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "false-positive",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "decision:DEC-003",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4079,6 +7906,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (false-positive); tracked as DEC-003",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4135,13 +7967,108 @@
      "status": "in-force"
     },
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 28
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "false-positive",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "decision:DEC-004",
+    "group_irv": null,
+    "group_lev": null,
+    "group_pain": null,
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4155,6 +8082,11 @@
     "occurrences": 1,
     "overdue_explanation": "documented suppression (false-positive); tracked as DEC-004",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4201,13 +8133,81 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "likely-overdue-short",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-02T12:00:00+00:00",
     "first_evaluated": "2026-11-02T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-18T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1040",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N3",
     "historical_pain": "N3",
+    "impact_rationale": "N3, a disruptive effect on one agency: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4224,6 +8224,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 1d of 16d allowed",
     "pain": "N3",
+    "public_disclosure": {
+     "level": "summary",
+     "policy": "DEC-182",
+     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4274,13 +8279,112 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-06-06T12:00:00+00:00",
     "first_evaluated": "2026-06-06T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-10-12T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1041",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": true,
@@ -4297,6 +8401,11 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (150d > 128d from 2026-06-06T12:00:00+00:00 for PAIN=N2, LEV=True, IRV=False)",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4323,6 +8432,7 @@
     "acceptance_explanation": "not recorded",
     "accepted": true,
     "accepted_at": "2026-10-26T12:00:00+00:00",
+    "accepted_basis": "maximum-period-passed",
     "block_reason": "past Class C SLA (200d > 192d from 2026-04-17T12:00:00+00:00 for PAIN=N2, LEV=False, IRV=False)",
     "clock_basis": [
      {
@@ -4347,13 +8457,112 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-04-17T12:00:00+00:00",
     "first_evaluated": "2026-04-17T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-10-26T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1042",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": true,
@@ -4370,6 +8579,11 @@
     "occurrences": 1,
     "overdue_explanation": "past Class C SLA (200d > 192d from 2026-04-17T12:00:00+00:00 for PAIN=N2, LEV=False, IRV=False)",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4420,13 +8634,112 @@
      "score": 0.01,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.01,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-04-29T12:00:00+00:00",
     "first_evaluated": "2026-04-29T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-07T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1043",
+    "group_irv": false,
+    "group_lev": false,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4443,6 +8756,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 188d of 192d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4489,13 +8807,81 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "floor",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [
+       "floor",
+       "floor-v4",
+       "fm-flag",
+       "m-full",
+       "m-nirv",
+       "m-void",
+       "n5-block",
+       "r-fp"
+      ],
+      "mitigations": [
+       "MIT-1",
+       "MIT-2"
+      ],
+      "open": 5
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-10-20T12:00:00+00:00",
     "first_evaluated": "2026-10-20T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1044",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N3",
     "historical_pain": "N3",
+    "impact_rationale": "N3, a disruptive effect on one agency: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4512,6 +8898,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 14d of 16d allowed",
     "pain": "N3",
+    "public_disclosure": {
+     "level": "summary",
+     "policy": "DEC-182",
+     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4558,13 +8949,76 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": true,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "configuration in the public source repository",
+      "value": "public-source"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "no vector",
+      "gained": "unknown",
+      "required": "unknown"
+     },
+     "proximate": {
+      "findings": [
+       "c-ra",
+       "c-ra-lapsed",
+       "c-ra-tfsec",
+       "cfg-noscore",
+       "irv-inventory-true",
+       "no-impact"
+      ],
+      "mitigations": [],
+      "open": 4
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "check:checkov:CKV_AWS_995",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N1",
     "historical_pain": "N1",
+    "impact_rationale": "N1, minimal customer effects: the scanner's severity (no vector): a default, not a contextual estimate; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": true,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4578,6 +9032,11 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4624,13 +9083,108 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-09-04T12:00:00+00:00",
     "first_evaluated": "2026-09-04T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-01-10T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1045",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4647,6 +9201,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 60d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4693,13 +9252,108 @@
     "description": "",
     "disposition_record": null,
     "epss": null,
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "no-score",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": null,
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 1,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "ovr-selector-miss",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": "evaluated-late",
     "final_disposition": "open",
     "first_detected": "2026-09-24T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2027-03-11T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1046",
+    "group_irv": false,
+    "group_lev": true,
+    "group_pain": "N2",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -4716,6 +9370,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4766,13 +9425,73 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "override",
+      "lev": false
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 3,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1050",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N5",
     "historical_pain": "N5",
+    "impact_rationale": "N5, a debilitating effect on more than one agency: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": false,
@@ -4789,6 +9508,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 16d allowed",
     "pain": "N5",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4839,13 +9563,73 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 0,
+      "findings": 1,
+      "inventory_share": 0.0
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1051",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N5",
     "historical_pain": "N5",
+    "impact_rationale": "N5, a debilitating effect on more than one agency: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": true,
@@ -4862,6 +9646,11 @@
     "occurrences": 1,
     "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
     "pain": "N5",
+    "public_disclosure": {
+     "level": "summary",
+     "policy": "DEC-182",
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4912,13 +9701,73 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 3,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1050",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N5",
     "historical_pain": "N5",
+    "impact_rationale": "N5, a debilitating effect on more than one agency: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": true,
@@ -4935,6 +9784,11 @@
     "occurrences": 1,
     "overdue_explanation": "N5+LEV+IRV (most-severe Class C tier)",
     "pain": "N5",
+    "public_disclosure": {
+     "level": "summary",
+     "policy": "DEC-182",
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -4985,13 +9839,73 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "known-exploited",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it; exploited elsewhere (CISA KEV), which the policy treats as likely exploitable (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": true
+     },
+     "prevalence": {
+      "components": 0,
+      "findings": 1,
+      "inventory_share": 0.0
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1052",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N5",
     "historical_pain": "N5",
+    "impact_rationale": "N5, a debilitating effect on more than one agency: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": true,
@@ -5008,6 +9922,11 @@
     "occurrences": 1,
     "overdue_explanation": "KEV (CISA Known Exploited Vulnerability)",
     "pain": "N5",
+    "public_disclosure": {
+     "level": "summary",
+     "policy": "DEC-182",
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5058,13 +9977,112 @@
      "score": 0.5,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "single",
+      "data_sensitivity": "public",
+      "internet_reachable": false,
+      "mission_criticality": "low"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is not internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "prediction",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.5,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 1,
+      "findings": 3,
+      "inventory_share": 0.2
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "high"
+     },
+     "proximate": {
+      "findings": [
+       "c-fp",
+       "c-fp-norecord",
+       "detected-earlier",
+       "floor-nirv",
+       "irv-inventory-false",
+       "legacy-id",
+       "likely-overdue",
+       "m-nlev",
+       "m-nlev-kev",
+       "mav",
+       "no-score",
+       "observed",
+       "overdue",
+       "pred-at",
+       "pred-hi",
+       "pred-lo",
+       "r-accepted-noref",
+       "r-bad-date",
+       "r-config-ignored",
+       "r-fp-control",
+       "r-investigating",
+       "r-lapsed",
+       "r-mitigated-full",
+       "r-mitigated-none",
+       "r-mitigated-ok",
+       "r-mitigated-other",
+       "r-no-review-by",
+       "r-oprq",
+       "r-unknown-term",
+       "r-vendor-fixed",
+       "r-vendor-ok",
+       "r-vendor-unknown"
+      ],
+      "mitigations": [
+       "MIT-3",
+       "MIT-4",
+       "MIT-6",
+       "MIT-7",
+       "MIT-8"
+      ],
+      "open": 27
+     },
+     "reachability": {
+      "basis": "inventory",
+      "irv": false
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": "2026-11-05T12:00:00+00:00",
+    "group_id": "cve:CVE-0000-1050",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N5",
     "historical_pain": "N2",
+    "impact_rationale": "N2, narrow customer effects: the advisory's CVSS vector; on a component holding public data, low criticality, single-agency scope.",
     "internet_reachable": false,
     "irv_basis": "inventory",
     "is_blocking": false,
@@ -5081,6 +10099,11 @@
     "occurrences": 1,
     "overdue_explanation": "within Class C SLA: 0d of 128d allowed",
     "pain": "N2",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5131,13 +10154,73 @@
      "score": 0.0,
      "score_date": "2026-11-03T00:00:00Z"
     },
+    "evaluation": {
+     "automatable": {
+      "evidence": null,
+      "source": "VER-EVA-AIA default",
+      "value": "yes"
+     },
+     "criticality": {
+      "agency_scope": "multi",
+      "data_sensitivity": "cui",
+      "internet_reachable": true,
+      "mission_criticality": "high"
+     },
+     "detectability": {
+      "basis": "a published advisory names the package; the component is internet-reachable",
+      "value": "public-advisory"
+     },
+     "exploitability": {
+      "basis": "override",
+      "lev": true
+     },
+     "exploitation": {
+      "assessed_at": "2026-11-03T12:00:00+00:00",
+      "basis": "no incident record names it (DEC-181)",
+      "value": "none-observed"
+     },
+     "known_threats": {
+      "epss": {
+       "model_version": "v2026.06.15",
+       "score": 0.0,
+       "score_date": "2026-11-03T00:00:00Z"
+      },
+      "kev": false
+     },
+     "prevalence": {
+      "components": 0,
+      "findings": 1,
+      "inventory_share": 0.0
+     },
+     "privilege": {
+      "basis": "CVSS PR/S",
+      "gained": "within-component",
+      "required": "none"
+     },
+     "proximate": {
+      "findings": [],
+      "mitigations": [],
+      "open": 0
+     },
+     "reachability": {
+      "basis": "unresolved",
+      "irv": true
+     }
+    },
+    "evaluation_late": null,
     "final_disposition": "open",
     "first_detected": "2026-11-03T12:00:00+00:00",
     "first_evaluated": "2026-11-03T12:00:00+00:00",
     "fix_state": null,
     "fix_versions": null,
     "fully_mitigated": false,
+    "group_due_at": null,
+    "group_id": "cve:CVE-0000-1053",
+    "group_irv": true,
+    "group_lev": true,
+    "group_pain": "N1",
     "historical_pain": "N1",
+    "impact_rationale": "N1, minimal customer effects: the advisory's CVSS vector; on a component holding cui data, high criticality, multi-agency scope.",
     "internet_reachable": true,
     "irv_basis": "unresolved",
     "is_blocking": false,
@@ -5151,6 +10234,11 @@
     "occurrences": 1,
     "overdue_explanation": "informational severity; no remediation SLA applies",
     "pain": "N1",
+    "public_disclosure": {
+     "level": "full",
+     "policy": "DEC-182",
+     "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"
+    },
     "rating_history": [
      {
       "at": "2026-11-03T12:00:00+00:00",
@@ -5172,6 +10260,1010 @@
     "unresolved_component": true,
     "vector_source": "scanner",
     "will_be_overdue": false
+   }
+  ],
+  "groups": [
+   {
+    "basis": "check",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "check:checkov:CKV_AWS_995",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "informational"
+    ],
+    "open_members": 1,
+    "pain": "N1",
+    "remediation_due_at": null
+   },
+   {
+    "basis": "check",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "check:checkov:CKV_AWS_996",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "irv-inventory-true"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
+   },
+   {
+    "basis": "check",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "check:checkov:CKV_AWS_997",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "irv-inventory-false"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "check",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "check:checkov:CKV_AWS_998",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "cfg-noscore"
+    ],
+    "open_members": 1,
+    "pain": "N1",
+    "remediation_due_at": null
+   },
+   {
+    "basis": "check",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "check:checkov:CKV_AWS_999",
+    "internet_reachable": true,
+    "likely_exploitable": false,
+    "members": [
+     "no-impact"
+    ],
+    "open_members": 1,
+    "pain": "N1",
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pkg"
+    ],
+    "dispositions": [
+     "false-positive"
+    ],
+    "group_id": "cve:CVE-0000-1001",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "kev-fp"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1002",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "floor"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1003",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "floor-v4"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1004",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "floor-nirv"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-05-14T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1005",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "pred-hi"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1006",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "pred-lo"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-05-14T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1007",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "pred-at"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1008",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "no-score"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1009",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "observed"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1010",
+    "internet_reachable": true,
+    "likely_exploitable": false,
+    "members": [
+     "irv-unresolved"
+    ],
+    "open_members": 1,
+    "pain": "N5",
+    "remediation_due_at": "2026-11-19T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pkg"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1011",
+    "internet_reachable": true,
+    "likely_exploitable": false,
+    "members": [
+     "irv-package"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-05-14T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "mitigated"
+    ],
+    "group_id": "cve:CVE-0000-1012",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "m-full"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1013",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "m-nirv"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-05-14T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1014",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "m-nlev"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-05-14T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1015",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "m-nlev-kev"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1016",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "m-void"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-11-21T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "mitigated"
+    ],
+    "group_id": "cve:CVE-0000-1017",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "fm-flag"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1020",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-mitigated-ok"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1021",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-mitigated-none"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1022",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-mitigated-other"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "mitigated"
+    ],
+    "group_id": "cve:CVE-0000-1023",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "r-mitigated-full"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1024",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-fp-control"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1025",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-lapsed"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1026",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-vendor-ok"
+    ],
+    "open_members": 1,
+    "pain": "N3",
+    "remediation_due_at": "2026-08-27T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1027",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-vendor-fixed"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1028",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-vendor-unknown"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1029",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-unknown-term"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1030",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-bad-date"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1031",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-investigating"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "operational-requirement"
+    ],
+    "group_id": "cve:CVE-0000-1032",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-oprq"
+    ],
+    "open_members": 0,
+    "pain": "N2",
+    "remediation_due_at": "2026-02-04T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1033",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-accepted-noref"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "false-positive"
+    ],
+    "group_id": "cve:CVE-0000-1034",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "r-fp"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "operational-requirement"
+    ],
+    "group_id": "cve:CVE-0000-1035",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-no-review-by"
+    ],
+    "open_members": 0,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1036",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "r-config-ignored"
+    ],
+    "open_members": 1,
+    "pain": "N3",
+    "remediation_due_at": "2026-12-05T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1040",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "n5-block"
+    ],
+    "open_members": 1,
+    "pain": "N3",
+    "remediation_due_at": "2026-11-18T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1041",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "overdue"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-10-12T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1042",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "mav"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-10-26T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1043",
+    "internet_reachable": false,
+    "likely_exploitable": false,
+    "members": [
+     "likely-overdue"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-11-07T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-pub"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1044",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "likely-overdue-short"
+    ],
+    "open_members": 1,
+    "pain": "N3",
+    "remediation_due_at": "2026-11-05T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1045",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "legacy-id"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-01-10T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1046",
+    "internet_reachable": false,
+    "likely_exploitable": true,
+    "members": [
+     "detected-earlier"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2027-03-11T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1050",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "ovr",
+     "ovr-excluded",
+     "ovr-selector-miss"
+    ],
+    "open_members": 3,
+    "pain": "N5",
+    "remediation_due_at": "2026-11-05T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1051",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "ovr-lapsed"
+    ],
+    "open_members": 1,
+    "pain": "N5",
+    "remediation_due_at": "2026-11-05T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1052",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "ovr-kev"
+    ],
+    "open_members": 1,
+    "pain": "N5",
+    "remediation_due_at": "2026-11-05T12:00:00+00:00"
+   },
+   {
+    "basis": "cve",
+    "components": [],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:CVE-0000-1053",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "ovr-raise"
+    ],
+    "open_members": 1,
+    "pain": "N1",
+    "remediation_due_at": null
+   },
+   {
+    "basis": "cve",
+    "components": [
+     "cmp-edge"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "cve:ZAP-1",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "irv-observed"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
+   },
+   {
+    "basis": "decision",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "false-positive"
+    ],
+    "group_id": "decision:DEC-003",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "c-fp"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "decision",
+    "components": [
+     "cmp-int"
+    ],
+    "dispositions": [
+     "false-positive"
+    ],
+    "group_id": "decision:DEC-004",
+    "internet_reachable": null,
+    "likely_exploitable": null,
+    "members": [
+     "c-fp-norecord"
+    ],
+    "open_members": 0,
+    "pain": null,
+    "remediation_due_at": null
+   },
+   {
+    "basis": "decision",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "risk-accepted"
+    ],
+    "group_id": "decision:DEC-007",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "c-ra"
+    ],
+    "open_members": 0,
+    "pain": "N2",
+    "remediation_due_at": "2026-09-22T12:00:00+00:00"
+   },
+   {
+    "basis": "decision",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "open"
+    ],
+    "group_id": "decision:DEC-009",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "c-ra-lapsed"
+    ],
+    "open_members": 1,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
+   },
+   {
+    "basis": "decision",
+    "components": [
+     "cmp-app"
+    ],
+    "dispositions": [
+     "risk-accepted"
+    ],
+    "group_id": "decision:DEC-010",
+    "internet_reachable": true,
+    "likely_exploitable": true,
+    "members": [
+     "c-ra-tfsec"
+    ],
+    "open_members": 0,
+    "pain": "N2",
+    "remediation_due_at": "2026-12-21T12:00:00+00:00"
    }
   ],
   "impact_level": "Moderate",
@@ -5239,6 +11331,7 @@
   "summary": {
    "blocking": 8,
    "by_pain": {
+    "N0": 0,
     "N1": 4,
     "N2": 34,
     "N3": 4,

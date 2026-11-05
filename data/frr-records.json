@@ -1571,9 +1571,26 @@
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Partially Implemented",
-      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration daily. The SDR counts the automated methods in place for each KSI (plan gate, plus runtime only when the signed runtime signal verifies and is fresh).",
-      "evidence": [],
-      "gap": "On the latest inputs 34 KSIs have two automated methods, 3 have one, and 9 have none (KSI-CED-RAT, KSI-IAM-AAM, KSI-IAM-APM, KSI-IAM-ELP, KSI-IAM-JIT, KSI-IAM-SNU, KSI-IAM-SUS, KSI-SCR-MIT, KSI-SCR-MON). To close: a second automated method for the 3, and two for the 9.",
+      "implementation": "Two automated methods per KSI, as the SDR counts them: the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, now covering IAM, identity, keys, logging, network, compute, API and packages) and the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect. On the 2026-11-05 plan and a local run of the runtime readers, 43 of 46 KSIs have both.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_validation_mapping.py::test_every_plan_validated_type_has_a_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
+      ],
+      "gap": "SCR-MIT and SCR-MON have one method (runtime package integrity; no plan rule touches packages) and CED-RAT has none (training records, no machine component). To close: either the SDR counts a fresh, verified VDR scan as a second method for KSIs with package components, and a governed automated check of the training-record attestation for CED-RAT (a counting change in scripts/build-sdr.py, owned by the SDR work), or the operator records a decision accepting fewer than two methods for these KSIs.",
       "closes_with": [
         "W7"
       ]
@@ -2916,32 +2933,115 @@
     },
     {
       "frr_id": "VDR-CSO-AKE",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:385 block_rule: any KEV blocks (G1, gate-modes.json 'vdr.kev' mode block, even when dispositioned). deploy-with-opa.yml: Grype scan (1002) runs before Terraform Apply (1171).",
-      "evidence": [],
-      "gap": "The KEV check doesn't run before activation. In deploy-with-opa.yml the KEV-blocking VDR build ('Build VDR Report', line 1428) and 'Vulnerability gate' (1454) run *after* 'Terraform Apply' (1171) and 'Sync Website Content' (1200). A new Lambda package or SPA bundle with a KEV dependency is deployed and live before the gate fails the run; G7 at 1157 only checks that feeds exist and are fresh. No pre-apply check either for KEVs in third-party runtimes (e.g. the Lambda runtime version). To close: Add a pre-apply KEV check: after the Grype step and KEV fetch, intersect grype.json CVEs with kev-catalog.json and fail before 'Generate fresh Terraform plan'/'Terraform Apply' and before the S3 sync. Add a test proving a KEV fixture stops the deploy pre-apply.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "scripts/kev-gate.py runs in the deploy after the detection gate and before the Terraform plan, apply and website sync: it intersects every Grype scan (Python, JS, the Lambda package, a11y tooling) and the open Dependabot alerts with the CISA KEV catalog and stops the deploy on any match, naming the catalog due date, under the governed mode of G1's check vdr.kev (block). A missing or unreadable input stops it. G1 in the VDR build still blocks any KEV finding afterwards.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_kev_in_a_grype_scan_stops_the_deploy_with_its_due_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_kev_in_a_dependabot_alert_stops_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_missing_input_stops_the_kev_gate"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_kev_gate_runs_before_anything_is_activated"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE)"
+        }
       ]
     },
     {
       "frr_id": "VDR-CSO-DAC",
-      "status": "Partially Implemented",
-      "implementation": "deploy-with-opa.yml on every push to main: 'Security Scan' job (tfsec + Checkov), 'Scan application and Lambda dependencies (Syft SBOM + Grype)' (line 1002), 'Detection gate (G7)' (1157), 'Build VDR Report' (1428), OPA plan check on the Terraform plan ('Run OPA Compliance Check').",
-      "evidence": [],
-      "gap": "Changed IaC and dependency trees are scanned on every change, but the changed *running* surfaces aren't: no DAST runs after a deploy (ZAP is weekly on a schedule, zap-dast.yml cron '23 7 * * 1'), and changed first-party code gets no SAST. A change to the Silk Reeling API or site pages isn't dynamically tested until the next Monday, and the API never is. To close: Trigger the ZAP workflow (baseline + authenticated API scan) via workflow_run after a successful deploy that changed website/ or the Silk Reeling app, and add code SAST to the deploy's Security Scan job.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Every change is scanned when it lands: the deploy runs IaC static analysis (Checkov, tfsec), Grype over every dependency tree and the KEV gate before apply, and the detection gate (G7) requires fresh CodeQL and DAST results; CodeQL (.github/workflows/codeql.yml) analyzes this repository's code and the Silk Reeling application on push and after each deploy; the ZAP baseline scan of the site and the authenticated ZAP scan of the Silk Reeling API (a dedicated Cognito scanner user, credentials in repository secrets, the deploy fails when they are missing) run after each successful deploy.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_codeql_runs_on_change_after_deploy_and_daily"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_zap_runs_at_least_every_three_days_and_after_each_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_publishers_fetch_gate_and_build_with_codeql_and_the_api_scan[deploy-with-opa.yml-deploy]"
+        },
+        {
+          "kind": "step",
+          "ref": "codeql.yml#Analyze"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP API Scan (authenticated)"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP Baseline Scan"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-CSO-DET",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/evidence-nightly.yml (twice-daily cron, 07:17/19:17): job 'SAST (Checkov + tfsec)' over all Terraform; step 'Scan application and Lambda dependencies (Syft SBOM + Grype)' over Silk Reeling Python/JS, compliance Lambda and a11y tooling; Dependabot alerts, CISA KEV and FIRST EPSS via scripts/fetch-detection-feeds.sh; 'Reconciliation gate' runs scripts/reconcile.py --live (live completeness (a) and tag (i) invariants). .github/workflows/zap-dast.yml: weekly ZAP baseline on https://samaydlette.com. infrastructure/lambda/index.js: daily runtime OPA (Wasm) re-validation. VDP: https://samaydlette.com/.well-known/security.txt (fetched). Live vdr-report.json methodology.detection (fetched 2026-11-05): all feeds ok.",
-      "evidence": [],
-      "gap": "Some techniques and resources aren't covered. (1) No DAST of the Cognito-gated Silk Reeling API Gateway/Lambda; ZAP is unauthenticated and targets the static site only (zap-dast.yml header: authenticated coverage is a 'Phase 2 follow-up'). (2) No SAST of first-party application code (Silk Reeling Python Lambda, SPA JS, compliance Lambda): no CodeQL/Semgrep/Bandit anywhere in .github/. (3) No penetration testing, ever. (4) No cloud-native threat/vulnerability detection (GuardDuty, Inspector, IAM Access Analyzer, Security Hub: none in infrastructure/*.tf). (5) 'Persistently verifying and validating that resources operate as intended' covers only 5 live components at runtime (see VDR-TFR-MVX) and nothing for non-machine resources (see VDR-TFR-NMV). (6) Inventory gaps: 5 of 35 live findings name IAM policies that don't resolve to an inventory component (irv_basis 'unresolved'). To close: Add authenticated ZAP (or API scan from the OpenAPI/route list) against the Silk Reeling API with a test Cognito user; add CodeQL or Semgrep on scripts/, the Lambdas and the SPA, ingested into the VDR; enable IAM Access Analyzer (free) and either Inspector Lambda scanning or GuardDuty, ingested as a VDR source; commission or perform and record an annual penetration test of the app; close the inventory gaps so every finding resolves.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources quarterly (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_api_scan_is_authenticated_and_never_prints_the_token"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_codeql_covers_this_repos_code_and_the_silk_reeling_app"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_codeql_zap_api_ingest.py::test_codeql_finding_is_published_in_the_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_components_no_technique_reached_this_month_are_uncovered"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP API Scan (authenticated)"
+        },
+        {
+          "kind": "step",
+          "ref": "codeql.yml#Analyze"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -2969,12 +3069,41 @@
     },
     {
       "frr_id": "VDR-CSO-FAV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/detection-gate.py (G7, 'fail the run when detection itself failed (T52, VDR-CSO-FAV)'); scripts/_gates.py + infrastructure/schemas/gate-modes.json (block by default, detect-and-recover events published in methodology.gate_events); build-vdr-report.py main(): missing/stale ZAP report blocks (detection.zap.missing/stale); infrastructure/watchdog.tf + infrastructure/watchdog/logic.mjs: hourly freshness alarms emailed via SNS; deploy-with-opa.yml job 'Notify on Failure' opens an issue; evidence-nightly.yml failure summary.",
-      "evidence": [],
-      "gap": "Detection and response failures are alarmed and stop the run, but they aren't treated *as vulnerabilities*: no failure becomes a tracked finding with a tracking ID, PAIN/IRV/LEV evaluation, a Class C deadline, a disposition, and an entry in the VDR/VDT. A stale feed, a skipped DAST or a watchdog breach leaves only a failed run, an email or an issue, so its history and time-to-recover aren't in the vulnerability record. To close: When a G7 check, a watchdog alarm or a gate in detect-and-recover mode fails, emit a synthetic finding (source 'process', e.g. process-detection-zap-stale) into the next VDR with first_detected = failure time, a governed PAIN for process failures, and normal deadline/disposition/remediation handling. Close it automatically when the check passes again (Remediated with time).",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "A detect-and-recover failure recorded in the run (e.g. runtime-divergence.observer-fault), a detection coverage gap (vdr.coverage), a finding that resolves to no component (vdr.unresolved-component) and a finding still on a default after the VER-TFR-EVU window each become a VDR finding with source 'process': tracking ID, clock from the failure, rating (severity proxy N2), Class C deadline, disposition and VDT record, remediated when the check passes. A block-mode failure stops the run (and the deploy opens an issue); each stopped run of the deploy, nightly or ZAP workflow on main is listed in the next report's process_failures with its times, from the 'Collect failed pipeline runs' step. scripts/build-vdr-report.py with scripts/_evaluation.py.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_detect_and_recover_event_becomes_one_process_finding_per_check"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_finding_on_a_default_past_the_window_becomes_a_process_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_unresolved_finding_becomes_a_process_finding_in_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_stopped_runs_on_main_since_the_previous_report_are_listed_without_ids"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_deploy_and_nightly_pass_failed_runs_to_the_vdr_build"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Collect failed pipeline runs (VDR-CSO-FAV)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Collect failed pipeline runs (VDR-CSO-FAV)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -2994,12 +3123,37 @@
     },
     {
       "frr_id": "VDR-CSO-RES",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py: ledger carries first_detected/first_evaluated/clock across builds (1142 ingest_previous_ledger, 1176 clock_facts), rating history and completed reductions (1225); policies/triage.rego decides IRV/LEV/disposition/deadline/blocking per finding; verified mitigations against the signed runtime signal (build-vdr-report.py:387 mitigation_state); scripts/vuln-gate.py forces fix-or-decide; data/decisions.json register (39 records); reconcile.py invariant (h) needs a decision for every finding; published nightly (live vdr-report.json, 35 findings, all dispositioned).",
-      "evidence": [],
-      "gap": "'Assess exploitation of' isn't mechanized: the 'exploitation' fact read by triage.rego (figure7 'exploitation-observed') is never set by any ingester (build-vdr-report.py:1345 reads f.get('exploitation'); nothing writes it), and nothing checks logs/CloudTrail for exploitation of detected vulnerabilities. Monitoring/reporting halves are partial; see VER-RPT-* (CR26 reports not yet live, supplementary info never filled). To close: Add an exploitation-assessment step: for each open IRV/LEV finding, query CloudFront/API Gateway/CloudTrail logs for indicators tied to the advisory (or record a dated operator assessment in the decision register), and set exploitation='active'|'none-observed' with basis on the finding. Merge the CR26 reports PR.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. The operator's log review for open IRV+LEV findings runs under incident response (DEC-181).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_incident_naming_the_finding_makes_exploitation_active"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_policies_named_are_in_force_in_the_register"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-181"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -3012,62 +3166,204 @@
     },
     {
       "frr_id": "VDR-TFR-KEV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1054 ingest_kev loads the CISA catalog; triage.rego:385 blocks any KEV (even when dispositioned or fully mitigated) via G1; detection-gate.py checks catalog freshness (14 days, detection-feeds.json). Live: kev feed ok, 1768 entries, 0 KEV findings.",
-      "evidence": [],
-      "gap": "CISA due dates aren't tracked: ingest_kev keeps only cveID and drops dueDate/dateAdded, so the report never states the BOD 26-04 due date or whether remediation met it. A KEV blocks publication, but nothing records a remediation deadline tied to the catalog. A fully mitigated KEV is still blocked (good), but its remediation due date isn't reported either. G1 runs after apply in deploys (see AKE). To close: Keep {cveID: dueDate, dateAdded} from the catalog; set remediation_due_at = min(Class C deadline, CISA dueDate) for KEV findings even when fully mitigated; publish kev_due_date and overdue state in the VDR/VDT providerExtensions; add tests.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The VDR keeps each KEV entry's dueDate and dateAdded: a KEV finding's remediation deadline is the earlier of the Class C deadline and the catalog's due date, even when fully mitigated, and it is overdue once the catalog date passes; kev_due_at, kev_date_added and kev_overdue are published per finding and in the VDT's providerExtensions (kevDueAt, kevDateAdded, kevOverdue). A KEV blocks before activation (VDR-CSO-AKE) and in the VDR build (G1).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_catalog_due_date_is_kept_and_bounds_the_deadline"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_vdt_names_the_kev_due_date"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-MVX",
-      "status": "Partially Implemented",
-      "implementation": "Runtime emitter daily (infrastructure/main.tf:809, variables.tf:144 rate(1 day)), live ksi-signal-runtime.json emitted 2026-11-05T14:01:20Z: 5 validations (4 object stores + CDN), all pass; divergence 'converged' over 46 KSIs. reconcile.py --live twice daily: live completeness and tags for every in-boundary resource. Watchdog alarms if the runtime signal is >26h old.",
-      "evidence": [],
-      "gap": "Of the ~30 cloud components in the live inventory (3 functions, API Gateway, Cognito, 6 IAM roles, 17 IAM policies, 4 KMS keys, log groups, alarms, DNS, SNS, SQS, DynamoDB, OIDC provider), only 5 have their configuration status verified and validated within 3 days; the rest get existence/tag checks only. Their full validation (52 validations) lives in the deploy-time signal, which may be up to 30 days old (freshness-config.json). Packages/html artifacts are covered by Grype/ZAP, not V&V. To close: Extend the runtime emitter (or a nightly OPA pass) to read live config for every machine component type and evaluate it against the same Rego, so ksi-signal-runtime.json carries one validation per machine component. Add a reconcile invariant that fails when any machine component lacks a runtime validation younger than 72h.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The runtime emitter (infrastructure/lambda, daily, signed with a KMS ECDSA key) re-validates every machine-based component live against the same gate policy the deploy enforces: live readers for each of the 20 machine types in infrastructure/schemas/runtime-vv-config.json (IAM roles, groups and the OIDC provider, Lambda, API Gateway, Cognito, KMS, log groups, SNS, SQS, alarms, rules, CloudTrail, DynamoDB, Route 53, ACM, S3, CloudFront), with read-only grants scoped by ARN. Reconciliation invariant (n) in the nightly fails closed unless every machine component was validated by a verified runtime run within 72 hours (Class C: 3 days); a denied read is unassessed, never a pass. Packages, static content and external services are excluded with their reasons (scans, content hashing, outside the boundary).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_unverified_or_stale_signal_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_missing_runtime_signal_fails_main"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_every_live_inventory_type_is_classified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_machine_type_has_a_reader_or_existing_check"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-NMV",
-      "status": "Not Implemented",
-      "implementation": "docs/security-review.md 'Quarterly continuous-monitoring reviews': one entry, 2026-Q2 dated 2026-05-08, 'Next review due: 2026-08-08'; no later entry anywhere in docs/ (grep for 2026-Q3). docs/training-log.md and docs/policies/*.md carry no dated quarterly verification. scripts/check-manual-settings.py observes three hand-applied *machine* settings on each deploy.",
-      "evidence": [],
-      "gap": "Non-machine resources (policies in docs/policies/, procedures/runbooks, the IR plan, the operator's training/role, decision records, the governance registry docs/governance/domains.json) have no verification-and-validation at least every 3 months. The only quarterly review on record is ~6 months old and overdue since 2026-08-08, and it reviewed machine signals (runtime emitter, VDR), not policies/people. No mechanism alarms when the 3-month window passes. To close: Create a non-machine resource register (each policy/procedure/role with owner, last_verified, evidence link) and a quarterly V&V record that checks each against what's actually practiced. Add a freshness entry (max 92 days) to infrastructure/schemas/freshness-config.json so the watchdog/trust center goes red when it lapses. Do the overdue Q3/Q4 review now.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "data/non-machine-resources.json registers every non-machine resource (policies and standards, runbooks, incident response, recovery, the continuous monitoring plan, the operator role and training record, rules of behavior, supply chain and significant change procedures, the PTA, the decision register and the governance registry), each with what its verification checks and the decision record that attests it. DEC-190 is the operator's 2026-Q4 verification and validation against practice (AI-drafted; Sam's attestation). scripts/check-non-machine-vv.py fails the deploy when an entry is older than 92 days, misses a policy or runbook, or cites a record not in force; the nightly publishes the status (.well-known/vdr-non-machine-vv.json, 92-day freshness window watched by the watchdog).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_the_register_lapses_after_92_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_the_register_lists_every_policy_and_runbook"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_every_entry_cites_an_in_force_decision_decided_on_its_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_enforce_fails_on_a_lapsed_register_and_writes_the_status"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-non-machine-vv.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-190"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PCD",
-      "status": "Partially Implemented",
-      "implementation": "Nightly (twice daily) Grype over every dependency tree and Checkov/tfsec over all Terraform (evidence-nightly.yml 'SAST (Checkov + tfsec)', 'Scan application and Lambda dependencies'); weekly ZAP over the static site; detection-gate enforces feed freshness (infrastructure/schemas/detection-feeds.json).",
-      "evidence": [],
-      "gap": "Monthly detection doesn't reach every resource: the Silk Reeling API/app surface gets no dynamic detection and first-party code gets no SAST (see DET). The rule's 'all information resources' includes non-machine resources, which get no vulnerability detection at all (see NMV). Nothing maps inventory components to the detection that covered them in the month, so completeness can't be shown. To close: Add a per-component coverage record to the VDR (component -> detection techniques -> last run) and fail/alarm when any inventory component has no detection in 30 days. Close the API DAST and code SAST gaps; fold the quarterly non-machine review in.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). External services are listed as the third party's to detect. Non-machine resources are verified quarterly (VDR-TFR-NMV). Live inputs on 2026-11-05: 207 of 207 own components covered, 7 external.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_components_no_technique_reached_this_month_are_uncovered"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_fresh_feed_covers_its_components"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_coverage_and_unresolved_components_are_governed_detect_and_recover_checks"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PDD",
-      "status": "Partially Implemented",
-      "implementation": "Twice daily: reconcile.py --live (evidence-nightly.yml:605) enumerates live AWS for completeness (a) and classification tags (i); Grype on all dependency trees; Checkov/tfsec on source. Daily: runtime emitter (infrastructure/lambda/index.js, rate(1 day)) re-evaluates live S3 buckets and the CloudFront distribution against the deploy Rego and computes divergence (live ksi-signal-runtime.json: 5 validations, divergence 'converged', 46 KSIs compared). Hourly watchdog for evidence availability.",
-      "evidence": [],
-      "gap": "Drift detection on live configuration covers only the 4 buckets and the distribution. Live drift in IAM roles/policies (privileges), the 3 Lambda functions (code/config), API Gateway, Cognito, KMS, DNS, Secrets isn't detected within 14 days: those are re-validated only on a human-initiated deploy (deploy-time ksi-signal.json, 52 validations, which freshness-config allows to be 30 days old) and by existence/tag checks. scripts/check-silk-runtime-config.py runs only in the deploy. No document says which resources are 'likely to drift'. To close: Extend buildRuntimeSignal (infrastructure/lambda/index.js:299) to read and evaluate live config for IAM roles/policies, Lambda (code SHA, env, runtime), API Gateway routes/authorizers, Cognito pool settings and KMS policies against the same Wasm policy; or run check-silk-runtime-config.py and a live OPA pass in the nightly. Record which component types are classed 'likely to drift' in the inventory.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "infrastructure/schemas/runtime-vv-config.json marks each machine type likely_to_drift or not, with the reason, and sets drift_window_days 14. Every machine type, drifting or not, is re-validated live daily by the runtime emitter, and invariant (n) fails the nightly when any machine component goes 72 hours without a verified run; dependency trees are scanned twice daily and IaC on every change. A config that would weaken the window is rejected.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_config_that_would_weaken_the_gate_is_rejected"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PSD",
-      "status": "Partially Implemented",
-      "implementation": "Every 12h: Grype over all dependency SBOMs, Checkov/tfsec over all IaC (evidence-nightly.yml). Daily: runtime OPA over live S3/CloudFront (infrastructure/lambda/index.js). Weekly: ZAP baseline.",
-      "evidence": [],
-      "gap": "Over a 3-day window, live machine resources other than S3/CloudFront get no vulnerability detection: Lambda functions, API Gateway, Cognito, IAM. DAST of the web surface runs every 7 days, not 3, and the API never. To close: Run the ZAP baseline (and the authenticated API scan once built) at least every 3 days, e.g. in the nightly or a 2-day cron with the --zap-max-age-days window set to 3. Extend runtime live-config detection to all machine component types (see PDD).",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Similar machine-based resources are sampled well inside 3 days: the runtime emitter re-validates every machine component daily (not a sample: all of them), invariant (n) enforces 72 hours; CodeQL and the authenticated ZAP API scan run daily and after each deploy and the detection gate fails the run when either is older than 72 hours; the ZAP site scan is held to 3 days (--zap-max-age-days 3, fractional days).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detection_gate.py::test_codeql_and_zap_api_windows_are_the_class_c_three_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_zap_runs_at_least_every_three_days_and_after_each_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_denied_reads_are_unassessed_not_findings"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_zap_age_is_not_floored_to_whole_days"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
@@ -3118,22 +3414,60 @@
     },
     {
       "frr_id": "VER-EVA-AIA",
-      "status": "Partially Implemented",
-      "implementation": "triage.rego figure7 'floor': IRV + AV:N/PR:N/UI:N with direct impact is LEV regardless of EPSS (REQ-LEV-3); no score defaults to LEV.",
-      "evidence": [],
-      "gap": "No explicit 'automatable' assumption is recorded or evaluated. The floor covers only unauthenticated, no-interaction network vectors. An EPSS score below 0.10 makes a finding NLEV with no evidence that its exploitation can't be automated, so the rule's 'UNLESS they have evidence proving otherwise' isn't enforced. To close: Add an 'automatable' fact per finding (default true; CVSS 4.0 AU or SSVC Automatable when present), let only an evidence-bearing decision record set it false, and make automatable=true block the EPSS-only NLEV path (or document why EPSS < threshold is evidence). Publish automatable + basis.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Every finding's evaluation record carries automatable (VER-EVA-AIA): yes by default; no only from a decision record carrying the evidence (decisions.schema.json 'automatable', and _decisions.py refuses 'no' without evidence) or a CVSS 4.0 AU:N. Figure 7's floor reads the vector as the automatable proxy, and a finding with no prediction score is LEV, as the method states; an EPSS score below the governed threshold (published with its rationale, REQ-LEV-2) is the method's evidence for NLEV.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_automatable_by_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_only_a_decision_with_evidence_says_not_automatable"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_cvss4_automatable_is_read"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_decisions.py::test_each_known_bad_register_fails_closed_for_its_reason[automatable-no-evidence.json-'no' needs its evidence]"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-EFA",
-      "status": "Partially Implemented",
-      "implementation": "Criticality: inventory classification -> CR/IR/AR (build-vdr-report.py:1680). Reachability: IRV (triage.rego reach/irv). Exploitability: Figure 7/EPSS/CVSS. Known threats: CISA KEV + EPSS. Prevalence: consolidate_by_cve counts assets (display only). Privilege: CVSS PR in the LEV floor only.",
-      "evidence": [],
-      "gap": "No factor for Detectability (how easily an attacker learns of the vulnerability) or Proximate Vulnerabilities (interaction with earlier or partially mitigated findings). Prevalence and Privilege (privilege gained by exploitation) don't feed PAIN or LEV. For config findings (all current findings) only Reachability is actually evaluated (see ELX/EPA). To close: Add the missing factors to the evaluation record: detectability (e.g. public advisory + exposed surface), prevalence (asset count -> raise PAIN when >1 component), privilege (scope change/privileged component -> raise PAIN), proximate (link to other open/mitigated findings on the same component and re-evaluate together). Document each in the method profile and publish per finding.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each finding carries an evaluation record with every factor VER-EVA-EFA names, each with its basis: criticality (the component's classification, which PAIN is computed from), reachability (IRV and basis), exploitability (LEV and basis), detectability (outside-in, public advisory, public source), prevalence (findings and components in its group, share of the inventory), privilege (CVSS PR/S and identity or key components), proximate vulnerabilities (other findings and verified mitigations on the component, read with the group) and known threats (KEV, EPSS). The VDR methodology publishes what each factor means (methodology.evaluation_factors). The factors are recorded, not fed into the global impact tables (REQ-PAI-4); grouping feeds the policy.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_is_evaluated_at_its_most_exposed_open_member"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
@@ -3161,114 +3495,384 @@
     },
     {
       "frr_id": "VER-EVA-EIR",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:189 reach() / :199 irv(): outside-in observation (ZAP) -> IRV; unresolved component or package -> IRV; else the inventory's declared internet_reachable; verified 'not-reachable' mitigation -> NIRV; irv_basis published per finding.",
-      "evidence": [],
-      "gap": "In the live report, 5 findings and all 3 suppression records have irv_basis 'unresolved': their resource (e.g. aws_iam_group_policy.operators_assessment_readonly, aws_iam_role_policy_attachment.legacy, .checkov.yaml) doesn't resolve to an inventory component, so IRV=true was assumed, not evaluated. The suppression records name '.checkov.yaml' as the resource, not the affected AWS resource. To close: Add the bootstrap-stack IAM policies to the canonical inventory with declared reachability; make suppression records name their real resources (from the decision's applies_to.resources); make unresolved_components > 0 a reconciliation failure, or at least a recorded detect-and-recover event.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego decides IRV from an outside-in observation, the resolved inventory component's declared internet_reachable, or a verified not-reachable mitigation, with irv_basis per finding. Suppressions resolve to the resources their decision names, a site-root DAST finding resolves to its page, and a finding that still resolves to no component is rated at the method's fail-safe (IRV) and recorded as vdr.unresolved-component, a process finding with a deadline until it resolves.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_resolution_identity.py::test_t7_unresolved_finding_is_irv_failsafe_and_flagged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_site_root_resolves_to_its_index_page"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_unresolved_finding_becomes_a_process_finding_in_the_build"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-ELX",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:207 figure7 (fully mitigated -> KEV -> exploitation observed -> floor IRV+AV:N/PR:N/UI:N -> no direct impact -> EPSS>=0.10 -> no score = LEV), plus verified 'not-likely-exploitable' mitigations and governed LEV overrides; per-finding lev_basis published. EPSS feed live (400,564 scores).",
-      "evidence": [],
-      "gap": "For every current finding, exploitability rests on the default, not an evaluation: all 35 live findings have lev_basis 'no-score' (config/DAST findings have no vector or EPSS; methodology.check_vectors_in_force = 0, lev_overrides_in_force = 0). So, for example, two ZAP false positives and a CloudTrail SNS setting are all 'likely exploitable', with no context considered. Only CVE findings get a contextual LEV path. To close: Put governed CVSS vectors in force for the Checkov/tfsec check IDs that recur (infrastructure/schemas/check-vectors.json needs decided_by/decided_on), and add a per-finding LEV judgment record (in the decision register) for DAST/config findings so LEV reflects the system context. Keep the default for anything unevaluated.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Figure 7 in policies/triage.rego, first match deciding, with lev_basis per finding. Configuration checks carry no CVE, so each recurring check has a governed CVSS vector (infrastructure/schemas/check-vectors.json) adopted by decision record DEC-180; a decided vector whose record is not in force stops the build. The vector drives the floor and the no-direct-impact rule, so LEV reflects what exploiting the misconfiguration needs in this system; DAST findings are evaluated by their decision records (DEC-039, DEC-040); anything unevaluated keeps the default (LEV).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_in_force_vector_is_applied_and_drives_lev_and_pain"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_known_bad_decided_vector_without_a_decision_record_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_the_committed_vectors_are_in_force_through_their_decision"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-180"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-EPA",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1730 assign_pain: CVSS-Environmental derivation for CVE findings, using asset CR/IR/AR from the inventory classification and a multi-agency scope term, bucketed into minimal/narrow/disruptive/debilitating x 1/>1 agency (_WORD_SCOPE_TO_N); governed config infrastructure/schemas/vdr-pain-config.json.",
-      "evidence": [],
-      "gap": "Findings without a CVSS vector, which is every current finding, use a severity proxy (SEVERITY_TO_PAIN, build-vdr-report.py:515: scanner severity -> N-level) with no system or agency context. N0 is never assigned: the scale is read from the PVR keys N1-N5 and fully mitigated maps to the lowest level N1 (triage.rego impact()), though EPA defines N0. The narrative 'potentialAgencyImpact' in the VDT is boilerplate ('Potential Agency Impact N2 (technical impact ...)'), not an estimate of effect on agencies. To close: Same governed per-check vectors as ELX so config findings go through the contextual derivation; add N0 to the scale for fully mitigated/no-effect cases; write a one-line agency-effect rationale per finding (or per check ID) into the record and the VDT potentialAgencyImpact.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "PAIN is computed by the CVSS-Environmental derivation from the vector (the advisory's, or the governed check vector adopted by DEC-180) and the component's classification, onto the rules' scale; a fully mitigated finding takes N0, read from VER-EVA-EPA in the rules. Each finding states its likely agency effect and what the rating rests on (impact_rationale), which the VDT carries as potentialAgencyImpact.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_fully_mitigated_takes_n0_from_the_rules_scale"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_dispositions_mitigations.py::test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_the_committed_vectors_are_in_force_through_their_decision"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-180"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-GRV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1777 consolidate_by_cve groups CVE findings across scanners/assets into cve_findings (live: 0 CVEs); decisions group check IDs/resources (e.g. DEC-032 covers CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162).",
-      "evidence": [],
-      "gap": "Grouping is for display only: deadlines, LEV/IRV and reporting still apply per instance (VDT emits one record per scanner finding; the 3 CloudTrail findings under DEC-032 are 3 VDT/AVI records). Config findings are never grouped by check or root cause, so the rules aren't 'applied to the consolidated groupings'. To close: Make a group (CVE, or check ID + root cause, or decision) the unit for clock, disposition and VDT record, listing its member instances/assets in providerExtensions, and derive the group's PAIN/IRV/LEV as the worst of its members.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each finding belongs to a group: its CVE, else the decision record that decided it, else its check. policies/triage.rego evaluates the group at its most exposed open member (highest PAIN, LEV or IRV if any member is) with the clock of its earliest member, and the group's deadline binds every open member, so a new instance of an old group does not get a new clock. The VDR publishes groups[] (members, components, rating, deadline) and each finding's group; the VDT carries groupId and groupDueAt.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_new_instance_of_an_old_group_is_on_the_groups_clock_and_blocks"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_is_evaluated_at_its_most_exposed_open_member"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_closed_member_does_not_set_the_groups_rating"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_keys"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-AVI",
-      "status": "Partially Implemented",
-      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496): each accepted vulnerability's detail and acceptance rationale from its decision record; the build fails if a rationale is missing.",
-      "evidence": [],
-      "gap": "Supplementary information is never populated. For the three suppression records, the detection time is when the ledger first saw the suppression rather than when the weakness was found, and the resource is the suppression file, so IRV is unresolved. To close: Take the detection date from the decision; resolve suppressions to the decision's resources so IRV is evaluated; populate supplementary information.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py): each accepted vulnerability's detail and acceptance rationale from its decision record (the build fails if a rationale is missing), supplementary information from the decision, and its detection time. A .checkov.yaml suppression resolves to the resources its decision names, so its IRV is decided from the inventory: DEC-010 (CKV_AWS_117) names the three Lambda components it covers and resolves; DEC-007, DEC-009 and DEC-010 record their original detection date (2025-06-14, from git history; AI-drafted for Sam's confirmation). Early acceptance (VER-TFR-MAV 'will not be') is included with its basis.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_decisions.py::test_the_post_migration_amendments_are_the_stated_ones"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-010"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-HLO",
-      "status": "Partially Implemented",
-      "implementation": "Live vdr-report.json methodology.detection lists each feed/scanner with status, count, source date and age; vdr-status.json shows gate results; security.txt is the VDP.",
-      "evidence": [],
-      "gap": "There's no high-level overview of *all* VDR activities in the period: no summary of DAST runs, the manual ZAP scans of 2026-10-26/27, VDP reports received (none recorded), penetration testing (none), assessments (the self-performed 2026-05-08 assessment), or remediations completed. The detection block is a machine feed inventory for one run, not a period overview. To close: Add an 'activities' section to the period report (VDT providerExtensions and the .md): each activity type (SCA, IaC SAST, DAST, VDP, pentest, assessment, runtime V&V) with runs in period, coverage, findings opened/closed, and an explicit 'none this period' when it didn't happen.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "scripts/build-vdr-monthly.py publishes .well-known/vdr-monthly.json and .md for the calendar month to date (and the last 12 finished months): an overview of every activity type (software composition analysis, IaC static analysis, CodeQL, the ZAP site scan and the authenticated API scan, KEV and EPSS feeds, runtime verification, non-machine V&V, the vulnerability disclosure program, bug bounty, penetration testing and assessments), each with its runs and counts or an explicit 'none this period'. Activities outside the pipeline come from data/vdr-activities.json, which the operator records (seeded with the 2026-05-08 self-assessment and the 2026-10-26/27 manual ZAP scans). The VDT and AVI also carry the period's activity summary.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_every_activity_type_is_stated_with_none_this_period_when_quiet"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_period_is_the_calendar_month_to_date"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-NID",
-      "status": "Partially Implemented",
-      "implementation": "The trust center and boundary map refuse ARNs, account IDs and email addresses before publishing, and since W0 every published artifact passes the account-ID gate (scripts/check-published-redaction.py).",
-      "evidence": [],
-      "gap": "Everything is published publicly the moment it's detected, with no sensitivity review: no rule or step decides what is too specific to disclose before remediation, and the VDR has no redaction pass. A real IRV+LEV CVE would be published with package, version, component and deadline before it's fixed, which the FRD 'Responsibly' definition warns against. The 'sufficient information to all necessary parties' half is met, but with no restricted channel there's no way to give FedRAMP/agencies detail while withholding it from the public. To close: Define a disclosure policy: until remediation, public artifacts carry only tracking ID, rating, IRV/LEV, dates and status for IRV+LEV findings at N3+; full detail goes to a restricted artifact (signed, access-controlled, e.g. a Cognito-gated or presigned location) for necessary parties. Apply a redaction pass + test to vdr-report/VDT/AVI, and record the disclosure decision per finding.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. Necessary parties receive the withheld detail from the provider on request through the security contact. All published artifacts also pass the account-ID redaction gate.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_open_irv_lev_n3_is_summarized_and_redacted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_dispositioned_or_lower_rated_findings_are_disclosed_in_full"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_policies_named_are_in_force_in_the_register"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-182"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-PER",
-      "status": "Partially Implemented",
-      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy; the VDT, AVI and history (#496) cover the period since the previous report.",
-      "evidence": [],
-      "gap": "No report summarizes the period's activity (detections, evaluations, reductions, remediations, scans and V&V runs with times), and V&V results are not cross-referenced from the period's report. To close: Add an activity summary for the period to each report (detections, evaluations, reductions, remediations, scans with times, V&V runs and failures), linking the runtime results for the period.",
-      "closes_with": [
-        "W2",
-        "W7"
+      "status": "Implemented",
+      "implementation": "Reports are refreshed by every deploy and twice-daily nightly and each summarizes all activity since the previous report: the VDT and AVI carry providerExtensions.activitySummary for their period (detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions, every scan and feed run), and the monthly report covers the month. Runtime V&V runs are all counted: the emitter signs a bounded run history into its signal, carried forward only from a previous signal that verifies, and the VDR passes it to the period reports. Activities outside the pipeline (VDP reports, penetration tests, assessments) come from data/vdr-activities.json, with 'none this period' when none.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_each_period_report_summarizes_the_periods_activity"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_every_retained_runtime_run_in_the_period_is_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_signed_run_history_the_vdr_carries_is_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_tampered_previous_restarts_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_history_is_bounded_keeping_the_newest"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-RPD",
-      "status": "Partially Implemented",
-      "implementation": "Checked: the provider discloses publicly (live /.well-known/vdr-report.json and .md; public data/decisions.json).",
-      "evidence": [],
-      "gap": "The permission depends on the provider having *determined* that disclosure won't likely lead to exploitation; no such determination is recorded per finding or as policy (see NID). To close: Record the determination: a disclosure policy plus a per-finding 'public_disclosure' field (full/summary/withheld, with reason) set by the triage policy and published.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The provider discloses its vulnerability reports publicly and records, per finding, the determination that doing so will not likely lead to exploitation (public_disclosure, under policy DEC-182); a finding where it would is published in summary until it is not.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_open_irv_lev_n3_is_summarized_and_redacted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_dispositioned_or_lower_rated_findings_are_disclosed_in_full"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-182"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ],
       "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation."
     },
     {
       "frr_id": "VER-RPT-VDT",
-      "status": "Partially Implemented",
-      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496), validated against the vendored VDT schema before writing: tracking ID, detection time and source, evaluation time, IRV, LEV, current rating, PAIN reductions, projected next reduction, overdue status and final disposition.",
-      "evidence": [],
-      "gap": "Historical PAIN and rating history are not carried into the record; the projected next reduction is always the remediation deadline; supplementary information is never produced; overdue explanations for closed findings describe the suppression instead; ZAP detection times start when the scans entered the pipeline, not at the earlier manual scans. To close: Carry historical PAIN and rating history; let a decision set a planned next reduction; populate supplementary information from the decision; take detection dates from the decision where the scanner never saw the finding.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py), validated against the vendored VDT schema before writing: tracking ID; detection time (the earliest evidence: the scanner's first report, or the original_detection_date of a decision naming that record, e.g. DEC-039/040 for the manual ZAP scans) and source; evaluation time; IRV; LEV; current rating, with the historical rating and full rating history under providerExtensions (the schema has no field for them); PAIN reductions; projected next reduction from the decision's planned_reduction, else the remediation deadline; overdue status whose explanation explains the overdue status (and likely-to-become-overdue); supplementary information from the decision (justification, dates, resources, plan, mitigation); final disposition. Each report carries an activity summary for its period.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_records_carry_their_historical_rating_and_rating_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_decision_sets_the_next_reduction_and_the_deadline_is_only_the_fallback"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_supplementary_information_comes_from_the_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_overdue_explanations_explain_the_overdue_status_not_the_suppression"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_detection_time_comes_from_a_decision_that_names_the_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-EVU",
-      "status": "Partially Implemented",
-      "implementation": "Evaluation is automatic in the build that first ingests a finding: clock_facts sets first_evaluated = now on first sight (build-vdr-report.py:1176); detection feeds are fetched twice daily, so first_evaluated - detection is < 1 day. scripts/_rules.py:129 evaluation_days() reads the 5-day rule.",
-      "evidence": [],
-      "gap": "The timing is met in practice, but nothing enforces or reports it: evaluation_days() is never called, so no check that evaluation completed within 5 days of the source's detection (e.g. Dependabot/Grype detection times). The evaluation completed within that window is the default-driven one for config/DAST findings (see ELX/EPA/EFA), not a full VER-EVA evaluation. To close: Use _rules.evaluation_days() in the triage policy: flag (and count as a process vulnerability, see FAV) any finding whose first_evaluated is more than 5 days after its source detection time, or whose LEV/PAIN still rests on a default 5 days after detection.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego reads the evaluation window from the rules (scripts/_rules.py evaluation_days(), passed in by the builder) and flags each finding evaluated more than 5 days after the source detected it (a decision made earlier counts as the evaluation), or still resting on a default 5 days after detection (evaluation_late, published per finding and in the VDT). A finding still on a default becomes a process finding (VDR-CSO-FAV). Feeds are fetched twice daily, so first evaluation follows detection within a day.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_evaluation_days_come_from_the_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_evaluated_more_than_five_days_after_detection_is_late"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_decision_before_the_pipeline_saw_it_counts_as_the_evaluation"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_still_on_a_default_after_the_window_is_late"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -3296,32 +3900,107 @@
     },
     {
       "frr_id": "VER-TFR-MAV",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:372 accepted_ns = first_evaluated + 192 days (read from data.rules VER-TFR-MAV), :376 accepted_now; build-cr26-vdr.py treats accepted/risk-accepted/operational-requirement decisions and MAV-passed findings as accepted; tests/test_clock.py:136 test_t14_past_maximum_period...",
-      "evidence": [],
-      "gap": "Only the 'is not' half is mechanized: a finding becomes accepted only once day 192 has passed. Nothing categorizes a finding that *will not* be fully mitigated or remediated within 192 days (e.g. a vendor-dependency with no fix, or a 'remediate' decision whose plan date is past day 192) as accepted earlier. Never exercised live (oldest first_evaluated 2026-08-06, day ~91). To close: In triage.rego, mark accepted when the projected remediation/next-reduction date (or a decision's target date, or vendor-dependency with fix_state not-fixed past a governed horizon) falls after first_evaluated + 192 days; require an acceptance explanation at that point. Add tests.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego marks a finding accepted once 192 days (VER-TFR-MAV, from the rules) have passed since its first evaluation, with no reset, and also as soon as its projected remediation (a decision's planned reduction to N0) falls after that day ('will not be'); accepted_basis is published, the acceptance explanation is the decision's justification, and the AVI reports it. A closed finding is never accepted.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_projected_remediation_past_the_maximum_period_is_accepted_now"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_closed_finding_is_never_accepted_early"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_clock.py::test_t14_past_maximum_period_is_reported_accepted_with_unrecorded_explanation"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-MHR",
-      "status": "Partially Implemented",
-      "implementation": "vdr-report.md under /.well-known/ is rebuilt twice daily (scripts/build-vdr-report.py render_markdown); since W1 its counts read Findings / Open / Dispositioned and accepted risks agree with the tables. vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published (#496).",
-      "evidence": [],
-      "gap": "It is a current-state report, not a report of the month's activity: no detections, evaluations, reductions, remediations, scans or V&V runs for the period.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "A consistent, human-readable monthly activity report: .well-known/vdr-monthly.md (with .json), rebuilt and signed by every deploy and nightly, covers the calendar month to date and keeps the previous 12 months: detections, evaluations, rating changes, reductions, remediations, decisions, every scan and feed run, runtime verification runs, non-machine V&V and the non-pipeline activities. The current-state vdr-report.md, vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published beside it.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_runs_accumulate_over_the_month_from_the_previous_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_a_finished_month_moves_to_previous_months"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_nightly_and_deploy_build_sign_and_publish_it"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-MRH",
-      "status": "Partially Implemented",
-      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (#496), rebuilt twice daily with 366-day retention, alongside vdr-report.json (per-finding rating history) and vdr-trend.json.",
-      "evidence": [],
-      "gap": "A record that leaves the VDR is labelled Remediated even when it vanished because coverage stopped or a suppression was added; closed decisions from before the history began are not backfilled. To close: Set a final disposition only from evidence (coverage continued and the scanner stopped reporting it, or a decision); otherwise record 'no longer reported'; backfill closed decisions.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (scripts/build-cr26-vdr.py), rebuilt twice daily with 366-day retention, alongside vdr-report.json and vdr-trend.json. A record that leaves the VDR keeps the time it stopped being reported and gets a final disposition only from evidence (a closed decision, a false-positive suppression of its check, or its scanner running again over the same scope without reporting it), recorded in providerExtensions.dispositionBasis; otherwise noLongerReportedReason says why (suppressed, reported again, or unknown) and no final disposition is given. An unsupported Remediated carried from an earlier history is withdrawn. Closed (remediated) decisions from data/decisions.json are carried as history records (backfilledFromDecision) for 366 days from closing.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_history_keeps_a_finding_that_left_the_vdr_then_drops_it_after_a_year"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_record_that_vanished_without_evidence_has_no_final_disposition"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_an_unsupported_remediated_from_an_earlier_history_is_withdrawn"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_check_that_became_a_suppression_is_not_remediated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_closed_decisions_are_backfilled_into_the_history_once"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-history.json"
+        }
       ]
     },
     {
