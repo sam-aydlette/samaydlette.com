@@ -1221,6 +1221,32 @@
         "vuln_ids": [],
         "resources": []
       }
+    },
+    {
+      "id": "DEC-190",
+      "title": "Quarterly verification and validation of non-machine resources, 2026-Q4 (VDR-TFR-NMV)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that on 2026-11-05 he verified and validated each non-machine resource listed in data/non-machine-resources.json against current practice, as each entry's 'verifies' states: the family policies, the runbooks, the incident response and recovery procedures, the continuous monitoring plan, the rules of behavior, the operator role and training record, the supply chain and significant change procedures, the privacy threshold analysis, this decision register and the governance domain registry. This replaces the overdue 2026-Q2 review (2026-05-08, next due 2026-08-08) in docs/security-review.md. Anything found out of date is recorded as its own decision or fixed in the resource. scripts/check-non-machine-vv.py fails the deploy when any entry is older than 92 days; the next verification is due by 2027-02-05 and is recorded as a new decision record.",
+      "controls": [
+        "ca-7",
+        "pl-2",
+        "pm-31"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "data/non-machine-resources.json"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)"
+      }
     }
   ]
 }

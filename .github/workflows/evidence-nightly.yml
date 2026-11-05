@@ -669,6 +669,17 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
 
+    # VDR-TFR-NMV: the non-machine V&V status, published with the VDR. Not
+    # enforced here (a lapsed quarterly review must not stop the nightly
+    # evidence); the deploy enforces it, and the published verifiedAt has a
+    # 92-day freshness window, so the watchdog alarms when it lapses.
+    - name: Non-machine verification and validation status (VDR-TFR-NMV)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/check-non-machine-vv.py --out vdr-non-machine-vv.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
+
     # The published VDR carries a SLSA/in-toto provenance attestation, and that
     # attestation binds to the artifact's sha256. Republishing vdr-report.json
     # without re-attesting it would leave the served
@@ -719,7 +730,7 @@ jobs:
         python3 ../scripts/check-published-redaction.py
         vdr-report.json vdr-report.md vdr-trend.json
         vdr-detail-report.json vdr-detail-report.md vdr-accepted-vulnerabilities.json
-        vdr-accepted-vulnerabilities.md vdr-history.json
+        vdr-accepted-vulnerabilities.md vdr-history.json vdr-non-machine-vv.json
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -748,6 +759,9 @@ jobs:
         done
         put vdr-detail-report.md            "text/markdown; charset=utf-8"
         put vdr-accepted-vulnerabilities.md "text/markdown; charset=utf-8"
+        # Non-machine V&V status (VDR-TFR-NMV).
+        put vdr-non-machine-vv.json   "application/json"
+        put vdr-non-machine-vv.bundle "application/json"
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"
