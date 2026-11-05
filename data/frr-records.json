@@ -628,12 +628,29 @@
     },
     {
       "frr_id": "FRC-CSX-MAS",
-      "status": "Partially Implemented",
-      "implementation": "The KSI signal applies the KSIs to the inventoried components (ksi-signal.json), derived from Terraform state.",
-      "evidence": [],
-      "gap": "The inventory misses external services the site loads from (cdn.jsdelivr.net, storage.googleapis.com) and some flows, and human-process KSIs are not applied per component; MAS-CSO-IIR and MAS-CSO-FLO carry the detail.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every KSI is applied to the whole Minimum Assessment Scope. The inventory now includes the external services the app and the VDR depend on (MAS-CSO-IIR), and each KSI's evidence domain names the component types it covers. KSIs with a per-component domain apply to every component of those types; inventory and documentation KSIs (PIY, CED) apply over the whole set. scripts/build-mas.py publishes the application per KSI and per component type in .well-known/minimum-assessment-scope.json, and fails the deploy when a component type is in no KSI's per-component domain and has no stated whole-set reason (static pages and the state lock table carry one).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_ksi_applies_and_every_component_type_is_covered"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_component_type_in_no_ksi_domain_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_audit_trail_is_in_the_logging_ksi_domain"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        }
       ]
     },
     {
@@ -816,32 +833,87 @@
     },
     {
       "frr_id": "MAS-CSO-FLO",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/boundary-map.json: 11 flows with protocol/auth/encryption/data, 137 edges derived from Terraform, per-node classification; flows declared in docs/boundary/boundary-classification.json and resolved against the inventory (unmatched endpoints check = 0); code scripts/build-boundary-graph.py; human view on /trust/ and authorization-boundary page.",
-      "evidence": [],
-      "gap": "Flows are not complete for ALL resources: missing user→Cognito Hosted UI authentication, browser→jsDelivr / storage.googleapis.com, Lambda/app→DynamoDB/SQS, CloudTrail/S3/CloudFront→log bucket, operator→AWS console (Duo/root MFA), nightly→GitHub Advisory DB / CISA KEV / detection feeds. Security categories are per component (classification) but flows carry no category. To close: Add the missing flows to the classification, and add a check that every inventoried external service and every data store appears in at least one flow; derive per-flow security category from its endpoints.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The boundary classification's data-flow table (docs/boundary/boundary-classification.json) covers every external service and every data store or log in the inventory, including sign-in to the Cognito Hosted UI, the browser loads from jsDelivr and Google Cloud Storage, log delivery to the access-log and CloudTrail buckets and the log groups, the dead-letter queue, operator administration with MFA, Terraform state and lock, and the vulnerability feeds. scripts/build-mas.py resolves each flow against this build's inventory, gives each the high-water mark of its endpoints' FIPS 199 security categories, and fails the deploy when a flow names a component the inventory lacks or an external service or data store is in no flow. Published in .well-known/minimum-assessment-scope.json (flows with categories, protocol, authentication, encryption and data) and drawn on the boundary map.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_flow_gaps_fail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_external_service_and_data_store_in_the_inventory_is_in_a_flow"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_flow_category_is_the_high_water_mark_of_its_endpoints"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/boundary-map.json"
+        }
       ]
     },
     {
       "frr_id": "MAS-CSO-IIR",
-      "status": "Partially Implemented",
-      "implementation": "Machine-readable: https://samaydlette.com/.well-known/ksi-signal.json components[] (214, from Terraform state + SBOMs) and iiw.csv; human-readable derivation: docs/ksi-signal.md and research/authorization-boundary.html; code: scripts/build-ksi-signal.py; reconcile invariant (a) 'every live in-boundary resource is in the inventory' held.",
-      "evidence": [],
-      "gap": "Incomplete: the Silk Reeling SPA loads MediaPipe code from cdn.jsdelivr.net and models from storage.googleapis.com and talks to Cognito Hosted UI (bootstrap/cloudfront.tf:185-186, 378-380); jsDelivr and Google Cloud Storage are not inventoried as information resources although they run code next to the camera feed. The npm package is listed, the delivery services are not. (Repo publicity for the 'code' artifact not verified from here.) To close: Derive external services from the CSP/connect-src allowlists and runtime egress as well as Terraform, so every origin the app loads code or data from becomes an inventoried component; or self-host MediaPipe assets and models.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy publishes the set of information resources that make up the offering: the canonical inventory (.well-known/ksi-signal.json, derived from Terraform state, the SBOMs, the site's HTML and the declared external services; reconcile invariant (a) holds every live in-boundary resource to it) and its summary in .well-known/minimum-assessment-scope.json with a human-readable twin and the derivation. The external services include every origin the Silk Reeling app loads code or data from in the user's browser (jsDelivr for the MediaPipe runtime, Google Cloud Storage for the pose model) and every vulnerability feed the VDR reads (GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database). scripts/build-mas.py parses the Content Security Policies the edge serves (infrastructure/bootstrap/cloudfront.tf) and fails the deploy, before the SDR is built, when an allowed off-origin host is neither an inventoried component nor out of scope with a stated reason; the podcast audio hosts (media only, no code or data from this system) are out of scope with that reason.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_unplaced_csp_host_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_unresolvable_csp_source_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_the_app_origins_are_inventoried_external_services"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal.json"
+        }
       ]
     },
     {
       "frr_id": "MAS-CSO-MDI",
-      "status": "Not Implemented",
-      "implementation": "Checked: no metadata inventory; CPO says 'MAS-CSO-MDI N/A (no federal customer data)'.",
-      "evidence": [],
-      "gap": "No machine-readable output, explanation or code covering metadata the offering collects: Cognito user records (email, MFA), CloudFront/S3/API Gateway/Lambda logs (IP addresses, user agents), CloudTrail, DynamoDB items, SNS subscriptions. To close: Classify each data store/log as metadata in the inventory (type, contents, retention, location), emit a metadata section from build-ksi-signal.py, and document the derivation.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The metadata the offering collects is in scope and inventoried: every data store and log in the inventory (buckets, log groups, the CloudTrail trail, the state lock table, the dead-letter queue, the Cognito user pool, the alert topic) and the request metadata third parties see when the app loads code or models (jsDelivr, Google Cloud Storage) has an entry stating what it holds, which personal data (for example IP addresses, user agents, the app users' email addresses), its retention and its location. scripts/build-mas.py joins data/minimum-assessment-scope.json with this build's inventory and fails the deploy when a data store or log has no entry; a test holds each stated retention equal to the Terraform. Published, with the explanation of its derivation, in .well-known/minimum-assessment-scope.json and its Markdown twin.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_data_store_without_metadata_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_metadata_retention_matches_the_terraform"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        }
       ]
     },
     {
@@ -854,12 +926,33 @@
     },
     {
       "frr_id": "MAS-CSO-TPR",
-      "status": "Partially Implemented",
-      "implementation": "ksi-signal.json external_service components (7) carry purpose, cia_impact, verification_mechanism, baseline_configuration; data/third-party-components.json holds responsibility split records; build-ksi-signal.py:1322-1345.",
-      "evidence": [],
-      "gap": "All 7 third-party records are undecided (decided_by/decided_on null), so the published upstream_offering/responsibility_split read 'not recorded'. No explicit justification-for-use, mitigation-measures or compensating-controls fields per resource. jsDelivr and Google Cloud Storage (MediaPipe) are missing entirely. Not included in the CPO (schema thirdPartyInformationResources). To close: Add the four required fields (usage/configuration, justification, mitigations, compensating controls) to the record schema, have the operator decide all records, add the MediaPipe hosts, and emit them into the CPO's thirdPartyInformationResources.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Each of the 11 third-party information resources (Sigstore Fulcio and Rekor, GitHub repository and Actions, GitHub OIDC, the operator's MFA authenticator, the GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database, jsDelivr, Google Cloud Storage) has a decided record in data/third-party-components.json with its general usage and configuration, justification for use, mitigation measures and compensating controls. The inventory builder fails when a decided record lacks any of the four, and scripts/build-mas.py fails the deploy when an inventoried external service has no decided record. Machine-readable output: the external_service components in .well-known/ksi-signal.json and the third-party section of .well-known/minimum-assessment-scope.json; the human-readable derivation is in its Markdown twin; the code is scripts/build-ksi-signal.py and scripts/build-mas.py.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_decided_third_party_record_without_the_four_fields_fails_the_inventory"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_third_party_resource_is_decided_with_the_four_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_published_inventory_carries_the_four_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_cpo_helper_matches_the_cpo_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        }
       ]
     },
     {

@@ -136,6 +136,14 @@
       "owner_domain": "silk-reeling",
       "consumed_by": ["silk-reeling"],
       "features": ["movement-feedback", "sign-in"]
+    },
+    {
+      "key": "app-browser-delivery",
+      "name": "MediaPipe runtime and model the app loads in the browser",
+      "group": "app-delivery",
+      "owner_domain": "silk-reeling",
+      "consumed_by": ["silk-reeling"],
+      "features": ["movement-feedback"]
     }
   ]
 }

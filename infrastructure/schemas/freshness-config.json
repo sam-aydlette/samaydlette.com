@@ -190,6 +190,17 @@
       "signature": ".well-known/policy-index.bundle"
     },
     {
+      "path": ".well-known/minimum-assessment-scope.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/minimum-assessment-scope.bundle"
+    },
+    {
       "path": ".well-known/security-decision-record.json",
       "cadence": "deploy",
       "max_age_hours": 720,

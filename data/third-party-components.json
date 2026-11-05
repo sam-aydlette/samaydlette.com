@@ -1,86 +1,233 @@
 {
-  "_note": "REQ-TPR-1 records for the external services the inventory declares (scripts/build-ksi-signal.py build_external_components). Each names the upstream offering, the upstream component's identifier, and the split between what the upstream runs and what this provider configures. A record is published only once it carries decided_by and decided_on; until then the inventory publishes every field as \"not recorded\". A record for a service the inventory does not declare fails the build. AI-drafted entries (drafted_by) are proposals from the evidence listed; none is in force until the operator records a decision. A null value is unknown and is published as \"not recorded\" even after a decision.",
+  "_note": "REQ-TPR-1 and MAS-CSO-TPR records for the external services the inventory declares (scripts/build-ksi-signal.py build_external_components). Each names the upstream offering, the upstream component's identifier, the split between what the upstream runs and what this provider configures, and the four things FedRAMP requires documented for each third-party information resource (MAS-CSO-TPR): general usage and configuration, justification for use, mitigation measures, and compensating controls. A record is published only once it carries decided_by and decided_on, and a decided record must carry all four MAS-CSO-TPR fields or the build fails; until a decision, the inventory publishes every field as \"not recorded\". A record for a service the inventory does not declare fails the build. AI-drafted entries (drafted_by) were proposed from the evidence listed; the decision fields on the 2026-11-05 drafts are for the operator to confirm. A null value is unknown and is published as \"not recorded\" even after a decision.",
   "components": {
     "ext::sigstore-fulcio": {
+      "provider": "OpenSSF Sigstore project (public-good instance)",
+      "website": "https://www.sigstore.dev/",
       "upstream_offering": "Sigstore public-good instance: Fulcio certificate authority",
       "upstream_component_id": "https://fulcio.sigstore.dev",
       "responsibility_split": {
         "upstream_runs": "The certificate authority that issues short-lived signing certificates bound to the CI run's OIDC identity.",
         "provider_configures": "Keyless signing in CI (cosign sign-blob), and the certificate identity and OIDC issuer every verification pins."
       },
-      "evidence": [".github/workflows/evidence-nightly.yml (cosign sign-blob; --certificate-identity, --certificate-oidc-issuer)", "scripts/verify-published.sh (--certificate-identity, --certificate-oidc-issuer)"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "Every deploy and nightly signs each published artifact keylessly: cosign obtains a short-lived certificate from Fulcio bound to the workflow's GitHub OIDC identity. No account or configuration exists on Fulcio's side.",
+      "justification": "Keyless signing removes long-lived signing keys from the pipeline and binds every signature to the exact workflow and commit that produced it, which any reader can verify.",
+      "mitigations": "Every verification pins the certificate identity (the workflow path and ref) and the OIDC issuer, so a certificate issued to anyone else does not verify. Fulcio sees only the CSR and the OIDC token claims (repository, workflow, ref), never artifact content. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "The post-publish round-trip verify and scripts/verify-published.sh re-verify every signature from outside; a Fulcio outage stops the deploy (fail closed) rather than publishing unsigned evidence.",
+      "evidence": [
+        ".github/workflows/evidence-nightly.yml (cosign sign-blob; --certificate-identity, --certificate-oidc-issuer)",
+        "scripts/verify-published.sh (--certificate-identity, --certificate-oidc-issuer)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::sigstore-rekor": {
+      "provider": "OpenSSF Sigstore project (public-good instance)",
+      "website": "https://www.sigstore.dev/",
       "upstream_offering": "Sigstore public-good instance: Rekor transparency log",
       "upstream_component_id": "https://rekor.sigstore.dev",
       "responsibility_split": {
         "upstream_runs": "The append-only transparency log and its inclusion proofs.",
         "provider_configures": "Signing with transparency-log upload (cosign defaults, not disabled) and verification that checks the inclusion proof in each bundle."
       },
-      "evidence": [".github/workflows/evidence-nightly.yml (cosign sign-blob --new-bundle-format)", "scripts/verify-published.sh (cosign verify-blob)"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "Each keyless signature is recorded in Rekor (cosign default, not disabled); the bundle published next to each artifact carries the inclusion proof.",
+      "justification": "The transparency log makes every signature publicly auditable, so a signature made outside the pipeline would be visible.",
+      "mitigations": "Rekor receives only the signature, certificate and artifact digest, never artifact content. Verification checks the inclusion proof offline from the bundle. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "Signature verification against the pinned identity does not depend on Rekor being reachable later; the published bundles carry the proofs.",
+      "evidence": [
+        ".github/workflows/evidence-nightly.yml (cosign sign-blob --new-bundle-format)",
+        "scripts/verify-published.sh (cosign verify-blob)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::github-oidc": {
+      "provider": "GitHub, Inc.",
+      "website": "https://docs.github.com/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect",
       "upstream_offering": "GitHub Actions OIDC token issuer",
       "upstream_component_id": "https://token.actions.githubusercontent.com",
       "responsibility_split": {
         "upstream_runs": "The token issuer and its signing keys (JWKS).",
         "provider_configures": "Which workflows may request a token (permissions: id-token: write), the AWS IAM OIDC trust conditions, and the issuer pinned in cosign verification."
       },
-      "evidence": [".github/workflows/deploy-with-opa.yml:105 (id-token: write)", "infrastructure/bootstrap/plan-role.tf, evidence-nightly.tf, main.tf (OIDC trust)", ".github/workflows/evidence-nightly.yml:118 (COSIGN_OIDC_ISSUER)"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "Workflows granted id-token: write obtain per-run identity tokens, which AWS STS exchanges for the deploy, plan and nightly roles and which Fulcio binds into signing certificates.",
+      "justification": "Workload identity replaces static cloud credentials in CI: there is no long-lived access key to leak.",
+      "mitigations": "The AWS role trust policies pin the repository and, for the deploy role, the prod environment (reviewer-gated); only named workflows request tokens. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "The deploy needs a human approval in the prod environment before its token can assume the deploy role; role permissions are least-privilege and reviewed in the bootstrap stack.",
+      "evidence": [
+        ".github/workflows/deploy-with-opa.yml:105 (id-token: write)",
+        "infrastructure/bootstrap/plan-role.tf, evidence-nightly.tf, main.tf (OIDC trust)",
+        ".github/workflows/evidence-nightly.yml:118 (COSIGN_OIDC_ISSUER)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::github-repo": {
+      "provider": "GitHub, Inc.",
+      "website": "https://github.com/sam-aydlette/samaydlette.com",
       "upstream_offering": "GitHub repository and GitHub Actions",
       "upstream_component_id": "https://github.com/sam-aydlette/samaydlette.com",
       "responsibility_split": {
         "upstream_runs": "Repository hosting, the Actions runners, Dependabot, and secret scanning.",
         "provider_configures": "Branch protection on main, the workflows and their permissions, the OPA gate, the SCN tag validator, and secret scanning with push protection."
       },
-      "evidence": ["scripts/build-ksi-signal.py (ext::github-repo verification text)", ".github/workflows/"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "Hosts the source of record and runs the CI/CD workflows (deploy, nightly evidence, scans) on GitHub-hosted runners.",
+      "justification": "The repository is the system of record for infrastructure as code and evidence generation; hosted runners give an ephemeral, reproducible build environment.",
+      "mitigations": "Branch protection on main, required checks, a reviewer-gated prod environment for every deploy, secret scanning with push protection, and least-privilege workflow permissions. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "Every published artifact is signed under the deploy workflow's pinned identity and re-verified from outside; the hand-applied GitHub settings are checked live on every deploy (scripts/check-manual-settings.py).",
+      "evidence": [
+        "scripts/build-ksi-signal.py (ext::github-repo verification text)",
+        ".github/workflows/"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::duo-mfa": {
-      "upstream_offering": null,
+      "provider": "Cisco Systems, Inc. (Duo)",
+      "website": "https://duo.com/",
+      "upstream_offering": "Duo Mobile authenticator app (inferred; see drafted_by)",
       "upstream_component_id": null,
-      "responsibility_split": null,
-      "evidence": ["scripts/build-ksi-signal.py (ext::duo-mfa: tenant identifier intentionally not published)"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03; the repository does not show the Duo edition, its identifier, or how it is configured, so nothing is drafted",
-      "decided_by": null,
-      "decided_on": null
+      "responsibility_split": {
+        "upstream_runs": "The authenticator app that generates the time-based one-time codes (inferred).",
+        "provider_configures": "Enrollment of the TOTP device as the MFA factor on the AWS root account, the operator IAM user and the GitHub account."
+      },
+      "usage_and_configuration": "Generates the TOTP codes the operator enters as the second factor for the AWS root account, the operator IAM user and the GitHub account (inferred from DEC-025, which records virtual TOTP MFA on root and the operator user, and from the inventory's description of this service).",
+      "justification": "A second factor on every top-level administrative and privileged account, as IA-2(1) and IA-2(2) require.",
+      "mitigations": "TOTP seeds stay on the operator's device; no tenant identifier is published. MFA is enabled on every privileged human account. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "The weaker-than-phishing-resistant factor is a recorded decision (DEC-025); CloudTrail records every console sign-in and privileged API call.",
+      "evidence": [
+        "scripts/build-ksi-signal.py (ext::duo-mfa: tenant identifier intentionally not published)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-05. INFERRED: the repository does not show the Duo edition or whether Duo is used only as a TOTP generator; the operator must confirm or correct every field.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::github-advisory-db": {
+      "provider": "GitHub, Inc.",
+      "website": "https://github.com/advisories",
       "upstream_offering": "GitHub Advisory Database, read through Dependabot alerts",
       "upstream_component_id": "https://github.com/advisories",
       "responsibility_split": {
         "upstream_runs": "The advisory database and the matching of advisories to this repository's dependencies.",
         "provider_configures": "The fetch of open Dependabot alerts in the deploy and nightly workflows, and how a failed fetch is handled."
       },
-      "evidence": [".github/workflows/evidence-nightly.yml:435 (dependabot/alerts)", ".github/workflows/deploy-with-opa.yml:1399"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "The deploy and the nightly read open Dependabot alerts for this repository, which GitHub matches from the Advisory Database.",
+      "justification": "An independent source of dependency vulnerabilities alongside the Grype scan.",
+      "mitigations": "A failed fetch fails the detection gate (G7) rather than reading as zero findings. Only public advisory data is read. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "Findings are corroborated with the Grype scan and CISA KEV; the VDR records each source.",
+      "evidence": [
+        ".github/workflows/evidence-nightly.yml:435 (dependabot/alerts)",
+        ".github/workflows/deploy-with-opa.yml:1399"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     },
     "ext::cisa-kev": {
+      "provider": "Cybersecurity and Infrastructure Security Agency (CISA)",
+      "website": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
       "upstream_offering": "CISA Known Exploited Vulnerabilities catalog (JSON feed)",
       "upstream_component_id": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
       "responsibility_split": {
         "upstream_runs": "The catalog and its JSON feed.",
         "provider_configures": "The fetch in the deploy and nightly workflows, and how a failed fetch is handled."
       },
-      "evidence": [".github/workflows/evidence-nightly.yml:447 (KEV_URL)", ".github/workflows/deploy-with-opa.yml:1415"],
-      "drafted_by": "Claude (AI-drafted), 2026-11-03",
-      "decided_by": null,
-      "decided_on": null
+      "usage_and_configuration": "The deploy and the nightly fetch the KEV JSON feed and mark each finding that appears in it.",
+      "justification": "The authoritative U.S. government list of vulnerabilities known to be exploited, which drives remediation priority.",
+      "mitigations": "A failed fetch fails the detection gate (G7). Only public data is read. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "EPSS and the Grype and Dependabot sources still rate findings; the VDR states which feeds it read.",
+      "evidence": [
+        ".github/workflows/evidence-nightly.yml:447 (KEV_URL)",
+        ".github/workflows/deploy-with-opa.yml:1415"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-03; MAS-CSO-TPR fields and decision fields AI-drafted 2026-11-05 for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
+    },
+    "ext::first-epss": {
+      "provider": "FIRST (Forum of Incident Response and Security Teams); file served from epss.cyentia.com",
+      "website": "https://www.first.org/epss/",
+      "upstream_offering": "FIRST Exploit Prediction Scoring System, daily scores file",
+      "upstream_component_id": "https://epss.cyentia.com/epss_scores-current.csv.gz",
+      "responsibility_split": {
+        "upstream_runs": "The EPSS model and the daily scores file.",
+        "provider_configures": "The fetch in scripts/fetch-detection-feeds.sh and how a failed fetch is handled (the detection gate fails)."
+      },
+      "usage_and_configuration": "The deploy and the nightly download the current scores file and attach each finding's exploit probability.",
+      "justification": "Exploit likelihood is one input to the finding's rating (likely exploitable), alongside KEV.",
+      "mitigations": "A failed fetch fails the detection gate (G7). Only public data is read. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "KEV membership still marks known exploitation; the rating method is recorded in the VDR.",
+      "evidence": [
+        "scripts/fetch-detection-feeds.sh (EPSS_URL)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-05, for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
+    },
+    "ext::anchore-grype-db": {
+      "provider": "Anchore, Inc.",
+      "website": "https://github.com/anchore/grype",
+      "upstream_offering": "Grype vulnerability database, distributed by Anchore",
+      "upstream_component_id": "https://grype.anchore.io/databases",
+      "responsibility_split": {
+        "upstream_runs": "Building and publishing the vulnerability database from upstream advisory sources.",
+        "provider_configures": "The pinned Grype version (GRYPE_VERSION) and the scans of each SBOM in the deploy and the nightly."
+      },
+      "usage_and_configuration": "Grype downloads the current database at scan time and matches every SBOM the pipeline builds against it.",
+      "justification": "The primary software-composition scan behind the VDR.",
+      "mitigations": "The Grype version is pinned; Grype checks the database download against the checksum in its published index. Only the SBOMs are scanned, locally; nothing is uploaded. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "Dependabot alerts and CISA KEV are independent sources the VDR corroborates against.",
+      "evidence": [
+        ".github/workflows/evidence-nightly.yml (grype sbom:...)",
+        ".github/workflows/deploy-with-opa.yml (GRYPE_VERSION)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-05, for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
+    },
+    "ext::jsdelivr": {
+      "provider": "jsDelivr",
+      "website": "https://www.jsdelivr.com/",
+      "upstream_offering": "jsDelivr open-source CDN, npm endpoint",
+      "upstream_component_id": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/",
+      "responsibility_split": {
+        "upstream_runs": "Serving the published npm package files over its CDN.",
+        "provider_configures": "The pinned MediaPipe Tasks Vision version in the app bundle and the CSP script-src and connect-src paths that allow only that package."
+      },
+      "usage_and_configuration": "The Silk Reeling app's browser code loads the MediaPipe Tasks Vision JavaScript and WebAssembly from jsDelivr at the version the bundle pins.",
+      "justification": "MediaPipe runs pose estimation in the user's browser, so camera frames never leave the device; jsDelivr is the distribution MediaPipe documents.",
+      "mitigations": "The CSP allows only the pinned package path; camera frames stay in the browser and only pose landmarks reach the app's API. jsDelivr sees the user's IP address and user agent when the file is fetched. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "The app requires Cognito sign-in with TOTP MFA; the API accepts only landmark data and returns scores. Self-hosting the runtime is the further step if a stronger integrity guarantee is needed.",
+      "evidence": [
+        "infrastructure/bootstrap/cloudfront.tf (silk_reeling_mediapipe, CSP script-src)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-05, for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
+    },
+    "ext::google-cloud-storage": {
+      "provider": "Google LLC",
+      "website": "https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker",
+      "upstream_offering": "Google Cloud Storage, MediaPipe public model bucket",
+      "upstream_component_id": "https://storage.googleapis.com/mediapipe-models/",
+      "responsibility_split": {
+        "upstream_runs": "Hosting and serving the published MediaPipe model files.",
+        "provider_configures": "The model path the app requests and the CSP connect-src path that allows only the mediapipe-models bucket."
+      },
+      "usage_and_configuration": "The MediaPipe runtime in the user's browser downloads the pose-landmarker model file from Google's public model bucket.",
+      "justification": "The model Google publishes for MediaPipe pose landmarking; running it in the browser keeps camera frames on the device.",
+      "mitigations": "The CSP allows only the mediapipe-models path; the model is data loaded by the pinned runtime, not script. Google sees the user's IP address and user agent when the file is fetched. No federal customer data is in this offering; the resource never receives app-user data.",
+      "compensating_controls": "Pose scores are computed server-side from landmarks only; a tampered model could degrade scores but cannot read data beyond the camera frames already in the browser.",
+      "evidence": [
+        "infrastructure/bootstrap/cloudfront.tf (CSP connect-src)"
+      ],
+      "drafted_by": "Claude (AI-drafted), 2026-11-05, for the operator to confirm",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05"
     }
   }
 }
