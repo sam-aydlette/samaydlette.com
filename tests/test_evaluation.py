@@ -306,3 +306,15 @@ def test_an_unresolved_finding_becomes_a_process_finding_in_the_build(tmp_path):
     assert [f["tracking_id"] for f in proc] == ["process-vdr.unresolved-component"]
     assert proc[0]["remediation_due_at"] and rep["summary"]["unresolved_components"] == 1
     assert "coverage" in rep
+
+
+def test_the_vdr_carries_the_runtime_run_history_only_from_a_verified_signal():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("vdr_rt", REPO / "scripts" / "build-vdr-report.py")
+    vdr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vdr)
+    hist = [{"signal_id": "a", "emitted_at": "2026-11-05T01:00:00Z", "validations": 3, "failed": 0}]
+    ok = vdr.runtime_verification_summary({"verified": True, "validations": [], "run_history": hist})
+    assert ok["run_history"][0]["signal_id"] == "a"
+    bad = vdr.runtime_verification_summary({"verified": False, "run_history": hist})
+    assert "run_history" not in bad

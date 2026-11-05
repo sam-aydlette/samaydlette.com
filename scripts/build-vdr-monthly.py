@@ -185,6 +185,10 @@ def runtime_runs(vdr, retained):
                         else len(r["validations"])})
         return out, "retained runs (every run the runtime emitter kept)"
     rt = (vdr.get("methodology") or {}).get("runtime_verification")
+    if isinstance(rt, dict) and rt.get("verified") and rt.get("run_history"):
+        # The emitter's signed run history, carried by the VDR build that verified it.
+        return runtime_runs(vdr, {"runs": rt["run_history"]})[0], \
+            "retained runs (the run history the runtime emitter signs into its signal)"
     note = ("latest run only: the runtime emitter publishes only its latest run, so a run replaced between "
             "two nightly builds is not counted")
     if isinstance(rt, dict) and rt.get("verified") and rt.get("emitted_at"):

@@ -154,3 +154,11 @@ def test_the_nightly_and_deploy_build_sign_and_publish_it():
         assert "--bundle vdr-monthly.bundle vdr-monthly.json" in text, wf
     fresh = json.loads((REPO / "infrastructure" / "schemas" / "freshness-config.json").read_text())
     assert any(a["path"] == ".well-known/vdr-monthly.json" and a["max_age_hours"] == 24 for a in fresh["artifacts"])
+
+
+def test_the_signed_run_history_the_vdr_carries_is_counted():
+    rt = {"verified": True, "emitted_at": "2026-11-20T03:00:00Z", "signal_id": "s", "validations": 7, "failed": 0,
+          "run_history": [{"signal_id": "a", "emitted_at": "2026-11-19T03:00:00Z", "validations": 7, "failed": 1},
+                          {"signal_id": "s", "emitted_at": "2026-11-20T03:00:00Z", "validations": 7, "failed": 0}]}
+    doc = build(v=vdr(runtime_verification=rt))
+    assert by_type(doc)["runtime-vv"]["runsInPeriod"] == 2 and doc["runtimeRunsBasis"].startswith("retained runs")

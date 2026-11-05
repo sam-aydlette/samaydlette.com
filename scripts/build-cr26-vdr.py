@@ -478,6 +478,15 @@ def activity_summary(vdr, mrh, register, frm, to):
                    "inPeriod": within(rt.get("emitted_at")),
                    "note": ("The runtime emitter publishes only its latest run; this is the run the VDR "
                             "build read. A run it replaced before this build is not retained.")}
+        hist = rt.get("run_history")
+        if rt.get("verified") and isinstance(hist, list) and hist:
+            # The emitter retains its runs in the signed signal: every run in
+            # the period is counted, not only the latest.
+            runs = [r for r in hist if within(r.get("emitted_at"))]
+            runtime["runsInPeriod"] = len(runs)
+            runtime["failedRunsInPeriod"] = sum(1 for r in runs if r.get("failed"))
+            runtime["note"] = ("Every runtime run in the period, from the run history the emitter signs into "
+                               "its signal (bounded to the newest runs).")
         if not rt.get("verified"):
             runtime["note"] = f"Runtime signal not verified ({rt.get('reason')}); its results are not reported."
     in_period = [s for s in scans if s["inPeriod"]]
@@ -489,8 +498,10 @@ def activity_summary(vdr, mrh, register, frm, to):
                    "noLongerReported": len(gone), "remediations": len(remediated),
                    "decisionsRecorded": len(decided), "decisionsClosed": len(closed),
                    "scansInPeriod": len(in_period),
-                   "runtimeRunsInPeriod": 1 if run_in_period else 0,
-                   "runtimeFailuresInPeriod": (runtime["failed"] or 0) if run_in_period else 0},
+                   "runtimeRunsInPeriod": (runtime["runsInPeriod"] if runtime and "runsInPeriod" in runtime
+                                           else 1 if run_in_period else 0),
+                   "runtimeFailuresInPeriod": (runtime["failedRunsInPeriod"] if runtime and "runsInPeriod" in runtime
+                                               else (runtime["failed"] or 0) if run_in_period else 0)},
         "detections": detections, "evaluations": evaluations, "ratingChanges": changes,
         "reductions": reductions, "noLongerReported": gone, "remediations": sorted(remediated),
         "decisionsRecorded": decided, "decisionsClosed": closed, "scans": scans,

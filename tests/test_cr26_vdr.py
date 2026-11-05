@@ -548,3 +548,16 @@ def test_a_missing_fedramp_id_stops_the_build(tmp_path):
     p.write_text("{}")
     with pytest.raises(SystemExit, match="fedramp_id is missing"):
         mod.fedramp_id(p)
+
+
+def test_every_retained_runtime_run_in_the_period_is_counted():
+    vdr = _with_activity()
+    vdr["methodology"]["runtime_verification"]["run_history"] = [
+        {"signal_id": "rt-0", "emitted_at": "2026-11-04T23:00:00Z", "validations": 5, "failed": 0},
+        {"signal_id": "rt-a", "emitted_at": "2026-11-05T05:00:00Z", "validations": 5, "failed": 2},
+        {"signal_id": "rt-1", "emitted_at": "2026-11-05T11:00:00Z", "validations": 5, "failed": 1}]
+    prev = {"reportPeriod": {"from": "2026-11-05T03:00:00+00:00", "to": "2026-11-05T03:00:00+00:00"}}
+    vdt, _, _ = _build(vdr=vdr, prev_vdt=prev)
+    s = vdt["providerExtensions"]["activitySummary"]
+    assert s["counts"]["runtimeRunsInPeriod"] == 2 and s["counts"]["runtimeFailuresInPeriod"] == 2
+    assert fs.validate(vdt, "vdt") == []

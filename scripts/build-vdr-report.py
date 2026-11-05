@@ -389,6 +389,8 @@ def load_runtime_signal(path, pubkey_path=None, now=None, max_age_hours=RUNTIME_
     if not out["fresh"]:
         out["reason"] = f"runtime signal emitted {sig.get('emitted_at')} is outside {max_age_hours}h"
     out["validations"] = sig.get("validations") or []
+    # VER-RPT-PER: the emitter's bounded run history, inside the signed payload.
+    out["run_history"] = [r for r in sig.get("run_history") or [] if isinstance(r, dict) and r.get("emitted_at")]
     return out
 
 
@@ -406,6 +408,11 @@ def runtime_verification_summary(runtime):
         out["validations"] = len(vals)
         out["failed"] = sum(1 for v in vals if v.get("result") != "pass")
         out["divergence"] = runtime.get("divergence")
+        # Every run the emitter retained (signed with the signal), so a period
+        # report counts the runs a later run replaced (VER-RPT-PER).
+        out["run_history"] = [{k: r.get(k) for k in ("signal_id", "emitted_at", "validations", "failed",
+                                                     "unassessed", "divergence")}
+                              for r in runtime.get("run_history") or []]
     return out
 
 
