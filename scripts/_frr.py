@@ -21,6 +21,8 @@ The register is only allowed to claim what the repository can show:
   workstream (W2..W10), "sam" (an act only the operator can perform, such as an
   application, a registration or engaging an assessor), or "optional" (a MAY
   rule not exercised; refused for any other force).
+- Every MAY rule says why it was or wasn't exercised (may_rationale); no
+  other rule carries one.
 - No record text may carry an AWS account ID, or an email address outside the
   system's domain and FedRAMP's (the SDR is published).
 
@@ -54,7 +56,7 @@ CLOSERS = (*WORKSTREAMS, "sam", "optional")
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
 
 TOP_KEYS = {"$comment", "schema", "basis", "records"}
-RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with"}
+RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with", "may_rationale"}
 EVIDENCE_KEYS = {"kind", "ref"}
 
 TEST_RE = re.compile(r"^(tests/[A-Za-z0-9_/]+\.py)::([A-Za-z_][A-Za-z0-9_]*)(?:::([A-Za-z_][A-Za-z0-9_]*))?(?:\[[^\]]*\])?$")
@@ -188,6 +190,10 @@ def validate(doc, applicable, resolve, where="data/frr-records.json"):
         if status not in STATUSES:
             _fail(f"{rid}: status {status!r} is not one of {list(STATUSES)}")
         _text(rec, "implementation", rid)
+        if applicable[rid]["force"] == "MAY":
+            _text(rec, "may_rationale", rid)
+        elif "may_rationale" in rec:
+            _fail(f"{rid}: may_rationale is for MAY rules only (Class C force is {applicable[rid]['force']})")
         evidence = rec.get("evidence", [])
         if not isinstance(evidence, list):
             _fail(f"{rid}: evidence must be a list")

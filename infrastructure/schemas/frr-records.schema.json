@@ -33,6 +33,7 @@
             }
           },
           "gap": {"type": "string", "minLength": 1},
+          "may_rationale": {"type": "string", "minLength": 1, "description": "Required on, and only on, MAY rules: why the provider did or didn't exercise the permission."},
           "closes_with": {
             "type": "array",
             "minItems": 1,

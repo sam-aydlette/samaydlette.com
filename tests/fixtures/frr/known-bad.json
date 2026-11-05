@@ -19,6 +19,8 @@
     {"case": "unknown status", "replace": {"frr_id": "AFC-CSO-INB", "status": "Met", "implementation": "x"}, "expect": "status 'Met' is not one of"},
     {"case": "unknown field", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "met": true}, "expect": "unknown field(s) ['met']"},
     {"case": "account ID in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "Bucket arn:aws:s3:us-east-1:111122223333:x", "gap": "x", "closes_with": ["W9"]}, "expect": "implementation carries an AWS account ID"},
+    {"case": "MAY rule without a rationale", "replace": {"frr_id": "VDR-CSO-SIR", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["optional"]}, "expect": "VDR-CSO-SIR: may_rationale must be a non-empty string"},
+    {"case": "rationale on a MUST rule", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "may_rationale": "x"}, "expect": "may_rationale is for MAY rules only"},
     {"case": "personal email in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "Mail goes to someone@example.com today.", "closes_with": ["W9"]}, "expect": "gap names an email address outside"}
   ]
 }

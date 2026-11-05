@@ -144,7 +144,8 @@ def test_known_bad_fixture_covers_every_check():
                      "Implemented needs evidence", "names no test function", "does not exist",
                      "no step named", "freshness-governed", "in-force decision", "has no gap",
                      "gap must be", "closes_with must be", "only a MAY rule", "is not one of",
-                     "unknown field", "AWS account ID", "email address outside"):
+                     "unknown field", "AWS account ID", "email address outside",
+                     "may_rationale must be", "for MAY rules only"):
         assert fragment in expects, fragment
 
 
@@ -194,3 +195,8 @@ def test_the_system_and_fedramp_addresses_are_allowed(applicable, resolve):
         if r["frr_id"] == "AFC-CSO-ACK":
             r["gap"] = "Acknowledge mail from x@fedramp.gov and x@gsa.gov at fedramp-security@samaydlette.com."
     _frr.validate(doc, applicable, resolve)
+
+
+def test_every_may_rule_says_why(applicable):
+    for r in _committed()["records"]:
+        assert ("may_rationale" in r) is (applicable[r["frr_id"]]["force"] == "MAY"), r["frr_id"]

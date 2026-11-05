@@ -141,7 +141,8 @@
       "gap": "Permissive rule, exercised; but no recorded determination that public release will not adversely affect the offering. To close: Record the public-release determination (who, when, basis) in each OCR issue or in the CPO.",
       "closes_with": [
         "W4"
-      ]
+      ],
+      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full; each issue will record the no-adverse-effect determination."
     },
     {
       "frr_id": "CCM-OCR-SOR",
@@ -238,20 +239,22 @@
       "status": "Not Implemented",
       "implementation": "No review content exists.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised.",
+      "gap": "No quarterly review has been held yet, so there is no content to publish.",
       "closes_with": [
-        "optional"
-      ]
+        "W4"
+      ],
+      "may_rationale": "Will be exercised: content prepared for each quarterly review will be published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check."
     },
     {
       "frr_id": "CCM-QTR-SRR",
       "status": "Not Implemented",
       "implementation": "No recordings exist.",
       "evidence": [],
-      "gap": "Optional (MAY); not exercised. No recordings are released; if one ever is, agency information must be removed first.",
+      "gap": "No quarterly review has been held yet, so there is no recording to publish.",
       "closes_with": [
-        "optional"
-      ]
+        "W4"
+      ],
+      "may_rationale": "Will be exercised: each review's recording or transcript will be published after all agency comments, questions and names are removed, so the review is as open as the rest of the package."
     },
     {
       "frr_id": "CDS-CSO-AVR",
@@ -323,7 +326,8 @@
       "gap": "Optional (MAY); not exercised. Could split package views per service (website, Silk Reeling).",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence."
     },
     {
       "frr_id": "CDS-CSO-PUB",
@@ -355,7 +359,8 @@
       "gap": "The artifact requires an explanation of if/how information is shared and the provider's determination that public sharing will not likely have an adverse effect. There is a statement of public sharing but no documented adverse-effect determination, and the redaction practice is inconsistent (see CDS-CSO-RIS). To close: Publish a short sharing statement: what is public, to whom else data goes, and the recorded determination (decision record in data/decisions.json with decided_by/on and review date) that it is not adverse.",
       "closes_with": [
         "W8"
-      ]
+      ],
+      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is recorded with the sharing statement."
     },
     {
       "frr_id": "CDS-CSO-SVC",
@@ -586,7 +591,8 @@
       "gap": "Optional (MAY); not exercised.",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen."
     },
     {
       "frr_id": "FRC-CSO-FCP",
@@ -779,7 +785,8 @@
       "gap": "Optional (MAY); not exercised.",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised while no assessor is engaged. When one is, advice will be accepted where it improves the security posture or the evidence, and recorded with the assessment."
     },
     {
       "frr_id": "IVV-CSO-SEE",
@@ -821,7 +828,8 @@
       "gap": "Optional (MAY); not exercised.",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample."
     },
     {
       "frr_id": "IVV-CSX-AIA",
@@ -871,7 +879,8 @@
       "gap": "Optional (MAY); not exercised. If coverage material for other frameworks (CMMC, GovRAMP, TX-RAMP on the trust page) is ever put in the package, mark it as supplemental.",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources."
     },
     {
       "frr_id": "MAS-CSO-TPR",
@@ -1011,7 +1020,8 @@
       "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
       "closes_with": [
         "W5"
-      ]
+      ],
+      "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
     },
     {
       "frr_id": "SCN-CSO-EMG",
@@ -1021,7 +1031,8 @@
       "gap": "Never exercised; 'notify all necessary parties' has no channel; no gate that requires the retroactive SCN materials (only a warning). To close: Add a check that opens/blocks until a retroactive SCN record exists for each emergency-tagged commit within 5 business days; route notification through the NOM mechanism.",
       "closes_with": [
         "W5"
-      ]
+      ],
+      "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
     },
     {
       "frr_id": "SCN-CSO-EVA",
@@ -1081,7 +1092,8 @@
       "gap": "Mechanism documented only in the repo README, not in the Certification Package (CPO); no list of available notification mechanisms (artifact); a git push is not a notification any party receives. To close: Offer real mechanisms (signed SCN JSON feed + Atom/RSS at /.well-known/, email list) and list them in the CPO.",
       "closes_with": [
         "W5"
-      ]
+      ],
+      "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
     },
     {
       "frr_id": "SCN-RTR-NNR",
@@ -1313,7 +1325,8 @@
       "gap": "Optional (MAY); not exercised. Note that coverage gaps are a DET/MVX matter, not sampling.",
       "closes_with": [
         "optional"
-      ]
+      ],
+      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain."
     },
     {
       "frr_id": "VDR-TFR-KEV",
@@ -1553,7 +1566,8 @@
       "gap": "The permission depends on the provider having *determined* that disclosure won't likely lead to exploitation; no such determination is recorded per finding or as policy (see NID). To close: Record the determination: a disclosure policy plus a per-finding 'public_disclosure' field (full/summary/withheld, with reason) set by the triage policy and published.",
       "closes_with": [
         "W7"
-      ]
+      ],
+      "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation."
     },
     {
       "frr_id": "VER-RPT-VDT",
@@ -1623,7 +1637,8 @@
       "gap": "MAY rule: optional, but the published policy claims it's adopted and nothing implements it. NLEV-IRV N5 findings never open an incident. To close: Either implement alongside IRI (NIRV and LEV and PAIN = N5 -> incident until a partial mitigation brings it to N4) or remove the claim from ir-policy.md and record the decision not to use the MAY.",
       "closes_with": [
         "W6"
-      ]
+      ],
+      "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
     }
   ]
 }
