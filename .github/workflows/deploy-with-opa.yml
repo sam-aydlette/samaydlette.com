@@ -1706,9 +1706,24 @@ jobs:
     # carries an AWS account ID. The inventory builder redacts it
     # (scripts/_redact.py) and everything else derives from the inventory; this
     # fails closed if anything slipped past that, before a byte is uploaded.
+    # It scans exactly what the next step uploads (bundles and the compiled
+    # policy archive aside), never inputs this run downloaded: the live runtime
+    # signal is read here but published by the runtime Lambda.
+    # tests/test_published_redaction.py holds this list equal to the upload step's.
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
-      run: python3 ../scripts/check-published-redaction.py --root .
+      run: |
+        files="ksi-signal.json schemas/ksi-signal.schema.json vdr-report.json vdr-report.md vdr-trend.json iiw.csv"
+        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
+        for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
+        files="$files ongoing-certification-report.json ongoing-certification-report.md"
+        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
+        for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
+          [ -f "$a.json" ] || continue
+          files="$files $a.json"
+        done
+        # shellcheck disable=SC2086  # a word list by design
+        python3 ../scripts/check-published-redaction.py $files
 
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always

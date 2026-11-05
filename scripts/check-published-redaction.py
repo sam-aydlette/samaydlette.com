@@ -4,10 +4,14 @@
 Run immediately before a workflow uploads to /.well-known/, over the directory
 the artifacts were built in:
 
-    python3 ../scripts/check-published-redaction.py --root .        # the deploy
-    python3 ../scripts/check-published-redaction.py vdr-report.json ...  # exactly these
+    python3 ../scripts/check-published-redaction.py ksi-signal.json ...  # the workflows
+    python3 ../scripts/check-published-redaction.py --root DIR  # a fetched copy
 
-With no file arguments it scans every artifact the governed freshness config lists (the set of files
+The workflows name exactly the files their upload step publishes, because their
+working directories also hold live files they downloaded as inputs and do not
+publish (the deploy reads the runtime signal, which the runtime Lambda
+publishes). tests/test_published_redaction.py holds each list equal to its
+upload step. With no file arguments it scans every artifact the governed freshness config lists (the set of files
 this site publishes; tests/test_freshness_config.py fails if a workflow
 publishes one that is not listed) that is present under --root, together with
 its Markdown rendering. Signatures and provenance envelopes are Sigstore's
