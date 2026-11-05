@@ -1,7 +1,7 @@
 {
   "schema": "frr-records/1",
   "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Validated by scripts/_frr.py; see infrastructure/schemas/frr-records.schema.json.",
-  "basis": "Drafted 2026-11-05 from a rule-by-rule assessment of the repository and the live site, corrected for the changes since (account IDs redacted, published claims fixed, CR26 vulnerability reports published). AI-drafted; for the operator's review.",
+  "basis": "Drafted 2026-11-05 from a rule-by-rule assessment of the repository and the live site, corrected for the changes since (account IDs redacted, published claims fixed, CR26 vulnerability reports published). AI-drafted; for the operator's review. Each record states the state after a successful deploy of the commit that contains it: what that deploy does counts as done, and a prerequisite it depends on must make the deploy fail when missing, so the record is accurate when published.",
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
