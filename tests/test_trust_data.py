@@ -94,7 +94,7 @@ def test_the_manifest_lists_every_governed_artifact_with_its_signature(tmp_path)
     m = _manifest(tmp_path)
     fresh = _freshness.load_freshness_config(FRESH)["artifacts"]
     assert [a["name"] for a in m["artifacts"]] == [a["path"].rsplit("/", 1)[1] for a in fresh]
-    for a, f in zip(m["artifacts"], fresh):
+    for a, f in zip(m["artifacts"], fresh, strict=True):
         assert a["url"] == "https://samaydlette.com/" + f["path"]
         assert ("signature" in a) == ("signature" in f)
     sim = next(a for a in m["artifacts"] if a["name"] == "simulated-assessment.json")
