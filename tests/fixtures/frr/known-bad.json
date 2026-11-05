@@ -1,0 +1,24 @@
+{
+  "$comment": "Each case changes the committed data/frr-records.json in one way that must fail scripts/_frr.py for the stated reason. Applied by tests/test_frr_records.py.",
+  "cases": [
+    {"case": "missing record", "drop": "AFC-CSO-INB", "expect": "no record for 1 applicable rule(s): AFC-CSO-INB"},
+    {"case": "extra record (Rev5 agency path)", "add": {"frr_id": "FRC-APS-ATO", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["sam"]}, "expect": "FRC-APS-ATO is not a rule that applies"},
+    {"case": "duplicate record", "add": {"frr_id": "VDR-TFR-PVR", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W7"]}, "expect": "duplicate record for VDR-TFR-PVR"},
+    {"case": "implemented without evidence", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "An inbox exists.", "evidence": []}, "expect": "AFC-CSO-INB: Implemented needs evidence that resolves"},
+    {"case": "test that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "test", "ref": "tests/test_frr_records.py::test_the_inbox_receives_mail"}]}, "expect": "names no test function"},
+    {"case": "test file that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "test", "ref": "tests/test_inbox.py::test_x"}]}, "expect": "tests/test_inbox.py does not exist"},
+    {"case": "workflow step that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "step", "ref": "deploy-with-opa.yml#Check the FedRAMP Security Inbox"}]}, "expect": "no step named"},
+    {"case": "artifact not published", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "artifact", "ref": ".well-known/fedramp-inbox.json"}]}, "expect": "is not a freshness-governed published artifact"},
+    {"case": "decision not in force", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-999"}]}, "expect": "is not an in-force decision record"},
+    {"case": "unresolved evidence on a partial record", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-999"}], "gap": "x", "closes_with": ["W9"]}, "expect": "does not resolve"},
+    {"case": "implemented with a gap", "replace": {"frr_id": "VDR-CSO-MSP", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-039"}], "gap": "x"}, "expect": "an Implemented record has no gap"},
+    {"case": "partial without a gap", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "closes_with": ["W9"]}, "expect": "AFC-CSO-INB: gap must be a non-empty string"},
+    {"case": "partial with nothing closing it", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "gap": "x"}, "expect": "closes_with must be a non-empty list"},
+    {"case": "unknown workstream", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W11"]}, "expect": "closes_with must be a non-empty list"},
+    {"case": "a MUST rule left as optional", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["optional"]}, "expect": "only a MAY rule can be left as optional"},
+    {"case": "unknown status", "replace": {"frr_id": "AFC-CSO-INB", "status": "Met", "implementation": "x"}, "expect": "status 'Met' is not one of"},
+    {"case": "unknown field", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "met": true}, "expect": "unknown field(s) ['met']"},
+    {"case": "account ID in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "Bucket arn:aws:s3:us-east-1:111122223333:x", "gap": "x", "closes_with": ["W9"]}, "expect": "implementation carries an AWS account ID"},
+    {"case": "personal email in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "Mail goes to someone@example.com today.", "closes_with": ["W9"]}, "expect": "gap names an email address outside"}
+  ]
+}

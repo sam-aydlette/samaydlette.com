@@ -1,0 +1,1629 @@
+{
+  "schema": "frr-records/1",
+  "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Validated by scripts/_frr.py; see infrastructure/schemas/frr-records.schema.json.",
+  "basis": "Drafted 2026-11-05 from a rule-by-rule assessment of the repository and the live site, corrected for the changes since (account IDs redacted, published claims fixed, CR26 vulnerability reports published). AI-drafted; for the operator's review.",
+  "records": [
+    {
+      "frr_id": "AFC-CSO-ACK",
+      "status": "Not Implemented",
+      "implementation": "No FSI; no auto-responder.",
+      "evidence": [],
+      "gap": "No prompt automatic acknowledgment of FedRAMP messages. To close: Configure an auto-acknowledgment for mail from @fedramp.gov/@gsa.gov (e.g. SES receipt rule -> Lambda reply, or provider auto-reply rule) and include it in the nightly configuration check.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-CRA",
+      "status": "Not Implemented",
+      "implementation": "No FSI, no Emergency/Emergency Test handling runbook in docs/incident-response.md or ir-policy.md.",
+      "evidence": [],
+      "gap": "No procedure to recognize Emergency / Emergency Test designated messages, extract the required actions and timeframe, and complete them; no record of completion. To close: Write an FSI runbook (classify by designation, open a tracked item with the message's deadline, complete, reply with completion) and wire Emergency-designated mail to page the operator; keep a completion log. Rehearse with a self-generated Emergency Test.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-EMR",
+      "status": "Not Implemented",
+      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
+      "evidence": [],
+      "gap": "No routing of Emergency-designated messages to a senior security official; no mailbox configuration or automated validation (both artifacts missing). To close: Add a mail rule that routes subject-designated 'Emergency' FedRAMP messages to the senior security official (the accountable official in the CPO, plus SNS page), and include it in the nightly mailbox-configuration check.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-IMA",
+      "status": "Not Implemented",
+      "implementation": "No FSI; no handling procedure for Important-designated messages.",
+      "evidence": [],
+      "gap": "No procedure to complete actions in Important messages within their stated timeframe. To close: Extend the FSI runbook to Important messages with tracked deadlines (same tracker as CRA).",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-INB",
+      "status": "Not Implemented",
+      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
+      "evidence": [],
+      "gap": "No dedicated FedRAMP Security Inbox address exists or is designated; the required artifact (an email address to receive messages from FedRAMP) cannot be produced. To close: Create a dedicated address on the system's domain (e.g. fedramp-security@samaydlette.com: MX record in dns.tf plus SES inbound or a mail provider, with SPF/DKIM/DMARC), document it as the FSI in the CPO certification_data (security_contact block) and trust center, and monitor it (alarm on delivery failure).",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-NOC",
+      "status": "Not Implemented",
+      "implementation": "No FSI exists, so no change-notification process exists; nothing in docs/incident-response.md or docs/policies/ir-policy.md covers notifying FedRAMP of an inbox change.",
+      "evidence": [],
+      "gap": "No process (manual or automated) to notify FedRAMP when the FSI address changes. To close: Make the FSI address a single value in the canonical inventory and add a CI check that fails a change to it unless the commit carries a 'FedRAMP notified on <date> via <channel>' record; document the runbook step (email FedRAMP from the old and new address) in ir-policy.md.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-RCV",
+      "status": "Not Implemented",
+      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
+      "evidence": [],
+      "gap": "Nothing receives FedRAMP mail without disruption (no inbox, no anti-spam allowlisting, no monitoring, no backup reader for a one-person operation). To close: After INB/TFG: allowlist FedRAMP senders, add delivery-failure and unread-age alarms (SNS to operator, reusing the watchdog path), and name a backup reader or an out-of-office auto-forward so a single absent operator does not disrupt receipt. Provider half is fully buildable; only an actual FedRAMP message demonstrates it end-to-end.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "AFC-CSO-TFG",
+      "status": "Not Implemented",
+      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
+      "evidence": [],
+      "gap": "No mailbox configuration treating @fedramp.gov / @gsa.gov senders as FedRAMP, and no automated validation of that configuration (both listed artifacts missing). To close: In the FSI mail rules, tag/route all mail from @fedramp.gov and @gsa.gov as FedRAMP (never spam-filtered/quarantined); export the rule set as code and add a nightly check (evidence-nightly.yml) that reads the live rules and compares them with the expected configuration, published to the trust center like check-manual-settings.py does for GitHub settings.",
+      "closes_with": [
+        "W9"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-AFS",
+      "status": "Not Implemented",
+      "implementation": "No summary section in build-ocr.py or the live OCR; declared N/A (build-ocr.py:106-110).",
+      "evidence": [],
+      "gap": "No anonymized/desensitized summary of feedback, questions and answers, and no stated delivery method. To close: Add a 'feedback summary' section to the OCR (and an addendum file) built from the FBM channel, with a redaction step for names/agency identifiers; when nothing was received, state 'no feedback received on OCR <id>'.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-AVL",
+      "status": "Partially Implemented",
+      "implementation": "Live https://samaydlette.com/.well-known/ongoing-certification-report.json + .md (fetched 2026-11-05), built by scripts/build-ocr.py in deploy-with-opa.yml step 'Build Ongoing Certification Report' (line ~1555); all eight summary sections present (build-ocr.py:91-105).",
+      "evidence": [],
+      "gap": "The OCR is rebuilt on every deploy rather than issued quarterly: there is no frozen, dated, signed issue per period, and no index of past issues.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-FBM",
+      "status": "Not Implemented",
+      "implementation": "build-ocr.py:106-110 and the live OCR state the feedback channel is 'N/A absent a consuming agency'; no feedback link in the OCR, CPO or trust center; security.txt contact is the only channel and is not tied to the OCR.",
+      "evidence": [],
+      "gap": "No asynchronous feedback/question mechanism for each OCR, and no documented way to access it (artifact missing). To close: Stand up a per-report asynchronous channel (e.g. a GitHub Discussions category or issue form per OCR issue, with a private alternative address for agencies), link it from each OCR, the CPO and the trust center.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-LSI",
+      "status": "Partially Implemented",
+      "implementation": "The OCR carries SCN summaries, decision titles and the accepted findings already public in the VDR, and passes the publication redaction gate (no AWS account ID) on every deploy.",
+      "evidence": [],
+      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. No documented sensitivity determination per issue and no screen beyond account IDs (ARNs, IPs, email addresses, secret-like strings). SCN text is copied verbatim.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-NRD",
+      "status": "Partially Implemented",
+      "implementation": "Live OCR json/md carry next_ongoing_certification_report_date 2027-02-04 (build-ocr.py:88).",
+      "evidence": [],
+      "gap": "The date is now+91 days recomputed on every deploy, so it is a moving value, not a committed target; it is published only inside the OCR, not with the other public Certification Data (CPO/trust center). To close: Derive the next date from the fixed cycle (last issued OCR + cycle), keep it stable between issues, and publish it in the CPO and trust-center.json as well.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-RPS",
+      "status": "Partially Implemented",
+      "implementation": "OCR is public at /.well-known/ (fetched).",
+      "evidence": [],
+      "gap": "Permissive rule, exercised; but no recorded determination that public release will not adversely affect the offering. To close: Record the public-release determination (who, when, basis) in each OCR issue or in the CPO.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-OCR-SOR",
+      "status": "Not Implemented",
+      "implementation": "build-ocr.py:34,54-55,88: rolling window recomputed per deploy.",
+      "evidence": [],
+      "gap": "No regular 3-month cycle and no chosen phase within the quarter. To close: Pick fixed issue dates (e.g. mid-quarter: 15 Feb/May/Aug/Nov), encode them in config, and have the build issue the OCR only on those dates.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-ACT",
+      "status": "Not Implemented",
+      "implementation": "No reviews held.",
+      "evidence": [],
+      "gap": "No additional agency-relevant information supplied in reviews. To close: Add a standing agenda item (e.g. upcoming roadmap, KSI trend, VDR trend) to the review template.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-MTG",
+      "status": "Not Implemented",
+      "implementation": "build-ocr.py:106-110 / live OCR declare the Quarterly Review N/A; no meeting record, agenda or schedule anywhere in the repo.",
+      "evidence": [],
+      "gap": "No synchronous Quarterly Review has been scheduled or held. To close: Schedule a recurring quarterly review (video call) 3-10 business days after each OCR issue, prepare an agenda from the OCR, hold it even if no agency attends, and keep minutes; publish the schedule.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-NID",
+      "status": "Partially Implemented",
+      "implementation": "No Quarterly Review has been held, so nothing has been disclosed; no content-review procedure exists.",
+      "evidence": [],
+      "gap": "No pre-meeting sensitivity review procedure for review content. To close: Add a review checklist (same screen as OCR-LSI) for slides/agenda before each review.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-NRD",
+      "status": "Partially Implemented",
+      "implementation": "Live OCR next_quarterly_review_date 2027-02-04 (build-ocr.py:89).",
+      "evidence": [],
+      "gap": "Same moving now+91 value as the OCR date (so the review date equals the report date, contradicting QTR-SAR); not published with the CPO/trust center; no review actually scheduled for that date. To close: Derive the review date from the OCR issue date + 3-10 business days, keep it stable, publish it in CPO and trust center, and tie it to the .ics.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-REG",
+      "status": "Not Implemented",
+      "implementation": "No registration link or .ics anywhere in website/ or the published artifacts.",
+      "evidence": [],
+      "gap": "No registration URL or calendar file (artifact missing). To close: Generate an .ics per review from the cycle config and publish it (e.g. /.well-known/quarterly-review.ics) plus a registration form link; reference it from the OCR and CPO.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-RTP",
+      "status": "Partially Implemented",
+      "implementation": "No reviews held, so no third parties invited; no attendance policy exists.",
+      "evidence": [],
+      "gap": "No documented invitation policy limiting third parties. To close: Document an attendee policy (agencies and FedRAMP; third parties only with stated relevance) in the review procedure.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-RTR",
+      "status": "Not Implemented",
+      "implementation": "No reviews held; no recording/transcript procedure.",
+      "evidence": [],
+      "gap": "No recording or transcript supplied to necessary parties. To close: Record or transcribe each review and distribute through the FBM channel; keep them with the OCR issue.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-SAR",
+      "status": "Not Implemented",
+      "implementation": "build-ocr.py:88-89 set the review date equal to the report date (0 business days after).",
+      "evidence": [],
+      "gap": "Review not scheduled 3-10 business days after the OCR release. To close: Compute the review date as OCR issue + N business days with 3<=N<=10 (holiday-aware) and assert it in a test.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-SCR",
+      "status": "Not Implemented",
+      "implementation": "No review content exists.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "CCM-QTR-SRR",
+      "status": "Not Implemented",
+      "implementation": "No recordings exist.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised. No recordings are released; if one ever is, agency information must be removed first.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-AVR",
+      "status": "Partially Implemented",
+      "implementation": "https://samaydlette.com/.well-known/availability.json + availability.md, scripts/build-availability.py (appends one point per deploy, L47-53; WINDOW_DAYS=45 L27).",
+      "evidence": [],
+      "gap": "Not an availability measurement: a point is written only when a deploy succeeds ('A deploy that produces this feed is, by definition, a successful one', L10-11), so an outage can never be recorded and there are no incidents field/records. Days without deploys are simply missing (27 points spanning 2026-08-06..11-05; ~10 in the last 30 days). Trim keeps the last 45 points, not 45 days, so history older than the window persists. Core services are not probed (Silk Reeling API/Cognito not checked at all). Served from the same CloudFront/S3 as the offering, so it is unavailable when the offering is (self-stated residual). To close: Run an external synthetic monitor on independent infrastructure (different provider/region/account and DNS name, e.g. a status subdomain on separate hosting) that probes the site, /.well-known/, and the Silk Reeling API/Cognito every few minutes; record incidents (start, end, affected service, cause); publish JSON + HTML status page from that independent host with 30+ days of continuous history.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-CBF",
+      "status": "Partially Implemented",
+      "implementation": "Each builder renders JSON and Markdown from the same in-memory dict in one run (build-cds-overview.py, build-cpo.py, build-availability.py, build-policy-index.py:109-119, build-sdr.py render_markdown L278, build-ocr.py); trust page renders from trust-center.json.",
+      "evidence": [],
+      "gap": "Human-readable twins are lossy, so the formats are not consistent in content: policy-index.md drops summary and version (build-policy-index.py:112-118); security-decision-record.md shows only KSI id/controls/explanation, not verification/validation or the 333 rev5 control statements. No test or reconcile invariant checks JSON/MD parity. Human-readable policies themselves (docs/policies/*.md) are not cross-checked against the SDR/control statements (ac-policy.md:3 says 'no end-user authentication' while the Cognito user pool exists). To close: Render every JSON field into the human view (or generate the MD from a schema-driven template), and add a parity test/reconcile invariant that parses each .md back and compares against the JSON.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-FID",
+      "status": "Partially Implemented",
+      "implementation": "offering.json:3 fedramp_id flows into certification-overview-package.json and certification-package-overview.json (build-cpo.py:80).",
+      "evidence": [],
+      "gap": "No FedRAMP ID is assigned. Even once assigned, the wiring would not put it in 'all certification data': build-ocr.py:83 hardcodes its own placeholder string; the SDR, VDR reports, availability feed, policy index, SCN records and ksi-signal carry no FedRAMP ID field. To close: Make offering.json the single source of fedramp_id and stamp it into every generated artifact (OCR, SDR, VDR/VDT/AVI, SCN, availability, policy index, trust-center.json); add a reconcile invariant that every published artifact carries the same FedRAMP ID.",
+      "closes_with": [
+        "W3",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-FRC",
+      "status": "Not Implemented",
+      "implementation": "No slot or process for FedRAMP Certification Reports: build-cpo.py PACKAGE_CONTENTS (L30-40) has no entry; no docs/ procedure.",
+      "evidence": [],
+      "gap": "No FedRAMP Certification Report has been received, and there is no mechanism to publish one unmodified within 2 weeks. To close: Add a package slot (store received report verbatim under data/, publish byte-identical with its hash, signed) and a runbook with a 2-week clock tracked as a decision/deadline item.",
+      "closes_with": [
+        "W4",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-HAD",
+      "status": "Not Implemented",
+      "implementation": "No snapshot mechanism: every artifact (including ongoing-certification-report.json) is overwritten in place each deploy; S3 versioning exists on the website bucket but versions are not exposed and are subject to lifecycle expiry (infrastructure/main.tf:148-200).",
+      "evidence": [],
+      "gap": "No snapshot of the certification data aligned to each OCR, and no retention for the duration of certification, and no access explanation. To close: At each OCR date, freeze the full package into an immutable, dated path (e.g. /.well-known/snapshots/2027-02-04/ with a manifest + signatures; S3 Object Lock), list snapshots in the trust center, and document access.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-IRP",
+      "status": "Partially Implemented",
+      "implementation": "policy-index.json and .md under /.well-known/ (scripts/build-policy-index.py): 28 policies with summary, owner, related practices, file, last update and version. Since W1 each policy's date and version (git:<commit>) come from its own last commit in full history; a shallow checkout is refused.",
+      "evidence": [],
+      "gap": "'Related FedRAMP Practices' are mostly Rev5 control families, not FedRAMP rules or KSIs. Procedures (runbooks, verification, deploy notes, architecture decisions) are not indexed. The policies themselves are served only from the repository, with no access explanation in the certification data, and the .md omits summary and version.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-PSM",
+      "status": "Not Implemented",
+      "implementation": "Permissive (MAY). Checked: no per-service materials are supplied; nothing in the rule requires them.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised. Could split package views per service (website, Silk Reeling).",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-PUB",
+      "status": "Partially Implemented",
+      "implementation": "certification-overview-package.json and .md under /.well-known/ (scripts/build-cds-overview.py from data/cds/offering.json): service and deployment model, business category, sales and security contacts, product website, description, service list, documentation and trust-center URLs. The logo is a real PNG at /assets/images/brand/logo.png and /trust/ serves its index (W1).",
+      "evidence": [],
+      "gap": "No UEI (no SAM.gov registration) and no FedRAMP ID (none exists; the provider name and acronym stand in, CDS-CSO-FID). The next-OCR date is now+91 days on every deploy, so it recedes and never arrives (W4 fixes the calendar). The secure configuration guide is not served from the site (W10). The documentation overview and the trust-center link are one field. Current assessment service: none. To close: Register in SAM.gov for a UEI; issue the OCR on a fixed calendar; serve the secure configuration guide from the site; split the documentation overview from the trust-center link.",
+      "closes_with": [
+        "W4",
+        "W10",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-RIS",
+      "status": "Partially Implemented",
+      "implementation": "Every artifact the deploy publishes passes a publication redaction gate (scripts/check-published-redaction.py, W0) that fails on an AWS account ID; account IDs in ARNs are replaced with ACCOUNT before publication. The trust center and boundary map also refuse ARNs and email addresses.",
+      "evidence": [],
+      "gap": "No written disclosure standard says what is public and what is need-to-know; IAM role and policy detail, the API endpoint ID and the CloudFront domain are published without a recorded determination. On sufficiency, the package lacks an independent assessment and the rule records are not yet in the SDR.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-RPS",
+      "status": "Partially Implemented",
+      "implementation": "All data is shared publicly; COP trust_center_status says so (certification-overview-package.json), trust page intro explains the self-attested context.",
+      "evidence": [],
+      "gap": "The artifact requires an explanation of if/how information is shared and the provider's determination that public sharing will not likely have an adverse effect. There is a statement of public sharing but no documented adverse-effect determination, and the redaction practice is inconsistent (see CDS-CSO-RIS). To close: Publish a short sharing statement: what is public, to whom else data goes, and the recorded determination (decision record in data/decisions.json with decided_by/on and review date) that it is not adverse.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-SVC",
+      "status": "Partially Implemented",
+      "implementation": "https://samaydlette.com/.well-known/certification-overview-package.json services[] (2 entries) + .md table; source data/cds/offering.json services.",
+      "evidence": [],
+      "gap": "List exists and names the two services, but security category is a uniform label ('FIPS-199 Moderate (FedRAMP 20x Class C)') rather than each service's own category (the system categorization is C low / I moderate / A low; component C values range not-applicable..moderate). It does not say what is NOT included (e.g. the optional LLM feedback is mentioned, but third-party-hosted podcast audio, the MediaPipe CDN/model hosts, newsletter/feed are not classified in or out). No separate human-readable page on the trust center. To close: Give each service its own C/I/A category derived from the inventory components it contains, add an explicit 'not included' list, and render the list on the trust page.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "CDS-CSO-UTC",
+      "status": "Partially Implemented",
+      "implementation": "https://samaydlette.com/trust/index.html (renders https://samaydlette.com/.well-known/trust-center.json) + signed artifacts under /.well-known/.",
+      "evidence": [],
+      "gap": "A trust center exists, but it is not FedRAMP-compatible: it does not meet CDS-TRC-AAI (no agency access inventory), CDS-TRC-ACL (no viewer-level access logging or summaries), CDS-TRC-PAC (no documented programmatic index of all data), and it is not the 'complete and definitive source' (FRD-TRC): policies live on GitHub, COP/availability/policy-index/OCR are not listed on the trust page. To close: Close the CDS-TRC-* gaps below and make the trust center list and serve every piece of certification data (including policies) from one place.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-AAI",
+      "status": "Not Implemented",
+      "implementation": "Access is anonymous public GET; no identity, registration or access inventory exists anywhere in scripts/ or infrastructure/.",
+      "evidence": [],
+      "gap": "No inventory or history of federal agency users or systems with access; no way to give one to FedRAMP; no explanation artifact. To close: Add an access tier for agencies (e.g. Cognito or OIDC federation with agency IdPs / API keys per agency system) for the full package; record every grant/revoke in an append-only register (who, agency, when, by whom) and document how FedRAMP requests it. An empty inventory with the mechanism live would satisfy the rule today.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-ACL",
+      "status": "Partially Implemented",
+      "implementation": "S3 server access logging on the website bucket (infrastructure/logging.tf:114) to a log bucket retained 400 days (logging.tf:59).",
+      "evidence": [],
+      "gap": "S3 server access logs only see origin fetches; CloudFront edge hits are not logged (no logging_config on the distribution, bootstrap/cloudfront.tf:233-311), so most access to certification data is invisible. No access summaries are produced or stored; no explanation of how parties obtain their log information. To close: Enable CloudFront standard (or real-time) logging for /.well-known/ and /trust/, build a scheduled job that writes monthly access summaries (per artifact, per requester/agency once authenticated) retained >= 6 months, and document how a party requests its records.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-HMR",
+      "status": "Partially Implemented",
+      "implementation": "JSON + .md twins for COP, CPO, SDR, OCR, availability, policy index, VDR (https://samaydlette.com/.well-known/*.md return 200, text/markdown); trust page renders trust-center.json and boundary-map.json.",
+      "evidence": [],
+      "gap": "ksi-signal.json, iiw.csv and boundary-map.json have no full human-readable twin; SDR .md omits most of the record; the .md files are not linked from the trust page; policies are not viewable/downloadable from the trust center. To close: Generate complete human views for every artifact and link both formats for each from one trust-center index.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-PAC",
+      "status": "Partially Implemented",
+      "implementation": "All data is plain HTTPS GET under /.well-known/ (fetched live); the trust page 'Verify' section shows curl + cosign usage; docs/ksi-signal.md documents the signal schema.",
+      "evidence": [],
+      "gap": "No signed machine-readable manifest lists every certification artifact with URL, media type, schema and signature, and no programmatic-access documentation exists to cite. Human-readable policies are served only from the repository.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-SSM",
+      "status": "Not Implemented",
+      "implementation": "Checked: no account, API-key, or access-management features exist (public anonymous access only).",
+      "evidence": [],
+      "gap": "No features for parties to provision or manage their own users' and services' access, and no documentation URL. To close: With the agency access tier from CDS-TRC-AAI, let an agency administrator self-register and manage its own users/service credentials (Cognito groups or API keys scoped per agency), and document it. If staying fully public, document that anonymous access requires no provisioning (weaker).",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-TRC-USH",
+      "status": "Partially Implemented",
+      "implementation": "The trust center is a static public site on CloudFront; /trust/ and every directory URL serve their index through a CloudFront Function (W1), and /.well-known/*.json are served directly.",
+      "evidence": [],
+      "gap": "Availability of the trust center is not measured independently (CDS-CSO-AVR), there is a single origin with no failover (DEC-009), and the page's content needs JavaScript.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-UTC-AAD",
+      "status": "Not Implemented",
+      "implementation": "Checked: no access-request process, denial path or FedRAMP-notification procedure in docs/policies, docs/runbooks or data/decisions.json.",
+      "evidence": [],
+      "gap": "No procedure to notify FedRAMP within 5 business days of denying an agency access request, and no tracking of the clock. To close: Write the access-request/denial procedure (who decides, record as a decision kind, auto-compute the 5-business-day deadline, notify FedRAMP via its published channel) and add it to the policy index.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CDS-UTC-AGA",
+      "status": "Partially Implemented",
+      "implementation": "Everything is public, so any agency can obtain the package without asking.",
+      "evidence": [],
+      "gap": "Neither artifact exists: no URL/explanation of how to request the package (beyond the public data) and no explanation of how the provider decides whether to share. To close: Add a 'Request access' section to the trust page (contact, what is provided, turnaround) and a sharing-decision policy entry.",
+      "closes_with": [
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "CMU-CSO-CAT",
+      "status": "Not Implemented",
+      "implementation": "Checked infrastructure/cognito.tf, silk-reeling.tf and bootstrap/cloudfront.tf: tenant-facing defaults use standard endpoints; no list of default modules exists.",
+      "evidence": [],
+      "gap": "No configuration that defaults agency tenants (Silk Reeling users/tenants) to validated modules, and no list of default modules with validation status. To close: Define the agency-tenant default (FIPS endpoints, TLS policy on CloudFront/API Gateway, KMS CMKs) in Terraform, and publish the generated list of default modules with CMVP status.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "CMU-CSO-CMD",
+      "status": "Partially Implemented",
+      "implementation": "certification-package-overview.json cryptographic_modules (4 entries, from offering.json); research/authorization-boundary.html#fips (L86-91); boundary-map.json fips_modules.",
+      "evidence": [],
+      "gap": "Not per service and not complete: Silk Reeling's Cognito, API Gateway TLS, Lambda runtime TLS, DynamoDB/SQS/SNS encryption, Secrets Manager, CloudTrail log-file validation, Route 53 DNSSEC signing are not listed. Validation status is imprecise: 'FIPS-validated cipher suites' for CloudFront TLS is not a CMVP status (no module name/cert number); S3 SSE-S3 has no validation status; no CMVP certificate numbers anywhere. Stale: lists an 'app secret' CMK (removed by SCN-2026-006) and omits the silk_reeling CMK (silk-reeling.tf:50). To close: Build the module list from the inventory per service: for each AWS service used, cite the module (e.g. AWS-LC FIPS, KMS HSM) with CMVP certificate number and whether it is validated or an update stream, from AWS's published FIPS documentation; generate it, don't hand-maintain it, and fail the build when a new crypto-using service appears unmapped.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "CMU-CSO-UVM",
+      "status": "Partially Implemented",
+      "implementation": "Customer-managed keys use AWS KMS (FIPS 140-3 HSM): infrastructure/main.tf:532,605,648; silk-reeling.tf:50,207.",
+      "evidence": [],
+      "gap": "Validated modules are not shown for the paths that would protect customer data in transit: CloudFront, API Gateway and Cognito are reached via standard (non-FIPS) endpoints with no evidence their TLS module is validated; buckets use SSE-S3 rather than SSE-KMS; Sigstore signing is non-validated (not customer data, but documented). To close: Confirm and document each customer-data path's module validation from AWS FIPS docs; use FIPS endpoints where offered (cognito-idp-fips, API Gateway via FIPS endpoint, KMS-fips), move data-bearing stores to SSE-KMS, and record any remaining non-validated path as a decision.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "CPO-CSO-MTD",
+      "status": "Partially Implemented",
+      "implementation": "certification-package-overview.json accountable_official (name, title, email) and metadata.last_updated / source_of_update (build-cpo.py:66-72).",
+      "evidence": [],
+      "gap": "Version is the constant 'live (regenerated each deploy)' (build-cpo.py:69), which identifies nothing; fields are not in the schema's names. To close: Use a real version (e.g. semver bumped on content change, or commit SHA + signal_id) and map to the schema's metadata fields.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "CPO-CSO-OSA",
+      "status": "Not Implemented",
+      "implementation": "certification-package-overview.json independent_assessment.status = 'N/A ... no FedRAMP Recognized independent assessment service engaged' (build-cpo.py:97-102).",
+      "evidence": [],
+      "gap": "No independent assessment, so no assessor-supplied overall summary. To close: Engage a FedRAMP Recognized assessment service, receive its IVV-IAS-OSA summary (signed assessor record, as _assessor.py already supports), and embed it unmodified in the CPO.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "CPO-CSO-OVR",
+      "status": "Partially Implemented",
+      "implementation": "https://samaydlette.com/.well-known/certification-package-overview.json + .md (scripts/build-cpo.py).",
+      "evidence": [],
+      "gap": "Does not validate against FedRAMP's CPO schema (vendored infrastructure/schemas/fedramp-2026-06-24/...certification-package-overview...: running scripts/_fedramp_schema.validate on the live file: wrong $schema, missing serviceIdentification, serviceProperties, contactInformation) even though its 'schema' field names it. Of the required content: CDS-CSO-PUB is only linked (and partial); IRP only linked; MAS-CSO-IIR is a count and a link; MAS-CSO-FLO and MAS-CSO-TPR are absent (only named in a 'reference' string); CMU-CSO-CMD is partial; IVV-CSO-ICP is 'N/A'. To close: Rebuild the CPO in FedRAMP's schema shape (serviceIdentification, serviceProperties, contactInformation, assessor, certifiedServices, thirdPartyInformationResources), validate it with write_validated() like the VDR reports, and include or reference the MAS flow/TPR data and the assessor's IVV material.",
+      "closes_with": [
+        "W3",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "CPO-CSX-CPM",
+      "status": "Partially Implemented",
+      "implementation": "The package (CPO, SDR, OCR, CDS artifacts) is rebuilt and published on every deploy to main; the VDR family is rebuilt twice daily.",
+      "evidence": [],
+      "gap": "Nothing guarantees a rebuild at least every 2 weeks: with no push to main for 14 days, the CPO, SDR and OCR go stale, and no freshness window covers them at that cadence.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-AFC",
+      "status": "Not Implemented",
+      "implementation": "Checked: no application form completed or drafted in the repo.",
+      "evidence": [],
+      "gap": "Form not completed. Completing it 'in full' depends on prerequisites not met (Marketplace listing, fresh independent assessment, UEI). To close: After the prerequisites, the operator completes and submits the FedRAMP Certification Application Form personally; keep a copy in the package.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-FCP",
+      "status": "Partially Implemented",
+      "implementation": "Package artifacts regenerate on every deploy (deploy-with-opa.yml build steps ~L1558-1600) and the runtime emitter re-validates daily (trust-center.json 'runtime' check).",
+      "evidence": [],
+      "gap": "Freshness is not bounded at 7 days: deploys are irregular (gaps 2026-08-27→09-24, 10-05→10-20 in the SDR metric history) and the governed freshness window for ksi-signal/OCR/COP/policy-index is 720h (infrastructure/schemas/freshness-config.json); the package is also incomplete (see FRC-CSO-PKG). To close: Rebuild and re-verify the full package on a schedule (at least weekly, e.g. a cron job reusing the deploy build) and set package freshness windows to <=168h so the watchdog alarms on staleness.",
+      "closes_with": [
+        "W4"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-FIA",
+      "status": "Not Implemented",
+      "implementation": "certification-package-overview.json independent_assessment: none engaged; SDR assessor_records.status 'no assessor record'.",
+      "evidence": [],
+      "gap": "No independent assessment by a FedRAMP Recognized assessment service, let alone within 3 months. To close: Engage a FedRAMP Recognized assessor, complete the assessment, and apply within 3 months of its completion.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-MLF",
+      "status": "Not Implemented",
+      "implementation": "Not listed in the FedRAMP Marketplace (stated in docs/cr26-applicability.md and COP).",
+      "evidence": [],
+      "gap": "No listing; MKT-CSO-MLR depends on CDS-CSO-PUB (partial); MKT-CSO-PML request not sent; MKT-IIP-AGU agency use case and MKT-IIP-DCP continuous progress not shown. To close: Finish CDS-CSO-PUB, document an agency use case within FedRAMP scope, submit the Marketplace Provider Listing Request Form, and publish continuous-progress evidence.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-NTP",
+      "status": "Partially Implemented",
+      "implementation": "No application exists, and the CPO names the operator as the accountable official, the person who would apply.",
+      "evidence": [],
+      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. To close: Operator applies personally; do not let the assessor or an advisor submit.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-APP-USA",
+      "status": "Not Implemented",
+      "implementation": "Permissive (MAY). Checked: no initial assessment exists, so there is nothing stale to freshen.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSO-FCP",
+      "status": "Partially Implemented",
+      "implementation": "Target stated: Class C, Moderate, 20x (system-profile categorization in ksi-signal.json; CPO class/impact). Conformance self-report: trust-center.json profile summary 18 implemented / 16 partial / 38 not yet.",
+      "evidence": [],
+      "gap": "The profile is identified, but 'apply all relevant FedRAMP Practices' is not met: most applicable rules are partially implemented or not implemented (see these records), and docs/cr26-applicability.md still records some families as not applicable.",
+      "closes_with": [
+        "W3",
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSO-JSN",
+      "status": "Partially Implemented",
+      "implementation": "The VDT, AVI and VDR history are written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas and published (C3a, #496). The CPO, SDR and OCR are JSON but in their own field names.",
+      "evidence": [],
+      "gap": "Live CPO, SDR and OCR do not validate against the vendored FedRAMP schemas (validate(): cpo 4 errors, sdr 6, ocr 11 — wrong $schema, missing required top-level objects), and their builders do not call write_validated. No CORS: a GET with Origin: https://example.org returns no Access-Control-Allow-Origin, so browser apps on other domains cannot read the JSON. To close: Port build-cpo.py, build-sdr.py and build-ocr.py to the FedRAMP schemas and write them via write_validated(); add a CloudFront response-headers policy for /.well-known/* with Access-Control-Allow-Origin: * (GET/HEAD/OPTIONS) and add a live check of the headers in verify-published.sh.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSO-MRA",
+      "status": "Partially Implemented",
+      "implementation": "Reconciliation gate (scripts/reconcile.py; live reconcile-report.json: 10 invariants held) blocks publishing inconsistent artifacts; signed provenance; AI-drafted third-party records are held at 'not recorded' until decided (data/third-party-components.json _note).",
+      "evidence": [],
+      "gap": "The reconciliation gate checks the inventory but not the package's claims: the CPO, SDR and OCR do not validate against their schemas, and no check covers URL liveness, the CMK list against the inventory, a fixed OCR calendar, or one FedRAMP ID across artifacts. W1 corrected the logo, policy dates, AC policy and CMK list, each with a test.",
+      "closes_with": [
+        "W3",
+        "W8"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSO-PKG",
+      "status": "Not Implemented",
+      "implementation": "Package components exist publicly (CPO, SDR, OCR under /.well-known/), but nothing has been supplied to FedRAMP.",
+      "evidence": [],
+      "gap": "No package supplied to FedRAMP; the components that exist are incomplete (CPO/SDR/OCR fail FedRAMP schemas; SDR lacks FRR records and independent V&V). To close: Complete CPO/SDR/OCR per their rules and schemas, then submit through the FedRAMP application (FRC-APP-*).",
+      "closes_with": [
+        "W3",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSO-POP",
+      "status": "Partially Implemented",
+      "implementation": "Checked: no application for either program exists (no FedRAMP ID, no Marketplace listing, no application in repo/docs); docs/cr26-applicability.md targets 20x Class C.",
+      "evidence": [],
+      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. Labels mix programs (CPO/SDR impact_level_canonical 'Moderate (FedRAMP Rev 5; 20x Class C)'; SDR carries rev5_controls), which could read as seeking both. To close: When applying, apply for 20x only and state certificationType '20x Class C' alone in the CPO.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSX-MAS",
+      "status": "Partially Implemented",
+      "implementation": "The KSI signal applies the KSIs to the inventoried components (ksi-signal.json), derived from Terraform state.",
+      "evidence": [],
+      "gap": "The inventory misses external services the site loads from (cdn.jsdelivr.net, storage.googleapis.com) and some flows, and human-process KSIs are not applied per component; MAS-CSO-IIR and MAS-CSO-FLO carry the detail.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSX-VVK",
+      "status": "Partially Implemented",
+      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration for object stores and the distribution daily (ksi-signal-runtime.json).",
+      "evidence": [],
+      "gap": "Class C requires at least two automated methods for each KSI. The runtime check covers only some component types, and no record counts the automated methods per KSI to show two exist for each.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "FRC-CSX-VVR",
+      "status": "Partially Implemented",
+      "implementation": "scripts/_frr.py checks the rule records automatically on every build: the set matches the pinned corpus, and every piece of evidence cited resolves to a test, workflow step, published artifact or decision.",
+      "evidence": [],
+      "gap": "Resolution shows the evidence exists, not that it passed for the rule: the records are not yet tied to test results (conformance-results.json) or published in the SDR.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-AIR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
+      "evidence": [],
+      "gap": "No automation exists for incident reporting; nothing exists to automate. To close: Once the incident register and report builder exist, run them from a workflow (workflow_dispatch + on push to the incident register) that validates, signs, publishes and sends IIR/OIR/FIR automatically, and pages through the existing watchdog/SNS when a report deadline is near or missed.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-DPR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
+      "evidence": [],
+      "gap": "Nothing assigns a PAIN rating to an incident, so there is no default-to-N5 behaviour and no record of whether a prompt estimate replaced it. The VDR PAIN classifier (scripts/build-vdr-report.py:1730 assign_pain) rates vulnerabilities, not incidents. To close: In the incident register, set pain=5 with basis 'default (IEC-CSO-DPR)' when a record becomes reportable, and allow it to drop only through an EFI estimate record (rating, reason, estimated_at). Drive the IIR/OIR/FIR clocks from the effective rating. Test both paths and show them in the simulated-incident log.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-EFI",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
+      "evidence": [],
+      "gap": "No Incident Rating step: nothing estimates likely adverse impact on agency customers for an incident or assigns N1-N5 using the minimal/narrow/disruptive/debilitating x 1 or >1 agency scale. The required artifact (an incident log showing the evaluation and its reason) does not exist. To close: Add an EFI record type to the incident register: rating N1-N5, the customer-effect word, single or multiple agencies, reason, estimated_at. Document the rubric in docs/incident-response.md (it can reuse the VDR effect words from infrastructure/schemas/vdr-pain-config.json). Exercise it in the simulated incidents.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-EFR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. docs/policies/ir-policy.md:15 only restates the trigger.",
+      "evidence": [],
+      "gap": "No step that evaluates each incident for effect (actual or likely) on confidentiality/integrity of federal customer data, no recorded determination with its reason, and no incident log. The required artifact (an incident log showing one or more real or simulated incidents evaluated, with the reason for the determination) does not exist. The runbook explicitly scopes federal-data incidents out, so it can't make the determination the rule asks for. To close: Add an incident register (e.g. data/incidents.json + schema) whose records carry detected_at, evaluated_at, reportable (bool), reason, and the federal-customer-data types considered. Add an 'Evaluate FedRAMP reportability' step to docs/incident-response.md triage (before Contain), define the data types that would be federal customer data for this offering, and fail a check if any incident record lacks an evaluation. Exercise it with at least two simulated incidents (one reportable, one not) and publish the log.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-FIR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. A schema test fixture (tests/fixtures/cr26/good/incident.json, reportType Final, CVE-2099-0142) checks the validator only; it is not an incident.",
+      "evidence": [],
+      "gap": "No Final Incident Report generation on resolution/recovery, no final updates to all previously reported items, no clock (Class C: within 6 hours for N3-N5, 1 business day for N1-N2, after recovery), no delivery. No sample FIR. To close: Add reportType=Final generation when the incident record gets resolved_at and recovery_complete_at, with final values for every earlier IIR/OIR field. Alarm on the FIR deadline. Close the simulated incident with a FIR and link it from the incident log and the Ongoing Certification Report.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-IIR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. The vendored schema infrastructure/schemas/fedramp-2026-06-24/fedramp-incident-report-schema-2026-06-24.json (reportType Initial/Ongoing/Final, federalIncidentCoordinator, timeline, potentialImpact, functionalImpact, recoveryPlan, affectedAgencies) and its validator are in place, but nothing produces a report.",
+      "evidence": [],
+      "gap": "No Initial Incident Report generator, no delivery to all affected parties (FedRAMP + affected agencies), and no clock (Class C: within 1 hour for N3-N5, 24 hours for N2, 1 business day for N1). None of the 8 items exists in any record: federal incident response coordinator contact, tracking ID, description, timeline (start, detection time/source, evaluation time, milestones), historical/current PAIN with EFI explanation, functional impact incl. C/I and federal data types, recovery plan/milestones, likely affected agencies. No sample IIR exists, real or simulated. To close: Build scripts/build-incident-report.py that renders an IIR from the incident register into the vendored schema (validated before write) plus a human-readable version; name the federal incident response coordinator contact; add a delivery step (e.g. signed publication to a restricted location plus email to a configured recipient list holding FedRAMP's incident address and each agency's contact) that starts on 'reportable' and is alarmed against the PAIN-based deadline (watchdog). Run a timed simulated incident end to end and keep the IIR.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IEC-CSO-OIR",
+      "status": "Not Implemented",
+      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
+      "evidence": [],
+      "gap": "No Ongoing Incident Report mechanism or cadence (Class C: every 6 hours for N3-N5, 24 hours for N2, 1 business day for N1), no 'updates or lack of updates' logic, and none of the additional items recorded: observed activity, IOCs, related CVE, root cause, response/recovery activities. No sample OIR. To close: Extend the incident report builder for reportType=Ongoing: diff against the previous report so every earlier item is restated (changed or 'no update'), add the 5 OIR fields to the incident record, and schedule/alarm the next OIR from the effective PAIN. Produce OIRs in the simulated exercise.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-DUS",
+      "status": "Partially Implemented",
+      "implementation": "Searched docs/ and scripts/ for sampling: no use of representative samples documented anywhere.",
+      "evidence": [],
+      "gap": "Conditional rule; nothing states whether verification/validation uses full populations or samples (e.g. runtime emitter coverage), so an assessor cannot confirm it is not triggered. To close: Add a statement to the SDR/verification.md that checks run over the full inventory (with counts from the KSI signal), or document any sampling method if used.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-FIA",
+      "status": "Not Implemented",
+      "implementation": "Live certification-package-overview.json independent_assessment: 'N/A — no FedRAMP Recognized independent assessment service engaged'; SDR assessor_records.status 'no assessor record'; data/assessor-records/README.md: none engaged.",
+      "evidence": [],
+      "gap": "No annual independent verification and validation of all applicable rules by a FedRAMP Recognized assessor or FedRAMP. To close: Engage a FedRAMP Recognized independent assessment service; pin its key (infrastructure/keys/assessor-identity.json) and ingest its signed records; schedule the persistent annual cycle. Provider prerequisite: SDR records for every applicable FRR (today only 46 KSI records), see SEI/SEE.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-ICP",
+      "status": "Partially Implemented",
+      "implementation": "scripts/_assessor.py: signed-record intake (ECDSA P-256 verify against pinned identity, verbatim carry, verify_output() at line 153 fails the build if output differs); build-sdr.py:36,201 wires it in; SDR assessor_records = 'no assessor record'.",
+      "evidence": [],
+      "gap": "No independent-assessment results exist to include; CPO independent_assessment is N/A text. To close: When an assessment occurs, ingest its signed results through the existing port and list the assessment report in CPO package_contents unaltered.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-RAA",
+      "status": "Not Implemented",
+      "implementation": "No assessor engaged.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-SEE",
+      "status": "Partially Implemented",
+      "implementation": "SDR 'validation' field present on 46 KSI records; runtime drift check (scripts/check-runtime-divergence.py, deploy-with-opa.yml:1139) and evidence-nightly.yml produce live effectiveness signals.",
+      "evidence": [],
+      "gap": "'validation' is one identical sentence for all 46 KSIs; no per-rule effectiveness results; FRR rules absent from the SDR; nothing supplied to an assessor. To close: Emit per-rule validation results (runtime check outcomes, test runs, drill records with dates) into the SDR for every applicable rule.",
+      "closes_with": [
+        "W3",
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-SEI",
+      "status": "Partially Implemented",
+      "implementation": "Live security-decision-record.json: 46 rule_records (KSI only) each with a 'verification' field; 333 rev5_controls with mechanisms; scripts/verify-published.sh + docs/verification.md let a third party verify signatures/provenance.",
+      "evidence": [],
+      "gap": "The 'verification' text is the same boilerplate sentence for all 46 KSIs (1 distinct value), so it is not per-measure implementation evidence; the SDR has no records for FRR rules (CCM, SCN, SCG, AFC, IVV, VDR, etc.), so 'all applicable FedRAMP rules' have no implementation evidence; nothing has been supplied to an assessor. To close: Generate per-rule verification entries (KSIs and every applicable FRR) that cite the specific check/artifact and result (e.g. OPA rule id + pass/fail, file + line, live check output), and package them for assessor delivery.",
+      "closes_with": [
+        "W3",
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-STE",
+      "status": "Partially Implemented",
+      "implementation": "docs/verification.md and scripts/verify-published.sh (reproducible signature/provenance/schema checks from the public internet); SDR rev5_controls mechanisms text.",
+      "evidence": [],
+      "gap": "No assessor-oriented technical walkthrough per rule/KSI (how each check works, how to run it, expected output), and no assessor to supply it to. To close: Write an assessor guide mapping each rule to its mechanism, command to reproduce, and evidence location; offer a demonstration session.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSO-USR",
+      "status": "Not Implemented",
+      "implementation": "No sampling in use.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "IVV-CSX-AIA",
+      "status": "Not Implemented",
+      "implementation": "No FedRAMP independent assessment has taken place. The package is built so an assessor can verify each KSI.",
+      "evidence": [],
+      "gap": "Engaging an assessor is the operator's decision; until then no annual independent assessment covers the KSIs (operator's decision of 2026-11-05: assessor-ready, none engaged).",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "MAS-CSO-FLO",
+      "status": "Partially Implemented",
+      "implementation": "https://samaydlette.com/.well-known/boundary-map.json: 11 flows with protocol/auth/encryption/data, 137 edges derived from Terraform, per-node classification; flows declared in docs/boundary/boundary-classification.json and resolved against the inventory (unmatched endpoints check = 0); code scripts/build-boundary-graph.py; human view on /trust/ and authorization-boundary page.",
+      "evidence": [],
+      "gap": "Flows are not complete for ALL resources: missing user→Cognito Hosted UI authentication, browser→jsDelivr / storage.googleapis.com, Lambda/app→DynamoDB/SQS, CloudTrail/S3/CloudFront→log bucket, operator→AWS console (Duo/root MFA), nightly→GitHub Advisory DB / CISA KEV / detection feeds. Security categories are per component (classification) but flows carry no category. To close: Add the missing flows to the classification, and add a check that every inventoried external service and every data store appears in at least one flow; derive per-flow security category from its endpoints.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "MAS-CSO-IIR",
+      "status": "Partially Implemented",
+      "implementation": "Machine-readable: https://samaydlette.com/.well-known/ksi-signal.json components[] (214, from Terraform state + SBOMs) and iiw.csv; human-readable derivation: docs/ksi-signal.md and research/authorization-boundary.html; code: scripts/build-ksi-signal.py; reconcile invariant (a) 'every live in-boundary resource is in the inventory' held.",
+      "evidence": [],
+      "gap": "Incomplete: the Silk Reeling SPA loads MediaPipe code from cdn.jsdelivr.net and models from storage.googleapis.com and talks to Cognito Hosted UI (bootstrap/cloudfront.tf:185-186, 378-380); jsDelivr and Google Cloud Storage are not inventoried as information resources although they run code next to the camera feed. The npm package is listed, the delivery services are not. (Repo publicity for the 'code' artifact not verified from here.) To close: Derive external services from the CSP/connect-src allowlists and runtime egress as well as Terraform, so every origin the app loads code or data from becomes an inventoried component; or self-host MediaPipe assets and models.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "MAS-CSO-MDI",
+      "status": "Not Implemented",
+      "implementation": "Checked: no metadata inventory; CPO says 'MAS-CSO-MDI N/A (no federal customer data)'.",
+      "evidence": [],
+      "gap": "No machine-readable output, explanation or code covering metadata the offering collects: Cognito user records (email, MFA), CloudFront/S3/API Gateway/Lambda logs (IP addresses, user agents), CloudTrail, DynamoDB items, SNS subscriptions. To close: Classify each data store/log as metadata in the inventory (type, contents, retention, location), emit a metadata section from build-ksi-signal.py, and document the derivation.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "MAS-CSO-SUP",
+      "status": "Not Implemented",
+      "implementation": "Permissive (MAY). Checked: the package supplies no supplement; CPO package_contents lists only in-scope artifacts.",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised. If coverage material for other frameworks (CMMC, GovRAMP, TX-RAMP on the trust page) is ever put in the package, mark it as supplemental.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "MAS-CSO-TPR",
+      "status": "Partially Implemented",
+      "implementation": "ksi-signal.json external_service components (7) carry purpose, cia_impact, verification_mechanism, baseline_configuration; data/third-party-components.json holds responsibility split records; build-ksi-signal.py:1322-1345.",
+      "evidence": [],
+      "gap": "All 7 third-party records are undecided (decided_by/decided_on null), so the published upstream_offering/responsibility_split read 'not recorded'. No explicit justification-for-use, mitigation-measures or compensating-controls fields per resource. jsDelivr and Google Cloud Storage (MediaPipe) are missing entirely. Not included in the CPO (schema thirdPartyInformationResources). To close: Add the four required fields (usage/configuration, justification, mitigations, compensating controls) to the record schema, have the operator decide all records, add the MediaPipe hosts, and emit them into the CPO's thirdPartyInformationResources.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "MKT-CSO-MLR",
+      "status": "Partially Implemented",
+      "implementation": "CDS-CSO-PUB data exists (see CDS-CSO-PUB).",
+      "evidence": [],
+      "gap": "CDS-CSO-PUB is only partial (no UEI, no FedRAMP ID, a receding OCR date, no assessor) and no listing application or update request exists. Not applying is the operator's decision of 2026-11-05 (build to apply, don't apply).",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "MKT-CSO-PML",
+      "status": "Not Implemented",
+      "implementation": "Checked: no listing request sent (docs/cr26-applicability.md records MKT as N/A).",
+      "evidence": [],
+      "gap": "Marketplace Provider Listing Request Form not submitted. To close: Operator submits the FedRAMP Marketplace Provider Listing Request Form once PUB data and an agency use case are ready.",
+      "closes_with": [
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "SCG-CSO-AUP",
+      "status": "Partially Implemented",
+      "implementation": "Live policy-index.json (listed in CPO package_contents) has an entry 'Secure Configuration Guide' with file 'docs/policies/secure-configuration-guide.md' (repo-relative path, no URL).",
+      "evidence": [],
+      "gap": "The certification package lists no secure configuration guide, and the guide is not served from the site; the OCR's reference to it points nowhere on samaydlette.com.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-CSO-PUB",
+      "status": "Partially Implemented",
+      "implementation": "A secure configuration guide exists in the repository only.",
+      "evidence": [],
+      "gap": "The guide is not published on the site in human-readable or machine-readable form, and its content predates the current inventory.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-CSO-RSC",
+      "status": "Partially Implemented",
+      "implementation": "docs/policies/secure-configuration-guide.md (94 lines): sections 1 (AWS root, l.7-17) and 2 (GitHub owner, l.19-40) give access/config/operation/decommission instructions.",
+      "evidence": [],
+      "gap": "Required item 1 is inaccurate: root 'MFA enforced via Duo' (l.11) vs DEC-025 (virtual TOTP on root and operator IAM user); l.29-36 prescribe 90-day rotation of a deployer IAM user access key although CI uses OIDC roles (deploy-with-opa.yml:328,639; DEC-001 closed/remediated); section 3 (l.49-62) still describes the retired Basic Auth credential, 'no authorizer' and 'access logging deferred', contradicting SCN-2026-002. Required item 2 is missing: l.67-76 declare it N/A by misreading it as customer settings; root-only and owner-only security settings (root MFA, account password policy, account-level S3 BPA, account closure; branch protection, Actions permissions, environment reviewers) are not explained with their implications. Recommended item 3 missing: privileged accounts (operator IAM user saydlette-dev, deploy/plan/evidence-nightly roles, Cognito user-pool admin) not covered. Artifacts: no samaydlette.com URL for the human-readable guide and no machine-readable version. To close: Rewrite the guide from the current inventory: correct MFA/credential facts, delete the access-key and Basic Auth material, add a root-only/owner-only settings table with security implications, add a privileged-accounts section, and generate both an HTML page on samaydlette.com and a JSON form from one source each deploy (with a test that fails when the guide names a retired mechanism).",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-CSO-SDF",
+      "status": "Partially Implemented",
+      "implementation": "Terraform-provisioned accounts ship hardened: infrastructure/cognito.tf:17 allow_admin_create_user_only, :21 mfa_configuration ON, :27 minimum_length 14; IAM roles least-privilege via Terraform.",
+      "evidence": [],
+      "gap": "The top-level administrative accounts (AWS root, GitHub owner) and the operator IAM user are not provisioned from code, and their MFA is virtual TOTP rather than the phishing-resistant default the system itself treats as the target (DEC-025, past due 2026-10-30); no explanation of how to access the defaults (artifact). To close: Move root/operator to phishing-resistant MFA (hardware key/passkey) and close DEC-025; record initial-provisioning defaults for the non-Terraform accounts in the guide and check them.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-ENH-API",
+      "status": "Partially Implemented",
+      "implementation": "Guide l.83 points to AWS and GitHub APIs as the upstream APIs.",
+      "evidence": [],
+      "gap": "Only a generic pointer; no explanation of which API calls view/adjust which security settings in this system. To close: Document, per setting in the SCG, the AWS/GitHub API or CLI call to read and change it (and that changes go via Terraform/PR).",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-ENH-CMP",
+      "status": "Partially Implemented",
+      "implementation": "scripts/check-manual-settings.py (deploy-with-opa.yml:1664) compares live GitHub environment reviewers / required checks to expected values and publishes to trust-center.json (github_settings 'ok'); scripts/check-runtime-divergence.py compares live AWS config to deploy-time signal.",
+      "evidence": [],
+      "gap": "No comparison for AWS root settings (MFA type, root access keys absent, password policy) or the operator IAM user; the comparison is against deploy-time state, not against the guide's recommended defaults; GitHub owner settings beyond branch checks 'need admin access and are not observed'. To close: Add checks for root/operator settings (IAM credential report: root MFA, no root keys, MFA type; account password policy; account S3 BPA) and GitHub owner settings, comparing to the machine-readable SCG defaults; publish results.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-ENH-EXP",
+      "status": "Partially Implemented",
+      "implementation": "Guide l.81 offers 'all configuration is in Terraform code'; trust-center.json publishes manual-settings results.",
+      "evidence": [],
+      "gap": "Terraform source is not an export of current security settings; root and GitHub-owner settings are not exported at all; no machine-readable export of current values. To close: Publish a signed JSON export of current security settings for top-level admin and privileged accounts (from the CMP checks) each nightly.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-ENH-MRG",
+      "status": "Not Implemented",
+      "implementation": "None: no machine-readable secure configuration guidance exists.",
+      "evidence": [],
+      "gap": "No machine-readable SCG that tools can compare against current settings. To close: Emit the recommended defaults as JSON (setting id, account, recommended value, implication, check id) and use it as the CMP comparison input.",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCG-ENH-VRH",
+      "status": "Partially Implemented",
+      "implementation": "Git history of docs/policies/secure-configuration-guide.md.",
+      "evidence": [],
+      "gap": "No version number or release history of the recommended defaults; git history mixes editorial and default changes, and the guide's stale content shows changes to defaults were not released into it. To close: Add a version and a changelog of default changes to the machine-readable SCG; bump on each default change (enforced by a test when the defaults JSON changes).",
+      "closes_with": [
+        "W10"
+      ]
+    },
+    {
+      "frr_id": "SCN-ADP-NTF",
+      "status": "Partially Implemented",
+      "implementation": "Each adaptive SCN record carries a new-risks summary (scn-register.csv new_risks_summary; SCN md section 5).",
+      "evidence": [],
+      "gap": "No notification has been sent to anyone: notify_by says 'No necessary parties'; FedRAMP is always a necessary party (FRD 'All Necessary Parties'), so this is not N/A; no sent-date is recorded for any SCN (artifact requires sent date and applied date). To close: Send each adaptive SCN through the NOM mechanism within 10 business days of date_finished, record sent_on in the register, and add a check that fails when date_finished + 10 business days passes without sent_on.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-ARI",
+      "status": "Partially Implemented",
+      "implementation": "docs/scn/SCN-2026-001-silk-reeling.md sections 3-5 (boundary delta, SIA by control family, verification result) add information beyond SCN-CSO-INF.",
+      "evidence": [],
+      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-EMG",
+      "status": "Partially Implemented",
+      "implementation": "docs/incident-response.md:86-104 emergency-change procedure; scn-tag.yml:53-58 recognizes 'emergency'.",
+      "evidence": [],
+      "gap": "Never exercised; 'notify all necessary parties' has no channel; no gate that requires the retroactive SCN materials (only a warning). To close: Add a check that opens/blocks until a retroactive SCN record exists for each emergency-tagged commit within 5 business days; route notification through the NOM mechanism.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-EVA",
+      "status": "Partially Implemented",
+      "implementation": ".github/workflows/scn-tag.yml (required check, confirmed live by check-manual-settings 'main requires 4 status checks', EXPECTED_REQUIRED_CHECKS l.39) validates an SCN-Type line; docs/policies/cm-policy.md:5; six adaptive records with categorization rationale (docs/scn/SCN-2026-00[1-6]*.md section 1).",
+      "evidence": [],
+      "gap": "Evaluation is not forced: a missing tag passes as routine-recurring (scn-tag.yml:59), and only 8 of 273 commits since 2026-08-01 carry any SCN-Type, so most changes have no recorded evaluation; the gate has no 'not significant' or 'class change' outcome and requires no rationale; commit 437be7b carries 'SCN-Type: Routine Recurring', a value the case statement (l.49-66) rejects. Adaptive tags do not require an SCN record (e.g. #376 tagged adaptive has none). Artifact gap: no example (real or fictitious) for routine-recurring, transformative or class change. SCN-2026-001 (new non-FedRAMP external interconnection) was judged adaptive 'at the upper edge'; the rationale should be revisited. To close: Require an explicit SCN-Type plus a one-line rationale on every PR (fail when missing); add values not-significant and class-change (class-change blocks and points to reassessment); fail when adaptive/transformative lacks a docs/scn record; add documented examples for each type (fictitious allowed).",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-HIS",
+      "status": "Partially Implemented",
+      "implementation": "docs/scn/ holds all six SCNs since 2026-06 (README: rows never deleted).",
+      "evidence": [],
+      "gap": "The SCN register and records are in the repository only; nothing under /.well-known/ publishes them, and the CPO lists no SCN material or how FedRAMP obtains it.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-HRM",
+      "status": "Partially Implemented",
+      "implementation": "Human-readable: docs/scn/*.md and scn-register.csv.",
+      "evidence": [],
+      "gap": "No JSON form of SCNs or of the related audit records (CSV is not JSON); no explanation of how to request them or how sharing is decided. To close: Emit SCN JSON (schema-valid) and the evaluation log as JSON; add access + sharing statement to the CPO.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-INF",
+      "status": "Partially Implemented",
+      "implementation": "docs/scn/scn-register.csv columns cover all ten items (fedramp_id, assessor_name, related_vulnerability, scn_type, categorization_rationale, short_description, reason_for_change, customer_impact, plan_and_timeline, sia_reference, approver_name/title); per-change SIA in docs/scn/SCN-2026-00x-*.md.",
+      "evidence": [],
+      "gap": "Service Offering FedRAMP ID is the placeholder '<FR-CERT-ID>'; not emitted in FedRAMP's SCN schema (tests/fixtures/cr26/good/scn.json exists but no builder); SCN-2026-006 verification still unrecorded (trust center scn_unverified); some impacted-control lists reference the retired OSCAL SSP/POA&M. To close: Generate per-SCN JSON in fedramp-significant-change-notifications-schema via _fedramp_schema.write_validated; fill the FedRAMP ID when assigned; record SCN-2026-006 verification.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-MAR",
+      "status": "Partially Implemented",
+      "implementation": "Git history + scn-tag.yml run logs; docs/scn/README.md 'How this relates' explains git history is the audit record; register and per-change records in docs/scn/.",
+      "evidence": [],
+      "gap": "Records of evaluation are incomplete because the default-to-routine path records no evaluation; Actions logs expire (default 90 days), so the gate's decisions are not durable; no explanation in the Certification Package of how FedRAMP obtains the records. To close: Write each evaluation (commit, type, rationale, evaluator, date) to an append-only signed log published with the certification data; state access in the CPO.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-CSO-NOM",
+      "status": "Partially Implemented",
+      "implementation": "docs/scn/README.md: notification = publishing updated certification data; register notify_by column says 'No necessary parties ... the public GitHub push ... is the notification'.",
+      "evidence": [],
+      "gap": "Mechanism documented only in the repo README, not in the Certification Package (CPO); no list of available notification mechanisms (artifact); a git push is not a notification any party receives. To close: Offer real mechanisms (signed SCN JSON feed + Atom/RSS at /.well-known/, email list) and list them in the CPO.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-RTR-NNR",
+      "status": "Partially Implemented",
+      "implementation": "docs/scn/ contains only adaptive SCNs; cm-policy.md:5 routine-recurring changes produce no SCN record.",
+      "evidence": [],
+      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-NAF",
+      "status": "Partially Implemented",
+      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
+      "evidence": [],
+      "gap": "No post-finish notice step or 5-business-day deadline check. To close: Add post-finish notice fields and a deadline check (finish + 5 business days).",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-NAV",
+      "status": "Partially Implemented",
+      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
+      "evidence": [],
+      "gap": "No post-verification notice step carrying updates, new risks and the assessment report; no deadline check. To close: Add post-verification notice fields (updates, new risks, SAR link) and a deadline check (verification complete + 5 business days).",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-NFP",
+      "status": "Partially Implemented",
+      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
+      "evidence": [],
+      "gap": "No final-plan notice step or 10-business-day check. To close: Add final-plan notice fields and gate (>=10 business days before start).",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-NIP",
+      "status": "Partially Implemented",
+      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
+      "evidence": [],
+      "gap": "Only a sentence in policy; no template, no planned-start field, no 30-business-day check, no channel to notify parties. To close: Add a transformative SCN template with initial-plan and security-impact sections, sent_on fields and a gate that blocks merge of a transformative change until initial notice is >=30 business days old.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-TPR",
+      "status": "Not Implemented",
+      "implementation": "No transformative changes; no recorded policy on third-party review.",
+      "evidence": [],
+      "gap": "Neither a third-party review nor an explanation of why one was not engaged exists (artifact accepts either). To close: Add to the transformative template a required 'human validation needed? assessor engaged / reason not engaged' field.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SCN-TRF-UPD",
+      "status": "Partially Implemented",
+      "implementation": "Machine-generated documentation (CPO, SDR, OCR) is rebuilt every deploy (deploy-with-opa.yml), so it tracks changes automatically.",
+      "evidence": [],
+      "gap": "Hand-written service documentation is not updated after changes: the Secure Configuration Guide still describes the Basic Auth gate retired by SCN-2026-002 (adaptive) months later; no check ties a transformative change to documentation updates within 30 business days. To close: Add a documentation-update checklist/fields to the SCN record (doc, updated_on) and a check that fails 30 business days after finish if listed docs are unchanged; fix the SCG now.",
+      "closes_with": [
+        "W5"
+      ]
+    },
+    {
+      "frr_id": "SDR-CSO-FRR",
+      "status": "Partially Implemented",
+      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata), each with status, implementation, evidence, gap and the work that closes it; scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve.",
+      "evidence": [],
+      "gap": "The published SDR does not yet carry these records in fedRampRequirements (next W3 PR), and the independent verification and validation halves stay empty until an assessor is engaged (operator's decision of 2026-11-05). To close: Publish the records in the SDR's fedRampRequirements with rule-specific verification and validation drawn from the evidence each cites; flip each record as its workstream lands.",
+      "closes_with": [
+        "W3",
+        "sam"
+      ]
+    },
+    {
+      "frr_id": "SDR-CSO-MTD",
+      "status": "Partially Implemented",
+      "implementation": "security-decision-record.json metadata: last_updated (timestamp), source_of_update (build-sdr.py).",
+      "evidence": [],
+      "gap": "Version is the constant 'live (regenerated each deploy)', not an identifier; field names do not match the schema (version/lastUpdated/updateSource). To close: Emit a real version (semver bumped on content change, or commit SHA) and the schema's field names.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "SDR-CSX-KMT",
+      "status": "Not Implemented",
+      "implementation": "KSI results are published per run (ksi-signal-runtime.json) and VDR counts as a daily trend (vdr-trend.json).",
+      "evidence": [],
+      "gap": "The SDR carries no historical metrics per KSI: no 30-day summary and no summary up to a year. No per-KSI history is kept to build them from.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "SDR-CSX-KSI",
+      "status": "Partially Implemented",
+      "implementation": "security-decision-record.json under /.well-known/ carries a record per KSI with an explanation and artifacts, built from the KSI signal's checks.",
+      "evidence": [],
+      "gap": "Verification and validation are the same boilerplate for every KSI (build-sdr.py), not per-KSI statements of the measures, their cycle, and how their automation was verified and validated.",
+      "closes_with": [
+        "W3"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-ADT",
+      "status": "Implemented",
+      "implementation": ".github/workflows/evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *'), deploy-with-opa.yml (every push to main), zap-dast.yml (weekly), infrastructure/main.tf:809 runtime emitter on EventBridge rate(1 day), watchdog rate(1 hour) (infrastructure/watchdog.tf:231). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; live vdr-status.json finished_at 2026-11-05T14:05:40Z.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-status.json"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-AKE",
+      "status": "Partially Implemented",
+      "implementation": "policies/triage.rego:385 block_rule: any KEV blocks (G1, gate-modes.json 'vdr.kev' mode block, even when dispositioned). deploy-with-opa.yml: Grype scan (1002) runs before Terraform Apply (1171).",
+      "evidence": [],
+      "gap": "The KEV check doesn't run before activation. In deploy-with-opa.yml the KEV-blocking VDR build ('Build VDR Report', line 1428) and 'Vulnerability gate' (1454) run *after* 'Terraform Apply' (1171) and 'Sync Website Content' (1200). A new Lambda package or SPA bundle with a KEV dependency is deployed and live before the gate fails the run; G7 at 1157 only checks that feeds exist and are fresh. No pre-apply check either for KEVs in third-party runtimes (e.g. the Lambda runtime version). To close: Add a pre-apply KEV check: after the Grype step and KEV fetch, intersect grype.json CVEs with kev-catalog.json and fail before 'Generate fresh Terraform plan'/'Terraform Apply' and before the S3 sync. Add a test proving a KEV fixture stops the deploy pre-apply.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-DAC",
+      "status": "Partially Implemented",
+      "implementation": "deploy-with-opa.yml on every push to main: 'Security Scan' job (tfsec + Checkov), 'Scan application and Lambda dependencies (Syft SBOM + Grype)' (line 1002), 'Detection gate (G7)' (1157), 'Build VDR Report' (1428), OPA plan check on the Terraform plan ('Run OPA Compliance Check').",
+      "evidence": [],
+      "gap": "Changed IaC and dependency trees are scanned on every change, but the changed *running* surfaces aren't: no DAST runs after a deploy (ZAP is weekly on a schedule, zap-dast.yml cron '23 7 * * 1'), and changed first-party code gets no SAST. A change to the Silk Reeling API or site pages isn't dynamically tested until the next Monday, and the API never is. To close: Trigger the ZAP workflow (baseline + authenticated API scan) via workflow_run after a successful deploy that changed website/ or the Silk Reeling app, and add code SAST to the deploy's Security Scan job.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-DET",
+      "status": "Partially Implemented",
+      "implementation": ".github/workflows/evidence-nightly.yml (twice-daily cron, 07:17/19:17): job 'SAST (Checkov + tfsec)' over all Terraform; step 'Scan application and Lambda dependencies (Syft SBOM + Grype)' over Silk Reeling Python/JS, compliance Lambda and a11y tooling; Dependabot alerts, CISA KEV and FIRST EPSS via scripts/fetch-detection-feeds.sh; 'Reconciliation gate' runs scripts/reconcile.py --live (live completeness (a) and tag (i) invariants). .github/workflows/zap-dast.yml: weekly ZAP baseline on https://samaydlette.com. infrastructure/lambda/index.js: daily runtime OPA (Wasm) re-validation. VDP: https://samaydlette.com/.well-known/security.txt (fetched). Live vdr-report.json methodology.detection (fetched 2026-11-05): all feeds ok.",
+      "evidence": [],
+      "gap": "Some techniques and resources aren't covered. (1) No DAST of the Cognito-gated Silk Reeling API Gateway/Lambda; ZAP is unauthenticated and targets the static site only (zap-dast.yml header: authenticated coverage is a 'Phase 2 follow-up'). (2) No SAST of first-party application code (Silk Reeling Python Lambda, SPA JS, compliance Lambda): no CodeQL/Semgrep/Bandit anywhere in .github/. (3) No penetration testing, ever. (4) No cloud-native threat/vulnerability detection (GuardDuty, Inspector, IAM Access Analyzer, Security Hub: none in infrastructure/*.tf). (5) 'Persistently verifying and validating that resources operate as intended' covers only 5 live components at runtime (see VDR-TFR-MVX) and nothing for non-machine resources (see VDR-TFR-NMV). (6) Inventory gaps: 5 of 35 live findings name IAM policies that don't resolve to an inventory component (irv_basis 'unresolved'). To close: Add authenticated ZAP (or API scan from the OpenAPI/route list) against the Silk Reeling API with a test Cognito user; add CodeQL or Semgrep on scripts/, the Lambdas and the SPA, ingested into the VDR; enable IAM Access Analyzer (free) and either Inspector Lambda scanning or GuardDuty, ingested as a VDR source; commission or perform and record an annual penetration test of the app; close the inventory gaps so every finding resolves.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-DFR",
+      "status": "Implemented",
+      "implementation": "Architecture: static content on private S3 behind CloudFront (infrastructure/main.tf), serverless Silk Reeling (API Gateway -> Lambda, Cognito-gated; infrastructure/silk-reeling.tf, cognito.tf); no servers/OS to patch; all infra as Terraform with OPA plan gating (deploy-with-opa.yml 'Run OPA Compliance Check'); runtime re-evaluation reuses the same Rego as Wasm (infrastructure/lambda/index.js header). The live inventory (ksi-signal.json) has no compute instances or containers.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-007"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-009"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-026"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-FAV",
+      "status": "Partially Implemented",
+      "implementation": "scripts/detection-gate.py (G7, 'fail the run when detection itself failed (T52, VDR-CSO-FAV)'); scripts/_gates.py + infrastructure/schemas/gate-modes.json (block by default, detect-and-recover events published in methodology.gate_events); build-vdr-report.py main(): missing/stale ZAP report blocks (detection.zap.missing/stale); infrastructure/watchdog.tf + infrastructure/watchdog/logic.mjs: hourly freshness alarms emailed via SNS; deploy-with-opa.yml job 'Notify on Failure' opens an issue; evidence-nightly.yml failure summary.",
+      "evidence": [],
+      "gap": "Detection and response failures are alarmed and stop the run, but they aren't treated *as vulnerabilities*: no failure becomes a tracked finding with a tracking ID, PAIN/IRV/LEV evaluation, a Class C deadline, a disposition, and an entry in the VDR/VDT. A stale feed, a skipped DAST or a watchdog breach leaves only a failed run, an email or an issue, so its history and time-to-recover aren't in the vulnerability record. To close: When a G7 check, a watchdog alarm or a gate in detect-and-recover mode fails, emit a synthetic finding (source 'process', e.g. process-detection-zap-stale) into the next VDR with first_detected = failure time, a governed PAIN for process failures, and normal deadline/disposition/remediation handling. Close it automatically when the check passes again (Remediated with time).",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-MSP",
+      "status": "Implemented",
+      "implementation": "Checked: security/zap/allowlist.json has entries [] ('No edge allowlist exists for the scanner today'); the VDR builder flags any allowlisted DAST finding (build-vdr-report.py:946-983, REQ-IRV-11). Scanner/reconcile AWS access is read-only (infrastructure/bootstrap/evidence-nightly.tf:142 read-only List*/Describe* policy). ZAP scans production unauthenticated as a stranger would; no security controls were disabled or opened for scanning.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_zap_allowlist.py::test_allowlist_entry_without_a_decision_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_zap_allowlist.py::test_allowlist_status_is_published_in_the_report"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-RES",
+      "status": "Partially Implemented",
+      "implementation": "scripts/build-vdr-report.py: ledger carries first_detected/first_evaluated/clock across builds (1142 ingest_previous_ledger, 1176 clock_facts), rating history and completed reductions (1225); policies/triage.rego decides IRV/LEV/disposition/deadline/blocking per finding; verified mitigations against the signed runtime signal (build-vdr-report.py:387 mitigation_state); scripts/vuln-gate.py forces fix-or-decide; data/decisions.json register (39 records); reconcile.py invariant (h) needs a decision for every finding; published nightly (live vdr-report.json, 35 findings, all dispositioned).",
+      "evidence": [],
+      "gap": "'Assess exploitation of' isn't mechanized: the 'exploitation' fact read by triage.rego (figure7 'exploitation-observed') is never set by any ingester (build-vdr-report.py:1345 reads f.get('exploitation'); nothing writes it), and nothing checks logs/CloudTrail for exploitation of detected vulnerabilities. Monitoring/reporting halves are partial; see VER-RPT-* (CR26 reports not yet live, supplementary info never filled). To close: Add an exploitation-assessment step: for each open IRV/LEV finding, query CloudFront/API Gateway/CloudTrail logs for indicators tied to the advisory (or record a dated operator assessment in the decision register), and set exploitation='active'|'none-observed' with basis on the finding. Merge the CR26 reports PR.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-SIR",
+      "status": "Not Implemented",
+      "implementation": "Checked: no sampling is used. Grype scans every SBOM'd dependency tree, Checkov/tfsec scan all Terraform, and the runtime emitter validates each object store and the distribution individually (live ksi-signal-runtime.json: 5 validations, one per component).",
+      "evidence": [],
+      "gap": "Optional (MAY); not exercised. Note that coverage gaps are a DET/MVX matter, not sampling.",
+      "closes_with": [
+        "optional"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-KEV",
+      "status": "Partially Implemented",
+      "implementation": "scripts/build-vdr-report.py:1054 ingest_kev loads the CISA catalog; triage.rego:385 blocks any KEV (even when dispositioned or fully mitigated) via G1; detection-gate.py checks catalog freshness (14 days, detection-feeds.json). Live: kev feed ok, 1768 entries, 0 KEV findings.",
+      "evidence": [],
+      "gap": "CISA due dates aren't tracked: ingest_kev keeps only cveID and drops dueDate/dateAdded, so the report never states the BOD 26-04 due date or whether remediation met it. A KEV blocks publication, but nothing records a remediation deadline tied to the catalog. A fully mitigated KEV is still blocked (good), but its remediation due date isn't reported either. G1 runs after apply in deploys (see AKE). To close: Keep {cveID: dueDate, dateAdded} from the catalog; set remediation_due_at = min(Class C deadline, CISA dueDate) for KEV findings even when fully mitigated; publish kev_due_date and overdue state in the VDR/VDT providerExtensions; add tests.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-MVX",
+      "status": "Partially Implemented",
+      "implementation": "Runtime emitter daily (infrastructure/main.tf:809, variables.tf:144 rate(1 day)), live ksi-signal-runtime.json emitted 2026-11-05T14:01:20Z: 5 validations (4 object stores + CDN), all pass; divergence 'converged' over 46 KSIs. reconcile.py --live twice daily: live completeness and tags for every in-boundary resource. Watchdog alarms if the runtime signal is >26h old.",
+      "evidence": [],
+      "gap": "Of the ~30 cloud components in the live inventory (3 functions, API Gateway, Cognito, 6 IAM roles, 17 IAM policies, 4 KMS keys, log groups, alarms, DNS, SNS, SQS, DynamoDB, OIDC provider), only 5 have their configuration status verified and validated within 3 days; the rest get existence/tag checks only. Their full validation (52 validations) lives in the deploy-time signal, which may be up to 30 days old (freshness-config.json). Packages/html artifacts are covered by Grype/ZAP, not V&V. To close: Extend the runtime emitter (or a nightly OPA pass) to read live config for every machine component type and evaluate it against the same Rego, so ksi-signal-runtime.json carries one validation per machine component. Add a reconcile invariant that fails when any machine component lacks a runtime validation younger than 72h.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-NMV",
+      "status": "Not Implemented",
+      "implementation": "docs/security-review.md 'Quarterly continuous-monitoring reviews': one entry, 2026-Q2 dated 2026-05-08, 'Next review due: 2026-08-08'; no later entry anywhere in docs/ (grep for 2026-Q3). docs/training-log.md and docs/policies/*.md carry no dated quarterly verification. scripts/check-manual-settings.py observes three hand-applied *machine* settings on each deploy.",
+      "evidence": [],
+      "gap": "Non-machine resources (policies in docs/policies/, procedures/runbooks, the IR plan, the operator's training/role, decision records, the governance registry docs/governance/domains.json) have no verification-and-validation at least every 3 months. The only quarterly review on record is ~6 months old and overdue since 2026-08-08, and it reviewed machine signals (runtime emitter, VDR), not policies/people. No mechanism alarms when the 3-month window passes. To close: Create a non-machine resource register (each policy/procedure/role with owner, last_verified, evidence link) and a quarterly V&V record that checks each against what's actually practiced. Add a freshness entry (max 92 days) to infrastructure/schemas/freshness-config.json so the watchdog/trust center goes red when it lapses. Do the overdue Q3/Q4 review now.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-PCD",
+      "status": "Partially Implemented",
+      "implementation": "Nightly (twice daily) Grype over every dependency tree and Checkov/tfsec over all Terraform (evidence-nightly.yml 'SAST (Checkov + tfsec)', 'Scan application and Lambda dependencies'); weekly ZAP over the static site; detection-gate enforces feed freshness (infrastructure/schemas/detection-feeds.json).",
+      "evidence": [],
+      "gap": "Monthly detection doesn't reach every resource: the Silk Reeling API/app surface gets no dynamic detection and first-party code gets no SAST (see DET). The rule's 'all information resources' includes non-machine resources, which get no vulnerability detection at all (see NMV). Nothing maps inventory components to the detection that covered them in the month, so completeness can't be shown. To close: Add a per-component coverage record to the VDR (component -> detection techniques -> last run) and fail/alarm when any inventory component has no detection in 30 days. Close the API DAST and code SAST gaps; fold the quarterly non-machine review in.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-PDD",
+      "status": "Partially Implemented",
+      "implementation": "Twice daily: reconcile.py --live (evidence-nightly.yml:605) enumerates live AWS for completeness (a) and classification tags (i); Grype on all dependency trees; Checkov/tfsec on source. Daily: runtime emitter (infrastructure/lambda/index.js, rate(1 day)) re-evaluates live S3 buckets and the CloudFront distribution against the deploy Rego and computes divergence (live ksi-signal-runtime.json: 5 validations, divergence 'converged', 46 KSIs compared). Hourly watchdog for evidence availability.",
+      "evidence": [],
+      "gap": "Drift detection on live configuration covers only the 4 buckets and the distribution. Live drift in IAM roles/policies (privileges), the 3 Lambda functions (code/config), API Gateway, Cognito, KMS, DNS, Secrets isn't detected within 14 days: those are re-validated only on a human-initiated deploy (deploy-time ksi-signal.json, 52 validations, which freshness-config allows to be 30 days old) and by existence/tag checks. scripts/check-silk-runtime-config.py runs only in the deploy. No document says which resources are 'likely to drift'. To close: Extend buildRuntimeSignal (infrastructure/lambda/index.js:299) to read and evaluate live config for IAM roles/policies, Lambda (code SHA, env, runtime), API Gateway routes/authorizers, Cognito pool settings and KMS policies against the same Wasm policy; or run check-silk-runtime-config.py and a live OPA pass in the nightly. Record which component types are classed 'likely to drift' in the inventory.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-PSD",
+      "status": "Partially Implemented",
+      "implementation": "Every 12h: Grype over all dependency SBOMs, Checkov/tfsec over all IaC (evidence-nightly.yml). Daily: runtime OPA over live S3/CloudFront (infrastructure/lambda/index.js). Weekly: ZAP baseline.",
+      "evidence": [],
+      "gap": "Over a 3-day window, live machine resources other than S3/CloudFront get no vulnerability detection: Lambda functions, API Gateway, Cognito, IAM. DAST of the web surface runs every 7 days, not 3, and the API never. To close: Run the ZAP baseline (and the authenticated API scan once built) at least every 3 days, e.g. in the nightly or a 2-day cron with the --zap-max-age-days window set to 3. Extend runtime live-config detection to all machine component types (see PDD).",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-PVR",
+      "status": "Implemented",
+      "implementation": "policies/triage.rego:87 timeframe() reads the Class C matrix from the pinned FedRAMP rules (data.rules ... VDR-TFR-PVR.varies_by_class.c, hash-checked by scripts/_rules.py) by PAIN x IRV x LEV; deadline from clock_start (triage.rego:363), clock moved only by a verified mitigation (build-vdr-report.py:1176 clock_facts); re-evaluation re-selects the timeframe; G3 'vdr.past-deadline' blocks publication (gate-modes.json mode block); likely-overdue margin (vdr-pain-config.json). Live vdr-report.json carries remediation_due_at per finding.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_timeframe_comes_from_data_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_rules_missing_a_timeframe_cell_fail_closed"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-RMN",
+      "status": "Implemented",
+      "implementation": "N1 findings get no timeframe (triage.rego:87 'null for a level with no timeframe (N1: routine operations)'), yet scripts/vuln-gate.py and reconcile.py invariant (h) still need every finding fixed or dispositioned by an in-force decision with review_by. Live: both N1 findings (tfsec-AVD-AWS-0162, zap-10036-2) carry decisions DEC-032/DEC-040.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_rules_as_data.py::test_t19_n1_has_no_timeframe"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vuln_gate.py::test_remediate_disposition_does_not_pass"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-040"
+        }
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-AIA",
+      "status": "Partially Implemented",
+      "implementation": "triage.rego figure7 'floor': IRV + AV:N/PR:N/UI:N with direct impact is LEV regardless of EPSS (REQ-LEV-3); no score defaults to LEV.",
+      "evidence": [],
+      "gap": "No explicit 'automatable' assumption is recorded or evaluated. The floor covers only unauthenticated, no-interaction network vectors. An EPSS score below 0.10 makes a finding NLEV with no evidence that its exploitation can't be automated, so the rule's 'UNLESS they have evidence proving otherwise' isn't enforced. To close: Add an 'automatable' fact per finding (default true; CVSS 4.0 AU or SSVC Automatable when present), let only an evidence-bearing decision record set it false, and make automatable=true block the EPSS-only NLEV path (or document why EPSS < threshold is evidence). Publish automatable + basis.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-EFA",
+      "status": "Partially Implemented",
+      "implementation": "Criticality: inventory classification -> CR/IR/AR (build-vdr-report.py:1680). Reachability: IRV (triage.rego reach/irv). Exploitability: Figure 7/EPSS/CVSS. Known threats: CISA KEV + EPSS. Prevalence: consolidate_by_cve counts assets (display only). Privilege: CVSS PR in the LEV floor only.",
+      "evidence": [],
+      "gap": "No factor for Detectability (how easily an attacker learns of the vulnerability) or Proximate Vulnerabilities (interaction with earlier or partially mitigated findings). Prevalence and Privilege (privilege gained by exploitation) don't feed PAIN or LEV. For config findings (all current findings) only Reachability is actually evaluated (see ELX/EPA). To close: Add the missing factors to the evaluation record: detectability (e.g. public advisory + exposed surface), prevalence (asset count -> raise PAIN when >1 component), privilege (scope change/privileged component -> raise PAIN), proximate (link to other open/mitigated findings on the same component and re-evaluate together). Document each in the method profile and publish per finding.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-EFP",
+      "status": "Implemented",
+      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: 13 false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version'); triage.rego:262 record_status rejects a false positive that names a control (it must be 'mitigated') and lapses at review_by; live report: 30 findings with final_disposition false-positive, each with a decision_id.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_dispositions_mitigations.py::test_t15_false_positive_naming_a_control_is_refused"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vuln_gate.py::test_false_positive_passes"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-039"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-040"
+        }
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-EIR",
+      "status": "Partially Implemented",
+      "implementation": "policies/triage.rego:189 reach() / :199 irv(): outside-in observation (ZAP) -> IRV; unresolved component or package -> IRV; else the inventory's declared internet_reachable; verified 'not-reachable' mitigation -> NIRV; irv_basis published per finding.",
+      "evidence": [],
+      "gap": "In the live report, 5 findings and all 3 suppression records have irv_basis 'unresolved': their resource (e.g. aws_iam_group_policy.operators_assessment_readonly, aws_iam_role_policy_attachment.legacy, .checkov.yaml) doesn't resolve to an inventory component, so IRV=true was assumed, not evaluated. The suppression records name '.checkov.yaml' as the resource, not the affected AWS resource. To close: Add the bootstrap-stack IAM policies to the canonical inventory with declared reachability; make suppression records name their real resources (from the decision's applies_to.resources); make unresolved_components > 0 a reconciliation failure, or at least a recorded detect-and-recover event.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-ELX",
+      "status": "Partially Implemented",
+      "implementation": "policies/triage.rego:207 figure7 (fully mitigated -> KEV -> exploitation observed -> floor IRV+AV:N/PR:N/UI:N -> no direct impact -> EPSS>=0.10 -> no score = LEV), plus verified 'not-likely-exploitable' mitigations and governed LEV overrides; per-finding lev_basis published. EPSS feed live (400,564 scores).",
+      "evidence": [],
+      "gap": "For every current finding, exploitability rests on the default, not an evaluation: all 35 live findings have lev_basis 'no-score' (config/DAST findings have no vector or EPSS; methodology.check_vectors_in_force = 0, lev_overrides_in_force = 0). So, for example, two ZAP false positives and a CloudTrail SNS setting are all 'likely exploitable', with no context considered. Only CVE findings get a contextual LEV path. To close: Put governed CVSS vectors in force for the Checkov/tfsec check IDs that recur (infrastructure/schemas/check-vectors.json needs decided_by/decided_on), and add a per-finding LEV judgment record (in the decision register) for DAST/config findings so LEV reflects the system context. Keep the default for anything unevaluated.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-EPA",
+      "status": "Partially Implemented",
+      "implementation": "scripts/build-vdr-report.py:1730 assign_pain: CVSS-Environmental derivation for CVE findings, using asset CR/IR/AR from the inventory classification and a multi-agency scope term, bucketed into minimal/narrow/disruptive/debilitating x 1/>1 agency (_WORD_SCOPE_TO_N); governed config infrastructure/schemas/vdr-pain-config.json.",
+      "evidence": [],
+      "gap": "Findings without a CVSS vector, which is every current finding, use a severity proxy (SEVERITY_TO_PAIN, build-vdr-report.py:515: scanner severity -> N-level) with no system or agency context. N0 is never assigned: the scale is read from the PVR keys N1-N5 and fully mitigated maps to the lowest level N1 (triage.rego impact()), though EPA defines N0. The narrative 'potentialAgencyImpact' in the VDT is boilerplate ('Potential Agency Impact N2 (technical impact ...)'), not an estimate of effect on agencies. To close: Same governed per-check vectors as ELX so config findings go through the contextual derivation; add N0 to the scale for fully mitigated/no-effect cases; write a one-line agency-effect rationale per finding (or per check ID) into the record and the VDT potentialAgencyImpact.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-GRV",
+      "status": "Partially Implemented",
+      "implementation": "scripts/build-vdr-report.py:1777 consolidate_by_cve groups CVE findings across scanners/assets into cve_findings (live: 0 CVEs); decisions group check IDs/resources (e.g. DEC-032 covers CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162).",
+      "evidence": [],
+      "gap": "Grouping is for display only: deadlines, LEV/IRV and reporting still apply per instance (VDT emits one record per scanner finding; the 3 CloudTrail findings under DEC-032 are 3 VDT/AVI records). Config findings are never grouped by check or root cause, so the rules aren't 'applied to the consolidated groupings'. To close: Make a group (CVE, or check ID + root cause, or decision) the unit for clock, disposition and VDT record, listing its member instances/assets in providerExtensions, and derive the group's PAIN/IRV/LEV as the worst of its members.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-AVI",
+      "status": "Partially Implemented",
+      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496): each accepted vulnerability's detail and acceptance rationale from its decision record; the build fails if a rationale is missing.",
+      "evidence": [],
+      "gap": "Supplementary information is never populated. For the three suppression records, the detection time is when the ledger first saw the suppression rather than when the weakness was found, and the resource is the suppression file, so IRV is unresolved. To close: Take the detection date from the decision; resolve suppressions to the decision's resources so IRV is evaluated; populate supplementary information.",
+      "closes_with": [
+        "W2"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-HLO",
+      "status": "Partially Implemented",
+      "implementation": "Live vdr-report.json methodology.detection lists each feed/scanner with status, count, source date and age; vdr-status.json shows gate results; security.txt is the VDP.",
+      "evidence": [],
+      "gap": "There's no high-level overview of *all* VDR activities in the period: no summary of DAST runs, the manual ZAP scans of 2026-10-26/27, VDP reports received (none recorded), penetration testing (none), assessments (the self-performed 2026-05-08 assessment), or remediations completed. The detection block is a machine feed inventory for one run, not a period overview. To close: Add an 'activities' section to the period report (VDT providerExtensions and the .md): each activity type (SCA, IaC SAST, DAST, VDP, pentest, assessment, runtime V&V) with runs in period, coverage, findings opened/closed, and an explicit 'none this period' when it didn't happen.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-NID",
+      "status": "Partially Implemented",
+      "implementation": "The trust center and boundary map refuse ARNs, account IDs and email addresses before publishing, and since W0 every published artifact passes the account-ID gate (scripts/check-published-redaction.py).",
+      "evidence": [],
+      "gap": "Everything is published publicly the moment it's detected, with no sensitivity review: no rule or step decides what is too specific to disclose before remediation, and the VDR has no redaction pass. A real IRV+LEV CVE would be published with package, version, component and deadline before it's fixed, which the FRD 'Responsibly' definition warns against. The 'sufficient information to all necessary parties' half is met, but with no restricted channel there's no way to give FedRAMP/agencies detail while withholding it from the public. To close: Define a disclosure policy: until remediation, public artifacts carry only tracking ID, rating, IRV/LEV, dates and status for IRV+LEV findings at N3+; full detail goes to a restricted artifact (signed, access-controlled, e.g. a Cognito-gated or presigned location) for necessary parties. Apply a redaction pass + test to vdr-report/VDT/AVI, and record the disclosure decision per finding.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-PER",
+      "status": "Partially Implemented",
+      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy; the VDT, AVI and history (#496) cover the period since the previous report.",
+      "evidence": [],
+      "gap": "No report summarizes the period's activity (detections, evaluations, reductions, remediations, scans and V&V runs with times), and V&V results are not cross-referenced from the period's report. To close: Add an activity summary for the period to each report (detections, evaluations, reductions, remediations, scans with times, V&V runs and failures), linking the runtime results for the period.",
+      "closes_with": [
+        "W2",
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-RPD",
+      "status": "Partially Implemented",
+      "implementation": "Checked: the provider discloses publicly (live /.well-known/vdr-report.json and .md; public data/decisions.json).",
+      "evidence": [],
+      "gap": "The permission depends on the provider having *determined* that disclosure won't likely lead to exploitation; no such determination is recorded per finding or as policy (see NID). To close: Record the determination: a disclosure policy plus a per-finding 'public_disclosure' field (full/summary/withheld, with reason) set by the triage policy and published.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-RPT-VDT",
+      "status": "Partially Implemented",
+      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496), validated against the vendored VDT schema before writing: tracking ID, detection time and source, evaluation time, IRV, LEV, current rating, PAIN reductions, projected next reduction, overdue status and final disposition.",
+      "evidence": [],
+      "gap": "Historical PAIN and rating history are not carried into the record; the projected next reduction is always the remediation deadline; supplementary information is never produced; overdue explanations for closed findings describe the suppression instead; ZAP detection times start when the scans entered the pipeline, not at the earlier manual scans. To close: Carry historical PAIN and rating history; let a decision set a planned next reduction; populate supplementary information from the decision; take detection dates from the decision where the scanner never saw the finding.",
+      "closes_with": [
+        "W2"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-EVU",
+      "status": "Partially Implemented",
+      "implementation": "Evaluation is automatic in the build that first ingests a finding: clock_facts sets first_evaluated = now on first sight (build-vdr-report.py:1176); detection feeds are fetched twice daily, so first_evaluated - detection is < 1 day. scripts/_rules.py:129 evaluation_days() reads the 5-day rule.",
+      "evidence": [],
+      "gap": "The timing is met in practice, but nothing enforces or reports it: evaluation_days() is never called, so no check that evaluation completed within 5 days of the source's detection (e.g. Dependabot/Grype detection times). The evaluation completed within that window is the default-driven one for config/DAST findings (see ELX/EPA/EFA), not a full VER-EVA evaluation. To close: Use _rules.evaluation_days() in the triage policy: flag (and count as a process vulnerability, see FAV) any finding whose first_evaluated is more than 5 days after its source detection time, or whose LEV/PAIN still rests on a default 5 days after detection.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-IRI",
+      "status": "Not Implemented",
+      "implementation": "Checked: policies/triage.rego block_rule 'top-impact-lev-irv' (G2) blocks only N5+LEV+IRV, as a pipeline block; docs/policies/ir-policy.md:13 states the IRI rule in prose.",
+      "evidence": [],
+      "gap": "Nothing treats an internet-reachable likely exploitable vulnerability at N4 or N5 as a FedRAMP Reportable Incident: no incident record is opened, no IIR/OIR/FIR clocks start, and nothing ends that status when it's partially mitigated to N3 or below. N4 IRV+LEV isn't even flagged beyond its 4-day deadline. Depends on the missing IEC machinery. To close: In triage.rego add an 'incident' decision (IRV and LEV and PAIN > N3) and in the builder open/update an incident record in the incident register (see IEC-CSO-EFR) with default PAIN-5 treatment, closing it when a verified partial mitigation brings it to N3 or below. Test with a synthetic finding.",
+      "closes_with": [
+        "W6"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-MAV",
+      "status": "Partially Implemented",
+      "implementation": "policies/triage.rego:372 accepted_ns = first_evaluated + 192 days (read from data.rules VER-TFR-MAV), :376 accepted_now; build-cr26-vdr.py treats accepted/risk-accepted/operational-requirement decisions and MAV-passed findings as accepted; tests/test_clock.py:136 test_t14_past_maximum_period...",
+      "evidence": [],
+      "gap": "Only the 'is not' half is mechanized: a finding becomes accepted only once day 192 has passed. Nothing categorizes a finding that *will not* be fully mitigated or remediated within 192 days (e.g. a vendor-dependency with no fix, or a 'remediate' decision whose plan date is past day 192) as accepted earlier. Never exercised live (oldest first_evaluated 2026-08-06, day ~91). To close: In triage.rego, mark accepted when the projected remediation/next-reduction date (or a decision's target date, or vendor-dependency with fix_state not-fixed past a governed horizon) falls after first_evaluated + 192 days; require an acceptance explanation at that point. Add tests.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-MHR",
+      "status": "Partially Implemented",
+      "implementation": "vdr-report.md under /.well-known/ is rebuilt twice daily (scripts/build-vdr-report.py render_markdown); since W1 its counts read Findings / Open / Dispositioned and accepted risks agree with the tables. vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published (#496).",
+      "evidence": [],
+      "gap": "It is a current-state report, not a report of the month's activity: no detections, evaluations, reductions, remediations, scans or V&V runs for the period.",
+      "closes_with": [
+        "W7"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-MRH",
+      "status": "Partially Implemented",
+      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (#496), rebuilt twice daily with 366-day retention, alongside vdr-report.json (per-finding rating history) and vdr-trend.json.",
+      "evidence": [],
+      "gap": "A record that leaves the VDR is labelled Remediated even when it vanished because coverage stopped or a suppression was added; closed decisions from before the history began are not backfilled. To close: Set a final disposition only from evidence (coverage continued and the scanner stopped reporting it, or a decision); otherwise record 'no longer reported'; backfill closed decisions.",
+      "closes_with": [
+        "W2"
+      ]
+    },
+    {
+      "frr_id": "VER-TFR-NRI",
+      "status": "Not Implemented",
+      "implementation": "Checked: docs/policies/ir-policy.md:13 adopts NRI in prose ('non-internet-reachable likely-exploitable vulnerabilities at PAIN N5 are reportable until N4 or below per VER-TFR-NRI'); no code implements it.",
+      "evidence": [],
+      "gap": "MAY rule: optional, but the published policy claims it's adopted and nothing implements it. NLEV-IRV N5 findings never open an incident. To close: Either implement alongside IRI (NIRV and LEV and PAIN = N5 -> incident until a partial mitigation brings it to N4) or remove the claim from ir-policy.md and record the decision not to use the MAY.",
+      "closes_with": [
+        "W6"
+      ]
+    }
+  ]
+}
