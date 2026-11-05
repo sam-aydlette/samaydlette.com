@@ -109,7 +109,9 @@ def main(argv=None):
     if not hits:
         return 0
     for cve, where, src, due in hits:
-        line = f"{cve} in {where} ({src}) is in the CISA KEV catalog, due {due or 'no due date'}"
+        # Scanner text goes into a GitHub Actions log, which parses `::` commands:
+        # _clean strips line breaks and `::` from it.
+        line = _gates._clean(f"{cve} in {where} ({src}) is in the CISA KEV catalog, due {due or 'no due date'}")
         if _gates.blocks(gates, CHECK):
             print(f"::error::{line}", file=sys.stderr)
         else:
