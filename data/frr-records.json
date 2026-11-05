@@ -258,12 +258,37 @@
     },
     {
       "frr_id": "CDS-CSO-AVR",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/availability.json + availability.md, scripts/build-availability.py (appends one point per deploy, L47-53; WINDOW_DAYS=45 L27).",
-      "evidence": [],
-      "gap": "Not an availability measurement: a point is written only when a deploy succeeds ('A deploy that produces this feed is, by definition, a successful one', L10-11), so an outage can never be recorded and there are no incidents field/records. Days without deploys are simply missing (27 points spanning 2026-08-06..11-05; ~10 in the last 30 days). Trim keeps the last 45 points, not 45 days, so history older than the window persists. Core services are not probed (Silk Reeling API/Cognito not checked at all). Served from the same CloudFront/S3 as the offering, so it is unavailable when the offering is (self-stated residual). To close: Run an external synthetic monitor on independent infrastructure (different provider/region/account and DNS name, e.g. a status subdomain on separate hosting) that probes the site, /.well-known/, and the Silk Reeling API/Cognito every few minutes; record incidents (start, end, affected service, cause); publish JSON + HTML status page from that independent host with 30+ days of continuous history.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "An availability monitor on GitHub Actions, independent of AWS (.github/workflows/availability-probe.yml, scripts/availability-probe.py), probes the website, the trust center, the certification data under /.well-known/, the Silk Reeling application and its Cognito sign-in every 15 minutes, keeps 35 days of history, and derives availability incidents (two or more consecutive failed probes of a service: start, end, failing check). It publishes JSON and a human-readable page to the repository's availability-status branch, served by GitHub, so the status stays readable when the offering is down; an ongoing incident fails the run, which notifies the operator. The deploy fails when that feed is missing or more than 2 hours old, and republishes it signed as /.well-known/availability.json with a Markdown twin (scripts/build-availability.py), which no longer records deploys as availability. History begins at the monitor's first run.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Probe the core services"
+        },
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Publish the status feed to the availability-status branch"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_consecutive_failures_make_an_incident_and_a_single_one_is_transient"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_the_known_bad_stale_feed_fails_the_deploy_guard"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_the_monitor_runs_outside_aws_on_a_schedule_and_pushes_only_its_branch"
+        }
       ]
     },
     {
@@ -391,12 +416,37 @@
     },
     {
       "frr_id": "CDS-TRC-ACL",
-      "status": "Partially Implemented",
-      "implementation": "S3 server access logging on the website bucket (infrastructure/logging.tf:114) to a log bucket retained 400 days (logging.tf:59).",
-      "evidence": [],
-      "gap": "S3 server access logs only see origin fetches; CloudFront edge hits are not logged (no logging_config on the distribution, bootstrap/cloudfront.tf:233-311), so most access to certification data is invisible. No access summaries are produced or stored; no explanation of how parties obtain their log information. To close: Enable CloudFront standard (or real-time) logging for /.well-known/ and /trust/, build a scheduled job that writes monthly access summaries (per artifact, per requester/agency once authenticated) retained >= 6 months, and document how a party requests its records.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. A party can ask for the summaries and for the records of its own requests, identified by the times and paths it gives, since no requester identity is logged (DEC-160); the trust page's privacy notice says so.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check edge access logging and build the access summary"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/access-summary.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_the_known_bad_fixture_fails_for_identifying_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_only_trust_paths_are_counted_and_nothing_identifying_survives"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_a_month_younger_than_six_is_never_dropped"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_raw_edge_records_expire_after_90_days"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-160"
+        }
       ]
     },
     {
@@ -431,12 +481,33 @@
     },
     {
       "frr_id": "CDS-TRC-USH",
-      "status": "Partially Implemented",
-      "implementation": "The trust center is a static public site on CloudFront; /trust/ and every directory URL serve their index through a CloudFront Function (W1), and /.well-known/*.json are served directly.",
-      "evidence": [],
-      "gap": "Availability of the trust center is not measured independently (CDS-CSO-AVR), there is a single origin with no failover (DEC-009), and the page's content needs JavaScript.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "The certification data is static, signed files under /.well-known/ served from the CloudFront edge (cached, with AWS Shield Standard), readable as plain JSON and Markdown without JavaScript and, since the deploy checks it, with CORS for programs on any origin. Interruptions are measured from outside AWS every 15 minutes, and an ongoing one fails the monitor's run, which notifies the operator (CDS-CSO-AVR); the status itself is served by GitHub, so it stays available during an outage. The single origin without failover is an accepted risk (DEC-009).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Alert on an ongoing availability incident"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_an_ongoing_incident_fails_the_monitor_run_after_publishing"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-009"
+        }
       ]
     },
     {

@@ -190,6 +190,18 @@
       "signature": ".well-known/policy-index.bundle"
     },
     {
+      "path": ".well-known/access-summary.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/access-summary.bundle",
+      "note": "Monthly aggregate counts of access to the certification data (CDS-TRC-ACL), rebuilt from the CloudFront access records on every deploy."
+    },
+    {
       "path": ".well-known/security-decision-record.json",
       "cadence": "deploy",
       "max_age_hours": 720,

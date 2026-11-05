@@ -1574,17 +1574,59 @@ jobs:
           --md-output ongoing-certification-report.md
         jq '{next_ongoing_certification_report_date, next_quarterly_review_date}' ongoing-certification-report.json
 
+    # W8 edge checks (FRC-CSO-JSN, CDS-CSO-AVR, CDS-TRC-USH, CDS-TRC-ACL). Each
+    # depends on something outside this deploy (the operator-applied bootstrap
+    # stack, or the independent monitor on GitHub Actions) and fails the deploy
+    # when it is missing, before the SDR says the rule is met.
+    - name: Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)
+      env:
+        DOMAIN: ${{ vars.DOMAIN_NAME || 'samaydlette.com' }}
+      run: python3 scripts/check-wellknown-headers.py --site "https://$DOMAIN"
+
+    - name: Read the independent availability feed (fails when missing or stale)
+      working-directory: infrastructure
+      env:
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        curl -fsS --max-time 30 -o availability-probe.json \
+          "https://raw.githubusercontent.com/$REPO/availability-status/availability-status.json"
+        python3 ../scripts/availability-probe.py --check-fresh availability-probe.json --max-age-hours 2
+
+    # The CloudFront access records carry no IP, cookie, query string or user
+    # agent (the delivery's field allowlist, checked here); only /.well-known/
+    # and /trust/ requests are counted, and only monthly aggregates published.
+    - name: Check edge access logging and build the access summary
+      working-directory: infrastructure
+      env:
+        DOMAIN: ${{ vars.DOMAIN_NAME || 'samaydlette.com' }}
+      run: |
+        set -euo pipefail
+        umask 077
+        trap 'rm -rf edge-access-records edge-deliveries.json edge-delivery-source.json' EXIT
+        name="${DOMAIN//./-}-edge-access"
+        aws logs describe-deliveries --region us-east-1 --output json > edge-deliveries.json
+        aws logs get-delivery-source --name "$name" --region us-east-1 --output json > edge-delivery-source.json || true
+        python3 ../scripts/check-edge-access-logging.py \
+          --deliveries edge-deliveries.json --source edge-delivery-source.json --name "$name"
+        bucket="${DOMAIN//./-}-logs"
+        account=$(aws sts get-caller-identity --query Account --output text)
+        aws s3 sync "s3://$bucket/cloudfront/" edge-access-records/cloudfront/ --only-show-errors
+        aws s3 sync "s3://$bucket/AWSLogs/$account/CloudFront/" edge-access-records/default/ --only-show-errors
+        curl -fsS --max-time 20 -o previous-access-summary.json "https://$DOMAIN/.well-known/access-summary.json" \
+          || echo '{}' > previous-access-summary.json
+        python3 ../scripts/build-access-summary.py \
+          --records edge-access-records --previous previous-access-summary.json
+
     - name: Build CDS certification-data artifacts (overview, availability, policy index)
       working-directory: infrastructure
       run: |
         echo "Building CDS certification-overview package, availability feed, policy index..."
-        # availability history: fetch the previously-published feed (best-effort)
-        curl -sfL -o previous-availability.json "https://samaydlette.com/.well-known/availability.json" \
-          || echo '{"history":[]}' > previous-availability.json
         python3 ../scripts/build-cds-overview.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json --ksi-signal ksi-signal.json
+        # Availability as measured by the independent monitor (read and checked above).
         python3 ../scripts/build-availability.py \
-          --previous previous-availability.json --ksi-signal ksi-signal.json
+          --probe-feed availability-probe.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
 
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
@@ -1701,6 +1743,7 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
+        cosign sign-blob --yes --new-bundle-format --bundle access-summary.bundle access-summary.json
 
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure
@@ -1729,6 +1772,7 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
+        for a in access-summary; do files="$files $a.json $a.md"; done
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
@@ -1784,6 +1828,12 @@ jobs:
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        # Trust-center access summary (CDS-TRC-ACL): aggregate counts only.
+        for a in access-summary; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"

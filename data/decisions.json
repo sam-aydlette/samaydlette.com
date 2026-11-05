@@ -1155,6 +1155,30 @@
       "source": {
         "detector": "OWASP ZAP baseline scan"
       }
+    },
+    {
+      "id": "DEC-160",
+      "title": "Trust-center access records: what is logged, and a party's own records on request",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for the operator to confirm. Access to the certification data is logged by CloudFront standard logging with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf); raw records expire after 90 days and only monthly aggregate counts for /.well-known/ and /trust/ are published, kept 13 months (scripts/build-access-summary.py). Because no requester identity is logged, the operator provides a party, on request to the security contact, the published summaries and any records matching the times and paths the party identifies, within 10 business days. Agencies are identified only by what they state in their own access request, never inferred from network data. This trades per-party attribution (CDS-TRC-ACL's SHOULD) for privacy, at the operator's direction of 2026-11-05.",
+      "controls": [
+        "au-2",
+        "au-3",
+        "au-11",
+        "pt-2"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
     }
   ]
 }
