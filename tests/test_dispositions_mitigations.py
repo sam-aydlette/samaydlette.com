@@ -143,7 +143,9 @@ def test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level():
     assert r["current_disposition"] == "mitigated"
     assert r["fully_mitigated"] is True
     assert r["likely_exploitable"] is False and r["lev_basis"] == "fully-mitigated"
-    assert r["current_pain"] == vdr._rules.impact_levels()[0]
+    # VER-EVA-EPA's lowest level, N0 since October 2026: an impact removed entirely.
+    # (The timeframe table, VDR-TFR-PVR, starts at N1; N0 has no timeframe.)
+    assert r["current_pain"] == "N0"
     assert r["remediation_due_at"] is None and r["is_blocking"] is False
 
 

@@ -53,6 +53,7 @@ from pathlib import Path
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
+import _evaluation  # noqa: E402
 import _gates  # noqa: E402
 import _redact  # noqa: E402
 import _rules  # noqa: E402
@@ -1403,11 +1404,13 @@ PAIN_CLASSIFIER_DEVIATION = (
 
 
 def triage_item(f, kind, *, pain, is_kev, epss_scores, reach, mitigation=None,
-                check_decision=None, register=None, clock=None):
-    """The facts the triage policy decides one finding from."""
+                check_decision=None, register=None, clock=None, extra=None):
+    """The facts the triage policy decides one finding from. `extra`: the
+    grouping, projection and evaluation-time facts (group, projected_ns,
+    detected_ns, default_evaluation), only for report findings."""
     cve = f.get("cve")
     scores = epss_scores or {}
-    return {
+    return {**(extra or {}),
         "id": f["tracking_id"],
         "kind": kind,
         "pain": pain,
@@ -1425,6 +1428,32 @@ def triage_item(f, kind, *, pain, is_kev, epss_scores, reach, mitigation=None,
         "resource": str(f.get("resource") or ""),
         "fix_state": f.get("fix_state"),
         "clock": clock,
+    }
+
+
+def evaluation_facts(f, dec, clk, epss_scores, now):
+    """The triage facts beyond the ratings: the finding's group (VER-EVA-GRV),
+    a decision's projected remediation date (VER-TFR-MAV), when the source
+    detected it and when it was first evaluated (VER-TFR-EVU), and whether its
+    ratings rest on defaults (no vector, no prediction score)."""
+    plan = dec.get("planned_reduction") or {}
+    projected = None
+    if plan.get("target_pain") == "N0" and plan.get("date"):
+        projected = _triage.to_ns(datetime.combine(date.fromisoformat(plan["date"]), datetime.min.time(),
+                                                   tzinfo=timezone.utc))
+    # A decision record is an evaluation: a finding a person decided on before
+    # the pipeline first saw it was evaluated then.
+    evaluated = clk["first_evaluated_dt"]
+    if dec.get("decided_on"):
+        evaluated = min(evaluated, datetime.combine(date.fromisoformat(dec["decided_on"]), datetime.min.time(),
+                                                    tzinfo=timezone.utc))
+    cve = f.get("cve")
+    return {
+        "group": _evaluation.group_key(f, dec.get("id")),
+        "projected_ns": projected,
+        "detected_ns": _triage.to_ns(_ts(clk["first_detected"], now)),
+        "evaluated_ns": _triage.to_ns(evaluated),
+        "default_evaluation": not f.get("cvss_vector") and not (cve and cve in (epss_scores or {})),
     }
 
 
@@ -1984,11 +2013,13 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     mitigations = mitigations or {}
     if decision_records is None:
         decision_records = load_decision_records()
+    full_records = {r["id"]: r for r in _decisions.in_force(DECISIONS)}
+    incidents = _evaluation.load_incidents()
     matched_register, matched_mitigations, lapsed = set(), set(), []
     margin_days = int(config["likely_overdue_margin_days"])
     report_findings = []
     summary = {
-        "by_pain": {"N1": 0, "N2": 0, "N3": 0, "N4": 0, "N5": 0},
+        "by_pain": {"N0": 0, "N1": 0, "N2": 0, "N3": 0, "N4": 0, "N5": 0},
         "blocking": 0,
         "kev": 0,
         "risk_accepted": len(suppressions),
@@ -2045,13 +2076,16 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         else:
             summary["ledger_newly_detected"] += 1
         clk = clock_facts(f, ledger.get(tid), now)
+        dec_id = (check_decision or {}).get("decision_id") or (reg[1].get("decision_id") if reg else None)
+        dec = full_records.get(dec_id) or {}
         items.append(triage_item(
             f, "finding", pain=assign_pain(f, index, config), is_kev=is_kev, epss_scores=epss_scores,
             reach=reach_facts(f, cid, inv), mitigation=mit, check_decision=check_decision,
             register=({"key": reg[0], "entry": reg[1]} if reg else None),
             clock={"start_ns": _triage.to_ns(clk["start_dt"]),
-                   "first_evaluated_ns": _triage.to_ns(clk["first_evaluated_dt"])}))
-        prepared.append((f, cid, mit, is_kev, check_decision, reg, tid, clk))
+                   "first_evaluated_ns": _triage.to_ns(clk["first_evaluated_dt"])},
+            extra=evaluation_facts(f, dec, clk, epss_scores, now)))
+        prepared.append((f, cid, mit, is_kev, check_decision, reg, tid, clk, dec))
 
     # Risk-accepted entries (.checkov.yaml suppressions) are decided for
     # reachability and exploitability only: they carry no deadline.
@@ -2073,10 +2107,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
 
     # 2. Decisions: one evaluation of policies/triage.rego for the whole report.
     decisions = _triage.decide(items, now=now, epss_threshold=config["epss_threshold"],
-                               margin_days=margin_days, lev_overrides=lev_overrides)
+                               margin_days=margin_days, lev_overrides=lev_overrides,
+                               evaluation_days=_rules.evaluation_days())
 
     # 3. Publish.
-    for (f, cid, mit, is_kev, check_decision, reg, tid, clk), d in zip(prepared, decisions[:len(prepared)], strict=True):
+    for (f, cid, mit, is_kev, check_decision, reg, tid, clk, dec), d in zip(prepared, decisions[:len(prepared)], strict=True):
         pain, irv, lev, sla = d["pain"], d["irv"], d["lev"], d["sla_days"]
         disposition, finding_decision_id = d["disposition"], d["decision_id"]
         is_suppressed, needs_remediation = d["closed"], d["needs_remediation"]
@@ -2184,11 +2219,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "will_be_overdue": d["will_be_overdue"],
             "accepted": d["accepted"],
             "accepted_at": accepted_at,
+            **({"accepted_basis": d["accepted_basis"]} if d["accepted"] else {}),
             # VER-RPT-AVI: the recorded justification when an in-force record
             # carries one; otherwise the gap is stated, never filled in.
             "acceptance_explanation": (
                 ((reg[1].get("justification") or "").strip() or NOT_RECORDED
-                 if reg and d["record_status"] == "in-force" else NOT_RECORDED)
+                 if reg and d["record_status"] == "in-force"
+                 else (dec.get("justification") or "").strip() or NOT_RECORDED
+                 if d["accepted_basis"] == "projected-past-maximum-period" else NOT_RECORDED)
                 if d["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
                                     else f"documented suppression ({disposition}); tracked as {finding_decision_id}"
@@ -2196,7 +2234,25 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "supplementary_info": "",
             "is_blocking": block_this,
             "block_reason": block_reason,
+            # VER-EVA-GRV: the group the finding is evaluated in, at its most
+            # exposed open member; the group's deadline binds this finding.
+            "group_id": d["group"],
+            "group_pain": d["group_pain"],
+            "group_lev": d["group_lev"],
+            "group_irv": d["group_irv"],
+            "group_due_at": (_triage.from_ns(d["group_due_ns"], clk["start_dt"].tzinfo)
+                             if d["group_due_ns"] is not None else None),
+            # VER-TFR-EVU: null when evaluated in time; otherwise why not.
+            "evaluation_late": d["evaluation_late"],
+            "evaluation": _evaluation.evaluation_record(
+                {"internet_reachable": irv, "irv_basis": d["irv_basis"], "likely_exploitable": lev,
+                 "lev_basis": d["lev_basis"]}, f,
+                cid=cid, ctype=inv["types"].get(cid), metrics=parse_vector(f.get("cvss_vector")),
+                classification=f.get("_classification"), auto=_evaluation.automatable(f, dec),
+                expl=_evaluation.exploitation(f, is_kev, incidents, now.isoformat()),
+                proximate=None, prevalence=None, epss=epss_used, is_kev=is_kev),
         })
+        report_findings[-1]["public_disclosure"] = _evaluation.disclosure(report_findings[-1])
         # Histogram and blocking counts reflect genuinely-open findings only;
         # suppressed findings are summarized via the risk-accepted/FP counts.
         if not is_suppressed:
@@ -2249,6 +2305,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "explanation": s.get("explanation", ""),
         })
 
+    # VER-EVA-GRV/EFA: groups, prevalence and proximate findings are read across
+    # every finding; then each finding's public form follows its disclosure
+    # determination (VER-RPT-NID).
+    groups = _evaluation.attach_groups(report_findings, len(inv.get("classes") or {}))
+    report_findings = [_evaluation.redact(r) for r in report_findings]
     cve_findings = consolidate_by_cve(report_findings, risk_accepted_records)
     summary["unique_cves"] = len(cve_findings)
     summary["unique_cves_open"] = sum(1 for c in cve_findings if "open" in c["dispositions"])
@@ -2266,6 +2327,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         "impact_level": _profile["impact_level"],
         "summary": summary,
         "findings": report_findings,
+        "groups": groups,
         "cve_findings": cve_findings,
         "risk_accepted": risk_accepted_records,
         "rules_reference": {

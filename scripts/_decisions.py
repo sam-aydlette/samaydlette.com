@@ -41,7 +41,7 @@ DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
 # field is refused: a misspelt review_by would otherwise read as absent.
 TOP_KEYS = {"$comment", "_note", "schema", "decisions"}
 RECORD_KEYS = {"id", "former_id", "title", "status", "disposition", "justification", *DECISION_FIELDS,
-               "closed_on", "original_detection_date", "planned_completion", "planned_reduction", "remediation_plan",
+               "closed_on", "original_detection_date", "planned_completion", "planned_reduction", "automatable", "remediation_plan",
                "vendor_dependency", "point_of_contact", "controls", "applies_to", "vuln_fields", "source"}
 APPLIES_KEYS = {"check_ids", "vuln_ids", "resources"}
 
@@ -104,6 +104,13 @@ def validate(doc, where="data/decisions.json"):
                 _fail(f"{rid}: planned_reduction must be {{date: YYYY-MM-DD, target_pain: N0-N5}}")
             if status != "in-force":
                 _fail(f"{rid}: only an in-force record plans a reduction")
+        auto = r.get("automatable")
+        if auto is not None:
+            # VER-EVA-AIA: exploitation is assumed automatable unless there is
+            # evidence it is not. "no" without the evidence would be an assumption.
+            if (not isinstance(auto, dict) or set(auto) - {"value", "evidence"} or auto.get("value") not in ("yes", "no")
+                    or (auto["value"] == "no" and not str(auto.get("evidence") or "").strip())):
+                _fail(f"{rid}: automatable must be {{value: yes|no, evidence}}, and 'no' needs its evidence")
         applies = r.get("applies_to")
         if not isinstance(applies, dict) or set(applies) - APPLIES_KEYS:
             _fail(f"{rid}: applies_to must be an object with only {sorted(APPLIES_KEYS)}")

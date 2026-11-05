@@ -37,6 +37,7 @@ KNOWN_BAD = [
     ("unknown-field.json", "unknown field(s) ['reviewby']"),
     ("planned-reduction-malformed.json", "planned_reduction must be {date: YYYY-MM-DD, target_pain: N0-N5}"),
     ("planned-reduction-closed.json", "only an in-force record plans a reduction"),
+    ("automatable-no-evidence.json", "'no' needs its evidence"),
 ]
 
 

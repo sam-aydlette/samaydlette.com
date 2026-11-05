@@ -42,6 +42,15 @@
           "properties": {"date": {"$ref": "#/$defs/date"}, "target_pain": {"type": "string", "pattern": "^N[0-5]$"}},
           "additionalProperties": false
         },
+        "automatable": {
+          "type": "object",
+          "description": "VER-EVA-AIA: whether exploitation of the findings this record covers can be automated. Exploitation is assumed automatable; only a record carrying the evidence sets it to no.",
+          "required": ["value"],
+          "properties": {"value": {"enum": ["yes", "no"]}, "evidence": {"type": "string"}},
+          "additionalProperties": false,
+          "if": {"properties": {"value": {"const": "no"}}},
+          "then": {"required": ["value", "evidence"], "properties": {"evidence": {"minLength": 1}}}
+        },
         "remediation_plan": {"type": "string"},
         "vendor_dependency": {"type": ["string", "boolean", "object"]},
         "point_of_contact": {"type": "string"},
