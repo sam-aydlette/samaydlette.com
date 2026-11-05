@@ -2183,6 +2183,21 @@ a:focus {
     height: 100%;
 }
 
+/* A linked thumbnail in place of an embedded player: the site sends COEP, which
+   blocks third-party players that do not send it themselves. */
+.video-link {
+    display: block;
+}
+
+.video-link img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
 /* Patreon exclusive content styles */
 .patreon-badge {
     background: var(--accent-primary);
