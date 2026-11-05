@@ -40,6 +40,7 @@
 # =============================================================================
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import os
@@ -2178,13 +2179,25 @@ def render_markdown(report):
     out.append("- **Source of truth:** the signed `vdr-report.json`; this is its "
                "human-readable rendering per VER-TFR-MHR.")
     out += ["", "## Summary", ""]
-    out.append(f"- Total findings: **{s.get('total_findings', 0)}** | "
-               f"Blocking: **{s.get('blocking', 0)}** | KEV: **{s.get('kev', 0)}** | "
-               f"Risk-accepted: **{s.get('risk_accepted', 0)}**")
-    out.append("- By PAIN: " + ", ".join(f"{k}={bp.get(k, 0)}" for k in ("N1", "N2", "N3", "N4", "N5")))
-    out.append(f"- Unique CVEs: {s.get('unique_cves', 0)} ({s.get('unique_cves_open', 0)} open)")
     fnd = report.get("findings", [])
-    out += ["", f"## Open findings ({len(fnd)})", ""]
+    # Counted from the findings themselves, so the summary and the table below
+    # cannot disagree. (summary.total_findings counts open findings only; it
+    # used to be printed as "Total findings" above a table of every finding.)
+    by_disp = Counter(f.get("final_disposition", "") for f in fnd)
+    n_open = by_disp.pop("open", 0)
+    out.append(f"- Findings: **{len(fnd)}** | Open: **{n_open}** | "
+               f"Dispositioned: **{sum(by_disp.values())}**"
+               + (" (" + ", ".join(f"{k} {v}" for k, v in sorted(by_disp.items())) + ")" if by_disp else ""))
+    # summary.risk_accepted counts accepted risks of both kinds: findings
+    # dispositioned risk-accepted, and suppressed checks (which raise no finding
+    # and are listed in their own section). Say which is which.
+    ra_list = report.get("risk_accepted", [])
+    out.append(f"- Blocking: **{s.get('blocking', 0)}** | KEV: **{s.get('kev', 0)}** | "
+               f"Accepted risks: **{s.get('risk_accepted', 0)}** "
+               f"({by_disp.get('risk-accepted', 0)} findings below, {len(ra_list)} suppressed checks)")
+    out.append("- Open findings by PAIN: " + ", ".join(f"{k}={bp.get(k, 0)}" for k in ("N1", "N2", "N3", "N4", "N5")))
+    out.append(f"- Unique CVEs: {s.get('unique_cves', 0)} ({s.get('unique_cves_open', 0)} open)")
+    out += ["", f"## Findings ({len(fnd)}: {n_open} open)", ""]
     if fnd:
         out.append("| Tracking ID | Source | PAIN | IRV | LEV | First detected | Due | Overdue | Disposition |")
         out.append("|---|---|---|---|---|---|---|---|---|")
@@ -2196,9 +2209,9 @@ def render_markdown(report):
                 fd=(f.get("first_detected") or "")[:10], due=(f.get("remediation_due_at") or "—")[:10],
                 od="YES" if f.get("is_overdue") else "no", disp=f.get("final_disposition", "")))
     else:
-        out.append("_No open findings._")
-    ra = report.get("risk_accepted", [])
-    out += ["", f"## Risk-accepted ({len(ra)})", ""]
+        out.append("_No findings._")
+    ra = ra_list
+    out += ["", f"## Accepted risks with suppressed checks ({len(ra)})", ""]
     if ra:
         out.append("| Tracking ID | PAIN | Decision | Explanation |")
         out.append("|---|---|---|---|")

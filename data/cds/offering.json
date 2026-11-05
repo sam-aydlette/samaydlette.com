@@ -8,7 +8,7 @@
   "sales_contact": { "name": "Sam Aydlette", "url": "https://samaydlette.com/pages/contact.html" },
   "security_contact": { "name": "Sam Aydlette", "email": "sam.aydlette@gmail.com", "source": "/.well-known/security.txt" },
   "product_website": "https://samaydlette.com",
-  "logo_url": "https://samaydlette.com/favicon.ico",
+  "logo_url": "https://samaydlette.com/assets/images/brand/logo.png",
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
   "secure_configuration_guidance_url": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
   "documentation_overview_url": "https://samaydlette.com/trust/index.html",
@@ -19,7 +19,7 @@
     "contact": "sam.aydlette@gmail.com"
   },
   "cryptographic_modules": [
-    { "module": "AWS KMS", "validation": "FIPS 140-3 (CMVP, HSM-backed)", "role": "key store for all four customer-managed CMKs (at-rest, runtime-signing, DNSSEC KSK, app secret)", "inherited": true },
+    { "module": "AWS KMS", "validation": "FIPS 140-3 (CMVP, HSM-backed)", "role": "key store for all four customer-managed CMKs: at-rest (the compliance and watchdog Lambdas' environments and log groups, the DNS query log, the alert topic), runtime signing (the runtime signal), DNSSEC KSK, and the Silk Reeling app (its Lambda environment and log groups; the app holds no secrets since SCN-2026-006)", "inherited": true },
     { "module": "ACM TLS termination on CloudFront", "validation": "FIPS-validated cipher suites; TLS 1.2+", "role": "TLS in transit", "inherited": true },
     { "module": "S3 SSE-S3", "validation": "AES-256 (AWS-managed keys)", "role": "at-rest on the public website + log buckets", "inherited": true },
     { "module": "Sigstore Fulcio + Rekor", "validation": "ECDSA P-256 (FIPS-approved algorithm); the implementations are NOT CMVP-validated modules", "role": "deploy-time keyless signing", "inherited": false, "compensating_control": "trust anchored in the public Rekor transparency log" }

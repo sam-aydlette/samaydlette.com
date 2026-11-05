@@ -47,6 +47,17 @@ data "aws_cloudfront_function" "strip_prefix" {
   stage = "LIVE"
 }
 
+# Directory URLs ("/trust/") resolve to their index.html, and a bare directory
+# ("/trust") redirects to it, at the edge. Managed here, unlike strip_prefix,
+# so the code that runs is the code in the repository.
+resource "aws_cloudfront_function" "directory_index" {
+  name    = "samaydlette-directory-index"
+  runtime = "cloudfront-js-2.0"
+  comment = "Serve index.html for directory URLs (S3 REST origin has no index documents)"
+  publish = true
+  code    = file("${path.module}/../cloudfront/directory-index.js")
+}
+
 # Origin Access Control: lets CloudFront (and only CloudFront) read the private
 # S3 origin via SigV4. Managed here; the S3 bucket policy in ../ already trusts
 # the distribution ARN.
@@ -288,6 +299,10 @@ resource "aws_cloudfront_distribution" "website" {
       cookies {
         forward = "none"
       }
+    }
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.directory_index.arn
     }
   }
 
