@@ -130,6 +130,12 @@ def _policy_repo(tmp_path):
     (repo / "scripts").mkdir(parents=True)
     (repo / "docs" / "policies").mkdir(parents=True)
     shutil.copy(REPO / "scripts" / "build-policy-index.py", repo / "scripts" / "build-policy-index.py")
+    # Related FedRAMP Practices come from the pinned rules and the KSI catalog.
+    shutil.copy(REPO / "scripts" / "_rules.py", repo / "scripts" / "_rules.py")
+    shutil.copytree(REPO / "infrastructure" / "schemas" / "fedramp-rules",
+                    repo / "infrastructure" / "schemas" / "fedramp-rules")
+    shutil.copy(REPO / "infrastructure" / "schemas" / "ksi-catalog.json",
+                repo / "infrastructure" / "schemas" / "ksi-catalog.json")
     _git(repo, "init", "-q")
     (repo / "docs" / "policies" / "ac-policy.md").write_text("# AC\n\nFirst.\n")
     (repo / "docs" / "policies" / "sc-policy.md").write_text("# SC\n\nFirst.\n")
