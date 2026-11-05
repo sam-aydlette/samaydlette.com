@@ -1774,6 +1774,11 @@ def resolve_component(finding, index, tf_components=()):
     m = _TF_ADDRESS.match(res)
     if m:
         rtype, rname = m.group(1), m.group(2)
+        # The exact resource type first: aws_iam_group_policy_attachment.operators
+        # is the attachment block, not the aws_iam_group.operators it prefixes.
+        exact = {cid for cid, tf_type, tf_name in tf_components if tf_name == rname and tf_type == rtype}
+        if exact:
+            return exact.pop() if len(exact) == 1 else None
         hits = {cid for cid, tf_type, tf_name in tf_components
                 if tf_name == rname and tf_type and rtype.startswith(tf_type)}
         return hits.pop() if len(hits) == 1 else None

@@ -71,6 +71,14 @@ TYPE_BY_TF_TYPE = {
     "aws_iam_role": "iam_role",
     "aws_iam_role_policy": "iam_policy",
     "aws_iam_policy": "iam_policy",  # managed policy (e.g., bootstrap assessment-readonly)
+    # The operators and read-only groups' inline policies, and the managed-policy
+    # attachments on the deploy/plan roles and the groups (bootstrap). Scanners
+    # name these blocks in findings, so they are components a finding resolves
+    # to. An attachment block is one component however many policies its
+    # for_each attaches: the finding names the block, not an instance.
+    "aws_iam_group_policy": "iam_policy",
+    "aws_iam_role_policy_attachment": "iam_policy",
+    "aws_iam_group_policy_attachment": "iam_policy",
     # CI/CD identity plane (infrastructure/bootstrap): the GitHub OIDC provider,
     # the deploy/assessment roles (aws_iam_role above), and the operators group.
     # These are the highest-privilege identities governing the production system,
@@ -909,6 +917,29 @@ def component_id_for_html(rel_path):
 # =============================================================================
 
 
+POLICY_ATTACHMENT_TYPES = ("aws_iam_role_policy_attachment", "aws_iam_group_policy_attachment")
+
+
+def _policy_holder(values):
+    """('role' | 'group', name) an attachment attaches its policy to."""
+    if values.get("group"):
+        return "group", values["group"]
+    return "role", values.get("role") or "unknown"
+
+
+def _add_attached_policy(component, values):
+    """Record an attached managed policy by name only (and whether AWS manages
+    it); its ARN carries the account ID, which is never published."""
+    arn = str(values.get("policy_arn") or "")
+    if not arn:
+        return
+    entry = {"policy_name": arn.rsplit("/", 1)[-1], "aws_managed": arn.startswith("arn:aws:iam::aws:")}
+    attached = component.setdefault("attributes", {}).setdefault("attached_policies", [])
+    if entry not in attached:
+        attached.append(entry)
+        attached.sort(key=lambda e: (e["policy_name"], e["aws_managed"]))
+
+
 def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main.tf"):
     """Walk Terraform state into normalized cloud components.
 
@@ -941,9 +972,17 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         # name; the key keeps their ids distinct. count indexes (int) stay out
         # of the id so existing component ids do not change.
         tf_index = r.get("index")
+        values = r.get("values", {}) or {}
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            # One component per attachment block; each instance adds the
+            # attached policy's name (never its ARN: it carries the account ID).
+            cid = component_id_for_cloud(tf_name, normalized)
+            if cid in components_by_id:
+                _add_attached_policy(components_by_id[cid], values)
+                continue
+            tf_index = None
         id_name = f"{tf_name}[{tf_index}]" if isinstance(tf_index, str) else tf_name
         cid = component_id_for_cloud(id_name, normalized)
-        values = r.get("values", {}) or {}
 
         attrs = {
             "tf_address": r.get("address"),
@@ -952,6 +991,8 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         }
         if isinstance(tf_index, str):
             attrs["tf_index"] = tf_index
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            attrs["tf_address"] = re.sub(r"\[[^\]]*\]$", "", str(r.get("address") or f"{tf_type}.{tf_name}"))
         # Pull a few common, non-sensitive identifying attributes if present.
         for key in ("region", "runtime", "function_name", "id", "domain_name"):
             if key in values and values[key] is not None:
@@ -990,6 +1031,12 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
             # role-name plus policy-name pair so the component is addressable.
             if values.get("arn"):
                 native_id = values["arn"]
+            elif tf_type in POLICY_ATTACHMENT_TYPES:
+                kind, holder = _policy_holder(values)
+                native_id = f"iam-{kind}-policy-attachment::{holder}/{tf_name}"
+            elif tf_type == "aws_iam_group_policy":
+                group_name = values.get("group") or "unknown"
+                native_id = f"iam-group-policy::{group_name}/{values.get('name') or 'inline'}"
             else:
                 role_name = values.get("role") or values.get("role_name") or "unknown"
                 policy_name = values.get("name") or "inline"
@@ -1024,7 +1071,20 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
                 attrs["policy_document_sha256"] = hashlib.sha256(_redact.redact_text(body_str).encode()).hexdigest()
             attrs["policy_name"] = values.get("name")
             attrs["attached_to_role"] = values.get("role") or values.get("role_name")
-            if attrs["attached_to_role"]:
+            if values.get("group"):
+                attrs["attached_to_group"] = values["group"]
+            if tf_type in POLICY_ATTACHMENT_TYPES:
+                kind, holder = _policy_holder(values)
+                attrs["policy_name"] = None
+                attrs["attached_policies"] = []
+                derived_text = {"function": f"Managed policies attached to {kind} {holder}",
+                                "baseline_configuration": f"Managed-policy attachment to {kind} {holder}; "
+                                                          f"policy names in attributes (block in {module_dir})"}
+            elif attrs.get("attached_to_group"):
+                derived_text = {"function": f"Inline policy on group {attrs['attached_to_group']}",
+                                "baseline_configuration": f"Inline policy on group {attrs['attached_to_group']}; "
+                                                          f"body hashed in attributes (body in {module_dir})"}
+            elif attrs["attached_to_role"]:
                 derived_text = {"function": f"Inline policy on role {attrs['attached_to_role']}",
                                 "baseline_configuration": f"Inline policy on role {attrs['attached_to_role']}; body "
                                                           f"hashed in attributes (body in {module_dir})"}
@@ -1042,6 +1102,8 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
         components_by_id[cid] = component
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            _add_attached_policy(component, values)
 
     # Second pass: fold attribute resources into their parent.
     for r in state_resources:
