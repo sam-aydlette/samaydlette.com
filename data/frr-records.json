@@ -1481,11 +1481,36 @@
     {
       "frr_id": "VER-RPT-AVI",
       "status": "Partially Implemented",
-      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496): each accepted vulnerability's detail and acceptance rationale from its decision record; the build fails if a rationale is missing.",
-      "evidence": [],
-      "gap": "Supplementary information is never populated. For the three suppression records, the detection time is when the ledger first saw the suppression rather than when the weakness was found, and the resource is the suppression file, so IRV is unresolved. To close: Take the detection date from the decision; resolve suppressions to the decision's resources so IRV is evaluated; populate supplementary information.",
+      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py): each accepted vulnerability's detail and acceptance rationale from its decision record (the build fails if a rationale is missing), supplementary information from the decision (when decided, review date, resources, plan), and a detection time from the decision for suppressed checks no scanner reports. A .checkov.yaml suppression resolves to the resources its decision names (scripts/build-vdr-report.py resolve_decision_resources), so its IRV is decided from the inventory: CKV_AWS_68 and CKV_AWS_86 now resolve to the CloudFront distribution.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_supplementary_information_comes_from_the_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_detection_time_comes_from_a_decision_that_names_the_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_component.py::test_a_suppressions_reachability_is_decided_from_the_resource_it_affects"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        }
+      ],
+      "gap": "CKV_AWS_117 (DEC-010) still has an unresolved IRV: DEC-010 names aws-lambda::compliance-monitor, which no inventory component carries, and the check is suppressed globally in .checkov.yaml, so it covers every Lambda, including the internet-reachable Silk Reeling backend. Its IRV is the fail-safe (true). DEC-007, DEC-009 and DEC-010 record no original_detection_date, so their suppressions are dated by decided_on. To close: the operator sets DEC-010's applies_to.resources to the Lambda components the suppression covers (component IDs, e.g. aws::function::opa_compliance) and records original detection dates for DEC-007/009/010.",
       "closes_with": [
-        "W2"
+        "sam"
       ]
     },
     {
@@ -1511,11 +1536,23 @@
     {
       "frr_id": "VER-RPT-PER",
       "status": "Partially Implemented",
-      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy; the VDT, AVI and history (#496) cover the period since the previous report.",
-      "evidence": [],
-      "gap": "No report summarizes the period's activity (detections, evaluations, reductions, remediations, scans and V&V runs with times), and V&V results are not cross-referenced from the period's report. To close: Add an activity summary for the period to each report (detections, evaluations, reductions, remediations, scans with times, V&V runs and failures), linking the runtime results for the period.",
+      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy. The VDT and AVI each cover the period since the previous report and carry an activity summary for it (providerExtensions.activitySummary, and an 'Activity this period' section in the .md): detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions recorded and closed, every scan and feed the build read with its time (VDR build, Grype, Dependabot, Checkov, tfsec, ZAP, KEV, EPSS), and the runtime V&V run the build read, linked by URI and signal ID with its validation and failure counts (counted only when its signature verifies).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_each_period_report_summarizes_the_periods_activity"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_an_unverified_runtime_run_is_linked_but_not_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_the_markdown_reports_carry_the_activity_and_link_the_runtime_results"
+        }
+      ],
+      "gap": "The runtime emitter publishes only its latest run, so a runtime V&V run replaced before the next VDR build is not summarized; and activity outside the pipeline (VDP reports, penetration tests, assessments) is not in the summary (see VER-RPT-HLO). To close: retain each runtime run's result (or have each report list every run since the previous report), and add the non-pipeline activities to the summary.",
       "closes_with": [
-        "W2",
         "W7"
       ]
     },
@@ -1532,12 +1569,45 @@
     },
     {
       "frr_id": "VER-RPT-VDT",
-      "status": "Partially Implemented",
-      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496), validated against the vendored VDT schema before writing: tracking ID, detection time and source, evaluation time, IRV, LEV, current rating, PAIN reductions, projected next reduction, overdue status and final disposition.",
-      "evidence": [],
-      "gap": "Historical PAIN and rating history are not carried into the record; the projected next reduction is always the remediation deadline; supplementary information is never produced; overdue explanations for closed findings describe the suppression instead; ZAP detection times start when the scans entered the pipeline, not at the earlier manual scans. To close: Carry historical PAIN and rating history; let a decision set a planned next reduction; populate supplementary information from the decision; take detection dates from the decision where the scanner never saw the finding.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py), validated against the vendored VDT schema before writing: tracking ID; detection time (the earliest evidence: the scanner's first report, or the original_detection_date of a decision naming that record, e.g. DEC-039/040 for the manual ZAP scans) and source; evaluation time; IRV; LEV; current rating, with the historical rating and full rating history under providerExtensions (the schema has no field for them); PAIN reductions; projected next reduction from the decision's planned_reduction, else the remediation deadline; overdue status whose explanation explains the overdue status (and likely-to-become-overdue); supplementary information from the decision (justification, dates, resources, plan, mitigation); final disposition. Each report carries an activity summary for its period.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_records_carry_their_historical_rating_and_rating_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_decision_sets_the_next_reduction_and_the_deadline_is_only_the_fallback"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_supplementary_information_comes_from_the_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_overdue_explanations_explain_the_overdue_status_not_the_suppression"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_detection_time_comes_from_a_decision_that_names_the_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
@@ -1582,12 +1652,41 @@
     },
     {
       "frr_id": "VER-TFR-MRH",
-      "status": "Partially Implemented",
-      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (#496), rebuilt twice daily with 366-day retention, alongside vdr-report.json (per-finding rating history) and vdr-trend.json.",
-      "evidence": [],
-      "gap": "A record that leaves the VDR is labelled Remediated even when it vanished because coverage stopped or a suppression was added; closed decisions from before the history began are not backfilled. To close: Set a final disposition only from evidence (coverage continued and the scanner stopped reporting it, or a decision); otherwise record 'no longer reported'; backfill closed decisions.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (scripts/build-cr26-vdr.py), rebuilt twice daily with 366-day retention, alongside vdr-report.json and vdr-trend.json. A record that leaves the VDR keeps the time it stopped being reported and gets a final disposition only from evidence (a closed decision, a false-positive suppression of its check, or its scanner running again over the same scope without reporting it), recorded in providerExtensions.dispositionBasis; otherwise noLongerReportedReason says why (suppressed, reported again, or unknown) and no final disposition is given. An unsupported Remediated carried from an earlier history is withdrawn. Closed (remediated) decisions from data/decisions.json are carried as history records (backfilledFromDecision) for 366 days from closing.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_history_keeps_a_finding_that_left_the_vdr_then_drops_it_after_a_year"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_record_that_vanished_without_evidence_has_no_final_disposition"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_an_unsupported_remediated_from_an_earlier_history_is_withdrawn"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_check_that_became_a_suppression_is_not_remediated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_closed_decisions_are_backfilled_into_the_history_once"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-history.json"
+        }
       ]
     },
     {

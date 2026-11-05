@@ -1,0 +1,27 @@
+{
+  "_note": "Known-bad: a planned reduction whose target is not an N-rating. A malformed plan would publish a projected reduction nobody planned; the build stops.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "remediate",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "CVE-2099-0001"
+        ],
+        "resources": []
+      },
+      "planned_reduction": {
+        "date": "2026-12-01",
+        "target_pain": "low"
+      }
+    }
+  ]
+}
