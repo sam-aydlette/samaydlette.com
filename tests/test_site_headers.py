@@ -1,4 +1,5 @@
-"""The static site sends COEP, so it embeds no cross-origin frames (ZAP 90004-2).
+"""Every CloudFront response-headers policy sends COEP (ZAP 90004-2), so the static
+site embeds no cross-origin frames.
 
 The website response-headers policy sets Cross-Origin-Embedder-Policy:
 credentialless. A cross-origin frame would then need its own COEP header, which
@@ -13,8 +14,12 @@ TF = REPO / "infrastructure" / "bootstrap" / "cloudfront.tf"
 FIX = REPO / "tests" / "fixtures" / "headers"
 
 
-def policy_block(name):
-    text = TF.read_text()
+POLICY_RE = re.compile(r'resource "aws_cloudfront_response_headers_policy" "([^"]+)"')
+COEP_RE = re.compile(r'header\s*=\s*"Cross-Origin-Embedder-Policy"\s*\n\s*value\s*=\s*"credentialless"')
+
+
+def policy_block(name, tf=TF):
+    text = tf.read_text()
     start = text.index(f'resource "aws_cloudfront_response_headers_policy" "{name}"')
     depth, i = 0, text.index("{", start)
     for j in range(i, len(text)):
@@ -24,13 +29,27 @@ def policy_block(name):
     raise AssertionError("unbalanced block")
 
 
+def policies_without_coep(tf):
+    return sorted(n for n in POLICY_RE.findall(tf.read_text()) if not COEP_RE.search(policy_block(n, tf)))
+
+
 def framed_pages(root):
     return sorted(str(p.relative_to(root)) for p in root.rglob("*.html") if re.search(r"<iframe\b", p.read_text(), re.I))
 
 
 def test_the_site_sends_coep_credentialless():
-    block = policy_block("website")
-    assert re.search(r'header\s*=\s*"Cross-Origin-Embedder-Policy"\s*\n\s*value\s*=\s*"credentialless"', block)
+    assert COEP_RE.search(policy_block("website"))
+
+
+def test_every_response_headers_policy_sends_coep():
+    # Not only the static site: the Silk Reeling app has its own policy, and
+    # ZAP's five-instance cap hid it the first time (90004-2 on /silk-reeling/).
+    assert POLICY_RE.findall(TF.read_text()) == ["website", "silk_reeling"]
+    assert policies_without_coep(TF) == []
+
+
+def test_a_policy_without_coep_is_caught():
+    assert policies_without_coep(FIX / "policy-without-coep.tf.fixture") == ["app"]
 
 
 def test_the_site_csp_allows_no_frames():

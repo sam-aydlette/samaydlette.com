@@ -217,6 +217,16 @@ resource "aws_cloudfront_response_headers_policy" "silk_reeling" {
       value    = "same-origin"
       override = true
     }
+    # COEP, as on the static site (ZAP 90004-2). credentialless, not require-corp:
+    # the app's cross-origin loads (MediaPipe from jsDelivr, models from
+    # storage.googleapis.com, Cognito) are either no-cors script loads, which
+    # credentialless allows without credentials, or CORS fetches, which COEP
+    # does not affect. require-corp would need a CORP header the CDNs do not send.
+    items {
+      header   = "Cross-Origin-Embedder-Policy"
+      value    = "credentialless"
+      override = true
+    }
   }
 }
 

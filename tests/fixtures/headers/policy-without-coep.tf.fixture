@@ -1,0 +1,14 @@
+# Named .tf.fixture so Checkov and tfsec, which scan the repo root, never read it
+# as real Terraform.
+# Known-bad: a second response-headers policy that sets COOP and CORP but not
+# COEP, the shape that left /silk-reeling/ flagged by ZAP 90004-2.
+resource "aws_cloudfront_response_headers_policy" "app" {
+  name = "app-security-headers"
+  custom_headers_config {
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      value    = "same-origin"
+      override = true
+    }
+  }
+}
