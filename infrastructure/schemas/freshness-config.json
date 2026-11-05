@@ -92,26 +92,6 @@
       "signature": ".well-known/opa-policy-bundle.tar.gz.bundle"
     },
     {
-      "path": ".well-known/oscal-ssp.json",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "system-security-plan.metadata.last-modified"
-      },
-      "signed": true,
-      "signature": ".well-known/oscal-ssp.bundle"
-    },
-    {
-      "path": ".well-known/oscal-ssp.json.intoto.jsonl",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "last_modified"
-      },
-      "signed": true
-    },
-    {
       "path": ".well-known/iiw.csv",
       "cadence": "deploy",
       "max_age_hours": 720,
@@ -183,6 +163,15 @@
       },
       "signed": true,
       "signature": ".well-known/security-decision-record.bundle"
+    },
+    {
+      "path": ".well-known/security-decision-record.json.intoto.jsonl",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true
     },
     {
       "path": ".well-known/certification-package-overview.json",

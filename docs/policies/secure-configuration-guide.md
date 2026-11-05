@@ -89,6 +89,6 @@ All settings ship in their recommended secure state when a resource is first pro
 
 ## Public availability
 
-Published at this path within the repository and rendered as part of the public site (`SCG-CSO-PUB`). Linked from [`docs/policies/README.md`](README.md) and from the OSCAL SSP for the AC and SC families.
+Published at this path within the repository and rendered as part of the public site (`SCG-CSO-PUB`). Linked from [`docs/policies/README.md`](README.md) and from the SDR's per-control records (`rev5_controls`) for the AC and SC families.
 
 > **Effective dates.** The Secure Configuration Guide rules (`SCG-*`) and the Addressing-FedRAMP-Communication rules (`AFC-*`) carry the earliest CR26 deadlines: their grace period ended **2026-07-01**. The SCG obligations above are met; AFC is N/A for this unsponsored system (see [`docs/cr26-applicability.md`](../cr26-applicability.md)).

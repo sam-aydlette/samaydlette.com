@@ -1,6 +1,6 @@
 # CA — Assessment, Authorization, and Monitoring
 
-There is no formal authorization process or independent assessor in scope for this PoC; the controls that depend on a third-party assessor or an authorizing official (CA-2/2.1, CA-6, CA-7.1, CA-8/8.1/8.2) are marked not-applicable in the OSCAL SSP. CA-7 (Continuous Monitoring) is the central live control of the family and is satisfied by:
+There is no formal authorization process or independent assessor in scope for this PoC; the controls that depend on a third-party assessor or an authorizing official (CA-2/2.1, CA-6, CA-7.1, CA-8/8.1/8.2) are marked not-applicable in the control projection, published per control in the SDR (`rev5_controls`). CA-7 (Continuous Monitoring) is the central live control of the family and is satisfied by:
 
 - The runtime KSI emitter — daily revalidation of the live state versus the deploy-time signal, drift surfaced at `/.well-known/ksi-signal-runtime.json`.
 - The deploy-time OPA gate — every PR re-evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego.

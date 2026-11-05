@@ -10,15 +10,18 @@
 # Invariants (assessment Task 1):
 #   (a) completeness   — every live in-boundary resource is in the inventory
 #                        (deny-by-default; enumerated from live AWS, not state)
-#   (b) referential    — every SSP component resolves to an inventory entry
+#   (b) referential    — every component a VDR finding names resolves to an
+#                        inventory entry (the SSP's component list, which this
+#                        checked until the SSP was retired, was built from the
+#                        inventory it was compared with)
 #   (c) suppressions   — every suppressed Checkov finding is categorized as
 #                        exactly one of risk-accepted / false-positive /
 #                        remediated, consistently across .checkov.yaml, the
 #                        decision register (data/decisions.json), and the VDR
-#   (d) impact level   — one identical impact level across signal, SSP, VDR
-#                        and dashboard; nothing asserts the system is Low
-#   (e) binding        — all artifacts are built from one inventory signal_id
-#                        and carry it
+#   (d) impact level   — one identical impact level across signal, VDR, SDR,
+#                        CPO and dashboard; nothing asserts the system is Low
+#   (e) binding        — the VDR, SDR and CPO are built from one inventory
+#                        signal_id and carry it
 #   (f) publish freshness — staged artifacts carry the current commit and a
 #                        fresh emitted_at (the live round-trip half is Task 1.5)
 #   (g) retired        — held the OSCAL POA&M and docs/poam.md in parity; the
@@ -289,30 +292,21 @@ def check_i_classification_tags(signal, live_tags):
 
 
 # ----------------------------------------------------------------------------
-# (b) referential — SSP components resolve to inventory entries
+# (b) referential — every component a VDR finding names is in the inventory
 # ----------------------------------------------------------------------------
-def check_b_referential(signal, ssp):
+def check_b_referential(signal, vdr):
+    """A finding that names a component must name one the inventory has: a
+    finding attributed to a component outside the boundary, or to a stale ID,
+    would publish risk against nothing. A finding the builder could not resolve
+    carries component_id null and unresolved_component true (it is queued and
+    rated fail-safe); that is reported, not invented."""
     violations = []
-    comp_ids = inventory_component_ids(signal)
-    native = inventory_native_ids(signal)
-    known = comp_ids | native
-
-    # SSP system-implementation components: each non-"this-system" component
-    # should trace to an inventory entry by title/id/prop.
-    si = (ssp.get("system-security-plan", {})
-             .get("system-implementation", {}))
-    for comp in si.get("components", []):
-        title = comp.get("title", "")
-        ctype = comp.get("type", "")
-        if ctype == "this-system":
-            continue
-        props = {p.get("name"): p.get("value") for p in comp.get("props", []) or []}
-        ref = props.get("inventory-component-id") or props.get("aws-arn") or title
-        if ref and ref not in known and not any(ref in k or k in ref for k in known if k):
-            # tolerate descriptive titles; only flag explicit id/arn props that miss
-            if props.get("inventory-component-id") or props.get("aws-arn"):
-                violations.append(f"(b) SSP component does not resolve to inventory: {ref}")
-
+    known = inventory_component_ids(signal)
+    for f in _all_vdr_findings(vdr):
+        cid = f.get("component_id")
+        if cid is not None and cid not in known:
+            violations.append(f"(b) VDR finding {f.get('tracking_id', '?')!r} names component {cid!r}, "
+                              "which is not in the inventory")
     return violations
 
 
@@ -368,14 +362,12 @@ def check_c_suppressions(checkov_skips, register, vdr):
 # ----------------------------------------------------------------------------
 # (d) impact level identical; nothing asserts Low
 # ----------------------------------------------------------------------------
-def extract_impacts(signal, ssp, vdr, dashboard_html):
+def extract_impacts(signal, sdr, cpo, vdr, dashboard_html):
     impacts = {}
     impacts["signal"] = normalize_impact(
         signal.get("categorization", {}).get("impact_level"))
-    impacts["ssp"] = normalize_impact(
-        ssp.get("system-security-plan", {})
-           .get("system-characteristics", {})
-           .get("security-sensitivity-level"))
+    impacts["sdr"] = normalize_impact(sdr.get("impact_level"))
+    impacts["cpo"] = normalize_impact(cpo.get("impact_level"))
     impacts["vdr"] = normalize_impact(vdr.get("impact_level") or
                                       ("class " + vdr.get("class", "")).strip())
     # dashboard (the trust center page, website/trust/index.html): its static
@@ -388,9 +380,9 @@ def extract_impacts(signal, ssp, vdr, dashboard_html):
     return impacts
 
 
-def check_d_impact(signal, ssp, vdr, dashboard_html, expected="moderate"):
+def check_d_impact(signal, sdr, cpo, vdr, dashboard_html, expected="moderate"):
     violations = []
-    impacts = extract_impacts(signal, ssp, vdr, dashboard_html)
+    impacts = extract_impacts(signal, sdr, cpo, vdr, dashboard_html)
     for art, val in impacts.items():
         if val is None:
             violations.append(f"(d) {art} carries no extractable impact level")
@@ -402,22 +394,13 @@ def check_d_impact(signal, ssp, vdr, dashboard_html, expected="moderate"):
 # ----------------------------------------------------------------------------
 # (e) binding — all artifacts carry the one inventory signal_id
 # ----------------------------------------------------------------------------
-def _first_prop(props, name):
-    for p in props or []:
-        if p.get("name") == name:
-            return p.get("value")
-    return None
-
-
-def check_e_binding(signal, ssp, vdr):
+def check_e_binding(signal, sdr, cpo, vdr):
     violations = []
     sid = signal.get("signal_id")
     if not sid:
         return ["(e) signal has no signal_id"]
-    ssp_md = ssp.get("system-security-plan", {}).get("metadata", {})
-    ssp_sid = _first_prop(ssp_md.get("props"), "ksi-signal-source")
-    vdr_sid = vdr.get("ksi_signal_id")
-    for art, got in (("ssp", ssp_sid), ("vdr", vdr_sid)):
+    for art, doc in (("vdr", vdr), ("sdr", sdr), ("cpo", cpo)):
+        got = doc.get("ksi_signal_id")
         if got != sid:
             violations.append(f"(e) {art} signal_id {got!r} != inventory signal_id {sid!r}")
     return violations
@@ -472,7 +455,7 @@ def check_h_finding_coverage(vdr, register):
 # (j) decision reference validity — narrative cross-references resolve
 # ----------------------------------------------------------------------------
 # Generators embed decision IDs in narrative strings (baseline_configuration,
-# SSP statements, VDR dispositions) as traceability pointers. A DEC-NNN must be
+# SDR statements, VDR dispositions) as traceability pointers. A DEC-NNN must be
 # a record in the decision register; a POAM-NNN (from before the register) must
 # be a record's former_id, or an explicitly retired ID.
 RETIRED_POAM_IDS = {"POAM-016"}
@@ -480,12 +463,12 @@ RETIRED_POAM_IDS = {"POAM-016"}
 _DECISION_REF_RE = re.compile(r"\b(?:DEC|POAM)-\d{3}\b")
 
 
-def check_j_decision_id_validity(signal, ssp, vdr, register):
+def check_j_decision_id_validity(signal, sdr, cpo, vdr, register):
     """(j) Every DEC-NNN or POAM-NNN string in a generated artifact resolves to
     the decision register (by id or former_id) or is an explicitly retired ID."""
     ok = set(_decisions.by_any_id(register)) | RETIRED_POAM_IDS
     violations = []
-    for name, art in (("signal", signal), ("ssp", ssp), ("vdr", vdr)):
+    for name, art in (("signal", signal), ("sdr", sdr), ("cpo", cpo), ("vdr", vdr)):
         refs = set(_DECISION_REF_RE.findall(json.dumps(art)))
         for ref in sorted(refs - ok):
             violations.append(
@@ -535,17 +518,17 @@ def check_l_boundary_map(signal, boundary_map, expected_commit=None):
     return violations
 
 
-def run_all(signal, ssp, vdr, dashboard_html, checkov_text, register,
+def run_all(signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
             live_arns=None, expected_commit=None, live_tags=None,
             boundary_map=None):
     violations = []
-    violations += check_d_impact(signal, ssp, vdr, dashboard_html)
-    violations += check_e_binding(signal, ssp, vdr)
-    violations += check_b_referential(signal, ssp)
+    violations += check_d_impact(signal, sdr, cpo, vdr, dashboard_html)
+    violations += check_e_binding(signal, sdr, cpo, vdr)
+    violations += check_b_referential(signal, vdr)
     violations += check_c_suppressions(parse_checkov_skips(checkov_text), register, vdr)
     violations += check_f_freshness(signal, vdr, expected_commit)
     violations += check_h_finding_coverage(vdr, register)
-    violations += check_j_decision_id_validity(signal, ssp, vdr, register)
+    violations += check_j_decision_id_validity(signal, sdr, cpo, vdr, register)
     violations += check_l_boundary_map(signal, boundary_map, expected_commit)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
@@ -557,7 +540,8 @@ def run_all(signal, ssp, vdr, dashboard_html, checkov_text, register,
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--artifacts-dir", default="infrastructure",
-                    help="dir holding ksi-signal.json, oscal-ssp.json, vdr-report.json")
+                    help="dir holding ksi-signal.json, vdr-report.json, security-decision-record.json, "
+                         "certification-package-overview.json")
     ap.add_argument("--live", action="store_true", help="enumerate live AWS for invariants (a) completeness and (i) classification tags (CI)")
     ap.add_argument("--live-fixture", default=None, help="JSON array of live ARNs (tests)")
     ap.add_argument("--live-tags-fixture", default=None, help="JSON object {arn: {tag: value}} of live resource tags (tests)")
@@ -577,8 +561,9 @@ def main():
     d = Path(args.artifacts_dir)
     try:
         signal = load_json(d / "ksi-signal.json")
-        ssp = load_json(d / "oscal-ssp.json")
         vdr = load_json(d / "vdr-report.json")
+        sdr = load_json(d / "security-decision-record.json")
+        cpo = load_json(d / "certification-package-overview.json")
     except FileNotFoundError as e:
         print(f"reconcile: missing artifact: {e}", file=sys.stderr)
         return 2
@@ -623,7 +608,7 @@ def main():
                 raise
 
     violations = run_all(
-        signal, ssp, vdr, dashboard_html, checkov_text, register,
+        signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
         boundary_map=boundary_map,
     )
@@ -651,7 +636,7 @@ def main():
         checks = "a-f,h,j" + optional + " (i deferred: no live tags)"
     else:
         checks = "b-f,h,j" + optional + " (a,i deferred: no --live)"
-    print(f"reconciliation OK — invariants {checks} hold across signal/SSP/VDR/decisions/dashboard")
+    print(f"reconciliation OK — invariants {checks} hold across signal/VDR/SDR/CPO/decisions/dashboard")
     if args.report:
         Path(args.report).write_text(json.dumps(build_report(
             signal, args.expect_commit,
@@ -662,7 +647,7 @@ def main():
 
 INVARIANT_TITLES = {
     "a": "Every live in-boundary resource is in the inventory",
-    "b": "Every SSP component resolves to an inventory entry",
+    "b": "Every component a VDR finding names is in the inventory",
     "c": "Every suppressed scanner finding is categorized consistently",
     "d": "One identical impact level everywhere",
     "e": "Every artifact is built from one inventory",

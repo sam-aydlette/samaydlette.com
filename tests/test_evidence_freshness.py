@@ -141,10 +141,10 @@ def test_each_artifact_is_measured_by_its_own_field_and_window(tmp_path):
     assert freshness.main(["--url", path.as_uri()]) == 0
     path.write_text(json.dumps({"generated_at": hours_ago(800)}))
     assert freshness.main(["--url", path.as_uri()]) == 1
-    # Nested OSCAL metadata.
-    ssp = tmp_path / "oscal-ssp.json"
-    ssp.write_text(json.dumps({"system-security-plan": {"metadata": {"last-modified": hours_ago(5)}}}))
-    assert freshness.main(["--url", ssp.as_uri()]) == 0
+    # A nested field (the SDR's metadata.last_updated).
+    sdr = tmp_path / "security-decision-record.json"
+    sdr.write_text(json.dumps({"metadata": {"last_updated": hours_ago(5)}}))
+    assert freshness.main(["--url", sdr.as_uri()]) == 0
 
 
 def test_an_artifact_without_a_timestamp_field_is_measured_by_last_modified(tmp_path):

@@ -29,7 +29,7 @@
 #   - The canonical inventory. This binds to the PUBLISHED ksi-signal.json
 #     (signature-verified against the deploy workflow's pinned identity) rather
 #     than rebuilding it, which is what satisfies reconciliation invariant (e)
-#     without touching the SSP/IIW. A changed inventory means changed
+#     without touching the SDR/CPO/IIW. A changed inventory means changed
 #     infrastructure, and that belongs on the reviewed deploy path.
 #   - The OPA gate axis. `validations.json` is produced by `terraform plan`,
 #     which this workflow has neither the state access nor the IAM rights to run.
@@ -38,9 +38,9 @@
 #     blocks the deploy first. So its absence changes no published value. It does
 #     mean the nightly VDR is an SAST+SCA+DAST report re-verified against today's
 #     threat data, not a re-evaluation of the infrastructure plan.
-#   - The SSP, IIW, OCR, CDS and provenance attestations. The SSP IS rebuilt
-#     here, but only as an input to the reconciliation gate; it is never signed
-#     and never published.
+#   - The SDR, CPO, IIW, OCR, CDS and provenance attestations. The published
+#     SDR and CPO are fetched and signature-verified here, but only as inputs to
+#     the reconciliation gate; they are never re-signed or re-published.
 #
 # A GENUINELY NEW CVE CANNOT AUTO-PUBLISH. Invariant (h) requires every VDR
 # finding to carry a decision_id that resolves to an in-force record in the
@@ -446,16 +446,25 @@ jobs:
     # -------------------------------------------------------------------------
     # GATE INPUTS — built, never signed, never published
     # -------------------------------------------------------------------------
-    # scripts/reconcile.py loads the signal, SSP and VDR and reads the decision
-    # register from the checkout. The SSP is rebuilt from the published
-    # inventory purely so the gate has a coherent set to evaluate. It is not
-    # signed and is not in the publish step below; the published SSP keeps
-    # whatever the last reviewed deploy put there.
-    - name: Build reconciliation inputs (OSCAL SSP, unpublished)
+    # scripts/reconcile.py loads the signal, VDR, SDR and CPO and reads the
+    # decision register from the checkout. The SDR and CPO are the ones the last
+    # reviewed deploy published with this inventory; they arrive over the public
+    # internet, so each is verified against the deploy workflow's pinned identity
+    # before use, exactly like the inventory above. Fail closed: an unverifiable
+    # artifact is not evidence. They are not re-signed or re-published here.
+    - name: Fetch and verify the published SDR and CPO (reconciliation inputs)
       working-directory: infrastructure
       run: |
         set -euo pipefail
-        python3 ../scripts/build-oscal-ssp.py
+        for art in security-decision-record certification-package-overview; do
+          curl -sfL --retry 3 --retry-delay 5 -o "$art.json" "${SITE_ORIGIN}/.well-known/$art.json"
+          curl -sfL --retry 3 --retry-delay 5 -o "$art.bundle" "${SITE_ORIGIN}/.well-known/$art.bundle"
+          cosign verify-blob \
+            --bundle "$art.bundle" \
+            --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            "$art.json"
+        done
 
     # The signed runtime signal is the only live read a mitigation can cite
     # (rule 1: a mitigation verified by a live read makes a finding fully
@@ -586,8 +595,8 @@ jobs:
     # Running it anyway does not weaken either gate. The job still fails, and
     # every sign and publish step below keeps its default success() condition, so
     # nothing is published unless BOTH gates pass. It only needs its inputs: the
-    # VDR and the rebuilt SSP, which exist whenever the VDR step
-    # succeeded.
+    # VDR (which exists whenever the VDR step succeeded) and the verified SDR and
+    # CPO fetched above.
     - name: Reconciliation gate (fail closed on drift)
       id: reconcile
       if: ${{ !cancelled() && steps.vdr.outcome == 'success' }}

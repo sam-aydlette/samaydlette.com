@@ -1,4 +1,4 @@
-# The SSP's implemented->partial auto-downgrade must follow the signal's own
+# The control projection's implemented->partial auto-downgrade must follow the signal's own
 # per-KSI verdict (ksis[].status / evidence.failed_validation_ids), not a
 # hardcoded policy-id heuristic that can both miss failing KSIs and drag in
 # passing ones.
@@ -8,9 +8,9 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
-spec = importlib.util.spec_from_file_location("ssp", REPO / "scripts" / "build-oscal-ssp.py")
-ssp = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(ssp)
+spec = importlib.util.spec_from_file_location("_controls", REPO / "scripts" / "_controls.py")
+ctl = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ctl)
 
 
 def _signal(ksis=None, validations=None):
@@ -34,7 +34,7 @@ def test_uses_signal_ksi_attribution_not_heuristic():
         # KSI-MLA-EVC; the signal above says it passes, so it must stay out.
         validations=[{"result": "fail", "policy": {"id": "terraform.compliance"}}],
     )
-    assert ssp._failing_ksis_from_signal(sig) == {"KSI-SVC-ACM"}
+    assert ctl._failing_ksis_from_signal(sig) == {"KSI-SVC-ACM"}
 
 
 def test_failed_validation_ids_alone_marks_failing():
@@ -42,7 +42,7 @@ def test_failed_validation_ids_alone_marks_failing():
         {"id": "KSI-CMT-LMC", "status": "pass",
          "evidence": {"failed_validation_ids": ["v-0002"]}},
     ])
-    assert ssp._failing_ksis_from_signal(sig) == {"KSI-CMT-LMC"}
+    assert ctl._failing_ksis_from_signal(sig) == {"KSI-CMT-LMC"}
 
 
 def test_all_pass_means_no_downgrade():
@@ -51,11 +51,11 @@ def test_all_pass_means_no_downgrade():
                "evidence": {"failed_validation_ids": []}}],
         validations=[{"result": "fail", "policy": {"id": "terraform.compliance"}}],
     )
-    assert ssp._failing_ksis_from_signal(sig) == set()
+    assert ctl._failing_ksis_from_signal(sig) == set()
 
 
 def test_legacy_signal_without_ksis_falls_back_to_policy_map():
     sig = _signal(validations=[
         {"result": "fail", "policy": {"id": "terraform.compliance"}},
     ])
-    assert ssp._failing_ksis_from_signal(sig) == {"KSI-MLA-EVC", "KSI-SVC-ACM"}
+    assert ctl._failing_ksis_from_signal(sig) == {"KSI-MLA-EVC", "KSI-SVC-ACM"}

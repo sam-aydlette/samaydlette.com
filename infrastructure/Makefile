@@ -13,7 +13,7 @@
 # did precisely that, and worse: they synced `.` (this directory) rather than
 # `website/`, with --delete and no .well-known/ exclusion.
 
-.PHONY: a11y help init plan apply-infra deploy destroy check-compliance build-ksi-signal build-oscal-ssp clean gate python-test reconcile verify-published test-policies fmt security-scan validate outputs status dev-setup pipeline create-cert
+.PHONY: a11y help init plan apply-infra deploy destroy check-compliance build-ksi-signal clean gate python-test reconcile verify-published test-policies fmt security-scan validate outputs status dev-setup pipeline create-cert
 
 # Default target
 help:
@@ -104,13 +104,6 @@ build-ksi-signal:
 	python3 ../scripts/build-ksi-signal.py
 	@echo "✅ ksi-signal.json built (local only)"
 
-# Build the OSCAL Rev 5 SSP from the canonical inventory and the FedRAMP KSI
-# catalog. Writes a local file; publishes nothing.
-build-oscal-ssp:
-	@echo "Building OSCAL Rev 5 SSP..."
-	python3 ../scripts/build-oscal-ssp.py
-	@echo "✅ oscal-ssp.json built (local only)"
-
 
 # Run compliance check
 check-compliance:
@@ -171,7 +164,7 @@ destroy:
 clean:
 	@echo "Cleaning temporary files..."
 	rm -f tfplan tfplan.json opa-input.json resource-input.json opa-result.json compliance-result.json
-	rm -f validations.json validations.ndjson ksi-signal.json ksi-signal.bundle oscal-ssp.json
+	rm -f validations.json validations.ndjson ksi-signal.json ksi-signal.bundle
 	rm -f opa-compliance.zip lambda/policy.wasm
 	@echo "✅ Cleanup complete"
 
@@ -191,7 +184,7 @@ gate:
 	python3 ../scripts/validate-ksi-signal.py ksi-signal.json
 	@echo "✅ Inventory gate passed"
 
-# Python unit/integration tests (inventory gate, provenance, PURLs, SSP params,
+# Python unit/integration tests (inventory gate, provenance, PURLs, control params,
 # CMMC mapping, figure injection). Runnable in PR CI without AWS state.
 python-test:
 	@echo "Running Python test suite..."
@@ -200,7 +193,7 @@ python-test:
 # Reconciliation gate (assessment keystone): fails closed if any cross-artifact
 # invariant breaks (completeness, referential, suppressions, impact level,
 # inventory binding, publish freshness). Run from infrastructure/ after the
-# signal/SSP/VDR are built. RECONCILE_FLAGS="--live" enumerates live AWS
+# signal, VDR, SDR and CPO are built. RECONCILE_FLAGS="--live" enumerates live AWS
 # for the completeness invariant in CI.
 reconcile:
 	@echo "Running reconciliation gate..."

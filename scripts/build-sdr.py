@@ -11,14 +11,15 @@
 # SDR-CSX-KMT (Class C) carries metric summaries over 30 days / up to a year /
 # all daily metric data.
 #
-# This is the *20x-paradigm* artifact. The Rev5-paradigm artifact, the OSCAL
-# System Security Plan (scripts/build-oscal-ssp.py), is STILL generated from the
-# same control hub: one inventory yields conformant evidence in both shapes,
-# which is the whole point. The SDR derives its per-KSI records from the KSI
-# catalog and the OSCAL SSP, so the two never disagree.
+# It carries both views CR26 defines over the same rule families: per KSI
+# (SDR-CSX-KSI, the 20x record) and per applicable Rev5 control (SDR-CSF-CTF,
+# the Rev5 record, in rev5_controls). Both come from the control projection
+# (scripts/_controls.py) computed from the canonical inventory and the KSI
+# catalog, so they cannot disagree. The OSCAL SSP that used to carry the
+# per-control statements is retired (CR26); this record replaces it.
 #
-#   build-sdr.py --ssp oscal-ssp.json --catalog schemas/ksi-catalog.json \
-#       --ksi-signal ksi-signal.json --vdr vdr-report.json --previous-sdr prev.json
+#   build-sdr.py --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
+#       --vdr vdr-report.json --previous-sdr prev.json
 # =============================================================================
 
 import argparse
@@ -33,23 +34,24 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import prop  # noqa: E402
 import _assessor  # noqa: E402
+import _controls  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
 NA = "N/A — self-attested proof of concept; no FedRAMP Recognized independent assessment service engaged (IVV is not applicable to an unsponsored system)."
 
 
-def _control_map(ssp):
-    """control_id -> {status, origination} from the OSCAL SSP."""
+def _control_map(irs):
+    """control_id -> {status, origination} from the control projection."""
     m = {}
-    for ir in ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]:
+    for ir in irs:
         m[ir["control-id"]] = {"status": prop(ir, "implementation-status"),
                                "origination": prop(ir, "control-origination")}
     return m
 
 
 def build_records(catalog, cmap):
-    """One SDR-CSO-FRR record per in-scope KSI, derived from its controls' SSP state."""
+    """One SDR-CSO-FRR record per in-scope KSI, derived from its controls' projected state."""
     records = []
     for fam in catalog.get("KSI", {}).values():
         for ind in fam.get("indicators", []) or []:
@@ -72,7 +74,7 @@ def build_records(catalog, cmap):
             if controls:
                 expl = (f"Satisfied through {len(controls)} NIST 800-53 control(s) "
                         f"({impl} system-implemented, {inh} inherited/shared, {na} not-applicable); "
-                        f"see the OSCAL SSP for each control's implementation statement.")
+                        f"see rev5_controls in this record for each control's implementation statement.")
             else:
                 expl = ("Process/organizational indicator with no direct 800-53 control mapping; "
                         "satisfied at the operator level and documented in the linked policy.")
@@ -89,9 +91,62 @@ def build_records(catalog, cmap):
                 "independent_verification": NA,
                 "independent_validation": NA,
                 "assessor_comment_responses": [],
-                "artifacts": ["/.well-known/ksi-signal.json", "/.well-known/oscal-ssp.json"],
+                "artifacts": ["/.well-known/ksi-signal.json", "/.well-known/security-decision-record.json"],
             })
     return records
+
+
+# CR26 implementation-status vocabulary (SDR-CSF-CTF) for the projection's
+# OSCAL tokens.
+REV5_STATUS = {"implemented": "Implemented", "partial": "Partially Implemented", "planned": "Planned",
+               "alternative": "Alternative Implementation", "not-applicable": "Not Applicable"}
+
+
+def build_rev5_controls(irs, catalog):
+    """SDR-CSF-CTF: a summary for each applicable Rev5 control: parameter values,
+    implementation status, the mechanisms (the projection's statement, including
+    any inheritance), verification, validation, independent verification and
+    validation, and control-specific artifacts. Verification and validation
+    point at the records of the KSIs that claim the control rather than
+    restating them; a control no KSI claims says so."""
+    ksis_by_control, _ = _controls.contributing_ksis(catalog)
+    out = []
+    for ir in irs:
+        cid = ir["control-id"]
+        status = prop(ir, "implementation-status")
+        origination = prop(ir, "control-origination")
+        ksis = sorted(ksis_by_control.get(cid, ()))
+        if status == "not-applicable":
+            verification = validation = "Not applicable."
+        elif origination == "inherited":
+            verification = validation = ("Inherited from AWS under its FedRAMP certification "
+                                         "(leveraged authorization); verified and validated there.")
+        elif ksis:
+            verification = validation = ("See the rule records (rule_records) of the contributing KSIs: "
+                                         + ", ".join(ksis) + ".")
+        else:
+            verification = ("No KSI claims this control; the statement is maintained in the control "
+                             "projection (scripts/_controls.py, data/component-definitions/) and "
+                             "reviewed with it.")
+            validation = "No automated validation."
+        remarks = [ir["statements"][0]["remarks"]] if ir.get("statements") else []
+        live = prop(ir, "implementation-status-remarks")
+        out.append({
+            "control_id": cid,
+            "implementation_status": REV5_STATUS.get(status, status),
+            "origination": origination,
+            "parameters": [{"param_id": sp["param-id"], "values": sp.get("values", [])}
+                           for sp in ir.get("set-parameters", [])],
+            "mechanisms": " ".join(remarks + ([live] if live else [])),
+            "contributing_ksis": ksis,
+            "verification": verification,
+            "validation": validation,
+            "independent_verification": NA,
+            "independent_validation": NA,
+            "assessor_comment_responses": [],
+            "artifacts": [lk["href"] for lk in ir.get("links", [])],
+        })
+    return out
 
 
 def build_metrics(records, controls_in_scope, vdr, signal, history, now):
@@ -136,7 +191,6 @@ def build_metrics(records, controls_in_scope, vdr, signal, history, now):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ssp", default="oscal-ssp.json")
     ap.add_argument("--catalog", default="schemas/ksi-catalog.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--vdr", default="vdr-report.json")
@@ -151,7 +205,6 @@ def main():
     a = ap.parse_args()
 
     now = datetime.now(timezone.utc)
-    ssp = json.loads(Path(a.ssp).read_text())
     catalog = json.loads(Path(a.catalog).read_text())
     signal = json.loads(Path(a.ksi_signal).read_text()) if Path(a.ksi_signal).exists() else {}
     vdr = json.loads(Path(a.vdr).read_text()) if Path(a.vdr).exists() else {}
@@ -163,7 +216,10 @@ def main():
         except Exception:
             history = []
 
-    cmap = _control_map(ssp)
+    # The projection needs the inventory: without it there is no control state
+    # to record, so a missing signal stops the build (fail-closed).
+    irs = _controls.load(a.ksi_signal, a.catalog)
+    cmap = _control_map(irs)
     records = build_records(catalog, cmap)
     # REQ-ASR-1: assessor records enter only through the signed port; any record
     # that does not verify fails the build. They are carried verbatim.
@@ -174,18 +230,19 @@ def main():
     sdr = {
         "record_type": "security-decision-record",
         "schema": "fedramp-security-decision-record-schema-2026-06-24.json",
-        "note": "The 20x-paradigm replacement for the System Security Plan. The Rev5 OSCAL SSP "
-                "is still generated from the same control hub (paradigm-agnostic automation).",
+        "note": "The CR26 replacement for the System Security Plan: per-KSI records (20x) and "
+                "per-Rev5-control records (rev5_controls), both from one control projection.",
         # SDR-CSO-MTD
         "metadata": {
             "version": "live (regenerated each deploy)",
             "last_updated": now.isoformat(),
-            "source_of_update": "scripts/build-sdr.py, derived from the canonical KSI inventory and OSCAL SSP",
+            "source_of_update": "scripts/build-sdr.py, derived from the canonical KSI inventory and the control projection",
         },
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "ksi_signal_id": (signal or {}).get("signal_id"),
         "rule_records": records,                 # SDR-CSO-FRR + SDR-CSX-KSI
+        "rev5_controls": build_rev5_controls(irs, catalog),   # SDR-CSF-CTF
         "metrics": metrics,                      # SDR-CSX-KMT
         # REQ-ASR-1: verified, signed assessor records not tied to one rule, and
         # the status ("no assessor record" when none exist).
@@ -246,8 +303,15 @@ def render_markdown(sdr):
         cids = ", ".join(c["control_id"] for c in r["controls"]) or "—"
         out.append("| `{rid}` | {cids} | {ex} |".format(
             rid=r["rule_id"], cids=cids, ex=r["explanation"].replace("|", "\\|")))
-    out += ["", "---", "_Source of truth: the signed `security-decision-record.json`. The Rev5 "
-            "OSCAL SSP at `/.well-known/oscal-ssp.json` is the same evidence in the Rev5 shape._"]
+    rc = sdr.get("rev5_controls", [])
+    by_status = {}
+    for c in rc:
+        by_status[c["implementation_status"]] = by_status.get(c["implementation_status"], 0) + 1
+    out += ["", "## Rev5 controls (SDR-CSF-CTF)", "",
+            f"{len(rc)} controls, each with its parameter values, implementation status, mechanisms, "
+            "verification and validation in `rev5_controls` of the JSON record. By status: "
+            + (", ".join(f"{k} {v}" for k, v in sorted(by_status.items())) or "none") + "."]
+    out += ["", "---", "_Source of truth: the signed `security-decision-record.json`._"]
     return "\n".join(out)
 
 

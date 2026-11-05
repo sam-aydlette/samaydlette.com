@@ -2,10 +2,10 @@
 # =============================================================================
 # COVERAGE STACK  (Phase 2 / A2 — spoke output contract)
 # =============================================================================
-# Rolls up an OSCAL SSP's authored per-control responsibility classification into
-# a coverage stack + inheritable fraction. Coverage is NOT a derived score: it is
-# the histogram of the control-origination/implementation-status that each
-# control already carries in the SSP. The responsibility classes use FedRAMP's
+# Rolls up the control projection's authored per-control responsibility
+# classification (scripts/_controls.py) into a coverage stack + inheritable
+# fraction. Coverage is NOT a derived score: it is the histogram of the
+# control-origination/implementation-status that each control already carries. The responsibility classes use FedRAMP's
 # authoritative control-origination vocabulary under plain-language labels.
 #
 # Deliberately does NOT report an "automation depth" / machine-evidence metric —
@@ -15,7 +15,7 @@
 #   inheritable fraction = fully-inherited + partially-inherited (the ~53/110
 #     analog for CMMC)
 #
-# Usage: build-coverage.py <oscal-ssp.json> [--framework NAME] [--output PATH]
+# Usage: build-coverage.py [--ksi-signal PATH] [--catalog PATH] [--framework NAME] [--output PATH]
 # =============================================================================
 
 import argparse
@@ -28,14 +28,14 @@ from collections import Counter
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import classify, prop  # noqa: E402
+import _controls  # noqa: E402
 
 # FedRAMP control-origination + implementation-status -> responsibility class
 CLASSES = ["implemented", "partially-inherited", "fully-inherited",
            "customer-responsibility", "planned", "not-applicable"]
 
 
-def build_coverage(ssp, framework):
-    irs = ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]
+def build_coverage(irs, framework):
     hist = Counter()
     for ir in irs:
         hist[classify(prop(ir, "implementation-status"),
@@ -62,11 +62,12 @@ def build_coverage(ssp, framework):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("ssp")
+    ap.add_argument("--ksi-signal", default=str(_controls.DEFAULT_SIGNAL))
+    ap.add_argument("--catalog", default=str(_controls.DEFAULT_CATALOG))
     ap.add_argument("--framework", default="FedRAMP Rev5 Moderate")
     ap.add_argument("--output", default=None)
     a = ap.parse_args()
-    cov = build_coverage(json.loads(open(a.ssp).read()), a.framework)
+    cov = build_coverage(_controls.load(a.ksi_signal, a.catalog), a.framework)
     out = json.dumps(cov, indent=2)
     if a.output:
         open(a.output, "w").write(out + "\n")

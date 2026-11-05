@@ -22,8 +22,8 @@ The following surfaces of the system were examined for PII handling:
 - **Cookies**: none set by the site. The only cookies that could touch a reader's browser are AWS-default CloudFront request-routing cookies (no user identification, no persistence beyond request).
 - **Lambda runtime KSI emitter**: processes only AWS configuration metadata (S3 bucket configuration, CloudFront distribution settings). No PII inputs, no PII outputs.
 - **CI/CD chain**: GitHub Actions, AWS API calls, Sigstore signing. No PII transits this chain.
-- **Published artifacts at `/.well-known/`**: KSI signal, OSCAL SSP, OSCAL POA&M, VDR report, IIW CSV, security.txt. None contains PII. Asset identifiers, system IDs, component names, and provenance are operational metadata, not PII.
-- **Operator's name and email** in the OSCAL SSP/POA&M `parties` blocks and in `security.txt`: the operator is a public author and consents to publication of their name and contact email for system-administration purposes. This is professional contact information published deliberately, not PII collected from a third party.
+- **Published artifacts at `/.well-known/`**: KSI signal, VDR report, Security Decision Record, Certification Package Overview, IIW CSV, security.txt. None contains PII. Asset identifiers, system IDs, component names, and provenance are operational metadata, not PII.
+- **Operator's name and email** in the Certification Package Overview (accountable official) and in `security.txt`: the operator is a public author and consents to publication of their name and contact email for system-administration purposes. This is professional contact information published deliberately, not PII collected from a third party.
 
 ## Federal customer data
 

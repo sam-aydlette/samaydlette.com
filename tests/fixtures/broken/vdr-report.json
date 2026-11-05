@@ -2,5 +2,13 @@
   "impact_level": "Moderate",
   "class": "C",
   "ksi_signal_id": "00000000-0000-4000-8000-000000000000",
-  "risk_accepted": []
+  "risk_accepted": [],
+  "findings": [
+    {
+      "tracking_id": "CKV_AWS_18-ghost",
+      "component_id": "aws::function::ghost",
+      "decision_id": "DEC-007",
+      "_note": "Known-bad for (b): names a component the inventory does not have."
+    }
+  ]
 }

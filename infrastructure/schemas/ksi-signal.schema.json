@@ -162,7 +162,7 @@
       }
     },
     "ksis": {
-      "description": "Per-KSI status for every in-scope FedRAMP 20x Key Security Indicator. Each entry maps a KSI to a live pass/fail and the validations + components that evidence it, so a consumer can trace a control's named KSI (in the OSCAL SSP) to a result in this signal without out-of-band knowledge.",
+      "description": "Per-KSI status for every in-scope FedRAMP 20x Key Security Indicator. Each entry maps a KSI to a live pass/fail and the validations + components that evidence it, so a consumer can trace a control's named KSI (in the Security Decision Record) to a result in this signal without out-of-band knowledge.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/ksi"
@@ -500,7 +500,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "description": "The KSI identifier from the FedRAMP 20x KSI catalog (e.g., 'KSI-IAM-ELP'). Matches the KSIs the OSCAL SSP names per control, making them traceable to this status.",
+          "description": "The KSI identifier from the FedRAMP 20x KSI catalog (e.g., 'KSI-IAM-ELP'). Matches the KSIs the Security Decision Record names per control, making them traceable to this status.",
           "type": "string",
           "minLength": 1
         },

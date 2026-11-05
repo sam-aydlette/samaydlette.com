@@ -24,7 +24,7 @@
 # verification step and must never be reachable from `check`.
 #
 # `reconcile` is also excluded, for a different reason: it consumes generated
-# artifacts (ksi-signal.json, oscal-ssp.json, ...) which are built by
+# artifacts (ksi-signal.json, vdr-report.json, the SDR and CPO, ...) which are built by
 # scripts/build-ksi-signal.py from `terraform output -json` / `terraform show
 # -json`, i.e. they need AWS credentials and remote state. It cannot run in a
 # fresh clone. It is CI-enforced on every deploy, and is available here as
@@ -124,7 +124,7 @@ check-full: check require-artifacts
 
 require-artifacts:
 	@missing=""; \
-	for f in ksi-signal.json oscal-ssp.json vdr-report.json; do \
+	for f in ksi-signal.json vdr-report.json security-decision-record.json certification-package-overview.json; do \
 	  [ -f "infrastructure/$$f" ] || missing="$$missing infrastructure/$$f"; \
 	done; \
 	if [ -n "$$missing" ]; then \

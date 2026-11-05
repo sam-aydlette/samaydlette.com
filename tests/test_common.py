@@ -6,7 +6,6 @@ that check needs build products; these tests pin the behavior itself so a future
 edit to a shared helper cannot quietly change what four artifacts assert.
 """
 import hashlib
-import json
 import sys
 import uuid
 from pathlib import Path
@@ -131,50 +130,30 @@ def test_prop_returns_the_first_match():
 # ---------------------------------------------------------------------------
 # load_hub
 # ---------------------------------------------------------------------------
-def _ssp(irs):
-    return {"system-security-plan": {"control-implementation": {"implemented-requirements": irs}}}
-
-
-def test_load_hub_maps_control_id_to_status_and_origination(tmp_path):
-    p = tmp_path / "ssp.json"
-    p.write_text(json.dumps(_ssp([
+def test_load_hub_maps_control_id_to_status_and_origination():
+    irs = [
         {"control-id": "ac-1", "props": [
             {"name": "implementation-status", "value": "implemented"},
             {"name": "control-origination", "value": "sp-system"}]},
         {"control-id": "au-2", "props": [
             {"name": "implementation-status", "value": "not-applicable"},
             {"name": "control-origination", "value": "inherited"}]},
-    ])))
-    assert c.load_hub(p) == {"ac-1": ("implemented", "sp-system"),
-                             "au-2": ("not-applicable", "inherited")}
+    ]
+    assert c.load_hub(irs) == {"ac-1": ("implemented", "sp-system"),
+                               "au-2": ("not-applicable", "inherited")}
 
 
-def test_load_hub_tolerates_a_requirement_with_no_props(tmp_path):
-    p = tmp_path / "ssp.json"
-    p.write_text(json.dumps(_ssp([{"control-id": "ac-1"}])))
-    assert c.load_hub(p) == {"ac-1": (None, None)}
+def test_load_hub_tolerates_a_requirement_with_no_props():
+    irs = [{"control-id": "ac-1"}]
+    assert c.load_hub(irs) == {"ac-1": (None, None)}
 
 
-def test_load_hub_output_feeds_classify(tmp_path):
+def test_load_hub_output_feeds_classify():
     """The two are always used together: hub -> classify -> the artifact."""
-    p = tmp_path / "ssp.json"
-    p.write_text(json.dumps(_ssp([
+    irs = [
         {"control-id": "ac-1", "props": [
             {"name": "implementation-status", "value": "implemented"},
             {"name": "control-origination", "value": "shared"}]},
-    ])))
-    status, origination = c.load_hub(p)["ac-1"]
+    ]
+    status, origination = c.load_hub(irs)["ac-1"]
     assert c.classify(status, origination) == "partially-inherited"
-
-
-# ---------------------------------------------------------------------------
-# constants
-# ---------------------------------------------------------------------------
-def test_oscal_version_is_the_published_pin():
-    """Bumping this changes every consumer's view of the SSP and POA&M. If this
-    test fails, the change was intended to be a reviewed artifact change."""
-    assert c.OSCAL_VERSION == "1.1.2"
-
-
-def test_fedramp_ns_is_the_published_namespace():
-    assert c.FEDRAMP_NS == "https://fedramp.gov/ns/oscal"

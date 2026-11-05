@@ -42,7 +42,7 @@ IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/depl
 #
 # Both identities are workflows in THIS repository, on `main`, so the trust
 # claim is unchanged: the evidence was produced by this repo's pinned CI, not by
-# a person with a key. Everything else — the canonical inventory, the SSP —
+# a person with a key. Everything else — the canonical inventory, the SDR —
 # still verifies against the deploy identity alone.
 NIGHTLY_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
 ISSUER='https://token.actions.githubusercontent.com'
@@ -89,7 +89,9 @@ bad() { echo "  FAIL  $1"; fail=1; }
 
 echo "== Fetching published evidence from $BASE =="
 for f in ksi-signal.json ksi-signal.bundle \
-         oscal-ssp.json oscal-ssp.json.intoto.jsonl \
+         security-decision-record.json security-decision-record.bundle \
+         security-decision-record.json.intoto.jsonl \
+         certification-package-overview.json certification-package-overview.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
@@ -109,16 +111,16 @@ else
   bad "ksi-signal.json signature"
 fi
 
-if verify_attestation_any_identity "$work/oscal-ssp.json.intoto.jsonl" "$work/oscal-ssp.json" \
-     "$IDENTITY"; then
-  ok "oscal-ssp.json attestation signed by the pinned workflow on main"
+if verify_attestation_any_identity "$work/security-decision-record.json.intoto.jsonl" \
+     "$work/security-decision-record.json" "$IDENTITY"; then
+  ok "security-decision-record.json attestation signed by the pinned workflow on main"
 else
-  bad "oscal-ssp.json attestation signature"
+  bad "security-decision-record.json attestation signature"
 fi
 
-# The trust center's own data: the generated boundary map, the gate's report and
-# the trust center itself.
-for art in boundary-map reconcile-report trust-center; do
+# The CR26 record (SDR, CPO) and the trust center's own data: the generated
+# boundary map, the gate's report and the trust center itself.
+for art in security-decision-record certification-package-overview boundary-map reconcile-report trust-center; do
   if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY"; then
     ok "$art.json signed by the pinned workflow on main"
   else
@@ -155,7 +157,7 @@ fi
 
 echo ""
 echo "== 2. Provenance claims (dependency-free consumer) =="
-for art in oscal-ssp.json vdr-report.json; do
+for art in security-decision-record.json vdr-report.json; do
   if python3 "$SCRIPTS/verify-attestation.py" \
        --bundle "$work/$art.intoto.jsonl" --artifact "$work/$art" \
        --ksi-signal "$work/ksi-signal.json" >/dev/null 2>&1; then
@@ -166,7 +168,7 @@ for art in oscal-ssp.json vdr-report.json; do
 done
 
 echo ""
-echo "== 3. Cross-artifact consistency (AWS-free reconciliation, invariants b–j) =="
+echo "== 3. Cross-artifact consistency (AWS-free reconciliation, invariants b–j and l) =="
 # The decision register is not a published artifact; it is data/decisions.json
 # at the commit the (signature-verified) inventory names. Read it from this
 # clone at that commit, never from the working copy, which may be any version.
@@ -176,7 +178,7 @@ if ! printf '%s' "$commit" | grep -Eq '^[0-9a-f]{40}$'; then
 elif ! git -C "$SCRIPTS/.." show "$commit:data/decisions.json" > "$work/decisions.json" 2>/dev/null; then
   bad "decision register at the published commit $commit is not in this clone (git fetch origin main)"
 elif python3 "$SCRIPTS/reconcile.py" --artifacts-dir "$work" --decisions "$work/decisions.json" >/dev/null 2>&1; then
-  ok "published set reconciles: one inventory, one commit, VDR and decision register coherent"
+  ok "published set reconciles: one inventory, one commit, VDR, SDR, CPO and decision register coherent"
 else
   bad "cross-artifact reconciliation"
 fi
@@ -184,7 +186,7 @@ fi
 echo ""
 echo "== Scope =="
 echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity)."
-echo "  Verified via public code : cross-artifact reconciliation (this repo, invariants b–h)."
+echo "  Verified via public code : cross-artifact reconciliation (this repo, invariants b–j and l)."
 echo "  NOT externally verifiable: live-state invariants (a completeness, i tag-match) need AWS."
 
 echo ""

@@ -2,11 +2,10 @@
 # Task 13 regression: build-time figure injection.
 # Proves (a) figures are computed from canonical artifacts and reproduce the
 # numbers the dashboard publishes, (b) stamp() rewrites only marked
-# sites, and (c) altering the SSP's implemented-requirement count flows through
+# sites, and (c) altering the projection's implemented-requirement count flows through
 # to the stamped HTML — the acceptance check for the injector.
 # =============================================================================
 import importlib.util
-import json
 from pathlib import Path
 
 import pytest
@@ -23,23 +22,18 @@ def _load():
 
 inj = _load()
 
-# The next tests are integration tests: they read the GENERATED
-# infrastructure/oscal-ssp.json (built by the pipeline, gitignored), so they
-# skip on a fresh checkout / the fast unit gate and run after a build (e.g. in
-# the deploy job, where the SSP exists). Figure freshness is separately enforced
-# at deploy time by scripts/inject-figures.py. Everything else in this file is a
-# pure unit test of stamp() and always runs.
-# These skip in CI, because the SSP is built in the deploy job and the test job
-# never sees it. That is not a gap any more: the same invariant is enforced by the
-# "Check committed figures against their sources" step in the deploy workflow,
-# which runs at the one point where the sources exist. It went unenforced for weeks
-# before that step was added, so do not weaken it here on the assumption that this
-# test covers it.
-_needs_ssp = pytest.mark.skipif(
-    not inj.SSP.exists(),
-    reason="requires generated infrastructure/oscal-ssp.json; enforced in CI by the "
-           "deploy job's figures check, which runs where the SSP exists",
-)
+# The figures come from the control projection (scripts/_controls.py), which
+# needs only an inventory and the KSI catalog. These tests run it on the
+# committed fixture inventory, so they run everywhere, including CI's test job.
+# (They used to read the generated OSCAL SSP and skipped wherever it had not
+# been built; the SSP is retired.) The deploy job still computes the published
+# figures from the real inventory.
+FIXTURE_SIGNAL = REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json"
+
+
+@pytest.fixture(autouse=True)
+def _fixture_inventory(monkeypatch):
+    monkeypatch.setattr(inj, "SIGNAL", FIXTURE_SIGNAL)
 
 
 def test_moderate_baseline_is_the_published_profile_not_the_hub():
@@ -48,7 +42,6 @@ def test_moderate_baseline_is_the_published_profile_not_the_hub():
     assert inj._profile_selection_count(inj.MODERATE_PROFILE) == 323
 
 
-@_needs_ssp
 def test_figures_reproduce_published_numbers():
     f = inj.compute_figures()
     # hub split: hand-written + family-default = total
@@ -108,25 +101,25 @@ def test_attribute_order_tolerated():
 # matter and noisy where it would not teaches you to ignore a red suite.
 
 
-@_needs_ssp
-def test_altered_ssp_count_flows_to_html(tmp_path, monkeypatch):
-    """Acceptance: add one implemented-requirement to the SSP and the stamped
-    hub_total / hub_generated move with it. It is outside the baseline, so it
-    counts as beyond-baseline and leaves baseline coverage alone."""
-    ssp = json.loads(inj.SSP.read_text())
-    irs = ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]
-    baseline = len(irs)
-    irs.append({
-        "uuid": "00000000-0000-4000-8000-000000000abc",
+def _altered(monkeypatch, mutate):
+    irs = inj._projection()
+    mutate(irs)
+    monkeypatch.setattr(inj, "_projection", lambda: irs)
+    return irs
+
+
+def test_altered_projection_count_flows_to_html(monkeypatch):
+    """Acceptance: add one implemented-requirement to the projection and the
+    stamped hub_total / hub_generated move with it. It is outside the baseline,
+    so it counts as beyond-baseline and leaves baseline coverage alone."""
+    baseline = len(inj._projection())
+    _altered(monkeypatch, lambda irs: irs.append({
         "control-id": "zz-99",
         "props": [
             {"name": "implementation-status", "value": "implemented"},
             {"name": "control-origination", "ns": "https://fedramp.gov/ns/oscal", "value": "sp-system"},
         ],
-    })
-    altered = tmp_path / "altered-ssp.json"
-    altered.write_text(json.dumps(ssp))
-    monkeypatch.setattr(inj, "SSP", altered)
+    }))
 
     f = inj.compute_figures()
     assert f["hub_total"] == str(baseline + 1)
@@ -141,20 +134,22 @@ def test_altered_ssp_count_flows_to_html(tmp_path, monkeypatch):
     assert f">{baseline + 1}<" in out
 
 
-@_needs_ssp
-def test_a_baseline_control_missing_from_the_ssp_lowers_coverage(tmp_path, monkeypatch):
-    """Coverage is measured, not assumed: drop one baseline control from the SSP
-    and the figure falls below N/N instead of staying green."""
-    ssp = json.loads(inj.SSP.read_text())
-    ci = ssp["system-security-plan"]["control-implementation"]
+def test_a_baseline_control_missing_from_the_projection_lowers_coverage(monkeypatch):
+    """Coverage is measured, not assumed: drop one baseline control from the
+    projection and the figure falls below N/N instead of staying green."""
     base = inj._profile_selection_ids(inj.MODERATE_PROFILE)
-    victim = next(ir for ir in ci["implemented-requirements"] if ir["control-id"] in base)
-    ci["implemented-requirements"].remove(victim)
-    altered = tmp_path / "altered-ssp.json"
-    altered.write_text(json.dumps(ssp))
-    monkeypatch.setattr(inj, "SSP", altered)
+
+    def drop_one(irs):
+        irs.remove(next(ir for ir in irs if ir["control-id"] in base))
+    _altered(monkeypatch, drop_one)
 
     assert inj.compute_figures()["moderate_coverage"] == "322/323"
+
+
+def test_a_missing_inventory_fails_closed(monkeypatch, tmp_path):
+    monkeypatch.setattr(inj, "SIGNAL", tmp_path / "absent.json")
+    with pytest.raises(SystemExit, match="fail-closed"):
+        inj.compute_figures()
 
 
 if __name__ == "__main__":

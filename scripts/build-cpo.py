@@ -10,7 +10,7 @@
 # CPO-CSX-CPM (Class C) requires the package be maintained at least every two
 # weeks — trivially met by the per-deploy pipeline. Together with the Security
 # Decision Record, the CPO is CR26's replacement for the base System Security
-# Plan; the OSCAL SSP is still generated as the Rev5-paradigm artifact.
+# Plan; the OSCAL SSP that used to be published alongside is retired.
 #
 # This is an overview/manifest: it points at the constituent artifacts the
 # pipeline already publishes and summarizes scope, crypto, and assessment status.
@@ -28,8 +28,8 @@ from pathlib import Path
 # The certification-package artifacts the pipeline publishes under /.well-known/.
 # (artifact filename, type, signed)
 PACKAGE_CONTENTS = [
-    ("security-decision-record.json", "Security Decision Record (SDR — 20x SSP replacement)", True),
-    ("oscal-ssp.json", "OSCAL Rev 5 System Security Plan (Rev5-paradigm)", True),
+    ("security-decision-record.json",
+     "Security Decision Record (SDR: per-KSI and per-Rev5-control records; replaces the SSP)", True),
     ("ksi-signal.json", "FedRAMP 20x KSI signal (canonical inventory)", True),
     ("vdr-report.json", "Vulnerability Detection and Response report", True),
     ("ongoing-certification-report.json", "Ongoing Certification Report (CCM)", True),
@@ -62,7 +62,7 @@ def main():
         "package_type": "certification-package-overview",
         "schema": "fedramp-certification-package-overview-schema-2026-06-24.json",
         "note": "With the Security Decision Record, the CR26 replacement for the base System "
-                "Security Plan. The OSCAL Rev5 SSP is still generated (paradigm-agnostic).",
+                "Security Plan.",
         # CPO-CSO-MTD
         "accountable_official": off.get("accountable_official"),
         "metadata": {

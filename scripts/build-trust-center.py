@@ -838,7 +838,7 @@ def main() -> None:
     ap.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
     ap.add_argument("--checkov-config", default=str(REPO / ".checkov.yaml"))
     ap.add_argument("--scn-register", default=str(REPO / "docs" / "scn" / "scn-register.csv"))
-    ap.add_argument("--no-figures", action="store_true", help="skip framework coverage (needs the built SSP)")
+    ap.add_argument("--no-figures", action="store_true", help="skip framework coverage (needs the built inventory)")
     ap.add_argument("--commit", default="")
     ap.add_argument("--output", default="trust-center.json")
     a = ap.parse_args()

@@ -1,0 +1,6 @@
+{
+  "record_type": "security-decision-record",
+  "_note": "Minimal SDR for the reconciliation fixture: only the fields the gate reads.",
+  "impact_level": "Moderate",
+  "ksi_signal_id": "11111111-1111-4111-8111-111111111111"
+}

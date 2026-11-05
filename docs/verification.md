@@ -41,8 +41,8 @@ cosign verify-blob --bundle ksi-signal.bundle \
 
 # a derived artifact (inline-DSSE in-toto attestation)
 cosign verify-blob-attestation --new-bundle-format --type slsaprovenance1 \
-  --bundle oscal-ssp.json.intoto.jsonl \
-  --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" oscal-ssp.json
+  --bundle security-decision-record.json.intoto.jsonl \
+  --certificate-identity "$IDENTITY" --certificate-oidc-issuer "$ISSUER" security-decision-record.json
 ```
 
 **Bundle format.** Every `.bundle` is a standard Sigstore bundle

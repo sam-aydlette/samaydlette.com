@@ -10,7 +10,7 @@ This is the central hub for what's going on with me. The repository also doubles
 - **Automated accessibility testing** — pa11y (WCAG 2 AA in headless Chromium) produces facts; the same OPA gate makes the pass/fail decision and reporting. Scanners produce facts, OPA decides.
 - **Continuous runtime validation** — A Lambda re-validates the live AWS configuration on a schedule against what was deployed.
 - **A KSI signal informed by a canonical inventory** — Every deploy publishes a JSON document at `/.well-known/ksi-signal.json` containing (1) a snapshot of this system's canonical inventory (PURL for software, ARN paired with a normalized type for cloud resources, sha256 for static artifacts) and (2) policy results attached to specific inventory components by reference, signed via Sigstore keyless. The inventory is the layer; the signal is one report built on it. SBOMs, vulnerability scans, license reports, and configuration drift reports could all ride on the same layer. See [docs/ksi-signal.md](docs/ksi-signal.md) for the full reference.
-- **An OSCAL Rev 5 System Security Plan** — Every deploy also generates and publishes a NIST OSCAL System Security Plan at `/.well-known/oscal-ssp.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. NIST 800-53 Rev 5 implemented-requirements (the full FedRAMP Moderate baseline plus KSI-extension controls) with differentiated `implementation-status` and FedRAMP-style `control-origination` per control — including automatic downgrade to `partial` while a live validation is failing — plus an actual implementation statement per control rather than a mass-assigned default. Two views of the same truth: the KSI signal is the wire format; the OSCAL SSP is the human-and-tool-friendly compliance artifact.
+- **A CR26 Security Decision Record in place of a System Security Plan** — Every deploy publishes a Security Decision Record at `/.well-known/security-decision-record.json` and a Certification Package Overview at `/.well-known/certification-package-overview.json`, deterministically derived from the canonical inventory and the FedRAMP KSI catalog. The SDR records how each KSI is met and, for each applicable NIST 800-53 Rev 5 control (the full FedRAMP Moderate baseline plus KSI-extension controls), its parameter values, implementation status, origination, mechanisms, verification and validation, including automatic downgrade to Partially Implemented while a contributing KSI is failing. The per-control view is the control projection in `scripts/_controls.py`. The OSCAL SSP that used to carry it was retired under CR26 on 2026-11-05.
 
 ## How the Compliance Pipeline Works
 
@@ -25,8 +25,8 @@ Every deployment goes through this gate, in CI:
     → build KSI signal   joins terraform state + package-lock + CycloneDX SBOMs
     │                    + every website/**/*.html sha256 + OPA validations
     │                    + SLSA-style build provenance
-    ├─ build OSCAL Rev 5 SSP          ├─ build VDR + vuln trend ledger (RA-5(6))
-    ├─ build OSCAL POA&M              ├─ build IIW (SSP Appendix M)
+    ├─ build VDR + vuln trend ledger (RA-5(6))
+    ├─ build IIW (SSP Appendix M)
     ├─ build SDR + CPO                ├─ build Ongoing Certification Report
     │                                 └─ build CDS certification-data artifacts
     │
@@ -71,7 +71,7 @@ The signal joins five sources into one document:
 - **Provenance** from GitHub Actions environment variables (repository, commit SHA, workflow run ID).
 - **Validations** from the OPA gate, each one carrying a `component_refs[]` array naming the specific inventory components it evaluated.
 
-For a browser-friendly view of the live signal and SSP, see the [Trust Center](https://samaydlette.com/trust/index.html). For programmatic access:
+For a browser-friendly view of the live signal and the CR26 record, see the [Trust Center](https://samaydlette.com/trust/index.html). For programmatic access:
 
 ```bash
 # The signal is published live; anyone can fetch it.
@@ -96,28 +96,25 @@ A separate Lambda re-validates the live AWS configuration on a schedule and publ
 
 For the schema, the component vocabulary, the join semantics, and the cross-CSP normalization decisions, see [docs/ksi-signal.md](docs/ksi-signal.md).
 
-## OSCAL Rev 5 SSP
+## Security Decision Record (replaces the SSP)
 
-Alongside the KSI signal, every deploy generates a NIST OSCAL System Security Plan in the FedRAMP Rev 5 Moderate baseline shape, published at `/.well-known/oscal-ssp.json`.
+Every deploy publishes the CR26 Security Decision Record at `/.well-known/security-decision-record.json`, signed and with an in-toto provenance attestation.
 
 ```bash
-curl -s https://samaydlette.com/.well-known/oscal-ssp.json | jq '{
-  uuid: ."system-security-plan".uuid,
-  oscal_version: ."system-security-plan".metadata."oscal-version",
-  controls: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
-  components: (."system-security-plan"."system-implementation".components | length)
+curl -s https://samaydlette.com/.well-known/security-decision-record.json | jq '{
+  ksi_signal_id,
+  ksi_records: (.rule_records | length),
+  rev5_controls: (.rev5_controls | length)
 }'
 ```
 
-The SSP is deterministically generated from two inputs: the canonical inventory in the live KSI signal, and the FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, source: FRMR.KSI). Each in-scope NIST 800-53 control is an `implemented-requirement` entry with a differentiated `implementation-status` (implemented / partial / not-applicable), a FedRAMP-style `control-origination` (sp-system / sp-corporate / shared / inherited), and an actual prose implementation statement — either explicit (for controls the system actively implements with traceable evidence) or family-level (for controls handled at the family level, with rationale that names how AWS-inherited / sole-operator-attested / N/A applies). Each requirement also links to (a) the contributing KSIs, (b) the live KSI signal as evidence, (c) the Sigstore bundle that signs it, and (d) the documentation file that records the implementation rationale. Reading the SSP at any time gives a Rev 5-shaped view of the same compliance state the KSI signal represents in 20x-shape; the two views never disagree because they're derived from the same source.
-
-The SSP is not currently signed independently. The signed KSI signal is the verifiable root; the SSP references it as evidence. A natural extension would sign the SSP as well, with the same Sigstore chain.
+`rule_records` summarize each in-scope KSI (`SDR-CSX-KSI`); `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`): parameter values, implementation status, origination, the implementation statement, verification and validation. Both come from one control projection (`scripts/_controls.py`), computed from the canonical inventory in the live KSI signal and the FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, source: FRMR.KSI), so they cannot disagree. The SDR names the inventory it was built from (`ksi_signal_id`), and the reconciliation gate fails the deploy if it differs from the signal's.
 
 For the full reference, see [docs/ksi-signal.md](docs/ksi-signal.md).
 
 ## Compliance Documentation
 
-The repository ships a documentation set that closes 27 KSI indicators with rationales, runbooks, and review templates. Each file is referenced by the OSCAL SSP's per-control `links`, and by the KSI signal's `validations[]` indirectly via the OPA gate that produces them.
+The repository ships a documentation set that closes 27 KSI indicators with rationales, runbooks, and review templates. Each file is referenced by the SDR's per-control `artifacts`, and by the KSI signal's `validations[]` indirectly via the OPA gate that produces them.
 
 | File | KSIs addressed | Purpose |
 |------|---------------|---------|
@@ -203,7 +200,7 @@ Two early items this README used to track as open are now closed:
                                                        (continuously updated)
 ```
 
-The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI signal (deploy-time + runtime), its Sigstore bundle, the schema both signals conform to, and the OSCAL Rev 5 SSP derived from them:
+The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI signal (deploy-time + runtime), its Sigstore bundle, the schema both signals conform to, and the Security Decision Record derived from them (the full list is in `infrastructure/schemas/freshness-config.json`):
 
 | Path | Producer | Cadence | Signed |
 |------|----------|---------|--------|
@@ -211,7 +208,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 | `/.well-known/ksi-signal.bundle` | `cosign sign-blob` in CI | Every push to `main` | (the bundle itself) |
 | `/.well-known/ksi-signal-runtime.json` | Lambda, `infrastructure/lambda/index.js` | EventBridge schedule (default daily) | No (PoC) — implicitly trusted via S3 + IAM |
 | `/.well-known/ksi-signal.schema.json` | Static, `infrastructure/schemas/` | Republished on each deploy | No (informational) |
-| `/.well-known/oscal-ssp.json` | CI generator, `scripts/build-oscal-ssp.py` | Every push to `main` | No (PoC) — references the signed KSI signal as evidence |
+| `/.well-known/security-decision-record.json` | CI generator, `scripts/build-sdr.py` | Every push to `main` | Yes (Sigstore keyless, plus an in-toto attestation) |
 
 ## File Structure
 
@@ -235,7 +232,8 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 ├── scripts/                        # the artifact generators — 25 live
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
-│   ├── build-oscal-ssp.py build-vdr-report.py build-iiw.py
+│   ├── _controls.py                # the control projection (per-control view)
+│   ├── build-vdr-report.py build-iiw.py
 │   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py
