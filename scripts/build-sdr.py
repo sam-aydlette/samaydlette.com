@@ -122,6 +122,121 @@ def runtime_validations(path):
     return rt["validations"], None
 
 
+# --- FRC-CSX-VVK: the automated methods counted per KSI ---------------------------------
+# 1. the OPA plan gate (the KSI's measures validated against the plan);
+# 2. the runtime re-validation (the signed runtime signal, verified and fresh);
+# 3. dependency vulnerability scanning, for a KSI whose components include npm or
+#    PyPI packages: the VDR built from this inventory's Syft SBOM and Grype scans,
+#    bound to this inventory, its signature verified, inside its freshness window,
+#    with every Grype scan passing the detection gate;
+# 4. for KSI-CED-RAT only, the check that the operator's training attestation
+#    is in force and under 12 months old.
+# A KSI with fewer than two is a shortfall unless an in-force `accepted`
+# decision record names it (resource "ksi::<KSI ID>").
+PACKAGE_TYPES = ("npm_package", "pypi_package")
+TRAINING_KSI = "KSI-CED-RAT"
+TRAINING_ATTESTATION = "DEC-192"
+ATTESTATION_MAX_DAYS = 365
+REQUIRED_METHODS = 2
+VDR_PATH = ".well-known/vdr-report.json"
+COSIGN_ISSUER = "https://token.actions.githubusercontent.com"
+
+
+def cosign_verify(path, bundle, identities):
+    """True when cosign verifies `bundle` over `path` for any of `identities`."""
+    for ident in identities:
+        r = subprocess.run(["cosign", "verify-blob", "--bundle", str(bundle), "--certificate-identity", ident,
+                            "--certificate-oidc-issuer", COSIGN_ISSUER, str(path)],
+                           capture_output=True, text=True, check=False)  # nosec B603: fixed argument list
+        if r.returncode == 0:
+            return True
+    return False
+
+
+def vdr_signature(path, bundle, identities, verifier=cosign_verify):
+    """(verified, reason) for the VDR report's Sigstore bundle."""
+    if not bundle or not identities:
+        return False, "no VDR signature was supplied to check"
+    if not Path(path).is_file() or not Path(bundle).is_file():
+        return False, "the VDR report or its signature is missing"
+    try:
+        ok = verifier(path, bundle, identities)
+    except OSError as exc:
+        return False, f"the VDR signature could not be checked ({type(exc).__name__})"
+    return (True, None) if ok else (False, "the VDR signature does not verify against the allowed identities")
+
+
+def _ts(v):
+    try:
+        t = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return t if t.tzinfo else t.replace(tzinfo=timezone.utc)
+
+
+def dependency_scan(vdr, signal, now, signature, max_age_hours):
+    """(True, None) when the VDR counts as a dependency-scanning method for this
+    inventory; else (False, the reason)."""
+    if not vdr:
+        return False, "no VDR report in this build"
+    if not signal.get("signal_id") or vdr.get("ksi_signal_id") != signal.get("signal_id"):
+        return False, "the VDR report is not bound to this inventory's signal_id"
+    if not signature[0]:
+        return False, signature[1] or "the VDR signature is not verified"
+    emitted = _ts(vdr.get("emitted_at"))
+    if emitted is None or not 0 <= (now - emitted).total_seconds() <= max_age_hours * 3600:
+        return False, f"the VDR report is not within its {max_age_hours}-hour window"
+    feeds = [f for f in ((vdr.get("methodology") or {}).get("detection") or {}).get("feeds") or []
+             if f.get("feed") == "grype"]
+    if not feeds:
+        return False, "the VDR's detection record lists no Grype dependency scan"
+    if any(f.get("status") != "ok" for f in feeds):
+        return False, "a Grype dependency scan failed the detection gate"
+    return True, None
+
+
+def _days_since(day, now):
+    try:
+        return (now.date() - datetime.fromisoformat(str(day)).date()).days
+    except ValueError:
+        return None
+
+
+def training_attestation(reg, now):
+    """(True, None) when the operator's training attestation decision record is
+    in force, not past its review date and decided under 12 months ago."""
+    rec = _decisions.records(reg).get(TRAINING_ATTESTATION) if reg else None
+    if rec is None:
+        return False, f"no training attestation ({TRAINING_ATTESTATION}) in the decision register"
+    if rec.get("status") != "in-force" or str(rec.get("review_by", "")) < now.date().isoformat():
+        return False, f"{TRAINING_ATTESTATION} is not in force"
+    age = _days_since(rec.get("decided_on"), now)
+    if age is None or not 0 <= age < ATTESTATION_MAX_DAYS:
+        return False, f"{TRAINING_ATTESTATION} was not decided within the last {ATTESTATION_MAX_DAYS} days"
+    return True, None
+
+
+def vvk_acceptances(reg, now):
+    """{KSI ID: DEC ID} for in-force, unexpired `accepted` records naming a KSI."""
+    out = {}
+    for r in _decisions.in_force(reg) if reg else []:
+        if r.get("disposition") != "accepted" or str(r.get("review_by", "")) < now.date().isoformat():
+            continue
+        for res in (r.get("applies_to") or {}).get("resources") or []:
+            if res.startswith("ksi::"):
+                out[res[len("ksi::"):]] = r["id"]
+    return out
+
+
+def vvk_shortfalls(doc):
+    """KSIs with fewer than two automated methods and no accepted decision."""
+    return [f"{k['ksiId']}: {k['providerExtensions']['automatedMethods']} automated method(s); FRC-CSX-VVK "
+            f"requires {REQUIRED_METHODS} and no in-force accepted decision record names it"
+            for k in doc["keySecurityIndicators"]
+            if k["providerExtensions"]["automatedMethods"] < REQUIRED_METHODS
+            and not k["providerExtensions"].get("fewerMethodsAccepted")]
+
+
 # --- FedRAMP rules --------------------------------------------------------------------
 
 def _evidence_line(ev):
@@ -264,13 +379,17 @@ def ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok
     return impl, val
 
 
-def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_by_rule):
+def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_by_rule,
+               dep_scan=(False, "not evaluated in this build"), training=(False, "not evaluated in this build"),
+               accepted=None):
     statements = {i["id"]: i for f in catalog["KSI"].values() for i in f["indicators"]}
     sig = {k["id"]: k for k in signal.get("ksis", [])}
     missing = sorted(set(statements) - set(sig))
     if missing:
         _fail(f"the KSI signal carries no result for {', '.join(missing)}")
     emitted = (signal.get("emitted_at") or "")[:10] or None
+    types = {c.get("component_id"): c.get("type") for c in signal.get("components", [])}
+    accepted = accepted or {}
     out, status = [], {}
     for kid in sorted(statements):
         k, cat = sig[kid], statements[kid]
@@ -280,11 +399,27 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         comps = set(ev.get("component_refs") or [])
         rt = [v for v in runtime if comps & set(v.get("component_refs") or [])]
         plan_ok = bool(ev.get("validation_ids"))
-        methods = int(plan_ok) + int(bool(rt))
+        pkgs = sorted(c for c in comps if types.get(c) in PACKAGE_TYPES)
+        dep_ok = bool(pkgs) and dep_scan[0]
+        train_ok = kid == TRAINING_KSI and training[0]
+        methods = int(plan_ok) + int(bool(rt)) + int(dep_ok) + int(train_ok)
         rules = rules_by_ksi.get(kid, [])
         nval, nfail = len(ev.get("validation_ids") or []), len(ev.get("failed_validation_ids") or [])
         impl, val = ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok)
-        val.append(f"Automated methods in place: {methods} (FRC-CSX-VVK requires 2 for Class C).")
+        if pkgs and dep_ok:
+            val.append(f"Dependency vulnerability scanning of its {len(pkgs)} npm and PyPI package component(s): "
+                       "the VDR report built from this inventory's Syft SBOM and Grype scans, bound to this "
+                       "inventory, signature verified, inside its freshness window, every Grype scan passing the "
+                       f"detection gate ({SITE}/.well-known/vdr-report.json).")
+        elif pkgs:
+            val.append(f"Dependency vulnerability scanning not counted for this build: {dep_scan[1]}.")
+        if kid == TRAINING_KSI:
+            val.append(f"Training attestation check: the operator's training attestation ({TRAINING_ATTESTATION}) "
+                       f"is in force and under 12 months old" if train_ok else
+                       f"Training attestation check not counted for this build: {training[1]}.")
+        val.append(f"Automated methods in place: {methods} (FRC-CSX-VVK requires {REQUIRED_METHODS} for Class C).")
+        if methods < REQUIRED_METHODS and kid in accepted:
+            val.append(f"Fewer than {REQUIRED_METHODS} automated methods is an accepted finding: {accepted[kid]}.")
         if st != "Implemented":
             val.append("Status is not Implemented because "
                        + ("the KSI does not pass." if st == "Not Implemented" else
@@ -308,6 +443,9 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
             "ksiTests": [f"infrastructure/policy/{r['file']}#{r['id']}" for r in rules],
             "ksiEvidence": evidence,
             "providerExtensions": {"method": k.get("method"), "automatedMethods": methods,
+                                   **({"fewerMethodsAccepted": accepted[kid]}
+                                      if methods < REQUIRED_METHODS and kid in accepted else {}),
+                                   "packageComponents": len(pkgs),
                                    "controls": [c["control_id"] for c in cat["controls"]],
                                    "measures": [f"{r['file']}#{r['id']}" for r in rules],
                                    "components": len(comps), "validations": nval, "failingValidations": nfail,
@@ -527,7 +665,9 @@ def simulated_summary(reqs):
 
 
 def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, runtime, runtime_reason,
-          assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None):
+          assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None,
+          dep_scan=(False, "not evaluated in this build"), training=(False, "not evaluated in this build"),
+          accepted=None):
     ids = [r["frr_id"] for r in records["records"]] + sorted(
         i["id"] for f in catalog["KSI"].values() for i in f["indicators"])
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ids]
@@ -535,7 +675,8 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
     by_rule = {p["rule_id"]: p["assessor_comment_responses"] for p in pseudo if p["assessor_comment_responses"]}
 
     reqs = build_requirements(records, applicable, by_rule, evidence_ctx)
-    ksis, ksi_st = build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, by_rule)
+    ksis, ksi_st = build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, by_rule,
+                              dep_scan, training, accepted)
     controls = build_controls(irs, catalog, ksi_st, applicable, records, moderate, policies)
     in_mod = [c for c in controls if c["providerExtensions"]["inModerateBaseline"]]
     beyond = [c for c in controls if not c["providerExtensions"]["inModerateBaseline"]]
@@ -593,6 +734,15 @@ def main(argv=None):
     # given, it is required to exist and verify; its records replace the loose ones.
     ap.add_argument("--assessment", default=None)
     ap.add_argument("--assessment-bundle", default=None)
+    # FRC-CSX-VVK: the VDR's Sigstore bundle and the identities allowed to sign
+    # it (dependency scanning counts only when it verifies), the decision
+    # register (the training attestation and accepted shortfalls), and whether
+    # a KSI short of two methods without an accepted decision fails the build.
+    ap.add_argument("--vdr-bundle", default=None)
+    ap.add_argument("--vdr-identity", action="append", default=[])
+    ap.add_argument("--decisions", default=None)
+    ap.add_argument("--freshness", default=None)
+    ap.add_argument("--require-two-methods", action="store_true")
     a = ap.parse_args(argv)
 
     now = datetime.now(timezone.utc)
@@ -616,9 +766,18 @@ def main(argv=None):
         assessor_records = _assessor.load_assessment(a.assessment, a.assessment_bundle, a.assessor_identity)
     else:
         assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
+    reg = _decisions.load(a.decisions)
+    window = _freshness.load_freshness_config(a.freshness)["windows"][VDR_PATH]
+    dep_scan = dependency_scan(vdr, signal, now, vdr_signature(a.vdr, a.vdr_bundle, a.vdr_identity), window)
     doc = build(catalog, signal, records, applicable, irs, moderate_ids(), policy_rules(), runtime, reason,
-                assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context())
+                assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context(),
+                dep_scan=dep_scan, training=training_attestation(reg, now), accepted=vvk_acceptances(reg, now))
     _assessor.verify_output(doc, assessor_records)  # T74
+    short = vvk_shortfalls(doc)
+    for msg in short:
+        print(f"::{'error' if a.require_two_methods else 'warning'}::FRC-CSX-VVK: {msg}", file=sys.stderr)
+    if short and a.require_two_methods:
+        _fail(f"{len(short)} KSI(s) short of {REQUIRED_METHODS} automated methods; nothing written")
     fs.write_validated(doc, "sdr", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(doc) + "\n")

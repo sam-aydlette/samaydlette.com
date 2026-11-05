@@ -1,0 +1,24 @@
+{
+  "_note": "Known bad: a Grype scan failed the detection gate.",
+  "ksi_signal_id": "sig-1",
+  "emitted_at": "2026-11-05T06:00:00+00:00",
+  "methodology": {
+    "detection": {
+      "schema": "detection/1",
+      "result": "ok",
+      "feeds": [
+        {
+          "feed": "grype",
+          "file": "grype-python.json",
+          "status": "ok"
+        },
+        {
+          "feed": "grype",
+          "file": "grype-js.json",
+          "status": "failed",
+          "problem": "DB too old"
+        }
+      ]
+    }
+  }
+}

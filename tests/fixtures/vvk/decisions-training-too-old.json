@@ -1,0 +1,23 @@
+{
+  "_note": "Known bad (FRC-CSX-VVK): the training attestation DEC-192 decided more than 12 months ago (2025-10-01); lapsed for the check though still within review_by.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-192",
+      "title": "Training attestation (old)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "Fixture.",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "docs/training-log.md"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2025-10-01",
+      "review_by": "2026-12-31"
+    }
+  ]
+}

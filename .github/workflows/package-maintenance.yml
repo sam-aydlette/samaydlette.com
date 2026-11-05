@@ -171,13 +171,21 @@ jobs:
         if grep -q -- '--assessment-bundle' ../scripts/build-cpo.py; then
           ASSESSMENT="--assessment $W/simulated-assessment.json --assessment-bundle $W/simulated-assessment.bundle"
         fi
-        cp "$W/ksi-signal.json" "$W/vdr-report.json" .
+        # FRC-CSX-VVK: the VDR's signature (verified above) for the dependency-scan
+        # method, and a KSI short of two automated methods without an accepted
+        # decision fails the run. Older deployed builders take neither.
+        VVK=""
+        if grep -q -- '--require-two-methods' ../scripts/build-sdr.py; then
+          VVK="--vdr-bundle vdr-report.bundle --vdr-identity $ID_DEPLOY --vdr-identity $ID_NIGHTLY --require-two-methods"
+        fi
+        cp "$W/ksi-signal.json" "$W/vdr-report.json" "$W/vdr-report.bundle" .
         [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json --vdr vdr-report.json --profile ../data/system-profile.json \
           --previous-sdr "$W/security-decision-record.json" \
           --output out/security-decision-record.json --md-output out/security-decision-record.md \
+          $VVK \
           $ASSESSMENT
         python3 ../scripts/_assessor.py --sdr out/security-decision-record.json \
           $ASSESSMENT

@@ -1593,6 +1593,52 @@
       "source": {
         "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)"
       }
+    },
+    {
+      "id": "DEC-191",
+      "title": "KSI-CED-RAT has one automated method, not two: the second is accepted as not built (FRC-CSX-VVK)",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. Extends the pattern of DEC-150. FRC-CSX-VVK asks Class C providers for at least two automated methods to verify and validate each KSI. KSI-CED-RAT (reviewing all training) has one: on every SDR build, scripts/build-sdr.py checks that the operator's training attestation (DEC-192) exists, is in force and was decided under 12 months ago. A second automated method is not built. Training here is a people-run process for a sole operator: no machine-based resource carries it, so there is nothing for the plan gate or the runtime re-validation to evaluate, and an automated check of training effectiveness (a learning-management system with tracked completions and assessments) would be a purchase and a third-party interconnection out of proportion to a one-person proof of concept. Residual risk: a lapse in training, or training that stops being effective, is caught only by the annual attestation and the quarterly non-machine review (DEC-190), not by a machine check. Why it is accepted: the system has one operator, who holds every role; the attestation's age is checked automatically and the build counts the KSI at one method, publishing this acceptance beside the count; the SDR states the shortfall plainly. Every other KSI has at least two automated methods, and the SDR build fails the package maintenance run when any KSI is short without an accepted record like this one.",
+      "controls": [
+        "at-2",
+        "at-3",
+        "ca-2"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "ksi::KSI-CED-RAT"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
+    },
+    {
+      "id": "DEC-192",
+      "title": "The operator completes and reviews his security training each year (KSI-CED-RAT attestation)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that he completes the training docs/training-log.md requires (general security, the privileged roles he holds, secure software delivery, and incident response and recovery), reviews whether it is effective at least once a year, and records each review as a dated entry in docs/training-log.md. This record is the attestation the Security Decision Record checks automatically for KSI-CED-RAT: it must be in force and decided under 12 months ago, so it is renewed with a new record each year. The quarterly non-machine verification (DEC-190, data/non-machine-resources.json NMR-REC-TRAINING) checks the training log itself.",
+      "controls": [
+        "at-2",
+        "at-3",
+        "at-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "docs/training-log.md"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
     }
   ]
 }
