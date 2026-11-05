@@ -53,7 +53,10 @@ HOW_TO_USE = ("Read each rule's explanation, then run the command beside each pi
 
 
 def _artifact_check(ref, fresh):
-    entry = fresh[ref]
+    entry = fresh.get(ref)
+    if entry is None:
+        raise SystemExit(f"::error::assessor guide: {ref} is not in the freshness config, so an assessor could "
+                         "not tell how fresh it must be (fail-closed)")
     name = ref.split("/", 1)[1]
     sig = entry.get("signature")
     return {"url": f"{SITE}/{ref}", "bundle_url": f"{SITE}/{sig}" if sig else None,

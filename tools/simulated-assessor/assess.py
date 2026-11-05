@@ -266,6 +266,11 @@ class Assessor:
                 out.append((k["ksi_id"], "observation", [f"not in the published signal {sig.get('signal_id')}"],
                             []))
                 continue
+            if s.get("status") != "pass":
+                out.append((k["ksi_id"], "fail",
+                            [f"the published signal {sig.get('signal_id')} reports status {s.get('status')!r} "
+                             f"(method {s.get('method')})"], []))
+                continue
             out.append((k["ksi_id"], "pass",
                         [f"in the published signal {sig.get('signal_id')} with status {s.get('status')} by "
                          f"method {s.get('method')}"],

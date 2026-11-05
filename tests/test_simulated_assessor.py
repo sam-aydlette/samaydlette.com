@@ -157,12 +157,12 @@ def _guide(**art):
             "ksis": [{"ksi_id": "KSI-CED-RAT"}]}
 
 
-def _get(age_hours=3, status=200, signal_has_ksi=True):
+def _get(age_hours=3, status=200, signal_has_ksi=True, ksi_status="pass"):
     emitted = (NOW - timedelta(hours=age_hours)).isoformat()
 
     def get(url):
         if url.endswith("ksi-signal.json"):
-            ks = [{"id": "KSI-CED-RAT", "status": "pass", "method": "documentation"}] if signal_has_ksi else []
+            ks = [{"id": "KSI-CED-RAT", "status": ksi_status, "method": "documentation"}] if signal_has_ksi else []
             return 200, json.dumps({"signal_id": "sig-1", "ksis": ks}).encode(), {}
         if url.endswith(".bundle"):
             return 200, b"{}", {}
@@ -192,6 +192,11 @@ def test_a_published_artifact_whose_signature_fails_is_a_failure():
     assert rules[0][1] == "fail"
     _, ksis = _run(_guide(), verify=lambda *_a: False)
     assert ksis[0][1] == "fail"
+
+
+def test_a_ksi_the_signal_does_not_report_passing_is_a_failure():
+    _, ksis = _run(_guide(), ksi_status="fail")
+    assert ksis[0][1] == "fail" and "'fail'" in ksis[0][2][0]
 
 
 def test_dotted_timestamp_fields_are_read():
