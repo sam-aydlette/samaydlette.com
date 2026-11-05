@@ -968,12 +968,37 @@
     },
     {
       "frr_id": "SCN-ADP-NTF",
-      "status": "Partially Implemented",
-      "implementation": "An adaptive record's notice (with its new-risks summary, which the register requires) is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py); it is given by publication in the certification data, and the index records the deadline and the date first published. The scheduled SCN deadline check fails and raises an issue when the notice is not published by its deadline. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
-      "evidence": [],
-      "gap": "Not yet shown working: no notice has been published. The first deploy after this change publishes all six adaptive records; SCN-2026-006 is due 2026-11-10 and the other five are already past their deadlines, so they will be published marked late. Closes when a deploy publishes them (the operator approves deploys).",
-      "closes_with": [
-        "sam"
+      "status": "Implemented",
+      "implementation": "Each adaptive record's notice, carrying its new-risks summary (required by the register), is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py). It is given by publication in the certification data, the method FedRAMP's rules name; nothing is sent to FedRAMP or anyone else. Every deploy builds and publishes all notices (a build or publish failure fails the deploy, and the post-publish round-trip compares the served index and feed), and the index records each notice's deadline and the date it was first published. The scheduled SCN deadline check fails and raises an issue when a notice is unpublished past its deadline. History: the six adaptive notices were first published by the deploy that introduced this mechanism. SCN-2026-001, SCN-2026-002, SCN-2026-003, SCN-2026-004 and SCN-2026-005 were published after their deadlines (2026-06-22, 2026-07-07, 2026-07-23, 2026-10-09, 2026-10-13) and are marked late (onTime false, lateNotices). SCN-2026-006 (deadline 2026-11-10) is on time only if that deploy ran by its deadline; the published index records which.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_adaptive_notice_is_due_ten_business_days_after_finishing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_new_notice_is_dated_today_and_late_ones_say_so"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_unpublished_notice_is_overdue_until_a_deploy_publishes_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_published_outputs_are_listed_signed_and_governed"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
