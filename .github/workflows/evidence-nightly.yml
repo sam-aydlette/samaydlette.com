@@ -925,12 +925,12 @@ jobs:
           --arg reconcile "${RECONCILE:-not reached}" \
           --arg published "${PUBLISHED:-not reached}" \
           --arg finished_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+          --arg run_commit "${GITHUB_SHA}" \
           --arg commit "${SIGNAL_COMMIT:-unknown}" \
           '{schema: "vdr-status/1", fedRampId: (if $fid == "" then null else $fid end),
             result: $result, finished_at: $finished_at,
             vuln_gate: $vuln_gate, reconcile: $reconcile, published: $published,
-            inventory_commit: $commit, run_url: $run_url,
+            inventory_commit: $commit, run: {workflow: "evidence-nightly.yml", commit: $run_commit},
             gates: $gs[0].gates, gate_events: $gs[0].gate_events,
             detection: $det[0],
             profile: (if $prof[0] then {profile_version: $prof[0].profile_version, conformance_sha256: $profsha} else null end)}' > vdr-status.json

@@ -16,7 +16,7 @@ Any alarm also fires if the watchdog stops publishing metrics, because missing d
 
 ## `nightly-failed`
 
-1. Open the latest **Evidence Nightly** run in GitHub Actions. The status beacon at `/.well-known/vdr-status.json` gives its URL (`run_url`), the overall `result`, and each gate's outcome.
+1. Open the latest **Evidence Nightly** run in GitHub Actions. The status beacon at `/.well-known/vdr-status.json` gives its workflow and commit (`run`; no run ID is published), its finish time, the overall `result`, and each gate's outcome; find the run in the Actions list by that time.
 2. The GitHub issue labelled `evidence-freshness` names the gate and, for a vulnerability-gate failure, each finding with its advisory and any open Dependabot PR.
    - **Vulnerability gate failed:** follow [`vuln-gate-failure.md`](vuln-gate-failure.md).
    - **Reconciliation gate failed:** the live system and its documentation disagree. The step log names the failing invariant. Fix the drift through the reviewed deploy path; never weaken the gate.

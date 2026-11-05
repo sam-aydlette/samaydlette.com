@@ -94,7 +94,6 @@ These queries are the actual job of an Authorizing Official, an SRE handling a C
 "provenance": {
   "builder": {
     "id": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml",
-    "run_id": "<github actions run id>",
     "version": "github-actions"
   },
   "source": {

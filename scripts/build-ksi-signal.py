@@ -1866,7 +1866,8 @@ def build_provenance():
     # certificate SAN. GITHUB_WORKFLOW (the display name, with spaces) is NOT a
     # valid SAN, so builder.id must be built from WORKFLOW_REF.
     workflow_ref = os.environ.get("GITHUB_WORKFLOW_REF")
-    run_id = os.environ.get("GITHUB_RUN_ID")
+    # No run ID: published output never names a GitHub run. The commit
+    # (source.commit) and the workflow (builder.id) identify the build.
     sha = os.environ.get("GITHUB_SHA")
     ref = os.environ.get("GITHUB_REF")
 
@@ -1875,7 +1876,6 @@ def build_provenance():
         provenance = {
             "builder": {
                 "id": builder_id,
-                "run_id": run_id or "unknown",
                 "version": "github-actions",
             },
             "source": {
@@ -1914,7 +1914,6 @@ def build_provenance():
     return {
         "builder": {
             "id": "local",
-            "run_id": "local",
             "version": "local",
         },
         "source": {

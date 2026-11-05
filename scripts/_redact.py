@@ -66,6 +66,16 @@ def find_iam_users(text):
     return len(IAM_USER.findall(text))
 
 
+# A GitHub Actions run, by URL or as a run_id value. Published output names a
+# build by its commit and workflow instead.
+GITHUB_RUN = re.compile(r"actions/runs/[0-9]+|\"run_id\"\s*:\s*\"?[0-9]{5,}")
+
+
+def find_github_runs(text):
+    """The count of GitHub run IDs or run URLs in `text` (not returned)."""
+    return len(GITHUB_RUN.findall(text))
+
+
 def find(text):
     """The twelve-digit numbers in `text`, in order (empty when clean)."""
     return ACCOUNT_ID.findall(text)

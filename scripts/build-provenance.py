@@ -7,7 +7,7 @@ It binds the artifact to:
   - the canonical inventory: ksi-signal.json content sha256 + its signal_id,
   - the generator that produced it (scripts/build-*.py, by content sha256),
   - this commit (git+repo@ref with gitCommit), and
-  - the CI run (builder id + invocationId).
+  - the CI workflow (builder id; no run ID, see runDetails below).
 
 The builder.id and commit are taken from build-ksi-signal.py's build_provenance()
 so there is ONE source of truth for the pinned identity (derived from
@@ -67,7 +67,6 @@ def build_predicate(ksi_signal_path, generator_path):
     commit = source.get("commit") or os.environ.get("GITHUB_SHA", "unknown")
     ref = source.get("ref") or "refs/heads/main"
     repo_url = source.get("repository") or "https://github.com/sam-aydlette/samaydlette.com"
-    run_id = os.environ.get("GITHUB_RUN_ID", "unknown")
 
     return {
         "buildDefinition": {
@@ -102,11 +101,13 @@ def build_predicate(ksi_signal_path, generator_path):
                 },
             ],
         },
+        # SLSA v1.0 requires only runDetails.builder.id; BuildMetadata has no
+        # required field (https://slsa.dev/spec/v1.0/provenance#buildmetadata).
+        # invocationId is omitted: on GitHub Actions it would be the run ID,
+        # which published output never carries. The commit (resolvedDependencies)
+        # and the workflow (builder.id, externalParameters) identify the build.
         "runDetails": {
             "builder": {"id": builder_id},
-            "metadata": {
-                "invocationId": f"{repo_url}/actions/runs/{run_id}",
-            },
         },
     }
 

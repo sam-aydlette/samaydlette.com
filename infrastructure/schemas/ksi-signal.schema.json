@@ -111,7 +111,7 @@
               "type": "string"
             },
             "run_id": {
-              "description": "Builder-specific identifier for this build run. For GitHub Actions: the workflow run ID.",
+              "description": "Builder-specific identifier for this build run, when it does not identify a GitHub Actions run: the deploy omits it (no GitHub run ID is published; source.commit and builder.id identify the build), and the runtime emitter gives its Lambda log stream.",
               "type": "string"
             },
             "version": {
