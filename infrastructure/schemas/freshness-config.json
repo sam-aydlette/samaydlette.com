@@ -321,6 +321,66 @@
       "signed": true,
       "signature": ".well-known/access-summary.bundle",
       "note": "Monthly aggregate counts of access to the certification data (CDS-TRC-ACL), rebuilt from the CloudFront access records on every deploy."
+    },
+    {
+      "path": ".well-known/assessor-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/assessor-guide.bundle",
+      "note": "How to verify and validate each FedRAMP rule and KSI, generated from the rule records on every deploy (IVV-CSO-STE, IVV-CSO-DUS); the simulated assessor runs its checks."
+    },
+    {
+      "path": ".well-known/simulated-assessment.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "issued_at"
+      },
+      "signed": true,
+      "signature": ".well-known/simulated-assessment.bundle",
+      "note": "The simulated assessor's signed result set (not a FedRAMP Recognized assessment), produced on every deploy and signed by the simulated-assessor.yml workflow identity, not the deploy's."
+    },
+    {
+      "path": ".well-known/frr-evidence.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/frr-evidence.bundle",
+      "note": "Per rule record, whether each test it cites passed in the build that published it (FRC-CSX-VVR)."
+    },
+    {
+      "path": ".well-known/agency-access-exercise.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/agency-access-exercise.bundle",
+      "note": "The agency access procedure run on every deploy against fictional agencies, including the 5-business-day denial clock (CDS-TRC-AAI, CDS-UTC-AAD)."
+    },
+    {
+      "path": ".well-known/trust-manifest.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/trust-manifest.bundle",
+      "note": "The signed index of all certification data with media types, signatures and human-readable forms (CDS-TRC-PAC)."
     }
   ]
 }

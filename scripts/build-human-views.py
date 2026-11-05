@@ -169,16 +169,45 @@ def check(path, view):
         _fail(f"{Path(view).name} does not match {Path(path).name}")
 
 
+# Published by something other than the deploy (the runtime Lambda, the nightly
+# beacon): the deploy never publishes them, so it writes no view of them; the
+# trust page renders them from the live JSON.
+NOT_DEPLOY_PUBLISHED = ("ksi-signal-runtime.json", "vdr-status.json")
+
+
+def sources(freshness, d):
+    """The JSON and CSV artifacts in the governed freshness config that this
+    build has in directory d (absent optional ones are skipped)."""
+    out = []
+    for a in json.loads(Path(freshness).read_text())["artifacts"]:
+        name = a["path"].rsplit("/", 1)[1]
+        if name.endswith((".json", ".csv")) and name not in NOT_DEPLOY_PUBLISHED and (Path(d) / name).is_file():
+            out.append(Path(d) / name)
+    return out
+
+
 def main(argv=None):
-    paths = argv if argv is not None else sys.argv[1:]
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("paths", nargs="*")
+    ap.add_argument("--freshness", default=None, help="take every JSON/CSV artifact it lists that is in --dir")
+    ap.add_argument("--dir", default=".")
+    ap.add_argument("--list", default=None, help="append each written view's name to this file")
+    a = ap.parse_args(argv)
+    paths = [Path(p) for p in a.paths] + (sources(a.freshness, a.dir) if a.freshness else [])
     if not paths:
         _fail("no artifacts named")
+    written = []
     for p in paths:
-        if not Path(p).is_file():
+        if not p.is_file():
             _fail(f"{p} not found")
         view = build(p)
         check(p, view)
-        print(f"human view: {view.name} reproduces {Path(p).name}")
+        written.append(view.name)
+        print(f"human view: {view.name} reproduces {p.name}")
+    if a.list:
+        with open(a.list, "a") as f:
+            f.writelines(w + "\n" for w in written)
     return 0
 
 

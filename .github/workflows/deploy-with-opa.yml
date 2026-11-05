@@ -1643,7 +1643,7 @@ jobs:
         # Availability as measured by the independent monitor (read and checked above).
         python3 ../scripts/build-availability.py \
           --probe-feed availability-probe.json --ksi-signal ksi-signal.json
-        python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
+        python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md --publish-dir policies
 
     # The Minimum Assessment Scope (MAS-CSO-IIR/FLO/MDI/TPR, FRC-CSX-MAS), generated
     # from this build's inventory, the boundary classification's flows, the CSPs
@@ -1652,6 +1652,27 @@ jobs:
     # no flow, a data store without a metadata entry, an undecided third-party
     # record, or a component type no KSI covers. Signed and published with the
     # rest after the gates.
+    # IVV-CSO-STE / IVV-CSO-DUS: the assessor guide, generated from the rule
+    # records (the simulated assessor received and ran the same guide before this
+    # job started). Signed and published with the rest.
+    - name: Build the assessor guide
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: python3 ../scripts/build-assessor-guide.py --commit "$GITHUB_SHA" --output assessor-guide.json --md-output assessor-guide.md
+
+    # CDS-TRC-AAI / CDS-TRC-SSM / CDS-UTC-AAD / CDS-UTC-AGA: the real register
+    # fails the deploy on a denial not notified to FedRAMP within 5 business
+    # days; the exercise runs the same code over fictional agencies dated from
+    # today and fails unless every expected outcome (late and overdue notices
+    # included) is observed. Nothing is sent to anyone.
+    - name: Agency access register check and simulated-agency exercise
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/agency-access.py validate
+        python3 ../scripts/agency-access.py exercise --output agency-access-exercise.json --md-output agency-access-exercise.md
+
     - name: Build the Minimum Assessment Scope
       working-directory: infrastructure
       env:
@@ -1810,6 +1831,25 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
         cosign sign-blob --yes --new-bundle-format --bundle access-summary.bundle access-summary.json
 
+    # CDS-TRC-HMR / CDS-CSO-CBF / CDS-TRC-PAC: a complete human-readable view
+    # of every JSON and CSV artifact this deploy publishes, each parsed back and
+    # required to reproduce its original exactly (the build fails otherwise),
+    # then the signed manifest of all certification data. published-docs.txt
+    # lists the views and the policy documents; the redaction gate scans and
+    # the publish step uploads exactly that list.
+    - name: Build the human-readable views and the trust manifest (format parity)
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        : > published-docs.txt
+        ls policies/*.md >> published-docs.txt
+        python3 ../scripts/build-human-views.py --freshness schemas/freshness-config.json --dir . --list published-docs.txt
+        python3 ../scripts/build-trust-manifest.py --dir . --policy-index policy-index.json --commit "$GITHUB_SHA" \
+          --output trust-manifest.json --md-output trust-manifest.md
+        python3 ../scripts/build-human-views.py trust-manifest.json --list published-docs.txt
+
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure
       run: |
@@ -1820,6 +1860,11 @@ jobs:
         if [ -f boundary-corroboration.json ]; then
           cosign sign-blob --yes --new-bundle-format --bundle boundary-corroboration.bundle boundary-corroboration.json
         fi
+        # The simulated assessment arrives signed by the assessor's own identity
+        # and is published with that bundle, never re-signed here.
+        for a in assessor-guide agency-access-exercise frr-evidence trust-manifest; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
 
     # Publication redaction gate: no artifact this run is about to publish
     # carries an AWS account ID. The inventory builder redacts it
@@ -1838,6 +1883,10 @@ jobs:
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
         for a in access-summary; do files="$files $a.json $a.md"; done
+        for a in assessor-guide agency-access-exercise trust-manifest; do files="$files $a.json $a.md"; done
+        files="$files frr-evidence.json simulated-assessment.json"
+        # The human-readable views and the policy documents (the list the publish step uploads).
+        if [ -f published-docs.txt ]; then files="$files $(cat published-docs.txt)"; fi
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
@@ -1915,6 +1964,23 @@ jobs:
         aws s3 cp minimum-assessment-scope.json "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp minimum-assessment-scope.bundle "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp minimum-assessment-scope.md "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        # Trust-center data: the assessor guide, the agency access exercise and
+        # the manifest (JSON, signature, Markdown); the per-rule evidence result;
+        # the simulated assessor's set with ITS bundle (signed by the assessor's
+        # identity, not this workflow's).
+        for a in assessor-guide agency-access-exercise trust-manifest; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        for a in frr-evidence simulated-assessment; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+        done
+        # The complete human-readable views and the policies and procedures.
+        while read -r f; do
+          aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done < published-docs.txt
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # -------------------------------------------------------------------------

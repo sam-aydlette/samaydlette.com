@@ -88,4 +88,9 @@ def test_the_documents_are_copied_for_publication(built):
 def test_the_deploy_publishes_the_documents():
     wf = (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text()
     assert re.search(r"build-policy-index\.py [^\n]*--publish-dir policies", wf)
-    assert re.search(r'aws s3 cp policies/ "s3://\$BUCKET_NAME/\.well-known/policies/" --recursive', wf)
+    # The views step lists them; the gate scans and the publish step uploads that list.
+    assert "ls policies/*.md >> published-docs.txt" in wf
+    gate = wf.split("- name: Publication redaction gate", 1)[1].split("\n    - name:", 1)[0]
+    publish = wf.split("- name: Publish all signed artifacts to /.well-known/", 1)[1].split("\n    - name:", 1)[0]
+    assert "$(cat published-docs.txt)" in gate
+    assert "done < published-docs.txt" in publish
