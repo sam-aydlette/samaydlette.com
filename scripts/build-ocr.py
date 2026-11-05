@@ -281,7 +281,6 @@ def main(argv=None):
     ap.add_argument("--vdr", default="vdr-report.json")
     ap.add_argument("--decisions", default="../data/decisions.json")
     ap.add_argument("--scn-register", default="../docs/scn/scn-register.csv")
-    ap.add_argument("--incidents", default="../data/incidents.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--profile", default=str(REPO / "data" / "system-profile.json"))
     ap.add_argument("--offering", default=str(_offering.OFFERING_PATH))
