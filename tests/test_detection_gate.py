@@ -21,7 +21,8 @@ SCHEMA = REPO / "infrastructure" / "schemas" / "detection-feeds.schema.json"
 NOW = "2026-11-04T12:00:00+00:00"
 
 GOOD = {"kev": "kev.json", "epss": "epss.csv", "grype": "grype.json", "dependabot": "dependabot.json",
-        "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json"}
+        "previous-vdr": "previous-vdr.json", "checkov": "checkov.sarif", "tfsec": "tfsec.json",
+        "codeql": "codeql.json", "zap-api": "zap-api.json"}
 
 
 def _load():
@@ -60,7 +61,7 @@ def test_all_good_inputs_pass(tmp_path):
     assert summary["result"] == "ok" and {f["feed"] for f in summary["feeds"]} == set(GOOD)
     assert all(f["status"] == "ok" and f["mode"] == "block" for f in summary["feeds"])
     assert {f["feed"]: f["age_hours"] for f in summary["feeds"] if f["age_hours"] is not None} == \
-        {"kev": 19.0, "epss": 12.0, "grype": 5.7}
+        {"kev": 19.0, "epss": 12.0, "grype": 5.7, "codeql": 6.3, "zap-api": 6.0}
 
 
 @pytest.mark.parametrize("feed,bad,reason", [
@@ -77,6 +78,15 @@ def test_all_good_inputs_pass(tmp_path):
     ("previous-vdr", "previous-vdr-bad.json", "no findings[]"),
     ("checkov", "checkov-fallback.sarif", "the empty fallback document"),
     ("tfsec", "absent.json", "missing"),
+    ("codeql", "codeql-missing.json", "no analysis found (HTTP 404)"),
+    ("codeql", "codeql-stale.json", "oldest required analysis is 100.0h old (max 72h)"),
+    ("codeql", "codeql-missing-category.json", "no analysis on main for /silk-reeling/language:javascript-typescript"),
+    ("codeql", "codeql-error.json", "the latest analysis for /language:actions reported an error"),
+    ("codeql", "codeql-no-alerts-key.json", "no alerts[] and analyses[]"),
+    ("zap-api", "zap-api-stale.json", "@generated is 102.0h old (max 72h)"),
+    ("zap-api", "zap-api-empty.json", "no site[]"),
+    ("zap-api", "zap-api-undated.json", "@generated absent or unparseable"),
+    ("zap-api", "absent.json", "missing (no file produced)"),
 ])
 def test_t52_each_failed_input_fails_the_gate_for_its_reason(tmp_path, feed, bad, reason):
     rc, summary, err = run(tmp_path, **{feed: bad})
@@ -171,3 +181,31 @@ def test_a_missing_dast_report_now_blocks_the_build(tmp_path):
                         "--output", "out.json"], cwd=work, capture_output=True, text=True, env=env)
     assert r.returncode == 1 and "No ZAP report at zap-report.json (no zap-dast-report artifact)" in r.stderr
     assert not (work / "out.json").exists()
+
+
+def test_codeql_requires_every_category_the_workflow_produces():
+    """The gate's required categories are exactly the ones codeql.yml uploads,
+    so a language dropped from the workflow (or added without a window) fails here."""
+    import yaml
+    wf = yaml.safe_load((REPO / ".github" / "workflows" / "codeql.yml").read_text())
+    produced = set()
+    for job in wf["jobs"].values():
+        analyze = next(st for st in job["steps"] if "codeql-action/analyze@" in st.get("uses", ""))
+        for lang in job["strategy"]["matrix"]["language"]:
+            produced.add(analyze["with"]["category"].replace("${{ matrix.language }}", lang))
+    assert set(_load().load_config()["feeds"]["codeql"]["categories"]) == produced
+
+
+def test_codeql_and_zap_api_windows_are_the_class_c_three_days():
+    cfg = _load().load_config()
+    assert cfg["feeds"]["codeql"]["max_age_hours"] == 72
+    assert cfg["feeds"]["zap-api"]["max_age_hours"] == 72
+
+
+def test_codeql_config_without_categories_fails_closed(tmp_path):
+    cfg = json.loads(CONFIG.read_text())
+    cfg["feeds"]["codeql"]["categories"] = []
+    p = tmp_path / "c.json"
+    p.write_text(json.dumps(cfg))
+    with pytest.raises(SystemExit, match="codeql.categories"):
+        _load().load_config(p)

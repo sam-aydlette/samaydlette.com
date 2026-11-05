@@ -588,10 +588,11 @@ jobs:
       # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
       # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
       id-token: write
-      # actions: read lets GITHUB_TOKEN download the weekly ZAP DAST artifact.
-      # Dependabot alerts are read with the DEPENDABOT_ALERTS_TOKEN secret:
-      # GITHUB_TOKEN cannot read them.
+      # actions: read lets GITHUB_TOKEN download the ZAP DAST artifacts, and
+      # security-events: read the CodeQL code-scanning alerts. Dependabot alerts
+      # are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN cannot.
       actions: read
+      security-events: read
     # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
@@ -1152,10 +1153,27 @@ jobs:
     # DETECTION INPUTS AND G7 — before anything is applied
     # -------------------------------------------------------------------------
     # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
-    # the latest weekly DAST report, fetched here (not after apply) so that a
+    # the latest DAST reports and CodeQL alerts, fetched here (not after apply) so that a
     # detection failure stops the deploy before it mutates anything (T52: G7
     # blocks every team). A failed fetch leaves <file>.error, never an empty
     # stand-in. The SAST files come from the security-scan job, Grype from above.
+    # The authenticated DAST of the Silk Reeling API (zap-dast.yml) signs in with
+    # these; without them the API scan fails and, 72 hours later, so does every
+    # VDR build. Stop here instead, before anything is applied or published.
+    - name: Require the DAST scanner credentials
+      env:
+        SILK_DAST_USERNAME: ${{ secrets.SILK_DAST_USERNAME }}
+        SILK_DAST_PASSWORD: ${{ secrets.SILK_DAST_PASSWORD }}
+        SILK_DAST_TOTP_SECRET: ${{ secrets.SILK_DAST_TOTP_SECRET }}
+        SILK_DAST_USER_POOL_ID: ${{ secrets.SILK_DAST_USER_POOL_ID }}
+      run: |
+        missing=""
+        for k in SILK_DAST_USERNAME SILK_DAST_PASSWORD SILK_DAST_TOTP_SECRET SILK_DAST_USER_POOL_ID; do
+          [ -n "${!k:-}" ] || missing="$missing $k"
+        done
+        [ -z "$missing" ] || { echo "::error::repository secret(s) not set:$missing (docs/runbooks/dast-scanner-user.md)"; exit 1; }
+        echo "DAST scanner credentials present."
+
     - name: Fetch detection feeds
       working-directory: infrastructure
       env:
@@ -1172,6 +1190,7 @@ jobs:
           --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
           --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --codeql codeql-alerts.json --zap-api zap-api-report.json \
           --output detection.json
 
     # VDR-CSO-AKE: nothing with a known exploited vulnerability is activated.
@@ -1471,6 +1490,9 @@ jobs:
           --dependabot dependabot-alerts.json \
           --grype grype.json \
           --zap zap-report.json \
+          --zap-max-age-days 3 \
+          --zap-api zap-api-report.json \
+          --codeql codeql-alerts.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \

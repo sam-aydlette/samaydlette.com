@@ -236,10 +236,11 @@ jobs:
       # Sigstore keyless signing via the GitHub Actions OIDC provider, and the
       # AWS role assumption. No AWS long-lived key.
       id-token: write
-      # Lets GITHUB_TOKEN download the weekly ZAP DAST artifact. Dependabot
-      # alerts are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN
-      # cannot read them.
+      # Lets GITHUB_TOKEN download the ZAP DAST artifacts (actions) and read
+      # the CodeQL code-scanning alerts (security-events). Dependabot alerts are
+      # read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN cannot.
       actions: read
+      security-events: read
 
     steps:
     # -------------------------------------------------------------------------
@@ -423,7 +424,7 @@ jobs:
     # DETECTION INPUTS AND G7
     # -------------------------------------------------------------------------
     # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
-    # the latest weekly DAST report. A failed fetch leaves <file>.error, never
+    # the latest DAST reports and CodeQL alerts. A failed fetch leaves <file>.error, never
     # an empty stand-in; the detection gate below fails the run on it (T52).
     - name: Fetch detection feeds
       working-directory: infrastructure
@@ -441,6 +442,7 @@ jobs:
           --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
           --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --codeql codeql-alerts.json --zap-api zap-api-report.json \
           --output detection.json
 
     # -------------------------------------------------------------------------
@@ -541,6 +543,9 @@ jobs:
           --dependabot dependabot-alerts.json \
           --grype grype.json \
           --zap zap-report.json \
+          --zap-max-age-days 3 \
+          --zap-api zap-api-report.json \
+          --codeql codeql-alerts.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
