@@ -93,6 +93,9 @@ for f in ksi-signal.json ksi-signal.bundle \
          security-decision-record.json.intoto.jsonl \
          certification-package-overview.json certification-package-overview.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
+         vdr-detail-report.json vdr-detail-report.bundle \
+         vdr-accepted-vulnerabilities.json vdr-accepted-vulnerabilities.bundle \
+         vdr-history.json vdr-history.bundle \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
          trust-center.json trust-center.bundle; do
@@ -155,6 +158,15 @@ else
   bad "vdr-report.json attestation signature"
 fi
 
+# The CR26 vulnerability reports are rebuilt with the VDR, so either identity too.
+for art in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY" "$NIGHTLY_IDENTITY"; then
+    ok "$art.json signed by a pinned workflow on main"
+  else
+    bad "$art.json signature"
+  fi
+done
+
 echo ""
 echo "== 2. Provenance claims (dependency-free consumer) =="
 for art in security-decision-record.json vdr-report.json; do
@@ -184,8 +196,31 @@ else
 fi
 
 echo ""
+echo "== 4. CR26 schema conformance (FedRAMP 2026-06-24 schemas, vendored by sha256) =="
+for pair in vdr-detail-report:vdt vdr-accepted-vulnerabilities:avi vdr-history:mrh; do
+  art="${pair%%:*}"; kind="${pair##*:}"
+  if python3 -c 'import json,sys; sys.path.insert(0,sys.argv[1]); import _fedramp_schema as fs
+errs = fs.validate(json.load(open(sys.argv[2])), sys.argv[3])
+[print("        " + e) for e in errs[:5]]
+sys.exit(1 if errs else 0)' "$SCRIPTS" "$work/$art.json" "$kind"; then
+    ok "$art.json validates against its FedRAMP schema and names it"
+  else
+    bad "$art.json does not validate against its FedRAMP schema"
+  fi
+done
+# The VDT and AVI must describe the published VDR, not an earlier one.
+vdr_id=$(jq -r .report_id "$work/vdr-report.json")
+for art in vdr-detail-report vdr-accepted-vulnerabilities; do
+  if [ "$(jq -r .providerExtensions.vdrReportId "$work/$art.json")" = "$vdr_id" ]; then
+    ok "$art.json was built from the published vdr-report.json"
+  else
+    bad "$art.json names a different VDR report than vdr-report.json"
+  fi
+done
+
+echo ""
 echo "== Scope =="
-echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity)."
+echo "  Independently verified   : signatures + provenance (Sigstore + pinned identity); CR26 schema conformance."
 echo "  Verified via public code : cross-artifact reconciliation (this repo, invariants b–j and l)."
 echo "  NOT externally verifiable: live-state invariants (a completeness, i tag-match) need AWS."
 

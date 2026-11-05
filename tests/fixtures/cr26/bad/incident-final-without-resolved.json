@@ -1,0 +1,18 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-incident-report-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "reportType": "Final",
+  "providerTrackingId": "INC-001",
+  "relatedCveIds": [
+    "CVE-2099-0142"
+  ],
+  "timeline": {
+    "detectedAt": "2026-11-01T00:00:00Z",
+    "milestones": [
+      {
+        "occurredAt": "2026-11-01T01:00:00Z",
+        "milestoneDescription": "Contained"
+      }
+    ]
+  }
+}

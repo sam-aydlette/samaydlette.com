@@ -1,0 +1,109 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-accepted-vulnerability-info-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "reportPeriod": {
+    "from": "2026-03-01T00:00:00+00:00",
+    "to": "2026-11-05T14:20:02.961513+00:00"
+  },
+  "vulnerabilities": [
+    {
+      "providerTrackingId": "grype-CVE-2099-0001-thumbnailer",
+      "detection": {
+        "detectedAt": "2026-08-06T13:51:28+00:00",
+        "detectionSource": "Grype (software composition analysis)"
+      },
+      "vulnerabilityDescription": "example-thumbnailer 3.1.0: Heap overflow in thumbnail decoding",
+      "potentialAgencyImpact": "Potential Agency Impact N3 (technical impact partial; see VER-EVA-EPA for the N-rating scale).",
+      "evaluationCompletedAt": "2026-08-06T14:00:00+00:00",
+      "isInternetReachable": true,
+      "isLikelyExploitable": true,
+      "currentRating": 3,
+      "overdueStatus": {
+        "isOverdue": false,
+        "explanation": "within Class C SLA"
+      },
+      "supplementaryRiskInformation": "File preview is turned off until the fix ships.",
+      "painReductionEvents": [
+        {
+          "reducedAt": "2026-10-14T10:00:00+00:00",
+          "rating": 3
+        }
+      ],
+      "projectedNextReduction": {
+        "estimatedAt": "2026-11-20T00:00:00+00:00",
+        "targetRating": 0
+      },
+      "providerExtensions": {
+        "componentId": "pkg:npm/example-thumbnailer@3.1.0",
+        "resource": null,
+        "cve": "CVE-2099-0001",
+        "scannerCheck": "CVE-2099-0001",
+        "decisionId": null,
+        "disposition": "open",
+        "isKev": true,
+        "remediationDueAt": "2026-11-20T00:00:00+00:00"
+      }
+    },
+    {
+      "providerTrackingId": "zap-10099-article",
+      "detection": {
+        "detectedAt": "2026-08-06T13:51:28+00:00",
+        "detectionSource": "OWASP ZAP (dynamic application scan)"
+      },
+      "vulnerabilityDescription": "zap-10099-article",
+      "potentialAgencyImpact": "Potential Agency Impact N1 (technical impact partial; see VER-EVA-EPA for the N-rating scale).",
+      "evaluationCompletedAt": "2026-08-06T14:00:00+00:00",
+      "isInternetReachable": false,
+      "isLikelyExploitable": false,
+      "currentRating": 1,
+      "overdueStatus": {
+        "isOverdue": false,
+        "explanation": "within Class C SLA"
+      },
+      "finalDisposition": "False Positive",
+      "providerExtensions": {
+        "componentId": null,
+        "resource": null,
+        "cve": null,
+        "scannerCheck": "zap-10099",
+        "decisionId": "DEC-103",
+        "disposition": "false-positive",
+        "isKev": false,
+        "remediationDueAt": null
+      }
+    },
+    {
+      "providerTrackingId": "grype-CVE-2099-0002-api",
+      "detection": {
+        "detectedAt": "2026-08-06T13:51:28+00:00",
+        "detectionSource": "Grype (software composition analysis)"
+      },
+      "vulnerabilityDescription": "grype-CVE-2099-0002-api",
+      "potentialAgencyImpact": "Potential Agency Impact N2 (technical impact partial; see VER-EVA-EPA for the N-rating scale).",
+      "evaluationCompletedAt": "2026-08-06T14:00:00+00:00",
+      "isInternetReachable": false,
+      "isLikelyExploitable": false,
+      "currentRating": 2,
+      "overdueStatus": {
+        "isOverdue": false,
+        "explanation": "within Class C SLA"
+      },
+      "finalDisposition": "Fully Mitigated",
+      "providerExtensions": {
+        "componentId": "pkg:pypi/example-lib@1.0.0",
+        "resource": null,
+        "cve": "CVE-2099-0002",
+        "scannerCheck": "CVE-2099-0002",
+        "decisionId": "DEC-105",
+        "disposition": "mitigated",
+        "isKev": false,
+        "remediationDueAt": null
+      }
+    }
+  ],
+  "providerExtensions": {
+    "source": "vdr-report.json",
+    "vdrReportId": "vdr-fixture",
+    "ksiSignalId": "sig-fixture"
+  }
+}

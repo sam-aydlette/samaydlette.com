@@ -40,6 +40,42 @@
       "note": "Provenance attestation; a DSSE envelope with no timestamp of its own, so the object's last-modified time is used."
     },
     {
+      "path": ".well-known/vdr-detail-report.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "reportPeriod.to"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-detail-report.bundle",
+      "note": "CR26 Vulnerability Detail Report (VER-RPT-VDT), rebuilt from every VDR report."
+    },
+    {
+      "path": ".well-known/vdr-accepted-vulnerabilities.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "reportPeriod.to"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-accepted-vulnerabilities.bundle",
+      "note": "CR26 Accepted Vulnerability Info (VER-RPT-AVI), rebuilt from every VDR report."
+    },
+    {
+      "path": ".well-known/vdr-history.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "generatedAt"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-history.bundle",
+      "note": "CR26 historical vulnerability activity (VER-TFR-MRH; Class C SHOULD update at least every 14 days), rebuilt from every VDR report."
+    },
+    {
       "path": ".well-known/vdr-status.json",
       "cadence": "nightly",
       "max_age_hours": 26,

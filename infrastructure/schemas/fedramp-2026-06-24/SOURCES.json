@@ -1,0 +1,44 @@
+{
+  "source": "https://www.fedramp.gov/schemas/ (fedramp.gov/schemas/* redirects here with HTTP 301)",
+  "fetched": "2026-11-05",
+  "cross_check": "Every sha256 equals the independently fetched copy vendored in storycheck (fetched 2026-11-03).",
+  "note": "Vendored, never edited. scripts/_fedramp_schema.py refuses to validate against any file whose sha256 differs from this list, and any file in this directory not listed here.",
+  "files": {
+    "fedramp-accepted-vulnerability-info-schema-2026-06-24.json": {
+      "sha256": "2c17ba6e21abd1951e29cf59d90e69d39468c01eb1ad69a6c690233e196f68e2",
+      "$id": "https://fedramp.gov/schemas/fedramp-accepted-vulnerability-info-schema-2026-06-24.json"
+    },
+    "fedramp-certification-package-overview-schema-2026-06-24.json": {
+      "sha256": "3870303570bf608dc723cf338cbc3b2295ebd79475003c63699876ac0b89262d",
+      "$id": "https://fedramp.gov/schemas/fedramp-certification-package-overview-schema-2026-06-24.json"
+    },
+    "fedramp-common-definitions-schema-2026-06-24.json": {
+      "sha256": "19dd37691779171f745ab887444f3604287006af78d261ad76c0cf2dd718e16d",
+      "$id": "https://fedramp.gov/schemas/fedramp-common-definitions-schema-2026-06-24.json"
+    },
+    "fedramp-historical-ver-activity-schema-2026-06-24.json": {
+      "sha256": "51011860138687f25b858b840eefe2b077f31a183ba5d625c461ac296c58df9f",
+      "$id": "https://fedramp.gov/schemas/fedramp-historical-ver-activity-schema-2026-06-24.json"
+    },
+    "fedramp-incident-report-schema-2026-06-24.json": {
+      "sha256": "e0871781b6a99c395b8b4854d10ca11e7600ce81c4f3dc6404caddb8ef3105e8",
+      "$id": "https://fedramp.gov/schemas/fedramp-incident-report-schema-2026-06-24.json"
+    },
+    "fedramp-ongoing-certification-report-schema-2026-06-24.json": {
+      "sha256": "c67f4e79a107f106abc2dce50043e798f9708e80a5df2c52e41ed700a3a542c8",
+      "$id": "https://fedramp.gov/schemas/fedramp-ongoing-certification-report-schema-2026-06-24.json"
+    },
+    "fedramp-security-decision-record-schema-2026-06-24.json": {
+      "sha256": "6a6d7dca1a9ae0031c06df6213bf5c5631e9b9b5fb81c050403cfd723484be86",
+      "$id": "https://fedramp.gov/schemas/fedramp-security-decision-record-schema-2026-06-24.json"
+    },
+    "fedramp-significant-change-notifications-schema-2026-06-24.json": {
+      "sha256": "e0f624b7996c2d8dfb1891c4663fb1df2ec6487a65f03fb43f1ce6ed59910372",
+      "$id": "https://fedramp.gov/schemas/fedramp-significant-change-notifications-schema-2026-06-24.json"
+    },
+    "fedramp-vulnerability-detail-report-schema-2026-06-24.json": {
+      "sha256": "92b2918106c0117ba84d14a5da33762dbb5df2acbf5303a806f6d4bbea98f60b",
+      "$id": "https://fedramp.gov/schemas/fedramp-vulnerability-detail-report-schema-2026-06-24.json"
+    }
+  }
+}

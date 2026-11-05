@@ -619,6 +619,37 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle vdr-trend.bundle vdr-trend.json
         ls -la vdr-report.bundle vdr-trend.bundle
 
+    # CR26 vulnerability reports (VER-RPT-VDT, VER-RPT-AVI, VER-TFR-MRH), rebuilt
+    # from the refreshed VDR report so they never describe a different moment
+    # from it. Same step as the deploy's: the previous published copies are read
+    # only if they verify against the deploy or this workflow; validated against
+    # the vendored FedRAMP schemas before they are written.
+    - name: Build and sign CR26 vulnerability reports (VDT, AVI, history)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        prev=()
+        for kind in detail-report:vdt accepted-vulnerabilities:avi history:mrh; do
+          name="vdr-${kind%%:*}"; flag="--previous-${kind##*:}"
+          if curl -sfL --retry 3 --retry-delay 5 -o "previous-$name.json" "${SITE_ORIGIN}/.well-known/$name.json"; then
+            curl -sfL --retry 3 --retry-delay 5 -o "previous-$name.bundle" "${SITE_ORIGIN}/.well-known/$name.bundle"
+            ok=0
+            for identity in "${DEPLOY_SIGNER_IDENTITY}" \
+                "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
+              if cosign verify-blob --bundle "previous-$name.bundle" --certificate-identity "$identity" \
+                   --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" "previous-$name.json" 2>/dev/null; then ok=1; break; fi
+            done
+            [ "$ok" -eq 1 ] || { echo "::error::previous $name.json does not verify; refusing to carry it forward"; exit 1; }
+            prev+=("$flag" "previous-$name.json")
+          else
+            echo "No previous $name.json published; its period starts at the earliest detection."
+          fi
+        done
+        python3 ../scripts/build-cr26-vdr.py --vdr vdr-report.json --decisions ../data/decisions.json "${prev[@]}"
+        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
+
     # The published VDR carries a SLSA/in-toto provenance attestation, and that
     # attestation binds to the artifact's sha256. Republishing vdr-report.json
     # without re-attesting it would leave the served
@@ -655,7 +686,7 @@ jobs:
           --ksi-signal ksi-signal.json
 
     # -------------------------------------------------------------------------
-    # PUBLISH — five objects, one prefix
+    # PUBLISH — one prefix (.well-known/vdr-*)
     # -------------------------------------------------------------------------
     # `s3api put-object` rather than `s3 cp`: a single unambiguous PutObject call
     # per object, so the role needs exactly s3:PutObject on
@@ -681,6 +712,13 @@ jobs:
         put vdr-report.md    "text/markdown; charset=utf-8"
         put vdr-trend.json   "application/json"
         put vdr-trend.bundle "application/json"
+        # CR26 vulnerability reports, rebuilt with the VDR report above.
+        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+          put "$a.json"   "application/json"
+          put "$a.bundle" "application/json"
+        done
+        put vdr-detail-report.md            "text/markdown; charset=utf-8"
+        put vdr-accepted-vulnerabilities.md "text/markdown; charset=utf-8"
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"
