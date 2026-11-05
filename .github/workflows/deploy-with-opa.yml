@@ -1587,6 +1587,22 @@ jobs:
           --previous previous-availability.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
 
+    # The Minimum Assessment Scope (MAS-CSO-IIR/FLO/MDI/TPR, FRC-CSX-MAS), generated
+    # from this build's inventory, the boundary classification's flows, the CSPs
+    # the edge serves and the third-party records. Fails the deploy, before the
+    # SDR, on an unplaced off-origin host, an external service or data store in
+    # no flow, a data store without a metadata entry, an undecided third-party
+    # record, or a component type no KSI covers. Signed and published with the
+    # rest after the gates.
+    - name: Build the Minimum Assessment Scope
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        python3 ../scripts/build-mas.py --ksi-signal ksi-signal.json --commit "$GITHUB_SHA" \
+          --output minimum-assessment-scope.json --md-output minimum-assessment-scope.md
+        cosign sign-blob --yes --new-bundle-format --bundle minimum-assessment-scope.bundle minimum-assessment-scope.json
+
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       run: |
@@ -1733,6 +1749,7 @@ jobs:
           [ -f "$a.json" ] || continue
           files="$files $a.json"
         done
+        files="$files minimum-assessment-scope.json minimum-assessment-scope.md"
         # shellcheck disable=SC2086  # a word list by design
         python3 ../scripts/check-published-redaction.py $files
 
@@ -1795,6 +1812,10 @@ jobs:
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
+        # Minimum Assessment Scope (MAS-CSO-IIR/FLO/MDI/TPR) + bundle + human-readable
+        aws s3 cp minimum-assessment-scope.json "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp minimum-assessment-scope.bundle "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp minimum-assessment-scope.md "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # -------------------------------------------------------------------------
