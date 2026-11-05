@@ -300,7 +300,9 @@ def detail(f, recs=None, accepted=False):
             "detectionSource": SOURCES.get(f.get("source"), f.get("source") or "unknown"),
         },
         "vulnerabilityDescription": _description(f) or tid,
-        "potentialAgencyImpact": (f"Potential Agency Impact {pain} "
+        "potentialAgencyImpact": (f"Potential Agency Impact {f['impact_rationale']}"
+                                  if f.get("impact_rationale") else
+                                  f"Potential Agency Impact {pain} "
                                   f"(technical impact {f.get('technical_impact') or 'not rated'}; "
                                   "see VER-EVA-EPA for the N-rating scale)."),
         "evaluationCompletedAt": _ts(f.get("first_evaluated") or f.get("completed_evaluation"),
@@ -343,6 +345,13 @@ def detail(f, recs=None, accepted=False):
         "detectedAtBasis": detected_basis,
         "firstReportedAt": _ts(f.get("first_detected"), f"{tid}.first_detected"),
     }
+    # VER-EVA-*: the evaluation record, the group the finding is evaluated in,
+    # and the disclosure determination, as the VDR report states them.
+    for k, name in (("evaluation", "evaluation"), ("group_id", "groupId"), ("group_due_at", "groupDueAt"),
+                    ("evaluation_late", "evaluationLate"), ("public_disclosure", "publicDisclosure"),
+                    ("accepted_basis", "acceptedBasis")):
+        if f.get(k) is not None:
+            ext[name] = f[k]
     if f.get("is_kev"):
         # VDR-TFR-KEV: the CISA catalog's remediation date and whether it passed.
         ext["kevDueAt"] = f.get("kev_due_at")

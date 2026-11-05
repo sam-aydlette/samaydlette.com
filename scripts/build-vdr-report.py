@@ -1562,7 +1562,32 @@ def apply_check_vector(finding, vectors):
     out = dict(finding)
     out["cvss_vector"] = vectors[finding["tool_id"]]["vector"]
     out["vector_source"] = "governed-check-vector"
+    out["vector_rationale"] = vectors[finding["tool_id"]].get("rationale")
+    out["vector_decision"] = vectors[finding["tool_id"]].get("decision")
     return out
+
+
+_EPA_EFFECT = {"N0": "no adverse effect on agencies is expected", "N1": "minimal customer effects",
+               "N2": "narrow customer effects", "N3": "a disruptive effect on one agency",
+               "N4": "a debilitating effect on one agency or a disruptive effect on more than one",
+               "N5": "a debilitating effect on more than one agency"}
+
+
+def impact_rationale(f, pain, fully_mitigated):
+    """VER-EVA-EPA: one line on the likely effect on agencies and what it rests on."""
+    if fully_mitigated:
+        return "Fully mitigated: the impact has been removed (N0)."
+    cls = f.get("_classification") or {}
+    where = (f"on a component holding {cls.get('data_sensitivity', 'unclassified')} data, "
+             f"{cls.get('mission_criticality', 'unrated')} criticality, "
+             f"{cls.get('agency_scope', 'multi')}-agency scope")
+    if f.get("vector_source") == "governed-check-vector":
+        basis = f"{f.get('vector_rationale') or 'governed vector'} (vector decided in {f.get('vector_decision')})"
+    elif f.get("cvss_vector"):
+        basis = "the advisory's CVSS vector"
+    else:
+        basis = "the scanner's severity (no vector): a default, not a contextual estimate"
+    return f"{pain}, {_EPA_EFFECT.get(pain, pain)}: {basis}; {where}."
 
 
 def load_lev_overrides(path=None):
@@ -1729,6 +1754,11 @@ def resolve_component(finding, index, tf_components=()):
         # (scripts/_redact.py); a finding that names a full ARN matches it so.
         if c and _redact.redact_text(str(c)) in index:
             return index[_redact.redact_text(str(c))]
+    # A site root ("https://host" or "https://host/") is the page it serves:
+    # the root object, index.html (VER-EVA-EIR: evaluated, not assumed).
+    root = str(finding.get("resource") or "")
+    if re.fullmatch(r"https?://[^/]+/?", root):
+        return resolve_component({"resource": root.rstrip("/") + "/index.html"}, index, tf_components)
     res = _redact.redact_text(str(finding.get("resource") or ""))
     m = _TF_ADDRESS.match(res)
     if m:
@@ -2054,7 +2084,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             matched_mitigations.update(mit.get("matched") or [mit["id"]])
         if mit and mit["valid"]:
             f = {**f, "verified_mitigation_at": mit["verified_on"], "mitigation_id": mit["id"]}
-        if cid is None:
+        if cid is None and f.get("source") != "process":
+            # A process finding names the pipeline, not an inventory component.
             summary["unresolved_components"] += 1
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
 
@@ -2205,6 +2236,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "cvss_vector": f.get("cvss_vector"),
             "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
             "technical_impact": technical_impact(f),
+            "impact_rationale": impact_rationale(f, pain, fully_mitigated),
             "is_kev": is_kev,
             **({"kev_due_at": kev_due_at, "kev_date_added": kev_added, "kev_overdue": kev_overdue}
                if is_kev and (kev_due_at or kev_added) else {}),
@@ -2438,6 +2470,7 @@ def main():
     parser.add_argument("--epss", default=None, help="EPSS scores (FIRST epss_scores-current.csv, optionally gzipped, or JSON). Enables the EPSS likely-exploitable union (EPSS >= threshold OR active); without it, LEV falls back to the severity proxy.")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
+    parser.add_argument("--failed-runs", default=None, help="Failed runs of the pipeline (gh run list --status failure --json workflowName,createdAt,updatedAt,event,headBranch): each stopped run on main since the previous report is listed in process_failures (VDR-CSO-FAV). Given but unreadable: the build fails.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
     parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
@@ -2519,15 +2552,39 @@ def main():
     check_vectors = load_check_vectors(args.check_vectors)
     lev_overrides = load_lev_overrides(args.lev_overrides)
     runtime = load_runtime_signal(args.runtime_signal, args.runtime_pubkey)
-    report, blocking = build_report(findings, suppressions, kev_cves, ledger,
-                                    index=classification_index, config=pain_config,
-                                    epss_scores=epss_scores,
-                                    disposition_register=disposition_register,
-                                    check_vectors=check_vectors,
-                                    lev_overrides=lev_overrides,
-                                    inventory=load_inventory(args.ksi_signal),
-                                    mitigations=load_mitigations(args.mitigations),
-                                    runtime=runtime)
+    inventory = load_inventory(args.ksi_signal)
+    mitigations = load_mitigations(args.mitigations)
+
+    def _build(fs):
+        return build_report(fs, suppressions, kev_cves, ledger,
+                            index=classification_index, config=pain_config,
+                            epss_scores=epss_scores,
+                            disposition_register=disposition_register,
+                            check_vectors=check_vectors,
+                            lev_overrides=lev_overrides,
+                            inventory=inventory, mitigations=mitigations, runtime=runtime)
+
+    # VDR-CSO-FAV: a detect-and-recover failure recorded earlier in this run,
+    # or a finding still on a default after the evaluation window, is itself a
+    # finding. The second is known only once the findings are decided, so the
+    # report is decided again with them.
+    events_path = os.environ.get(_gates.EVENTS_ENV)
+    run_events = _gates.read_events(events_path) if events_path else []
+    report, blocking = _build(findings + _evaluation.process_findings(run_events, []))
+    process = _evaluation.process_findings(run_events, report["findings"])
+    if {p["tracking_id"] for p in process} - {f["tracking_id"] for f in report["findings"]}:
+        report, blocking = _build(findings + process)
+    # Stopped runs of the pipeline since the previous report (block-mode
+    # failures): each is listed with when it failed. Given but unreadable fails.
+    if args.failed_runs:
+        try:
+            runs = json.loads(Path(args.failed_runs).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"::error::--failed-runs {args.failed_runs}: unreadable ({exc.__class__.__name__}) "
+                             "(fail-closed)") from exc
+        since = (json.loads(Path(args.previous_vdr).read_text()).get("emitted_at")
+                 if args.previous_vdr and Path(args.previous_vdr).is_file() else None)
+        report["process_failures"] = _evaluation.failed_runs(runs, since)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can
@@ -2567,6 +2624,13 @@ def main():
         "fedramp_rules": rules_pin(),
         "reference": pain_config.get("method_reference", ""),
         "gates": _gates.published_view(gates),
+        # VER-EVA-EFA: what each factor in a finding's evaluation record means.
+        "evaluation_factors": _evaluation.FACTORS,
+        "process_failures": ("VDR-CSO-FAV: a detect-and-recover check that failed this run, or a finding still "
+                             "on a default after the VER-TFR-EVU window, is a finding with source 'process' "
+                             f"(severity proxy {_evaluation.PROCESS_SEVERITY}); it is remediated when the check "
+                             "passes. A block-mode failure stops the run; each stopped run is listed in "
+                             "process_failures of the next report."),
     }
 
     # Apply each blocking finding's governed mode before writing, so a

@@ -198,3 +198,51 @@ def test_group_keys():
     assert _evaluation.group_key({"cve": "CVE-1"}, "DEC-1") == "cve:CVE-1"
     assert _evaluation.group_key({"source": "checkov", "tool_id": "CKV_1"}, "DEC-1") == "decision:DEC-1"
     assert _evaluation.group_key({"source": "checkov", "tool_id": "CKV_1"}, None) == "check:checkov:CKV_1"
+
+
+# --- VER-EVA-EIR: a site root resolves to the page it serves -----------------------------------
+
+def test_a_site_root_resolves_to_its_index_page():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("vdr_eval", REPO / "scripts" / "build-vdr-report.py")
+    vdr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vdr)
+    index = {"https://example.test/index.html": "html::index.html"}
+    assert vdr.resolve_component({"resource": "https://example.test"}, index) == "html::index.html"
+    assert vdr.resolve_component({"resource": "https://example.test/"}, index) == "html::index.html"
+    assert vdr.resolve_component({"resource": "https://example.test/x"}, index) is None
+
+
+# --- VDR-CSO-FAV: failures are vulnerabilities ------------------------------------------------
+
+def test_a_detect_and_recover_event_becomes_one_process_finding_per_check():
+    ev = [{"check": "runtime-divergence.observer-fault", "gate": "G7", "mode": "detect-and-recover",
+           "detail": "observer unreachable", "at": "2026-11-05T01:00:00+00:00"}] * 2
+    out = _evaluation.process_findings(ev, [])
+    assert [f["tracking_id"] for f in out] == ["process-runtime-divergence.observer-fault"]
+    assert out[0]["source"] == "process" and out[0]["detected_at"] == "2026-11-05T01:00:00+00:00"
+
+
+def test_a_finding_on_a_default_past_the_window_becomes_a_process_finding():
+    rows = [{"tracking_id": "t1", "source": "checkov", "evaluation_late": "default-after-evaluation-window"},
+            {"tracking_id": "t2", "source": "checkov", "evaluation_late": "evaluated-late"},
+            {"tracking_id": "t3", "source": "checkov", "evaluation_late": None}]
+    assert [f["tracking_id"] for f in _evaluation.process_findings([], rows)] == ["process-evaluation-t1"]
+
+
+def test_stopped_runs_on_main_since_the_previous_report_are_listed_without_ids():
+    runs = [{"workflowName": "Evidence Nightly (VDR refresh)", "createdAt": "2026-11-05T07:17:00Z",
+             "updatedAt": "2026-11-05T07:40:00Z", "event": "schedule", "headBranch": "main", "databaseId": 1},
+            {"workflowName": "Evidence Nightly (VDR refresh)", "createdAt": "2026-11-01T07:17:00Z",
+             "headBranch": "main"},
+            {"workflowName": "Some PR check", "createdAt": "2026-11-05T08:00:00Z", "headBranch": "main"},
+            {"workflowName": "ZAP DAST Scan", "createdAt": "2026-11-05T09:00:00Z", "headBranch": "feature"}]
+    out = _evaluation.failed_runs(runs, "2026-11-04T19:00:00+00:00")
+    assert len(out) == 1 and out[0]["failed_at"] == "2026-11-05T07:17:00Z"
+    assert "databaseId" not in json.dumps(out) and "1" != out[0].get("id")
+
+
+def test_the_deploy_and_nightly_pass_failed_runs_to_the_vdr_build():
+    for wf in ("deploy-with-opa.yml", "evidence-nightly.yml"):
+        t = (REPO / ".github" / "workflows" / wf).read_text()
+        assert "Collect failed pipeline runs (VDR-CSO-FAV)" in t and "--failed-runs failed-runs.json" in t, wf

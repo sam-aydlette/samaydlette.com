@@ -221,3 +221,46 @@ def redact(row):
             if out[k] not in (None, "", [], {}):
                 out[k] = f"[withheld under {DISCLOSURE_POLICY}]" if isinstance(out[k], str) else None
     return out
+
+
+# ---- failures are vulnerabilities (VDR-CSO-FAV) ------------------------------------------
+# A detection or response check that fails in detect-and-recover mode, or a
+# finding still resting on a default after the evaluation window, is a process
+# vulnerability: a finding with a tracking ID, a clock, a rating and a deadline,
+# open for as long as the failure lasts and gone (remediated) when the check
+# passes. A check in block mode stops the run instead; each such stopped run of
+# the deploy or the nightly is listed in the next report with when it failed.
+PROCESS_SEVERITY = "MEDIUM"  # severity proxy: N2, narrow effect (detection degraded)
+PIPELINE_WORKFLOWS = ("Deploy Website with OPA Compliance", "Evidence Nightly (VDR refresh)", "ZAP DAST Scan")
+
+
+def process_findings(events, rows):
+    out = {}
+    for ev in events or []:
+        tid = f"process-{ev['check']}"
+        if tid not in out:
+            out[tid] = {"source": "process", "tool_id": ev["check"], "tracking_id": tid,
+                        "title": f"Process failure: {ev.get('gate', '')} {ev['check']} ({ev.get('mode', '')})",
+                        "description": ev.get("detail", ""), "severity": PROCESS_SEVERITY,
+                        "resource": f"pipeline:{ev['check']}", "detected_at": ev.get("at")}
+    for r in rows or []:
+        if r.get("evaluation_late") == "default-after-evaluation-window" and r.get("source") != "process":
+            tid = f"process-evaluation-{r['tracking_id']}"
+            out[tid] = {"source": "process", "tool_id": "evaluation.default-after-window", "tracking_id": tid,
+                        "title": "Process failure: evaluation still on a default after the VER-TFR-EVU window",
+                        "description": f"{r['tracking_id']} has no vector and no prediction score",
+                        "severity": PROCESS_SEVERITY, "resource": f"pipeline:evaluation:{r['tracking_id']}"}
+    return sorted(out.values(), key=lambda f: f["tracking_id"])
+
+
+def failed_runs(runs, since, workflows=PIPELINE_WORKFLOWS):
+    """Stopped runs of the pipeline on main since the previous report: when each
+    failed and which workflow. No run IDs or URLs are kept."""
+    out = []
+    for r in runs or []:
+        if (r.get("workflowName") in workflows and r.get("headBranch") == "main"
+                and str(r.get("createdAt") or "") > str(since or "")):
+            out.append({"tracking_id": f"process-run-{r['workflowName'].lower().replace(' ', '-')}-{r['createdAt']}",
+                        "workflow": r["workflowName"], "event": r.get("event"),
+                        "failed_at": r.get("createdAt"), "ended_at": r.get("updatedAt")})
+    return sorted(out, key=lambda x: x["failed_at"])
