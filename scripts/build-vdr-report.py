@@ -1098,15 +1098,38 @@ def zap_report_age_days(path, now):
     return None
 
 
+class KevCatalog(set):
+    """The CISA KEV catalog's CVE IDs, plus each entry's dates (VDR-TFR-KEV):
+    `entries` is {cveID: {"due_date", "date_added"}} from the catalog."""
+
+    def __init__(self, ids=(), entries=None):
+        super().__init__(ids)
+        self.entries = entries or {}
+
+
 def ingest_kev(path):
-    """Load CISA KEV catalog and return the set of CVE IDs."""
+    """Load the CISA KEV catalog: its CVE IDs, with the catalog's dueDate and
+    dateAdded for each (BOD 26-04 remediation dates)."""
     if not path or not Path(path).exists():
-        return set()
+        return KevCatalog()
     try:
         doc = json.loads(Path(path).read_text())
     except json.JSONDecodeError:
-        return set()
-    return {v.get("cveID") for v in (doc.get("vulnerabilities") or []) if v.get("cveID")}
+        return KevCatalog()
+    entries = {v["cveID"]: {"due_date": v.get("dueDate"), "date_added": v.get("dateAdded")}
+               for v in (doc.get("vulnerabilities") or []) if isinstance(v, dict) and v.get("cveID")}
+    return KevCatalog(entries, entries)
+
+
+def kev_dates(kev_cves, cve, now):
+    """(due_at, date_added, overdue) for a KEV finding from the catalog, or
+    (None, None, False). The catalog's due date is a day; it is read as the
+    start of that day, UTC, the earlier reading."""
+    entry = (getattr(kev_cves, "entries", None) or {}).get(cve) if cve else None
+    due = _ts(f"{entry['due_date']}T00:00:00+00:00", None) if entry and entry.get("due_date") else None
+    if due is None:
+        return None, (entry or {}).get("date_added"), False
+    return due.isoformat(), entry.get("date_added"), now >= due
 
 
 class EpssScores(dict):
@@ -2093,8 +2116,17 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # VER-RPT-VDT per-vulnerability record fields. History and reductions come
         # from the ledger (REQ-PAI-2); the deadline runs whatever the disposition.
         is_overdue = d["is_overdue"]
+        # VDR-TFR-KEV: a known exploited vulnerability is remediated by the
+        # catalog's due date, even when fully mitigated: the earlier of that and
+        # the Class C deadline, and overdue once the catalog's date has passed.
+        kev_due_at, kev_added, kev_overdue = kev_dates(kev_cves, f.get("cve"), now) if is_kev else (None, None, False)
+        if kev_due_at and due_at:
+            due_at = min(due_at, kev_due_at, key=lambda x: _ts(x, now))
+        elif kev_due_at and needs_remediation:
+            due_at = kev_due_at
+        is_overdue = is_overdue or kev_overdue
         next_reduction = ({"estimated_time": due_at, "target_pain": "remediated"}
-                          if sla is not None else None)
+                          if sla is not None or kev_due_at else None)
         overdue_explanation = (block_reason if block_this
                                else f"within Class C SLA: {days_since_detected}d of {sla}d allowed"
                                if sla is not None
@@ -2133,6 +2165,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
             "technical_impact": technical_impact(f),
             "is_kev": is_kev,
+            **({"kev_due_at": kev_due_at, "kev_date_added": kev_added, "kev_overdue": kev_overdue}
+               if is_kev and (kev_due_at or kev_added) else {}),
             "completed_reductions": hist["completed_reductions"],
             "next_reduction": next_reduction if needs_remediation else None,
             "current_disposition": d["label"] or "open",

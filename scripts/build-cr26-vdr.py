@@ -327,6 +327,11 @@ def detail(f, recs=None, accepted=False):
         "detectedAtBasis": detected_basis,
         "firstReportedAt": _ts(f.get("first_detected"), f"{tid}.first_detected"),
     }
+    if f.get("is_kev"):
+        # VDR-TFR-KEV: the CISA catalog's remediation date and whether it passed.
+        ext["kevDueAt"] = f.get("kev_due_at")
+        ext["kevDateAdded"] = f.get("kev_date_added")
+        ext["kevOverdue"] = bool(f.get("kev_overdue"))
     if f.get("affected_resources"):
         ext["affectedResources"] = list(f["affected_resources"])
     if projection_basis:

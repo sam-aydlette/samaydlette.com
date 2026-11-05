@@ -1,0 +1,19 @@
+{
+  "_note": "Known-bad: a Grype match whose related CVE is in the KEV catalog. The deploy must stop before apply.",
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "GHSA-xxxx-yyyy-zzzz"
+      },
+      "relatedVulnerabilities": [
+        {
+          "id": "CVE-2099-1111"
+        }
+      ],
+      "artifact": {
+        "name": "thumbnailer",
+        "version": "3.1.0"
+      }
+    }
+  ]
+}

@@ -1174,6 +1174,16 @@ jobs:
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
           --output detection.json
 
+    # VDR-CSO-AKE: nothing with a known exploited vulnerability is activated.
+    # Runs before the plan, the apply and the website sync (G1 in the VDR build
+    # runs after them).
+    - name: KEV gate before apply (VDR-CSO-AKE)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/kev-gate.py --kev kev-catalog.json \
+          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
+          --dependabot dependabot-alerts.json
+
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
       run: terraform plan -lock-timeout=300s -out=tfplan
