@@ -223,6 +223,10 @@
     "divergence": {
       "description": "Result of comparing this runtime evaluation against the deploy gate's published verdict for the same system. Emitted by the runtime emitter only; absent from deploy-time signals. `regressions` lists KSIs the deploy gate published as passing that this evaluation found failing \u2014 a genuine disagreement about the resource. `unassessed` lists KSIs this evaluation could not reach a verdict on (category:input violations such as resource_read_error), which is an observer fault and must never be treated as drift.",
       "$ref": "#/$defs/divergence"
+    },
+    "run_history": {
+      "description": "Runtime emitter only: a bounded history (at most 400 entries, oldest first) of every runtime run, carried inside the signed payload so a period report can list each run even after the signal it came from was replaced (VER-RPT-PER). The emitter carries the history forward only from a previous signal whose signature verifies against its own key; otherwise the history restarts and the first entry's history_reset says why.",
+      "$ref": "#/$defs/run_history"
     }
   },
   "$defs": {
@@ -676,6 +680,54 @@
           "type": "integer",
           "minimum": 0,
           "description": "Failing violations carrying no ksi_ids, so attributable to no KSI."
+        }
+      }
+    },
+    "run_history": {
+      "type": "array",
+      "maxItems": 400,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "signal_id",
+          "emitted_at",
+          "validations",
+          "failed",
+          "divergence"
+        ],
+        "properties": {
+          "signal_id": {
+            "type": "string",
+            "description": "The run's signal_id."
+          },
+          "emitted_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validations": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Validations the run carried."
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Validations with result fail."
+          },
+          "unassessed": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Validations with a category input violation (could not read the configuration)."
+          },
+          "divergence": {
+            "type": "string",
+            "description": "The run's divergence.status (converged, degraded, diverged), or unknown."
+          },
+          "history_reset": {
+            "type": "string",
+            "description": "Present on the first entry after a restart: why earlier runs were not carried forward."
+          }
         }
       }
     }
