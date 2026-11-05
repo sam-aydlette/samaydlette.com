@@ -639,9 +639,26 @@
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Partially Implemented",
-      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration for object stores and the distribution daily (ksi-signal-runtime.json).",
-      "evidence": [],
-      "gap": "Class C requires at least two automated methods for each KSI. The runtime check covers only some component types, and no record counts the automated methods per KSI to show two exist for each.",
+      "implementation": "Two automated methods per KSI, as the SDR counts them: the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, now covering IAM, identity, keys, logging, network, compute, API and packages) and the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect. On the 2026-11-05 plan and a local run of the runtime readers, 43 of 46 KSIs have both.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_validation_mapping.py::test_every_plan_validated_type_has_a_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
+      ],
+      "gap": "SCR-MIT and SCR-MON have one method (runtime package integrity; no plan rule touches packages) and CED-RAT has none (training records, no machine component). To close: either the SDR counts a fresh, verified VDR scan as a second method for KSIs with package components, and a governed automated check of the training-record attestation for CED-RAT (a counting change in scripts/build-sdr.py, owned by the SDR work), or the operator records a decision accepting fewer than two methods for these KSIs.",
       "closes_with": [
         "W7"
       ]
@@ -1261,12 +1278,49 @@
     },
     {
       "frr_id": "VDR-CSO-DET",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/evidence-nightly.yml (twice-daily cron, 07:17/19:17): job 'SAST (Checkov + tfsec)' over all Terraform; step 'Scan application and Lambda dependencies (Syft SBOM + Grype)' over Silk Reeling Python/JS, compliance Lambda and a11y tooling; Dependabot alerts, CISA KEV and FIRST EPSS via scripts/fetch-detection-feeds.sh; 'Reconciliation gate' runs scripts/reconcile.py --live (live completeness (a) and tag (i) invariants). .github/workflows/zap-dast.yml: weekly ZAP baseline on https://samaydlette.com. infrastructure/lambda/index.js: daily runtime OPA (Wasm) re-validation. VDP: https://samaydlette.com/.well-known/security.txt (fetched). Live vdr-report.json methodology.detection (fetched 2026-11-05): all feeds ok.",
-      "evidence": [],
-      "gap": "Some techniques and resources aren't covered. (1) No DAST of the Cognito-gated Silk Reeling API Gateway/Lambda; ZAP is unauthenticated and targets the static site only (zap-dast.yml header: authenticated coverage is a 'Phase 2 follow-up'). (2) No SAST of first-party application code (Silk Reeling Python Lambda, SPA JS, compliance Lambda): no CodeQL/Semgrep/Bandit anywhere in .github/. (3) No penetration testing, ever. (4) No cloud-native threat/vulnerability detection (GuardDuty, Inspector, IAM Access Analyzer, Security Hub: none in infrastructure/*.tf). (5) 'Persistently verifying and validating that resources operate as intended' covers only 5 live components at runtime (see VDR-TFR-MVX) and nothing for non-machine resources (see VDR-TFR-NMV). (6) Inventory gaps: 5 of 35 live findings name IAM policies that don't resolve to an inventory component (irv_basis 'unresolved'). To close: Add authenticated ZAP (or API scan from the OpenAPI/route list) against the Silk Reeling API with a test Cognito user; add CodeQL or Semgrep on scripts/, the Lambdas and the SPA, ingested into the VDR; enable IAM Access Analyzer (free) and either Inspector Lambda scanning or GuardDuty, ingested as a VDR source; commission or perform and record an annual penetration test of the app; close the inventory gaps so every finding resolves.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources quarterly (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_api_scan_is_authenticated_and_never_prints_the_token"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_codeql_covers_this_repos_code_and_the_silk_reeling_app"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_codeql_zap_api_ingest.py::test_codeql_finding_is_published_in_the_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_components_no_technique_reached_this_month_are_uncovered"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP API Scan (authenticated)"
+        },
+        {
+          "kind": "step",
+          "ref": "codeql.yml#Analyze"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -1422,12 +1476,37 @@
     },
     {
       "frr_id": "VDR-TFR-MVX",
-      "status": "Partially Implemented",
-      "implementation": "Runtime emitter daily (infrastructure/main.tf:809, variables.tf:144 rate(1 day)), live ksi-signal-runtime.json emitted 2026-11-05T14:01:20Z: 5 validations (4 object stores + CDN), all pass; divergence 'converged' over 46 KSIs. reconcile.py --live twice daily: live completeness and tags for every in-boundary resource. Watchdog alarms if the runtime signal is >26h old.",
-      "evidence": [],
-      "gap": "Of the ~30 cloud components in the live inventory (3 functions, API Gateway, Cognito, 6 IAM roles, 17 IAM policies, 4 KMS keys, log groups, alarms, DNS, SNS, SQS, DynamoDB, OIDC provider), only 5 have their configuration status verified and validated within 3 days; the rest get existence/tag checks only. Their full validation (52 validations) lives in the deploy-time signal, which may be up to 30 days old (freshness-config.json). Packages/html artifacts are covered by Grype/ZAP, not V&V. To close: Extend the runtime emitter (or a nightly OPA pass) to read live config for every machine component type and evaluate it against the same Rego, so ksi-signal-runtime.json carries one validation per machine component. Add a reconcile invariant that fails when any machine component lacks a runtime validation younger than 72h.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The runtime emitter (infrastructure/lambda, daily, signed with a KMS ECDSA key) re-validates every machine-based component live against the same gate policy the deploy enforces: live readers for each of the 20 machine types in infrastructure/schemas/runtime-vv-config.json (IAM roles, groups and the OIDC provider, Lambda, API Gateway, Cognito, KMS, log groups, SNS, SQS, alarms, rules, CloudTrail, DynamoDB, Route 53, ACM, S3, CloudFront), with read-only grants scoped by ARN. Reconciliation invariant (m) in the nightly fails closed unless every machine component was validated by a verified runtime run within 72 hours (Class C: 3 days); a denied read is unassessed, never a pass. Packages, static content and external services are excluded with their reasons (scans, content hashing, outside the boundary).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_unverified_or_stale_signal_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_missing_runtime_signal_fails_main"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_every_live_inventory_type_is_classified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_machine_type_has_a_reader_or_existing_check"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
@@ -1502,22 +1581,68 @@
     },
     {
       "frr_id": "VDR-TFR-PDD",
-      "status": "Partially Implemented",
-      "implementation": "Twice daily: reconcile.py --live (evidence-nightly.yml:605) enumerates live AWS for completeness (a) and classification tags (i); Grype on all dependency trees; Checkov/tfsec on source. Daily: runtime emitter (infrastructure/lambda/index.js, rate(1 day)) re-evaluates live S3 buckets and the CloudFront distribution against the deploy Rego and computes divergence (live ksi-signal-runtime.json: 5 validations, divergence 'converged', 46 KSIs compared). Hourly watchdog for evidence availability.",
-      "evidence": [],
-      "gap": "Drift detection on live configuration covers only the 4 buckets and the distribution. Live drift in IAM roles/policies (privileges), the 3 Lambda functions (code/config), API Gateway, Cognito, KMS, DNS, Secrets isn't detected within 14 days: those are re-validated only on a human-initiated deploy (deploy-time ksi-signal.json, 52 validations, which freshness-config allows to be 30 days old) and by existence/tag checks. scripts/check-silk-runtime-config.py runs only in the deploy. No document says which resources are 'likely to drift'. To close: Extend buildRuntimeSignal (infrastructure/lambda/index.js:299) to read and evaluate live config for IAM roles/policies, Lambda (code SHA, env, runtime), API Gateway routes/authorizers, Cognito pool settings and KMS policies against the same Wasm policy; or run check-silk-runtime-config.py and a live OPA pass in the nightly. Record which component types are classed 'likely to drift' in the inventory.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "infrastructure/schemas/runtime-vv-config.json marks each machine type likely_to_drift or not, with the reason, and sets drift_window_days 14. Every machine type, drifting or not, is re-validated live daily by the runtime emitter, and invariant (m) fails the nightly when any machine component goes 72 hours without a verified run; dependency trees are scanned twice daily and IaC on every change. A config that would weaken the window is rejected.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_config_that_would_weaken_the_gate_is_rejected"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PSD",
-      "status": "Partially Implemented",
-      "implementation": "Every 12h: Grype over all dependency SBOMs, Checkov/tfsec over all IaC (evidence-nightly.yml). Daily: runtime OPA over live S3/CloudFront (infrastructure/lambda/index.js). Weekly: ZAP baseline.",
-      "evidence": [],
-      "gap": "Over a 3-day window, live machine resources other than S3/CloudFront get no vulnerability detection: Lambda functions, API Gateway, Cognito, IAM. DAST of the web surface runs every 7 days, not 3, and the API never. To close: Run the ZAP baseline (and the authenticated API scan once built) at least every 3 days, e.g. in the nightly or a 2-day cron with the --zap-max-age-days window set to 3. Extend runtime live-config detection to all machine component types (see PDD).",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Similar machine-based resources are sampled well inside 3 days: the runtime emitter re-validates every machine component daily (not a sample: all of them), invariant (m) enforces 72 hours; CodeQL and the authenticated ZAP API scan run daily and after each deploy and the detection gate fails the run when either is older than 72 hours; the ZAP site scan is held to 3 days (--zap-max-age-days 3, fractional days).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detection_gate.py::test_codeql_and_zap_api_windows_are_the_class_c_three_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_zap_runs_at_least_every_three_days_and_after_each_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_denied_reads_are_unassessed_not_findings"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_zap_age_is_not_floored_to_whole_days"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
@@ -1878,8 +2003,8 @@
     },
     {
       "frr_id": "VER-RPT-PER",
-      "status": "Partially Implemented",
-      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy. The VDT and AVI each cover the period since the previous report and carry an activity summary for it (providerExtensions.activitySummary, and an 'Activity this period' section in the .md): detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions recorded and closed, every scan and feed the build read with its time (VDR build, Grype, Dependabot, Checkov, tfsec, ZAP, KEV, EPSS), and the runtime V&V run the build read, linked by URI and signal ID with its validation and failure counts (counted only when its signature verifies).",
+      "status": "Implemented",
+      "implementation": "Reports are refreshed by every deploy and twice-daily nightly and each summarizes all activity since the previous report: the VDT and AVI carry providerExtensions.activitySummary for their period (detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions, every scan and feed run), and the monthly report covers the month. Runtime V&V runs are all counted: the emitter signs a bounded run history into its signal, carried forward only from a previous signal that verifies, and the VDR passes it to the period reports. Activities outside the pipeline (VDP reports, penetration tests, assessments) come from data/vdr-activities.json, with 'none this period' when none.",
       "evidence": [
         {
           "kind": "test",
@@ -1887,16 +2012,40 @@
         },
         {
           "kind": "test",
-          "ref": "tests/test_cr26_vdr.py::test_an_unverified_runtime_run_is_linked_but_not_counted"
+          "ref": "tests/test_cr26_vdr.py::test_every_retained_runtime_run_in_the_period_is_counted"
         },
         {
           "kind": "test",
-          "ref": "tests/test_cr26_vdr.py::test_the_markdown_reports_carry_the_activity_and_link_the_runtime_results"
+          "ref": "tests/test_vdr_monthly.py::test_the_signed_run_history_the_vdr_carries_is_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_tampered_previous_restarts_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_history_is_bounded_keeping_the_newest"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
         }
-      ],
-      "gap": "The runtime emitter publishes only its latest run, so a runtime V&V run replaced before the next VDR build is not summarized; and activity outside the pipeline (VDP reports, penetration tests, assessments) is not in the summary (see VER-RPT-HLO). To close: retain each runtime run's result (or have each report list every run since the previous report), and add the non-pipeline activities to the summary.",
-      "closes_with": [
-        "W7"
       ]
     },
     {
