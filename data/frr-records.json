@@ -85,176 +85,325 @@
     },
     {
       "frr_id": "CCM-OCR-AFS",
-      "status": "Not Implemented",
-      "implementation": "No summary section in build-ocr.py or the live OCR; declared N/A (build-ocr.py:106-110).",
-      "evidence": [],
-      "gap": "No anonymized/desensitized summary of feedback, questions and answers, and no stated delivery method. To close: Add a 'feedback summary' section to the OCR (and an addendum file) built from the FBM channel, with a redaction step for names/agency identifiers; when nothing was received, state 'no feedback received on OCR <id>'.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each OCR carries an anonymized, desensitized summary of the feedback and questions on the previous issued report, with the operator's answers (providerExtensions.feedback.summaryOfPreviousReport, from data/ocr-feedback.json), or says none were received; the OCR's sensitivity screen rejects names, handles and addresses (DEC-102).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_feedback_summary_covers_the_previous_issue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_feedback_summary_with_more_items_than_received_fails"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-102"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-AVL",
-      "status": "Partially Implemented",
-      "implementation": "Live https://samaydlette.com/.well-known/ongoing-certification-report.json + .md (fetched 2026-11-05), built by scripts/build-ocr.py in deploy-with-opa.yml step 'Build Ongoing Certification Report' (line ~1555); all eight summary sections present (build-ocr.py:91-105).",
-      "evidence": [],
-      "gap": "The OCR is rebuilt on every deploy rather than issued quarterly: there is no frozen, dated, signed issue per period, and no index of past issues.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "On each calendar issue date the maintainer issues the OCR covering the period since the previous issue: frozen ocr-issue-<date>.json and .md, signed, never rewritten, listed with its sha256 in /.well-known/ocr-issues.json. The rolling OCR between issues carries all eight summaries, the incidents from the incident register (or an attestation of none), and the review schedule.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_first_run_on_an_issue_date_freezes_the_report_and_snapshots_the_package"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_issued_report_is_carried_over_and_never_rebuilt"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_reportable_incidents_come_from_the_register_and_exercises_say_so"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-FBM",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:106-110 and the live OCR state the feedback channel is 'N/A absent a consuming agency'; no feedback link in the OCR, CPO or trust center; security.txt contact is the only channel and is not tied to the OCR.",
-      "evidence": [],
-      "gap": "No asynchronous feedback/question mechanism for each OCR, and no documented way to access it (artifact missing). To close: Stand up a per-report asynchronous channel (e.g. a GitHub Discussions category or issue form per OCR issue, with a private alternative address for agencies), link it from each OCR, the CPO and the trust center.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each OCR links its own asynchronous feedback channel, a GitHub issue form (.github/ISSUE_TEMPLATE/ocr-feedback.yml) prefilled with the report's date, with the security contact for anything sensitive; the CPO and the issue index link it too (DEC-102).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-102"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-LSI",
-      "status": "Partially Implemented",
-      "implementation": "The OCR carries SCN summaries, decision titles and the accepted findings already public in the VDR, and passes the publication redaction gate (no AWS account ID) on every deploy.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. No documented sensitivity determination per issue and no screen beyond account IDs (ARNs, IPs, email addresses, secret-like strings). SCN text is copied verbatim.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Before the OCR is written, every string in it passes a sensitivity screen (account IDs, email addresses outside the system's and FedRAMP's domains, IP addresses, AWS keys, tokens and private keys, @handles); a hit fails the build. The publication redaction gate checks it again before publishing. The public-release determination is DEC-101.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_sensitivity_screen_catches_each_kind"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_ocr_carrying_a_personal_address_is_never_built"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Ongoing Certification Report (CCM)"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-NRD",
-      "status": "Partially Implemented",
-      "implementation": "Live OCR json/md carry next_ongoing_certification_report_date 2027-02-04 (build-ocr.py:88).",
-      "evidence": [],
-      "gap": "The date is now+91 days recomputed on every deploy, so it is a moving value, not a committed target; it is published only inside the OCR, not with the other public Certification Data (CPO/trust center). To close: Derive the next date from the fixed cycle (last issued OCR + cycle), keep it stable between issues, and publish it in the CPO and trust-center.json as well.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The next OCR date comes from the fixed CCM calendar (infrastructure/schemas/ccm-calendar.json), stays the same between issues, and is published in the OCR, the CPO (serviceProperties.nextOngoingCertificationReportDate) and the issue index.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_next_dates_hold_steady_between_issues_and_move_on_the_issue_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_publishes_the_fixed_cycle_dates"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-RPS",
-      "status": "Partially Implemented",
-      "implementation": "OCR is public at /.well-known/ (fetched).",
-      "evidence": [],
-      "gap": "Permissive rule, exercised; but no recorded determination that public release will not adversely affect the offering. To close: Record the public-release determination (who, when, basis) in each OCR issue or in the CPO.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: each OCR is published in full and records the public-release determination (providerExtensions.publicRelease, DEC-101) after passing the sensitivity screen.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ],
-      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full; each issue will record the no-adverse-effect determination."
+      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101)."
     },
     {
       "frr_id": "CCM-OCR-SOR",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:34,54-55,88: rolling window recomputed per deploy.",
-      "evidence": [],
-      "gap": "No regular 3-month cycle and no chosen phase within the quarter. To close: Pick fixed issue dates (e.g. mid-quarter: 15 Feb/May/Aug/Nov), encode them in config, and have the build issue the OCR only on those dates.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The OCR is issued on a regular 3-month cycle of fixed dates set in the CCM calendar, each a business day placed away from the beginning, middle and end of its quarter (late in the second month); the calendar is validated on every build and must keep two dates ahead.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_committed_calendar_is_valid"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-ACT",
-      "status": "Not Implemented",
-      "implementation": "No reviews held.",
-      "evidence": [],
-      "gap": "No additional agency-relevant information supplied in reviews. To close: Add a standing agenda item (e.g. upcoming roadmap, KSI trend, VDR trend) to the review template.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each Quarterly Review covers a standing agenda of agency-relevant items beyond the report (KSI trend, VDR trend, planned changes, upcoming roadmap), published with the OCR (DEC-103).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-103"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-MTG",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:106-110 / live OCR declare the Quarterly Review N/A; no meeting record, agenda or schedule anywhere in the repo.",
-      "evidence": [],
-      "gap": "No synchronous Quarterly Review has been scheduled or held. To close: Schedule a recurring quarterly review (video call) 3-10 business days after each OCR issue, prepare an agenda from the OCR, hold it even if no agency attends, and keep minutes; publish the schedule.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The operator hosts a synchronous Quarterly Review by video call 5 business days after each OCR issue, open to all necessary parties who register, held even if nobody registers (DEC-103). The schedule is the published calendar file and appears in the OCR and CPO.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-103"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_is_five_business_days_after_issue_skipping_thanksgiving"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-NID",
-      "status": "Partially Implemented",
-      "implementation": "No Quarterly Review has been held, so nothing has been disclosed; no content-review procedure exists.",
-      "evidence": [],
-      "gap": "No pre-meeting sensitivity review procedure for review content. To close: Add a review checklist (same screen as OCR-LSI) for slides/agenda before each review.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Content for each Quarterly Review is the agenda published in the OCR, which passes the sensitivity screen, and the operator screens anything else shown against the same list before the review (DEC-106).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-106"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_sensitivity_screen_catches_each_kind"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-NRD",
-      "status": "Partially Implemented",
-      "implementation": "Live OCR next_quarterly_review_date 2027-02-04 (build-ocr.py:89).",
-      "evidence": [],
-      "gap": "Same moving now+91 value as the OCR date (so the review date equals the report date, contradicting QTR-SAR); not published with the CPO/trust center; no review actually scheduled for that date. To close: Derive the review date from the OCR issue date + 3-10 business days, keep it stable, publish it in CPO and trust center, and tie it to the .ics.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The next Quarterly Review date is the latest issue's review date from the CCM calendar (issue + 5 business days, holiday-aware), stable between issues, published in the OCR, the CPO and the calendar file.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_next_dates_hold_steady_between_issues_and_move_on_the_issue_date"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-REG",
-      "status": "Not Implemented",
-      "implementation": "No registration link or .ics anywhere in website/ or the published artifacts.",
-      "evidence": [],
-      "gap": "No registration URL or calendar file (artifact missing). To close: Generate an .ics per review from the cycle config and publish it (e.g. /.well-known/quarterly-review.ics) plus a registration form link; reference it from the OCR and CPO.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event and the OCR and CPO link the registration form (.github/ISSUE_TEMPLATE/quarterly-review-registration.yml).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_calendar_file_is_rfc5545"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-RTP",
-      "status": "Partially Implemented",
-      "implementation": "No reviews held, so no third parties invited; no attendance policy exists.",
-      "evidence": [],
-      "gap": "No documented invitation policy limiting third parties. To close: Document an attendee policy (agencies and FedRAMP; third parties only with stated relevance) in the review procedure.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Invitations go to agencies, FedRAMP and the assessor; other third parties only with specific relevance, recorded with the invitation; the registration form states the policy (DEC-105).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-105"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-RTR",
-      "status": "Not Implemented",
-      "implementation": "No reviews held; no recording/transcript procedure.",
-      "evidence": [],
-      "gap": "No recording or transcript supplied to necessary parties. To close: Record or transcribe each review and distribute through the FBM channel; keep them with the OCR issue.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The operator records or transcribes each Quarterly Review and supplies it to the parties who registered (DEC-104).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-104"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-SAR",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:88-89 set the review date equal to the report date (0 business days after).",
-      "evidence": [],
-      "gap": "Review not scheduled 3-10 business days after the OCR release. To close: Compute the review date as OCR issue + N business days with 3<=N<=10 (holiday-aware) and assert it in a test.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each review is scheduled 5 business days after its OCR issue, counting only weekdays that are not federal holidays; the calendar rejects an offset outside 3 to 10 business days.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_is_five_business_days_after_issue_skipping_thanksgiving"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-SCR",
-      "status": "Not Implemented",
-      "implementation": "No review content exists.",
-      "evidence": [],
-      "gap": "No quarterly review has been held yet, so there is no content to publish.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: the content prepared for each review (its agenda and the report it reviews) is published with the OCR after the no-adverse-effect determination (DEC-101).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ],
-      "may_rationale": "Will be exercised: content prepared for each quarterly review will be published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check."
+      "may_rationale": "Exercised: content prepared for each quarterly review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101)."
     },
     {
       "frr_id": "CCM-QTR-SRR",
-      "status": "Not Implemented",
-      "implementation": "No recordings exist.",
-      "evidence": [],
-      "gap": "No quarterly review has been held yet, so there is no recording to publish.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: a recording or transcript published beyond registered parties has all agency comments, questions and names removed first and passes the same no-adverse-effect check (DEC-104).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-104"
+        }
       ],
-      "may_rationale": "Will be exercised: each review's recording or transcript will be published after all agency comments, questions and names are removed, so the review is as open as the rest of the package."
+      "may_rationale": "Exercised: each review's recording or transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package (DEC-104)."
     },
     {
       "frr_id": "CDS-CSO-AVR",
@@ -333,33 +482,93 @@
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Partially Implemented",
-      "implementation": "offering.json:3 fedramp_id flows into certification-overview-package.json and certification-package-overview.json (build-cpo.py:80).",
-      "evidence": [],
-      "gap": "No FedRAMP ID is assigned. Even once assigned, the wiring would not put it in 'all certification data': build-ocr.py:83 hardcodes its own placeholder string; the SDR, VDR reports, availability feed, policy index, SCN records and ksi-signal carry no FedRAMP ID field. To close: Make offering.json the single source of fedramp_id and stamp it into every generated artifact (OCR, SDR, VDR/VDT/AVI, SCN, availability, policy index, trust-center.json); add a reconcile invariant that every published artifact carries the same FedRAMP ID.",
+      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_gate_fails_a_report_with_another_fedramp_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_the_sdr_carries_the_offerings_fedramp_id"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-100"
+        }
+      ],
+      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, the availability feed, the policy index, the trust-center data, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
       "closes_with": [
-        "W3",
-        "sam"
+        "W2",
+        "W5",
+        "W6",
+        "W8"
       ]
     },
     {
       "frr_id": "CDS-CSO-FRC",
-      "status": "Not Implemented",
-      "implementation": "No slot or process for FedRAMP Certification Reports: build-cpo.py PACKAGE_CONTENTS (L30-40) has no entry; no docs/ procedure.",
-      "evidence": [],
-      "gap": "No FedRAMP Certification Report has been received, and there is no mechanism to publish one unmodified within 2 weeks. To close: Add a package slot (store received report verbatim under data/, publish byte-identical with its hash, signed) and a runbook with a 2-week clock tracked as a decision/deadline item.",
-      "closes_with": [
-        "W4",
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "FedRAMP Certification Reports received are stored verbatim under data/fedramp-certification-reports/ with the sha256 and date of receipt in register.json. Each deploy checks every report against its sha256 (an edited report fails the deploy), publishes it byte-identical under /.well-known/fedramp-certification-reports/, and writes a signed index recording when it was first published and whether that was within 2 weeks of receipt.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_committed_reports_are_published_byte_identical"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_modified_or_unregistered_report_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Certification Reports published unmodified (simulated FedRAMP)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Publish FedRAMP Certification Reports byte-identical"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-certification-reports.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "fedramp",
+        "how": "No FedRAMP counterpart exists. The one report is a plainly fake stand-in the operator wrote, flagged simulated in the register and the index."
+      }
     },
     {
       "frr_id": "CDS-CSO-HAD",
-      "status": "Not Implemented",
-      "implementation": "No snapshot mechanism: every artifact (including ongoing-certification-report.json) is overwritten in place each deploy; S3 versioning exists on the website bucket but versions are not exposed and are subject to lifecycle expiry (infrastructure/main.tf:148-200).",
-      "evidence": [],
-      "gap": "No snapshot of the certification data aligned to each OCR, and no retention for the duration of certification, and no access explanation. To close: At each OCR date, freeze the full package into an immutable, dated path (e.g. /.well-known/snapshots/2027-02-04/ with a manifest + signatures; S3 Object Lock), list snapshots in the trust center, and document access.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "On each OCR issue date the maintainer snapshots the certification data as published (with signatures) to /.well-known/snapshots/<date>/ and writes a signed manifest of sha256s, listed in /.well-known/ocr-issues.json with an explanation of access; an issue fails if the core files are missing. The publishing role cannot delete, issued files are never overwritten, and the website sync excludes /.well-known/, so snapshots stay for the duration of certification.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_first_run_on_an_issue_date_freezes_the_report_and_snapshots_the_package"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_no_issue_without_the_certification_data_to_snapshot"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_tampered_issue_index_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
@@ -393,7 +602,7 @@
         },
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#Build CDS certification-data artifacts (overview, availability, policy index)"
+          "ref": "deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar)"
         },
         {
           "kind": "artifact",
@@ -412,13 +621,33 @@
     {
       "frr_id": "CDS-CSO-PUB",
       "status": "Partially Implemented",
-      "implementation": "certification-overview-package.json and .md under /.well-known/ (scripts/build-cds-overview.py from data/cds/offering.json): service and deployment model, business category, sales and security contacts, product website, description, service list, documentation and trust-center URLs. The logo is a real PNG at /assets/images/brand/logo.png and /trust/ serves its index (W1).",
-      "evidence": [],
-      "gap": "No UEI (no SAM.gov registration) and no FedRAMP ID (none exists; the provider name and acronym stand in, CDS-CSO-FID). The next-OCR date is now+91 days on every deploy, so it recedes and never arrives (W4 fixes the calendar). The secure configuration guide is not served from the site (W10). The documentation overview and the trust-center link are one field. Current assessment service: none. To close: Register in SAM.gov for a UEI; issue the OCR on a fixed calendar; serve the secure configuration guide from the site; split the documentation overview from the trust-center link.",
+      "implementation": "The CPO (JSON and Markdown) publishes the FedRAMP ID (simulated fallback), service and deployment model, business categories, a UEI (simulated, flagged sam-gov), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its own security category, the next OCR date from the fixed calendar, the documentation overview and the current assessment service (none).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_publishes_the_fixed_cycle_dates"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated"
+        }
+      ],
+      "gap": "Group 5 adds the secure configuration guidance and the trust-center entry to the CPO and the assessor fields.",
       "closes_with": [
-        "W4",
-        "W10",
-        "sam"
+        "W8",
+        "W10"
       ]
     },
     {
@@ -466,12 +695,25 @@
     },
     {
       "frr_id": "CDS-CSO-SVC",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/certification-overview-package.json services[] (2 entries) + .md table; source data/cds/offering.json services.",
-      "evidence": [],
-      "gap": "List exists and names the two services, but security category is a uniform label ('FIPS-199 Moderate (FedRAMP 20x Class C)') rather than each service's own category (the system categorization is C low / I moderate / A low; component C values range not-applicable..moderate). It does not say what is NOT included (e.g. the optional LLM feedback is mentioned, but third-party-hosted podcast audio, the MediaPipe CDN/model hosts, newsletter/feed are not classified in or out). No separate human-readable page on the trust center. To close: Give each service its own C/I/A category derived from the inventory components it contains, add an explicit 'not included' list, and render the list on the trust page.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The CPO lists each service (certifiedServices) with its own FIPS 199 category, high-water mark and rationale, and the boundary groups it is made of (providerExtensions.services), plus an explicit list of what is not included (providerExtensions.notIncluded); its Markdown rendering shows the same table. The builder fails when a service's category exceeds the system's or names a boundary group that is not in the boundary classification.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_each_service_has_its_own_category_and_the_list_says_what_is_not_included"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_service_list_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
@@ -824,12 +1066,25 @@
     },
     {
       "frr_id": "CPO-CSO-MTD",
-      "status": "Partially Implemented",
-      "implementation": "certification-package-overview.json accountable_official (name, title, email) and metadata.last_updated / source_of_update (build-cpo.py:66-72).",
-      "evidence": [],
-      "gap": "Version is the constant 'live (regenerated each deploy)' (build-cpo.py:69), which identifies nothing; fields are not in the schema's names. To close: Use a real version (e.g. semver bumped on content change, or commit SHA + signal_id) and map to the schema's metadata fields.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The CPO carries metadata.accountableOfficial (name, title, contact), metadata.version (semver: unchanged content keeps its version, changed content bumps it, judged by a sha256 of the content), metadata.lastUpdated and metadata.updateSource.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_version_is_semver_and_bumps_only_on_change"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
@@ -845,22 +1100,56 @@
     {
       "frr_id": "CPO-CSO-OVR",
       "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/certification-package-overview.json + .md (scripts/build-cpo.py).",
-      "evidence": [],
-      "gap": "Does not validate against FedRAMP's CPO schema (vendored infrastructure/schemas/fedramp-2026-06-24/...certification-package-overview...: running scripts/_fedramp_schema.validate on the live file: wrong $schema, missing serviceIdentification, serviceProperties, contactInformation) even though its 'schema' field names it. Of the required content: CDS-CSO-PUB is only linked (and partial); IRP only linked; MAS-CSO-IIR is a count and a link; MAS-CSO-FLO and MAS-CSO-TPR are absent (only named in a 'reference' string); CMU-CSO-CMD is partial; IVV-CSO-ICP is 'N/A'. To close: Rebuild the CPO in FedRAMP's schema shape (serviceIdentification, serviceProperties, contactInformation, assessor, certifiedServices, thirdPartyInformationResources), validate it with write_validated() like the VDR reports, and include or reference the MAS flow/TPR data and the assessor's IVV material.",
+      "implementation": "scripts/build-cpo.py writes the CPO in FedRAMP's 2026-06-24 schema through write_validated: serviceIdentification, serviceProperties (with the package's repositories and the next OCR date), contactInformation, certifiedServices and metadata, with the services, cycle dates and simulated values under providerExtensions. It replaces certification-overview-package.json, which is retired.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "gap": "Group 5 adds the remaining required content: the assessor's overall summary (CPO-CSO-OSA), serviceProperties.secureConfigurationGuidance (SCG), thirdPartyInformationResources (MAS-CSO-TPR) and the trust-center repository entry.",
       "closes_with": [
-        "W3",
-        "sam"
+        "W8",
+        "W10"
       ]
     },
     {
       "frr_id": "CPO-CSX-CPM",
-      "status": "Partially Implemented",
-      "implementation": "The package (CPO, SDR, OCR, CDS artifacts) is rebuilt and published on every deploy to main; the VDR family is rebuilt twice daily.",
-      "evidence": [],
-      "gap": "Nothing guarantees a rebuild at least every 2 weeks: with no push to main for 14 days, the CPO, SDR and OCR go stale, and no freshness window covers them at that cadence.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "package-maintenance.yml runs daily, unattended, in its own environment: it fetches the published package and its inputs, verifies their signatures (fail closed), rebuilds the SDR, OCR and CPO at the deployed commit, signs and publishes them with a role that may write only those objects, and checks the edge serves them. Every deploy also runs it. The deploy's preflight fails if the role variable or environment is missing. The SDR, CPO and OCR have 14-day freshness windows (metadata.lastUpdated), alarmed by the evidence watchdog.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Package maintainer preflight"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_maintainer_runs_daily_and_the_package_windows_are_two_weeks_at_most"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_maintainer_preflight_fails_when_not_in_place"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
@@ -908,55 +1197,133 @@
     },
     {
       "frr_id": "FRC-CSO-FCP",
-      "status": "Partially Implemented",
-      "implementation": "Target stated: Class C, Moderate, 20x (system-profile categorization in ksi-signal.json; CPO class/impact). Conformance self-report: trust-center.json profile summary 18 implemented / 16 partial / 38 not yet.",
-      "evidence": [],
-      "gap": "The profile is identified, but 'apply all relevant FedRAMP Practices' is not met: most applicable rules are partially implemented or not implemented (see these records), and docs/cr26-applicability.md still records some families as not applicable.",
-      "closes_with": [
-        "W3",
-        "W10"
+      "status": "Implemented",
+      "implementation": "The target profile is identified: FedRAMP 20x, Program path, Class C, Moderate (data/system-profile.json; the CPO's certificationType and providerExtensions). Every applicable rule has a record in data/frr-records.json, and the deploy's completeness gate stops every deploy unless each record is Implemented or Not Applicable, so a deployed system applies all relevant FedRAMP practices.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP rules complete (no gaps)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_records.py::test_any_open_record_keeps_the_deploy_from_proceeding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_records.py::test_the_gate_runs_before_anything_is_applied"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSO-JSN",
       "status": "Partially Implemented",
-      "implementation": "The VDT, AVI and VDR history are written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas and published (C3a, #496). The CPO, SDR and OCR are JSON but in their own field names.",
-      "evidence": [],
-      "gap": "Live CPO, SDR and OCR do not validate against the vendored FedRAMP schemas (validate(): cpo 4 errors, sdr 6, ocr 11 — wrong $schema, missing required top-level objects), and their builders do not call write_validated. No CORS: a GET with Origin: https://example.org returns no Access-Control-Allow-Origin, so browser apps on other domains cannot read the JSON. To close: Port build-cpo.py, build-sdr.py and build-ocr.py to the FedRAMP schemas and write them via write_validated(); add a CloudFront response-headers policy for /.well-known/* with Access-Control-Allow-Origin: * (GET/HEAD/OPTIONS) and add a live check of the headers in verify-published.sh.",
+      "implementation": "The CPO, SDR and OCR, like the VDR family, are written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 FedRAMP schemas: a document that fails is not written and the deploy stops. The package submission re-validates all three.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_it_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        }
+      ],
+      "gap": "CORS and nosniff on public JSON: group 5.",
       "closes_with": [
-        "W3"
-      ]
-    },
-    {
-      "frr_id": "FRC-CSO-MRA",
-      "status": "Partially Implemented",
-      "implementation": "Reconciliation gate (scripts/reconcile.py; live reconcile-report.json: 10 invariants held) blocks publishing inconsistent artifacts; signed provenance; AI-drafted third-party records are held at 'not recorded' until decided (data/third-party-components.json _note).",
-      "evidence": [],
-      "gap": "The reconciliation gate checks the inventory but not the package's claims: the CPO, SDR and OCR do not validate against their schemas, and no check covers URL liveness, the CMK list against the inventory, a fixed OCR calendar, or one FedRAMP ID across artifacts. W1 corrected the logo, policy dates, AC policy and CMK list, each with a test.",
-      "closes_with": [
-        "W3",
         "W8"
       ]
     },
     {
+      "frr_id": "FRC-CSO-MRA",
+      "status": "Implemented",
+      "implementation": "The operator keeps the package accurate with gates that fail the deploy: schema validation of the CPO, SDR and OCR; the reconciliation gate (one impact level and one inventory binding across the CPO, SDR, VDR and signal); one FedRAMP ID across the reports (check-fedramp-id.py); the package submission's completeness check (every applicable rule exactly once, one program); the FedRAMP Certification Reports' recorded sha256s; and a test that every link the CPO and OCR give resolves to something this repository publishes. The CCM calendar is validated on every build. Third-party-supplied records stay 'not recorded' until the operator decides them.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_every_link_in_the_cpo_and_ocr_resolves"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        }
+      ]
+    },
+    {
       "frr_id": "FRC-CSO-PKG",
-      "status": "Not Implemented",
-      "implementation": "Package components exist publicly (CPO, SDR, OCR under /.well-known/), but nothing has been supplied to FedRAMP.",
-      "evidence": [],
-      "gap": "No package supplied to FedRAMP; the components that exist are incomplete (CPO/SDR/OCR fail FedRAMP schemas; SDR lacks FRR records and independent V&V). To close: Complete CPO/SDR/OCR per their rules and schemas, then submit through the FedRAMP application (FRC-APP-*).",
+      "status": "Partially Implemented",
+      "implementation": "scripts/submit-package.py checks the package (CPO, SDR and OCR each valid against FedRAMP's schema, every applicable rule in the SDR exactly once, one FedRAMP ID, certificationType 20x) and supplies it to a simulated FedRAMP intake: a function in the repository that returns a receipt. Nothing is sent. Each content change appends a signed entry to /.well-known/package-submission-log.json.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_complete_package_is_logged_once_per_content_change"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/package-submission-log.json"
+        }
+      ],
+      "gap": "The package is not complete until the CPO is (CPO-CSO-OVR: group 5's assessor summary, secure configuration guidance, third-party resources and trust-center entry). The submission mechanism is in place; the record moves to Implemented, simulated fedramp, when the CPO does.",
       "closes_with": [
-        "W3",
-        "sam"
+        "W8"
       ]
     },
     {
       "frr_id": "FRC-CSO-POP",
-      "status": "Partially Implemented",
-      "implementation": "Checked: no application for either program exists (no FedRAMP ID, no Marketplace listing, no application in repo/docs); docs/cr26-applicability.md targets 20x Class C.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. Labels mix programs (CPO/SDR impact_level_canonical 'Moderate (FedRAMP Rev 5; 20x Class C)'; SDR carries rev5_controls), which could read as seeking both. To close: When applying, apply for 20x only and state certificationType '20x Class C' alone in the CPO.",
-      "closes_with": [
-        "sam"
+      "status": "Implemented",
+      "implementation": "The offering seeks FedRAMP 20x Program Certification only (DEC-107). The CPO states certificationType 20x; the package submission refuses any other; no label in the CPO or OCR names Rev5 as a program (the SDR's Rev5 view is the Moderate control baseline the 20x evidence maps onto).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-107"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_seeks_20x_only"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_no_cpo_or_ocr_label_names_rev5_as_a_program"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        }
       ]
     },
     {
@@ -1208,25 +1575,57 @@
     },
     {
       "frr_id": "IVV-CSO-SEE",
-      "status": "Partially Implemented",
-      "implementation": "SDR 'validation' field present on 46 KSI records; runtime drift check (scripts/check-runtime-divergence.py, deploy-with-opa.yml:1139) and evidence-nightly.yml produce live effectiveness signals.",
-      "evidence": [],
-      "gap": "'validation' is one identical sentence for all 46 KSIs; no per-rule effectiveness results; FRR rules absent from the SDR; nothing supplied to an assessor. To close: Emit per-rule validation results (runtime check outcomes, test runs, drill records with dates) into the SDR for every applicable rule.",
-      "closes_with": [
-        "W3",
-        "W10"
-      ]
+      "status": "Implemented",
+      "implementation": "Every rule record in the SDR states, for each piece of evidence, how it validates the measure and on what cycle (a test on every pull request and deploy, a workflow step each run, a published artifact on its freshness cadence with the watchdog's alarm window, or a decision record with its review date); every KSI states its deploy-time validations and failures and its daily runtime re-validation. The SDR is signed and published, so an assessor reads it without a request.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_rule_states_how_each_piece_of_evidence_verifies_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_artifact_evidence_states_its_cycle"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+      }
     },
     {
       "frr_id": "IVV-CSO-SEI",
-      "status": "Partially Implemented",
-      "implementation": "Live security-decision-record.json: 46 rule_records (KSI only) each with a 'verification' field; 333 rev5_controls with mechanisms; scripts/verify-published.sh + docs/verification.md let a third party verify signatures/provenance.",
-      "evidence": [],
-      "gap": "The 'verification' text is the same boilerplate sentence for all 46 KSIs (1 distinct value), so it is not per-measure implementation evidence; the SDR has no records for FRR rules (CCM, SCN, SCG, AFC, IVV, VDR, etc.), so 'all applicable FedRAMP rules' have no implementation evidence; nothing has been supplied to an assessor. To close: Generate per-rule verification entries (KSIs and every applicable FRR) that cite the specific check/artifact and result (e.g. OPA rule id + pass/fail, file + line, live check output), and package them for assessor delivery.",
-      "closes_with": [
-        "W3",
-        "W10"
-      ]
+      "status": "Implemented",
+      "implementation": "Every rule record in the SDR names the test, workflow step, published artifact or decision record that verifies its implementation, and every KSI names its measures (the OPA rules annotated to it, by file and rule), the components they cover, how the annotations and the automation are verified, or why there is no measure and the risk. The SDR is signed and published with verification instructions (docs/verification.md, scripts/verify-published.sh).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_rule_states_how_each_piece_of_evidence_verifies_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_ksi_states_its_own_measures_cycle_and_validation"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+      }
     },
     {
       "frr_id": "IVV-CSO-STE",
@@ -1850,26 +2249,51 @@
     },
     {
       "frr_id": "SDR-CSX-KMT",
-      "status": "Not Implemented",
-      "implementation": "KSI results are published per run (ksi-signal-runtime.json) and VDR counts as a daily trend (vdr-trend.json).",
-      "evidence": [],
-      "gap": "The SDR carries no historical metrics per KSI: no 30-day summary and no summary up to a year. No per-KSI history is kept to build them from.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The SDR's daily metric data carries, for every KSI, its status, deploy-time validations and failures, automated methods and whether the runtime signal re-validated it, carried forward from the published SDR for up to a year; per KSI it summarizes the past 30 days and up to the past year. The unattended maintainer rebuilds the SDR daily, so there is a point for every day, not only deploy days.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_todays_point_carries_every_ksi"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_per_ksi_history_is_carried_forward_and_summarized_over_30_days_and_a_year"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_a_summary_counts_the_days_a_ksi_was_not_implemented"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
       "frr_id": "SDR-CSX-KSI",
-      "status": "Partially Implemented",
-      "implementation": "The SDR carries every KSI with its tests (the OPA rules annotated to it), its evidence, its status rule, and the number of automated methods in place.",
+      "status": "Implemented",
+      "implementation": "Each KSI in the SDR has its own statement, built from its own measures and results: the measures (OPA rules annotated to it) and their objective, or the reason there are none and the risk to customers; their cycle (every deploy against the plan, daily at runtime where re-validated); verification that the measures demonstrate the KSI (the annotation check) and that the automation is accurate (the rules' own tests with a coverage floor and the CLI/Wasm parity test), or that the reason for no measure is not accepted; and validation that they are in place (this deploy's validations and failures, the runtime re-validation).",
       "evidence": [
         {
           "kind": "test",
-          "ref": "tests/test_sdr.py::test_every_ksi_is_listed_with_tests_and_evidence"
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_ksi_states_its_own_measures_cycle_and_validation"
         },
         {
           "kind": "test",
-          "ref": "tests/test_sdr.py::test_a_ksi_is_implemented_only_when_its_measures_are_checked"
+          "ref": "tests/test_sdr_ksi_metrics.py::test_a_ksi_without_a_measure_says_why_and_the_risk"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_no_two_ksis_share_the_same_statement"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_every_ksi_is_listed_with_tests_and_evidence"
         },
         {
           "kind": "step",
@@ -1879,11 +2303,6 @@
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
         }
-      ],
-      "gap": "Validation text is generated per method, not written per KSI: 6 distinct statements across 46 KSIs, and the 9 KSIs with no automated method state no measures or cycle. To close: per-KSI statements of the measures, their cycle, and how their automation was verified and validated.",
-      "closes_with": [
-        "W7",
-        "W10"
       ]
     },
     {

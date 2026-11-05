@@ -110,6 +110,11 @@ def test_each_invalid_config_fails_closed(tmp_path, how):
         load_freshness_config(write(tmp_path, _break(good(), how)))
 
 
+# The unattended package maintainer (CPO-CSX-CPM) republishes the certification
+# package between deploys; what it writes needs a governed window too.
+MAINTENANCE_STEP = "Publish the certification package to /.well-known/"
+
+
 def _published(workflow, step_name, signatures=False):
     """Object names a workflow step writes under .well-known/, with for-loops
     expanded. Signatures, schemas and markdown renderings are covered through
@@ -137,15 +142,18 @@ def test_every_artifact_the_pipelines_publish_has_a_governed_window():
         r"^\s*attest (\S+)\s+scripts/", (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text(), re.M)}
     nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/") \
         | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog")
+    maintenance = _published("package-maintenance.yml", MAINTENANCE_STEP)
+    assert "ocr-issues.json" in maintenance and "quarterly-review.ics" in maintenance
     assert "ksi-signal.json" in deploy and "trust-center.json" in deploy and "vdr-report.json" in nightly
     assert len(attest) == 4  # the POA&M attestation is retired
-    missing = (deploy | attest | nightly | {"ksi-signal-runtime.json"}) - listed
+    missing = (deploy | attest | nightly | maintenance | {"ksi-signal-runtime.json"}) - listed
     assert not missing, f"published without a governed freshness window: {sorted(missing)}"
 
 
 def test_every_listed_signature_is_published():
     published = _published("deploy-with-opa.yml", "Publish all signed artifacts to /.well-known/", signatures=True) \
-        | _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/", signatures=True)
+        | _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/", signatures=True) \
+        | _published("package-maintenance.yml", MAINTENANCE_STEP, signatures=True)
     for a in good()["artifacts"]:
         if "signature" in a:
             assert a["signed"], a["path"]

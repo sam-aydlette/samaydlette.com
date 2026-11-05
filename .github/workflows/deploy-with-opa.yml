@@ -620,6 +620,17 @@ jobs:
       with:
         fetch-depth: 0
 
+    # The package maintenance and quarterly cycle records (CPO-CSX-CPM,
+    # CCM-OCR-AVL, CDS-CSO-HAD, SDR-CSX-KMT) describe the system after this
+    # deploy, so it fails here, before anything is applied or built, unless the
+    # unattended maintainer's role variable and environment are in place. The
+    # package-maintainer job below then proves the role publishes.
+    - name: Package maintainer preflight
+      env:
+        PACKAGE_MAINTENANCE_ROLE_ARN: ${{ vars.AWS_PACKAGE_MAINTENANCE_ROLE_ARN }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 scripts/check-package-maintainer.py
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
       with:
@@ -1580,15 +1591,18 @@ jobs:
     - name: Build Ongoing Certification Report (CCM)
       working-directory: infrastructure
       run: |
-        echo "Building Ongoing Certification Report (CCM-OCR-AVL: quarterly human-readable summary)..."
+        echo "Building Ongoing Certification Report (CCM-OCR-AVL, FedRAMP's OCR schema, fixed CCM calendar)..."
+        curl -sfL -o previous-ocr.json "https://samaydlette.com/.well-known/ongoing-certification-report.json" \
+          || echo '{}' > previous-ocr.json
         python3 ../scripts/build-ocr.py \
           --vdr vdr-report.json \
           --decisions ../data/decisions.json \
           --ksi-signal ksi-signal.json \
           --scn-register ../docs/scn/scn-register.csv \
+          --previous previous-ocr.json \
           --output ongoing-certification-report.json \
           --md-output ongoing-certification-report.md
-        jq '{next_ongoing_certification_report_date, next_quarterly_review_date}' ongoing-certification-report.json
+        jq '.providerExtensions.continuousMonitoring | {nextOngoingCertificationReportDate, nextQuarterlyReviewDate}' ongoing-certification-report.json
 
     # W8 edge checks (FRC-CSO-JSN, CDS-CSO-AVR, CDS-TRC-USH, CDS-TRC-ACL). Each
     # depends on something outside this deploy (the operator-applied bootstrap
@@ -1634,12 +1648,12 @@ jobs:
         python3 ../scripts/build-access-summary.py \
           --records edge-access-records --previous previous-access-summary.json
 
-    - name: Build CDS certification-data artifacts (overview, availability, policy index)
+    - name: Build CDS certification-data artifacts (availability, policy index, review calendar)
       working-directory: infrastructure
       run: |
-        echo "Building CDS certification-overview package, availability feed, policy index..."
-        python3 ../scripts/build-cds-overview.py \
-          --offering ../data/cds/offering.json --profile ../data/system-profile.json --ksi-signal ksi-signal.json
+        echo "Building availability feed, policy index, Quarterly Review calendar..."
+        # CCM-QTR-REG: the review calendar file, from the fixed CCM calendar.
+        python3 ../scripts/_ccm.py --ics quarterly-review.ics
         # Availability as measured by the independent monitor (read and checked above).
         python3 ../scripts/build-availability.py \
           --probe-feed availability-probe.json --ksi-signal ksi-signal.json
@@ -1732,10 +1746,43 @@ jobs:
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure
       run: |
-        echo "Building Certification Package Overview (CPO-CSO-OVR); with the SDR, the SSP replacement..."
+        echo "Building Certification Package Overview (CPO-CSO-OVR, FedRAMP's CPO schema); with the SDR, the SSP replacement..."
+        curl -sfL -o previous-cpo.json "https://samaydlette.com/.well-known/certification-package-overview.json" \
+          || echo '{}' > previous-cpo.json
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-          --overview certification-overview-package.json --ksi-signal ksi-signal.json
+          --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json
+
+    # CDS-CSO-FRC: every FedRAMP Certification Report received is published
+    # unmodified (its sha256 is checked against the register) with the days
+    # from receipt to publication. FedRAMP is SIMULATED: the one report is a
+    # plainly fake stand-in. Nothing is received from or sent to FedRAMP.
+    - name: FedRAMP Certification Reports published unmodified (simulated FedRAMP)
+      working-directory: infrastructure
+      run: |
+        curl -sfL -o previous-fedramp-certification-reports.json \
+          "https://samaydlette.com/.well-known/fedramp-certification-reports.json" \
+          || echo '{}' > previous-fedramp-certification-reports.json
+        python3 ../scripts/publish-certification-reports.py --previous previous-fedramp-certification-reports.json --out .
+
+    # FRC-CSO-PKG: the package (CPO, SDR, OCR) is checked against its schemas
+    # and the applicable rules, and "submitted" to a simulated FedRAMP intake: a
+    # function in scripts/submit-package.py. NOTHING IS SENT; the submission is
+    # an entry in the signed, published log. Any unexpected outcome fails here.
+    - name: Simulated package submission to FedRAMP (nothing is sent)
+      working-directory: infrastructure
+      run: |
+        curl -sfL -o previous-package-submission-log.json \
+          "https://samaydlette.com/.well-known/package-submission-log.json" \
+          || rm -f previous-package-submission-log.json
+        python3 ../scripts/submit-package.py --previous previous-package-submission-log.json \
+          --output package-submission-log.json --commit "$GITHUB_SHA"
+
+    # CDS-CSO-FID: every FedRAMP report this deploy publishes carries the
+    # offering's FedRAMP ID (scripts/check-fedramp-id.py REPORTS lists them).
+    - name: FedRAMP ID in every FedRAMP report (CDS-CSO-FID)
+      working-directory: infrastructure
+      run: python3 ../scripts/check-fedramp-id.py
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -1824,11 +1871,12 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Signing CDS artifacts with cosign keyless..."
-        cosign sign-blob --yes --new-bundle-format --bundle certification-overview-package.bundle certification-overview-package.json
         cosign sign-blob --yes --new-bundle-format --bundle availability.bundle availability.json
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
+        cosign sign-blob --yes --new-bundle-format --bundle fedramp-certification-reports.bundle fedramp-certification-reports.json
+        cosign sign-blob --yes --new-bundle-format --bundle package-submission-log.bundle package-submission-log.json
         cosign sign-blob --yes --new-bundle-format --bundle access-summary.bundle access-summary.json
 
     # CDS-TRC-HMR / CDS-CSO-CBF / CDS-TRC-PAC: a complete human-readable view
@@ -1881,12 +1929,13 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
+        for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
         for a in access-summary; do files="$files $a.json $a.md"; done
         for a in assessor-guide agency-access-exercise trust-manifest; do files="$files $a.json $a.md"; done
         files="$files frr-evidence.json simulated-assessment.json"
         # The human-readable views and the policy documents (the list the publish step uploads).
         if [ -f published-docs.txt ]; then files="$files $(cat published-docs.txt)"; fi
+        files="$files fedramp-certification-reports.json package-submission-log.json quarterly-review.ics"
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
@@ -1934,7 +1983,8 @@ jobs:
         # SDR (per-KSI and per-Rev5-control records) and CPO on 2026-11-05. Their
         # published copies are deleted rather than left to go stale unwatched;
         # the round-trip step below asserts they are gone.
-        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
+        # The CDS certification-overview package folded into the CPO on 2026-11-05.
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl certification-overview-package.json certification-overview-package.bundle certification-overview-package.md; do
           aws s3 rm "s3://$BUCKET_NAME/.well-known/$retired"
         done
         # Ongoing Certification Report (CCM-OCR-AVL) + human-readable rendering
@@ -1942,7 +1992,7 @@ jobs:
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do
+        for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
@@ -1953,6 +2003,13 @@ jobs:
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
+        # CDS-CSO-FRC index and the simulated FRC-CSO-PKG submission log (signed), and
+        # the Quarterly Review calendar file (CCM-QTR-REG).
+        for a in fedramp-certification-reports package-submission-log; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+        done
+        aws s3 cp quarterly-review.ics "s3://$BUCKET_NAME/.well-known/quarterly-review.ics" --content-type "text/calendar; charset=utf-8" --cache-control "public, max-age=300"
         # Trust center: the generated boundary map, the gate's own report (it exists
         # only because the gate above passed) and the trust center's data.
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
@@ -1982,6 +2039,25 @@ jobs:
           aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done < published-docs.txt
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
+
+    # CDS-CSO-FRC: each FedRAMP Certification Report exactly as received (data
+    # committed byte for byte; its sha256 checked against the register when the
+    # index was built), and read back from the origin to prove the served bytes
+    # are unmodified. Separate from the step above because the files are named
+    # by the register, not by this workflow. Simulated FedRAMP: see the index.
+    - name: Publish FedRAMP Certification Reports byte-identical
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        BUCKET_NAME=$(terraform output -raw s3_bucket_name)
+        python3 ../scripts/check-published-redaction.py fedramp-certification-reports/*
+        jq -r '.reports[] | "\(.file) \(.sha256)"' fedramp-certification-reports.json | while read -r f sha; do
+          aws s3 cp "fedramp-certification-reports/$f" "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/$f" \
+            --content-type application/json --cache-control "public, max-age=300"
+          got=$(aws s3 cp "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/$f" - | sha256sum | awk '{print $1}')
+          [ "$got" = "$sha" ] || { echo "::error::$f served bytes differ from the report as received"; exit 1; }
+          echo "published unmodified: fedramp-certification-reports/$f"
+        done
 
     # -------------------------------------------------------------------------
     # ATTEST ARTIFACT PROVENANCE (SLSA v1 / in-toto, DSSE — Task 14 / S2)
@@ -2059,11 +2135,13 @@ jobs:
           check "$a.json" ".well-known/$a.json"
         done
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
-        check certification-overview-package.json .well-known/certification-overview-package.json
         check availability.json .well-known/availability.json
         check policy-index.json .well-known/policy-index.json
         check security-decision-record.json .well-known/security-decision-record.json
         check certification-package-overview.json .well-known/certification-package-overview.json
+        check fedramp-certification-reports.json .well-known/fedramp-certification-reports.json
+        check package-submission-log.json .well-known/package-submission-log.json
+        check quarterly-review.ics .well-known/quarterly-review.ics
         check iiw.csv .well-known/iiw.csv
         check boundary-map.json .well-known/boundary-map.json
         check reconcile-report.json .well-known/reconcile-report.json
@@ -2076,7 +2154,7 @@ jobs:
         done
         # Retired artifacts must be gone from the origin. Only a 404 counts as
         # gone: any other error (e.g. AccessDenied) fails rather than passing.
-        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl certification-overview-package.json certification-overview-package.bundle certification-overview-package.md; do
           if head_err=$(aws s3api head-object --bucket "$BUCKET_NAME" --key ".well-known/$retired" 2>&1 >/dev/null); then
             echo "::error::retired artifact still published: .well-known/$retired"; fail=1
           elif printf '%s' "$head_err" | grep -q '(404)'; then
@@ -2384,11 +2462,27 @@ jobs:
   #    which is functionally the same as no alert: nothing distinguishes the one
   #    that matters. It now reuses a single issue, reopening and commenting, and
   #    assigns it to the repository owner so it reaches a person.
+  # CPO-CSX-CPM: after every successful deploy, the unattended package
+  # maintainer runs once, so a green deploy proves it verifies the just-published
+  # package, rebuilds it at the deployed commit and publishes with its own role.
+  package-maintainer:
+    name: Prove the certification package maintainer
+    needs: [deploy]
+    if: needs.deploy.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    uses: ./.github/workflows/package-maintenance.yml
+    # Least privilege: the one secret the maintainer uses, not `inherit`.
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [compliance-check, deploy]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
+    needs: [compliance-check, deploy, package-maintainer]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure')
     permissions:
       contents: read
       issues: write

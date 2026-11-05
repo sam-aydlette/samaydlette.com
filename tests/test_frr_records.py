@@ -266,8 +266,8 @@ def test_the_summary_counts_simulated_counterparties(applicable, resolve):
                     evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
                     simulated={"counterparty": "assessor", "how": "A plainly fictional assessor."})
     _frr.validate(doc, applicable, resolve)
-    base = _frr.summary(_committed(), applicable)["simulated"]
-    assert _frr.summary(doc, applicable)["simulated"] == {**base, "assessor": base.get("assessor", 0) + 1}
+    before = _frr.summary(_committed(), applicable)["simulated"]
+    assert _frr.summary(doc, applicable)["simulated"] == {**before, "assessor": before.get("assessor", 0) + 1}
 
 
 def test_the_gate_runs_before_anything_is_applied():

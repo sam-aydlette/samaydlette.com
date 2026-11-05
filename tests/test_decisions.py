@@ -134,7 +134,7 @@ def test_every_poam_item_landed_in_the_register_with_its_decision():
         assert r["id"] == "DEC-" + i["id"].split("-")[1], i["id"]
         assert r["disposition"] == POAM_TO_DISPOSITION[i["category"]], i["id"]
         assert r["status"] == ("closed" if i["category"] == "closed" else "in-force"), i["id"]
-        assert r["title"] == i["title"] and r["justification"] == i["description"], i["id"]
+        assert r["title"] == i["title"] and r["justification"] == _published_text(i["description"]), i["id"]
         for k in ("decided_by", "decided_on", "review_by", "original_detection_date"):
             assert r.get(k) == i.get(k), (i["id"], k)
         assert r["applies_to"]["resources"] == i.get("asset_identifiers", []), i["id"]
@@ -146,6 +146,27 @@ def test_the_check_maps_are_the_ones_the_poam_held():
     rename = lambda m: {c: "DEC-" + p.split("-")[1] for c, p in m.items()}  # noqa: E731
     assert accepted == rename(frozen["risk_accepted"])
     assert false_pos == rename(frozen["false_positive"])
+
+
+# Text removed from the POA&M wording when it moved to the register, because the
+# register is published (trust-center.json): IAM user names stay out of
+# published output. The parity test applies exactly these and nothing else.
+PUBLICATION_REDACTIONS = {" (saydlette-dev)": ""}
+
+
+def _published_text(text):
+    for old, new in PUBLICATION_REDACTIONS.items():
+        text = text.replace(old, new)
+    return text
+
+
+def test_no_iam_user_name_is_in_published_decision_text():
+    users = {res.split("::", 1)[1] for r in _decisions.load()["decisions"]
+             for res in r["applies_to"]["resources"] if res.startswith("aws-iam-user::")}
+    assert users
+    for r in _decisions.load()["decisions"]:
+        for field in ("title", "justification", "remediation_plan"):
+            assert not any(u in (r.get(field) or "") for u in users), (r["id"], field)
 
 
 def _num(r):

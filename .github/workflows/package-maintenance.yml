@@ -1,0 +1,341 @@
+# =============================================================================
+# GitHub Actions Workflow: Certification Package Maintenance (CPO-CSX-CPM)
+# =============================================================================
+# FedRAMP 20x Class C: keep the certification package up to date at least every
+# two weeks (CPO-CSX-CPM), keep daily KSI metric data (SDR-CSX-KMT), and issue
+# the Ongoing Certification Report on its calendar date with a snapshot of the
+# package (CCM-OCR-AVL/SOR, CDS-CSO-HAD). The deploy is behind a human reviewer
+# and keeps none of those dates, so this runs daily, unattended:
+#
+#   daily cron, or by hand, or called by every deploy after it succeeds
+#     -> fetch the published inputs and verify every signature (fail closed):
+#        the KSI signal (deploy), the VDR (deploy or nightly), and the copies
+#        this run replaces (CPO, SDR, OCR: deploy or this workflow)
+#     -> check out the commit the published inventory was built from, so the
+#        rebuild describes the deployed system, not an undeployed main
+#     -> rebuild the SDR (one more daily metric point), the OCR and the CPO,
+#        each validated against FedRAMP's schema; write the review calendar;
+#        on or after an issue date not yet issued, freeze that report and
+#        snapshot the package (scripts/issue-ocr.py)
+#     -> FedRAMP ID, sensitivity and redaction gates; sign; attest the SDR
+#     -> refuse to overwrite an issued report; publish; invalidate; verify the
+#        edge serves what was built
+#
+# THE TRADE, as for the evidence nightly: an unattended production write. Its
+# role (infrastructure/bootstrap/package-maintenance.tf, operator-applied) can
+# put the package objects listed there and invalidate the CDN, and nothing else:
+# no Terraform, no website sync, no delete, no read.
+# =============================================================================
+
+name: Certification Package Maintenance
+
+on:
+  workflow_dispatch:
+  # Called by every deploy (deploy-with-opa.yml, job package-maintainer) after
+  # the deploy job succeeds, so a green deploy proves this maintainer verifies,
+  # rebuilds and publishes with its own role.
+  workflow_call:
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID:
+        required: true
+  schedule:
+    - cron: '37 9 * * *'
+
+concurrency:
+  group: package-maintenance
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  OPA_VERSION: 1.18.2
+  OPA_SHA256: 9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8
+  SITE_BUCKET: samaydlette.com
+  SITE_ORIGIN: https://samaydlette.com
+  COSIGN_OIDC_ISSUER: https://token.actions.githubusercontent.com
+  ID_DEPLOY: https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main
+  ID_NIGHTLY: https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main
+  ID_MAINTENANCE: https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main
+
+jobs:
+  maintain:
+    name: Rebuild, sign and publish the certification package
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # No required reviewer: the dates run while nobody is awake. The role this
+    # environment can assume writes only the package objects.
+    environment: package-maintenance
+    outputs:
+      publish: ${{ steps.publish.outcome }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
+
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    - name: Setup OPA
+      run: |
+        curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
+          -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+        echo "${{ env.OPA_SHA256 }}  opa" | sha256sum -c -
+        chmod 755 ./opa
+        sudo mv opa /usr/local/bin
+
+    # Everything arrives over the public internet, so nothing is used before its
+    # signature checks out against the workflows allowed to have signed it. The
+    # published CPO, SDR and OCR are the copies this run replaces: they must be
+    # signed by the deploy or by this workflow, or the run stops.
+    - name: Fetch and verify the published package and its inputs
+      run: |
+        set -euo pipefail
+        mkdir -p work
+        cd work
+        fetch() { curl -sfL --retry 3 --retry-delay 5 -o "$1" "${SITE_ORIGIN}/.well-known/$1"; }
+        verify() {  # verify <file> <bundle> <identity>...
+          f="$1"; b="$2"; shift 2
+          for id in "$@"; do
+            if cosign verify-blob --bundle "$b" --certificate-identity "$id" \
+                 --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" "$f" 2>/dev/null; then return 0; fi
+          done
+          echo "::error::$f does not verify against the identities allowed to sign it; refusing to use it"
+          return 1
+        }
+        fetch ksi-signal.json; fetch ksi-signal.bundle
+        verify ksi-signal.json ksi-signal.bundle "$ID_DEPLOY"
+        for a in vdr-report vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+          fetch "$a.json"; fetch "$a.bundle"; verify "$a.json" "$a.bundle" "$ID_DEPLOY" "$ID_NIGHTLY"
+        done
+        for a in security-decision-record certification-package-overview ongoing-certification-report; do
+          fetch "$a.json"; fetch "$a.bundle"; fetch "$a.md"
+          verify "$a.json" "$a.bundle" "$ID_DEPLOY" "$ID_MAINTENANCE"
+        done
+        for a in boundary-map policy-index availability trust-center fedramp-certification-reports package-submission-log; do
+          fetch "$a.json"; fetch "$a.bundle"; verify "$a.json" "$a.bundle" "$ID_DEPLOY"
+        done
+        fetch iiw.csv; fetch iiw.bundle; verify iiw.csv iiw.bundle "$ID_DEPLOY"
+        # The issue index exists once this workflow has run; before that, none.
+        # Only a definite "not there" starts a new one; any other failure stops
+        # the run rather than rebuild the index without its earlier issues.
+        code=$(curl -s -o /dev/null -w '%{http_code}' "${SITE_ORIGIN}/.well-known/ocr-issues.json")
+        if [ "$code" = "404" ] || [ "$code" = "403" ]; then
+          echo "No published issue index yet; starting one."
+        else
+          fetch ocr-issues.json; fetch ocr-issues.bundle
+          verify ocr-issues.json ocr-issues.bundle "$ID_MAINTENANCE"
+        fi
+        # Verified in-band by build-sdr.py against the committed runtime key.
+        fetch ksi-signal-runtime.json || rm -f ksi-signal-runtime.json
+        SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
+        if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
+          echo "::error::published inventory carries a malformed commit id"; exit 1
+        fi
+        echo "SIGNAL_COMMIT=${SIGNAL_COMMIT}" >> "$GITHUB_ENV"
+
+    # Rebuild at the deployed commit: the records, registers and builders that
+    # the published inventory was built with. A commit that is not on main is
+    # not this repository's deployed state.
+    - name: Check out the deployed commit
+      run: |
+        set -euo pipefail
+        git merge-base --is-ancestor "$SIGNAL_COMMIT" origin/main || {
+          echo "::error::the published inventory's commit is not on main"; exit 1; }
+        git checkout -q --detach "$SIGNAL_COMMIT"
+        for f in scripts/issue-ocr.py scripts/build-cpo.py scripts/build-ocr.py scripts/build-sdr.py; do
+          [ -f "$f" ] || { echo "::error::the deployed commit has no $f"; exit 1; }
+        done
+
+    - name: Rebuild the SDR, OCR and CPO at the deployed commit
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        W=../work
+        mkdir -p out
+        cp "$W/ksi-signal.json" "$W/vdr-report.json" .
+        [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
+        python3 ../scripts/build-sdr.py \
+          --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
+          --runtime-signal ksi-signal-runtime.json --vdr vdr-report.json --profile ../data/system-profile.json \
+          --previous-sdr "$W/security-decision-record.json" \
+          --output out/security-decision-record.json --md-output out/security-decision-record.md
+        python3 ../scripts/_assessor.py --sdr out/security-decision-record.json
+        python3 ../scripts/build-ocr.py --vdr vdr-report.json --decisions ../data/decisions.json \
+          --ksi-signal ksi-signal.json --scn-register ../docs/scn/scn-register.csv \
+          --previous "$W/ongoing-certification-report.json" \
+          --output out/ongoing-certification-report.json --md-output out/ongoing-certification-report.md
+        python3 ../scripts/build-cpo.py --offering ../data/cds/offering.json --profile ../data/system-profile.json \
+          --ksi-signal ksi-signal.json --previous-cpo "$W/certification-package-overview.json" \
+          --output out/certification-package-overview.json --md-output out/certification-package-overview.md
+        python3 ../scripts/_ccm.py --ics out/quarterly-review.ics
+
+    # The snapshot is the package as published at issue time: the verified
+    # copies fetched above, with this run's rebuilt CPO, SDR and OCR and their
+    # signatures (signed first, so the snapshot holds signed files).
+    - name: Sign the rebuilt reports
+      working-directory: infrastructure/out
+      run: |
+        set -euo pipefail
+        for a in security-decision-record certification-package-overview ongoing-certification-report; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
+
+    - name: Issue the quarterly report when due (frozen, with a snapshot)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        W=../work
+        cp out/*.json out/*.md out/*.bundle "$W/"
+        prev=""
+        [ -f "$W/ocr-issues.json" ] && prev="--previous-index $W/ocr-issues.json"
+        # shellcheck disable=SC2086
+        python3 ../scripts/issue-ocr.py --work "$W" --out out $prev --new-files out/issued.txt \
+          --vdr vdr-report.json --ksi-signal ksi-signal.json
+        cat out/issued.txt
+
+    - name: Gates (FedRAMP ID, redaction)
+      working-directory: infrastructure/out
+      run: |
+        set -euo pipefail
+        python3 ../../scripts/check-fedramp-id.py security-decision-record.json \
+          certification-package-overview.json ongoing-certification-report.json ocr-issues.json \
+          $(grep -E '^(ocr-issue-.*\.json|snapshot-.*\.json)$' issued.txt || true)
+        # shellcheck disable=SC2046
+        python3 ../../scripts/check-published-redaction.py security-decision-record.json security-decision-record.md \
+          certification-package-overview.json certification-package-overview.md \
+          ongoing-certification-report.json ongoing-certification-report.md ocr-issues.json quarterly-review.ics \
+          $(grep -E '^(ocr-issue-|snapshot-)' issued.txt || true)
+
+    - name: Sign the issue index and new issues; attest the SDR
+      working-directory: infrastructure/out
+      run: |
+        set -euo pipefail
+        cosign sign-blob --yes --new-bundle-format --bundle ocr-issues.bundle ocr-issues.json
+        for f in $(grep -E '^(ocr-issue-.*|snapshot-.*)\.json$' issued.txt || true); do
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+          echo "${f%.json}.bundle" >> issued.txt
+        done
+        python3 ../../scripts/build-provenance.py --ksi-signal ../ksi-signal.json \
+          --generator ../../scripts/build-sdr.py --output sdr.predicate.json
+        cosign attest-blob --yes --new-bundle-format --predicate sdr.predicate.json --type slsaprovenance1 \
+          --bundle security-decision-record.json.intoto.jsonl security-decision-record.json
+        cosign verify-blob-attestation --new-bundle-format --bundle security-decision-record.json.intoto.jsonl \
+          --type slsaprovenance1 --certificate-identity "$ID_MAINTENANCE" \
+          --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" security-decision-record.json
+        python3 ../../scripts/verify-attestation.py --bundle security-decision-record.json.intoto.jsonl \
+          --artifact security-decision-record.json --ksi-signal ../ksi-signal.json
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+      timeout-minutes: 6
+      with:
+        # Defined in infrastructure/bootstrap/package-maintenance.tf; the deploy's
+        # preflight fails while it is unset.
+        role-to-assume: ${{ vars.AWS_PACKAGE_MAINTENANCE_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        retry-max-attempts: 5
+
+    - name: Publish the certification package to /.well-known/
+      id: publish
+      working-directory: infrastructure/out
+      run: |
+        set -euo pipefail
+        put() {
+          aws s3api put-object --bucket "${SITE_BUCKET}" --key ".well-known/$1" --body "$1" \
+            --content-type "$2" --cache-control "public, max-age=300" --query 'ETag' --output text > /dev/null
+          echo "published .well-known/$1"
+        }
+        ctype() {
+          case "$1" in
+            *.md) echo "text/markdown; charset=utf-8" ;;
+            *.ics) echo "text/calendar; charset=utf-8" ;;
+            *.csv) echo "text/csv" ;;
+            *) echo "application/json" ;;
+          esac
+        }
+        # An issued report and its snapshot are never rewritten.
+        while read -r f; do
+          [ -n "$f" ] || continue
+          code=$(curl -s -o /dev/null -w '%{http_code}' "${SITE_ORIGIN}/.well-known/$f")
+          if [ "$code" != "404" ] && [ "$code" != "403" ]; then
+            echo "::error::.well-known/$f is already served (HTTP $code): issued files are never overwritten"; exit 1
+          fi
+        done < issued.txt
+        while read -r f; do [ -n "$f" ] && put "$f" "$(ctype "$f")"; done < issued.txt
+        for a in security-decision-record certification-package-overview ongoing-certification-report; do
+          put "$a.md" "text/markdown; charset=utf-8"
+          put "$a.bundle" application/json
+          put "$a.json" application/json
+        done
+        put security-decision-record.json.intoto.jsonl application/json
+        put quarterly-review.ics "text/calendar; charset=utf-8"
+        put ocr-issues.bundle application/json
+        put ocr-issues.json application/json
+
+    - name: Invalidate CloudFront cache (package paths only)
+      env:
+        DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+      run: |
+        set -euo pipefail
+        aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "/.well-known/security-decision-record*" "/.well-known/certification-package-overview*" \
+                  "/.well-known/ongoing-certification-report*" "/.well-known/ocr-issue*" \
+                  "/.well-known/quarterly-review.ics" --query 'Invalidation.Id' --output text
+
+    - name: Assert the edge serves the rebuilt package
+      run: |
+        set -euo pipefail
+        for a in security-decision-record certification-package-overview ongoing-certification-report ocr-issues; do
+          python3 scripts/check-evidence-freshness.py --url "${SITE_ORIGIN}/.well-known/$a.json" \
+            --expect-sha256 "$(sha256sum "infrastructure/out/$a.json" | awk '{print $1}')" \
+            --retries 12 --retry-delay 20
+        done
+
+  alert:
+    name: Alert on package maintenance
+    runs-on: ubuntu-latest
+    needs: [maintain]
+    if: always() && needs.maintain.result == 'failure'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+    - name: Raise or update the package-maintenance issue
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        PUBLISH: ${{ needs.maintain.outputs.publish }}
+      with:
+        script: |
+          const TITLE = 'Certification package maintenance failed';
+          const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+          const body = [
+            `The certification package maintenance run failed ([run](${runUrl}), trigger \`${context.eventName}\`, publish \`${process.env.PUBLISH || 'not reached'}\`).`,
+            ``,
+            `Until it succeeds, the CPO, SDR and OCR are not refreshed, a due Ongoing Certification Report is not issued, and the evidence watchdog pages when they pass their 14-day window (CPO-CSX-CPM). If "Configure AWS credentials" failed, the role or the AWS_PACKAGE_MAINTENANCE_ROLE_ARN variable is missing (infrastructure/bootstrap/package-maintenance.tf). If a fetch or verify failed, a published input is not signed by the workflow allowed to sign it: investigate before re-running.`,
+            ``,
+            `This issue is reused; each failure adds a comment.`,
+          ].join('\n');
+          const existing = await github.paginate(github.rest.issues.listForRepo, {
+            owner: context.repo.owner, repo: context.repo.repo, state: 'all', per_page: 100,
+            labels: 'package-maintenance',
+          });
+          const match = existing.filter(i => i.title === TITLE && !i.pull_request)
+            .sort((a, b) => (a.state === b.state ? a.number - b.number : a.state === 'open' ? -1 : 1))[0];
+          if (match) {
+            if (match.state === 'closed') {
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, state: 'open' });
+            }
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body });
+          } else {
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo,
+              title: TITLE, body, labels: ['package-maintenance'] });
+          }

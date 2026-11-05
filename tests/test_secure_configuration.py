@@ -115,7 +115,7 @@ def test_the_guide_publishes_no_iam_user_name_or_account_id():
     text = json.dumps(doc)
     named = [u.split("::", 1)[1] for r in _decisions.load()["decisions"]
              for u in r["applies_to"].get("resources", []) if u.startswith("aws-iam-user::")]
-    assert named and not any(n in text for n in named if n != "operator")
+    assert named and not any(n in text for n in named)
     assert not re.search(r"\b\d{12}\b", text)
 
 
