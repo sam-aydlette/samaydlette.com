@@ -1,0 +1,14 @@
+{
+  "version": "0.0-fixture",
+  "description": "Known-bad: a vector marked decided that names no decision record in force. The build stops.",
+  "vectors": {
+    "CKV_AWS_18": {
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
+      "rationale": "Access logging off: weakens detection only.",
+      "decided_by": "Operator",
+      "decided_on": "2026-11-01",
+      "review_by": "2027-11-01",
+      "decision": "DEC-998"
+    }
+  }
+}

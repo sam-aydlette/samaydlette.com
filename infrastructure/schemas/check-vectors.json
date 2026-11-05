@@ -1,223 +1,250 @@
 {
   "$schema": "./check-vectors.schema.json",
   "version": "1.0",
-  "description": "Governed CVSS 3.1 base vectors for configuration checks, which carry no CVE and so no published vector. One vector per check ID, decided once by a named person and reviewed by a date; the VDR builder applies it to every finding of that check. It drives PAIN (CVSS-Environmental) and LEV (Figure 7: the floor, and the no-direct-impact rule). An entry without decided_by and decided_on is a proposal and is NOT in force; an entry past review_by lapses. Vectors marked AI-drafted were proposed for operator review.",
+  "description": "Governed CVSS 3.1 base vectors for configuration checks, which carry no CVE and so no published vector. One vector per check ID, decided once by a named person and reviewed by a date; the VDR builder applies it to every finding of that check. It drives PAIN (CVSS-Environmental) and LEV (Figure 7: the floor, and the no-direct-impact rule). An entry without decided_by and decided_on is a proposal and is NOT in force; an entry past review_by lapses. Vectors marked AI-drafted were proposed for operator review. A decided entry names the decision record that adopted it (decision); one whose record is missing or not in force fails the build.",
   "vectors": {
     "AVD-AWS-0015": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudTrail logs SSE-S3 instead of a customer-managed key: encrypted at rest; key custody only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "AVD-AWS-0089": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "Bucket access logging off: reduces detection only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "AVD-AWS-0132": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "SSE-S3 instead of a customer-managed key: data is encrypted at rest; key custody choice only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "AVD-AWS-0162": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudTrail not streamed to CloudWatch Logs: reduces alerting only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV2_AWS_10": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudTrail not streamed to CloudWatch Logs: trail still written; reduces alerting only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV2_AWS_47": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "No Log4j WAF managed rule: no Log4j in the stack, so the absent rule protects nothing exploitable.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV2_AWS_56": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
       "rationale": "Administrator policy on the operator group: a compromised operator credential controls the account.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV2_AWS_62": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "S3 event notifications off: reduces detection only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_115": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
       "rationale": "No reserved concurrency: a request flood can exhaust account concurrency for other functions.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_117": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "Lambda outside a VPC: network-isolation depth; the function's own permissions bound what it reaches.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_119": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "DynamoDB default encryption instead of a customer-managed key: encrypted at rest; key custody only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_144": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "S3 cross-region replication off: resilience only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_145": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "SSE-S3 instead of a customer-managed key: data is encrypted at rest; key custody choice only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_174": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "No Log4j-specific WAF rule: no Log4j in the stack, so the absent rule protects nothing exploitable.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_18": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "S3 access logging off on a log-target bucket: reduces detection; gives an attacker no capability.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_23": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "S3 event notifications off: reduces detection only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_252": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudTrail SNS delivery notifications off: no consumer; no attacker capability.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_272": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:H/A:N",
       "rationale": "No code signing: a holder of deploy rights can ship unsigned code.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_287": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
       "rationale": "Secrets metadata reads on a wildcard: a holder of the role can list secret metadata, not values.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_310": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudFront origin failover absent: resilience only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_35": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudTrail logs SSE-S3 instead of a customer-managed key: encrypted at rest; key custody only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_355": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
       "rationale": "Wildcard resource in a read-only assessment policy: a holder of the role can read more metadata than needed.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_356": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N",
       "rationale": "Wildcard resource for account-level enumeration: a holder of the role can enumerate the account.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_374": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudFront geo restriction off on a public site: no capability beyond the site's intended exposure.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_50": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "Lambda X-Ray tracing off: observability only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_68": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:L",
       "rationale": "No WAF on a public distribution: request floods and application attacks meet no edge filter; availability impact.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     },
     "CKV_AWS_86": {
       "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N",
       "rationale": "CloudFront origin failover absent: resilience only.",
       "drafted_by": "AI-drafted for operator review",
-      "decided_by": null,
-      "decided_on": null,
-      "review_by": "2027-11-03"
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "decision": "DEC-180"
     }
   }
 }

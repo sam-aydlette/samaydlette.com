@@ -1160,6 +1160,67 @@
       "source": {
         "detector": "OWASP ZAP baseline scan"
       }
+    },
+    {
+      "id": "DEC-180",
+      "title": "Governed CVSS vectors for the configuration checks in infrastructure/schemas/check-vectors.json",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
+      "controls": [
+        "ra-3",
+        "ra-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "infrastructure/schemas/check-vectors.json"
+        ]
+      }
+    },
+    {
+      "id": "DEC-181",
+      "title": "Exploitation assessment of detected vulnerabilities (VDR-CSO-RES)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+      "controls": [
+        "ra-5",
+        "si-4",
+        "ir-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-182",
+      "title": "Responsible disclosure of vulnerability information (VER-RPT-NID, VER-RPT-RPD)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. The provider discloses its vulnerability reports publicly (VER-RPT-RPD) and determines per finding that doing so will not likely lead to exploitation, recorded as public_disclosure on each finding. An open finding that is internet-reachable, likely exploitable and rated N3 or above is published in summary until it is remediated, fully mitigated or dispositioned: tracking ID, ratings, reachability, exploitability, dates, deadline and status stay public, so any party can make a risk-based decision; the description, observed locations, fixed versions and supplementary detail are withheld from the public artifacts (VDR report, detail report, accepted-vulnerability report and their renderings). Every other finding is disclosed in full: a dispositioned or lower-rated finding, or configuration already readable in the public source repository, gives an attacker nothing it would not otherwise have. Necessary parties (FedRAMP, agency customers) receive the withheld detail from the provider on request through the security contact in /.well-known/security.txt.",
+      "controls": [
+        "ra-5",
+        "si-5",
+        "ir-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
     }
   ]
 }

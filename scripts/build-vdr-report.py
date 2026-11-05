@@ -1522,10 +1522,11 @@ def _valid_v31(vector):
     return all(k in m and m[k] in _V3_VALUES[k] for k in _V3_REQUIRED) and len(m) == len(_V3_REQUIRED)
 
 
-def load_check_vectors(path=None, today=None):
+def load_check_vectors(path=None, today=None, decisions=None):
     """{check_id: entry} for entries in force today. Malformed file or entry fails closed."""
     p = Path(path) if path else DEFAULT_CHECK_VECTORS
     today = today or datetime.now(timezone.utc).date()
+    in_force_ids = {r["id"] for r in _decisions.in_force(decisions or DECISIONS)}
     try:
         doc = json.loads(p.read_text())
     except (OSError, json.JSONDecodeError) as exc:
@@ -1543,6 +1544,11 @@ def load_check_vectors(path=None, today=None):
         if not e.get("decided_by") or not e.get("decided_on"):
             continue  # proposed, not decided: not in force
         _parse_day(e["decided_on"], where)
+        # A vector is decided through the decision register (DEC-180): a decided
+        # entry that names no record in force would be a decision nobody made.
+        if e.get("decision") not in in_force_ids:
+            raise SystemExit(f"::error::{where}: decided, but decision {e.get('decision')!r} is not a decision "
+                             "record in force (fail-closed)")
         if review_by < today:
             continue  # lapsed
         in_force[check_id] = e

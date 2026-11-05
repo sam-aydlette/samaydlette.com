@@ -1,0 +1,9 @@
+{
+  "_note": "Known-bad: two open findings of one group (one Checkov check, no decision). The first was evaluated 60 days ago; the second appeared today. Each alone is inside its own N2+LEV+IRV timeframe only for the newcomer; as a group (VER-EVA-GRV) the newcomer is on the old member's clock, so it is past the deadline and blocks (G3). Without grouping it would pass.",
+  "now": "2026-11-03T12:00:00+00:00",
+  "old_days": 60,
+  "items": [
+    {"id": "old", "group": "check:checkov:CKV_TEST_1"},
+    {"id": "new", "group": "check:checkov:CKV_TEST_1"}
+  ]
+}
