@@ -612,6 +612,19 @@ jobs:
       with:
         fetch-depth: 0
 
+    # The incident report records (IEC-CSO-IIR/OIR/FIR/AIR) describe the system
+    # after a successful deploy, which includes the unattended publisher in
+    # .github/workflows/incident-reports.yml. Fail before anything is applied if
+    # its prerequisites are missing: the role variable set and naming the
+    # bootstrap role, and the incident-reports environment main-only (checked
+    # when the job token can read it; said so when it cannot). The
+    # incident-publisher job below then proves the role publishes.
+    - name: Incident report publisher preflight
+      env:
+        INCIDENT_REPORTS_ROLE_ARN: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 scripts/check-incident-publisher.py
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
       with:
@@ -2249,11 +2262,27 @@ jobs:
   #    which is functionally the same as no alert: nothing distinguishes the one
   #    that matters. It now reuses a single issue, reopening and commenting, and
   #    assigns it to the repository owner so it reaches a person.
+  # A deploy is not done until the unattended incident report publisher has run
+  # on its own role from the incident-reports environment: the IEC records say
+  # it publishes, so a deploy where it cannot fails here.
+  incident-publisher:
+    name: Prove the incident report publisher
+    needs: [deploy]
+    if: needs.deploy.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    uses: ./.github/workflows/incident-reports.yml
+    # Least privilege: the one secret the publisher uses, not `inherit`.
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [compliance-check, deploy]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
+    needs: [compliance-check, deploy, incident-publisher]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure' || needs.incident-publisher.result == 'failure')
     permissions:
       contents: read
       issues: write
@@ -2267,6 +2296,7 @@ jobs:
       env:
         COMPLIANCE_RESULT: ${{ needs.compliance-check.result }}
         DEPLOY_RESULT: ${{ needs.deploy.result }}
+        PUBLISHER_RESULT: ${{ needs.incident-publisher.result }}
       with:
         script: |
           const TITLE = `Deployment failing: ${context.workflow}`;
@@ -2282,6 +2312,7 @@ jobs:
             `| Ref | ${context.ref} |`,
             `| Compliance check | \`${process.env.COMPLIANCE_RESULT}\` |`,
             `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,
+            `| Incident report publisher | \`${process.env.PUBLISHER_RESULT}\` |`,
             ``,
             `Review the failing step in the run log, and the compliance reports it uploaded.`,
             ``,

@@ -41,6 +41,15 @@ on:
     branches: [main]
     paths: [data/incidents.json]
   workflow_dispatch:
+  # Called by every deploy (deploy-with-opa.yml, job incident-publisher) after
+  # the deploy job succeeds, so a green deploy proves this publisher assumes its
+  # role from the incident-reports environment and publishes; a deploy whose
+  # publisher cannot fails.
+  workflow_call:
+    # Only the secret the publish step uses; the caller passes it by name.
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID:
+        required: true
   # Keeps the published log inside its 24-hour freshness window when nothing
   # changes, and re-reads the VDR for new VER-TFR-IRI/NRI triggers.
   schedule:

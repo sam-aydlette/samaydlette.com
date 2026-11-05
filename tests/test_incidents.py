@@ -455,6 +455,98 @@ def test_all_three_workflows_pin_the_same_opa():
     assert pins("incident-reports.yml") == pins("deploy-with-opa.yml") == pins("evidence-nightly.yml")
 
 
+# ---- deploy preflight and proof of the publisher (the records hold once deployed) ----
+
+preflight = _load("preflight", "scripts/check-incident-publisher.py")
+ENV_OK = {"name": "incident-reports",
+          "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+ARN_OK = "arn:aws:iam::000000000000:role/github-actions-incident-reports-oidc"
+
+
+def test_preflight_role_name_is_the_bootstrap_role():
+    tf = (REPO / "infrastructure" / "bootstrap" / "incident-reports.tf").read_text()
+    assert f'"{preflight.EXPECTED_ROLE_NAME}"' in tf
+    assert f"environment: {preflight.ENVIRONMENT}" in _wf()
+
+
+def test_preflight_passes_a_set_variable_and_a_main_only_environment():
+    assert preflight.evaluate(ARN_OK, "ok", ENV_OK, ["main"]) == ([], ["incident-reports deploys only from main"])
+    assert preflight.main(["--fixture", str(FIX / "preflight-good.json")]) == 0
+
+
+def test_preflight_fails_the_known_bad_fixture_for_the_missing_variable(capsys):
+    fx = json.loads((FIX / "preflight-missing-variable.json").read_text())
+    problems, _ = preflight.evaluate(fx["role_arn"], fx["env_state"], fx["environment"], fx["branch_policies"])
+    assert len(problems) == 1 and "AWS_INCIDENT_REPORTS_ROLE_ARN is not set" in problems[0]
+    assert preflight.main(["--fixture", str(FIX / "preflight-missing-variable.json")]) == 1
+    assert "::error::" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("arn,why", [
+    (None, "is not set"),
+    ("arn:aws:iam::000000000000:role/github-actions-oidc", "names a role other than"),
+    ("arn:aws:iam::000000000000:user/github-actions-incident-reports-oidc", "is not an IAM role ARN"),
+    ("github-actions-incident-reports-oidc", "is not an IAM role ARN"),
+])
+def test_preflight_fails_a_variable_that_does_not_name_the_role(arn, why):
+    problems, _ = preflight.evaluate(arn, "ok", ENV_OK, ["main"])
+    assert len(problems) == 1 and why in problems[0]
+
+
+def test_preflight_never_prints_the_arn_or_account(capsys, tmp_path):
+    fx = tmp_path / "fx.json"
+    fx.write_text(json.dumps({"role_arn": "arn:aws:iam::123456789012:role/other", "env_state": "ok",
+                              "environment": ENV_OK, "branch_policies": ["main"]}))
+    preflight.main(["--fixture", str(fx)])
+    assert "123456789012" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("state,env,branches,why", [
+    ("missing", None, None, "does not exist"),
+    ("ok", {"deployment_branch_policy": None}, None, "custom branch list"),
+    ("ok", {"deployment_branch_policy": {"protected_branches": True, "custom_branch_policies": False}}, None,
+     "custom branch list"),
+    ("ok", ENV_OK, ["main", "feat/*"], "not only main"),
+    ("ok", ENV_OK, [], "not only main"),
+])
+def test_preflight_fails_a_missing_or_unrestricted_environment(state, env, branches, why):
+    problems, _ = preflight.evaluate(ARN_OK, state, env, branches)
+    assert len(problems) == 1 and why in problems[0]
+
+
+def test_preflight_says_so_when_the_environment_cannot_be_read_and_checks_the_variable():
+    problems, notes = preflight.evaluate(ARN_OK, "unreadable", None, None)
+    assert problems == [] and "not observed" in notes[0]
+    problems, _ = preflight.evaluate("", "unreadable", None, None)
+    assert problems and "is not set" in problems[0]
+
+
+def _deploy():
+    return (WF / "deploy-with-opa.yml").read_text()
+
+
+def test_deploy_runs_the_preflight_before_anything_is_applied():
+    yaml = pytest.importorskip("yaml")
+    steps = yaml.safe_load(_deploy())["jobs"]["deploy"]["steps"]
+    names = [st.get("name") for st in steps]
+    i = names.index("Incident report publisher preflight")
+    assert i < names.index("Configure AWS credentials") < names.index("Terraform Apply")
+    assert "INCIDENT_REPORTS_ROLE_ARN: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}" in _deploy()
+    assert "run: python3 scripts/check-incident-publisher.py" in _deploy()
+
+
+def test_deploy_proves_the_publisher_by_calling_it_after_the_deploy():
+    yaml = pytest.importorskip("yaml")
+    jobs = yaml.safe_load(_deploy())["jobs"]
+    job = jobs["incident-publisher"]
+    assert job["uses"] == "./.github/workflows/incident-reports.yml" and job["needs"] == ["deploy"]
+    assert job["permissions"]["id-token"] == "write"
+    assert job["secrets"] == {"CLOUDFRONT_DISTRIBUTION_ID": "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"}
+    assert list(yaml.safe_load(_wf())[True]["workflow_call"]["secrets"]) == ["CLOUDFRONT_DISTRIBUTION_ID"]
+    assert "incident-publisher" in jobs["notify"]["needs"]
+    assert "needs.incident-publisher.result == 'failure'" in jobs["notify"]["if"]
+    assert "workflow_call" in yaml.safe_load(_wf())[True]
+
 # ---- the Ongoing Certification Report's incident summary (CCM-OCR-AVL item 7) -------
 
 def test_ocr_attests_none_when_only_exercises_are_recorded():
