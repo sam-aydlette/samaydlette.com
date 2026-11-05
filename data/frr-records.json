@@ -5,83 +5,235 @@
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no auto-responder.",
-      "evidence": [],
-      "gap": "No prompt automatic acknowledgment of FedRAMP messages. To close: Configure an auto-acknowledgment for mail from @fedramp.gov/@gsa.gov (e.g. SES receipt rule -> Lambda reply, or provider auto-reply rule) and include it in the nightly configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The acknowledgement logic (scripts/_fsi.py, build_ack and receive) acknowledges each FedRAMP message once, even when it is redelivered, with headers inbound content cannot inject, and never to auto-replies, bulk mail, bounces, mail without a From address, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged). In the simulation each acknowledgement is built and checked for header safety, then filed nowhere. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_nothing_from_the_inbound_message_can_inject_a_header"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_redelivered_message_is_acknowledged_and_paged_once"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_unauthenticated_fedramp_mail_is_registered_and_paged_but_not_acknowledged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_no_acknowledgement_to_auto_replies_bulk_mail_or_bounces"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-CRA",
-      "status": "Not Implemented",
-      "implementation": "No FSI, no Emergency/Emergency Test handling runbook in docs/incident-response.md or ir-policy.md.",
-      "evidence": [],
-      "gap": "No procedure to recognize Emergency / Emergency Test designated messages, extract the required actions and timeframe, and complete them; no record of completion. To close: Write an FSI runbook (classify by designation, open a tracked item with the message's deadline, complete, reply with completion) and wire Emergency-designated mail to page the operator; keep a completion log. Rehearse with a self-generated Emergency Test.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; the receipt day counts and holidays are not skipped, both erring earlier), replaced at triage by the timeframe the message states; the register reports an item past its deadline until it is closed (scripts/_fsi.py, deadlines, triage, close, overdue). In the simulation the Emergency Test received on a Friday is due 3:00 p.m. ET the following Monday, is reported once that passes, and stops being reported when closed. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_class_c_default_deadline_is_3pm_eastern_on_the_second_business_day"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_emergency_records_carry_a_deadline_and_important_ones_ask_for_the_messages_own"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-EMR",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No routing of Emergency-designated messages to a senior security official; no mailbox configuration or automated validation (both artifacts missing). To close: Add a mail rule that routes subject-designated 'Emergency' FedRAMP messages to the senior security official (the accountable official in the CPO, plus SNS page), and include it in the nightly mailbox-configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Every FedRAMP message, Emergency-designated ones included, produces a page to the senior security official (the accountable official named in the CPO, the operator) naming the designation and the sender's domain (scripts/_fsi.py, receive and page_subject); an Emergency from an address other than FedRAMP's designated Emergency senders (AFC-FRP-UFS) is flagged, not demoted. In the simulation the page is recorded, not delivered: the operator's phone stays blissfully quiet. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_from_an_address_other_than_fedramp_security_is_flagged_not_demoted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_page_subject_is_ascii_and_names_the_domain_not_the_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-IMA",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no handling procedure for Important-designated messages.",
-      "evidence": [],
-      "gap": "No procedure to complete actions in Important messages within their stated timeframe. To close: Extend the FSI runbook to Important messages with tracked deadlines (same tracker as CRA).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Important-designated messages open a register item that cannot be triaged without recording the timeframe the message states; the register reports it while untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed (scripts/_fsi.py, triage and overdue). The simulation checks each of these. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_important_message_cannot_be_triaged_without_its_stated_timeframe"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-INB",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No dedicated FedRAMP Security Inbox address exists or is designated; the required artifact (an email address to receive messages from FedRAMP) cannot be produced. To close: Create a dedicated address on the system's domain (e.g. fedramp-security@samaydlette.com: MX record in dns.tf plus SES inbound or a mail provider, with SPF/DKIM/DMARC), document it as the FSI in the CPO certification_data (security_contact block) and trust center, and monitor it (alarm on delivery failure).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published FedRAMP Security Inbox contact (data/cds/offering.json, fedramp_security_inbox.contact, published in the CPO's certification_data) says, plainly, that the inbox does not exist and to hit the operator up on LinkedIn. The logic a real inbox would run receives, classifies, registers, acknowledges and pages. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_simulation_passes_and_publishes_a_labelled_result_without_addresses"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_cpo_publishes_the_simulated_contact_not_an_email_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-NOC",
-      "status": "Not Implemented",
-      "implementation": "No FSI exists, so no change-notification process exists; nothing in docs/incident-response.md or docs/policies/ir-policy.md covers notifying FedRAMP of an inbox change.",
-      "evidence": [],
-      "gap": "No process (manual or automated) to notify FedRAMP when the FSI address changes. To close: Make the FSI address a single value in the canonical inventory and add a CI check that fails a change to it unless the commit carries a 'FedRAMP notified on <date> via <channel>' record; document the runbook step (email FedRAMP from the old and new address) in ir-policy.md.",
-      "closes_with": [
-        "W9"
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history, and the notice rule applies to it unchanged. scripts/check-fsi-notice.py, run in the unit-test job on every pull request and push, fails a change to the contact unless a new history entry carries a dated fedramp_notified marker naming the channel (FedRAMP's '[CSP] Notification of Changes' form), and fails a rewritten history against the merge base. Known-bad fixtures in tests/fixtures/fsi/. Procedure: docs/runbooks/fedramp-security-inbox.md. The contact was established 2026-11-05 with nothing earlier on file with FedRAMP, so there has been no change to notify.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_the_fedramp_notified_marker_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_a_history_entry_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_rewriting_history_fails_against_the_base"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox change notice (AFC-CSO-NOC)"
+        }
       ]
     },
     {
       "frr_id": "AFC-CSO-RCV",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "Nothing receives FedRAMP mail without disruption (no inbox, no anti-spam allowlisting, no monitoring, no backup reader for a one-person operation). To close: After INB/TFG: allowlist FedRAMP senders, add delivery-failure and unread-age alarms (SNS to operator, reusing the watchdog path), and name a backup reader or an out-of-office auto-forward so a single absent operator does not disrupt receipt. Provider half is fully buildable; only an actual FedRAMP message demonstrates it end-to-end.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Nothing in the inbox logic asks anything of FedRAMP or drops FedRAMP mail: every FedRAMP message is registered and paged whatever its verdicts (the simulation fails the deploy otherwise), a failed acknowledgement is recorded, reported overdue and sent once on retry, and overdue items are reported by the register (scripts/_fsi.py, receive and overdue). Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_failed_acknowledgement_is_recorded_retried_and_counted_overdue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_each_register_check_fails_the_simulation_when_its_outcome_differs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-TFG",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No mailbox configuration treating @fedramp.gov / @gsa.gov senders as FedRAMP, and no automated validation of that configuration (both listed artifacts missing). To close: In the FSI mail rules, tag/route all mail from @fedramp.gov and @gsa.gov as FedRAMP (never spam-filtered/quarantined); export the rule set as code and add a nightly check (evidence-nightly.yml) that reads the live rules and compares them with the expected configuration, published to the trust center like check-manual-settings.py does for GitHub settings.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Classification (scripts/_fsi.py, classify): a message whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov is FedRAMP, whatever its spam verdict or SPF/DKIM/DMARC result; look-alike domains and display-name spoofs are not; failed authentication is recorded so the operator can confirm the sender, never used to filter. The simulation includes a forged @gsa.gov message (still FedRAMP), a FedRAMP envelope sender behind an unreadable From (still FedRAMP), a look-alike domain and a display-name spoof (neither is FedRAMP). Automated validation of the configuration is the deploy-time simulation itself. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_fedramp_senders_are_fedramp_even_when_unauthenticated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_look_alike_domains_and_display_name_spoofs_are_not_fedramp"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_fedramp_envelope_sender_counts_even_if_the_from_header_is_unparseable"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "CCM-OCR-AFS",
@@ -1455,73 +1607,236 @@
     },
     {
       "frr_id": "IEC-CSO-AIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No automation exists for incident reporting; nothing exists to automate. To close: Once the incident register and report builder exist, run them from a workflow (workflow_dispatch + on push to the incident register) that validates, signs, publishes and sends IIR/OIR/FIR automatically, and pages through the existing watchdog/SNS when a report deadline is near or missed.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main), assumes the publisher's role from the deploy job before the SDR is built (scripts/check-incident-role.py, step 'Incident report publisher role can be assumed'), so a deploy whose publisher role does not work stops before anything is published, and after the deploy job runs this workflow on its own role (job incident-publisher). Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Incident report clocks (fail when a report is due and missing)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher preflight"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_deploy_proves_the_publisher_by_calling_it_after_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_air_workflow_validates_builds_signs_publishes_and_checks_the_clock_in_order"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher role can be assumed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_the_role_check_runs_in_the_deploy_job_before_the_sdr_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_a_role_that_cannot_be_assumed_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_delivery_runs_before_signing_in_the_deploy_and_before_publishing_in_the_publisher"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-DPR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "Nothing assigns a PAIN rating to an incident, so there is no default-to-N5 behaviour and no record of whether a prompt estimate replaced it. The VDR PAIN classifier (scripts/build-vdr-report.py:1730 assign_pain) rates vulnerabilities, not incidents. To close: In the incident register, set pain=5 with basis 'default (IEC-CSO-DPR)' when a record becomes reportable, and allow it to drop only through an EFI estimate record (rating, reason, estimated_at). Drive the IIR/OIR/FIR clocks from the effective rating. Test both paths and show them in the simulated-incident log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A reportable incident is rated at the default the IEC-CSO-DPR text states (N5, read from the rule) until an IEC-CSO-EFI estimate record exists, and the report clocks use the rating in force at each start time. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFI",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Incident Rating step: nothing estimates likely adverse impact on agency customers for an incident or assigns N1-N5 using the minimal/narrow/disruptive/debilitating x 1 or >1 agency scale. The required artifact (an incident log showing the evaluation and its reason) does not exist. To close: Add an EFI record type to the incident register: rating N1-N5, the customer-effect word, single or multiple agencies, reason, estimated_at. Document the rubric in docs/incident-response.md (it can reuse the VDR effect words from infrastructure/schemas/vdr-pain-config.json). Exercise it in the simulated incidents.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). An estimate record carries rating, customer effect (minimal/narrow/disruptive/debilitating), one or several agencies, reason and time; the loader refuses a rating that is not the one the IEC-CSO-EFI bullets give for that effect and agency count (the rubric is parsed from the rule text). Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_rating_scale_and_default_come_from_the_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. docs/policies/ir-policy.md:15 only restates the trigger.",
-      "evidence": [],
-      "gap": "No step that evaluates each incident for effect (actual or likely) on confidentiality/integrity of federal customer data, no recorded determination with its reason, and no incident log. The required artifact (an incident log showing one or more real or simulated incidents evaluated, with the reason for the determination) does not exist. The runbook explicitly scopes federal-data incidents out, so it can't make the determination the rule asks for. To close: Add an incident register (e.g. data/incidents.json + schema) whose records carry detected_at, evaluated_at, reportable (bool), reason, and the federal-customer-data types considered. Add an 'Evaluate FedRAMP reportability' step to docs/incident-response.md triage (before Contain), define the data types that would be federal customer data for this offering, and fail a check if any incident record lacks an evaluation. Exercise it with at least two simulated incidents (one reportable, one not) and publish the log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Every incident record must carry an evaluation (evaluated_at, reportable true/false, basis, reason, the federal customer data considered); a record without one does not load. docs/incident-response.md triage now evaluates reportability before containment. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. The published incident log is the artifact the rule asks for.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_logs_a_not_reportable_evaluation_with_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-FIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. A schema test fixture (tests/fixtures/cr26/good/incident.json, reportType Final, CVE-2099-0142) checks the validator only; it is not an incident.",
-      "evidence": [],
-      "gap": "No Final Incident Report generation on resolution/recovery, no final updates to all previously reported items, no clock (Class C: within 6 hours for N3-N5, 1 business day for N1-N2, after recovery), no delivery. No sample FIR. To close: Add reportType=Final generation when the incident record gets resolved_at and recovery_complete_at, with final values for every earlier IIR/OIR field. Alarm on the FIR deadline. Close the simulated incident with a FIR and link it from the incident log and the Ongoing Certification Report.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_the_final_report_is_due_after_recovery_and_ongoing_reports_stop"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-IIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. The vendored schema infrastructure/schemas/fedramp-2026-06-24/fedramp-incident-report-schema-2026-06-24.json (reportType Initial/Ongoing/Final, federalIncidentCoordinator, timeline, potentialImpact, functionalImpact, recoveryPlan, affectedAgencies) and its validator are in place, but nothing produces a report.",
-      "evidence": [],
-      "gap": "No Initial Incident Report generator, no delivery to all affected parties (FedRAMP + affected agencies), and no clock (Class C: within 1 hour for N3-N5, 24 hours for N2, 1 business day for N1). None of the 8 items exists in any record: federal incident response coordinator contact, tracking ID, description, timeline (start, detection time/source, evaluation time, milestones), historical/current PAIN with EFI explanation, functional impact incl. C/I and federal data types, recovery plan/milestones, likely affected agencies. No sample IIR exists, real or simulated. To close: Build scripts/build-incident-report.py that renders an IIR from the incident register into the vendored schema (validated before write) plus a human-readable version; name the federal incident response coordinator contact; add a delivery step (e.g. signed publication to a restricted location plus email to a configured recipient list holding FedRAMP's incident address and each agency's contact) that starts on 'reportable' and is alarmed against the PAIN-based deadline (watchdog). Run a timed simulated incident end to end and keep the IIR.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_runs_initial_ongoing_final_all_on_time"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_every_report_validates_against_fedramps_schema_and_is_listed_with_its_hash"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_known_bad_logs_fail_delivery_and_write_nothing"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-OIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Ongoing Incident Report mechanism or cadence (Class C: every 6 hours for N3-N5, 24 hours for N2, 1 business day for N1), no 'updates or lack of updates' logic, and none of the additional items recorded: observed activity, IOCs, related CVE, root cause, response/recovery activities. No sample OIR. To close: Extend the incident report builder for reportType=Ongoing: diff against the previous report so every earlier item is restated (changed or 'no update'), add the 5 OIR fields to the incident record, and schedule/alarm the next OIR from the effective PAIN. Produce OIRs in the simulated exercise.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_reports_are_due_every_oir_period_until_resolved"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IVV-CSO-DUS",
@@ -2087,165 +2402,369 @@
     },
     {
       "frr_id": "SCN-ADP-NTF",
-      "status": "Partially Implemented",
-      "implementation": "Each adaptive SCN record carries a new-risks summary (scn-register.csv new_risks_summary; SCN md section 5).",
-      "evidence": [],
-      "gap": "No notification has been sent to anyone: notify_by says 'No necessary parties'; FedRAMP is always a necessary party (FRD 'All Necessary Parties'), so this is not N/A; no sent-date is recorded for any SCN (artifact requires sent date and applied date). To close: Send each adaptive SCN through the NOM mechanism within 10 business days of date_finished, record sent_on in the register, and add a check that fails when date_finished + 10 business days passes without sent_on.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each adaptive record's notice, carrying its new-risks summary (required by the register), is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py). It is given by publication in the certification data, the method FedRAMP's rules name; nothing is sent to FedRAMP or anyone else. Every deploy builds and publishes all notices (a build or publish failure fails the deploy, and the post-publish round-trip compares the served index and feed), and the index records each notice's deadline and the date it was first published. The scheduled SCN deadline check fails and raises an issue when a notice is unpublished past its deadline. History: the six adaptive notices were first published by the deploy that introduced this mechanism. SCN-2026-001, SCN-2026-002, SCN-2026-003, SCN-2026-004 and SCN-2026-005 were published after their deadlines (2026-06-22, 2026-07-07, 2026-07-23, 2026-10-09, 2026-10-13) and are marked late (onTime false, lateNotices). SCN-2026-006 (deadline 2026-11-10) is on time only if that deploy ran by its deadline; the published index records which.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_adaptive_notice_is_due_ten_business_days_after_finishing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_new_notice_is_dated_today_and_late_ones_say_so"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_unpublished_notice_is_overdue_until_a_deploy_publishes_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_published_outputs_are_listed_signed_and_governed"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-ARI",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/SCN-2026-001-silk-reeling.md sections 3-5 (boundary delta, SIA by control family, verification result) add information beyond SCN-CSO-INF.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each published notification adds, beyond the required items, the change's status, initiation/finish/verification dates, the pull requests that made it, the new-risks summary, its notices with deadlines and publication dates, and a link to the full record (boundary change, impact by control family, verification result).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ],
       "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
     },
     {
       "frr_id": "SCN-CSO-EMG",
-      "status": "Partially Implemented",
-      "implementation": "docs/incident-response.md:86-104 emergency-change procedure; scn-tag.yml:53-58 recognizes 'emergency'.",
-      "evidence": [],
-      "gap": "Never exercised; 'notify all necessary parties' has no channel; no gate that requires the retroactive SCN materials (only a warning). To close: Add a check that opens/blocks until a retroactive SCN record exists for each emergency-tagged commit within 5 business days; route notification through the NOM mechanism.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/incident-response.md (Emergency-change procedure), linked from the Certification Package Overview: an emergency change carries SCN-Type emergency with its SCN-Record; the gate accepts it and states the record is due; the retroactive register row (emergency = yes) is due within 5 business days of the change merging, enforced by the scheduled SCN deadline check, and the published notification marks each retroactive notice against that deadline. Notification is publication. Not yet invoked.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_emergency_change_owes_its_record_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_emergency_notices_are_retroactive_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ],
       "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
     },
     {
       "frr_id": "SCN-CSO-EVA",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/scn-tag.yml (required check, confirmed live by check-manual-settings 'main requires 4 status checks', EXPECTED_REQUIRED_CHECKS l.39) validates an SCN-Type line; docs/policies/cm-policy.md:5; six adaptive records with categorization rationale (docs/scn/SCN-2026-00[1-6]*.md section 1).",
-      "evidence": [],
-      "gap": "Evaluation is not forced: a missing tag passes as routine-recurring (scn-tag.yml:59), and only 8 of 273 commits since 2026-08-01 carry any SCN-Type, so most changes have no recorded evaluation; the gate has no 'not significant' or 'class change' outcome and requires no rationale; commit 437be7b carries 'SCN-Type: Routine Recurring', a value the case statement (l.49-66) rejects. Adaptive tags do not require an SCN record (e.g. #376 tagged adaptive has none). Artifact gap: no example (real or fictitious) for routine-recurring, transformative or class change. SCN-2026-001 (new non-FedRAMP external interconnection) was judged adaptive 'at the upper edge'; the rationale should be revisited. To close: Require an explicit SCN-Type plus a one-line rationale on every PR (fail when missing); add values not-significant and class-change (class-change blocks and points to reassessment); fail when adaptive/transformative lacks a docs/scn record; add documented examples for each type (fictitious allowed).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every pull request (or direct push) must carry SCN-Type (not-significant, routine-recurring, adaptive, transformative, emergency, class-change), a one-line SCN-Rationale and, for adaptive/transformative/emergency, the SCN-Record that will document it; the required scn-tag check (scripts/scn-evaluate.py, rules in scripts/_scn.py) fails a change without them, with no default, and always fails class-change. A change named adaptive, transformative or emergency whose record is not in the register by its deadline fails the scheduled SCN deadline check. docs/scn/evaluation-examples.md gives one example per type (real for adaptive, fictitious otherwise), each checked against the gate. Changes merged before this gate mostly carry no evaluation; the evaluation log starts at the change that introduced it. SCN-2026-001's categorization (adaptive, at the upper edge, for a new external interconnection since removed by SCN-2026-006) is unchanged and left to the operator's review.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_empty_description_fails_there_is_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_workflow_runs_the_tested_gate_with_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_every_type_has_a_documented_example"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_adaptive_change_with_no_record_is_overdue_after_ten_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HIS",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ holds all six SCNs since 2026-06 (README: rows never deleted).",
-      "evidence": [],
-      "gap": "The SCN register and records are in the repository only; nothing under /.well-known/ publishes them, and the CPO lists no SCN material or how FedRAMP obtains it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every notification is published with the certification data at /.well-known/significant-change-notifications.json (+ .md, Atom feed), listed in the Certification Package Overview, and never pruned: a deploy that would drop a published notification or re-date a notice fails (retention exceeds 12 months). The register rows are never deleted.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_build_that_would_drop_a_published_notification_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_published_notice_keeps_its_first_publication_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HRM",
-      "status": "Partially Implemented",
-      "implementation": "Human-readable: docs/scn/*.md and scn-register.csv.",
-      "evidence": [],
-      "gap": "No JSON form of SCNs or of the related audit records (CSV is not JSON); no explanation of how to request them or how sharing is decided. To close: Emit SCN JSON (schema-valid) and the evaluation log as JSON; add access + sharing statement to the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Notifications are published in JSON (FedRAMP SCN schema) and as a Markdown view; the related audit records (the evaluation log) likewise in JSON and Markdown. The index and the Certification Package Overview state that everything is public with no request needed, and how sharing is decided (everything is shared: no federal data, no agency customer).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-INF",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/scn-register.csv columns cover all ten items (fedramp_id, assessor_name, related_vulnerability, scn_type, categorization_rationale, short_description, reason_for_change, customer_impact, plan_and_timeline, sia_reference, approver_name/title); per-change SIA in docs/scn/SCN-2026-00x-*.md.",
-      "evidence": [],
-      "gap": "Service Offering FedRAMP ID is the placeholder '<FR-CERT-ID>'; not emitted in FedRAMP's SCN schema (tests/fixtures/cr26/good/scn.json exists but no builder); SCN-2026-006 verification still unrecorded (trust center scn_unverified); some impacted-control lists reference the retired OSCAL SSP/POA&M. To close: Generate per-SCN JSON in fedramp-significant-change-notifications-schema via _fedramp_schema.write_validated; fill the FedRAMP ID when assigned; record SCN-2026-006 verification.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/scn/scn-register.csv carries the ten items for every record and scripts/_scn.py refuses a row missing one; each deploy writes every row as a notification in FedRAMP's SCN schema (scripts/build-scn.py via _fedramp_schema.write_validated) inside /.well-known/significant-change-notifications.json, with the security impact analysis linked. The Service Offering FedRAMP ID is published as not assigned, with the reason (the offering is not certified). SCN-2026-006's verification is recorded (2026-10-27). Older records' plans name artifacts since retired (the OSCAL SSP/POA&M); they describe the plan as it was.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_committed_register_is_valid"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-MAR",
-      "status": "Partially Implemented",
-      "implementation": "Git history + scn-tag.yml run logs; docs/scn/README.md 'How this relates' explains git history is the audit record; register and per-change records in docs/scn/.",
-      "evidence": [],
-      "gap": "Records of evaluation are incomplete because the default-to-routine path records no evaluation; Actions logs expire (default 90 days), so the gate's decisions are not durable; no explanation in the Certification Package of how FedRAMP obtains the records. To close: Write each evaluation (commit, type, rationale, evaluator, date) to an append-only signed log published with the certification data; state access in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each deploy appends the evaluation of every first-parent commit on main since the last entry (commit, merge date, pull request, SCN type, rationale, record, who merged it) to /.well-known/scn-evaluations.json (+ .md), signed with Sigstore and freshness-governed. The log is append-only against the previous published version: a build that would drop or rewrite an entry, or whose last entry has left main's history, fails. A change merged without a valid evaluation is logged with the problem, not skipped. The Certification Package Overview states how to obtain the records (public, no request needed). The log starts at the change that introduced it; earlier evaluations exist only for the six records in docs/scn.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_append_only_check_fails_each_known_bad_log"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_logs_every_first_parent_commit_from_the_builder_onward"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_fails_when_the_last_logged_commit_left_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-NOM",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/README.md: notification = publishing updated certification data; register notify_by column says 'No necessary parties ... the public GitHub push ... is the notification'.",
-      "evidence": [],
-      "gap": "Mechanism documented only in the repo README, not in the Certification Package (CPO); no list of available notification mechanisms (artifact); a git push is not a notification any party receives. To close: Offer real mechanisms (signed SCN JSON feed + Atom/RSS at /.well-known/, email list) and list them in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Mechanisms: an Atom feed (/.well-known/significant-change-notifications.atom, one entry per notice, subscribable with any feed reader), the signed JSON index and its Markdown view. They are listed, with how to obtain the evaluation records, in the Certification Package Overview's significant_change_notifications section. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_feed_is_atom_with_one_entry_per_notice"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.atom"
+        }
       ],
       "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
     },
     {
       "frr_id": "SCN-RTR-NNR",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ contains only adaptive SCNs; cm-policy.md:5 routine-recurring changes produce no SCN record.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "No formal notification for routine recurring changes: the register refuses a routine-recurring (or not-significant) row, and the evaluation gate refuses an SCN-Record on a routine-recurring or not-significant change.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAF",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-finish notice step or 5-business-day deadline check. To close: Add post-finish notice fields and a deadline check (finish + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "date_finished adds the after-finish notice, due 5 business days later and published with the record's current information; the scheduled SCN deadline check fails while it is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAV",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-verification notice step carrying updates, new risks and the assessment report; no deadline check. To close: Add post-verification notice fields (updates, new risks, SAR link) and a deadline check (verification complete + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "verified_on adds the after-verification notice, due 5 business days later; the register requires the new-risks summary and sar_reference (the assessment report, or why there is none) once verified_on is set; the scheduled SCN deadline check fails while the notice is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NFP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No final-plan notice step or 10-business-day check. To close: Add final-plan notice fields and gate (>=10 business days before start).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "plan_final = yes publishes the final-plan notice, which carries the record's current information (every notice republishes all of it). The evaluation gate blocks the merge until it has been published at least 10 business days. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NIP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "Only a sentence in policy; no template, no planned-start field, no 30-business-day check, no channel to notify parties. To close: Add a transformative SCN template with initial-plan and security-impact sections, sent_on fields and a gate that blocks merge of a transformative change until initial notice is >=30 business days old.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record (docs/scn/TEMPLATE-transformative.md) requires its planned start and a summary of likely security impacts; its initial-plan notice is published with the next deploy and dated. The evaluation gate blocks the merge of the transformative change until the initial-plan notice has been published at least 30 business days (read from the published index; fails closed when the index cannot be read). No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_fails_closed_without_the_published_index"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-TPR",
-      "status": "Not Implemented",
-      "implementation": "No transformative changes; no recorded policy on third-party review.",
-      "evidence": [],
-      "gap": "Neither a third-party review nor an explanation of why one was not engaged exists (artifact accepts either). To close: Add to the transformative template a required 'human validation needed? assessor engaged / reason not engaged' field.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record must state whether the change needs human validation (tpr_human_validation) and name the third-party assessor engaged or why none was (tpr_assessor_or_reason); the register refuses a transformative row without them, and the published notification carries both. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-UPD",
-      "status": "Partially Implemented",
-      "implementation": "Machine-generated documentation (CPO, SDR, OCR) is rebuilt every deploy (deploy-with-opa.yml), so it tracks changes automatically.",
-      "evidence": [],
-      "gap": "Hand-written service documentation is not updated after changes: the Secure Configuration Guide still describes the Basic Auth gate retired by SCN-2026-002 (adaptive) months later; no check ties a transformative change to documentation updates within 30 business days. To close: Add a documentation-update checklist/fields to the SCN record (doc, updated_on) and a check that fails 30 business days after finish if listed docs are unchanged; fix the SCG now.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred. (The Secure Configuration Guide's stale Basic Auth text follows an adaptive change, SCN-2026-002, which this rule does not cover.)",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_documentation_update_is_overdue_after_thirty_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
@@ -2754,12 +3273,25 @@
     },
     {
       "frr_id": "VER-TFR-IRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: policies/triage.rego block_rule 'top-impact-lev-irv' (G2) blocks only N5+LEV+IRV, as a pipeline block; docs/policies/ir-policy.md:13 states the IRI rule in prose.",
-      "evidence": [],
-      "gap": "Nothing treats an internet-reachable likely exploitable vulnerability at N4 or N5 as a FedRAMP Reportable Incident: no incident record is opened, no IIR/OIR/FIR clocks start, and nothing ends that status when it's partially mitigated to N3 or below. N4 IRV+LEV isn't even flagged beyond its 4-day deadline. Depends on the missing IEC machinery. To close: In triage.rego add an 'incident' decision (IRV and LEV and PAIN > N3) and in the builder open/update an incident record in the incident register (see IEC-CSO-EFR) with default PAIN-5 treatment, closing it when a verified partial mitigation brings it to N3 or below. Test with a synthetic finding.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego (incident_triggers) names every VDR finding that is internet-reachable, likely exploitable and above the N-rating the VER-TFR-IRI Class C text states (read from the rule; a changed text fails closed), unless it is a false positive or fully mitigated; once partially mitigated to N3 or below it no longer triggers. scripts/build-incident-report.py publishes each trigger in the incident log and, while no unresolved incident in data/incidents.json names it, puts an Initial report due from the finding's first evaluation at the default N5 clock: the incident-reports workflow fails and the evidence watchdog pages when that passes. Opening the incident record is the operator's act; its reports then follow IEC-CSO-IIR/OIR/FIR. Reconciliation invariant (m) fails a build whose open incident names a finding the VDR does not carry. Adopted in data/incidents.json policy.adopted_vulnerability_rules.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_irv_lev_n4_finding_with_no_incident_is_due_an_initial_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_a_partially_mitigated_finding_at_n3_is_no_longer_an_incident"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_reconcile_m_fails_the_known_bad_register"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
@@ -2794,12 +3326,21 @@
     },
     {
       "frr_id": "VER-TFR-NRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: docs/policies/ir-policy.md:13 adopts NRI in prose ('non-internet-reachable likely-exploitable vulnerabilities at PAIN N5 are reportable until N4 or below per VER-TFR-NRI'); no code implements it.",
-      "evidence": [],
-      "gap": "MAY rule: optional, but the published policy claims it's adopted and nothing implements it. NLEV-IRV N5 findings never open an incident. To close: Either implement alongside IRI (NIRV and LEV and PAIN = N5 -> incident until a partial mitigation brings it to N4) or remove the claim from ir-policy.md and record the decision not to use the MAY.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "Adopted (docs/policies/ir-policy.md; data/incidents.json policy.adopted_vulnerability_rules). policies/triage.rego names every likely exploitable, not internet-reachable VDR finding at the N-rating the VER-TFR-NRI Class C text states (N5), until partially mitigated to N4 or below; the incident log and clocks treat it exactly as VER-TFR-IRI does. An unadopted rule's triggers are still shown but start no clock.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_nirv_lev_n5_finding_opens_under_nri_and_n4_does_not"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unadopted_rule_is_shown_but_starts_no_clock"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ],
       "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
     }

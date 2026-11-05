@@ -1,0 +1,262 @@
+# =============================================================================
+# GitHub Actions Workflow: Incident Reports (IEC-CSO-AIR)
+# =============================================================================
+# FedRAMP's Incident Evaluation and Communication rules put an Initial Incident
+# Report one hour after a FedRAMP Reportable Incident is identified (Class C,
+# N3-N5), and an Ongoing report every six hours after that. The deploy path is
+# behind a human reviewer and cannot keep those clocks, so reporting runs here,
+# unattended, the moment the incident register changes (IEC-CSO-AIR: automate
+# reporting; no hand-crafted email):
+#
+#   push to data/incidents.json on main, or by hand, or twice a day, or after
+#   each nightly VDR refresh
+#     -> validate the register (scripts/_incidents.py, fail-closed)
+#     -> fetch the published VDR, verified against the deploy or nightly
+#        identity, for the vulnerabilities that are reportable incidents
+#        (VER-TFR-IRI / VER-TFR-NRI, decided by policies/triage.rego)
+#     -> build every IIR/OIR/FIR (validated against FedRAMP's incident report
+#        schema) and the incident log (scripts/build-incident-report.py)
+#     -> sign, redaction-gate, publish under /.well-known/incident-*, invalidate
+#     -> check the clocks: fail, and raise an issue, when a report is overdue
+#
+# The evidence watchdog (infrastructure/watchdog.tf) reads the published log
+# hourly and pages by email when a listed report passes its deadline, on AWS's
+# clock, whether or not this workflow runs.
+#
+# NOTIFICATION IS PUBLISH-ONLY. Nothing here sends a report to FedRAMP or to an
+# agency. The operator has not authorized sending, and this system has no
+# FedRAMP certification and no agency customers; the register's policy and
+# every report say so. Sending is a separate decision and a separate change.
+#
+# THE TRADE, as for the evidence nightly: an unattended production write. Its
+# role (infrastructure/bootstrap/incident-reports.tf, operator-applied) can put
+# objects under `.well-known/incident-*` and invalidate the CDN, and nothing
+# else: no Terraform, no website sync, no delete, no read of anything.
+# =============================================================================
+
+name: Incident Reports
+
+on:
+  push:
+    branches: [main]
+    paths: [data/incidents.json]
+  workflow_dispatch:
+  # Called by every deploy (deploy-with-opa.yml, job incident-publisher) after
+  # the deploy job succeeds, so a green deploy proves this publisher assumes its
+  # role from the incident-reports environment and publishes; a deploy whose
+  # publisher cannot fails.
+  workflow_call:
+    # Only the secret the publish step uses; the caller passes it by name.
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID:
+        required: true
+  # Keeps the published log inside its 24-hour freshness window when nothing
+  # changes, and re-reads the VDR for new VER-TFR-IRI/NRI triggers.
+  schedule:
+    - cron: '47 7 * * *'
+    - cron: '47 19 * * *'
+  # Right after each nightly VDR refresh, so a vulnerability that has just
+  # become a reportable incident is in the log within minutes of the VDR.
+  workflow_run:
+    workflows: [Evidence Nightly (VDR refresh)]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: incident-reports
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  # Same pins as the deploy and the nightly (tests/test_incidents.py checks).
+  OPA_VERSION: 1.18.2
+  OPA_SHA256: 9903e5125ac281104f2c4b7371d10cc3b74a98933743fcbfc174f9bf0ab20de8
+  SITE_BUCKET: samaydlette.com
+  SITE_ORIGIN: https://samaydlette.com
+  COSIGN_OIDC_ISSUER: https://token.actions.githubusercontent.com
+
+jobs:
+  report:
+    name: Build, sign and publish incident reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # A nightly that did not succeed published no new VDR; a pull request never
+    # reaches the role. The event check closes a fork branch named `main`.
+    if: >-
+      github.event_name != 'workflow_run' || (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event != 'pull_request' &&
+        github.event.workflow_run.head_repository.full_name == github.repository)
+    # No required reviewer: the clocks run while nobody is awake. The role this
+    # environment can assume writes only .well-known/incident-*.
+    environment: incident-reports
+    outputs:
+      clock: ${{ steps.clock.outcome }}
+      publish: ${{ steps.publish.outcome }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    - name: Setup OPA (triage policy)
+      run: |
+        curl -fL --retry 5 --retry-delay 5 --connect-timeout 10 --max-time 120 \
+          -o opa "https://openpolicyagent.org/downloads/v${{ env.OPA_VERSION }}/opa_linux_amd64_static"
+        echo "${{ env.OPA_SHA256 }}  opa" | sha256sum -c -
+        chmod 755 ./opa
+        sudo mv opa /usr/local/bin
+        opa version
+
+    # The VDR arrives over the public internet, so it is verified before a byte
+    # of it is used: it must be signed by the deploy or the nightly on main.
+    - name: Fetch and verify the published VDR report
+      run: |
+        set -euo pipefail
+        mkdir -p out
+        curl -sfL --retry 3 --retry-delay 5 -o vdr-report.json "${SITE_ORIGIN}/.well-known/vdr-report.json"
+        curl -sfL --retry 3 --retry-delay 5 -o vdr-report.bundle "${SITE_ORIGIN}/.well-known/vdr-report.bundle"
+        ok=0
+        for wf in deploy-with-opa evidence-nightly; do
+          if cosign verify-blob --bundle vdr-report.bundle \
+               --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/$wf.yml@refs/heads/main" \
+               --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" vdr-report.json 2>/dev/null; then ok=1; break; fi
+        done
+        [ "$ok" -eq 1 ] || { echo "::error::the published VDR does not verify; refusing to derive incidents from it"; exit 1; }
+
+    - name: Build incident reports (IIR, OIR, FIR)
+      id: build
+      run: python3 scripts/build-incident-report.py --incidents data/incidents.json --vdr vdr-report.json --out-dir out
+
+    # SIMULATED delivery: each report goes to a simulated FedRAMP and agency
+    # recipient and the delivery log records it. Nothing is sent. A failed
+    # delivery fails the run before anything is published.
+    - name: Deliver incident reports (simulated recipients; nothing sent)
+      run: python3 scripts/deliver-incident-reports.py --dir out
+
+    - name: Sign incident reports
+      working-directory: out
+      run: |
+        set -euo pipefail
+        for f in incident-*.json; do
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done
+
+    - name: Publication redaction gate (no AWS account ID)
+      working-directory: out
+      run: python3 ../scripts/check-published-redaction.py incident-*.json incident-*.md
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+      timeout-minutes: 6
+      with:
+        # Defined in infrastructure/bootstrap/incident-reports.tf. Unset until
+        # the operator applies it and sets the variable; this step then fails
+        # and the alert job says so.
+        role-to-assume: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+        retry-max-attempts: 5
+
+    - name: Publish incident reports to /.well-known/
+      id: publish
+      working-directory: out
+      run: |
+        set -euo pipefail
+        put() {
+          aws s3api put-object --bucket "${SITE_BUCKET}" --key ".well-known/$1" --body "$1" \
+            --content-type "$2" --cache-control "public, max-age=300" --query 'ETag' --output text > /dev/null
+          echo "published .well-known/$1"
+        }
+        # Every report first, the log that lists them last.
+        for f in incident-INC-*.json; do
+          put "$f" "application/json"
+          put "${f%.json}.bundle" "application/json"
+        done
+        put incident-deliveries.json "application/json"
+        put incident-deliveries.bundle "application/json"
+        put incident-reports.md "text/markdown; charset=utf-8"
+        put incident-reports.bundle "application/json"
+        put incident-reports.json "application/json"
+
+    - name: Invalidate CloudFront cache (incident paths only)
+      env:
+        DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+      run: |
+        set -euo pipefail
+        aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "/.well-known/incident-*" --query 'Invalidation.Id' --output text
+
+    - name: Assert the published incident log is fresh at the edge
+      run: |
+        set -euo pipefail
+        python3 scripts/check-evidence-freshness.py \
+          --url "${SITE_ORIGIN}/.well-known/incident-reports.json" \
+          --expect-sha256 "$(sha256sum out/incident-reports.json | awk '{print $1}')" \
+          --retries 12 --retry-delay 20
+
+    # Last, so an overdue report is published (the log says what is late) and
+    # still fails the run. The watchdog pages on the same list independently.
+    - name: Incident report clocks (fail when a report is due and missing)
+      id: clock
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+      run: python3 scripts/build-incident-report.py --check out/incident-reports.json
+
+  alert:
+    name: Alert on incident reporting
+    runs-on: ubuntu-latest
+    needs: [report]
+    if: always() && needs.report.result == 'failure'
+    permissions:
+      contents: read
+      issues: write
+    steps:
+    - name: Raise or update the incident-reporting issue
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        CLOCK: ${{ needs.report.outputs.clock }}
+        PUBLISH: ${{ needs.report.outputs.publish }}
+      with:
+        script: |
+          const TITLE = 'Incident reporting: a report is overdue or was not published';
+          const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+          const clock = process.env.CLOCK || 'not reached';
+          const publish = process.env.PUBLISH || 'not reached';
+          const runbook = `${context.payload.repository.html_url}/blob/main/docs/incident-response.md#reporting-fedramp-reportable-incidents-iec`;
+          const body = [
+            `The incident reports workflow failed ([run](${runUrl}), trigger \`${context.eventName}\`).`,
+            ``,
+            `| | |`, `|---|---|`,
+            `| Report clocks | \`${clock}\` |`,
+            `| Publish | \`${publish}\` |`,
+            ``,
+            clock === 'failure'
+              ? `**A FedRAMP incident report is past its Class C deadline.** The "Incident report clocks" step names each one. Record the report (or open the incident) in data/incidents.json and push; this workflow publishes it.`
+              : `**The reports were not built or published.** Check the failing step. If "Configure AWS credentials" failed, the incident-reports role or the AWS_INCIDENT_REPORTS_ROLE_ARN variable is missing (infrastructure/bootstrap/incident-reports.tf).`,
+            ``,
+            `Runbook: ${runbook}. This issue is reused; each failure adds a comment.`,
+          ].join('\n');
+          const existing = await github.paginate(github.rest.issues.listForRepo, {
+            owner: context.repo.owner, repo: context.repo.repo, state: 'all', per_page: 100,
+            labels: 'incident-reporting',
+          });
+          const match = existing.filter(i => i.title === TITLE && !i.pull_request)
+            .sort((a, b) => (a.state === b.state ? a.number - b.number : a.state === 'open' ? -1 : 1))[0];
+          if (match) {
+            if (match.state === 'closed') {
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: match.number, state: 'open' });
+            }
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: match.number, body });
+          } else {
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: TITLE,
+              body, labels: ['compliance', 'incident-reporting', 'urgent'], assignees: [context.repo.owner] });
+          }

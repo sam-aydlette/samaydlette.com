@@ -38,6 +38,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _ccm  # noqa: E402
 import _decisions  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
+import _incidents  # noqa: E402
 import _offering  # noqa: E402
 import _sensitivity  # noqa: E402
 
@@ -88,6 +89,22 @@ def _day(v):
         return date.fromisoformat(str(v)[:10])
     except ValueError:
         return None
+
+
+def incident_summary(incidents, period_start):
+    """CCM-OCR-AVL item 7, from the incident register: the FedRAMP Reportable
+    Incidents detected this period, or an attestation of none. Exercises are
+    not incidents and are never counted."""
+    log = "The incident log, /.well-known/incident-reports.json, records every incident evaluated, exercises included."
+    real = [i for i in (incidents or {}).get("incidents", [])
+            if not i.get("exercise") and (i.get("evaluation") or {}).get("reportable")
+            and str(i.get("detected_at") or i.get("started_at") or "")[:10] >= period_start]
+    if real:
+        return (f"{len(real)} FedRAMP Reportable Incident(s) this period: "
+                + "; ".join(f"{i['id']} ({_incidents.status(i)})" for i in real) + f". {log}")
+    return ("No FedRAMP Reportable Incidents occurred during this reporting period. The system holds "
+            "no federal customer data, so the IEC-CSO-EFR trigger does not apply; this is an "
+            f"attestation of none, not an omission. {log}")
 
 
 def _in(d, period):
@@ -232,6 +249,7 @@ def build(cal, today, vdr, decisions, scn_rows, incidents, feedback, signal, pro
             "report": kind,
             "continuousMonitoring": _ccm.dates_summary(cal, ref),
             "activeAgenciesStatement": "No agency uses this offering: it is an unsponsored proof of concept.",
+            "incidentAttestation": incident_summary(incidents, period[0].isoformat()),
             "incidentRegister": ("data/incidents.json" if incidents is not None else
                                  "No incident register in this build; the list above is empty because no "
                                  "FedRAMP Reportable Incident has been recorded."),
@@ -263,6 +281,7 @@ def main(argv=None):
     ap.add_argument("--vdr", default="vdr-report.json")
     ap.add_argument("--decisions", default="../data/decisions.json")
     ap.add_argument("--scn-register", default="../docs/scn/scn-register.csv")
+    ap.add_argument("--incidents", default="../data/incidents.json")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--profile", default=str(REPO / "data" / "system-profile.json"))
     ap.add_argument("--offering", default=str(_offering.OFFERING_PATH))
@@ -281,7 +300,7 @@ def main(argv=None):
     prev = _load_json(a.previous) or {}
     issue = date.fromisoformat(a.issue) if a.issue else None
     doc = build(cal, today, _load_json(a.vdr), _decisions.load(a.decisions), _scn_rows(a.scn_register),
-                _load_json(a.incidents), load_feedback(a.feedback), _load_json(a.ksi_signal),
+                _incidents.load(a.incidents) if Path(a.incidents).is_file() else None, load_feedback(a.feedback), _load_json(a.ksi_signal),
                 json.loads(Path(a.profile).read_text()), _offering.load(a.offering), prev, now, issue)
     fs.write_validated(doc, "ocr", a.output)
     if a.md_output:
@@ -328,7 +347,8 @@ def render_markdown(r):
     section(7, "FedRAMP Reportable Incidents",
             [f"- {i['summary']} (occurred {i['occurredAt']}"
              + (f", resolved {i['resolvedAt']})" if i.get("resolvedAt") else ")") for i in inc]
-            or ["No FedRAMP Reportable Incident occurred in this period."])
+            or ["No FedRAMP Reportable Incident occurred in this period."]
+            + ([pe["incidentAttestation"]] if pe.get("incidentAttestation") else []))
     lessons = [f"- {x}" for i in inc for x in i.get("incidentLessonsLearned", [])]
     section(8, "Lessons learned from incidents", lessons)
     s = fb["summaryOfPreviousReport"]

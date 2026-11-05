@@ -62,6 +62,7 @@ CHECKS = {
     "reconcile.e": "G6",
     "reconcile.f": "G6",
     "reconcile.l": "G6",
+    "reconcile.m": "G5",
     "reconcile.i.unreadable": "G7",
     "runtime-divergence.observer-fault": "G7",
     "detection.zap.missing": "G7",

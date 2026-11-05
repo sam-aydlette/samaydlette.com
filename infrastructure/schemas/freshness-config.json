@@ -87,6 +87,30 @@
       "note": "The nightly's status beacon. Unsigned and not evidence; listed because the watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
     },
     {
+      "path": ".well-known/incident-reports.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-reports.bundle",
+      "note": "The incident log (IEC-CSO-EFR) and, through it, every incident report it lists with its sha256. Rebuilt by .github/workflows/incident-reports.yml on every change to data/incidents.json and twice a day, and by every deploy. The report deadlines themselves are hours, so the watchdog also pages on each listed report past its deadline (IncidentReportsOverdue)."
+    },
+    {
+      "path": ".well-known/incident-deliveries.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-deliveries.bundle",
+      "note": "SIMULATION: the delivery log of every incident report to a simulated FedRAMP and agency recipient; nothing is sent. Rebuilt with the incident log by every deploy and by .github/workflows/incident-reports.yml."
+    },
+    {
       "path": ".well-known/ksi-signal-runtime.json",
       "cadence": "runtime",
       "max_age_hours": 26,
@@ -419,6 +443,53 @@
       "signed": true,
       "signature": ".well-known/trust-manifest.bundle",
       "note": "The signed index of all certification data with media types, signatures and human-readable forms (CDS-TRC-PAC)."
+    },
+    {
+      "path": ".well-known/fedramp-inbox-simulation.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/fedramp-inbox-simulation.bundle",
+      "note": "SIMULATION: the FedRAMP Security Inbox is simulated for this proof of concept; this is the deploy's run of the inbox logic over synthetic messages."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.bundle",
+      "note": "Significant Change Notifications index (SCN-CSO-HIS/HRM/NOM), rebuilt every deploy from docs/scn/scn-register.csv; never pruned."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.atom",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.atom.bundle",
+      "note": "Atom feed of the SCN notices (SCN-CSO-NOM); its <updated> is the last notice's date, so the object's last-modified time is used."
+    },
+    {
+      "path": ".well-known/scn-evaluations.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/scn-evaluations.bundle",
+      "note": "Append-only significant-change evaluation log (SCN-CSO-MAR), one entry per change merged to main."
     }
   ]
 }

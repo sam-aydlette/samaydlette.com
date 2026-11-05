@@ -75,7 +75,47 @@ PACKAGE = [
      "FedRAMP Certification Reports received, published unmodified (CDS-CSO-FRC). Simulated: see the file."),
     ("package-submission-log.json", ["Package Submission"],
      "Log of each submission of this package to FedRAMP (FRC-CSO-PKG). Simulated: nothing is sent."),
+    ("significant-change-notifications.json", ["Significant Change Notifications"],
+     "Significant Change Notifications in FedRAMP's SCN schema (SCN-CSO-HIS, SCN-CSO-HRM)."),
+    ("significant-change-notifications.atom", ["Significant Change Notifications"],
+     "Atom feed of the notifications (SCN-CSO-NOM)."),
+    ("scn-evaluations.json", ["Significant Change Notifications"],
+     "Significant-change evaluation log, append-only (SCN-CSO-MAR)."),
+    ("incident-reports.json", ["Incident Reports"],
+     "Incident log and reports in FedRAMP's incident report schema (IEC); exercises are marked as exercises."),
+    ("fedramp-inbox-simulation.json", ["FedRAMP Security Inbox"],
+     "The FedRAMP Security Inbox logic run over synthetic messages (AFC-CSO-INB). Simulated: no mail is "
+     "received or sent."),
 ]
+
+# SCN-CSO-NOM / SCN-CSO-MAR / SCN-CSO-HRM: how notifications are given and how
+# the records are obtained; scripts/build-scn.py publishes the same statement.
+SCN_NOTIFICATION = {
+    "mechanisms": [
+        {"mechanism": "Atom feed", "url": BASE + "significant-change-notifications.atom"},
+        {"mechanism": "Signed JSON index", "url": BASE + "significant-change-notifications.json"},
+        {"mechanism": "Human-readable view", "url": BASE + "significant-change-notifications.md"},
+    ],
+    "method": "Notification is publication: each notice is an update to the Certification Data at the URLs "
+              "above, dated when first published. Nothing is sent by email or to FedRAMP directly.",
+    "evaluation_records": BASE + "scn-evaluations.json",
+    "access": "Public; no request needed. Everything is published to everyone (no federal data, no agency "
+              "customer).",
+    "emergency_procedure": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md"
+                           "#emergency-change-procedure-cr26-scn-cso-emg",
+}
+
+
+def _fsi(off):
+    """The FedRAMP Security Inbox as published. The inbox is simulated for this
+    proof of concept, so this is a contact statement, never an email address,
+    plus the simulation's published results. The change history stays in the
+    repository."""
+    fsi = off.get("fedramp_security_inbox")
+    if not fsi:
+        return None
+    return {"simulated": True, "contact": fsi["contact"], "rule": "AFC-CSO-INB",
+            "simulation": fsi.get("simulation"), "runbook": fsi.get("runbook")}
 
 
 def _fail(msg):
@@ -252,6 +292,10 @@ def provider_extensions(off, prof, signal, dates, groups, assessment):
         "cryptographicModules": off.get("cryptographic_modules", []),
         "independentAssessment": independent_assessment(off, assessment),
         "documentationOverview": off.get("documentation_overview_url"),
+        # AFC-CSO-INB: the FedRAMP Security Inbox contact, from its one source.
+        # Simulated for this proof of concept (no mail is received or sent).
+        "fedrampSecurityInbox": _fsi(off),
+        "significantChangeNotifications": SCN_NOTIFICATION,
     }
 
 
@@ -340,6 +384,8 @@ def render_markdown(c):
            f"- **Accountable official:** {ao['name']}, {ao['title']} ({ao['contact']})",
            f"- **Version:** {m['version']} | **Last updated:** {m['lastUpdated']}",
            f"- **Source:** {m['updateSource']}",
+           f"- **FedRAMP Security Inbox (AFC-CSO-INB):** "
+           f"{(pe.get('fedrampSecurityInbox') or {}).get('contact', 'not established')}",
            f"- **Bound to inventory signal:** `{pe['ksi_signal_id']}`", "",
            "## Service description", "", si["serviceDescription"], "",
            "## Contacts", "", "| Type | Contact |", "|---|---|"]
@@ -373,6 +419,11 @@ def render_markdown(c):
     for mod in pe["cryptographicModules"]:
         out.append(f"| {_cell(mod.get('module', ''))} | {_cell(mod.get('validation', ''))} | "
                    f"{_cell(mod.get('role', ''))} |")
+    scn = pe["significantChangeNotifications"]
+    out += ["", "## Significant Change Notifications (SCN-CSO-NOM)", "", scn["method"], ""]
+    out += [f"- {m['mechanism']}: {m['url']}" for m in scn["mechanisms"]]
+    out += [f"- Evaluation records (SCN-CSO-MAR): {scn['evaluation_records']}",
+            f"- Access: {scn['access']}", f"- Emergency changes (SCN-CSO-EMG): {scn['emergency_procedure']}"]
     ia = pe["independentAssessment"]
     out += ["", "## Trust center and secure configuration", "",
             f"- **Trust center:** {sp['trustCenter']['url']} ({sp['trustCenter']['accessRequestInstructions']})",

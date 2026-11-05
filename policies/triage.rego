@@ -444,3 +444,101 @@ decide(item) := {
 }
 
 decisions := [decide(item) | some item in input.items]
+
+# =============================================================================
+# VULNERABILITIES TREATED AS FEDRAMP REPORTABLE INCIDENTS (VER-TFR-IRI, -NRI)
+# =============================================================================
+# Entry points, over the findings of a built VDR report (input.findings):
+#   data.vdr.triage.incident_triggers   one entry per finding a rule makes a
+#                                       FedRAMP Reportable Incident
+#   data.vdr.triage.incident_errors     non-empty => the caller fails closed
+#
+# The N-rating comparisons are read from the Class C rule text in data.rules,
+# not restated here: "N-rating > 3 ... until ... at N3 or below" (IRI) and
+# "N-rating = 5 ... until ... at N4 or below" (NRI). A rule stays in force for a
+# finding until its current rating (after partial mitigation) is at or below
+# the "until" level, which for both rules is the trigger level's complement.
+# A false positive is not a vulnerability and a fully mitigated finding is not
+# exploitable, so neither triggers. Whether the operator has adopted each rule
+# (IRI is a SHOULD, NRI a MAY at Class C) is the incident register's policy,
+# applied by scripts/build-incident-report.py.
+ver_tfr := data.rules.FRR.VER.data.all.TFR
+
+class_c_statement(rid) := s if {
+	s := ver_tfr[rid].varies_by_class.c.statement
+} else := ver_tfr[rid].statement
+
+rule_digit(pattern, rid) := to_number(m[0][1]) if {
+	m := regex.find_all_string_submatch_n(pattern, class_c_statement(rid), 1)
+	count(m) == 1
+}
+
+iri_above := rule_digit(`N-rating > ([0-9])`, "VER-TFR-IRI")
+
+iri_until := rule_digit(`at N([0-9]) or below`, "VER-TFR-IRI")
+
+nri_equals := rule_digit(`N-rating = ([0-9])`, "VER-TFR-NRI")
+
+nri_until := rule_digit(`at N([0-9]) or below`, "VER-TFR-NRI")
+
+incident_errors contains "VER-TFR-IRI Class C statement no longer reads 'N-rating > n ... at Nn or below'" if {
+	not iri_above
+}
+
+incident_errors contains "VER-TFR-IRI Class C statement no longer reads 'N-rating > n ... at Nn or below'" if {
+	not iri_until
+}
+
+incident_errors contains "VER-TFR-NRI Class C statement no longer reads 'N-rating = n ... at Nn or below'" if {
+	not nri_equals
+}
+
+incident_errors contains "VER-TFR-NRI Class C statement no longer reads 'N-rating = n ... at Nn or below'" if {
+	not nri_until
+}
+
+# The trigger and the exit must be complements; anything else is a changed rule
+# that needs reading before it is trusted.
+incident_errors contains "VER-TFR-IRI: the trigger and the 'until' level are not complements" if {
+	iri_above != iri_until
+}
+
+incident_errors contains "VER-TFR-NRI: the trigger and the 'until' level are not complements" if {
+	nri_until != nri_equals - 1
+}
+
+incident_errors contains msg if {
+	some f in input.findings
+	not regex.match(`^N[0-9]$`, sprintf("%v", [f.pain]))
+	msg := sprintf("%v: impact %v is not an N-rating", [f.tracking_id, f.pain])
+}
+
+pain_number(p) := to_number(substring(p, 1, -1))
+
+still_a_vulnerability(f) if {
+	f.fully_mitigated != true
+	f.final_disposition != "false-positive"
+}
+
+incident_rule(f) := "VER-TFR-IRI" if {
+	f.internet_reachable == true
+	f.likely_exploitable == true
+	pain_number(f.pain) > iri_above
+} else := "VER-TFR-NRI" if {
+	f.internet_reachable == false
+	f.likely_exploitable == true
+	pain_number(f.pain) == nri_equals
+}
+
+incident_triggers := [t |
+	some f in input.findings
+	still_a_vulnerability(f)
+	rule := incident_rule(f)
+	t := {
+		"tracking_id": f.tracking_id,
+		"cve": object.get(f, "cve", null),
+		"rule": rule,
+		"pain": f.pain,
+		"first_evaluated": object.get(f, "first_evaluated", null),
+	}
+]

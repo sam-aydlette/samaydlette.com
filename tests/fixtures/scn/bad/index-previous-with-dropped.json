@@ -1,0 +1,17 @@
+{
+  "$comment": "Known-bad previous index: holds SCN-2025-001, which the current register does not, so a build over it would drop a published notification (SCN-CSO-HIS).",
+  "notifications": [
+    {
+      "scnId": "SCN-2025-001",
+      "notices": [
+        {
+          "stage": "after-finish",
+          "rule": "SCN-ADP-NTF",
+          "deadline": "2025-12-01",
+          "publishedOn": "2025-11-20",
+          "onTime": true
+        }
+      ]
+    }
+  ]
+}
