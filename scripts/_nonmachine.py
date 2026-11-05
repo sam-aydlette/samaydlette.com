@@ -28,7 +28,7 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # The rule's "at least once every 3 months": the longest three calendar months.
 RULE_MAX_DAYS = 92
 # Directories whose every Markdown file is a non-machine resource that must be listed.
-MUST_LIST = (("docs/policies", {"README.md"}), ("docs/runbooks", set()))
+MUST_LIST: tuple[tuple[str, set[str]], ...] = (("docs/policies", {"README.md"}), ("docs/runbooks", set()))
 
 
 def _fail(msg):

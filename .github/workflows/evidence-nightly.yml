@@ -680,6 +680,34 @@ jobs:
         python3 ../scripts/check-non-machine-vv.py --out vdr-non-machine-vv.json
         cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
 
+    # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
+    # in human-readable form, listing every kind of detection and response
+    # activity ("none this period" when nothing happened). The previous published
+    # report carries the month's earlier runs forward, read only if its signature
+    # verifies against this workflow or the other publisher.
+    - name: Build monthly VDR activity report (VER-TFR-MHR)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        prev=()
+        if curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.json "${SITE_ORIGIN}/.well-known/vdr-monthly.json"; then
+          curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.bundle "${SITE_ORIGIN}/.well-known/vdr-monthly.bundle"
+          ok=0
+          for identity in "${DEPLOY_SIGNER_IDENTITY}" \
+              "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
+            if cosign verify-blob --bundle previous-vdr-monthly.bundle --certificate-identity "$identity" \
+                 --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" previous-vdr-monthly.json 2>/dev/null; then ok=1; break; fi
+          done
+          [ "$ok" -eq 1 ] || { echo "::error::previous vdr-monthly.json does not verify; refusing to carry it forward"; exit 1; }
+          prev=(--previous previous-vdr-monthly.json)
+        else
+          echo "No previous vdr-monthly.json published; the month starts with this build's runs."
+        fi
+        python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
+          --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
+          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
+
     # The published VDR carries a SLSA/in-toto provenance attestation, and that
     # attestation binds to the artifact's sha256. Republishing vdr-report.json
     # without re-attesting it would leave the served
@@ -731,6 +759,7 @@ jobs:
         vdr-report.json vdr-report.md vdr-trend.json
         vdr-detail-report.json vdr-detail-report.md vdr-accepted-vulnerabilities.json
         vdr-accepted-vulnerabilities.md vdr-history.json vdr-non-machine-vv.json
+        vdr-monthly.json vdr-monthly.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -762,6 +791,10 @@ jobs:
         # Non-machine V&V status (VDR-TFR-NMV).
         put vdr-non-machine-vv.json   "application/json"
         put vdr-non-machine-vv.bundle "application/json"
+        # Monthly activity report (VER-TFR-MHR).
+        put vdr-monthly.json   "application/json"
+        put vdr-monthly.bundle "application/json"
+        put vdr-monthly.md     "text/markdown; charset=utf-8"
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"

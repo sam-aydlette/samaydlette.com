@@ -1,0 +1,40 @@
+{
+  "$schema": "../infrastructure/schemas/vdr-activities.schema.json",
+  "schema": "vdr-activities/1",
+  "$comment": "Vulnerability detection and response activity that happens outside the pipeline (VER-RPT-HLO): vulnerability disclosure reports received, bug bounty reports, penetration tests, assessments and manual scans. The operator records each one here when it happens; scripts/build-vdr-monthly.py lists it in the month it happened, and states 'none this period' for each kind with no entry. A kind with no entries in a month means none was recorded, so a report received and not recorded here is a gap in the record. The two seed entries were AI-drafted from the repository on 2026-11-05 (docs/security-review.md; DEC-039 and DEC-040) for the operator's review.",
+  "programs": {
+    "vdp": {
+      "active": true,
+      "note": "reports to the contact in /.well-known/security.txt"
+    },
+    "bug-bounty": {
+      "active": false,
+      "note": "no bug bounty program"
+    },
+    "penetration-testing": {
+      "active": false,
+      "note": "no penetration test has been performed or scheduled"
+    }
+  },
+  "activities": [
+    {
+      "id": "ACT-001",
+      "kind": "tabletop",
+      "date": "2026-05-08",
+      "performed_by": "Sam Aydlette (operator; self-performed)",
+      "summary": "Independent-assessment-style external assessment, self-performed; findings SAR-001 to SAR-009",
+      "evidence": "docs/security-review.md (2026-Q2 quarterly review)",
+      "recorded_by": "AI-drafted from the repository, 2026-11-05; for the operator's confirmation"
+    },
+    {
+      "id": "ACT-002",
+      "kind": "manual-scan",
+      "date": "2026-10-26",
+      "end_date": "2026-10-27",
+      "performed_by": "Sam Aydlette (operator)",
+      "summary": "Manual OWASP ZAP scans of https://samaydlette.com; alerts 10099 and 10036-2 assessed as false positives",
+      "evidence": "data/decisions.json DEC-039, DEC-040 (original_detection_date 2026-10-26)",
+      "recorded_by": "AI-drafted from the repository, 2026-11-05; for the operator's confirmation"
+    }
+  ]
+}

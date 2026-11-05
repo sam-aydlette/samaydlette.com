@@ -97,6 +97,7 @@ for f in ksi-signal.json ksi-signal.bundle \
          vdr-accepted-vulnerabilities.json vdr-accepted-vulnerabilities.bundle \
          vdr-history.json vdr-history.bundle \
          vdr-non-machine-vv.json vdr-non-machine-vv.bundle \
+         vdr-monthly.json vdr-monthly.bundle \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
          trust-center.json trust-center.bundle; do
@@ -167,8 +168,9 @@ for art in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
     bad "$art.json signature"
   fi
 done
-# The non-machine V&V status (VDR-TFR-NMV), republished with the VDR.
-for art in vdr-non-machine-vv; do
+# The non-machine V&V status (VDR-TFR-NMV) and the monthly activity report
+# (VER-TFR-MHR), republished with the VDR.
+for art in vdr-non-machine-vv vdr-monthly; do
   if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY" "$NIGHTLY_IDENTITY"; then
     ok "$art.json signed by a pinned workflow on main"
   else

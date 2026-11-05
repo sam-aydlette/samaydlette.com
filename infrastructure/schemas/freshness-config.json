@@ -76,6 +76,18 @@
       "note": "CR26 historical vulnerability activity (VER-TFR-MRH; Class C SHOULD update at least every 14 days), rebuilt from every VDR report."
     },
     {
+      "path": ".well-known/vdr-monthly.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "generatedAt"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-monthly.bundle",
+      "note": "Monthly vulnerability detection and response activity report, month to date (VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER), rebuilt from every VDR report."
+    },
+    {
       "path": ".well-known/vdr-non-machine-vv.json",
       "cadence": "operator",
       "max_age_hours": 2208,
