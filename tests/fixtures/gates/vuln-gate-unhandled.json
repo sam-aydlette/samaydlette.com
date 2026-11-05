@@ -1,0 +1,2 @@
+{"findings": [{"source": "grype", "cve": "CVE-2099-0004", "tool_id": "CVE-2099-0004", "resource": "pkg:npm/a@1",
+               "severity": "HIGH", "fix_state": "fixed", "tracking_id": "grype-CVE-2099-0004-pkg:npm/a@1"}]}

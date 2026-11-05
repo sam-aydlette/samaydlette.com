@@ -1,7 +1,7 @@
 # tfsec configuration.
 # =============================================================================
-# Excludes are tracked in docs/poam.md where applicable. Excluded checks here
-# are evaluated as False Positive in the FedRAMP POA&M sense: tfsec's
+# Excludes are decision records in data/decisions.json where applicable.
+# Excluded checks here are recorded as false positives: tfsec's
 # heuristic flags them, but the underlying IAM policy is appropriately scoped
 # upon inspection. Rationale per exclude is recorded inline below.
 # =============================================================================

@@ -20,6 +20,14 @@
 #
 # WHAT BLOCKS AND WHAT DOES NOT
 #
+# The modes below are governed decision records in
+# infrastructure/schemas/gate-modes.json (REQ-GAT-4), read through
+# scripts/_gates.py: `runtime-divergence.diverged` (G4) and
+# `runtime-divergence.observer-fault` (G7). What follows is the reasoning behind
+# the recorded modes; changing one is an edit to that register, with a reason
+# and a review date, not an edit here. A detect-and-recover fault is published
+# as a gate event and queued by the trust center.
+#
 #   status=diverged  -> BLOCK. A KSI the deploy gate published as PASSING is
 #                       failing against the live account. Someone should look
 #                       before layering another change on top.
@@ -68,6 +76,10 @@ import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _gates  # noqa: E402
 
 DEFAULT_URL = "https://samaydlette.com/.well-known/ksi-signal-runtime.json"
 
@@ -135,16 +147,26 @@ def describe(entries):
     )
 
 
-def evaluate(signal, max_age_hours, now=None):
-    """Return (exit_code, lines_to_print). Pure, so the tests can drive it."""
+def observer_fault(gates, msg):
+    """The evaluator could not reach a verdict (G7). Its governed mode decides:
+    block stops the deploy; detect-and-recover publishes the fault and goes on."""
+    if _gates.blocks(gates, "runtime-divergence.observer-fault"):
+        print(f"::error::divergence-gate: {clean(msg)}", file=sys.stderr)
+        return BLOCK
+    warn(msg)
+    _gates.record_event(gates, "runtime-divergence.observer-fault", clean(msg))
+    return PASS
+
+
+def evaluate(signal, max_age_hours, now=None, gates=None):
+    """Return (exit_code, lines_to_print). Pure apart from the gate-mode
+    register it reads, so the tests can drive it."""
+    gates = gates or _gates.load_gate_modes()
     out = []
     div = signal.get("divergence")
     if not isinstance(div, dict):
-        warn(
-            "published runtime signal carries no `divergence` block; the emitter "
-            "that produces it has not been deployed yet. Not blocking."
-        )
-        return PASS, out
+        return observer_fault(gates, "published runtime signal carries no `divergence` block; "
+                                     "the emitter that produces it has not been deployed yet."), out
 
     status = div.get("status")
     against = div.get("compared_against") or {}
@@ -159,12 +181,13 @@ def evaluate(signal, max_age_hours, now=None):
 
     stale = age is None or age > max_age_hours
     if stale:
-        warn(
+        code = observer_fault(gates,
             f"runtime signal is stale or undateable "
             f"({'no parseable emitted_at' if age is None else f'{age:.1f}h > {max_age_hours}h'}). "
             "The daily evaluation may not be running, so this gate is not "
-            "currently protecting anything. Not blocking."
-        )
+            "currently protecting anything.")
+        if code == BLOCK:
+            return BLOCK, out
 
     if status == "diverged":
         regressions = div.get("regressions") or []
@@ -176,6 +199,10 @@ def evaluate(signal, max_age_hours, now=None):
                 f"divergence reported ({describe(regressions)}) but the signal is "
                 "stale; not blocking on an out-of-date verdict. Check the dashboard."
             )
+            return PASS, out
+        if not _gates.blocks(gates, "runtime-divergence.diverged"):
+            _gates.record_event(gates, "runtime-divergence.diverged",
+                                f"{len(regressions)} KSI(s) diverged: {describe(regressions)}")
             return PASS, out
         out.append("")
         out.append("DEPLOY BLOCKED — the live system disagrees with its published compliance state.")
@@ -198,20 +225,16 @@ def evaluate(signal, max_age_hours, now=None):
     if status == "degraded":
         unassessed = div.get("unassessed") or []
         unattributed = div.get("unattributed_failures") or 0
-        warn(
+        return observer_fault(gates,
             "runtime evaluation is DEGRADED — the evaluator could not reach a "
             f"verdict on {len(unassessed)} KSI(s)"
             + (f" plus {unattributed} unattributed failure(s)" if unattributed else "")
             + f". {describe(unassessed)}. "
             "This is an observer fault (check the evaluator's permissions), not "
-            "drift, so it does not block. It does mean the gate is only partly "
-            "protecting this deploy."
-        )
-        return PASS, out
+            "drift. It does mean the gate is only partly protecting this deploy."), out
 
     if status != "converged":
-        warn(f"unrecognized divergence status '{clean(status)}'; treating as non-blocking.")
-        return PASS, out
+        return observer_fault(gates, f"unrecognized divergence status '{clean(status)}'."), out
 
     out.append("Runtime evaluation agrees with the published deploy-time verdict.")
     return PASS, out
@@ -231,6 +254,7 @@ def main():
     ap.add_argument("--allow-divergence", metavar="REASON", default=None,
                     help="break-glass: proceed despite divergence, recording REASON")
     a = ap.parse_args()
+    gates = _gates.load_gate_modes()
 
     if a.signal:
         signal = json.loads(open(a.signal).read())
@@ -238,14 +262,9 @@ def main():
         try:
             signal = fetch(a.url, a.timeout)
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as e:
-            warn(
-                f"could not read the published runtime signal ({type(e).__name__}). "
-                "Availability failures do not block deploys — see the header of "
-                "this script. Not blocking."
-            )
-            return PASS
+            return observer_fault(gates, f"could not read the published runtime signal ({type(e).__name__}).")
 
-    code, lines = evaluate(signal, a.max_age_hours)
+    code, lines = evaluate(signal, a.max_age_hours, gates=gates)
     for line in lines:
         print(line, file=sys.stderr if code == BLOCK else sys.stdout)
 

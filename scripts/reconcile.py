@@ -10,28 +10,27 @@
 # Invariants (assessment Task 1):
 #   (a) completeness   — every live in-boundary resource is in the inventory
 #                        (deny-by-default; enumerated from live AWS, not state)
-#   (b) referential    — every SSP component and POA&M asset resolves to an
-#                        inventory entry
+#   (b) referential    — every SSP component resolves to an inventory entry
 #   (c) suppressions   — every suppressed Checkov finding is categorized as
 #                        exactly one of risk-accepted / false-positive /
-#                        remediated, consistently across .checkov.yaml,
-#                        docs/poam.md, and the VDR
-#   (d) impact level   — one identical impact level across signal, SSP, POA&M,
-#                        VDR, and dashboard; nothing asserts the system is Low
+#                        remediated, consistently across .checkov.yaml, the
+#                        decision register (data/decisions.json), and the VDR
+#   (d) impact level   — one identical impact level across signal, SSP, VDR
+#                        and dashboard; nothing asserts the system is Low
 #   (e) binding        — all artifacts are built from one inventory signal_id
 #                        and carry it
 #   (f) publish freshness — staged artifacts carry the current commit and a
 #                        fresh emitted_at (the live round-trip half is Task 1.5)
-#   (g) POA&M parity   — the OSCAL POA&M's item set exactly equals the formal
-#                        POA&M items in docs/poam.md, so the human and
-#                        machine-readable registers can never silently drift
-#   (h) finding coverage — every VDR finding carries a poam_ref that resolves
-#                        to a POA&M item
+#   (g) retired        — held the OSCAL POA&M and docs/poam.md in parity; the
+#                        POA&M was replaced by one decision register (CR26)
+#   (h) finding coverage — every VDR finding carries a decision_id that resolves
+#                        to an in-force record in the decision register
 #   (i) classification tags — live resource tags match the inventory's
 #                        projected classification (with --live)
-#   (j) POA&M reference validity — every POAM-NNN mentioned anywhere in a
-#                        generated artifact resolves to a formal POA&M item
-#                        (or an explicitly retired ID), so a typo'd or
+#   (j) decision reference validity — every DEC-NNN or POAM-NNN mentioned
+#                        anywhere in a generated artifact resolves to the
+#                        decision register by id or former_id (or is an
+#                        explicitly retired ID), so a typo'd or
 #                        vanished cross-reference cannot publish silently
 #   (k) retired       — bound a customer-assessment bundle that is no longer
 #                        published by this site; the letter is not reused
@@ -58,6 +57,10 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _decisions  # noqa: E402
+import _gates  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -286,9 +289,9 @@ def check_i_classification_tags(signal, live_tags):
 
 
 # ----------------------------------------------------------------------------
-# (b) referential — SSP components and POA&M assets resolve to inventory entries
+# (b) referential — SSP components resolve to inventory entries
 # ----------------------------------------------------------------------------
-def check_b_referential(signal, ssp, poam):
+def check_b_referential(signal, ssp):
     violations = []
     comp_ids = inventory_component_ids(signal)
     native = inventory_native_ids(signal)
@@ -310,13 +313,6 @@ def check_b_referential(signal, ssp, poam):
             if props.get("inventory-component-id") or props.get("aws-arn"):
                 violations.append(f"(b) SSP component does not resolve to inventory: {ref}")
 
-    # POA&M items: any explicit affected-resource prop must resolve.
-    for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or []):
-        for p in item.get("props", []) or []:
-            if p.get("name") in ("affected-resource", "inventory-component-id", "aws-arn"):
-                ref = p.get("value")
-                if ref and ref not in known and not any(ref in k or k in ref for k in known if k):
-                    violations.append(f"(b) POA&M asset does not resolve to inventory: {ref}")
     return violations
 
 
@@ -341,39 +337,38 @@ def parse_checkov_skips(checkov_yaml_text):
     return skips
 
 
-def check_c_suppressions(checkov_skips, ckv_to_poam, poam_md_text, vdr,
-                         false_positive_ckvs):
+def check_c_suppressions(checkov_skips, register, vdr):
     """Every suppressed Checkov finding is categorized exactly once and the
-    sources agree. Categories:
-      risk-accepted  -> CKV maps to a POAM with a non-null poam_ref in the VDR
-                        AND the POAM id appears in docs/poam.md
-      false-positive -> CKV listed in the False Positives register
+    sources agree. The categories come from the decision register
+    (data/decisions.json, in-force records' applies_to.check_ids):
+      risk-accepted  -> the check resolves to a risk-accepted record, and that
+                        record's ID is a non-null decision_id in the VDR
+      false-positive -> the check resolves to a false-positive record
       remediated     -> suppression removed (so not in checkov_skips at all)
     """
     violations = []
-    vdr_poam_refs = {r.get("poam_ref") for r in vdr.get("risk_accepted", []) if r.get("poam_ref")}
+    accepted, false_pos = _decisions.check_maps(register)
+    vdr_decision_ids = {r.get("decision_id") for r in vdr.get("risk_accepted", []) if r.get("decision_id")}
     for ckv in checkov_skips:
-        is_fp = ckv in false_positive_ckvs
-        poam_id = ckv_to_poam.get(ckv)
-        is_ra = poam_id is not None
+        is_fp = ckv in false_pos
+        dec_id = accepted.get(ckv)
+        is_ra = dec_id is not None
         if is_fp and is_ra:
             violations.append(f"(c) {ckv} is categorized as BOTH false-positive and risk-accepted")
             continue
         if not is_fp and not is_ra:
-            violations.append(f"(c) suppressed {ckv} is uncategorized (not risk-accepted, false-positive, or remediated)")
+            violations.append(f"(c) suppressed {ckv} is uncategorized (no in-force risk-accepted or "
+                              "false-positive record in data/decisions.json)")
             continue
-        if is_ra:
-            if poam_id not in vdr_poam_refs:
-                violations.append(f"(c) {ckv} -> {poam_id} but {poam_id} has no non-null poam_ref in the VDR")
-            if poam_id not in poam_md_text:
-                violations.append(f"(c) {ckv} -> {poam_id} but {poam_id} is absent from docs/poam.md")
+        if is_ra and dec_id not in vdr_decision_ids:
+            violations.append(f"(c) {ckv} -> {dec_id} but {dec_id} has no non-null decision_id in the VDR")
     return violations
 
 
 # ----------------------------------------------------------------------------
 # (d) impact level identical; nothing asserts Low
 # ----------------------------------------------------------------------------
-def extract_impacts(signal, ssp, poam, vdr, dashboard_html):
+def extract_impacts(signal, ssp, vdr, dashboard_html):
     impacts = {}
     impacts["signal"] = normalize_impact(
         signal.get("categorization", {}).get("impact_level"))
@@ -381,10 +376,6 @@ def extract_impacts(signal, ssp, poam, vdr, dashboard_html):
         ssp.get("system-security-plan", {})
            .get("system-characteristics", {})
            .get("security-sensitivity-level"))
-    poam_props = {p.get("name"): p.get("value")
-                  for p in poam.get("plan-of-action-and-milestones", {})
-                              .get("metadata", {}).get("props", []) or []}
-    impacts["poam"] = normalize_impact(poam_props.get("impact-level"))
     impacts["vdr"] = normalize_impact(vdr.get("impact_level") or
                                       ("class " + vdr.get("class", "")).strip())
     # dashboard (the trust center page, website/trust/index.html): its static
@@ -397,9 +388,9 @@ def extract_impacts(signal, ssp, poam, vdr, dashboard_html):
     return impacts
 
 
-def check_d_impact(signal, ssp, poam, vdr, dashboard_html, expected="moderate"):
+def check_d_impact(signal, ssp, vdr, dashboard_html, expected="moderate"):
     violations = []
-    impacts = extract_impacts(signal, ssp, poam, vdr, dashboard_html)
+    impacts = extract_impacts(signal, ssp, vdr, dashboard_html)
     for art, val in impacts.items():
         if val is None:
             violations.append(f"(d) {art} carries no extractable impact level")
@@ -418,17 +409,15 @@ def _first_prop(props, name):
     return None
 
 
-def check_e_binding(signal, ssp, poam, vdr):
+def check_e_binding(signal, ssp, vdr):
     violations = []
     sid = signal.get("signal_id")
     if not sid:
         return ["(e) signal has no signal_id"]
     ssp_md = ssp.get("system-security-plan", {}).get("metadata", {})
     ssp_sid = _first_prop(ssp_md.get("props"), "ksi-signal-source")
-    poam_md = poam.get("plan-of-action-and-milestones", {}).get("metadata", {})
-    poam_sid = _first_prop(poam_md.get("props"), "ksi-signal-id")
     vdr_sid = vdr.get("ksi_signal_id")
-    for art, got in (("ssp", ssp_sid), ("poam", poam_sid), ("vdr", vdr_sid)):
+    for art, got in (("ssp", ssp_sid), ("vdr", vdr_sid)):
         if got != sid:
             violations.append(f"(e) {art} signal_id {got!r} != inventory signal_id {sid!r}")
     return violations
@@ -437,7 +426,7 @@ def check_e_binding(signal, ssp, poam, vdr):
 # ----------------------------------------------------------------------------
 # (f) publish freshness (staged half; live round-trip is Task 1.5)
 # ----------------------------------------------------------------------------
-def check_f_freshness(signal, ssp, poam, vdr, expected_commit):
+def check_f_freshness(signal, vdr, expected_commit):
     violations = []
     if not expected_commit:
         return violations  # not enforced outside CI
@@ -449,22 +438,6 @@ def check_f_freshness(signal, ssp, poam, vdr, expected_commit):
     return violations
 
 
-# ----------------------------------------------------------------------------
-# (g) POA&M register parity — docs/poam.md <-> oscal-poam.json
-# ----------------------------------------------------------------------------
-def _formal_poam_ids_in_md(poam_md_text):
-    """POA&M IDs that docs/poam.md tracks as FORMAL items: those appearing as a
-    section header (### POAM-NNN) or as the first cell of a table row
-    (| POAM-NNN | ...). IDs that occur only in prose cross-references (e.g.
-    "see POAM-016") are deliberately NOT formal items and are excluded."""
-    ids = set()
-    for line in poam_md_text.splitlines():
-        m = re.match(r"\s*#{1,6}\s*(POAM-\d{3})\b", line) or re.match(r"\s*\|\s*(POAM-\d{3})\b", line)
-        if m:
-            ids.add(m.group(1))
-    return ids
-
-
 def _all_vdr_findings(vdr):
     """Every finding the VDR carries, across all disposition buckets."""
     return (list(vdr.get("findings", []) or [])
@@ -472,78 +445,51 @@ def _all_vdr_findings(vdr):
             + list(vdr.get("false_positives", []) or []))
 
 
-def check_h_finding_coverage(vdr, poam):
+def check_h_finding_coverage(vdr, register):
     """(h) Every VDR finding — open, risk-accepted, or false-positive — must
-    carry a poam_ref that resolves to a poam-item in the OSCAL POA&M. This is the
-    invariant whose absence let 18 inline-suppressed / tfsec findings publish as
-    open with a null poam_ref: a suppressed finding with no POA&M home, and an
-    open finding with no remediation item, both fail closed here."""
+    carry a decision_id that resolves to an in-force record in the decision
+    register (data/decisions.json). This is the invariant whose absence let 18
+    inline-suppressed / tfsec findings publish as open with a null reference: a
+    suppressed finding with no recorded decision, and an open finding with no
+    decision, both fail closed here."""
     violations = []
-    poam_ids = {
-        p["value"]
-        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
-        for p in (item.get("props", []) or [])
-        if p.get("name") == "poam-id" and p.get("value")
-    }
+    in_force = {r["id"] for r in _decisions.in_force(register)}
+    known = set(_decisions.records(register))
     for f in _all_vdr_findings(vdr):
-        ref = f.get("poam_ref")
+        ref = f.get("decision_id")
         tid = f.get("tracking_id", "?")
         disp = f.get("current_disposition") or f.get("final_disposition") or "open"
         if not ref:
-            violations.append(f"(h) VDR finding {tid!r} (disposition {disp}) has no poam_ref")
-        elif ref not in poam_ids:
-            violations.append(f"(h) VDR finding {tid!r} references {ref} which is not a POA&M item")
+            violations.append(f"(h) VDR finding {tid!r} (disposition {disp}) has no decision_id")
+        elif ref not in known:
+            violations.append(f"(h) VDR finding {tid!r} references {ref} which is not in the decision register")
+        elif ref not in in_force:
+            violations.append(f"(h) VDR finding {tid!r} references {ref}, a closed decision")
     return violations
 
 
 # ----------------------------------------------------------------------------
-# (j) POA&M reference validity — narrative cross-references resolve
+# (j) decision reference validity — narrative cross-references resolve
 # ----------------------------------------------------------------------------
-# Generators embed POA&M IDs in narrative strings (baseline_configuration,
-# SSP statements, VDR dispositions) as traceability pointers. The IDs are
-# permanent, so referencing them is safe — but only if they resolve. Retired
-# IDs stay referenceable for history without being register items.
+# Generators embed decision IDs in narrative strings (baseline_configuration,
+# SSP statements, VDR dispositions) as traceability pointers. A DEC-NNN must be
+# a record in the decision register; a POAM-NNN (from before the register) must
+# be a record's former_id, or an explicitly retired ID.
 RETIRED_POAM_IDS = {"POAM-016"}
 
-_POAM_REF_RE = re.compile(r"POAM-\d{3}")
+_DECISION_REF_RE = re.compile(r"\b(?:DEC|POAM)-\d{3}\b")
 
 
-def check_j_poam_ref_validity(signal, ssp, poam, vdr):
-    """(j) Every POAM-NNN string in a generated artifact must be a formal item
-    in the OSCAL POA&M register or an explicitly retired ID."""
-    poam_ids = {
-        p["value"]
-        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
-        for p in (item.get("props", []) or [])
-        if p.get("name") == "poam-id" and p.get("value")
-    }
-    ok = poam_ids | RETIRED_POAM_IDS
+def check_j_decision_id_validity(signal, ssp, vdr, register):
+    """(j) Every DEC-NNN or POAM-NNN string in a generated artifact resolves to
+    the decision register (by id or former_id) or is an explicitly retired ID."""
+    ok = set(_decisions.by_any_id(register)) | RETIRED_POAM_IDS
     violations = []
-    for name, art in (("signal", signal), ("ssp", ssp), ("poam", poam), ("vdr", vdr)):
-        refs = set(_POAM_REF_RE.findall(json.dumps(art)))
+    for name, art in (("signal", signal), ("ssp", ssp), ("vdr", vdr)):
+        refs = set(_DECISION_REF_RE.findall(json.dumps(art)))
         for ref in sorted(refs - ok):
             violations.append(
-                f"(j) {name} references {ref}, which is neither a POA&M item nor a retired ID")
-    return violations
-
-
-def check_g_poam_parity(poam, poam_md_text):
-    """(g) The OSCAL POA&M's item set must exactly equal the formal POA&M items
-    in docs/poam.md. Both registers are hand-maintained; without this check they
-    drift (a missing OSCAL item hides an open finding from a machine-readable
-    consumer — the exact failure mode this gate exists to prevent)."""
-    violations = []
-    md_ids = _formal_poam_ids_in_md(poam_md_text)
-    oscal_ids = {
-        p["value"]
-        for item in (poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or [])
-        for p in (item.get("props", []) or [])
-        if p.get("name") == "poam-id" and p.get("value")
-    }
-    for missing in sorted(md_ids - oscal_ids):
-        violations.append(f"(g) {missing} is a formal item in docs/poam.md but is absent from the OSCAL POA&M")
-    for extra in sorted(oscal_ids - md_ids):
-        violations.append(f"(g) {extra} is in the OSCAL POA&M but is not a formal item in docs/poam.md")
+                f"(j) {name} references {ref}, which is neither a decision record nor a retired ID")
     return violations
 
 
@@ -589,21 +535,17 @@ def check_l_boundary_map(signal, boundary_map, expected_commit=None):
     return violations
 
 
-def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
-            ckv_to_poam, poam_md_text, false_positive_ckvs,
+def run_all(signal, ssp, vdr, dashboard_html, checkov_text, register,
             live_arns=None, expected_commit=None, live_tags=None,
             boundary_map=None):
     violations = []
-    violations += check_d_impact(signal, ssp, poam, vdr, dashboard_html)
-    violations += check_e_binding(signal, ssp, poam, vdr)
-    violations += check_b_referential(signal, ssp, poam)
-    violations += check_c_suppressions(parse_checkov_skips(checkov_text),
-                                       ckv_to_poam, poam_md_text, vdr,
-                                       false_positive_ckvs)
-    violations += check_f_freshness(signal, ssp, poam, vdr, expected_commit)
-    violations += check_g_poam_parity(poam, poam_md_text)
-    violations += check_h_finding_coverage(vdr, poam)
-    violations += check_j_poam_ref_validity(signal, ssp, poam, vdr)
+    violations += check_d_impact(signal, ssp, vdr, dashboard_html)
+    violations += check_e_binding(signal, ssp, vdr)
+    violations += check_b_referential(signal, ssp)
+    violations += check_c_suppressions(parse_checkov_skips(checkov_text), register, vdr)
+    violations += check_f_freshness(signal, vdr, expected_commit)
+    violations += check_h_finding_coverage(vdr, register)
+    violations += check_j_decision_id_validity(signal, ssp, vdr, register)
     violations += check_l_boundary_map(signal, boundary_map, expected_commit)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
@@ -612,40 +554,10 @@ def run_all(signal, ssp, poam, vdr, dashboard_html, checkov_text,
     return violations
 
 
-def _load_ckv_to_poam():
-    """Import the CKV->POAM map from the VDR builder (single source)."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("_vdr", REPO / "scripts" / "build-vdr-report.py")
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    for attr in ("POAM_BY_CHECK_ID", "CKV_TO_POAM", "CHECKOV_TO_POAM", "SUPPRESSION_POAM"):
-        if hasattr(m, attr):
-            return getattr(m, attr)
-    return {}
-
-
-def _load_false_positives(text=None):
-    """CKV ids recorded in the docs/poam.md False Positives register."""
-    if text is None:
-        text = (REPO / "docs" / "poam.md").read_text()
-    fp = set()
-    in_fp = False
-    for line in text.splitlines():
-        low = line.lower()
-        if "false positive" in low and line.lstrip().startswith("#"):
-            in_fp = True
-            continue
-        if in_fp and line.lstrip().startswith("#") and "false positive" not in low:
-            in_fp = False
-        if in_fp:
-            fp.update(re.findall(r"CKV[_A-Z0-9]+", line))
-    return fp
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--artifacts-dir", default="infrastructure",
-                    help="dir holding ksi-signal.json, oscal-ssp.json, oscal-poam.json, vdr-report.json")
+                    help="dir holding ksi-signal.json, oscal-ssp.json, vdr-report.json")
     ap.add_argument("--live", action="store_true", help="enumerate live AWS for invariants (a) completeness and (i) classification tags (CI)")
     ap.add_argument("--live-fixture", default=None, help="JSON array of live ARNs (tests)")
     ap.add_argument("--live-tags-fixture", default=None, help="JSON object {arn: {tag: value}} of live resource tags (tests)")
@@ -657,15 +569,15 @@ def main():
                     help="on success, write the invariants that held (and any deferred) as JSON for the trust center")
     ap.add_argument("--checkov", default=str(REPO / ".checkov.yaml"),
                     help="path to .checkov.yaml (overridable for hermetic tests)")
-    ap.add_argument("--poam-md", default=str(REPO / "docs" / "poam.md"),
-                    help="path to docs/poam.md (overridable for hermetic tests)")
+    ap.add_argument("--decisions", default=str(_decisions.DEFAULT_PATH),
+                    help="the decision register (overridable for hermetic tests); missing or invalid fails closed")
     args = ap.parse_args()
+    gates = _gates.load_gate_modes()
 
     d = Path(args.artifacts_dir)
     try:
         signal = load_json(d / "ksi-signal.json")
         ssp = load_json(d / "oscal-ssp.json")
-        poam = load_json(d / "oscal-poam.json")
         vdr = load_json(d / "vdr-report.json")
     except FileNotFoundError as e:
         print(f"reconcile: missing artifact: {e}", file=sys.stderr)
@@ -678,7 +590,7 @@ def main():
 
     dashboard_html = Path(args.dashboard).read_text() if Path(args.dashboard).exists() else None
     checkov_text = Path(args.checkov).read_text()
-    poam_md_text = Path(args.poam_md).read_text()
+    register = _decisions.load(args.decisions)
 
     live_arns = None
     live_tags = None
@@ -699,20 +611,34 @@ def main():
         except RuntimeError as e:
             msg = str(e)
             if "AccessDenied" in msg or "not authorized" in msg.lower():
-                print("::warning::reconcile: tag:GetResources not permitted; invariant (i) "
-                      "classification-tag reconciliation skipped until the deploy role is "
-                      "granted it (tag:GetResources).", file=sys.stderr)
+                # A denied read is a detection failure (G7). Its mode is governed:
+                # block stops here; detect-and-recover publishes it and skips (i).
+                note = "tag:GetResources not permitted; invariant (i) could not be checked"
+                if _gates.blocks(gates, "reconcile.i.unreadable"):
+                    print(f"::error::reconcile: {note}", file=sys.stderr)
+                    return 1
+                _gates.record_event(gates, "reconcile.i.unreadable", note)
                 live_tags = None
             else:
                 raise
 
     violations = run_all(
-        signal, ssp, poam, vdr, dashboard_html, checkov_text,
-        _load_ckv_to_poam(), poam_md_text, _load_false_positives(poam_md_text),
+        signal, ssp, vdr, dashboard_html, checkov_text, register,
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
         boundary_map=boundary_map,
     )
 
+    # Each violation names its invariant, "(x) ..."; its check's governed mode
+    # decides whether it stops the run. An unattributable violation always does.
+    hard = []
+    for v in violations:
+        m = re.match(r"\(([a-z])\)", v)
+        check = f"reconcile.{m.group(1)}" if m else None
+        if check in _gates.CHECKS and not _gates.blocks(gates, check):
+            _gates.record_event(gates, check, v)
+        else:
+            hard.append(v)
+    violations = hard
     if violations:
         print(f"RECONCILIATION FAILED — {len(violations)} violation(s):", file=sys.stderr)
         for v in violations:
@@ -720,12 +646,12 @@ def main():
         return 1
     optional = ",l" if boundary_map is not None else ""
     if live_arns is not None and live_tags is not None:
-        checks = "a-j" + optional
+        checks = "a-f,h-j" + optional
     elif live_arns is not None:
-        checks = "a-h,j" + optional + " (i deferred: no live tags)"
+        checks = "a-f,h,j" + optional + " (i deferred: no live tags)"
     else:
-        checks = "b-h,j" + optional + " (a,i deferred: no --live)"
-    print(f"reconciliation OK — invariants {checks} hold across signal/SSP/POA&M/VDR/dashboard")
+        checks = "b-f,h,j" + optional + " (a,i deferred: no --live)"
+    print(f"reconciliation OK — invariants {checks} hold across signal/SSP/VDR/decisions/dashboard")
     if args.report:
         Path(args.report).write_text(json.dumps(build_report(
             signal, args.expect_commit,
@@ -736,15 +662,16 @@ def main():
 
 INVARIANT_TITLES = {
     "a": "Every live in-boundary resource is in the inventory",
-    "b": "Every SSP component and POA&M asset resolves to an inventory entry",
+    "b": "Every SSP component resolves to an inventory entry",
     "c": "Every suppressed scanner finding is categorized consistently",
     "d": "One identical impact level everywhere",
     "e": "Every artifact is built from one inventory",
     "f": "Staged artifacts carry this build's commit",
-    "g": "The OSCAL POA&M matches the human POA&M",
-    "h": "Every VDR finding resolves to a POA&M item",
+    # (g) is retired: it held two copies of the POA&M in parity, and the POA&M
+    # was replaced by one decision register (data/decisions.json).
+    "h": "Every VDR finding resolves to an in-force decision record",
     "i": "Live resource tags match the inventory's classification",
-    "j": "Every POA&M reference resolves",
+    "j": "Every decision reference resolves",
     # (k) is retired: the bundle it bound is no longer published by this site.
     "l": "The boundary map describes exactly this build's inventory",
 }

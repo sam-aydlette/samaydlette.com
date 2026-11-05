@@ -26,7 +26,7 @@ For this system, "top-level administrative accounts" map to two real-world accou
 
 **Secure operation.** No long-lived PATs are issued; the workflow's ephemeral `GITHUB_TOKEN` and the OIDC token for cosign are the only GitHub-issued tokens used.
 
-**AWS access key rotation (90-day cadence).** While the OIDC migration in [POAM-001](../poam.md) remains deferred, the AWS access key used by the deployer IAM user is rotated every 90 days. The rotation procedure:
+**AWS access key rotation (90-day cadence).** While the OIDC migration in [POAM-001](../../data/decisions.json) remains deferred, the AWS access key used by the deployer IAM user is rotated every 90 days. The rotation procedure:
 
 1. **Calendar trigger.** A recurring 90-day calendar event on the operator's calendar is the rotation trigger.
 2. **Generate the new key.** In the AWS console (IAM → Users → `<deployer-user>` → Security credentials → Create access key) or via CLI: `aws iam create-access-key --user-name <deployer-user>`.

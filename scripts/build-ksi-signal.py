@@ -1861,7 +1861,6 @@ def main():
             ),
             "related_artifacts": {
                 "oscal_ssp": "https://samaydlette.com/.well-known/oscal-ssp.json",
-                "oscal_poam": "https://samaydlette.com/.well-known/oscal-poam.json",
                 "vdr_report": "https://samaydlette.com/.well-known/vdr-report.json",
                 "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
                 "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",

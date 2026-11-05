@@ -1,0 +1,37 @@
+{
+  "_note": "Reconcile fixture register: one in-force risk-accepted record for the one suppressed check, one closed record.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-005",
+      "former_id": "POAM-005",
+      "title": "Access logging (fixed)",
+      "status": "closed",
+      "disposition": "remediated",
+      "justification": "Server access logging enabled.",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-007",
+      "former_id": "POAM-007",
+      "title": "CloudFront WAF not attached",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "SC-7 met via managed interfaces.",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      }
+    }
+  ]
+}

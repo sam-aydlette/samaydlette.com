@@ -138,7 +138,7 @@ def test_every_artifact_the_pipelines_publish_has_a_governed_window():
     nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/") \
         | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog")
     assert "ksi-signal.json" in deploy and "trust-center.json" in deploy and "vdr-report.json" in nightly
-    assert len(attest) == 5
+    assert len(attest) == 4  # the POA&M attestation is retired
     missing = (deploy | attest | nightly | {"ksi-signal-runtime.json"}) - listed
     assert not missing, f"published without a governed freshness window: {sorted(missing)}"
 

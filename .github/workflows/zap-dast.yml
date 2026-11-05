@@ -4,7 +4,7 @@
 # Weekly OWASP ZAP baseline scan against the live site, in CI. This mechanizes
 # SA-11(8): a dynamic analysis tool runs on a schedule and its findings are
 # documented (the ZAP action maintains a tracking issue, which the operator
-# triages into docs/poam.md). SAST (Checkov, tfsec) and SCA (Syft, Grype) run on
+# records as decisions in data/decisions.json). SAST (Checkov, tfsec) and SCA (Syft, Grype) run on
 # every deploy in deploy-with-opa.yml; this adds the dynamic layer.
 #
 # Weekly, so the latest report is always inside the VDR builder's 14-day DAST
@@ -32,7 +32,7 @@ on:
 
 permissions:
   contents: read
-  issues: write             # ZAP maintains one tracking issue as the POA&M feed
+  issues: write             # ZAP maintains one tracking issue for triage
 
 jobs:
   zap_baseline:
@@ -47,7 +47,7 @@ jobs:
         with:
           target: 'https://samaydlette.com'
           cmd_options: '-a'            # include alpha-quality passive rules
-          fail_action: false           # informational; findings become POA&M items, not a hard gate
+          fail_action: false           # informational here; the VDR build and vulnerability gate decide
           allow_issue_writing: true
           issue_title: 'ZAP DAST findings for SA-11.8'
           artifact_name: 'zap-dast-report'

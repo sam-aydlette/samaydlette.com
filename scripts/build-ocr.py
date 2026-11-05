@@ -8,7 +8,7 @@
 # high-level summaries; CCM-OCR-NRD requires publishing the target date of the
 # next OCR, and CCM-QTR-NRD the target date of the next Quarterly Review. This
 # generator derives the OCR from the system's own published artifacts (the SCN
-# register, the POA&M, the VDR report) and emits it as both JSON (Certification
+# register, the decision register, the VDR report) and emits it as both JSON (Certification
 # Data, bound to the canonical inventory's signal_id) and human-readable
 # markdown. It is the same report for the Rev5 and 20x certification types.
 #
@@ -17,7 +17,7 @@
 # consuming party. With no agency sponsor those are recorded as N/A, and the OCR
 # says so rather than implying a closed loop that does not exist.
 #
-#   build-ocr.py --vdr vdr-report.json --poam oscal-poam.json \
+#   build-ocr.py --vdr vdr-report.json --decisions ../data/decisions.json \
 #                --scn-register ../docs/scn/scn-register.csv --ksi-signal ksi-signal.json
 # =============================================================================
 
@@ -27,6 +27,9 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _decisions  # noqa: E402
 
 QUARTER_DAYS = 91
 
@@ -47,7 +50,7 @@ def _scn_rows(path):
         return list(csv.DictReader(f))
 
 
-def build_ocr(vdr, poam, scn_rows, signal_id, now):
+def build_ocr(vdr, decisions, scn_rows, signal_id, now):
     period_start = (now - timedelta(days=QUARTER_DAYS)).date().isoformat()
     period_end = now.date().isoformat()
 
@@ -58,21 +61,20 @@ def build_ocr(vdr, poam, scn_rows, signal_id, now):
     # 4. Transformative changes (a subset of the above).
     transformative = [c for c in cert_changes if (c.get("type") or "").lower() == "transformative"]
 
-    # 2. Planned changes over the next 3 months — open POA&M items.
-    planned = []
-    if poam:
-        for it in poam.get("plan-of-action-and-milestones", {}).get("poam-items", []) or []:
-            status = next((p.get("value") for p in it.get("props", []) or []
-                           if p.get("name") == "status"), None)
-            if status == "open":
-                planned.append({"title": it.get("title", "")[:160]})
+    # 2. Planned changes over the next 3 months — in-force decision records that
+    # carry a remediation plan or a planned completion date. A false positive or
+    # an accepted risk plans no change, so it is not listed here.
+    planned = [{"decision_id": r["id"], "title": r.get("title", "")[:160],
+                "planned_completion": r.get("planned_completion")}
+               for r in (decisions or {}).get("decisions", [])
+               if r.get("status") == "in-force" and (r.get("remediation_plan") or r.get("planned_completion"))]
 
     # 3. Accepted vulnerabilities.
     accepted = []
     if vdr:
         for a in vdr.get("risk_accepted", []) or []:
             accepted.append({"tracking_id": a.get("tracking_id"), "pain": a.get("pain"),
-                             "poam_ref": a.get("poam_ref"),
+                             "decision_id": a.get("decision_id"),
                              "explanation": (a.get("explanation") or "")[:200]})
 
     report = {
@@ -136,7 +138,7 @@ def render_markdown(r):
             ([f"- {p['title']}" for p in pc] if pc else ["_None planned._"]))
     av = s["accepted_vulnerabilities"]
     section(3, "Accepted vulnerabilities",
-            ([f"- `{a['tracking_id']}` (PAIN {a['pain']}, {a['poam_ref'] or 'no POA&M'}): {a['explanation']}" for a in av]
+            ([f"- `{a['tracking_id']}` (PAIN {a['pain']}, {a['decision_id'] or 'no decision record'}): {a['explanation']}" for a in av]
              if av else ["_None._"]))
     tf = s["transformative_changes"]
     section(4, "Transformative changes",
@@ -158,7 +160,7 @@ def render_markdown(r):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--vdr", default="vdr-report.json")
-    ap.add_argument("--poam", default="oscal-poam.json")
+    ap.add_argument("--decisions", default="../data/decisions.json")
     ap.add_argument("--scn-register", default="../docs/scn/scn-register.csv")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--output", default="ongoing-certification-report.json")
@@ -167,12 +169,12 @@ def main():
 
     now = datetime.now(timezone.utc)
     vdr = _load_json(a.vdr)
-    poam = _load_json(a.poam)
+    decisions = _decisions.load(a.decisions)
     sig = _load_json(a.ksi_signal)
     signal_id = sig.get("signal_id") if sig else None
     scn_rows = _scn_rows(a.scn_register)
 
-    report = build_ocr(vdr, poam, scn_rows, signal_id, now)
+    report = build_ocr(vdr, decisions, scn_rows, signal_id, now)
     Path(a.output).write_text(json.dumps(report, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(report) + "\n")

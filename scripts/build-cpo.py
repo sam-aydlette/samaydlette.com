@@ -30,7 +30,6 @@ from pathlib import Path
 PACKAGE_CONTENTS = [
     ("security-decision-record.json", "Security Decision Record (SDR — 20x SSP replacement)", True),
     ("oscal-ssp.json", "OSCAL Rev 5 System Security Plan (Rev5-paradigm)", True),
-    ("oscal-poam.json", "OSCAL Plan of Action and Milestones", True),
     ("ksi-signal.json", "FedRAMP 20x KSI signal (canonical inventory)", True),
     ("vdr-report.json", "Vulnerability Detection and Response report", True),
     ("ongoing-certification-report.json", "Ongoing Certification Report (CCM)", True),

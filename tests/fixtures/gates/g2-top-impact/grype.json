@@ -1,0 +1,27 @@
+{
+ "matches": [
+  {
+   "vulnerability": {
+    "id": "CVE-2099-0002",
+    "severity": "High",
+    "cvss": [
+     {
+      "version": "3.1",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+     }
+    ],
+    "fix": {
+     "state": "fixed",
+     "versions": [
+      "2"
+     ]
+    }
+   },
+   "artifact": {
+    "name": "a",
+    "version": "1",
+    "purl": "pkg:npm/a@1"
+   }
+  }
+ ]
+}

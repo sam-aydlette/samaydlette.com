@@ -25,11 +25,9 @@
 # spokes must all agree on, and nothing was keeping them in step.
 #
 # WHAT DOES NOT BELONG HERE: same-named functions that do different things.
-# render_markdown() exists five times and renders five different artifacts;
-# build_metadata() differs in signature and content between the SSP and the
-# POA&M; build-oscal-poam.py's _prop() BUILDS a prop while the prop() below
-# READS one. Merging any of those would be a behavior change wearing the costume
-# of a cleanup.
+# render_markdown() exists several times and renders a different artifact each
+# time. Merging those would be a behavior change wearing the costume of a
+# cleanup.
 # =============================================================================
 
 import hashlib
@@ -39,7 +37,7 @@ import uuid
 # OSCAL constants
 # =============================================================================
 # Pinned at the value the live generators currently emit. This is a published
-# field: bumping it changes every consumer's view of the SSP and POA&M, so treat
+# field: bumping it changes every consumer's view of the SSP, so treat
 # it as a reviewed artifact change, not a dependency refresh.
 #
 # scripts/staged/migrate_hub_to_component_def.py pins 1.2.2 instead. That

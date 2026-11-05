@@ -1,0 +1,18 @@
+{
+  "$schema": "./detection-feeds.schema.json",
+  "version": "2026-11-04.1",
+  "description": "What G7 (detection) requires of every input the VDR build reads: present, well-formed and, where the source dates itself, no older than max_age_hours. Read by scripts/detection-gate.py, which fails closed on a missing or invalid file. Each feed's mode (block or detect-and-recover) is in gate-modes.json under detection.<feed>.",
+  "decided_by": "Sam Aydlette",
+  "decided_on": "2026-11-04",
+  "review_by": "2027-11-04",
+  "rationale": "KEV: CISA releases the catalog on weekdays when entries change, not daily; 14 days tolerates quiet periods without missing a release cycle. EPSS: FIRST publishes daily; 3 days tolerates a missed publication. Grype DB: Anchore builds daily; 5 days matches Grype's own default maximum database age. The remaining feeds carry no source date and must simply be present and well-formed; DAST's 14-day window is the builder's --zap-max-age-days.",
+  "feeds": {
+    "kev": {"max_age_hours": 336, "source_date": "dateReleased"},
+    "epss": {"max_age_hours": 72, "source_date": "score_date in the file's header line"},
+    "grype": {"max_age_hours": 120, "source_date": "descriptor.db.status.built in each scan"},
+    "dependabot": {"source_date": null},
+    "previous-vdr": {"source_date": null},
+    "checkov": {"source_date": null},
+    "tfsec": {"source_date": null}
+  }
+}

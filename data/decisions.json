@@ -1,0 +1,1160 @@
+{
+  "$comment": "CR26 decision register: every human decision about a finding, once. Replaces the POA&M (data/poam-items.json, docs/poam.md), retired 2026-11-04; records carried over keep their POA&M ID in former_id. Read through scripts/_decisions.py by the VDR builder, the vulnerability gate, reconciliation and the trust center. An in-force record needs decided_by, decided_on and review_by; a record past review_by is lapsed and confers nothing. One check or vulnerability ID resolves to at most one in-force record.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "former_id": "POAM-001",
+      "title": "Long-lived AWS access keys for the deployer",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "The CI deployer authenticates to AWS using an IAM user's access key + secret access key, stored in GitHub Actions encrypted secrets. If either secret leaks, the credentials remain valid until manually rotated. As an active compensating control while the OIDC migration is deferred, the operator rotates the AWS access key every 90 days; the procedure is documented in docs/policies/secure-configuration-guide.md and the rotation log is tracked in docs/security-review.md. The 90-day cadence bounds the leakage window but does not eliminate the standing-privilege surface; this POA&M item remains open until the OIDC migration is complete.",
+      "controls": [
+        "ia-2",
+        "ia-5",
+        "ac-2"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-user::github-actions-deployer",
+          "github-secret::AWS_ACCESS_KEY_ID",
+          "github-secret::AWS_SECRET_ACCESS_KEY"
+        ]
+      },
+      "closed_on": "2026-05-08",
+      "original_detection_date": "2026-05-06",
+      "remediation_plan": "Migrate to GitHub OIDC role assumption against AWS. Provision an aws_iam_openid_connect_provider for token.actions.githubusercontent.com and a deployer role whose trust policy restricts sub to repo:sam-aydlette/samaydlette.com:*. Switch the workflow's aws-actions/configure-aws-credentials step from access-key inputs to role-to-assume. Verify, then delete the IAM user and remove the GitHub Actions secrets.",
+      "planned_completion": "2026-08-31",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "CodeGuard rule codeguard-0-iac-security",
+        "identifier": "codeguard-0-iac-security",
+        "original_risk_rating": "moderate",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-002",
+      "former_id": "POAM-002",
+      "title": "Runtime KSI signal not cryptographically signed",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 5 (2026-06-17): the runtime emitter now signs the runtime signal with an asymmetric KMS key (ECC NIST P-256, SIGN_VERIFY). It canonicalizes the signal with provenance.attestation absent (sorted-keys JSON, no whitespace), signs the SHA-256 digest with ECDSA_SHA_256, places the signature in provenance.attestation, and publishes the verifying public key at /.well-known/runtime-signing-pubkey.pem. A consumer verifies the runtime signal cryptographically without trusting the well-known URL.",
+      "controls": [
+        "au-10",
+        "si-7",
+        "sc-12",
+        "sc-13"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor",
+          "aws-s3-key::.well-known/ksi-signal-runtime.json"
+        ]
+      },
+      "closed_on": "2026-06-17",
+      "original_detection_date": "2026-05-06",
+      "remediation_plan": "AWS KMS asymmetric signing in the Lambda. Provision an ECC NIST P-256 key with key_usage = SIGN_VERIFY, grant the Lambda role kms:Sign and kms:GetPublicKey, sign the canonical-form bytes, embed the signature in provenance.attestation, and publish the public key at /.well-known/runtime-signing-pubkey.pem.",
+      "planned_completion": "2026-06-17",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Internal review",
+        "identifier": "internal-review-2026-05-06",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-003",
+      "former_id": "POAM-003",
+      "title": "S3 cross-region replication not configured",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Single-region static site. Cross-region replication adds cost without commensurate availability benefit at the declared 21-day RTO.",
+      "controls": [
+        "cp-9"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_144"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::website-prod"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-15",
+      "review_by": "2027-06-15",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_144",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-004",
+      "former_id": "POAM-004",
+      "title": "S3 event notifications not configured",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope.",
+      "controls": [
+        "au-2"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV2_AWS_62",
+          "CKV_AWS_23"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::website-prod"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-15",
+      "review_by": "2027-06-15",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_23",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-005",
+      "former_id": "POAM-005",
+      "title": "S3 access logging not enabled",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 7 (2026-06-18): the website bucket now writes S3 server access logs to a dedicated locked-down log bucket (samaydlette-com-logs), authorized by a bucket policy scoped to the S3 log-delivery service from this account/source bucket. The global CKV_AWS_18 suppression was removed; the check passes on its own. CloudFront access logging is enabled out-of-band to the same bucket (C-3).",
+      "controls": [
+        "au-2",
+        "au-3"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::website-prod"
+        ]
+      },
+      "closed_on": "2026-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_18",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-006",
+      "former_id": "POAM-006",
+      "title": "S3 lifecycle configuration not defined",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 8b (2026-06-18): the versioned website bucket now has a lifecycle configuration (abort incomplete multipart uploads after 7 days; expire non-current versions after 90 days; live versions never expired). The CKV_AWS_300 suppression was removed; the check passes on its own.",
+      "controls": [
+        "si-12"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::website-prod"
+        ]
+      },
+      "closed_on": "2026-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_300",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-007",
+      "former_id": "POAM-007",
+      "title": "CloudFront WAF not attached",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints, no expensive backend; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
+      "controls": [
+        "sc-7",
+        "si-4"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-05-08",
+      "review_by": "2027-05-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_68",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-008",
+      "former_id": "POAM-008",
+      "title": "Log4j-specific WAF rules not configured",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "No Java runtime in scope (Lambda runs Node.js; site is static HTML/CSS/JS). Log4j-class vulnerabilities cannot exist in this stack.",
+      "controls": [
+        "si-3"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV2_AWS_47",
+          "CKV_AWS_174"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-15",
+      "review_by": "2027-06-15",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_174; CKV2_AWS_47",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-009",
+      "former_id": "POAM-009",
+      "title": "CloudFront origin failover not configured",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage (see POAM-016).",
+      "controls": [
+        "cp-2",
+        "cp-7"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_310",
+          "CKV_AWS_86"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-05-08",
+      "review_by": "2027-05-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_86; CKV_AWS_310",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-010",
+      "former_id": "POAM-010",
+      "title": "Lambda VPC configuration absent",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway (~$45/month) adds cost without commensurate isolation benefit.",
+      "controls": [
+        "sc-7"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_117"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-05-08",
+      "review_by": "2027-05-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_117",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-011",
+      "former_id": "POAM-011",
+      "title": "Lambda environment variables not customer-key encrypted",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 6 (2026-06-16): every Lambda environment block is now encrypted with a customer-managed CMK (compliance Lambda -> at_rest CMK; silk-reeling Lambda -> silk_reeling CMK). The global CKV_AWS_173 Checkov suppression was removed; the check passes on its own.",
+      "controls": [
+        "sc-12",
+        "sc-28"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "closed_on": "2026-06-16",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_173",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-012",
+      "former_id": "POAM-012",
+      "title": "Lambda concurrent execution limit not set",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Reclassified false positive (Task 8b): reserved concurrency manages concurrency contention/DoS, but the compliance monitor is a daily EventBridge-triggered internal function with no DoS exposure or contention. SC-5 is met at the system boundary (CloudFront + API Gateway throttling + AWS Shield Standard); the check is N/A here, and the account is hard-capped at 10 concurrency so reservation is infeasible regardless.",
+      "controls": [
+        "sc-5"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_115"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-18",
+      "review_by": "2027-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_115",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-013",
+      "former_id": "POAM-013",
+      "title": "Lambda DLQ not configured",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 8b (2026-06-18): the compliance Lambda now has an SQS dead-letter queue (SSE-SQS, 14-day retention) via dead_letter_config, so a failed daily async invocation is captured for inspection. The CKV_AWS_116 suppression was removed; the check passes on its own.",
+      "controls": [
+        "si-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "closed_on": "2026-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_116",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-014",
+      "former_id": "POAM-014",
+      "title": "Lambda X-Ray tracing not enabled",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Observability concern, not a security control. Cost-driven exclusion; CloudWatch Logs covers the diagnostic need.",
+      "controls": [
+        "au-2"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_50"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-15",
+      "review_by": "2027-06-15",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_50",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-015",
+      "former_id": "POAM-015",
+      "title": "Lambda zip not signed via AWS Signer",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Reclassified false positive (Task 8b): CKV_AWS_272 flags the absence of one specific signing tool (AWS Signer); no control mandates that tool. SI-7/SA-12 software and supply-chain integrity is established via the Sigstore source-signing chain (deploy-time KSI signal Sigstore-signed and anchored in the public Rekor log; Wasm policy bytes verify against the canonical inventory hash) plus the GitHub OIDC / GitOps chain of custody with no out-of-band code path.",
+      "controls": [
+        "si-7",
+        "sa-12"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_272"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::compliance-monitor"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-18",
+      "review_by": "2027-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_272",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-017",
+      "former_id": "POAM-017",
+      "title": "CloudWatch log retention shorter than 1 year (7-day retention)",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 7 (2026-06-18): every CloudWatch log group now has 365-day retention (AU-11). The route53 query-log and silk-reeling Lambda groups were raised from 7 days; the compliance group was already 365 (Task 6). The global CKV_AWS_338 Checkov suppression was removed; the check passes on its own.",
+      "controls": [
+        "au-11"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudwatch-log-group::route53-query-log",
+          "aws-cloudwatch-log-group::lambda-execution"
+        ]
+      },
+      "closed_on": "2026-06-18",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_338",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-018",
+      "former_id": "POAM-018",
+      "title": "CloudWatch log group not customer-key encrypted (uses AWS-default encryption)",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 6 (2026-06-16): every CloudWatch log group is now encrypted with a customer-managed CMK (compliance Lambda + route53 query-log groups -> at_rest CMK; silk-reeling log group -> silk_reeling CMK). The global CKV_AWS_158 Checkov suppression was removed; the check passes on its own.",
+      "controls": [
+        "sc-28"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudwatch-log-group::route53-query-log",
+          "aws-cloudwatch-log-group::lambda-execution"
+        ]
+      },
+      "closed_on": "2026-06-16",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_158",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-019",
+      "former_id": "POAM-019",
+      "title": "Secrets Manager automatic rotation not configured",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-10-27, SCN-2026-006): the check no longer applies. The app's only Secrets Manager secret, the Anthropic API key, was removed with the interconnection (POAM-020) and is scheduled for deletion, so no secret remains and the CKV2_AWS_57 skip was removed from .checkov.yaml. Original record: Reclassified false positive (Task 3): CKV2_AWS_57 flags the absence of automatic rotation, but no control mandates that specific mechanism. The basic-auth secret it shared the finding with was removed under Task 3, leaving only the third-party Anthropic API key, which has no programmatic rotation source (AWS cannot mint a new upstream key), so a Secrets Manager rotation Lambda is infeasible by construction. SC-12 rotation is met by documented annual manual rotation, and rotation currency is verified automatically: the runtime KSI emitter reads the secret's LastChangedDate daily and fails an SC-12 validation if rotation lapses past the cadence (395-day grace). Because rotation is met and self-verifying, this is a false positive, not an accepted risk.",
+      "controls": [
+        "sc-12",
+        "sc-28"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-secretsmanager-secret::anthropic-api-key"
+        ]
+      },
+      "closed_on": "2026-10-27",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-26",
+      "review_by": "2027-06-26",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV2_AWS_57",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-020",
+      "former_id": "POAM-020",
+      "title": "Interconnection with Anthropic API (non-FedRAMP-authorized external service)",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-10-27, SCN-2026-006): the Silk Reeling app writes its feedback from the scores, and its optional LLM-written feedback is customer-configurable and disabled in this deployment, so the interconnection was removed. Verified live after the gated deploy: the API-key secret is scheduled for deletion, neither the app role nor the runtime emitter role references it, the app CMK's key policy no longer has a Secrets Manager statement, and the published SSP and KSI signal carry no Anthropic interconnection or external component (the published evidence verifies). The Anthropic SDK remains in the app package for the optional setting and is inventoried as a software component; it makes no calls while the setting is off. Correction (2026-10-27): the live function environment still holds the removed secret's ARN as a stale setting, because Terraform's environment updates to the app Lambda have not taken effect since 2026-06 (POAM-038). The reference is inert: the secret is pending deletion, no role can read it, and LLM-written feedback is off. Original record: The gated Silk Reeling app Lambda calls the Anthropic API, a non-FedRAMP-authorized external service (SA-9). The only data crossing the authorization boundary is the derived deviation summary (per-joint metrics, scores, hotspots, exercise id) over TLS - no video, raw landmarks, or personal data. SA-9 due diligence rests on Anthropic's commercial API terms (API inputs/outputs not used to train models, retained only transiently for trust-and-safety); this is an assumption re-verified at each annual security review, and a change in those terms reopens this item. Applies only while the app is deployed.",
+      "controls": [
+        "sa-9",
+        "ca-3"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "interconnection::anthropic-api"
+        ]
+      },
+      "closed_on": "2026-10-27",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-26",
+      "review_by": "2027-06-26",
+      "original_detection_date": "2026-06-08",
+      "remediation_plan": "Migrate the app's feedback generation to Claude on AWS Bedrock (FedRAMP-authorized, in-boundary), which removes the external interconnection entirely.",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Architectural decision",
+        "identifier": "silk-reeling-deploy.md",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-021",
+      "former_id": "POAM-021",
+      "title": "App access via single-factor shared-credential HTTP Basic Auth (no MFA, no lockout)",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 3 (2026-06-22): the app's shared-credential HTTP Basic Auth gate was replaced by Amazon Cognito with mandatory TOTP multi-factor authentication and a 14-character password policy, fronted by an API Gateway JWT authorizer. The single-factor shared credential (IA-2(2)) and missing lockout (AC-7) no longer exist.",
+      "controls": [
+        "ia-2.2",
+        "ac-7"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "silk-reeling::access-control"
+        ]
+      },
+      "closed_on": "2026-06-22",
+      "original_detection_date": "2026-06-08",
+      "remediation_plan": "Replace Basic Auth with Amazon Cognito (mandatory TOTP MFA, strong password policy) plus an API Gateway JWT authorizer on the data routes.",
+      "source": {
+        "detector": "Architectural decision",
+        "identifier": "silk-reeling-deploy.md",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-022",
+      "former_id": "POAM-022",
+      "title": "API Gateway HTTP API route specifies no authorizer",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 3 (2026-06-22): the API Gateway HTTP API now carries a Cognito JWT authorizer on the ANY /api/{proxy+} routes, so an unauthenticated request to the data API is rejected at the gateway (401) before the Lambda runs. The $default route stays open only so the SPA shell can load. CKV_AWS_309 passes.",
+      "controls": [
+        "ia-2",
+        "ac-3"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-apigatewayv2::silk-reeling"
+        ]
+      },
+      "closed_on": "2026-06-22",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_309",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-023",
+      "former_id": "POAM-023",
+      "title": "No brute-force / rate-limit protection on the Basic Auth endpoint",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 3 (2026-06-22): API Gateway usage-plan throttling (20 req/s, burst 10) now fronts the app and Cognito provides account lockout, so credential guessing against the endpoint is throttled and locked out. The unthrottled Basic Auth endpoint no longer exists.",
+      "controls": [
+        "ac-7",
+        "sc-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "silk-reeling::access-control"
+        ]
+      },
+      "closed_on": "2026-06-22",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Security review",
+        "identifier": "security-review.md",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-024",
+      "former_id": "POAM-024",
+      "title": "API Gateway HTTP API access logging not enabled",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed under Task 7 (2026-06-18): the API Gateway stage now has access logging configured to a CloudWatch log group via the vended-logs delivery path (AccessLogSettings). CKV_AWS_76 passes.",
+      "controls": [
+        "au-2",
+        "au-3"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-apigatewayv2::silk-reeling"
+        ]
+      },
+      "closed_on": "2026-06-18",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_76",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-025",
+      "former_id": "POAM-025",
+      "title": "Root and operator MFA is virtual TOTP, not hardware/phishing-resistant",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The root account and the operator IAM user (saydlette-dev) both authenticate with virtual authenticator-app (TOTP) MFA rather than a hardware/phishing-resistant authenticator. Multi-factor authentication (IA-2(1)/(2)) is met - MFA is enabled on both - but the stricter phishing-resistant objective (IA-2(8): hardware token or passkey) is not. Surfaced by the 2026-06-22 Prowler scan. Compensating control: virtual TOTP MFA is enabled on both principals now.",
+      "controls": [
+        "ia-2.1",
+        "ia-2.2",
+        "ia-2.8",
+        "cm-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-account::root",
+          "aws-iam-user::saydlette-dev"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-09-30",
+      "review_by": "2027-09-30",
+      "original_detection_date": "2026-06-22",
+      "remediation_plan": "Enroll a hardware security key (FIDO2/WebAuthn) as the MFA device for the root account and the operator IAM user, satisfying the phishing-resistant objective (IA-2(8)).",
+      "planned_completion": "2026-10-30",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Prowler",
+        "identifier": "root-account-hardware-mfa-enabled; iam_user_hardware_mfa_enabled",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-026",
+      "former_id": "POAM-026",
+      "title": "Operator IAM group holds broad IAM administration privileges",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "The operators IAM group (the sole human-principal group) carries IAM administration privileges (it manages users, groups, and policies). Surfaced by Checkov CKV2_AWS_56 against infrastructure/bootstrap/main.tf. At this system's Moderate categorization a single principal holding IAM admin is a real least-privilege/separation-of-duties weakness (AC-5/AC-6), accepted on the operating model rather than the categorization: the system is a single-operator PoC with no second human to separate duties against, so IAM administration cannot be delegated to a distinct role. Compensating controls: the operator authenticates with MFA (see POAM-025), all IAM changes flow through version-controlled Terraform reviewed in GitHub, and CloudTrail records every IAM action.",
+      "controls": [
+        "ac-5",
+        "ac-6",
+        "ac-6.7"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV2_AWS_56"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-group::operators"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-29",
+      "review_by": "2027-06-29",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV2_AWS_56",
+        "original_risk_rating": "moderate",
+        "adjusted_risk_rating": "low",
+        "risk_adjustment": true
+      }
+    },
+    {
+      "id": "DEC-027",
+      "former_id": "POAM-027",
+      "title": "Bootstrap deploy/assessment roles use account-level read-only IAM actions",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "The bootstrap deploy and assessment roles grant account-level read-only IAM/enumeration actions (List*/Describe*/Get*) that AWS does not allow to be resource-scoped. Surfaced by Checkov CKV_AWS_355 (read-only assessment policy), CKV_AWS_287 (metadata-only Secrets reads, no GetSecretValue), and CKV_AWS_356 (account-level enumeration that cannot carry a resource ARN). This is a false positive: the flagged actions are read-only and AWS requires Resource \"*\" for them (they have no per-resource ARN form); the policies grant no write, no admin, and no credential retrieval. Least privilege (AC-6) is met by the explicit, enumerated read-only Action lists and the ARN-scoped management statements alongside them.",
+      "controls": [
+        "ac-6",
+        "ac-6.1"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_287",
+          "CKV_AWS_355",
+          "CKV_AWS_356"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-iam-role::github-actions-deploy-oidc",
+          "aws-iam-policy::assessment-readonly"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-29",
+      "review_by": "2027-06-29",
+      "original_detection_date": "2026-06-08",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_355; CKV_AWS_287; CKV_AWS_356",
+        "original_risk_rating": "low"
+      }
+    },
+    {
+      "id": "DEC-028",
+      "former_id": "POAM-028",
+      "title": "Log-target bucket does not enable S3 server access logging on itself",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Scanners flag the access-log destination bucket (samaydlette-logs) for not having S3 server access logging enabled — Checkov CKV_AWS_18 (inline skip in infrastructure/logging.tf), tfsec AVD-AWS-0089, and Prowler s3_bucket_server_access_logging_enabled all report the same condition. This is a false positive: this bucket is the terminal log sink for the website bucket's access logs; enabling server access logging on it would recurse into itself. AU-2/AU-3 logging is met — the website bucket logs land here, and this is the standard log-target self-logging exception (consistent with POAM-005's closure for the website bucket).",
+      "controls": [
+        "au-2",
+        "au-3"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_18"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::samaydlette-logs"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-29",
+      "review_by": "2027-06-29",
+      "original_detection_date": "2026-06-22",
+      "source": {
+        "detector": "Checkov; tfsec; Prowler",
+        "identifier": "CKV_AWS_18; AVD-AWS-0089; s3_bucket_server_access_logging_enabled",
+        "original_risk_rating": "low"
+      }
+    },
+    {
+      "id": "DEC-029",
+      "former_id": "POAM-029",
+      "title": "Selected internal storage uses AWS-managed at-rest encryption (AES256) rather than a customer CMK",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Scanners flag internal resources for encrypting at rest with AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler s3_bucket_default_encryption — a check Prowler marks deprecated), the Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — extended 2026-07-09 — the CloudTrail management trail's log files (CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket samaydlette-com-cloudtrail (CKV_AWS_145), all inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every case; a customer CMK is declined deliberately, for a different reason per resource: the log bucket holds only low-sensitivity public-resource access logs (a CMK would need to grant the AWS log-delivery services key access for no confidentiality benefit); the lock table holds only lock metadata, no secrets; and the state bucket, though it can contain secret material, is private (public-access-blocked), TLS-only, versioned, and reachable only by the deploy role and operator, so a CMK is defense-in-depth rather than required and is declined to avoid adding another key to manage. Accepted as a low residual (SSP SC-28 narrative).",
+      "controls": [
+        "sc-28"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_119",
+          "CKV_AWS_145",
+          "CKV_AWS_35"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-s3-bucket::samaydlette-logs",
+          "aws-s3-bucket::samaydlette-com-tfstate",
+          "aws-dynamodb-table::samaydlette-com-tflock"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-29",
+      "review_by": "2027-06-29",
+      "original_detection_date": "2026-06-22",
+      "source": {
+        "detector": "Checkov; tfsec; Prowler",
+        "identifier": "CKV_AWS_145; CKV_AWS_119; AVD-AWS-0132; s3_bucket_default_encryption",
+        "original_risk_rating": "low"
+      }
+    },
+    {
+      "id": "DEC-030",
+      "former_id": "POAM-030",
+      "title": "CloudFront geo restriction not enabled",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "Checkov CKV_AWS_374 flags the now-managed CloudFront distribution (infrastructure/bootstrap/cloudfront.tf) for not enabling a geo restriction. This is a false positive: the distribution serves a public personal website intended to be reachable from every geography, and no control requires geo-blocking — enabling one would deny legitimate access for no security benefit. SC-7 boundary protection is met via the managed CloudFront and API Gateway interfaces, AWS Shield Standard, and throttling.",
+      "controls": [
+        "sc-7"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_374"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-06-29",
+      "review_by": "2027-06-29",
+      "original_detection_date": "2026-06-29",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV_AWS_374",
+        "original_risk_rating": "low"
+      }
+    },
+    {
+      "id": "DEC-031",
+      "former_id": "POAM-031",
+      "title": "CloudFront response-headers policy not attached",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-06-29): a CloudFront response-headers policy is now attached to the distribution's default cache behavior (infrastructure/bootstrap/cloudfront.tf), delivering HSTS (includeSubDomains; preload), X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, and X-XSS-Protection at the edge. The CKV2_AWS_32 suppression was removed; the check passes on its own. (A Content-Security-Policy is staged separately, pending a frame-src allowance for the activities.html podcast embeds and a report-only rollout.)",
+      "controls": [
+        "sc-7",
+        "sc-8"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "closed_on": "2026-06-29",
+      "source": {
+        "detector": "Checkov",
+        "identifier": "CKV2_AWS_32",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-032",
+      "former_id": "POAM-032",
+      "title": "CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications",
+      "disposition": "risk-accepted",
+      "status": "in-force",
+      "justification": "The CloudTrail management trail (SCN-2026-003) delivers to S3 only: Checkov CKV2_AWS_10 / tfsec AVD-AWS-0162 flag the missing CloudWatch Logs integration and CKV_AWS_252 the missing SNS delivery topic, both inline-skipped in infrastructure/cloudtrail.tf. CloudWatch Logs integration duplicates every management event into paid log-group storage to enable real-time metric filters that this single-operator system replaces with the quarterly audit-log review (KSI-MLA-RVL); per-delivery SNS notifications have no consumer. Residual risk: no real-time alerting on control-plane events — accepted at this scale, revisited if the operating model gains a second principal or an incident shows the review cadence was too slow. Compensating: log-file validation on the trail; the delivery bucket is TLS-only, versioned, public-access-blocked, lifecycle-tiered (AU-11).",
+      "controls": [
+        "au-6",
+        "si-4"
+      ],
+      "applies_to": {
+        "check_ids": [
+          "CKV2_AWS_10",
+          "CKV_AWS_252"
+        ],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudtrail::management"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-07-09",
+      "review_by": "2027-07-09",
+      "original_detection_date": "2026-07-09",
+      "source": {
+        "detector": "Checkov, tfsec",
+        "identifier": "CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-033",
+      "former_id": "POAM-033",
+      "title": "pa11y contrast finding on decorative aria-hidden separators (silk-reeling-mirror.html)",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "The accessibility gate (pa11y WCAG 2 AA + OPA decision) flags WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail on the footer's decorative dot separators, which are marked aria-hidden=\"true\". WCAG 1.4.3 exempts pure decoration from contrast minima; the scanner cannot see decorative intent. Suppressed via the gate's machine-readable exceptions register (infrastructure/policy/exceptions/data.json, expires 2027-01-15); the finding stays visible in the gate report under 'excepted'.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "html-artifact::silk-reeling-mirror.html"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-07-11",
+      "review_by": "2027-07-11",
+      "original_detection_date": "2026-07-10",
+      "source": {
+        "detector": "pa11y (HTML_CodeSniffer WCAG2AA)",
+        "identifier": "WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail",
+        "original_risk_rating": "low",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-034",
+      "former_id": "POAM-034",
+      "title": "extract-zip path-traversal advisory (GHSA-jmr9-qjv8-65gv / CVE-2026-56876) in the build-time accessibility scanner",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Grype reports GHSA-jmr9-qjv8-65gv (CVE-2026-56876, High — unvalidated symlink path traversal on extract) against extract-zip 2.0.1 in sbom-a11y.json. This is a false positive on two independent grounds. (1) Not reachable from any deployed artifact: extract-zip exists only in tools/a11y/ as a transitive dependency of the accessibility scanner (pa11y -> puppeteer -> @puppeteer/browsers -> extract-zip). tools/a11y is build tooling — it runs in CI to produce policy input for the deploy gate and is never packaged or deployed; it is inventoried and SBOM-scanned as a build-time component, not because it ships. The package is absent at every depth from the compliance Lambda (infrastructure/lambda/), the Lambda zip staging set (_pkg), and the Silk Reeling frontend bundle (_silk_src/frontend). (2) No upstream fix exists: the advisory records firstPatchedVersion: null and 2.0.1 is extract-zip's final release, so there is no patched version to move to; @puppeteer/browsers 3.x replaced extract-zip with modern-tar but is reachable only via puppeteer 25.x, outside the ^24.37.5 range pa11y 9.1.1 declares. Remediation is blocked upstream, not deferred by choice. Compensating control: the vulnerable code path is never executed — extract-zip is reached only when @puppeteer/browsers unpacks a downloaded browser archive, and the only install of this tree in CI, the 'Install accessibility scanner' step of the compliance-check job in .github/workflows/deploy-with-opa.yml, sets PUPPETEER_SKIP_DOWNLOAD=1 and runs npm ci --ignore-scripts (the nightly catalogues the tree from its lockfile without installing it), so no browser is fetched and no dependency lifecycle script runs (pa11y renders against the runner's system Chrome). SI-2/RA-5 are met by continuous SCA over this tree every build (Syft sbom-a11y.json + Grype), so a patched release or a change in reachability surfaces automatically. Revisit when pa11y widens its puppeteer range to a release whose @puppeteer/browsers no longer depends on extract-zip, or when a patched extract-zip is published. Dispositioned in data/vuln-dispositions.json, which is the register the vulnerability gate reads and from which build-vdr-report.py carries this poam_ref onto the VDR finding. Closed 2026-11-03 under its own remediation plan: Grype no longer reports the advisory. tools/a11y moved to pa11y 10.0.0 (#444), whose dependency tree no longer contains extract-zip at any depth (tools/a11y/package-lock.json), and the nightly's sbom-a11y Grype scan has reported 0 matches since 2026-10-23. Its data/vuln-dispositions.json entry is removed.",
+      "controls": [
+        "si-2",
+        "ra-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "npm-package::extract-zip@2.0.1 (tools/a11y build-time)"
+        ]
+      },
+      "closed_on": "2026-11-03",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-08-24",
+      "review_by": "2027-08-24",
+      "original_detection_date": "2026-08-13",
+      "remediation_plan": "Blocked upstream — no patched extract-zip release exists. When pa11y widens its puppeteer range to a release whose @puppeteer/browsers no longer depends on extract-zip (or a patched extract-zip ships), upgrade tools/a11y, confirm Grype no longer reports the advisory, and close this item together with its entry in data/vuln-dispositions.json.",
+      "planned_completion": "2026-11-03",
+      "vendor_dependency": true,
+      "source": {
+        "detector": "Grype (SCA, Syft SBOM sbom-a11y.json)",
+        "identifier": "GHSA-jmr9-qjv8-65gv; CVE-2026-56876",
+        "original_risk_rating": "high",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-035",
+      "former_id": "POAM-035",
+      "title": "sprintf-js denial-of-service advisory (GHSA-hp3w-g68c-fv3c / CVE-2026-97058) in the runtime Lambda's OPA Wasm host",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Grype reports GHSA-hp3w-g68c-fv3c (CVE-2026-97058, Medium — denial of service through unbounded precision specifiers) against sprintf-js 1.1.3, a production transitive dependency of the runtime compliance Lambda (infrastructure/lambda: @open-policy-agent/opa-wasm 1.10.0 -> sprintf-js), where it implements the Rego sprintf builtin. The flaw requires an attacker who controls the format string. This is a false positive on reachability: every sprintf call in the deployed policies takes a string literal (or a concat of literals, one call in gate.rego) as its format, none uses a precision specifier, and the policies are compiled into policy.wasm at deploy time behind the reviewed deploy gate; runtime inputs (live AWS configuration) reach sprintf only as arguments, so no input to the running system can supply a precision specifier. No upstream fix exists: the advisory records no patched version and 1.1.3 is the latest sprintf-js release. Compensating controls: scripts/check-wasm-safe.py, run in the test job of .github/workflows/deploy-with-opa.yml on every pull request and push to main (the deploy job needs that job), fails the build if any sprintf call in infrastructure/policy takes as its format anything other than a string literal or a concat whose separator and elements are all string literals, or if any format literal carries a precision specifier; it parses the format argument even when it starts on the line after sprintf(. tests/test_check_wasm_safe.py exercises it against committed known-bad fixtures and the live policy tree, so make check fails too; and continuous SCA (Syft + Grype, every deploy and twice daily via the nightly) surfaces a patched release or a reachability change automatically. Dispositioned in data/vuln-dispositions.json, from which build-vdr-report.py carries this poam_ref onto the VDR finding. The advisory entered the scanner database on 2026-10-06; until this disposition the nightly VDR refresh failed closed and the published VDR aged past its 24-hour window. Closed 2026-11-03 under its own remediation plan: Grype no longer reports the advisory. GitHub withdrew GHSA-hp3w-g68c-fv3c on 2026-10-22 (advisory withdrawn_at), and the nightly's lambda Grype scan has reported 0 matches since 2026-10-23 with sprintf-js 1.1.3 still installed. Its data/vuln-dispositions.json entry is removed; scripts/check-wasm-safe.py keeps the literal-format condition as a guard.",
+      "controls": [
+        "si-2",
+        "ra-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "npm-package::sprintf-js@1.1.3 (infrastructure/lambda, via @open-policy-agent/opa-wasm)"
+        ]
+      },
+      "closed_on": "2026-11-03",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-10-20",
+      "review_by": "2027-10-20",
+      "original_detection_date": "2026-10-06",
+      "remediation_plan": "Blocked upstream — no patched sprintf-js release exists. When sprintf-js ships a fix (or opa-wasm drops or replaces it), upgrade infrastructure/lambda, confirm Grype no longer reports the advisory, and close this item together with its entry in data/vuln-dispositions.json.",
+      "planned_completion": "2026-11-03",
+      "vendor_dependency": true,
+      "source": {
+        "detector": "Grype (SCA, Syft SBOM of infrastructure/lambda)",
+        "identifier": "GHSA-hp3w-g68c-fv3c; CVE-2026-97058",
+        "original_risk_rating": "moderate",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-036",
+      "former_id": "POAM-036",
+      "title": "Silk Reeling path served without CloudFront security headers",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-10-26): the /silk-reeling/* cache behavior now carries a response-headers policy of its own (aws_cloudfront_response_headers_policy.silk_reeling in infrastructure/bootstrap/cloudfront.tf), applied by the operator from a tree synced to main. The live response for /silk-reeling/ carries a Content-Security-Policy fitted to the app (frame-ancestors 'none', object-src 'none', script and connect sources limited to the pinned MediaPipe runtime, the pose model path and the app's Cognito domain), X-Frame-Options: DENY, Strict-Transport-Security (includeSubDomains; preload), X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy (camera for the app's own origin only), and Cross-Origin-Opener-Policy and Cross-Origin-Resource-Policy set to same-origin. The site policy gained Permissions-Policy, COOP and CORP with its CSP unchanged. Verified from outside with HEAD requests to /silk-reeling/ and / that reached the origin. Through CloudFront, the API Gateway JWT authorizer still receives and evaluates bearer tokens, and the app's HTML and bundle, inspected statically, reference nothing the CSP does not allow. Not exercised: the in-browser camera and pose-detection path, because the app's API is unavailable for an unrelated reason (its backend does not see its Cognito configuration at runtime and refuses to serve, fail-closed). That outage is tracked as POAM-038 and is not a header regression. Original finding (2026-10-23, passive OWASP ZAP baseline): the /silk-reeling/* behavior carried no response-headers policy, so the app was served without CSP, frame protection, nosniff or HSTS and could be framed by another origin.",
+      "controls": [
+        "sc-7",
+        "sc-8",
+        "si-10"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution::silk-reeling-behavior"
+        ]
+      },
+      "closed_on": "2026-10-26",
+      "original_detection_date": "2026-10-23",
+      "remediation_plan": "Attach a response-headers policy of its own to the /silk-reeling/* behavior: the site's transport and framing headers plus a CSP fitted to what the app loads (the pinned MediaPipe runtime, the pose model and the Cognito token endpoint). The site's policy cannot be reused because its connect-src and script-src would break the app. Close once the live response carries the headers and the app works.",
+      "planned_completion": "2026-11-06",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "OWASP ZAP baseline + outside-in review (manual)",
+        "identifier": "zap-10020-1; zap-10038-1; zap-10021; zap-10035-1",
+        "original_risk_rating": "moderate",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-037",
+      "former_id": "POAM-037",
+      "title": "Site Content-Security-Policy permits inline styles (style-src 'unsafe-inline')",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-10-27): the static site's response-headers policy (aws_cloudfront_response_headers_policy.website in infrastructure/bootstrap/cloudfront.tf) is now style-src 'self', applied by the operator from a tree synced to main after the plan showed only that change. Verified from outside: the live response for / carries style-src 'self'; headless Chrome loaded every page under website/ from the live site (48 loads) with no securitypolicyviolation events, and the boundary map lays out on its four pages with Cytoscape's stylesheet injection pre-empted; a passive OWASP ZAP baseline rescan with the same pinned image no longer reports 10055-6. Original finding (2026-10-23, passive OWASP ZAP baseline, rated medium by the tool): CSP style-src unsafe-inline on every static page, kept for KaTeX math layout that no page loads any more.",
+      "controls": [
+        "sc-18",
+        "si-10"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "closed_on": "2026-10-27",
+      "original_detection_date": "2026-10-23",
+      "remediation_plan": "Move every inline style into stylesheets, pre-empt Cytoscape's injected stylesheet, and set style-src 'self' on the site policy. Close once the live response carries style-src 'self', the affected pages render without CSP violations, and a ZAP rescan no longer reports 10055-6.",
+      "planned_completion": "2026-11-06",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "OWASP ZAP baseline",
+        "identifier": "zap-10055-6",
+        "original_risk_rating": "moderate",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-038",
+      "former_id": "POAM-038",
+      "title": "Silk Reeling app Lambda runtime environment drifted from Terraform; drift undetected",
+      "disposition": "remediated",
+      "status": "closed",
+      "justification": "Closed (2026-10-29): the app Lambda was destroyed and recreated through the reviewed pipeline (a Terraform replace trigger, two gated deploys), so Lambda set its environment fresh from the Terraform configuration. Verified from outside: the app's /silk-reeling/auth-config reports all four Cognito settings present, with the domain, client id and redirect URI equal to the Terraform output, and the Hosted-UI authorize endpoint accepts the app client. Detection is now in the deploy: after apply and before any evidence is published, scripts/check-silk-runtime-config.py compares what the running app reports against the Terraform output and fails the deploy on any difference. Root cause not determined: every apply sent the environment and reported success while the running function kept the old one; recreating the function is the fix, and the check is what would catch a recurrence. Original record: since 2026-06 the app Lambda's runtime environment has not matched the environment Terraform applies on every deploy. The function runs with the pre-Cognito settings (the allowed origin, the SPA path, and the ARNs of the since-removed basic-auth and Anthropic API-key secrets) and without the four Cognito settings, so the app's API refuses to serve (fail-closed) and Hosted-UI sign-in and sign-out do not start. No unauthorized access results: the API Gateway JWT authorizer still guards /api, and both referenced secrets are deleted or pending deletion with no role able to read them. Each deploy's plan and apply report the environment as updated, and the reconciliation gate cannot see the drift because neither CI role can decrypt the CMK-encrypted environment to compare it. Found 2026-10-27 from the app's cold-start log, which names the SRM_* settings the process sees (names only). The root cause is under investigation.",
+      "controls": [
+        "cm-3",
+        "cm-6",
+        "ca-7"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-lambda::silk-reeling"
+        ]
+      },
+      "closed_on": "2026-10-29",
+      "original_detection_date": "2026-10-27",
+      "remediation_plan": "Find why the environment update does not take effect, fix it so the function runs with the environment Terraform declares, and add a deploy-time check that fails when the running function's settings differ from the deployed configuration. Close once the app reports its Cognito settings present, sign-in works end to end, and the check is in place.",
+      "planned_completion": "2026-11-10",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Operator investigation (app cold-start log)",
+        "identifier": "silk-reeling-env-drift",
+        "original_risk_rating": "moderate",
+        "risk_adjustment": false
+      }
+    },
+    {
+      "id": "DEC-039",
+      "title": "ZAP 10099 Source Code Disclosure - SQL on the method article",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "False positive. ZAP's SQL pattern matched prose in /research/vulnerability-evidence.html (\"select a new timeframe from the same start\"); the page is static HTML and discloses no source code. Assessed in the 2026-10-26/27 manual scans and again on the first weekly scan, 2026-11-04.",
+      "controls": [
+        "ra-5",
+        "sa-11.8"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "zap-10099"
+        ],
+        "resources": [
+          "https://samaydlette.com"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "original_detection_date": "2026-10-26",
+      "source": {
+        "detector": "OWASP ZAP baseline scan"
+      }
+    },
+    {
+      "id": "DEC-040",
+      "title": "ZAP 10036-2 Server header leaks version information",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "False positive. The header is `Server: AmazonS3`, set by the S3 origin behind CloudFront; it names the service and carries no version. Assessed in the 2026-10-26/27 manual scans and again on the first weekly scan, 2026-11-04.",
+      "controls": [
+        "ra-5",
+        "sa-11.8"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "zap-10036-2"
+        ],
+        "resources": [
+          "https://samaydlette.com"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "original_detection_date": "2026-10-26",
+      "source": {
+        "detector": "OWASP ZAP baseline scan"
+      }
+    }
+  ]
+}

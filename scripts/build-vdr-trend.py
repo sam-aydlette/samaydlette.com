@@ -68,6 +68,8 @@ def main():
     trend["system_id"] = rpt.get("system_id")
     trend["control"] = "RA-5(6) — automated vulnerability trend analysis"
     trend["updated_at"] = rpt.get("emitted_at")
+    # REQ-GOV-2: the profile and conformance results of the report this point came from.
+    trend["profile"] = (rpt.get("methodology") or {}).get("profile")
     trend["points"] = points
     tp.write_text(json.dumps(trend, indent=2) + "\n")
     print(f"vdr-trend: {len(points)} point(s); latest {date} "

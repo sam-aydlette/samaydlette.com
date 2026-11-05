@@ -34,7 +34,6 @@ These artifacts are published continuously at `/.well-known/`:
 - `ksi-signal-runtime.json` — the daily runtime revalidation, signed with an asymmetric KMS key (ECC NIST P-256); the signature is carried in `provenance.attestation` and verifiable against `runtime-signing-pubkey.pem` (POAM-002)
 - `runtime-signing-pubkey.pem` — the public key for verifying the runtime signal's signature
 - `oscal-ssp.json` — the NIST OSCAL System Security Plan; per-deploy emission
-- `oscal-poam.json` — the NIST OSCAL Plan of Action and Milestones; per-deploy emission
 - `vdr-report.json` — the FedRAMP 20x VDR report; per-deploy emission
 - `vdr-report.md` — human-readable VDR rendering (VER-TFR-MHR)
 - `ongoing-certification-report.json` / `.md` — the quarterly Ongoing Certification Report (CCM-OCR-AVL), Sigstore-signed; carries the eight required summaries plus the target dates for the next report (CCM-OCR-NRD) and next quarterly review (CCM-QTR-NRD)

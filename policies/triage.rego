@@ -306,15 +306,15 @@ record(item) := r if {
 } else := null
 
 # (disposition, decision reference, label) before the fully-mitigated default.
-disposed(item) := [item.check_decision.disposition, item.check_decision.poam_ref, item.check_decision.disposition] if {
+disposed(item) := [item.check_decision.disposition, item.check_decision.decision_id, item.check_decision.disposition] if {
 	check_record(item)[0] == "in-force"
 } else := [null, null, null] if {
 	item.check_decision != null
-} else := [e.disposition, e.poam_ref, e.disposition] if {
+} else := [e.disposition, e.decision_id, e.disposition] if {
 	register_record(item)[0] == "in-force"
 	e := item.register.entry
 	e.disposition in pass_dispositions
-	truthy(object.get(e, "poam_ref", null))
+	truthy(object.get(e, "decision_id", null))
 } else := [null, null, item.register.entry.disposition] if {
 	register_record(item)[0] == "in-force"
 } else := [null, null, null]
@@ -415,7 +415,7 @@ decide(item) := {
 	"record_status": pair_or_null(rec, 0),
 	"record_reason": pair_or_null(rec, 1),
 	"disposition": disposition,
-	"poam_ref": dsp[1],
+	"decision_id": dsp[1],
 	"label": label_of(disposition, dsp[2]),
 	"closed": closed,
 	"needs_remediation": needs,

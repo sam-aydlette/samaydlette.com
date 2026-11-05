@@ -42,6 +42,8 @@ REPO = Path(__file__).resolve().parent.parent
 # FRESHNESS_CONFIG names another file (tests); it is validated the same way.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _freshness import load_freshness_config  # noqa: E402
+import _decisions  # noqa: E402
+import _gates  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
 VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
@@ -58,12 +60,12 @@ HISTORY_DAYS = 180
 
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SCN_VERIFIED = re.compile(r"verification complete|implemented and verified", re.I)
-POAM_DECISIONS = {"risk-accepted", "false-positive", "operational-requirement"}
+DECISIONS_PATH = REPO / "data" / "decisions.json"
 
 WHY_YOURS = {
     "vdr_blocking": "The vulnerability gate stops deploys on this finding. Fixing, dispositioning or accepting it is a person's call.",
     "vdr_undispositioned": "No recorded precedent covers this finding, so the pipeline cannot resolve it on its own.",
-    "poam_overdue": "The committed completion date has passed. Extending it, accepting the risk or stopping is the Authorizing Official's decision.",
+    "decision_overdue": "A recorded decision's planned completion date has passed. Extending it, accepting the risk or stopping is the Authorizing Official's decision.",
     "exception_expiring": "An accepted policy exception expires soon. Renewing it is a new decision, not a formality.",
     "runtime_diverged": "The running system no longer matches what was deployed and approved.",
     "runtime_unassessed": "The runtime emitter could not assess some KSIs, so they rest on deploy-time evidence alone. Whether that is enough is a judgment.",
@@ -76,6 +78,7 @@ WHY_YOURS = {
     "manual_setting": "A setting applied by hand no longer matches what this system expects. Restoring it, or accepting the change, is a person's call.",
     "decision_review_due": "A recorded risk decision has reached its review date. Reaffirming, changing or ending it is the Authorizing Official's call.",
     "vulnerability_evidence_stale": "The published vulnerability evidence is older than its freshness window, so current exposure is not known. Whether to rely on the system meanwhile is a judgment.",
+    "gate_detect_recover": "A gate check running in detect-and-recover mode failed, so the run continued without it. Whether to repair, accept or return the gate to block is a judgment.",
     "decision_records_incomplete": "Recorded decisions are missing who made them, when, or when to revisit them. Setting that governance is the Authorizing Official's call.",
 }
 
@@ -85,11 +88,11 @@ WHY_YOURS = {
 OPTIONS = {
     "vdr_blocking": ["Remediate: upgrade or remove the affected package and redeploy",
                      "Record a disposition (false positive or not affected) with its justification",
-                     "Accept the risk in a POA&M entry with a review date"],
+                     "Accept the risk in a decision record with a review date"],
     "vdr_undispositioned": ["Remediate: upgrade or remove the affected package",
                             "Record a disposition (false positive or not affected) with its justification",
-                            "Accept the risk in a POA&M entry with a review date"],
-    "poam_overdue": ["Close the item: complete the remediation and record it",
+                            "Accept the risk in a decision record with a review date"],
+    "decision_overdue": ["Close the record: complete the remediation and record it",
                      "Set a new completion date, with the reason for the delay",
                      "Accept the risk, recording who decided, when and the review date"],
     "exception_expiring": ["Renew the exception with a new expiry and justification",
@@ -97,7 +100,7 @@ OPTIONS = {
                            "Let it expire; the policy gate will then stop deploys on the resource"],
     "runtime_diverged": ["Restore the deployed configuration by redeploying",
                          "Change the code to match the running system, through review",
-                         "Accept the divergence in a POA&M entry with a review date"],
+                         "Accept the divergence in a decision record with a review date"],
     "runtime_unassessed": ["Fix the runtime emitter so it can assess these KSIs",
                            "Accept deploy-time evidence for them, recording the decision"],
     "runtime_stale": ["Investigate and restore the runtime emitter",
@@ -119,6 +122,9 @@ OPTIONS = {
                             "End it: remediate or close the underlying item"],
     "vulnerability_evidence_stale": ["Investigate and rerun the nightly vulnerability scan",
                                      "Accept reliance on the last published evidence for a stated period, recording the decision"],
+    "gate_detect_recover": ["Repair the failed check so the next run passes it",
+                            "Return the check to block mode in infrastructure/schemas/gate-modes.json",
+                            "Renew the detect-and-recover decision with a reason and review date"],
     "decision_records_incomplete": ["Record who decided, when and the review date on each record",
                                     "Retire the decisions no one will own"],
 }
@@ -137,7 +143,7 @@ SINCE_BASES = ("recorded", "derived", "observed", "first_observed")
 SINCE_SOURCE = {
     "vdr_blocking": "The finding's first_detected; else the VDR's emitted_at (observed).",
     "vdr_undispositioned": "The finding's first_detected; else the VDR's emitted_at (observed).",
-    "poam_overdue": "The POA&M item's scheduled completion date: the day it became overdue (recorded).",
+    "decision_overdue": "The decision record's planned completion date: the day it became overdue (recorded).",
     "exception_expiring": "The exception's expiry less the renewal warning window: the day it entered the window (derived).",
     "runtime_diverged": "The runtime signal's emitted_at (observed).",
     "runtime_unassessed": "The runtime signal's emitted_at (observed).",
@@ -151,6 +157,7 @@ SINCE_SOURCE = {
     "decision_review_due": "The decision's review_by date (recorded).",
     "vulnerability_evidence_stale": "Raised only by the page's live re-check: the VDR's emitted_at.",
     "decision_records_incomplete": "The inventory's emitted_at (observed).",
+    "gate_detect_recover": "When the run recorded the gate event (observed); the earliest such time is carried forward.",
 }
 
 
@@ -195,17 +202,18 @@ def _props(item: dict[str, Any]) -> dict[str, str]:
     return {p["name"]: p["value"] for p in item.get("props", []) if "name" in p}
 
 
-def poam_items(poam: dict[str, Any]) -> list[dict[str, Any]]:
+def register_items(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The decision register's records (data/decisions.json), flattened for the
+    queue, the precedent count and the decision log. In force reads as open."""
     out = []
-    for item in poam.get("plan-of-action-and-milestones", {}).get("poam-items", []):
-        pr = _props(item)
+    for r in decisions:
         out.append({
-            "id": pr.get("poam-id"), "title": item.get("title", ""), "description": item.get("description", ""),
-            "status": pr.get("status"), "disposition": pr.get("disposition"),
-            "scheduled_completion": pr.get("scheduled-completion-date"),
-            "point_of_contact": pr.get("point-of-contact"), "status_date": pr.get("status-date"),
-            # The human decision behind an open item (data/poam-items.json).
-            "decided_by": pr.get("decided-by"), "decided_on": pr.get("decided-on"), "review_by": pr.get("review-by"),
+            "id": r.get("id"), "former_id": r.get("former_id"), "title": r.get("title", ""),
+            "description": r.get("justification", ""),
+            "status": "open" if r.get("status") == "in-force" else "closed", "disposition": r.get("disposition"),
+            "scheduled_completion": r.get("planned_completion"),
+            "applies_to": r.get("applies_to") or {},
+            "decided_by": r.get("decided_by"), "decided_on": r.get("decided_on"), "review_by": r.get("review_by"),
         })
     return out
 
@@ -355,6 +363,21 @@ def build_picture(inp: dict[str, Any], now: datetime) -> list[dict[str, Any]]:
 
     add_corroboration(add, inp.get("corroboration"), now)
 
+    # REQ-GOV-2: the method profile this build conforms to, and how much of its
+    # conformance suite is implemented and passing. Read from the VDR it built.
+    prof = ((inp["vdr"].get("methodology") or {}).get("profile")) or None
+    if not prof or not isinstance(prof.get("summary"), dict):
+        add("conformance", "Method conformance", "not_observed",
+            "The VDR names no conformance results.")
+    else:
+        sm = prof["summary"]
+        whole = sm.get("failed", 0) == 0 and sm.get("partial", 0) == 0 and sm.get("not-implemented", 0) == 0
+        add("conformance", "Method conformance", "ok" if whole else "attention",
+            f"Profile {prof.get('profile_version')}: {sm.get('implemented', 0)} conformance tests implemented, "
+            f"{sm.get('partial', 0)} partly, {sm.get('not-implemented', 0)} not yet, "
+            f"{sm.get('not-applicable', 0)} not applicable; {sm.get('failed', 0)} failing.",
+            prof.get("conformance_generated_at"), "/.well-known/conformance-results.json")
+
     manual = inp.get("manual_settings") or {}
     observed = {c.get("id"): c for c in manual.get("checks", [])}
     for id_, label in MANUAL_SETTINGS.items():
@@ -418,11 +441,35 @@ def build_decisions_pending(inp: dict[str, Any], now: datetime, log: list[dict[s
     return out
 
 
+def gate_events(inp: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Detect-and-recover gate events published by this build's VDR (deploy)
+    and the nightly status beacon, one per check, earliest first."""
+    events: dict[str, dict[str, Any]] = {}
+    sources = [((inp.get("vdr") or {}).get("methodology") or {}).get("gate_events"),
+               (inp.get("vdr_status") or {}).get("gate_events")]
+    for src in sources:
+        for e in src if isinstance(src, list) else []:
+            # Read back from published JSON: only checks the register knows, with a real time.
+            if (not isinstance(e, dict) or e.get("check") not in _gates.CHECKS
+                    or not _parse_time(e.get("at"))):
+                continue
+            prior = events.get(e["check"])
+            if prior is None or _parse_time(e["at"]) < _parse_time(prior["at"]):  # type: ignore[operator]
+                events[e["check"]] = e
+    return events
+
+
 def _queue_items(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
                  log_gaps: dict[str, int]) -> list[dict[str, Any]]:
     today = now.date()
     out: list[dict[str, Any]] = []
     bmap = inp["boundary_map"]
+
+    for check, e in sorted(gate_events(inp).items()):
+        out.append(_decision("gate_detect_recover", check,
+                             f"{e.get('gate', '?')} {check} failed and ran in detect-and-recover: "
+                             f"{_brief(str(e.get('detail', '')), 160)}",
+                             since=e["at"], refs=["infrastructure/schemas/gate-modes.json"]))
 
     for f in inp["vdr"].get("findings", []):
         if f.get("is_blocking"):
@@ -437,11 +484,11 @@ def _queue_items(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
                              due=f.get("remediation_due_at"),
                              refs=[r for r in ("/.well-known/vdr-report.json", f.get("component_id")) if r]))
 
-    for p in poam_items(inp["poam"]):
+    for p in register_items(inp["decisions"]):
         due = _parse_date(p["scheduled_completion"])
         if p["status"] == "open" and due and due < today:
-            out.append(_decision("poam_overdue", p["id"], p["title"], since=due.isoformat(), basis="recorded",
-                                 due=due.isoformat(), refs=["/.well-known/oscal-poam.json"]))
+            out.append(_decision("decision_overdue", p["id"], p["title"], since=due.isoformat(), basis="recorded",
+                                 due=due.isoformat(), refs=["data/decisions.json"]))
 
     for e in inp["exceptions"]:
         exp = _parse_date(e.get("expiry"))
@@ -526,7 +573,7 @@ def _queue_items(inp: dict[str, Any], now: datetime, log: list[dict[str, Any]],
 def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
     rules = sorted(inp["rules"], key=lambda r: (r.get("path", ""), r.get("custom", {}).get("id", "")))
     config = inp["policy_config"].get("gate", {})
-    poam_decisions = [p for p in poam_items(inp["poam"]) if p["status"] == "open" and p["disposition"] in POAM_DECISIONS]
+    in_force = [p for p in register_items(inp["decisions"]) if p["status"] == "open"]
     return {
         "immutable": {
             "about": "OPA rules the deploy cannot pass while they are violated. A person can change a rule only by changing the code, in review.",
@@ -553,10 +600,9 @@ def build_policy_catalog(inp: dict[str, Any]) -> dict[str, Any]:
         "precedent": {
             "about": "Recorded human decisions the automation applies again without asking: the same finding, the same answer.",
             "registers": [
-                {"name": "Vulnerability dispositions", "entries": len(inp["dispositions"]), "source": "data/vuln-dispositions.json"},
+                {"name": "Decision register (in force)", "entries": len(in_force), "source": "data/decisions.json"},
                 {"name": "Policy exceptions", "entries": len(inp["exceptions"]), "source": "infrastructure/policy/exceptions/data.json"},
                 {"name": "Checkov suppressions", "entries": len(inp["checkov_skips"]), "source": ".checkov.yaml"},
-                {"name": "POA&M risk decisions (open)", "entries": len(poam_decisions), "source": "/.well-known/oscal-poam.json"},
             ],
         },
         "escalation": {
@@ -588,24 +634,20 @@ def build_decision_log(inp: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[
             (["review_by"] if review_applies and not entry["review_by"] else [])
         log.append(entry)
 
-    for key, d in sorted(inp["dispositions"].items()):
-        add("vulnerability_disposition", key, key, d.get("disposition", ""), decided_by=d.get("decided_by"),
-            decided_on=d.get("decided_on"), reasoning=d.get("justification", ""), review_by=d.get("review_by"),
-            source="data/vuln-dispositions.json", poam_ref=d.get("poam_ref"))
     for e in inp["exceptions"]:
         add("policy_exception", f"{e.get('rule_id')}:{e.get('resource')}", f"{e.get('rule_id')} on {e.get('resource')}",
             "excepted", decided_by=e.get("decided_by"), decided_on=e.get("decided_on"), reasoning=e.get("justification", ""),
             review_by=e.get("expiry"), source="infrastructure/policy/exceptions/data.json", ticket=e.get("ticket"))
-    for p in poam_items(inp["poam"]):
-        if p["status"] != "open" or p["disposition"] not in POAM_DECISIONS:
+    for p in register_items(inp["decisions"]):
+        if p["status"] != "open":
             continue
-        # Who decided, when, and the review date come from the POA&M's own
-        # decision props. The point of contact is never taken as the decider;
-        # an item without the props is reported as a gap.
-        add("poam_risk_decision", p["id"], p["title"], p["disposition"], decided_by=p["decided_by"],
+        # Who decided, when, and the review date come from the record itself; a
+        # record without them is reported as a gap.
+        applies = p["applies_to"]
+        add("decision", p["id"], p["title"], p["disposition"], decided_by=p["decided_by"],
             decided_on=p["decided_on"], reasoning=p["description"], review_by=p["review_by"],
-            source="/.well-known/oscal-poam.json",
-            point_of_contact=p["point_of_contact"], status_date=p["status_date"])
+            source="data/decisions.json", former_id=p["former_id"],
+            applies_to=sorted(applies.get("check_ids", []) + applies.get("vuln_ids", [])))
     for row in inp["scn_register"]:
         m = SCN_VERIFIED.search(row.get("status", ""))
         add("significant_change", row.get("scn_id", ""), _brief(row.get("short_description", ""), 160),
@@ -621,7 +663,7 @@ def build_decision_log(inp: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[
 # build encountered. Other kinds (a pending trust-root change, a drifted
 # setting, an unclassified resource) are always a person's call and are not
 # part of the rate.
-PRECEDENT_KINDS = {"vdr_blocking", "vdr_undispositioned", "exception_expiring", "poam_overdue", "decision_review_due"}
+PRECEDENT_KINDS = {"vdr_blocking", "vdr_undispositioned", "exception_expiring", "decision_overdue", "decision_review_due"}
 
 
 def build_escalation_rate(inp: dict[str, Any], pending: list[dict[str, Any]], now: datetime) -> dict[str, Any]:
@@ -662,9 +704,9 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
     denominator). Kinds outside PRECEDENT_KINDS go to a person by design; their
     rate says how much of their population needs one now."""
     findings = inp["vdr"].get("findings", [])
-    open_poam = [p for p in poam_items(inp["poam"]) if p["status"] == "open"]
+    open_decisions = [p for p in register_items(inp["decisions"]) if p["status"] == "open"]
     log, _ = build_decision_log(inp)
-    reviewable = [e for e in log if e["kind"] in ("vulnerability_disposition", "poam_risk_decision")]
+    reviewable = [e for e in log if e["kind"] == "decision"]
     runtime = inp.get("runtime")
     div = (runtime or {}).get("divergence") or {}
     bmap = inp["boundary_map"]
@@ -677,9 +719,9 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
     populations: dict[str, tuple[int, str]] = {
         "vdr_blocking": (len(findings), "vulnerability findings in this build's VDR"),
         "vdr_undispositioned": (len(findings), "vulnerability findings in this build's VDR"),
-        "poam_overdue": (len(open_poam), "open POA&M items"),
+        "decision_overdue": (len(open_decisions), "in-force decision records"),
         "exception_expiring": (len(inp["exceptions"]), "recorded policy exceptions"),
-        "decision_review_due": (len(reviewable), "recorded vulnerability dispositions and POA&M risk decisions"),
+        "decision_review_due": (len(reviewable), "in-force decision records"),
         "runtime_diverged": (max(int(div.get("ksis_compared") or 0), len(div.get("regressions", []))),
                              "KSIs compared between deploy and runtime"),
         "runtime_unassessed": (1 if runtime is not None else 0, "runtime signals read by this build"),
@@ -692,6 +734,10 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
         "scn_unverified": (len(inp["scn_register"]), "significant changes in the SCN register"),
         "manual_setting": (len(MANUAL_SETTINGS), "hand-applied settings this system expects"),
         "decision_records_incomplete": (1, "the decision log"),
+        "gate_detect_recover": (len({c.get("check") for c in (((inp["vdr"].get("methodology") or {}).get("gates") or {})
+                                                            .get("checks") or []) if isinstance(c, dict)}
+                                    | set(gate_events(inp))),
+                                "gate checks in the published gate-mode register"),
     }
     out: dict[str, dict[str, Any]] = {}
     for kind, (den, population) in populations.items():
@@ -727,6 +773,8 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
         "picture": build_picture(inp, now),
+        # REQ-GOV-2: the profile and conformance results this build conforms to.
+        "profile": (inp["vdr"].get("methodology") or {}).get("profile"),
         # The page re-checks the two evidence streams that change between
         # deploys (runtime signal, nightly beacon) live, against these windows.
         "freshness_windows_hours": {"runtime": RUNTIME_MAX_AGE_HOURS, "vulnerability_scan": VDR_MAX_AGE_HOURS,
@@ -745,8 +793,8 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
             "options": OPTIONS,
             "since_source": SINCE_SOURCE,
             "exception_warning_days": EXCEPTION_WARNING_DAYS,
-            "poam_due": [{"id": p["id"], "title": p["title"], "due": d.isoformat()}
-                         for p in poam_items(inp["poam"])
+            "decision_due": [{"id": p["id"], "title": p["title"], "due": d.isoformat()}
+                         for p in register_items(inp["decisions"])
                          if p["status"] == "open" and (d := _parse_date(p["scheduled_completion"]))],
         },
         "policy_catalog": build_policy_catalog(inp),
@@ -776,7 +824,6 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Build the trust center's data from this build's artifacts and registers.")
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--vdr", default="vdr-report.json")
-    ap.add_argument("--poam", default="oscal-poam.json")
     ap.add_argument("--reconcile-report", default="reconcile-report.json")
     ap.add_argument("--boundary-map", default="boundary-map.json")
     ap.add_argument("--trust-root-plan", default="trust-root-plan.json")
@@ -785,7 +832,7 @@ def main() -> None:
     ap.add_argument("--manual-settings", default="manual-settings.json", help="scripts/check-manual-settings.py output (optional)")
     ap.add_argument("--corroboration", default="boundary-corroboration.json", help="tools/boundary-map/corroborate.py output (optional)")
     ap.add_argument("--previous", default="trust-center-previous.json", help="the last published trust center (optional)")
-    ap.add_argument("--dispositions", default=str(REPO / "data" / "vuln-dispositions.json"))
+    ap.add_argument("--decisions", default=str(DECISIONS_PATH))
     ap.add_argument("--exceptions", default=str(REPO / "infrastructure" / "policy" / "exceptions" / "data.json"))
     ap.add_argument("--policy-config", default=str(REPO / "infrastructure" / "policy" / "config" / "data.json"))
     ap.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
@@ -815,14 +862,14 @@ def main() -> None:
         figures = _load_module("inject_figures", REPO / "scripts" / "inject-figures.py").compute_figures()
 
     inp = {
-        "signal": load(a.ksi_signal), "vdr": load(a.vdr), "poam": load(a.poam),
+        "signal": load(a.ksi_signal), "vdr": load(a.vdr),
         "reconcile": load(a.reconcile_report), "boundary_map": load(a.boundary_map),
         "trust_root_plan": load(a.trust_root_plan, required=False),
         "runtime": load(a.runtime, required=False), "vdr_status": load(a.vdr_status, required=False),
         "previous": load(a.previous, required=False),
         "manual_settings": load(a.manual_settings, required=False),
         "corroboration": load(a.corroboration, required=False),
-        "dispositions": (load(a.dispositions) or {}).get("dispositions", {}),
+        "decisions": _decisions.load(a.decisions)["decisions"],
         "exceptions": load(a.exceptions) or [],
         "policy_config": load(a.policy_config) or {},
         "rules": annotations.load_rule_annotations(a.policy_dir),

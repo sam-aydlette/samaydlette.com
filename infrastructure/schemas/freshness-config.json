@@ -112,26 +112,6 @@
       "signed": true
     },
     {
-      "path": ".well-known/oscal-poam.json",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "plan-of-action-and-milestones.metadata.last-modified"
-      },
-      "signed": true,
-      "signature": ".well-known/oscal-poam.bundle"
-    },
-    {
-      "path": ".well-known/oscal-poam.json.intoto.jsonl",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "last_modified"
-      },
-      "signed": true
-    },
-    {
       "path": ".well-known/iiw.csv",
       "cadence": "deploy",
       "max_age_hours": 720,
@@ -259,6 +239,18 @@
       "signed": true,
       "signature": ".well-known/boundary-corroboration.bundle",
       "note": "Run by the operator (tools/boundary-map/corroborate.py), committed, and signed and published by the deploy."
+    },
+    {
+      "path": ".well-known/conformance-results.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/conformance-results.bundle",
+      "note": "The conformance suite's results for the method profile (REQ-GOV-2), run, signed and published by the deploy."
     }
   ]
 }

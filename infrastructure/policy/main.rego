@@ -37,13 +37,13 @@ all_violations contains violation if {
 }
 
 # =============================================================================
-# EXCEPTIONS-AS-CODE (POA&M-as-code)
+# EXCEPTIONS-AS-CODE
 # =============================================================================
 # data.exceptions (infrastructure/policy/exceptions/data.json) is the
 # machine-readable register of accepted findings: each entry names the
 # violation it suppresses ({resource, rule_id}), the justification, an expiry
-# date, and a ticket (the docs/poam.md or False Positives register entry it
-# traces to). Suppression happens HERE, in the aggregator — never inside a
+# date, and a ticket (the data/decisions.json record it traces to).
+# Suppression happens HERE, in the aggregator — never inside a
 # rule — so every rule keeps reporting the raw fact and the report shows
 # suppressed findings under `excepted` for auditability.
 #
