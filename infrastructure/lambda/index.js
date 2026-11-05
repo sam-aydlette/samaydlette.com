@@ -68,6 +68,7 @@ const { computeDivergence } = require('./divergence');
 const { accountOf, withAccount } = require('./account');
 const { validateComponents } = require('./describers');
 const { nextRunHistory, verifySignal } = require('./history');
+const { stageKeys } = require('./stage');
 
 const SIGNAL_VERSION = '1.0.0';
 const SCHEMA_URL = 'https://samaydlette.com/.well-known/ksi-signal.schema.json';
@@ -434,10 +435,10 @@ async function readPreviousRuntimeSignal(s3, bucketName) {
     }
 }
 
-async function readDeploySignal(s3, bucketName) {
+async function readDeploySignal(s3, bucketName, key = '.well-known/ksi-signal.json') {
     const out = await s3.send(new GetObjectCommand({
         Bucket: bucketName,
-        Key: '.well-known/ksi-signal.json',
+        Key: key,
     }));
     const body = await streamToString(out.Body);
     return JSON.parse(body);
@@ -661,12 +662,19 @@ exports.handler = async (event, context) => {
     const cf = new CloudFrontClient({ region: 'us-east-1' });
     const sm = new SecretsManagerClient({ region });
 
+    let staged;
+    try {
+        staged = stageKeys(event);
+    } catch (err) {
+        return { statusCode: 400, body: JSON.stringify({ message: err.message, compliant: false }) };
+    }
+
     const { policy, version: policyVersion, data: policyData } = await getPolicy();
     console.log(`Loaded compiled Rego policy (sha256:${policyVersion}...)`);
 
     let deploySignal;
     try {
-        deploySignal = await readDeploySignal(s3, bucketName);
+        deploySignal = await readDeploySignal(s3, bucketName, staged ? staged.deploySignal : undefined);
     } catch (err) {
         console.error('Could not read deploy-time signal', err);
         return {
@@ -716,7 +724,9 @@ exports.handler = async (event, context) => {
     runtimeSignal.run_history = nextRunHistory(previous, verifySignal(previous, publicKeyPem), runtimeSignal);
 
     try {
-        await publishPublicKey(kms, s3, bucketName, signingKeyAlias);
+        // A staged run is verified against the committed key by the deploy;
+        // only a published signal needs the published key beside it.
+        if (!staged) await publishPublicKey(kms, s3, bucketName, signingKeyAlias);
         runtimeSignal = await signSignal(runtimeSignal, kms, signingKeyAlias);
         console.log(`Public key published; runtime signal signed with ${signingKeyAlias}`);
     } catch (err) {
@@ -725,7 +735,7 @@ exports.handler = async (event, context) => {
 
     await s3.send(new PutObjectCommand({
         Bucket: bucketName,
-        Key: '.well-known/ksi-signal-runtime.json',
+        Key: staged ? staged.runtimeSignal : '.well-known/ksi-signal-runtime.json',
         Body: JSON.stringify(runtimeSignal, null, 2) + '\n',
         ContentType: 'application/json',
         CacheControl: 'public, max-age=300',
@@ -740,7 +750,8 @@ exports.handler = async (event, context) => {
     return {
         statusCode: 200,
         body: JSON.stringify({
-            message: 'Runtime KSI signal published',
+            message: staged ? 'Runtime KSI signal staged' : 'Runtime KSI signal published',
+            ...(staged ? { staged_key: staged.runtimeSignal } : {}),
             compliant,
             signal_id: runtimeSignal.signal_id,
             policy_version: policyVersion,
@@ -750,4 +761,4 @@ exports.handler = async (event, context) => {
 };
 
 // For local verification and tests only; the Lambda runtime calls `handler`.
-exports.internals = { makeAws, sweepTags, buildRuntimeSignal, getPolicy };
+exports.internals = { makeAws, sweepTags, buildRuntimeSignal, getPolicy, stageKeys };

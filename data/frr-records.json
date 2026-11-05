@@ -1612,7 +1612,7 @@
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Implemented",
-      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) for KSI-CED-RAT, an automated check that the operator's training attestation (DEC-192) is in force and was decided under 12 months ago. On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two. KSI-CED-RAT has one automated method, the attestation check: a second is not built, and that is an accepted finding (DEC-191), because training is a people-run process for a sole operator with no machine component to check. The SDR publishes the count and the acceptance on the KSI. The package maintainer, which every deploy runs after it publishes (the deploy is not done until it succeeds) and which runs daily, rebuilds the SDR against the runtime signal the deployed emitter produced and fails the run when any KSI has fewer than two automated methods and no in-force accepted decision record names it; the deploy's own build reports any shortfall as a warning.",
+      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) for KSI-CED-RAT, an automated check that the operator's training attestation (DEC-192) is in force and was decided under 12 months ago. On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two. KSI-CED-RAT has one automated method, the attestation check: a second is not built, and that is an accepted finding (DEC-191), because training is a people-run process for a sole operator with no machine component to check. The SDR publishes the count and the acceptance on the KSI. After apply and before it builds anything it publishes, the deploy stages its signed inventory and invokes the runtime emitter synchronously; the emitter re-validates the deployed system against that inventory and writes its signed signal beside it, and the deploy reads it back. The deploy's SDR build counts the runtime method only for that signal (it must have re-validated this commit) and fails the deploy, before anything is published, when any KSI has fewer than two automated methods and no in-force accepted decision record names it. The package maintainer, which runs after every deploy and daily, applies the same requirement to the SDR it rebuilds.",
       "evidence": [
         {
           "kind": "test",
@@ -1665,6 +1665,22 @@
         {
           "kind": "decision",
           "ref": "DEC-192"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_deploy_invokes_the_emitter_after_apply_and_requires_two_methods_before_publishing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_runtime_signal_counts_only_for_this_commits_inventory"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)"
         }
       ]
     },

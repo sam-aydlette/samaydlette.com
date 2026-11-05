@@ -168,3 +168,83 @@ def test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the
     assert deploy.index("- name: Sign VDR Report") < deploy.index("- name: Build Security Decision Record")
     deploy_jobs = deploy.split("\n  package-maintainer:\n", 1)[1]
     assert "needs: [deploy]" in deploy_jobs.split("\n\n", 1)[0] or "needs: [deploy]" in deploy_jobs[:400]
+
+
+# --- the deploy holds it: staged runtime run, then two methods required ---------------------
+
+THIS = "a" * 40
+
+
+def test_the_runtime_signal_counts_only_for_this_commits_inventory():
+    assert sdr.runtime_bound(FIX / "runtime-this-commit.json", THIS) is None
+    why = sdr.runtime_bound(FIX / "runtime-previous-commit.json", THIS)
+    assert "re-validated commit bbbbbbbbbbbb, not this build's aaaaaaaaaaaa" in why
+    assert sdr.runtime_bound(FIX / "missing.json", THIS) == "the runtime signal is unreadable"
+
+
+def test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing(tmp_path):
+    """The deploy's invocation: --require-two-methods with --runtime-commit. A
+    runtime signal from the previously published inventory counts for
+    nothing, so KSIs are short and the build stops before the SDR exists."""
+    out = tmp_path / "sdr.json"
+    sig = tmp_path / "ksi-signal.json"
+    sig.write_text(json.dumps(_signal()))
+    args = ["--catalog", str(REPO / "infrastructure" / "schemas" / "ksi-catalog.json"),
+            "--ksi-signal", str(sig),
+            "--runtime-signal", str(FIX / "runtime-previous-commit.json"),
+            "--vdr", str(FIX / "vdr-good.json"), "--profile", str(REPO / "data" / "system-profile.json"),
+            "--output", str(out), "--md-output", "", "--runtime-commit", THIS, "--require-two-methods"]
+    with pytest.raises(SystemExit, match="short of 2 automated methods; nothing written"):
+        sdr.main(args)
+    assert not out.exists()
+
+
+def _step(text, name):
+    at = text.index(f"- name: {name}")
+    return text[at:text.index("\n    - name:", at + 10)]
+
+
+def test_the_deploy_invokes_the_emitter_after_apply_and_requires_two_methods_before_publishing():
+    deploy = (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text()
+    name = "Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)"
+    order = [deploy.index(f"- name: {n}") for n in (
+        "Terraform Apply", "Sign KSI signal", name, "Build VDR Report (FedRAMP 20x Class C)",
+        "Build Security Decision Record", "Publish all signed artifacts to /.well-known/")]
+    assert order == sorted(order)
+    step = _step(deploy, name)
+    assert "check-published-redaction.py ksi-signal.json" in step  # before the staged copy
+    assert '"{\\"stage\\":\\"${COMMIT}\\"}"' in step and "trap cleanup EXIT" in step
+    assert ".FunctionError" in step and "exit 1" in step
+    assert "Fetch the signed runtime signal" not in deploy
+    sdr_step = _step(deploy, "Build Security Decision Record")
+    assert '--runtime-commit "$COMMIT" --require-two-methods' in sdr_step
+    assert "COMMIT: ${{ github.sha }}" in sdr_step
+
+
+def test_the_emitter_accepts_only_a_commit_sha_as_its_stage():
+    import shutil
+    import subprocess
+    if shutil.which("node") is None:
+        pytest.skip("node not available")
+    script = """
+const { stageKeys } = require('./infrastructure/lambda/stage.js');
+const out = { none: stageKeys({}), ok: stageKeys({ stage: 'a'.repeat(40) }), refused: [] };
+for (const bad of ['../../.well-known/x', 'A'.repeat(40), 'a'.repeat(39), 7, null]) {
+  try { stageKeys({ stage: bad }); } catch (e) { out.refused.push(String(bad)); }
+}
+console.log(JSON.stringify(out));
+"""
+    r = json.loads(subprocess.run(["node", "-e", script], cwd=REPO, capture_output=True, text=True,
+                                  check=True).stdout)
+    assert r["none"] is None
+    assert r["ok"] == {"deploySignal": f"deploy-staging/{'a' * 40}/ksi-signal.json",
+                       "runtimeSignal": f"deploy-staging/{'a' * 40}/ksi-signal-runtime.json"}
+    assert len(r["refused"]) == 5
+
+
+def test_the_emitter_may_write_only_the_staged_runtime_signal():
+    tf = (REPO / "infrastructure" / "main.tf").read_text()
+    assert '"${data.aws_s3_bucket.website.arn}/deploy-staging/*/ksi-signal-runtime.json"' in tf
+    js = (REPO / "infrastructure" / "lambda" / "index.js").read_text()
+    assert "staged ? staged.runtimeSignal : '.well-known/ksi-signal-runtime.json'" in js
+    assert "if (!staged) await publishPublicKey" in js

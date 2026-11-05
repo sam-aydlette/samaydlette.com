@@ -494,7 +494,10 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
         Resource = [
           "${data.aws_s3_bucket.website.arn}/.well-known/ksi-signal-runtime.json",
-          "${data.aws_s3_bucket.website.arn}/.well-known/runtime-signing-pubkey.pem"
+          "${data.aws_s3_bucket.website.arn}/.well-known/runtime-signing-pubkey.pem",
+          # FRC-CSX-VVK: the deploy's staged re-validation, read back and deleted
+          # by the deploy before it builds the SDR (index.js stageKeys).
+          "${data.aws_s3_bucket.website.arn}/deploy-staging/*/ksi-signal-runtime.json"
         ]
       },
       {

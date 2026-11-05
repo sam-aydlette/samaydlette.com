@@ -122,6 +122,20 @@ def runtime_validations(path):
     return rt["validations"], None
 
 
+def runtime_bound(path, commit):
+    """None when the runtime signal re-validated the inventory of `commit`
+    (provenance.source.commit, copied by the emitter from the inventory it
+    read); else why not. The deploy stages its own inventory for the emitter,
+    so a signal from the previously published inventory does not count."""
+    try:
+        got = ((json.loads(Path(path).read_text()).get("provenance") or {}).get("source") or {}).get("commit")
+    except (OSError, json.JSONDecodeError):
+        return "the runtime signal is unreadable"
+    if got != commit:
+        return f"the runtime signal re-validated commit {str(got)[:12]}, not this build's {commit[:12]}"
+    return None
+
+
 # --- FRC-CSX-VVK: the automated methods counted per KSI ---------------------------------
 # 1. the OPA plan gate (the KSI's measures validated against the plan);
 # 2. the runtime re-validation (the signed runtime signal, verified and fresh);
@@ -743,6 +757,9 @@ def main(argv=None):
     ap.add_argument("--decisions", default=None)
     ap.add_argument("--freshness", default=None)
     ap.add_argument("--require-two-methods", action="store_true")
+    # The commit whose inventory the runtime signal must have re-validated (the
+    # deploy's staged emitter run); runtime validations of any other count for nothing.
+    ap.add_argument("--runtime-commit", default=None)
     a = ap.parse_args(argv)
 
     now = datetime.now(timezone.utc)
@@ -762,6 +779,9 @@ def main(argv=None):
     applicable = _rules.applicable_provider_rules()
     irs = _controls.load(a.ksi_signal, a.catalog)
     runtime, reason = runtime_validations(a.runtime_signal)
+    if a.runtime_commit and runtime:
+        reason = runtime_bound(a.runtime_signal, a.runtime_commit)
+        runtime = [] if reason else runtime
     if a.assessment:
         assessor_records = _assessor.load_assessment(a.assessment, a.assessment_bundle, a.assessor_identity)
     else:
@@ -777,7 +797,8 @@ def main(argv=None):
     for msg in short:
         print(f"::{'error' if a.require_two_methods else 'warning'}::FRC-CSX-VVK: {msg}", file=sys.stderr)
     if short and a.require_two_methods:
-        _fail(f"{len(short)} KSI(s) short of {REQUIRED_METHODS} automated methods; nothing written")
+        _fail(f"{len(short)} KSI(s) short of {REQUIRED_METHODS} automated methods; nothing written"
+              + (f" (runtime re-validation not counted: {reason})" if reason else ""))
     fs.write_validated(doc, "sdr", a.output)
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(doc) + "\n")
