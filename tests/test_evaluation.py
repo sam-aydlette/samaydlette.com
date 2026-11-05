@@ -258,3 +258,51 @@ def test_zap_age_is_not_floored_to_whole_days(tmp_path):
     p.write_text(json.dumps({"@generated": "Mon, 2 Nov 2026 00:00:00"}))
     age = vdr.zap_report_age_days(p, datetime(2026, 11, 5, 21, 36, tzinfo=timezone.utc))
     assert age > 3  # 3.9 days: past a 3-day window
+
+
+# --- VDR-TFR-PCD: detection coverage per component -------------------------------------------
+
+def test_known_bad_components_no_technique_reached_this_month_are_uncovered():
+    from datetime import datetime
+    fx = json.loads((FIX / "coverage-gap.json").read_text())
+    cov = _evaluation.coverage(fx["components"], fx["detection"], None, datetime.fromisoformat(fx["now"]))
+    assert cov["uncovered"] == ["pkg:npm/a@1", "x::unknown::thing"]
+    rows = {r["component_id"]: r for r in cov["components"]}
+    assert rows["aws::object_store::site"]["last_detection"] == "2026-11-05T11:00:00+00:00"
+    assert "external" in rows["ext::svc"] and cov["covered"] == 1
+
+
+def test_a_fresh_feed_covers_its_components():
+    from datetime import datetime
+    fx = json.loads((FIX / "coverage-gap.json").read_text())
+    fx["detection"]["feeds"][0]["source_date"] = "2026-11-04T00:00:00+00:00"
+    cov = _evaluation.coverage(fx["components"], fx["detection"], None, datetime.fromisoformat(fx["now"]))
+    assert cov["uncovered"] == ["x::unknown::thing"]
+
+
+def test_coverage_and_unresolved_components_are_governed_detect_and_recover_checks():
+    import _gates
+    reg = _gates.load_gate_modes()
+    for check in ("vdr.coverage", "vdr.unresolved-component"):
+        assert _gates.mode_of(reg, check) == "detect-and-recover" and reg["checks"][check]["reason"]
+
+
+def test_an_unresolved_finding_becomes_a_process_finding_in_the_build(tmp_path):
+    import os
+    import shutil
+    import subprocess
+    work = tmp_path / "w"
+    shutil.copytree(REPO / "tests" / "fixtures" / "gates" / "g3-past-deadline", work)
+    g = json.loads((work / "grype.json").read_text())
+    g["matches"][0]["artifact"].update(name="zzz", version="9", purl="pkg:npm/zzz@9")
+    (work / "grype.json").write_text(json.dumps(g))
+    env = {k: v for k, v in os.environ.items() if k not in ("GITHUB_ACTIONS", "GATE_EVENTS_FILE")}
+    subprocess.run([sys.executable, str(REPO / "scripts" / "build-vdr-report.py"),
+                    "--grype", "grype.json", "--kev", "kev.json", "--previous-vdr", "previous-vdr.json",
+                    "--ksi-signal", "ksi-signal.json", "--checkov-yaml", "absent.yaml", "--opa", "absent.json",
+                    "--md-output", "", "--output", "out.json"], cwd=work, capture_output=True, text=True, env=env)
+    rep = json.loads((work / "out.json").read_text())
+    proc = [f for f in rep["findings"] if f["source"] == "process"]
+    assert [f["tracking_id"] for f in proc] == ["process-vdr.unresolved-component"]
+    assert proc[0]["remediation_due_at"] and rep["summary"]["unresolved_components"] == 1
+    assert "coverage" in rep

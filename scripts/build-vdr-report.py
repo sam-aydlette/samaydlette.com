@@ -2578,10 +2578,29 @@ def main():
     # report is decided again with them.
     events_path = os.environ.get(_gates.EVENTS_ENV)
     run_events = _gates.read_events(events_path) if events_path else []
+    # VDR-TFR-PCD: every inventory component reached by a detection technique
+    # within the month; a component none reached is a recorded gap.
+    detection_doc = json.loads(Path(args.detection).read_text()) if args.detection else None
+    coverage = _evaluation.coverage(inventory["components"], detection_doc, dast_summary(args.zap),
+                                    datetime.now(timezone.utc))
+    if coverage["uncovered"] and detection_doc is not None:
+        run_events.append(_gates.record_event(
+            gates, "vdr.coverage", f"no detection in {coverage['window_days']} days: "
+                                   f"{', '.join(coverage['uncovered'][:10])}"))
     report, blocking = _build(findings + _evaluation.process_findings(run_events, []))
+    # VER-EVA-EIR: a finding that resolves to no component was rated at the
+    # fail-safe, not evaluated; that is recorded until it resolves.
+    # (Without an inventory, as in unit fixtures, nothing resolves and nothing is recorded.)
+    if report["summary"].get("unresolved_components") and inventory["components"]:
+        unresolved = sorted(f["tracking_id"] for f in report["findings"]
+                            if f.get("unresolved_component") and f.get("source") != "process")
+        run_events.append(_gates.record_event(
+            gates, "vdr.unresolved-component",
+            f"{len(unresolved)} finding(s) resolve to no inventory component: {', '.join(unresolved[:5])}"))
     process = _evaluation.process_findings(run_events, report["findings"])
     if {p["tracking_id"] for p in process} - {f["tracking_id"] for f in report["findings"]}:
         report, blocking = _build(findings + process)
+    report["coverage"] = coverage
     # Stopped runs of the pipeline since the previous report (block-mode
     # failures): each is listed with when it failed. Given but unreadable fails.
     if args.failed_runs:

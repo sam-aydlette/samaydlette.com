@@ -264,3 +264,62 @@ def failed_runs(runs, since, workflows=PIPELINE_WORKFLOWS):
                         "workflow": r["workflowName"], "event": r.get("event"),
                         "failed_at": r.get("createdAt"), "ended_at": r.get("updatedAt")})
     return sorted(out, key=lambda x: x["failed_at"])
+
+
+# ---- detection coverage per component (VDR-TFR-PCD) -----------------------------------------
+# Which detection techniques reached each inventory component, and when. A
+# component no technique reached within the window is a detection gap: the
+# build records a vdr.coverage event, which makes it a process finding.
+PCD_WINDOW_DAYS = 31  # VDR-TFR-PCD Class C: at least once every month
+_IAC = ("checkov", "tfsec")
+_SCA = ("grype", "dependabot")
+# Component type -> the techniques that detect vulnerabilities in it.
+TECHNIQUES = {
+    "npm_package": _SCA, "pypi_package": _SCA,
+    "html_artifact": ("zap-site",),
+    "api_gateway": _IAC + ("zap-api",),
+    "function": _IAC + _SCA + ("codeql",),
+}
+# Components outside the provider's own detection: the third party detects in
+# its service, and the provider monitors it through the third-party register.
+EXTERNAL_TYPES = {"external_service": "third-party service: detection is the provider's own "
+                                      "(data/third-party-components.json)"}
+
+
+def _feed_times(detection, dast):
+    """{technique: ISO time it last ran}, from the detection gate's summary of
+    this run (a feed without a source date counts at the gate's check time)
+    and the DAST summary."""
+    out = {}
+    det = detection or {}
+    for f in det.get("feeds") or []:
+        if isinstance(f, dict) and f.get("status") == "ok":
+            at = f.get("source_date") or det.get("checked_at")
+            if at and (f["feed"] not in out or at > out[f["feed"]]):
+                out[f["feed"]] = at
+    if (dast or {}).get("status") == "ok" and dast.get("generated_at"):
+        out["zap-site"] = dast["generated_at"]
+    return out
+
+
+def coverage(components, detection, dast, now):
+    from datetime import datetime, timedelta
+    times = _feed_times(detection, dast)
+    floor = (now - timedelta(days=PCD_WINDOW_DAYS)).isoformat()
+    rows, uncovered = [], []
+    for cid, comp in sorted((components or {}).items()):
+        ctype = comp.get("type")
+        if ctype in EXTERNAL_TYPES:
+            rows.append({"component_id": cid, "type": ctype, "techniques": [], "external": EXTERNAL_TYPES[ctype]})
+            continue
+        wanted = TECHNIQUES.get(ctype) or (_IAC if comp.get("resource_type") else ())
+        techs = [{"technique": t, "at": times.get(t)} for t in wanted]
+        recent = [t["at"] for t in techs if t["at"] and
+                  datetime.fromisoformat(t["at"].replace("Z", "+00:00")).isoformat() >= floor]
+        row = {"component_id": cid, "type": ctype, "techniques": techs,
+               "last_detection": max(recent) if recent else None}
+        rows.append(row)
+        if not recent:
+            uncovered.append(cid)
+    return {"window_days": PCD_WINDOW_DAYS, "components": rows, "uncovered": uncovered,
+            "covered": len(rows) - len(uncovered) - sum(1 for r in rows if "external" in r)}
