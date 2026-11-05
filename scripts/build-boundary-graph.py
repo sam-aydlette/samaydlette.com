@@ -40,6 +40,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _redact  # noqa: E402
+
 SCHEMA = "samaydlette-boundary-map/1"
 
 # The inventory's package and content components are not boundary resources.
@@ -234,6 +237,12 @@ def build(
     now: str,
 ) -> dict[str, Any]:
     groups = classification["groups"]
+    # The published inventory carries ACCOUNT in place of the account ID
+    # (scripts/_redact.py). Terraform state and the plan carry the real one, so
+    # they are redacted the same way before any ARN is matched against it.
+    signal = _redact.redact(signal)
+    states = [_redact.redact(st) for st in states]
+    trust_root_plan = _redact.redact(trust_root_plan)
 
     components = [c for c in signal.get("components", []) if c.get("type") not in NON_BOUNDARY_TYPES]
 

@@ -1702,6 +1702,14 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle boundary-corroboration.bundle boundary-corroboration.json
         fi
 
+    # Publication redaction gate: no artifact this run is about to publish
+    # carries an AWS account ID. The inventory builder redacts it
+    # (scripts/_redact.py) and everything else derives from the inventory; this
+    # fails closed if anything slipped past that, before a byte is uploaded.
+    - name: Publication redaction gate (no AWS account ID)
+      working-directory: infrastructure
+      run: python3 ../scripts/check-published-redaction.py --root .
+
     # PUBLISH PHASE — every artifact was built and signed before the gate; this
     # uploads them as one block so the served /.well-known/ set is always
     # internally consistent. Nothing here runs unless the gate above passed.

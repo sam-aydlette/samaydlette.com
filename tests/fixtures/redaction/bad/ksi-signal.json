@@ -1,0 +1,8 @@
+{
+  "signal_id": "sig-known-bad",
+  "components": [
+    {"component_id": "aws::function::app", "type": "function",
+     "native_id": "arn:aws:lambda:us-east-2:123456789012:function:app",
+     "attributes": {"config": {"aws_sns_topic_policy": {"owner": "123456789012"}}}}
+  ]
+}

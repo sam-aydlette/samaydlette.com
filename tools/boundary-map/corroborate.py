@@ -45,6 +45,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import _redact  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import corroborate_checks as checks  # noqa: E402
@@ -331,7 +334,7 @@ def fetch_bytes(url: str) -> bytes:
 
 def matched_components(tap: dict[str, Any], signal: dict[str, Any]) -> dict[str, str]:
     """{TAP entity id: component_id}, matched by ARN as in compare()."""
-    by_native = {c["native_id"]: c["component_id"] for c in signal.get("components", [])
+    by_native = {_redact.redact_text(c["native_id"]): c["component_id"] for c in signal.get("components", [])
                  if c.get("type") in COVERAGE and c.get("native_id")}
     out = {}
     for e in tap.get("entities", []):
@@ -352,8 +355,10 @@ def fetch_json(src: str) -> Any:
 # ---------------------------------------------------------------------------
 
 def normalize_id(tap_type: str, value: Any) -> str:
-    """TAP's identifier in the inventory's native_id form."""
-    v = str(value or "")
+    """TAP's identifier in the inventory's native_id form. The published
+    inventory carries ACCOUNT in place of the account ID (scripts/_redact.py),
+    so TAP's identifiers are redacted the same way before they are matched."""
+    v = _redact.redact_text(str(value or ""))
     if tap_type == "cloudwatch_log_group":
         return v[:-2] if v.endswith(":*") else v
     if tap_type == "route53_zone":
@@ -363,7 +368,7 @@ def normalize_id(tap_type: str, value: Any) -> str:
 
 def public_name(value: str) -> str:
     """A resource's name without the account, region or partition parts of its ARN."""
-    v = re.sub(r"^arn:aws[a-z-]*:[^:]*:[^:]*:[0-9]*:", "", value)
+    v = re.sub(r"^arn:aws[a-z-]*:[^:]*:[^:]*:(?:[0-9]*|ACCOUNT):", "", value)
     return v.split("/", 1)[-1] if v.startswith(("role/", "table/", "key/", "trail/", "rule/")) else v
 
 
@@ -389,7 +394,7 @@ def compare(tap: dict[str, Any], signal: dict[str, Any], bmap: dict[str, Any], n
         sys.exit("corroborate: the published map and inventory are bound to different signals; retry after the deploy settles")
 
     in_scope = [c for c in signal.get("components", []) if c.get("type") in COVERAGE]
-    by_native = {c["native_id"]: c for c in in_scope if c.get("native_id")}
+    by_native = {_redact.redact_text(c["native_id"]): c for c in in_scope if c.get("native_id")}
     map_ids = {n["id"] for n in bmap.get("nodes", [])}
 
     matched: dict[str, str] = {}  # tap entity id -> component_id

@@ -692,6 +692,16 @@ jobs:
     # per object, so the role needs exactly s3:PutObject on
     # `.well-known/vdr-*` and nothing else. The bucket default-encrypts with
     # SSE-S3 (AES256), so no KMS grant is involved.
+    # Publication redaction gate over exactly the files the next step uploads
+    # (scripts/_redact.py): fails closed on any AWS account ID.
+    - name: Publication redaction gate (no AWS account ID)
+      working-directory: infrastructure
+      run: >-
+        python3 ../scripts/check-published-redaction.py
+        vdr-report.json vdr-report.md vdr-trend.json
+        vdr-detail-report.json vdr-detail-report.md vdr-accepted-vulnerabilities.json
+        vdr-accepted-vulnerabilities.md vdr-history.json
+
     - name: Publish VDR + trend to /.well-known/
       id: publish
       working-directory: infrastructure
@@ -815,6 +825,9 @@ jobs:
             gates: $gs[0].gates, gate_events: $gs[0].gate_events,
             detection: $det[0],
             profile: (if $prof[0] then {profile_version: $prof[0].profile_version, conformance_sha256: $profsha} else null end)}' > vdr-status.json
+        # The beacon always publishes, so it is redacted rather than gated: a
+        # failed AWS call's text can name the account (scripts/_redact.py).
+        python3 ../scripts/_redact.py vdr-status.json
         cat vdr-status.json
         aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
           --content-type application/json --cache-control "no-cache"

@@ -39,6 +39,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import sha256_file  # noqa: E402
+import _redact  # noqa: E402
 
 # =============================================================================
 # CONSTANTS
@@ -988,7 +989,10 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
             native_id = values.get("arn") or values.get("id")
 
         # Sensitive-content hashing: IAM policy bodies are NOT included in the
-        # canonical inventory directly; only their SHA-256 hash. The full body
+        # canonical inventory directly; only their SHA-256 hash. The hash is
+        # taken over the redacted body (scripts/_redact.py): the Terraform that
+        # produces it is public, so a hash over the account ID would let anyone
+        # recover it by trying every twelve-digit number. The full body
         # is reviewable in infrastructure/main.tf for anyone with repo access.
         # Same treatment for IAM role trust policies.
         derived_text = {}
@@ -996,7 +1000,7 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
             trust_policy = values.get("assume_role_policy")
             if trust_policy is not None:
                 body_str = trust_policy if isinstance(trust_policy, str) else json.dumps(trust_policy, sort_keys=True)
-                attrs["trust_policy_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
+                attrs["trust_policy_sha256"] = hashlib.sha256(_redact.redact_text(body_str).encode()).hexdigest()
                 principals = trusted_principals(trust_policy)
                 if principals:
                     attrs["trusted_principals"] = principals
@@ -1006,7 +1010,7 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
             policy_body = values.get("policy")
             if policy_body is not None:
                 body_str = policy_body if isinstance(policy_body, str) else json.dumps(policy_body, sort_keys=True)
-                attrs["policy_document_sha256"] = hashlib.sha256(body_str.encode()).hexdigest()
+                attrs["policy_document_sha256"] = hashlib.sha256(_redact.redact_text(body_str).encode()).hexdigest()
             attrs["policy_name"] = values.get("name")
             attrs["attached_to_role"] = values.get("role") or values.get("role_name")
             if attrs["attached_to_role"]:
@@ -1869,6 +1873,10 @@ def main():
         },
     }
 
+    # The account ID never leaves the build (scripts/_redact.py): every ARN and
+    # configuration value is published with ACCOUNT in its place, and the
+    # publication gate fails the deploy on any twelve-digit number that remains.
+    signal = _redact.redact(signal)
     output_path.write_text(json.dumps(signal, indent=2) + "\n")
     print(
         f"Wrote {output_path} "
