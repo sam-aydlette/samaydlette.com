@@ -144,7 +144,8 @@ def test_known_bad_fixture_covers_every_check():
                      "gap must be", "closes_with must be", "cannot be Not Applicable", "is not one of",
                      "not_applicable must be", "a Not Applicable record has no gap", "for Not Applicable records only",
                      "unknown field", "AWS account ID", "email address outside",
-                     "may_rationale must be", "for MAY rules only"):
+                     "may_rationale must be", "for MAY rules only", "simulated is for Implemented records only",
+                     "simulated must be {counterparty", "needs deploy-time evidence"):
         assert fragment in expects, fragment
 
 
@@ -213,3 +214,68 @@ def test_conditional_subsets_say_so_in_the_corpus():
     rules, _ = _rules.load_rules()
     for (fam, subset), phrase in _frr.CONDITIONAL_SUBSETS.items():
         assert phrase in rules["FRR"][fam]["info"]["subsets"][subset]["description"]
+
+
+# --- the completeness gate ---------------------------------------------------------
+
+def _doc_with(rid, **fields):
+    doc = copy.deepcopy(_committed())
+    for r in doc["records"]:
+        if r["frr_id"] == rid:
+            r.clear()
+            r.update({"frr_id": rid, **fields})
+    return doc
+
+
+def _complete_doc():
+    """The committed records with every open one made Implemented on a test that exists."""
+    doc = copy.deepcopy(_committed())
+    for r in doc["records"]:
+        if r["status"] not in _frr.COMPLETE_STATUSES:
+            for k in ("gap", "closes_with"):
+                r.pop(k, None)
+            r["status"] = "Implemented"
+            r["evidence"] = [{"kind": "test", "ref": "tests/test_frr_records.py::test_summary_counts_add_up"}]
+    return doc
+
+
+@pytest.mark.parametrize("status", ["Partially Implemented", "Not Implemented"])
+def test_any_open_record_keeps_the_deploy_from_proceeding(status, tmp_path, applicable, resolve):
+    doc = _complete_doc()
+    rec = next(r for r in doc["records"] if r["frr_id"] == "AFC-CSO-INB")
+    rec.update({"status": status, "gap": "x", "closes_with": ["W9"]})
+    rec.pop("simulated", None)
+    _frr.validate(doc, applicable, resolve)          # honest, so it passes the honesty rule...
+    assert _frr.incomplete(doc) == [("AFC-CSO-INB", status)]
+    p = tmp_path / "frr.json"
+    p.write_text(json.dumps(doc))
+    assert _frr.main(["--records", str(p), "--complete"]) == 1   # ...and still stops the deploy
+
+
+def test_a_complete_record_set_lets_the_deploy_proceed(tmp_path, applicable, resolve):
+    doc = _complete_doc()
+    _frr.validate(doc, applicable, resolve)
+    assert _frr.incomplete(doc) == []
+    p = tmp_path / "frr.json"
+    p.write_text(json.dumps(doc))
+    assert _frr.main(["--records", str(p), "--complete"]) == 0
+
+
+def test_the_summary_counts_simulated_counterparties(applicable, resolve):
+    doc = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+                    evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
+                    simulated={"counterparty": "assessor", "how": "A plainly fictional assessor."})
+    _frr.validate(doc, applicable, resolve)
+    assert _frr.summary(doc, applicable)["simulated"] == {"assessor": 1}
+
+
+def test_the_gate_runs_before_anything_is_applied():
+    """The completeness gate is in the job the deploy job needs, so a gap
+    stops the run before terraform apply or any publish."""
+    import yaml
+    wf = yaml.safe_load((REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text())
+    steps = [s.get("run", "") for s in wf["jobs"]["test"]["steps"]]
+    assert any("scripts/_frr.py --complete" in r for r in steps)
+    assert "test" in wf["jobs"]["deploy"]["needs"]
+    assert not any("terraform apply" in s.get("run", "") or "aws s3" in s.get("run", "")
+                   for s in wf["jobs"]["test"]["steps"])

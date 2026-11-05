@@ -28,6 +28,15 @@ The register is only allowed to claim what the repository can show:
   other rule carries one.
 - No record text may carry an AWS account ID, or an email address outside the
   system's domain and FedRAMP's (the SDR is published).
+- A record that relies on a simulated outside party (an assessor, FedRAMP, an
+  agency, an incident recipient, the mail system, SAM.gov) says so in
+  `simulated` {counterparty, how}. Only an Implemented record may, and it must
+  cite deploy-time evidence (a workflow step or a published artifact): the
+  mechanism is real and exercised on every deploy; only the party is not.
+
+The deploy gate (`--complete`, operator's decision of 2026-11-05): the deploy
+proceeds only when every record is Implemented or Not Applicable. Each record
+describes the state after a successful deploy of the commit that contains it.
 
 Fails closed, stdlib only (the deploy job installs no jsonschema); the JSON
 schema beside it documents the same shape and is checked in tests.
@@ -63,10 +72,17 @@ CONDITIONAL_SUBSETS = {
 WORKSTREAMS = tuple(f"W{n}" for n in range(2, 11))
 CLOSERS = (*WORKSTREAMS, "sam")
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
+# Outside parties this proof of concept stands in for (operator's decision of
+# 2026-11-05): the mechanism is real and runs on every deploy; the party is not.
+SIMULATED_COUNTERPARTIES = ("assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov")
+SIMULATED_KEYS = {"counterparty", "how"}
+# What the completeness gate accepts: the deploy proceeds only when every
+# applicable rule is one of these.
+COMPLETE_STATUSES = ("Implemented", "Not Applicable")
 
 TOP_KEYS = {"$comment", "schema", "basis", "records"}
 RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with", "may_rationale",
-               "not_applicable"}
+               "not_applicable", "simulated"}
 EVIDENCE_KEYS = {"kind", "ref"}
 
 TEST_RE = re.compile(r"^(tests/[A-Za-z0-9_/]+\.py)::([A-Za-z_][A-Za-z0-9_]*)(?:::([A-Za-z_][A-Za-z0-9_]*))?(?:\[[^\]]*\])?$")
@@ -214,6 +230,17 @@ def validate(doc, applicable, resolve, where="data/frr-records.json"):
             why = resolve(ev)
             if why:
                 _fail(f"{rid}: {ev['kind']} evidence {ev['ref']!r} does not resolve: {why}")
+        if "simulated" in rec:
+            sim = rec["simulated"]
+            if not isinstance(sim, dict) or set(sim) != SIMULATED_KEYS \
+                    or sim.get("counterparty") not in SIMULATED_COUNTERPARTIES:
+                _fail(f"{rid}: simulated must be {{counterparty: one of {list(SIMULATED_COUNTERPARTIES)}, how}}")
+            _text(sim, "how", f"{rid} simulated")
+            if status != "Implemented":
+                _fail(f"{rid}: simulated is for Implemented records only")
+            if not any(ev["kind"] in ("step", "artifact") for ev in evidence):
+                _fail(f"{rid}: a simulated counterparty needs deploy-time evidence (a workflow step or a "
+                      f"published artifact): the simulation runs on every deploy")
         closes = rec.get("closes_with")
         if status == "Implemented":
             if not evidence:
@@ -254,6 +281,12 @@ def load(path=None, rules_dir=None, repo=REPO, freshness_path=None, decisions_pa
     return validate(doc, applicable, resolver(repo, freshness_path, decisions_path), str(p))
 
 
+def incomplete(doc):
+    """The records that keep the deploy from proceeding: every rule must be
+    Implemented or Not Applicable (operator's decision of 2026-11-05)."""
+    return [(r["frr_id"], r["status"]) for r in doc["records"] if r["status"] not in COMPLETE_STATUSES]
+
+
 def summary(doc, applicable):
     """Counts the trust center and the SDR can show: by status, and by status
     within each force (MUST, SHOULD, ...)."""
@@ -262,8 +295,10 @@ def summary(doc, applicable):
     for r in doc["records"]:
         f = applicable[r["frr_id"]]["force"]
         by_force.setdefault(f, Counter())[r["status"]] += 1
+    simulated = Counter(r["simulated"]["counterparty"] for r in doc["records"] if "simulated" in r)
     return {"rules": len(doc["records"]),
             "by_status": {s: by_status.get(s, 0) for s in STATUSES},
+            "simulated": {c: simulated[c] for c in sorted(simulated)},
             "by_force": {f: {s: c.get(s, 0) for s in STATUSES} for f, c in sorted(by_force.items())}}
 
 
@@ -271,9 +306,20 @@ def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="Validate data/frr-records.json against the pinned FedRAMP rules.")
     ap.add_argument("--records", default=str(DEFAULT_PATH))
+    ap.add_argument("--complete", action="store_true",
+                    help="also fail unless every record is Implemented or Not Applicable (the deploy gate)")
     args = ap.parse_args(argv)
     doc = load(args.records)
     print(json.dumps(summary(doc, _rules.applicable_provider_rules()), indent=2))
+    if args.complete:
+        open_ = incomplete(doc)
+        if open_:
+            for rid, status in open_:
+                print(f"::error::{rid} is {status}: every applicable rule must be Implemented or Not Applicable")
+            print(f"{len(open_)} of {len(doc['records'])} rule(s) not complete; the deploy does not proceed.",
+                  file=sys.stderr)
+            return 1
+        print("Every applicable rule is Implemented or Not Applicable.")
     return 0
 
 

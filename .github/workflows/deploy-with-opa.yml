@@ -188,6 +188,12 @@ jobs:
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
 
+    # The completeness gate (operator's decision of 2026-11-05): every
+    # applicable FedRAMP rule must be Implemented or Not Applicable, or nothing
+    # deploys. The deploy job needs this job, so this runs before any apply.
+    - name: FedRAMP rules complete (no gaps)
+      run: python3 scripts/_frr.py --complete
+
     - name: Python unit tests
       run: python3 -m pytest tests/ -q
 

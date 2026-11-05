@@ -35,6 +35,16 @@
           "gap": {"type": "string", "minLength": 1},
           "not_applicable": {"type": "string", "minLength": 1, "description": "Why the rule does not apply: FedRAMP scopes it to a step the provider is not taking, or it is a MAY permission not exercised."},
           "may_rationale": {"type": "string", "minLength": 1, "description": "Required on, and only on, MAY rules: why the provider did or didn't exercise the permission."},
+          "simulated": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["counterparty", "how"],
+            "description": "The outside party this proof of concept simulates; Implemented records only, with deploy-time evidence.",
+            "properties": {
+              "counterparty": {"enum": ["assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov"]},
+              "how": {"type": "string", "minLength": 1}
+            }
+          },
           "closes_with": {
             "type": "array",
             "minItems": 1,
@@ -50,8 +60,8 @@
         },
         "else": {
           "if": {"properties": {"status": {"const": "Not Applicable"}}},
-          "then": {"required": ["not_applicable"], "not": {"anyOf": [{"required": ["gap"]}, {"required": ["closes_with"]}]}},
-          "else": {"required": ["gap", "closes_with"], "not": {"required": ["not_applicable"]}}
+          "then": {"required": ["not_applicable"], "not": {"anyOf": [{"required": ["gap"]}, {"required": ["closes_with"]}, {"required": ["simulated"]}]}},
+          "else": {"required": ["gap", "closes_with"], "not": {"anyOf": [{"required": ["not_applicable"]}, {"required": ["simulated"]}]}}
         }
       }
     }
