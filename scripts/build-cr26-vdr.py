@@ -88,13 +88,14 @@ SOURCES = {
     "zap": "OWASP ZAP (dynamic application scan)",
     "grype": "Grype (software composition analysis)",
     "dependabot": "GitHub Dependabot (software composition analysis)",
+    "codeql": "GitHub CodeQL (static analysis of first-party code)",
     "opa": "OPA policy evaluation of the deployed configuration",
 }
 SOURCE_BY_LABEL = {v: k for k, v in SOURCES.items()}
 # The detection-gate feed that shows a source's scanner ran in a build. A source
 # with no feed here (OPA) never earns a disposition from coverage.
 COVERAGE_FEEDS = {"grype": "grype", "dependabot": "dependabot", "checkov": "checkov",
-                  "checkov-suppression": "checkov", "tfsec": "tfsec"}
+                  "checkov-suppression": "checkov", "tfsec": "tfsec", "codeql": "codeql"}
 SCAN_FEEDS = {"grype": "Grype software composition scan", "dependabot": "Dependabot alerts",
               "checkov": "Checkov IaC scan", "tfsec": "tfsec IaC scan",
               "kev": "CISA KEV catalog", "epss": "FIRST EPSS scores"}

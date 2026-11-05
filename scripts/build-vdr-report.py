@@ -52,12 +52,14 @@ from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _codeql  # noqa: E402
 import _decisions  # noqa: E402
 import _evaluation  # noqa: E402
 import _gates  # noqa: E402
 import _redact  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
+import _zap_api  # noqa: E402
 
 
 # =============================================================================
@@ -202,7 +204,7 @@ def classify_finding(tool_id):
 # Scanner sources whose findings are vulnerabilities (governed by the register)
 # rather than configuration findings (governed by .checkov.yaml + the maps
 # above). Mirrors vuln-gate.py's VULN_SOURCES.
-VULN_SOURCES = {"grype", "zap", "dependabot"}
+VULN_SOURCES = {"grype", "zap", "dependabot", "codeql"}
 
 # The disposition vocabulary (REQ-DSP-3), the dispositions that pass the
 # vulnerability gate, and those that close a finding for the deadline gate are
@@ -2458,6 +2460,8 @@ def main():
     parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
+    parser.add_argument("--zap-api", default=None, help="Authenticated ZAP API scan report of the Silk Reeling API (scripts/_zap_api.py); presence and age are the detection gate's (detection.zap-api)")
+    parser.add_argument("--codeql", default=None, help="CodeQL code-scanning alerts and analyses (scripts/_codeql.py); completeness and age are the detection gate's (detection.codeql)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--conformance", default=None, help="Signed conformance results (scripts/build-conformance.py): the report names their profile version and sha256 (REQ-GOV-2). Given but missing or invalid: the build fails.")
     parser.add_argument("--detection", default=None, help="The detection gate's summary (scripts/detection-gate.py --output): recorded in the methodology so the report says what its inputs were and how old.")
@@ -2503,6 +2507,7 @@ def main():
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
     findings.extend(ingest_grype(args.grype))
+    findings.extend(_codeql.ingest_codeql(args.codeql))
 
     # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
     # a MISSING report only warns (DAST coverage absent until the first scan is
@@ -2532,6 +2537,8 @@ def main():
                         print(f"::error::{stale}", file=sys.stderr)
                         return 1
                     _gates.record_event(gates, "detection.zap.stale", stale)
+
+    findings.extend(_zap_api.ingest_zap_api(args.zap_api, ingest_zap, load_zap_allowlist()))
 
     findings = dedupe_findings(findings)
     kev_cves = ingest_kev(args.kev)

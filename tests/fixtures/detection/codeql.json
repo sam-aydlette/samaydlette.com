@@ -1,0 +1,97 @@
+{
+ "analyses": [
+  {
+   "category": "/language:python",
+   "created_at": "2026-11-04T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "0000000000000000000000000000000000000000",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  },
+  {
+   "category": "/language:javascript-typescript",
+   "created_at": "2026-11-04T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "0000000000000000000000000000000000000000",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  },
+  {
+   "category": "/language:actions",
+   "created_at": "2026-11-04T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "0000000000000000000000000000000000000000",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  },
+  {
+   "category": "/silk-reeling/language:python",
+   "created_at": "2026-11-04T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "0000000000000000000000000000000000000000",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  },
+  {
+   "category": "/silk-reeling/language:javascript-typescript",
+   "created_at": "2026-11-04T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "0000000000000000000000000000000000000000",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  },
+  {
+   "category": "/language:python",
+   "created_at": "2026-10-20T05:41:00Z",
+   "error": "",
+   "results_count": 0,
+   "commit_sha": "1111111111111111111111111111111111111111",
+   "tool": {
+    "name": "CodeQL",
+    "version": "2.23.0"
+   }
+  }
+ ],
+ "alerts": [
+  {
+   "number": 7,
+   "state": "open",
+   "created_at": "2026-11-03T05:41:00Z",
+   "rule": {
+    "id": "py/path-injection",
+    "name": "py/path-injection",
+    "description": "Uncontrolled data used in path expression",
+    "severity": "error",
+    "security_severity_level": "high"
+   },
+   "most_recent_instance": {
+    "category": "/silk-reeling/language:python",
+    "location": {
+     "path": "backend/main.py",
+     "start_line": 120,
+     "end_line": 120,
+     "start_column": 5,
+     "end_column": 9
+    },
+    "message": {
+     "text": "This path depends on a user-provided value."
+    }
+   }
+  }
+ ]
+}
