@@ -639,9 +639,9 @@
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Partially Implemented",
-      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration for object stores and the distribution daily (ksi-signal-runtime.json).",
+      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration daily. The SDR counts the automated methods in place for each KSI (plan gate, plus runtime only when the signed runtime signal verifies and is fresh).",
       "evidence": [],
-      "gap": "Class C requires at least two automated methods for each KSI. The runtime check covers only some component types, and no record counts the automated methods per KSI to show two exist for each.",
+      "gap": "On the latest inputs 34 KSIs have two automated methods, 3 have one, and 9 have none (KSI-CED-RAT, KSI-IAM-AAM, KSI-IAM-APM, KSI-IAM-ELP, KSI-IAM-JIT, KSI-IAM-SNU, KSI-IAM-SUS, KSI-SCR-MIT, KSI-SCR-MON). To close: a second automated method for the 3, and two for the 9.",
       "closes_with": [
         "W7"
       ]
@@ -651,9 +651,9 @@
       "status": "Partially Implemented",
       "implementation": "scripts/_frr.py checks the rule records automatically on every build: the set matches the pinned corpus, and every piece of evidence cited resolves to a test, workflow step, published artifact or decision.",
       "evidence": [],
-      "gap": "Resolution shows the evidence exists, not that it passed for the rule: the records are not yet tied to test results (conformance-results.json) or published in the SDR.",
+      "gap": "Resolution shows the evidence exists, not that it passed for the rule: the records published in the SDR are not tied to test results (conformance-results.json). To close: fail the build when a test cited as evidence fails, and publish the result per record.",
       "closes_with": [
-        "W3"
+        "W10"
       ]
     },
     {
@@ -1132,22 +1132,55 @@
     {
       "frr_id": "SDR-CSO-FRR",
       "status": "Partially Implemented",
-      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata), each with status, implementation, evidence, gap and the work that closes it; scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve.",
-      "evidence": [],
-      "gap": "The published SDR does not yet carry these records in fedRampRequirements (next W3 PR), and the independent verification and validation halves stay empty until an assessor is engaged (operator's decision of 2026-11-05). To close: Publish the records in the SDR's fedRampRequirements with rule-specific verification and validation drawn from the evidence each cites; flip each record as its workstream lands.",
+      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_every_applicable_rule_is_listed_once"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_an_invalid_record_set_never_reaches_the_sdr"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "gap": "The independent verification and validation halves stay empty: no assessor is engaged (operator's decision of 2026-11-05). To close: engage an assessor.",
       "closes_with": [
-        "W3",
         "sam"
       ]
     },
     {
       "frr_id": "SDR-CSO-MTD",
-      "status": "Partially Implemented",
-      "implementation": "security-decision-record.json metadata: last_updated (timestamp), source_of_update (build-sdr.py).",
-      "evidence": [],
-      "gap": "Version is the constant 'live (regenerated each deploy)', not an identifier; field names do not match the schema (version/lastUpdated/updateSource). To close: Emit a real version (semver bumped on content change, or commit SHA) and the schema's field names.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The SDR carries metadata.version, metadata.lastUpdated and metadata.updateSource in FedRAMP's schema. The version is semver: unchanged content keeps the previous version and a content change bumps it, judged by a sha256 of the content excluding metadata.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_version_starts_at_1_0_0_after_the_unversioned_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_unchanged_content_keeps_its_version_and_a_change_bumps_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_it_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
@@ -1163,11 +1196,29 @@
     {
       "frr_id": "SDR-CSX-KSI",
       "status": "Partially Implemented",
-      "implementation": "security-decision-record.json under /.well-known/ carries a record per KSI with an explanation and artifacts, built from the KSI signal's checks.",
-      "evidence": [],
-      "gap": "Verification and validation are the same boilerplate for every KSI (build-sdr.py), not per-KSI statements of the measures, their cycle, and how their automation was verified and validated.",
+      "implementation": "The SDR carries every KSI with its tests (the OPA rules annotated to it), its evidence, its status rule, and the number of automated methods in place.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_every_ksi_is_listed_with_tests_and_evidence"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_a_ksi_is_implemented_only_when_its_measures_are_checked"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "gap": "Validation text is generated per method, not written per KSI: 6 distinct statements across 46 KSIs, and the 9 KSIs with no automated method state no measures or cycle. To close: per-KSI statements of the measures, their cycle, and how their automation was verified and validated.",
       "closes_with": [
-        "W3"
+        "W7",
+        "W10"
       ]
     },
     {
