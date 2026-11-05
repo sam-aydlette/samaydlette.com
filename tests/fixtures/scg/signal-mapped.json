@@ -1,0 +1,29 @@
+{
+ "signal_id": "fixture",
+ "components": [
+  {
+   "component_id": "x::kms_key",
+   "type": "kms_key"
+  },
+  {
+   "component_id": "x::function",
+   "type": "function"
+  },
+  {
+   "component_id": "x::object_store",
+   "type": "object_store"
+  },
+  {
+   "component_id": "x::npm_package",
+   "type": "npm_package"
+  },
+  {
+   "component_id": "x::cdn_distribution",
+   "type": "cdn_distribution"
+  },
+  {
+   "component_id": "x::external_service",
+   "type": "external_service"
+  }
+ ]
+}

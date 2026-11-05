@@ -461,32 +461,71 @@
     },
     {
       "frr_id": "CMU-CSO-CAT",
-      "status": "Not Implemented",
-      "implementation": "Checked infrastructure/cognito.tf, silk-reeling.tf and bootstrap/cloudfront.tf: tenant-facing defaults use standard endpoints; no list of default modules exists.",
-      "evidence": [],
-      "gap": "No configuration that defaults agency tenants (Silk Reeling users/tenants) to validated modules, and no list of default modules with validation status. To close: Define the agency-tenant default (FIPS endpoints, TLS policy on CloudFront/API Gateway, KMS CMKs) in Terraform, and publish the generated list of default modules with CMVP status.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The app's tenants (Silk Reeling users) get validated cryptography by default where AWS offers it, set in Terraform: the app's Lambda environment and every app log group are encrypted with a customer-managed key on the AWS KMS HSM (CMVP #4884) with rotation on, and viewer and origin TLS are fixed at TLS 1.2 or later. AWS offers no validated-module option for a distribution's viewer TLS, an HTTP API's endpoint or the Cognito Hosted UI (DEC-152). The published module list marks each service's agency-tenant default.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_agency_tenant_defaults_use_the_validated_kms_hsm_in_terraform"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-152"
+        }
       ]
     },
     {
       "frr_id": "CMU-CSO-CMD",
-      "status": "Partially Implemented",
-      "implementation": "certification-package-overview.json cryptographic_modules (4 entries, from offering.json); research/authorization-boundary.html#fips (L86-91); boundary-map.json fips_modules.",
-      "evidence": [],
-      "gap": "Not per service and not complete: Silk Reeling's Cognito, API Gateway TLS, Lambda runtime TLS, DynamoDB/SQS/SNS encryption, Secrets Manager, CloudTrail log-file validation, Route 53 DNSSEC signing are not listed. Validation status is imprecise: 'FIPS-validated cipher suites' for CloudFront TLS is not a CMVP status (no module name/cert number); S3 SSE-S3 has no validation status; no CMVP certificate numbers anywhere. Stale: lists an 'app secret' CMK (removed by SCN-2026-006) and omits the silk_reeling CMK (silk-reeling.tf:50). To close: Build the module list from the inventory per service: for each AWS service used, cite the module (e.g. AWS-LC FIPS, KMS HSM) with CMVP certificate number and whether it is validated or an update stream, from AWS's published FIPS documentation; generate it, don't hand-maintain it, and fail the build when a new crypto-using service appears unmapped.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide publishes the cryptographic module used by each service (CloudFront and API Gateway TLS, Cognito, KMS, Lambda, CloudWatch Logs, SNS, Secrets Manager, S3, SQS, DynamoDB, CloudTrail, Route 53 DNSSEC, the IAM OIDC provider, Sigstore signing), with the CMVP certificate and its status where AWS publishes one (the AWS KMS HSM, FIPS 140-3 Level 3, certificate #4884, read from NIST's CMVP page) and says plainly where AWS publishes none. The list is generated each deploy from data/crypto-modules.json joined with the inventory; the build fails when the inventory holds a component type with no module mapping.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_an_unmapped_component_type_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_validated_module_cites_its_cmvp_certificate_page"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_inventory_type_the_builder_knows_is_mapped"
+        }
       ]
     },
     {
       "frr_id": "CMU-CSO-UVM",
-      "status": "Partially Implemented",
-      "implementation": "Customer-managed keys use AWS KMS (FIPS 140-3 HSM): infrastructure/main.tf:532,605,648; silk-reeling.tf:50,207.",
-      "evidence": [],
-      "gap": "Validated modules are not shown for the paths that would protect customer data in transit: CloudFront, API Gateway and Cognito are reached via standard (non-FIPS) endpoints with no evidence their TLS module is validated; buckets use SSE-S3 rather than SSE-KMS; Sigstore signing is non-validated (not customer data, but documented). To close: Confirm and document each customer-data path's module validation from AWS FIPS docs; use FIPS endpoints where offered (cognito-idp-fips, API Gateway via FIPS endpoint, KMS-fips), move data-bearing stores to SSE-KMS, and record any remaining non-validated path as a decision.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Where a validated module is available for data the app holds, it is used: the app's Lambda environment and log groups, the alert topic and the signing keys are protected by customer-managed keys on the AWS KMS HSM (CMVP #4884, FIPS 140-3 Level 3). The paths where AWS publishes no CMVP module (viewer TLS on CloudFront, the HTTP API, the Cognito Hosted UI; SSE-S3, SSE-SQS and AWS-owned keys on stores that hold no customer data; the Lambda runtime's outbound TLS) are listed per service and accepted by decision (DEC-152). The system holds no federal customer data.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-152"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_paths_without_a_published_validation_are_covered_by_a_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_agency_tenant_defaults_use_the_validated_kms_hsm_in_terraform"
+        }
       ]
     },
     {
@@ -878,92 +917,189 @@
     },
     {
       "frr_id": "SCG-CSO-AUP",
-      "status": "Partially Implemented",
-      "implementation": "Live policy-index.json (listed in CPO package_contents) has an entry 'Secure Configuration Guide' with file 'docs/policies/secure-configuration-guide.md' (repo-relative path, no URL).",
-      "evidence": [],
-      "gap": "The certification package lists no secure configuration guide, and the guide is not served from the site; the OCR's reference to it points nowhere on samaydlette.com.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The certification package explains how to obtain and use the Secure Configuration Guide: the guide itself opens with obtain, use and change instructions (where it is, that it is public and signed, how to compare a system's values with it, and that the operator's own comparison is published at /.well-known/security-settings.json), and the policy index lists it with its URL. Every deploy builds it from data/secure-configuration.json (scripts/build-scg.py) and publishes it signed at https://samaydlette.com/.well-known/secure-configuration-guide.json and .md.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_committed_guide_is_released_and_builds"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-PUB",
-      "status": "Partially Implemented",
-      "implementation": "A secure configuration guide exists in the repository only.",
-      "evidence": [],
-      "gap": "The guide is not published on the site in human-readable or machine-readable form, and its content predates the current inventory.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide is public, with no account or request: human-readable at https://samaydlette.com/.well-known/secure-configuration-guide.md and machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json, signed with the deploy's keyless identity, rebuilt and republished on every deploy.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-RSC",
-      "status": "Partially Implemented",
-      "implementation": "docs/policies/secure-configuration-guide.md (94 lines): sections 1 (AWS root, l.7-17) and 2 (GitHub owner, l.19-40) give access/config/operation/decommission instructions.",
-      "evidence": [],
-      "gap": "Required item 1 is inaccurate: root 'MFA enforced via Duo' (l.11) vs DEC-025 (virtual TOTP on root and operator IAM user); l.29-36 prescribe 90-day rotation of a deployer IAM user access key although CI uses OIDC roles (deploy-with-opa.yml:328,639; DEC-001 closed/remediated); section 3 (l.49-62) still describes the retired Basic Auth credential, 'no authorizer' and 'access logging deferred', contradicting SCN-2026-002. Required item 2 is missing: l.67-76 declare it N/A by misreading it as customer settings; root-only and owner-only security settings (root MFA, account password policy, account-level S3 BPA, account closure; branch protection, Actions permissions, environment reviewers) are not explained with their implications. Recommended item 3 missing: privileged accounts (operator IAM user saydlette-dev, deploy/plan/evidence-nightly roles, Cognito user-pool admin) not covered. Artifacts: no samaydlette.com URL for the human-readable guide and no machine-readable version. To close: Rewrite the guide from the current inventory: correct MFA/credential facts, delete the access-key and Basic Auth material, add a root-only/owner-only settings table with security implications, add a privileged-accounts section, and generate both an HTML page on samaydlette.com and a JSON form from one source each deploy (with a test that fails when the guide names a retired mechanism).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide (one source, data/secure-configuration.json; published at https://samaydlette.com/.well-known/secure-configuration-guide.md and .json) names each top-level administrative account (the AWS root user, the GitHub repository owner) and privileged account (the operator IAM user, the three CI roles, user-pool administration), says how each is named, and gives secure access, configuration, operation and decommissioning instructions for each. For every security setting it states who can operate it (root-only and owner-only settings marked), the recommended value and its security implication. It states the system as it is (virtual TOTP MFA on root and the operator user, an accepted finding, DEC-150); the build fails if the guide names a retired mechanism (the old shared app credential, a deployer access key, Duo-enforced root MFA).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_committed_guide_is_released_and_builds"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_guide_naming_a_retired_mechanism_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_policy_page_names_no_retired_mechanism"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-SDF",
-      "status": "Partially Implemented",
-      "implementation": "Terraform-provisioned accounts ship hardened: infrastructure/cognito.tf:17 allow_admin_create_user_only, :21 mfa_configuration ON, :27 minimum_length 14; IAM roles least-privilege via Terraform.",
-      "evidence": [],
-      "gap": "The top-level administrative accounts (AWS root, GitHub owner) and the operator IAM user are not provisioned from code, and their MFA is virtual TOTP rather than the phishing-resistant default the system itself treats as the target (DEC-025, past due 2026-10-30); no explanation of how to access the defaults (artifact). To close: Move root/operator to phishing-resistant MFA (hardware key/passkey) and close DEC-025; record initial-provisioning defaults for the non-Terraform accounts in the guide and check them.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Privileged accounts created by code start in their recommended state: the CI roles' trust policies (infrastructure/bootstrap) and the Silk Reeling user pool (MFA required, admin-created users only, 14-character passwords; infrastructure/cognito.tf). The accounts not created by code (the AWS root user, the GitHub owner, the operator IAM user) are read on every deploy and compared with the guide's defaults (scripts/check-secure-config.py); the deploy fails on any deviation no decision covers. The one deviation is the MFA type on root and the operator user: virtual TOTP rather than the phishing-resistant default, an accepted finding (DEC-150, extending DEC-025), published against that record in /.well-known/security-settings.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-150"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_mfa_deviation_is_the_accepted_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_matching_account_passes_with_mfa_as_the_accepted_deviation"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-API",
-      "status": "Partially Implemented",
-      "implementation": "Guide l.83 points to AWS and GitHub APIs as the upstream APIs.",
-      "evidence": [],
-      "gap": "Only a generic pointer; no explanation of which API calls view/adjust which security settings in this system. To close: Document, per setting in the SCG, the AWS/GitHub API or CLI call to read and change it (and that changes go via Terraform/PR).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every setting in the Secure Configuration Guide names the API or CLI call that reads it and the one that changes it (AWS IAM, S3 Control, Cognito and STS APIs; GitHub's REST API), and the deploy uses those read calls itself to compare the live settings. Changes go through Terraform or the repository settings in reviewed pull requests.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_setting_says_how_to_read_and_change_it"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-CMP",
-      "status": "Partially Implemented",
-      "implementation": "scripts/check-manual-settings.py (deploy-with-opa.yml:1664) compares live GitHub environment reviewers / required checks to expected values and publishes to trust-center.json (github_settings 'ok'); scripts/check-runtime-divergence.py compares live AWS config to deploy-time signal.",
-      "evidence": [],
-      "gap": "No comparison for AWS root settings (MFA type, root access keys absent, password policy) or the operator IAM user; the comparison is against deploy-time state, not against the guide's recommended defaults; GitHub owner settings beyond branch checks 'need admin access and are not observed'. To close: Add checks for root/operator settings (IAM credential report: root MFA, no root keys, MFA type; account password policy; account S3 BPA) and GitHub owner settings, comparing to the machine-readable SCG defaults; publish results.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy reads the current settings of the top-level administrative and privileged accounts (root MFA and access keys, MFA type, account password policy, account-level S3 Block Public Access, other IAM users' permissions, the operator user's MFA, console password and access-key age, the CI roles' trust subjects, the user-pool sign-in policy, and the GitHub environment and branch settings) and compares each with the guide's recommended default (scripts/check-secure-config.py). A deviation no in-force decision covers, or a setting that cannot be read, fails the deploy before the SDR is built. The GitHub owner's own two-factor setting, which no API exposes to the deploy, is the operator's attestation (DEC-151). The comparison is published at /.well-known/security-settings.json and .md.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_known_bad_account_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_an_unreadable_setting_fails_the_deploy"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-151"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-EXP",
-      "status": "Partially Implemented",
-      "implementation": "Guide l.81 offers 'all configuration is in Terraform code'; trust-center.json publishes manual-settings results.",
-      "evidence": [],
-      "gap": "Terraform source is not an export of current security settings; root and GitHub-owner settings are not exported at all; no machine-readable export of current values. To close: Publish a signed JSON export of current security settings for top-level admin and privileged accounts (from the CMP checks) each nightly.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy exports the current security settings of the top-level administrative and privileged accounts as signed JSON at /.well-known/security-settings.json (with a Markdown view): each setting's current value, recommended value and result. Values only: no account ID, ARN, IAM user or role name.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_export_carries_no_user_name_or_account_id"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-MRG",
-      "status": "Not Implemented",
-      "implementation": "None: no machine-readable secure configuration guidance exists.",
-      "evidence": [],
-      "gap": "No machine-readable SCG that tools can compare against current settings. To close: Emit the recommended defaults as JSON (setting id, account, recommended value, implication, check id) and use it as the CMP comparison input.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide is machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json: per setting, an ID, the account, who can operate it, the recommended value (literal or bound), the implication, the read and change calls and the check ID. The deploy's own comparison consumes it.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-VRH",
-      "status": "Partially Implemented",
-      "implementation": "Git history of docs/policies/secure-configuration-guide.md.",
-      "evidence": [],
-      "gap": "No version number or release history of the recommended defaults; git history mixes editorial and default changes, and the guide's stale content shows changes to defaults were not released into it. To close: Add a version and a changelog of default changes to the machine-readable SCG; bump on each default change (enforced by a test when the defaults JSON changes).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The recommended defaults carry a version and a release history (the guide's release_history). Each release records a digest of the defaults it fixes; the build fails when a default changes without a new version and a changelog entry carrying the new digest.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_default_changed_without_a_release_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_release_with_a_new_digest_is_accepted"
+        }
       ]
     },
     {

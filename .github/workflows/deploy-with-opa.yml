@@ -1587,6 +1587,37 @@ jobs:
           --previous previous-availability.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
 
+    # The Secure Configuration Guide and the per-service cryptographic module
+    # list (SCG-CSO-RSC/PUB/AUP, SCG-ENH-MRG/API/VRH; CMU-CSO-CMD/UVM/CAT), from
+    # data/secure-configuration.json and data/crypto-modules.json joined with this
+    # deploy's inventory. Fails on an unreleased change to a default, a decision
+    # that is not in force, an inventoried component type with no module mapping,
+    # or a retired mechanism in the guide.
+    - name: Build the secure configuration guide (SCG, cryptographic modules)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-scg.py --ksi-signal ksi-signal.json \
+          --output secure-configuration-guide.json --md-output secure-configuration-guide.md
+        cosign sign-blob --yes --new-bundle-format --bundle secure-configuration-guide.bundle secure-configuration-guide.json
+
+    # SCG-ENH-CMP / SCG-ENH-EXP: read the live settings of the top-level and
+    # privileged accounts (read-only; the deploy role's secure-configuration-reads
+    # policy in infrastructure/bootstrap) and compare each with the guide. A
+    # deviation no in-force decision covers, or a setting that cannot be read,
+    # fails the deploy here, before the SDR is built and before anything is
+    # published. The export carries values only: no account ID, ARN or IAM name.
+    - name: Compare live security settings with the secure configuration guide
+      working-directory: infrastructure
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        pool=$(terraform output -raw cognito_user_pool_id)
+        python3 ../scripts/check-secure-config.py --cognito-pool-id "$pool" \
+          --output security-settings.json --md-output security-settings.md
+        cosign sign-blob --yes --new-bundle-format --bundle security-settings.bundle security-settings.json
+
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       run: |
@@ -1728,7 +1759,7 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
+        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
@@ -1783,7 +1814,7 @@ jobs:
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do
+        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"

@@ -1,94 +1,21 @@
-# Secure Configuration Guide (FedRAMP 20x SCG)
+# Secure Configuration Guide
 
-This guide describes the secure access, configuration, operation, and decommissioning of the **top-level administrative accounts** for the system, per `SCG-CSO-RSC`. It is published publicly (`SCG-CSO-PUB`) and lives in the repository so it is versioned alongside the code (`SCG-ENH-VRH`).
+The Secure Configuration Guide for samaydlette.com (`SCG-CSO-RSC`) is published on the site in two forms, generated on every deploy from one source:
 
-For this system, "top-level administrative accounts" map to two real-world accounts: the AWS root account, and the GitHub repository owner.
+- **Human-readable:** https://samaydlette.com/.well-known/secure-configuration-guide.md
+- **Machine-readable:** https://samaydlette.com/.well-known/secure-configuration-guide.json (signed; `secure-configuration-guide.bundle`)
+- **Live comparison and export:** https://samaydlette.com/.well-known/security-settings.json (and `.md`): every setting read from the live accounts during the deploy and compared with the guide's recommended defaults.
 
-## 1. AWS root account
+The source is [`data/secure-configuration.json`](../../data/secure-configuration.json), with the per-service cryptographic module list in [`data/crypto-modules.json`](../../data/crypto-modules.json). `scripts/build-scg.py` publishes the guide and `scripts/check-secure-config.py` runs the comparison; the deploy fails on a changed default without a new version and changelog entry, on a deviation that no in-force decision covers, and on a setting it cannot read.
 
-**Naming.** The root account is the operator's email address registered against the AWS account holding all production resources.
+## What the guide covers
 
-**Secure access.** MFA enforced via Duo. Access is interactive only — there are no API keys generated for root. Sessions are minimal: root is used only for billing, service quotas, and IAM-policy-of-last-resort actions. Day-to-day deploys use the IAM deployer principal, not root.
+- **Top-level administrative accounts:** the AWS root user and the GitHub repository owner: how each is named, and how to securely access, configure, operate and decommission it; the settings only those accounts can operate and what each means for security.
+- **Privileged accounts:** the operator IAM user, the three CI roles GitHub Actions assumes through OIDC (deploy, plan, nightly), and administration of the Silk Reeling user pool.
+- **For every setting:** the recommended secure default, its security implication, and the API or CLI call that reads and changes it.
+- **Versioning:** a version number and a release history of the recommended defaults; each release records a digest of the defaults it fixes.
+- **Cryptographic modules:** the module each service uses to protect data, with its CMVP certificate where AWS publishes one, and the agency-tenant defaults.
 
-**Secure configuration.** AWS-default secure settings are kept. CloudTrail is account-wide and management-event logging is enabled. The S3 bucket public-access block is on at the account level.
+## Accepted deviation
 
-**Secure operation.** Sessions are short. Any root-level action is recorded in CloudTrail. Routine operations do not use root.
-
-**Decommissioning.** If the operator transfers stewardship of the site, the AWS root account is closed and the domain is transferred per AWS's account-closure procedures. All API keys for the deployer principal are rotated and deleted before account closure.
-
-## 2. GitHub repository owner
-
-**Naming.** The operator's GitHub account, which is the owner of the `samaydlette.com` repository.
-
-**Secure access.** MFA enforced via Duo. All pushes to `main` require an authenticated session; `main` has branch protection requiring PR review and OPA-gate passage.
-
-**Secure configuration.** Repository settings: branch protection on `main`; required status checks (OPA gate, build); secret scanning with push protection; Dependabot enabled. GitHub Actions settings: workflow permissions are read-only by default; mutation is granted per-job. Encrypted secrets used for AWS credentials are scoped per-environment.
-
-**Secure operation.** No long-lived PATs are issued; the workflow's ephemeral `GITHUB_TOKEN` and the OIDC token for cosign are the only GitHub-issued tokens used.
-
-**AWS access key rotation (90-day cadence).** While the OIDC migration in [POAM-001](../../data/decisions.json) remains deferred, the AWS access key used by the deployer IAM user is rotated every 90 days. The rotation procedure:
-
-1. **Calendar trigger.** A recurring 90-day calendar event on the operator's calendar is the rotation trigger.
-2. **Generate the new key.** In the AWS console (IAM → Users → `<deployer-user>` → Security credentials → Create access key) or via CLI: `aws iam create-access-key --user-name <deployer-user>`.
-3. **Update the GitHub Actions secrets.** Repository Settings → Secrets and variables → Actions → update `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with the new values.
-4. **Verify a deploy.** Push a small no-op PR (or open and close one) to trigger the workflow. Confirm the compliance-check and deploy jobs both pass with the new key.
-5. **Delete the old key.** In AWS console (IAM → Users → `<deployer-user>` → Security credentials → Delete previous access key) or via CLI: `aws iam delete-access-key --user-name <deployer-user> --access-key-id <old-key-id>`.
-6. **Log the rotation.** Append a one-line entry to [`docs/security-review.md`](../security-review.md) under the rotation log: date, action, outcome.
-
-**Emergency rotation.** If a key is suspected compromised at any time, rotation happens immediately, not on the 90-day cadence. Same procedure as above, plus the IR runbook ([`docs/incident-response.md`](../incident-response.md)) is followed.
-
-**Decommissioning.** If the operator transfers stewardship, repository ownership is transferred per GitHub's transfer flow. Encrypted secrets are rotated before transfer; AWS access keys held in those secrets are deleted on the AWS side immediately after.
-
-## 3. Silk Reeling Mirror app (operator-configured security settings)
-
-Active in production (`create_silk_reeling = true` in the main deploy pipeline; live
-since 2026-06-03). The app adds one operator-configured security setting and a fixed
-secure-by-default resource baseline. Introduced under
-[SCN-2026-001](../scn/SCN-2026-001-silk-reeling.md).
-
-**Operator-set Basic Auth credential (the one configurable security setting).** Access
-to the app is gated by a single HTTP Basic Auth credential the operator sets, stored in
-Secrets Manager and CMK-encrypted. It is the access-control setting for the app
-(POAM-021; single-factor, shared, no MFA, no lockout — risk-accepted operational item).
-
-- **Set / rotate securely.** The secret *value* is injected out of band — never via Terraform (Terraform manages only the secret container, so plaintext never enters state). Set or rotate it with `aws secretsmanager put-secret-value` from the CI-held GitHub secret; use a long, random password. Rotate on the same 90-day cadence as the deployer key (and immediately on suspected compromise), logging the rotation in [`docs/security-review.md`](../security-review.md). Automatic rotation is not configured (POAM-019).
-- **Upgrade path (available on request).** SAML/OIDC federation to a customer IdP — or native WebAuthn/FIDO2 (phishing-resistant MFA) — is offered on request and would move authentication to a `customer-configured` control; not pre-built. The current single-factor credential is an **operator-accepted residual risk** for the sole-customer demo (POAM-021); any customer onboarded must accept this risk or adopt federation.
-
-**Fixed secure-by-default baseline (not operator-tunable, recorded here for the SCG inventory).**
-
-- **KMS CMK** with key rotation enabled; an explicit least-privilege key policy (account root-enable + Secrets-Manager-via-service condition only).
-- **Secrets Manager:** none. The basic-auth credential was removed in Task 3 and the Anthropic API key in SCN-2026-006, so the app role holds no `GetSecretValue`; it keeps `kms:Decrypt` on the one CMK for its encrypted environment.
-- **Lambda** runs with that least-privilege role; non-sensitive config only in environment variables; CORS locked to the site origin; constant-time credential compare.
-- **API Gateway HTTP API** has no authorizer by design (app-layer Basic Auth is the gate, POAM-022); TLS-only; access logging deferred (POAM-024).
-- **Egress:** no third-party service. The app Lambda's only outbound call is to the Cognito user pool's public JWKS endpoint (TLS) to validate tokens; feedback text is written from the scores in the Lambda. It runs outside a VPC, so this is enforced by code and configuration, not a network control.
-- **LLM-written feedback (customer-configurable, off).** The app can have an LLM write its feedback (`SRM_ENABLE_LLM_FEEDBACK=1` plus a provider key). It is disabled in this deployment. Enabling it adds an external interconnection and a secret, so it is a significant change that needs an SCN and SA-9/CA-3 treatment first (see SCN-2026-006).
-- **Logs** go to an explicit CloudWatch log group with managed retention.
-
-## What this guide does NOT cover
-
-Apart from the operator-set app credential in section 3, this system has no
-customer-configurable surface. There are no agency-customer accounts, no per-tenant
-settings, no provisioning APIs. The "customer" experience is the public read of the
-static site plus the single-credential gated app — there is otherwise nothing to
-configure. The standard SCG content about agency-customer security settings
-(`SCG-CSO-RSC` items 2 and 3 — settings operated by top-level administrative accounts on
-behalf of customers, and settings operated by privileged accounts) is not-applicable as
-scoped.
-
-## Enhanced capabilities (`SCG-ENH-*`)
-
-- **Comparison capability (`SCG-ENH-CMP`):** the runtime KSI emitter is the comparison capability — it reads the live cloud configuration and compares against the deploy-time signal. The drift detection is the SCG comparison.
-- **Export capability (`SCG-ENH-EXP`):** all configuration is in Terraform code, fully exportable.
-- **Machine-readable guidance (`SCG-ENH-MRG`):** this guide is in markdown; the configuration the guide describes is in `infrastructure/main.tf` (machine-readable Terraform).
-- **API capability (`SCG-ENH-API`):** AWS APIs and GitHub APIs are the upstream APIs that govern these accounts; both are fully API-driven.
-- **Versioning (`SCG-ENH-VRH`):** maintained in git with full history.
-
-## Secure defaults (`SCG-CSO-SDF`)
-
-All settings ship in their recommended secure state when a resource is first provisioned, because there is no manual provisioning step: every account, key, bucket, and policy is created from version-controlled Terraform with the hardened configuration baked in (S3 public-access block, SSE encryption, TLS 1.2+, mandatory MFA on the Cognito pool, least-privilege IAM, the FSBP account password policy). There is no "default-then-harden" window — the first applied state is the secure state, which is what `SCG-CSO-SDF` (a SHOULD) asks for.
-
-## Public availability
-
-Published at this path within the repository and rendered as part of the public site (`SCG-CSO-PUB`). Linked from [`docs/policies/README.md`](README.md) and from the SDR's per-control records (`rev5_controls`) for the AC and SC families.
-
-> **Effective dates.** The Secure Configuration Guide rules (`SCG-*`) and the Addressing-FedRAMP-Communication rules (`AFC-*`) carry the earliest CR26 deadlines: their grace period ended **2026-07-01**. The SCG obligations above are met; AFC is N/A for this unsponsored system (see [`docs/cr26-applicability.md`](../cr26-applicability.md)).
+The recommended default for the AWS root user and the operator IAM user is phishing-resistant MFA (a FIDO2 security key or passkey). Both use virtual authenticator-app (TOTP) MFA; that deviation is an accepted finding, [DEC-150](../../data/decisions.json), extending DEC-025, and the published comparison shows it against that record on every deploy.
