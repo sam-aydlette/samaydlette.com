@@ -46,7 +46,9 @@ def _env():
 
 def test_the_committed_register_loads_and_matches_its_schema():
     reg = _decisions.load()
-    assert len(reg["decisions"]) == 39  # 37 carried over from the POA&M, 2 new
+    # The migration range (DEC-001..099): 37 carried over from the POA&M, 2 new.
+    # Later records are added in the blocks below.
+    assert len([r for r in reg["decisions"] if _num(r) < 100]) == 39
     jsonschema = pytest.importorskip("jsonschema")
     jsonschema.validate(json.loads(REGISTER.read_text()), json.loads(SCHEMA.read_text()))
 
@@ -146,8 +148,25 @@ def test_the_check_maps_are_the_ones_the_poam_held():
     assert false_pos == rename(frozen["false_positive"])
 
 
+def _num(r):
+    return int(r["id"][4:])
+
+
+# Blocks for records added after the migration, one per piece of work, so
+# parallel branches never collide (2026-11-05). DEC-041..099 stay unused: the
+# migration range is closed.
+DEC_BLOCKS = {"certification reports": (100, 129), "notifications": (130, 149),
+              "trust center, scope and assessor": (150, 179), "detection and evaluation": (180, 209)}
+
+
+def test_records_after_the_migration_sit_in_an_allocated_block():
+    for r in _decisions.load()["decisions"]:
+        n = _num(r)
+        assert n <= 40 or any(lo <= n <= hi for lo, hi in DEC_BLOCKS.values()), r["id"]
+
+
 def test_the_only_new_records_are_the_two_dast_false_positives():
-    new = [r for r in _decisions.load()["decisions"] if not r.get("former_id")]
+    new = [r for r in _decisions.load()["decisions"] if not r.get("former_id") and _num(r) < 100]
     assert [(r["id"], r["disposition"], r["applies_to"]["vuln_ids"]) for r in new] == [
         ("DEC-039", "false-positive", ["zap-10099"]), ("DEC-040", "false-positive", ["zap-10036-2"])]
     assert all(r["decided_by"] == "Sam Aydlette" for r in new)
