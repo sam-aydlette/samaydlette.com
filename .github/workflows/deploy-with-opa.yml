@@ -1582,6 +1582,11 @@ jobs:
       run: |
         set -euo pipefail
         python3 ../scripts/build-incident-report.py --incidents ../data/incidents.json --vdr vdr-report.json --out-dir .
+        # SIMULATED delivery (IEC-CSO-IIR/OIR/FIR/AIR): every listed report is
+        # read back, hash- and schema-checked and "delivered" to a simulated
+        # FedRAMP and agency recipient; nothing is sent. A failed delivery
+        # stops the deploy here, before the SDR is built or anything published.
+        python3 ../scripts/deliver-incident-reports.py --dir .
         for f in incident-*.json; do
           cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
         done
@@ -1634,6 +1639,15 @@ jobs:
         python3 ../scripts/build-availability.py \
           --previous previous-availability.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
+
+    # The IEC records claim an unattended publisher that assumes its own role.
+    # Prove the role can be assumed, from this job, before the SDR is built:
+    # if it cannot, the deploy stops here and nothing claiming it is published.
+    # The incident-publisher job after the deploy then runs the publisher itself.
+    - name: Incident report publisher role can be assumed
+      env:
+        INCIDENT_REPORTS_ROLE_ARN: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}
+      run: python3 scripts/check-incident-role.py
 
     # SIMULATION. The FedRAMP Security Inbox is simulated for this proof of
     # concept (operator's decision): nothing real is received or sent. This
@@ -1903,6 +1917,8 @@ jobs:
         aws s3 cp incident-reports.json "s3://$BUCKET_NAME/.well-known/incident-reports.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp incident-reports.bundle "s3://$BUCKET_NAME/.well-known/incident-reports.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp incident-reports.md "s3://$BUCKET_NAME/.well-known/incident-reports.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp incident-deliveries.json "s3://$BUCKET_NAME/.well-known/incident-deliveries.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-deliveries.bundle "s3://$BUCKET_NAME/.well-known/incident-deliveries.bundle" --content-type application/json --cache-control "public, max-age=300"
         for f in incident-INC-*.json; do
           aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "${f%.json}.bundle" "s3://$BUCKET_NAME/.well-known/${f%.json}.bundle" --content-type application/json --cache-control "public, max-age=300"

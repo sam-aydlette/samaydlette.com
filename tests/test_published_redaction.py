@@ -200,12 +200,13 @@ def test_deploy_gates_exactly_what_it_publishes(tmp_path):
         (tmp_path / f"{a}.json").write_text("{}")
     # The incident reports are named by incident, so the steps use globs; with
     # the files the builder writes present, both expand to the same set.
-    incident_files = ("incident-reports.json", "incident-reports.md", "incident-INC-2026-001-01-initial.json")
+    incident_files = ("incident-reports.json", "incident-reports.md", "incident-deliveries.json",
+                      "incident-INC-2026-001-01-initial.json")
     for f in incident_files:
         (tmp_path / f).write_text("{}")
     assert "incident-INC-*.json" in publish
     publish = {n for n in publish if "*" not in n} | {f for f in incident_files if f.startswith("incident-INC-")}
-    assert {"incident-reports.json", "incident-reports.md"} <= publish
+    assert {"incident-reports.json", "incident-reports.md", "incident-deliveries.json"} <= publish
     assert _gate_files(gate_step, tmp_path) == publish
     # One absent (the operator-run corroboration): it is neither uploaded nor scanned.
     (tmp_path / "boundary-corroboration.json").unlink()

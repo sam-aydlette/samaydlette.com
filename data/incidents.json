@@ -4,7 +4,7 @@
   "policy": {
     "federal_incident_coordinator": "Sam Aydlette, System Owner and incident response lead; contact through https://samaydlette.com/.well-known/security.txt",
     "notification": "published-only",
-    "notification_text": "Published only. Each report is signed and published under https://samaydlette.com/.well-known/ (incident-reports.json lists every report and its sha256). Nothing is sent to FedRAMP or to any agency: the operator has not authorized sending, and this system has no FedRAMP certification and no agency customers.",
+    "notification_text": "Published, and delivered to SIMULATED recipients. Each report is signed and published under https://samaydlette.com/.well-known/ (incident-reports.json lists every report and its sha256) and 'delivered' to a simulated FedRAMP and agency recipient, recorded in incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: this system has no FedRAMP certification and no agency customers.",
     "adopted_vulnerability_rules": ["VER-TFR-IRI", "VER-TFR-NRI"],
     "federal_customer_data": "None. This system holds no federal customer data (FRD-FCD) and has no agency customers. Were an agency to use the Silk Reeling application, what its users supply to it (pose landmarks) would be the federal customer data to consider; the operator's public site content, account information and the published evidence are not.",
     "decided_by": "Operator",

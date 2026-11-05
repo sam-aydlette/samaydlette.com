@@ -29,9 +29,10 @@
 # report due from the finding's first evaluation at the default rating; the
 # clock check fails, and the evidence watchdog pages, once that time passes.
 #
-# Notification. Delivery to FedRAMP and agencies is not built: the register's
-# policy says "published-only" and every report says so. Publication under
-# /.well-known/ is the only channel until the operator decides otherwise.
+# Notification. Nothing is sent to FedRAMP or to agencies: the register's
+# policy says "published-only" and every report says so. After this builder,
+# scripts/deliver-incident-reports.py "delivers" each report to SIMULATED
+# FedRAMP and agency recipients and writes the delivery log.
 #
 #   build-incident-report.py --incidents ../data/incidents.json --vdr vdr-report.json --out-dir .
 #   build-incident-report.py --check incident-reports.json     # exit 1 if a report is overdue

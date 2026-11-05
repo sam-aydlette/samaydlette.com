@@ -25,9 +25,12 @@ variable "incident_reports_environment" {
   default     = "incident-reports"
 }
 
-# TRUST: this repository, this GitHub Environment, nothing else. A pull request
-# cannot assume it, and neither can a workflow that does not declare the
-# environment.
+# TRUST: this repository, two GitHub Environments, nothing else. A pull request
+# cannot assume it, and neither can a workflow that does not declare one of
+# them. The second is the reviewer-gated deploy environment: every deploy
+# assumes this role before it builds the SDR (scripts/check-incident-role.py),
+# so a deploy cannot publish records claiming a publisher whose role does not
+# work. That adds no privilege: the deploy role can already write the bucket.
 data "aws_iam_policy_document" "incident_reports_trust" {
   statement {
     effect  = "Allow"
@@ -47,7 +50,10 @@ data "aws_iam_policy_document" "incident_reports_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:environment:${var.incident_reports_environment}"]
+      values = [
+        "repo:${var.github_repo}:environment:${var.incident_reports_environment}",
+        "repo:${var.github_repo}:environment:${var.deploy_environment}",
+      ]
     }
   }
 }

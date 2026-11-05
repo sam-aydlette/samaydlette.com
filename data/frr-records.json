@@ -810,8 +810,8 @@
     },
     {
       "frr_id": "IEC-CSO-AIR",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main) and, after the deploy job, runs this workflow on its own role (deploy-with-opa.yml job incident-publisher), so the deploy fails if the publisher cannot publish.",
+      "status": "Implemented",
+      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main), assumes the publisher's role from the deploy job before the SDR is built (scripts/check-incident-role.py, step 'Incident report publisher role can be assumed'), so a deploy whose publisher role does not work stops before anything is published, and after the deploy job runs this workflow on its own role (job incident-publisher). Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
           "kind": "step",
@@ -836,12 +836,36 @@
         {
           "kind": "artifact",
           "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher role can be assumed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_the_role_check_runs_in_the_deploy_job_before_the_sdr_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_a_role_that_cannot_be_assumed_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_delivery_runs_before_signing_in_the_deploy_and_before_publishing_in_the_publisher"
         }
       ],
-      "gap": "Everything up to publication is automated; what is left is the last step of the rule, reaching all affected parties. Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). A person still records the incident's facts in the register, which the rule allows (it asks to minimize human intervention, not remove it). To close: the operator's delivery decision (IEC-CSO-IIR); the delivery is then built into this workflow.",
-      "closes_with": [
-        "sam"
-      ]
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-DPR",
@@ -906,8 +930,8 @@
     },
     {
       "frr_id": "IEC-CSO-FIR",
-      "status": "Partially Implemented",
-      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
           "kind": "test",
@@ -920,17 +944,29 @@
         {
           "kind": "artifact",
           "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
         }
       ],
-      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
-      "closes_with": [
-        "sam"
-      ]
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-IIR",
-      "status": "Partially Implemented",
-      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
           "kind": "test",
@@ -947,17 +983,33 @@
         {
           "kind": "artifact",
           "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_known_bad_logs_fail_delivery_and_write_nothing"
         }
       ],
-      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator decides a delivery channel (e.g. SES from the system's domain to FedRAMP's incident address) and it is built behind that decision.",
-      "closes_with": [
-        "sam"
-      ]
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-OIR",
-      "status": "Partially Implemented",
-      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
           "kind": "test",
@@ -970,12 +1022,24 @@
         {
           "kind": "artifact",
           "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
         }
       ],
-      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
-      "closes_with": [
-        "sam"
-      ]
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IVV-CSO-DUS",

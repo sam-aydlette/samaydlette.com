@@ -18,9 +18,10 @@ check is reported as not observed and the deploy continues on checks 1-2:
 the deploy's later incident-publisher job assumes the role from that
 environment, so a wrong environment still fails the deploy there.
 
-Whether the role itself works is proved later in the same run: the
-`incident-publisher` job calls .github/workflows/incident-reports.yml, which
-assumes the role, publishes, and fails the deploy if it cannot.
+Whether the role itself works is proved in the same job before the SDR is
+built (scripts/check-incident-role.py assumes it), and again after the deploy:
+the `incident-publisher` job calls .github/workflows/incident-reports.yml,
+which assumes the role, publishes, and fails the deploy if it cannot.
 
 Prints no ARN or account ID. Exit 0 pass, 1 fail.
 """

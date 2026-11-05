@@ -136,6 +136,12 @@ jobs:
       id: build
       run: python3 scripts/build-incident-report.py --incidents data/incidents.json --vdr vdr-report.json --out-dir out
 
+    # SIMULATED delivery: each report goes to a simulated FedRAMP and agency
+    # recipient and the delivery log records it. Nothing is sent. A failed
+    # delivery fails the run before anything is published.
+    - name: Deliver incident reports (simulated recipients; nothing sent)
+      run: python3 scripts/deliver-incident-reports.py --dir out
+
     - name: Sign incident reports
       working-directory: out
       run: |
@@ -174,6 +180,8 @@ jobs:
           put "$f" "application/json"
           put "${f%.json}.bundle" "application/json"
         done
+        put incident-deliveries.json "application/json"
+        put incident-deliveries.bundle "application/json"
         put incident-reports.md "text/markdown; charset=utf-8"
         put incident-reports.bundle "application/json"
         put incident-reports.json "application/json"

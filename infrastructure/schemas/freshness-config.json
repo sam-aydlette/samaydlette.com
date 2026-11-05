@@ -99,6 +99,18 @@
       "note": "The incident log (IEC-CSO-EFR) and, through it, every incident report it lists with its sha256. Rebuilt by .github/workflows/incident-reports.yml on every change to data/incidents.json and twice a day, and by every deploy. The report deadlines themselves are hours, so the watchdog also pages on each listed report past its deadline (IncidentReportsOverdue)."
     },
     {
+      "path": ".well-known/incident-deliveries.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-deliveries.bundle",
+      "note": "SIMULATION: the delivery log of every incident report to a simulated FedRAMP and agency recipient; nothing is sent. Rebuilt with the incident log by every deploy and by .github/workflows/incident-reports.yml."
+    },
+    {
       "path": ".well-known/ksi-signal-runtime.json",
       "cadence": "runtime",
       "max_age_hours": 26,

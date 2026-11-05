@@ -1,0 +1,37 @@
+{
+  "schema": "incident-reports/1",
+  "emitted_at": "2026-11-05T00:00:00Z",
+  "incidents": [
+    {
+      "id": "INC-2026-002",
+      "exercise": true,
+      "evaluation": {
+        "reportable": false
+      },
+      "reports": [
+        {
+          "type": "Initial",
+          "issued_at": "2026-11-05T03:40:00Z",
+          "file": "incident-INC-2026-001-01-initial.json",
+          "sha256": "5857e833e1eb8103600a828261e7e51cc3a2aad0e63ba23bd02292f678433d93",
+          "changes": {
+            "coordinator": "updated",
+            "tracking_id": "updated",
+            "description": "updated",
+            "timeline": "updated",
+            "rating": "updated",
+            "functional_impact": "updated",
+            "recovery_plan": "updated",
+            "affected_agencies": "updated",
+            "observed_activity": "not yet available",
+            "indicators_of_compromise": "not yet available",
+            "related_cves": "updated",
+            "root_cause": "not yet available",
+            "response_and_recovery_activities": "not yet available"
+          }
+        }
+      ]
+    }
+  ],
+  "_note": "KNOWN-BAD: reports listed under an incident evaluated not reportable; delivery must refuse them."
+}

@@ -73,7 +73,7 @@ def test_the_committed_register_adopts_both_vulnerability_rules_and_publishes_on
     p = json.loads(REGISTER.read_text())["policy"]
     assert set(p["adopted_vulnerability_rules"]) == {"VER-TFR-IRI", "VER-TFR-NRI"}
     assert p["notification"] == "published-only"
-    assert "not authorized" in p["notification_text"]
+    assert "Nothing is sent" in p["notification_text"] and "SIMULATED" in p["notification_text"]
 
 
 BAD = {
@@ -306,7 +306,7 @@ def test_reports_are_deterministic_and_say_they_are_published_only(exercise, tmp
     for a, b in zip(log["incidents"], again["incidents"], strict=True):
         assert [r["sha256"] for r in a["reports"]] == [r["sha256"] for r in b["reports"]]
     md = (out / "incident-reports.md").read_text()
-    assert "published-only" in md and "not authorized" in md and "(no update)" in md
+    assert "published-only" in md and "Nothing is sent" in md and "(no update)" in md
     assert log["notification"]["mode"] == "published-only"
 
 
