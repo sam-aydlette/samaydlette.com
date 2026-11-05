@@ -23,7 +23,7 @@ const ARTIFACTS = [
     ['boundary-map.json', 'The authorization boundary map'],
     ['reconcile-report.json', 'The reconciliation gate’s report for this deploy'],
     ['ksi-signal.json', 'The canonical inventory and KSI results'],
-    ['security-decision-record.json', 'Security Decision Record: how each KSI and each Rev5 control is met (replaces the SSP)'],
+    ['security-decision-record.json', 'Security Decision Record: every applicable FedRAMP rule, KSI and Rev5 Moderate control, with status and evidence'],
     ['certification-package-overview.json', 'Certification Package Overview'],
     ['vdr-report.json', 'Vulnerability Detection and Response report'],
     ['vdr-detail-report.json', 'Vulnerability Detail Report (CR26 VER-RPT-VDT): findings not accepted'],

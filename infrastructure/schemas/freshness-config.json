@@ -195,7 +195,7 @@
       "max_age_hours": 720,
       "timestamp": {
         "source": "json",
-        "field": "metadata.last_updated"
+        "field": "metadata.lastUpdated"
       },
       "signed": true,
       "signature": ".well-known/security-decision-record.bundle"

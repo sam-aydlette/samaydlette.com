@@ -1590,11 +1590,12 @@ jobs:
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       run: |
-        echo "Building Security Decision Record (SDR-CSO-FRR per KSI, SDR-CSF-CTF per Rev5 control) from the control projection..."
+        echo "Building the Security Decision Record (FedRAMP schema): every applicable rule, KSI and Moderate control..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
           || echo '{}' > previous-sdr.json
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
+          --runtime-signal ksi-signal-runtime.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.

@@ -155,6 +155,12 @@ def verify_output(sdr, records):
     signed record is carried. Fails the build otherwise."""
     signed = {r["record_id"]: _carried(r) for r in records}
     carried = []
+    pe = sdr.get("providerExtensions")
+    if isinstance(pe, dict):
+        # The SDR in FedRAMP's schema keeps them under providerExtensions.
+        for entries in (pe.get("assessorCommentResponses") or {}).values():
+            carried += entries or []
+        carried += (pe.get("assessorRecords") or {}).get("records", []) or []
     for rr in sdr.get("rule_records", []):
         carried += rr.get("assessor_comment_responses", []) or []
     carried += (sdr.get("assessor_records") or {}).get("records", []) or []
