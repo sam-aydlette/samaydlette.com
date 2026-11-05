@@ -1506,20 +1506,49 @@ jobs:
     # fetched and checked by the detection gate (G7) before apply.
     # The signed runtime signal is the only live read a mitigation can cite
     # (rule 1: a mitigation verified by a live read makes a finding fully
-    # mitigated). The builder verifies its signature against
-    # infrastructure/keys/runtime-signing-key.json and its age; anything short
-    # of verified and fresh voids every mitigation that needs a live read, so a
-    # failed fetch can only keep findings open, never close them.
-    - name: Fetch the signed runtime signal (live read for mitigations)
+    # mitigated), and the second automated method the SDR counts per KSI
+    # (FRC-CSX-VVK). It must re-validate THIS deploy's system against THIS
+    # deploy's inventory: the emitter is invoked synchronously, after apply,
+    # with the signed inventory staged under deploy-staging/<sha>/ (redaction
+    # gate first: the staged copy is in the website bucket). The emitter writes
+    # its signed signal next to it; the deploy reads it back, deletes the
+    # staging objects, and the VDR and SDR builders verify its signature
+    # (infrastructure/keys/runtime-signing-key.json), its age, and (the SDR)
+    # that it re-validated this commit. Any failure fails the deploy: the SDR
+    # step requires two automated methods per KSI. The deploy role's
+    # lambda:InvokeFunction and S3 object writes are existing grants (the
+    # post-publish compliance check and the site sync use them).
+    - name: Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)
       working-directory: infrastructure
+      env:
+        COMMIT: ${{ github.sha }}
       run: |
-        if curl -sfL --retry 3 --retry-delay 2 -o ksi-signal-runtime.json \
-            "https://samaydlette.com/.well-known/ksi-signal-runtime.json"; then
-          echo "Runtime signal fetched: emitted $(jq -r '.emitted_at' ksi-signal-runtime.json 2>/dev/null || echo 'unreadable; the builder will reject it')"
-        else
-          echo "::warning::Could not fetch the runtime signal; mitigations that need a live read are void this run."
-          rm -f ksi-signal-runtime.json
+        set -euo pipefail
+        python3 ../scripts/check-published-redaction.py ksi-signal.json
+        BUCKET=$(terraform output -raw s3_bucket_name)
+        FN=$(terraform output -raw lambda_function_name)
+        STAGE="deploy-staging/${COMMIT}"
+        cleanup() { aws s3 rm "s3://${BUCKET}/${STAGE}/" --recursive --only-show-errors || true; }
+        trap cleanup EXIT
+        aws s3 cp ksi-signal.json "s3://${BUCKET}/${STAGE}/ksi-signal.json" \
+          --content-type application/json --cache-control no-store --only-show-errors
+        if ! aws lambda invoke --function-name "$FN" --cli-binary-format raw-in-base64-out --cli-read-timeout 300 \
+            --payload "{\"stage\":\"${COMMIT}\"}" runtime-invoke.json > runtime-invoke-meta.json; then
+          echo "::error::Could not invoke the runtime emitter. The deploy role needs lambda:InvokeFunction on the emitter (bootstrap)."
+          exit 1
         fi
+        if jq -e '.FunctionError' runtime-invoke-meta.json >/dev/null \
+            || [ "$(jq -r '.statusCode' runtime-invoke.json)" != "200" ]; then
+          echo "::error::The runtime emitter's staged run failed: $(jq -c '.body // .errorMessage' runtime-invoke.json)"
+          exit 1
+        fi
+        aws s3 cp "s3://${BUCKET}/${STAGE}/ksi-signal-runtime.json" ksi-signal-runtime.json --only-show-errors
+        GOT=$(jq -r '.provenance.source.commit // ""' ksi-signal-runtime.json)
+        if [ "$GOT" != "$COMMIT" ]; then
+          echo "::error::The staged runtime signal re-validated commit ${GOT:-none}, not ${COMMIT}"
+          exit 1
+        fi
+        echo "Runtime signal for ${COMMIT}: $(jq -c '.validations | group_by(.result) | map({(.[0].result): length}) | add' ksi-signal-runtime.json)"
 
     # VDR-CSO-FAV: runs of the pipeline that a block-mode check stopped. The
     # next report lists each one (no run IDs or URLs are kept). A failed query
@@ -1929,6 +1958,7 @@ jobs:
       working-directory: infrastructure
       env:
         VDR_SIGNER: https://github.com/${{ github.workflow_ref }}
+        COMMIT: ${{ github.sha }}
       run: |
         echo "Building the Security Decision Record (FedRAMP schema): every applicable rule, KSI and Moderate control..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
@@ -1938,10 +1968,12 @@ jobs:
           --runtime-signal ksi-signal-runtime.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
           --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
-          --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER"
-        # FRC-CSX-VVK: a KSI short of two automated methods is reported here; the
-        # package-maintainer job that follows rebuilds the SDR against the runtime
-        # signal this deploy's emitter run produces and fails the run on it.
+          --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER" \
+          --runtime-commit "$COMMIT" --require-two-methods
+        # FRC-CSX-VVK: a KSI short of two automated methods without an in-force
+        # accepted decision (KSI-CED-RAT: DEC-191) fails the deploy here, before
+        # anything is published. The runtime method counts only for the signal
+        # the staged emitter run produced for this commit.
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json \
