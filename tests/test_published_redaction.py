@@ -353,3 +353,18 @@ def test_policy_hashes_cannot_be_used_to_recover_the_account():
     digests = {a.get("trust_policy_sha256") or a.get("policy_document_sha256") for a in attrs}
     assert hashlib.sha256(body.encode()).hexdigest() not in digests
     assert digests == {hashlib.sha256(_redact.redact_text(body).encode()).hexdigest()}
+
+
+def test_deploy_refreshes_the_runtime_signal_before_verifying_it():
+    """The external verifier scans the runtime signal through the CDN. The
+    runtime Lambda emits it from the published inventory, so the deploy invokes
+    it after publishing and before the invalidation and the verifier; in the
+    other order the verifier judged the previous inventory's runtime signal."""
+    names, text = _steps("deploy-with-opa.yml")
+    order = [names.index(n) for n in ("Publish all signed artifacts to /.well-known/",
+                                       "Run Post-Deployment Compliance Check",
+                                       "Invalidate CloudFront Cache",
+                                       "External verifier smoke test (reciprocity handshake)")]
+    assert order == sorted(order)
+    step = _step(text, "Run Post-Deployment Compliance Check")
+    assert "aws lambda invoke" in step and "if:" not in step.split("run:", 1)[0]

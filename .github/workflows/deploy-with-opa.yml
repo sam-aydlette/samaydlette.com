@@ -1894,61 +1894,14 @@ jobs:
         echo "✅ Round-trip verified: served origin matches the just-built artifacts"
 
     # -------------------------------------------------------------------------
-    # REFRESH WEBSITE CACHE
-    # -------------------------------------------------------------------------
-    # Tell the CDN to show the new website immediately
-    # -------------------------------------------------------------------------
-    - name: Invalidate CloudFront Cache
-      run: |
-        echo "Getting CloudFront distribution ID..."
-        cd infrastructure
-        
-        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
-        
-        if [ -z "$DISTRIBUTION_ID" ]; then
-          echo "❌ Could not get CloudFront distribution ID"
-          echo "Available outputs:"
-          terraform output 2>/dev/null || echo "No outputs available"
-          exit 1
-        fi
-        
-        echo "✅ CloudFront distribution ID: $DISTRIBUTION_ID"
-        echo "Creating cache invalidation..."
-
-        # Tell CDN to refresh all cached content. Capture the id + distribution so
-        # the external-verifier smoke test can wait for this invalidation to
-        # complete before checking the live edge.
-        INVALIDATION_ID=$(aws cloudfront create-invalidation \
-          --distribution-id $DISTRIBUTION_ID \
-          --paths "/*" \
-          --query 'Invalidation.Id' --output text)
-        echo "CLOUDFRONT_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> "$GITHUB_ENV"
-        echo "CLOUDFRONT_INVALIDATION_ID=$INVALIDATION_ID" >> "$GITHUB_ENV"
-
-        echo "✅ CloudFront cache invalidation created ($INVALIDATION_ID)"
-
-    # -------------------------------------------------------------------------
-    # RECIPROCITY HANDSHAKE: prove the EXTERNAL verification path still works
-    # -------------------------------------------------------------------------
-    # Run the same verifier a third party would (scripts/verify-published.sh)
-    # against the LIVE public URL: fetch the artifacts, check the Sigstore
-    # signatures + SLSA provenance against the pinned identity, and reconcile
-    # them (AWS-free, invariants b–h). Waits for the invalidation above so the
-    # edge is serving this deploy's artifacts. Fails closed: if an outsider could
-    # not reproduce our verdict, the deploy is not done.
-    - name: External verifier smoke test (reciprocity handshake)
-      run: |
-        echo "Waiting for CloudFront invalidation $CLOUDFRONT_INVALIDATION_ID to complete..."
-        aws cloudfront wait invalidation-completed \
-          --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-          --id "$CLOUDFRONT_INVALIDATION_ID"
-        echo "Reproducing third-party verification against the live site:"
-        bash scripts/verify-published.sh
-
-    # -------------------------------------------------------------------------
     # VERIFY EVERYTHING WORKED
     # -------------------------------------------------------------------------
-    # Run the monitoring function to make sure deployment was successful
+    # Run the monitoring function to make sure deployment was successful. It
+    # re-emits the runtime signal from the inventory just published, so it runs
+    # BEFORE the cache invalidation and the external verifier: the verifier reads
+    # the runtime signal through the CDN, and a runtime signal emitted from the
+    # previous inventory is not this deploy's evidence (it failed the
+    # account-ID check on the deploy that first redacted the inventory).
     # -------------------------------------------------------------------------
     - name: Run Post-Deployment Compliance Check
       run: |
@@ -2010,7 +1963,59 @@ jobs:
         else
           echo "❌ compliance-result.json still missing"
         fi
-  
+
+    # -------------------------------------------------------------------------
+    # REFRESH WEBSITE CACHE
+    # -------------------------------------------------------------------------
+    # Tell the CDN to show the new website immediately
+    # -------------------------------------------------------------------------
+    - name: Invalidate CloudFront Cache
+      run: |
+        echo "Getting CloudFront distribution ID..."
+        cd infrastructure
+        
+        DISTRIBUTION_ID=$(terraform output -raw cloudfront_distribution_id 2>/dev/null || echo "")
+        
+        if [ -z "$DISTRIBUTION_ID" ]; then
+          echo "❌ Could not get CloudFront distribution ID"
+          echo "Available outputs:"
+          terraform output 2>/dev/null || echo "No outputs available"
+          exit 1
+        fi
+        
+        echo "✅ CloudFront distribution ID: $DISTRIBUTION_ID"
+        echo "Creating cache invalidation..."
+
+        # Tell CDN to refresh all cached content. Capture the id + distribution so
+        # the external-verifier smoke test can wait for this invalidation to
+        # complete before checking the live edge.
+        INVALIDATION_ID=$(aws cloudfront create-invalidation \
+          --distribution-id $DISTRIBUTION_ID \
+          --paths "/*" \
+          --query 'Invalidation.Id' --output text)
+        echo "CLOUDFRONT_DISTRIBUTION_ID=$DISTRIBUTION_ID" >> "$GITHUB_ENV"
+        echo "CLOUDFRONT_INVALIDATION_ID=$INVALIDATION_ID" >> "$GITHUB_ENV"
+
+        echo "✅ CloudFront cache invalidation created ($INVALIDATION_ID)"
+
+    # -------------------------------------------------------------------------
+    # RECIPROCITY HANDSHAKE: prove the EXTERNAL verification path still works
+    # -------------------------------------------------------------------------
+    # Run the same verifier a third party would (scripts/verify-published.sh)
+    # against the LIVE public URL: fetch the artifacts, check the Sigstore
+    # signatures + SLSA provenance against the pinned identity, and reconcile
+    # them (AWS-free, invariants b–h). Waits for the invalidation above so the
+    # edge is serving this deploy's artifacts. Fails closed: if an outsider could
+    # not reproduce our verdict, the deploy is not done.
+    - name: External verifier smoke test (reciprocity handshake)
+      run: |
+        echo "Waiting for CloudFront invalidation $CLOUDFRONT_INVALIDATION_ID to complete..."
+        aws cloudfront wait invalidation-completed \
+          --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+          --id "$CLOUDFRONT_INVALIDATION_ID"
+        echo "Reproducing third-party verification against the live site:"
+        bash scripts/verify-published.sh
+
     # Help debug file system issues
     - name: Debug - List files before upload
       if: always()
