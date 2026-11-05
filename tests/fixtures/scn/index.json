@@ -1,0 +1,10 @@
+{
+  "notifications": [
+    {"scnId": "SCN-2099-001", "notices": [
+      {"stage": "initial-plan", "rule": "SCN-TRF-NIP", "deadline": "2099-01-01", "publishedOn": "2026-10-20", "onTime": true},
+      {"stage": "final-plan", "rule": "SCN-TRF-NFP", "deadline": "2099-01-01", "publishedOn": "2026-11-02", "onTime": true}]},
+    {"scnId": "SCN-2099-002", "notices": [
+      {"stage": "initial-plan", "rule": "SCN-TRF-NIP", "deadline": "2099-01-01", "publishedOn": "2026-09-01", "onTime": true},
+      {"stage": "final-plan", "rule": "SCN-TRF-NFP", "deadline": "2099-01-01", "publishedOn": "2026-10-15", "onTime": true}]}
+  ]
+}

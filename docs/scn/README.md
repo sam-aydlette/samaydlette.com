@@ -5,31 +5,47 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
 
 ## Contents
 
-- **[`scn-register.csv`](scn-register.csv)** — the machine-readable **and** human-readable
-  SCN register (`SCN-CSO-HRM`). One row per significant change, carrying the
-  `SCN-CSO-INF` required fields. CSV is the format the FedRAMP SCN beta used to satisfy
-  both readability requirements simultaneously.
-- **`SCN-<year>-<n>-<slug>.md`** — the human-readable SCN record + copy of the security
-  impact analysis for each change (`SCN-CSO-INF`, including item 9, the SIA).
+- **[`scn-register.csv`](scn-register.csv)** — the register, and the source every published
+  notification is built from. One row per adaptive or transformative change, carrying the
+  `SCN-CSO-INF` fields, the dates the notice deadlines count from (`date_started`,
+  `date_finished`, `verified_on`), and for transformative changes the plan, third-party-review and
+  documentation-update fields. `scripts/_scn.py` validates it (`tests/test_scn.py`); a
+  routine-recurring row is refused (`SCN-RTR-NNR`).
+- **`SCN-<year>-<n>-<slug>.md`** — the human-readable record and copy of the security impact
+  analysis for each change (`SCN-CSO-INF` item 9).
+- **[`evaluation-examples.md`](evaluation-examples.md)** — the evaluation format and one example
+  per type (`SCN-CSO-EVA`).
+- **[`TEMPLATE-transformative.md`](TEMPLATE-transformative.md)** — the transformative record
+  template: notice windows, third-party review, verification and documentation update.
 
-## How this relates to the rest of the system
+## How the process runs
 
-- **Audit records (`SCN-CSO-MAR`):** the git history is the audit record of SCN
-  evaluation activity. Every commit to `main` carries an `SCN-Type:` categorization
-  validated by [`.github/workflows/scn-tag.yml`](../../.github/workflows/scn-tag.yml);
-  the default is `routine-recurring` per [`docs/policies/cm-policy.md`](../policies/cm-policy.md),
-  and the operator upgrades to `adaptive` / `transformative` / `emergency` explicitly.
-  The register and the per-change records here are the durable, structured complement to
-  that history for Adaptive and Transformative changes (which produce a SIA).
-- **Historical notifications (`SCN-CSO-HIS`):** at least **12 months** of SCNs are kept
-  here with the FedRAMP Certification data. Rows are never deleted; superseded records
-  are retained.
-- **Notification mechanism (`SCN-CSO-NOM`):** the system has no agency customers today,
-  so notification is met by publishing the updated certification data — the KSI signal,
-  SDR, CPO and VDR report at `/.well-known/` — alongside these records.
-- **Emergency changes (`SCN-CSO-EMG`):** handled per the IR runbook
-  ([`docs/incident-response.md`](../incident-response.md)); retroactive SCN materials are
-  added here within the required window.
+- **Evaluation (`SCN-CSO-EVA`).** Every pull request carries `SCN-Type:`, `SCN-Rationale:` and,
+  for adaptive, transformative and emergency changes, `SCN-Record:`. The required `scn-tag`
+  check ([`.github/workflows/scn-tag.yml`](../../.github/workflows/scn-tag.yml)) fails without
+  them; there is no default. `class-change` always fails. A transformative change fails until its
+  initial plan has been published 30 business days and its final plan 10.
+- **Audit records (`SCN-CSO-MAR`).** Each deploy appends the evaluation of every change merged
+  since the last one (commit, type, rationale, record, who merged it, when) to the signed,
+  append-only log at `/.well-known/scn-evaluations.json` (and `.md`). A deploy that would drop or
+  rewrite an entry fails.
+- **Notification (`SCN-CSO-NOM`).** FedRAMP's rules name the notification method as an update to
+  the Certification Data. Each deploy publishes every register row in FedRAMP's SCN schema at
+  `/.well-known/significant-change-notifications.json` (signed), its human-readable view (`.md`)
+  and an Atom feed (`significant-change-notifications.atom`) anyone can subscribe to; the
+  Certification Package Overview lists them. A notice is given when it is first published, and
+  the index records that date beside its deadline. **Nothing is sent by email or to FedRAMP.**
+- **Deadlines.** Business days exclude weekends and US federal holidays (`scripts/_bizdays.py`).
+  Adaptive: 10 after finishing (`SCN-ADP-NTF`). Transformative: initial plan 30 before starting,
+  final plan 10 before, 5 after finishing, 5 after verification, documentation within 30
+  (`SCN-TRF-*`). Emergency: the retroactive record within 5 (`SCN-CSO-EMG`). The scheduled
+  [`scn-deadlines`](../../.github/workflows/scn-deadlines.yml) workflow fails and raises an issue
+  on anything overdue.
+- **History (`SCN-CSO-HIS`).** Notifications are never pruned; a deploy that would drop one or
+  re-date a notice fails. Rows here are never deleted.
+
+The six records below predate the published index: their notices were first published by the
+deploy that introduced it, after their deadlines, and the index says so.
 
 ## Index
 

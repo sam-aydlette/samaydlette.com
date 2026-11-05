@@ -1,0 +1,68 @@
+# =============================================================================
+# SCN DEADLINE CHECK  (SCN-ADP-NTF, SCN-TRF-NAF/NAV/UPD, SCN-CSO-EMG)
+# =============================================================================
+# Once a business day, compares the published evaluation log and notification
+# index with the register on main and fails on anything late and outstanding:
+# a change named as adaptive/transformative/emergency with no record by its
+# deadline, a notice not yet published after its deadline, or a transformative
+# change's documentation not updated within 30 business days. The rules are in
+# scripts/_scn.py (tests/test_scn.py). A failure raises or updates one GitHub
+# issue, the same paper trail the evidence nightly uses.
+#
+# Reads only public URLs and this checkout: no AWS credentials, no writes
+# outside the issue.
+# =============================================================================
+
+name: SCN Deadlines
+
+on:
+  schedule:
+    - cron: "17 13 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deadlines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      result: ${{ steps.check.outcome }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check SCN deadlines
+        id: check
+        run: python3 scripts/check-scn-deadlines.py
+
+  alert:
+    name: Raise the overdue-SCN issue
+    runs-on: ubuntu-latest
+    needs: [deadlines]
+    if: always() && needs.deadlines.result == 'failure'
+    permissions:
+      issues: write
+    steps:
+      - name: Raise or update the overdue-SCN issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const TITLE = 'Significant Change Notification overdue';
+            const runUrl = `${context.payload.repository.html_url}/actions/runs/${context.runId}`;
+            const body = [
+              'The scheduled SCN deadline check failed: a significant change has a record or notice past its deadline.',
+              '',
+              `The "Check SCN deadlines" step in [this run](${runUrl}) names each item. Add the record to docs/scn/scn-register.csv and deploy, which publishes it; a notice is given when the deploy publishes it.`,
+            ].join('\n');
+            const open = (await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100,
+            })).filter(i => i.title === TITLE && !i.pull_request);
+            if (open.length) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number: open[0].number, body,
+              });
+            } else {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: TITLE, body });
+            }

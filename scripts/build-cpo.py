@@ -37,8 +37,28 @@ PACKAGE_CONTENTS = [
     ("availability.json", "Availability feed (CDS-CSO-AVR)", True),
     ("policy-index.json", "Policy and procedure index (CDS-CSO-IRP)", True),
     ("iiw.csv", "FedRAMP Integrated Inventory Workbook (Appendix M)", True),
+    ("significant-change-notifications.json",
+     "Significant Change Notifications, FedRAMP SCN schema (SCN-CSO-HIS/HRM)", True),
+    ("significant-change-notifications.atom", "SCN notification feed, Atom (SCN-CSO-NOM)", True),
+    ("scn-evaluations.json", "Significant-change evaluation log, append-only (SCN-CSO-MAR)", True),
 ]
 BASE = "https://samaydlette.com/.well-known/"
+# SCN-CSO-NOM / SCN-CSO-MAR / SCN-CSO-HRM: how notifications are given and how
+# the records are obtained; scripts/build-scn.py publishes the same statement.
+SCN_NOTIFICATION = {
+    "mechanisms": [
+        {"mechanism": "Atom feed", "url": BASE + "significant-change-notifications.atom"},
+        {"mechanism": "Signed JSON index", "url": BASE + "significant-change-notifications.json"},
+        {"mechanism": "Human-readable view", "url": BASE + "significant-change-notifications.md"},
+    ],
+    "method": "Notification is publication: each notice is an update to the Certification Data at the URLs "
+              "above, dated when first published. Nothing is sent by email or to FedRAMP directly.",
+    "evaluation_records": BASE + "scn-evaluations.json",
+    "access": "Public; no request needed. Everything is published to everyone (no federal data, no agency "
+              "customer).",
+    "emergency_procedure": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md"
+                           "#emergency-change-procedure-cr26-scn-cso-emg",
+}
 
 
 def main():
@@ -100,6 +120,7 @@ def main():
                       "the Security Decision Record; the independent half is unmet by design.",
             "current_service": off.get("current_independent_assessment_service"),
         },
+        "significant_change_notifications": SCN_NOTIFICATION,
         "package_contents": [
             {"artifact": fn, "description": desc, "url": BASE + fn, "signed": signed}
             for fn, desc, signed in PACKAGE_CONTENTS
@@ -135,6 +156,11 @@ def render_markdown(c):
         out.append("| {mod} | {val} | {role} |".format(
             mod=m.get("module", ""), val=m.get("validation", ""), role=m.get("role", "")))
     out += ["", "## Independent assessment (IVV-CSO-ICP)", "", c["independent_assessment"]["status"], ""]
+    scn = c["significant_change_notifications"]
+    out += ["## Significant Change Notifications (SCN-CSO-NOM)", "", scn["method"], ""]
+    out += [f"- {m['mechanism']}: {m['url']}" for m in scn["mechanisms"]]
+    out += [f"- Evaluation records (SCN-CSO-MAR): {scn['evaluation_records']}",
+            f"- Access: {scn['access']}", f"- Emergency changes (SCN-CSO-EMG): {scn['emergency_procedure']}", ""]
     out += ["## Package contents", "", "| Artifact | Description | Signed |", "|---|---|---|"]
     for p in c["package_contents"]:
         out.append("| [`{a}`]({u}) | {d} | {s} |".format(
