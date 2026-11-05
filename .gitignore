@@ -153,6 +153,8 @@ tests/__pycache__/
 # (Python's venv also writes its own .venv/.gitignore, but that only covers the
 # .venv name; these cover the other conventional ones.)
 .venv/
+# A worktree may symlink its venv; a symlink does not match the directory pattern.
+.venv
 venv/
 env/
 .mypy_cache/
