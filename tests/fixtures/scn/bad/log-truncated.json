@@ -1,0 +1,16 @@
+{
+  "genesis_commit": "1111111111111111111111111111111111111111",
+  "entries": [
+    {
+      "commit": "1111111111111111111111111111111111111111",
+      "merged_on": "2026-11-06",
+      "pull_request": 501,
+      "evaluator": "sam-aydlette",
+      "scn_type": "not-significant",
+      "rationale": "compliance-process change; no component, boundary or access change.",
+      "scn_record": null,
+      "problem": null
+    }
+  ],
+  "$comment": "Known-bad: drops entry 1 of log-previous.json. The append-only check must fail."
+}

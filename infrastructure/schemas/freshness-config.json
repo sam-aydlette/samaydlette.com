@@ -276,6 +276,41 @@
       "signed": true,
       "signature": ".well-known/conformance-results.bundle",
       "note": "The conformance suite's results for the method profile (REQ-GOV-2), run, signed and published by the deploy."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.bundle",
+      "note": "Significant Change Notifications index (SCN-CSO-HIS/HRM/NOM), rebuilt every deploy from docs/scn/scn-register.csv; never pruned."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.atom",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.atom.bundle",
+      "note": "Atom feed of the SCN notices (SCN-CSO-NOM); its <updated> is the last notice's date, so the object's last-modified time is used."
+    },
+    {
+      "path": ".well-known/scn-evaluations.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/scn-evaluations.bundle",
+      "note": "Append-only significant-change evaluation log (SCN-CSO-MAR), one entry per change merged to main."
     }
   ]
 }

@@ -1,16 +1,19 @@
 # =============================================================================
-# SCN TAG VALIDATOR
+# SCN EVALUATION GATE  (SCN-CSO-EVA)
 # =============================================================================
-# Enforces FedRAMP 20x Significant Change Notification rules SCN-CSO-EVA and
-# SCN-CSO-MAR by reading the SCN-Type tag from either the PR description (on
-# pull_request events) or the commit message (on push events). The git history
-# is the SCN audit record (SCN-CSO-MAR), and this gate ensures every entry in
-# that record carries a recognized SCN-Type categorization.
+# Every change carries an explicit significant-change evaluation: an SCN-Type
+# line, a one-line SCN-Rationale and, for adaptive, transformative and emergency
+# changes, the SCN-Record it will be documented in. The pull request's
+# description is read on pull_request events; on a push to main, the merged
+# pull request's description (or the commit message for a direct push).
 #
-# Categorization defaults to routine-recurring per docs/policies/cm-policy.md
-# when no SCN-Type line is present. The validator only fails on a malformed
-# SCN-Type value; missing tags are treated as the default. Operators must
-# explicitly upgrade the categorization for Adaptive or Transformative changes.
+# There is no default. A missing type, a missing or placeholder rationale, or an
+# unrecognized value fails. class-change always fails: it is a new
+# certification, not a significant change. A transformative change fails until
+# its initial and final plans have been published 30 and 10 business days
+# (SCN-TRF-NIP/NFP). The rules live in scripts/_scn.py and are unit-tested in
+# tests/test_scn.py; the deploy writes every merged evaluation to the
+# append-only log at /.well-known/scn-evaluations.json (SCN-CSO-MAR).
 # =============================================================================
 
 name: SCN Tag
@@ -28,41 +31,33 @@ permissions:
 jobs:
   scn-tag:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Validate SCN-Type tag
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Untrusted text (a PR description, a commit message) reaches the script
+      # only through the environment, never by ${{ }} interpolation into shell.
+      - name: Validate the SCN evaluation
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           COMMIT_MSG: ${{ github.event.head_commit.message }}
           EVENT_NAME: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           if [ "${EVENT_NAME}" = "pull_request" ]; then
-            content="${PR_BODY:-}"
+            SCN_TEXT="${PR_BODY:-}"
             source_label="PR description"
           else
-            content="${COMMIT_MSG:-}"
+            SCN_TEXT="${COMMIT_MSG:-}"
             source_label="commit message"
+            pr=$(printf '%s\n' "${SCN_TEXT}" | head -n1 | sed -nE 's/^Merge pull request #([0-9]+) from .*/\1/p')
+            if [ -n "${pr}" ]; then
+              SCN_TEXT=$(gh api "repos/${REPO}/pulls/${pr}" --jq '.body // ""')
+              source_label="description of merged PR #${pr}"
+            fi
           fi
-          # Extract the SCN-Type line if present. Match optional leading hashes
-          # (Markdown heading) and case-insensitive 'SCN-Type:' prefix.
-          tag=$(printf '%s\n' "${content}" | grep -iE '^[[:space:]]*##?[[:space:]]*SCN-Type:' | head -n1 | sed -E 's/^[[:space:]]*##?[[:space:]]*SCN-Type:[[:space:]]*//I' | tr -d '[:space:]' || true)
-          case "${tag}" in
-            adaptive|routine-recurring|transformative)
-              echo "SCN-Type: ${tag} (from ${source_label})"
-              ;;
-            emergency)
-              # Emergency-change procedure per CR26 SCN-CSO-EMG. The change itself
-              # is permitted to bypass the formal SCN flow; the retroactive
-              # documentation is required per the IR runbook.
-              echo "::warning::SCN-Type: emergency (from ${source_label}). Emergency-change procedure invoked per SCN-CSO-EMG; retroactive SCN documentation required within 5 business days. See docs/incident-response.md."
-              ;;
-            "")
-              # Per CM policy default: missing tag = routine-recurring. This is the
-              # documented default for sole-operator direct pushes; do not fail.
-              echo "::notice::No SCN-Type line in ${source_label}; defaulting to routine-recurring per docs/policies/cm-policy.md."
-              ;;
-            *)
-              echo "::error::SCN-Type '${tag}' in ${source_label} is not a recognized value. Must be one of: adaptive | routine-recurring | transformative | emergency. See SCN-CSO-EVA / SCN-CSO-EMG in docs/policies/cm-policy.md."
-              exit 1
-              ;;
-          esac
+          export SCN_TEXT
+          python3 scripts/scn-evaluate.py --text-env SCN_TEXT --source "${source_label}"

@@ -969,164 +969,343 @@
     {
       "frr_id": "SCN-ADP-NTF",
       "status": "Partially Implemented",
-      "implementation": "Each adaptive SCN record carries a new-risks summary (scn-register.csv new_risks_summary; SCN md section 5).",
+      "implementation": "An adaptive record's notice (with its new-risks summary, which the register requires) is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py); it is given by publication in the certification data, and the index records the deadline and the date first published. The scheduled SCN deadline check fails and raises an issue when the notice is not published by its deadline. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
       "evidence": [],
-      "gap": "No notification has been sent to anyone: notify_by says 'No necessary parties'; FedRAMP is always a necessary party (FRD 'All Necessary Parties'), so this is not N/A; no sent-date is recorded for any SCN (artifact requires sent date and applied date). To close: Send each adaptive SCN through the NOM mechanism within 10 business days of date_finished, record sent_on in the register, and add a check that fails when date_finished + 10 business days passes without sent_on.",
+      "gap": "Not yet shown working: no notice has been published. The first deploy after this change publishes all six adaptive records; SCN-2026-006 is due 2026-11-10 and the other five are already past their deadlines, so they will be published marked late. Closes when a deploy publishes them (the operator approves deploys).",
       "closes_with": [
-        "W5"
+        "sam"
       ]
     },
     {
       "frr_id": "SCN-CSO-ARI",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/SCN-2026-001-silk-reeling.md sections 3-5 (boundary delta, SIA by control family, verification result) add information beyond SCN-CSO-INF.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each published notification adds, beyond the required items, the change's status, initiation/finish/verification dates, the pull requests that made it, the new-risks summary, its notices with deadlines and publication dates, and a link to the full record (boundary change, impact by control family, verification result).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ],
       "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
     },
     {
       "frr_id": "SCN-CSO-EMG",
-      "status": "Partially Implemented",
-      "implementation": "docs/incident-response.md:86-104 emergency-change procedure; scn-tag.yml:53-58 recognizes 'emergency'.",
-      "evidence": [],
-      "gap": "Never exercised; 'notify all necessary parties' has no channel; no gate that requires the retroactive SCN materials (only a warning). To close: Add a check that opens/blocks until a retroactive SCN record exists for each emergency-tagged commit within 5 business days; route notification through the NOM mechanism.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/incident-response.md (Emergency-change procedure), linked from the Certification Package Overview: an emergency change carries SCN-Type emergency with its SCN-Record; the gate accepts it and states the record is due; the retroactive register row (emergency = yes) is due within 5 business days of the change merging, enforced by the scheduled SCN deadline check, and the published notification marks each retroactive notice against that deadline. Notification is publication. Not yet invoked.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_emergency_change_owes_its_record_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_emergency_notices_are_retroactive_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ],
       "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
     },
     {
       "frr_id": "SCN-CSO-EVA",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/scn-tag.yml (required check, confirmed live by check-manual-settings 'main requires 4 status checks', EXPECTED_REQUIRED_CHECKS l.39) validates an SCN-Type line; docs/policies/cm-policy.md:5; six adaptive records with categorization rationale (docs/scn/SCN-2026-00[1-6]*.md section 1).",
-      "evidence": [],
-      "gap": "Evaluation is not forced: a missing tag passes as routine-recurring (scn-tag.yml:59), and only 8 of 273 commits since 2026-08-01 carry any SCN-Type, so most changes have no recorded evaluation; the gate has no 'not significant' or 'class change' outcome and requires no rationale; commit 437be7b carries 'SCN-Type: Routine Recurring', a value the case statement (l.49-66) rejects. Adaptive tags do not require an SCN record (e.g. #376 tagged adaptive has none). Artifact gap: no example (real or fictitious) for routine-recurring, transformative or class change. SCN-2026-001 (new non-FedRAMP external interconnection) was judged adaptive 'at the upper edge'; the rationale should be revisited. To close: Require an explicit SCN-Type plus a one-line rationale on every PR (fail when missing); add values not-significant and class-change (class-change blocks and points to reassessment); fail when adaptive/transformative lacks a docs/scn record; add documented examples for each type (fictitious allowed).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every pull request (or direct push) must carry SCN-Type (not-significant, routine-recurring, adaptive, transformative, emergency, class-change), a one-line SCN-Rationale and, for adaptive/transformative/emergency, the SCN-Record that will document it; the required scn-tag check (scripts/scn-evaluate.py, rules in scripts/_scn.py) fails a change without them, with no default, and always fails class-change. A change named adaptive, transformative or emergency whose record is not in the register by its deadline fails the scheduled SCN deadline check. docs/scn/evaluation-examples.md gives one example per type (real for adaptive, fictitious otherwise), each checked against the gate. Changes merged before this gate mostly carry no evaluation; the evaluation log starts at the change that introduced it. SCN-2026-001's categorization (adaptive, at the upper edge, for a new external interconnection since removed by SCN-2026-006) is unchanged and left to the operator's review.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_empty_description_fails_there_is_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_workflow_runs_the_tested_gate_with_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_every_type_has_a_documented_example"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_adaptive_change_with_no_record_is_overdue_after_ten_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HIS",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ holds all six SCNs since 2026-06 (README: rows never deleted).",
-      "evidence": [],
-      "gap": "The SCN register and records are in the repository only; nothing under /.well-known/ publishes them, and the CPO lists no SCN material or how FedRAMP obtains it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every notification is published with the certification data at /.well-known/significant-change-notifications.json (+ .md, Atom feed), listed in the Certification Package Overview, and never pruned: a deploy that would drop a published notification or re-date a notice fails (retention exceeds 12 months). The register rows are never deleted.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_build_that_would_drop_a_published_notification_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_published_notice_keeps_its_first_publication_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HRM",
-      "status": "Partially Implemented",
-      "implementation": "Human-readable: docs/scn/*.md and scn-register.csv.",
-      "evidence": [],
-      "gap": "No JSON form of SCNs or of the related audit records (CSV is not JSON); no explanation of how to request them or how sharing is decided. To close: Emit SCN JSON (schema-valid) and the evaluation log as JSON; add access + sharing statement to the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Notifications are published in JSON (FedRAMP SCN schema) and as a Markdown view; the related audit records (the evaluation log) likewise in JSON and Markdown. The index and the Certification Package Overview state that everything is public with no request needed, and how sharing is decided (everything is shared: no federal data, no agency customer).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-INF",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/scn-register.csv columns cover all ten items (fedramp_id, assessor_name, related_vulnerability, scn_type, categorization_rationale, short_description, reason_for_change, customer_impact, plan_and_timeline, sia_reference, approver_name/title); per-change SIA in docs/scn/SCN-2026-00x-*.md.",
-      "evidence": [],
-      "gap": "Service Offering FedRAMP ID is the placeholder '<FR-CERT-ID>'; not emitted in FedRAMP's SCN schema (tests/fixtures/cr26/good/scn.json exists but no builder); SCN-2026-006 verification still unrecorded (trust center scn_unverified); some impacted-control lists reference the retired OSCAL SSP/POA&M. To close: Generate per-SCN JSON in fedramp-significant-change-notifications-schema via _fedramp_schema.write_validated; fill the FedRAMP ID when assigned; record SCN-2026-006 verification.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/scn/scn-register.csv carries the ten items for every record and scripts/_scn.py refuses a row missing one; each deploy writes every row as a notification in FedRAMP's SCN schema (scripts/build-scn.py via _fedramp_schema.write_validated) inside /.well-known/significant-change-notifications.json, with the security impact analysis linked. The Service Offering FedRAMP ID is published as not assigned, with the reason (the offering is not certified). SCN-2026-006's verification is recorded (2026-10-27). Older records' plans name artifacts since retired (the OSCAL SSP/POA&M); they describe the plan as it was.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_committed_register_is_valid"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-MAR",
-      "status": "Partially Implemented",
-      "implementation": "Git history + scn-tag.yml run logs; docs/scn/README.md 'How this relates' explains git history is the audit record; register and per-change records in docs/scn/.",
-      "evidence": [],
-      "gap": "Records of evaluation are incomplete because the default-to-routine path records no evaluation; Actions logs expire (default 90 days), so the gate's decisions are not durable; no explanation in the Certification Package of how FedRAMP obtains the records. To close: Write each evaluation (commit, type, rationale, evaluator, date) to an append-only signed log published with the certification data; state access in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each deploy appends the evaluation of every first-parent commit on main since the last entry (commit, merge date, pull request, SCN type, rationale, record, who merged it) to /.well-known/scn-evaluations.json (+ .md), signed with Sigstore and freshness-governed. The log is append-only against the previous published version: a build that would drop or rewrite an entry, or whose last entry has left main's history, fails. A change merged without a valid evaluation is logged with the problem, not skipped. The Certification Package Overview states how to obtain the records (public, no request needed). The log starts at the change that introduced it; earlier evaluations exist only for the six records in docs/scn.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_append_only_check_fails_each_known_bad_log"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_logs_every_first_parent_commit_from_the_builder_onward"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_fails_when_the_last_logged_commit_left_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-NOM",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/README.md: notification = publishing updated certification data; register notify_by column says 'No necessary parties ... the public GitHub push ... is the notification'.",
-      "evidence": [],
-      "gap": "Mechanism documented only in the repo README, not in the Certification Package (CPO); no list of available notification mechanisms (artifact); a git push is not a notification any party receives. To close: Offer real mechanisms (signed SCN JSON feed + Atom/RSS at /.well-known/, email list) and list them in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Mechanisms: an Atom feed (/.well-known/significant-change-notifications.atom, one entry per notice, subscribable with any feed reader), the signed JSON index and its Markdown view. They are listed, with how to obtain the evaluation records, in the Certification Package Overview's significant_change_notifications section. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_feed_is_atom_with_one_entry_per_notice"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.atom"
+        }
       ],
       "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
     },
     {
       "frr_id": "SCN-RTR-NNR",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ contains only adaptive SCNs; cm-policy.md:5 routine-recurring changes produce no SCN record.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "No formal notification for routine recurring changes: the register refuses a routine-recurring (or not-significant) row, and the evaluation gate refuses an SCN-Record on a routine-recurring or not-significant change.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAF",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-finish notice step or 5-business-day deadline check. To close: Add post-finish notice fields and a deadline check (finish + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "date_finished adds the after-finish notice, due 5 business days later and published with the record's current information; the scheduled SCN deadline check fails while it is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAV",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-verification notice step carrying updates, new risks and the assessment report; no deadline check. To close: Add post-verification notice fields (updates, new risks, SAR link) and a deadline check (verification complete + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "verified_on adds the after-verification notice, due 5 business days later; the register requires the new-risks summary and sar_reference (the assessment report, or why there is none) once verified_on is set; the scheduled SCN deadline check fails while the notice is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NFP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No final-plan notice step or 10-business-day check. To close: Add final-plan notice fields and gate (>=10 business days before start).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "plan_final = yes publishes the final-plan notice, which carries the record's current information (every notice republishes all of it). The evaluation gate blocks the merge until it has been published at least 10 business days. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NIP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "Only a sentence in policy; no template, no planned-start field, no 30-business-day check, no channel to notify parties. To close: Add a transformative SCN template with initial-plan and security-impact sections, sent_on fields and a gate that blocks merge of a transformative change until initial notice is >=30 business days old.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record (docs/scn/TEMPLATE-transformative.md) requires its planned start and a summary of likely security impacts; its initial-plan notice is published with the next deploy and dated. The evaluation gate blocks the merge of the transformative change until the initial-plan notice has been published at least 30 business days (read from the published index; fails closed when the index cannot be read). No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_fails_closed_without_the_published_index"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-TPR",
-      "status": "Not Implemented",
-      "implementation": "No transformative changes; no recorded policy on third-party review.",
-      "evidence": [],
-      "gap": "Neither a third-party review nor an explanation of why one was not engaged exists (artifact accepts either). To close: Add to the transformative template a required 'human validation needed? assessor engaged / reason not engaged' field.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record must state whether the change needs human validation (tpr_human_validation) and name the third-party assessor engaged or why none was (tpr_assessor_or_reason); the register refuses a transformative row without them, and the published notification carries both. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-UPD",
-      "status": "Partially Implemented",
-      "implementation": "Machine-generated documentation (CPO, SDR, OCR) is rebuilt every deploy (deploy-with-opa.yml), so it tracks changes automatically.",
-      "evidence": [],
-      "gap": "Hand-written service documentation is not updated after changes: the Secure Configuration Guide still describes the Basic Auth gate retired by SCN-2026-002 (adaptive) months later; no check ties a transformative change to documentation updates within 30 business days. To close: Add a documentation-update checklist/fields to the SCN record (doc, updated_on) and a check that fails 30 business days after finish if listed docs are unchanged; fix the SCG now.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred. (The Secure Configuration Guide's stale Basic Auth text follows an adaptive change, SCN-2026-002, which this rule does not cover.)",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_documentation_update_is_overdue_after_thirty_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {

@@ -91,19 +91,19 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 
 **What gets bypassed.** During an emergency the operator may:
 
-- Push directly to `main` without the usual SCN-Type categorization deliberation (an `emergency` label is still required on the commit message — see below).
+- Merge without the usual categorization deliberation (an `SCN-Type: emergency` evaluation is still required — see below).
 - Skip the standard advance-notification timing for Adaptive (`SCN-ADP-NTF`, 10 business days) or Transformative (`SCN-TRF-NIP`/`NFP`/`NAF`/`NAV`, 30 / 10 / 5 / 5 business days, plus the 30-business-day documentation update in `SCN-TRF-UPD`) changes.
 - Defer the threat-model review and per-control implementation-statement updates that a Transformative change would normally trigger.
 
 **What still applies.** During and after an emergency the operator must:
 
-1. Tag the commit message with `SCN-Type: emergency` so the SCN audit record reflects the emergency disposition. The CI workflow recognizes `emergency` as a fourth valid SCN-Type value alongside `routine-recurring`, `adaptive`, and `transformative`.
+1. Carry `SCN-Type: emergency`, a one-line `SCN-Rationale:` and the `SCN-Record:` the retroactive record will use in the pull request description (or the commit message of a direct push), so the evaluation log records the emergency disposition. The `scn-tag` check accepts it and says the record is due.
 2. Follow the rest of this IR runbook: detect, contain, eradicate, recover, after-action.
-3. Within 5 business days of incident closure, retroactively produce the SCN materials that would have been produced in advance for the equivalent non-emergency change (per `SCN-CSO-EMG`): summary of the change, summary of new risks identified, copy of the security impact analysis, plan for any verification or assessment of impacted KSIs.
+3. Within 5 business days, retroactively produce the SCN materials that would have been produced in advance for the equivalent non-emergency change (per `SCN-CSO-EMG`): summary of the change, summary of new risks identified, copy of the security impact analysis, plan for any verification or assessment of impacted KSIs. Count the 5 business days from the day the emergency change merged. The materials are a row in `docs/scn/scn-register.csv` with `emergency` = `yes` and the change in `evaluation_prs`, plus its record; the next deploy publishes them, which is the notification to all necessary parties. The scheduled SCN deadline check (`.github/workflows/scn-deadlines.yml`) fails and raises an issue if the record is not in the register within 5 business days of the emergency change merging, and the published index marks each retroactive notice against that deadline.
 4. Append an after-action entry to the section above with the emergency-procedure invocation noted in the timeline.
 5. Reopen the threat model in `docs/architecture-decisions.md` if the emergency change altered the threat surface, and update before the next security review.
 
-**Documentation evidence.** Emergency-change procedures are documented in this section, in `docs/policies/cm-policy.md` (referenced under SCN integration), and in the `.github/workflows/scn-tag.yml` validator (which accepts `emergency` as a valid tag). Together these satisfy `SCN-CSO-EMG`'s "procedures should be documented in the FedRAMP Certification package" requirement.
+**Documentation evidence.** Emergency-change procedures are documented in this section, in `docs/policies/cm-policy.md` (referenced under SCN integration), in the `.github/workflows/scn-tag.yml` gate (which accepts `emergency`), and in the Certification Package Overview, which links this section. Together these satisfy `SCN-CSO-EMG`'s "procedures should be documented in the FedRAMP Certification package" requirement.
 
 ## Pattern review (KSI-INR-RPI)
 

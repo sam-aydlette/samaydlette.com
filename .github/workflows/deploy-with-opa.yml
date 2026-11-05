@@ -1602,6 +1602,30 @@ jobs:
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --overview certification-overview-package.json --ksi-signal ksi-signal.json
 
+    # Significant Change Notifications (SCN-CSO-HIS/HRM/NOM/INF) and the
+    # append-only evaluation log (SCN-CSO-MAR). The builder fails if this build
+    # would drop or rewrite anything the previous published copies hold, so they
+    # are fetched first: a 404 means nothing has been published yet, any other
+    # failure stops the deploy rather than restarting the record.
+    - name: Build Significant Change Notifications and the evaluation log
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        fetch() {
+          code=$(curl -sSL -o "$2" -w '%{http_code}' "https://samaydlette.com/.well-known/$1") \
+            || { echo "::error::cannot fetch the published $1"; exit 1; }
+          case "$code" in
+            200) ;;
+            404) rm -f "$2"; echo "$1 not published yet" ;;
+            *) echo "::error::fetching the published $1 returned HTTP $code"; exit 1 ;;
+          esac
+        }
+        fetch significant-change-notifications.json previous-scn-index.json
+        fetch scn-evaluations.json previous-scn-evaluations.json
+        python3 ../scripts/build-scn.py --previous-index previous-scn-index.json \
+          --previous-log previous-scn-evaluations.json --commit "$GITHUB_SHA"
+
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
     # by what Terraform state says references what, with the data-flow table
@@ -1694,6 +1718,10 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle policy-index.bundle policy-index.json
         cosign sign-blob --yes --new-bundle-format --bundle security-decision-record.bundle security-decision-record.json
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
+        for a in significant-change-notifications scn-evaluations; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
+        cosign sign-blob --yes --new-bundle-format --bundle significant-change-notifications.atom.bundle significant-change-notifications.atom
 
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure
@@ -1722,6 +1750,8 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
+        for a in significant-change-notifications scn-evaluations; do files="$files $a.json $a.md"; done
+        files="$files significant-change-notifications.atom"
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
@@ -1781,6 +1811,14 @@ jobs:
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
+        # Significant Change Notifications + evaluation log (SCN-*) + bundles + human-readable, and the Atom feed
+        for a in significant-change-notifications scn-evaluations; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        aws s3 cp significant-change-notifications.atom "s3://$BUCKET_NAME/.well-known/significant-change-notifications.atom" --content-type "application/atom+xml; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp significant-change-notifications.atom.bundle "s3://$BUCKET_NAME/.well-known/significant-change-notifications.atom.bundle" --content-type application/json --cache-control "public, max-age=300"
         # Trust center: the generated boundary map, the gate's own report (it exists
         # only because the gate above passed) and the trust center's data.
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
@@ -1871,6 +1909,9 @@ jobs:
         check policy-index.json .well-known/policy-index.json
         check security-decision-record.json .well-known/security-decision-record.json
         check certification-package-overview.json .well-known/certification-package-overview.json
+        check significant-change-notifications.json .well-known/significant-change-notifications.json
+        check significant-change-notifications.atom .well-known/significant-change-notifications.atom
+        check scn-evaluations.json .well-known/scn-evaluations.json
         check iiw.csv .well-known/iiw.csv
         check boundary-map.json .well-known/boundary-map.json
         check reconcile-report.json .well-known/reconcile-report.json
