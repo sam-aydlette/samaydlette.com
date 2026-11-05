@@ -506,7 +506,7 @@ def test_each_period_report_summarizes_the_periods_activity():
         assert scans["Grype software composition scan (grype-js.json)"]["vulnerabilityDatabaseBuiltAt"] == \
             "2026-11-05T06:00:00+00:00"
         assert scans["CISA KEV catalog (kev-catalog.json)"]["inPeriod"] is False   # published before the period
-        assert scans["OWASP ZAP dynamic scan (weekly)"]["inPeriod"] is True
+        assert scans["OWASP ZAP dynamic scan of the site"]["inPeriod"] is True
         assert not any("previous-vdr" in k for k in scans)
         rt = s["runtimeVerification"]
         assert rt["uri"] == "https://samaydlette.com/.well-known/ksi-signal-runtime.json" and rt["signalId"] == "rt-1"
@@ -532,7 +532,7 @@ def test_the_markdown_reports_carry_the_activity_and_link_the_runtime_results(tm
     assert r.returncode == 0, r.stderr
     for name in ("vdr-detail-report.md", "vdr-accepted-vulnerabilities.md"):
         text = (tmp_path / name).read_text()
-        assert "## Activity this period" in text and "| OWASP ZAP dynamic scan (weekly) |" in text
+        assert "## Activity this period" in text and "| OWASP ZAP dynamic scan of the site |" in text
         assert "(https://samaydlette.com/.well-known/ksi-signal-runtime.json)" in text
 
 

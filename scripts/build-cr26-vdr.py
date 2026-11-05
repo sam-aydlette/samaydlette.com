@@ -98,7 +98,8 @@ COVERAGE_FEEDS = {"grype": "grype", "dependabot": "dependabot", "checkov": "chec
                   "checkov-suppression": "checkov", "tfsec": "tfsec", "codeql": "codeql"}
 SCAN_FEEDS = {"grype": "Grype software composition scan", "dependabot": "Dependabot alerts",
               "checkov": "Checkov IaC scan", "tfsec": "tfsec IaC scan",
-              "kev": "CISA KEV catalog", "epss": "FIRST EPSS scores"}
+              "kev": "CISA KEV catalog", "epss": "FIRST EPSS scores",
+              "codeql": "CodeQL code scan", "zap-api": "OWASP ZAP authenticated API scan"}
 
 OFFERING = Path(__file__).resolve().parent.parent / "data" / "cds" / "offering.json"
 
@@ -465,7 +466,7 @@ def activity_summary(vdr, mrh, register, frm, to):
         scans.append(row)
     dast = meth.get("dast")
     if isinstance(dast, dict):
-        scans.append({"activity": "OWASP ZAP dynamic scan (weekly)", "at": dast.get("generated_at"),
+        scans.append({"activity": "OWASP ZAP dynamic scan of the site", "at": dast.get("generated_at"),
                       "timeBasis": "scan report generated", "status": dast.get("status"),
                       "count": dast.get("alerts"), "inPeriod": within(dast.get("generated_at"))})
     rt = meth.get("runtime_verification")

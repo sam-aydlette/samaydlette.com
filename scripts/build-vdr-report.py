@@ -1095,7 +1095,8 @@ def zap_report_age_days(path, now):
     for fmt in ("%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%dT%H:%M:%S"):
         try:
             gen = datetime.strptime(stamp.strip(), fmt)
-            return (now.replace(tzinfo=None) - gen).days
+            # Fractional days: a whole-day floor would let a 3-day window read 3.9 days as 3.
+            return round((now.replace(tzinfo=None) - gen).total_seconds() / 86400, 2)
         except ValueError:
             continue
     return None

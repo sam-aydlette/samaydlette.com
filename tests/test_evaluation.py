@@ -246,3 +246,15 @@ def test_the_deploy_and_nightly_pass_failed_runs_to_the_vdr_build():
     for wf in ("deploy-with-opa.yml", "evidence-nightly.yml"):
         t = (REPO / ".github" / "workflows" / wf).read_text()
         assert "Collect failed pipeline runs (VDR-CSO-FAV)" in t and "--failed-runs failed-runs.json" in t, wf
+
+
+def test_zap_age_is_not_floored_to_whole_days(tmp_path):
+    import importlib.util
+    from datetime import datetime, timezone
+    spec = importlib.util.spec_from_file_location("vdr_age", REPO / "scripts" / "build-vdr-report.py")
+    vdr = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vdr)
+    p = tmp_path / "zap.json"
+    p.write_text(json.dumps({"@generated": "Mon, 2 Nov 2026 00:00:00"}))
+    age = vdr.zap_report_age_days(p, datetime(2026, 11, 5, 21, 36, tzinfo=timezone.utc))
+    assert age > 3  # 3.9 days: past a 3-day window

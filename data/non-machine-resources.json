@@ -281,6 +281,18 @@
       }
     },
     {
+      "id": "NMR-RUN-DAST-SCANNER-USER",
+      "path": "docs/runbooks/dast-scanner-user.md",
+      "kind": "procedure",
+      "title": "Runbook: the authenticated DAST scanner user and its secrets",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "The steps still work against the current pipeline: every command, workflow, step name, file and alarm the runbook names exists, and the response it describes is the one the operator would follow.",
+      "last_verified": {
+        "on": "2026-11-05",
+        "decision": "DEC-190"
+      }
+    },
+    {
       "id": "NMR-PROC-IR",
       "path": "docs/incident-response.md",
       "kind": "procedure",
