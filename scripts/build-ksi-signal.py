@@ -393,7 +393,7 @@ IIW_DEFAULTS = {
         "function": "Public TLS certificate for the CDN",
         "diagram_label": "ACM TLS certificate",
         "public": False,
-        "baseline_configuration": "AWS ACM-managed; auto-renewing; FIPS-validated cipher suites via CloudFront",
+        "baseline_configuration": "AWS ACM-managed; auto-renewing; TLS 1.2+ via CloudFront (TLSv1.2_2021)",
         "iiw_asset_type": "TLS Certificate (ACM)",
     },
     "event_schedule": {

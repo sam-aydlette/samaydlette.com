@@ -1235,6 +1235,82 @@
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
       "point_of_contact": "Sam Aydlette (operator)"
+    },
+    {
+      "id": "DEC-150",
+      "title": "Root and operator MFA stays virtual TOTP: phishing-resistant MFA is accepted as not bought",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "Extends DEC-025. The AWS root user and the operator IAM user keep virtual authenticator-app (TOTP) MFA; a FIDO2 security key or passkey (IA-2(8), the Secure Configuration Guide's recommended default) is not being bought for this proof of concept. Residual risk: a TOTP code can be relayed by a real-time phishing site. Why it is accepted: both principals have MFA (IA-2(1)/(2) met); the root user has no access keys and is used only for root-only tasks; the operator user has no console password, so a phished TOTP code alone opens no console session; every production change goes through the reviewed, approval-gated deploy, not either principal; CloudTrail records both. The deploy checks both principals' MFA on every run (scripts/check-secure-config.py) and publishes the deviation against this record. AI-drafted for the operator to confirm.",
+      "controls": [
+        "ia-2.1",
+        "ia-2.2",
+        "ia-2.8",
+        "cm-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-account::root",
+          "aws-iam-user::operator"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-151",
+      "title": "The operator keeps two-factor authentication on the GitHub owner account and issues no classic personal access tokens",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator keeps two-factor authentication enabled on the GitHub account that owns the repository, issues no classic personal access tokens from it, and reviews its sign-in methods, tokens, SSH keys and authorized applications each quarter. GitHub exposes these settings only to the account itself, so the deploy's token cannot read them; this record is the operator's attestation, cited by the Secure Configuration Guide setting github.owner-2fa. AI-drafted for the operator to confirm.",
+      "controls": [
+        "ia-2.1",
+        "ia-5",
+        "cm-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "github-owner"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-152",
+      "title": "Service paths with no published CMVP module validation are accepted",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "AWS publishes CMVP certificates for module families (AWS-LC, the KMS HSM) but names no validated module for these paths this system uses: CloudFront viewer TLS, API Gateway HTTP API TLS, the Cognito Hosted UI, S3 SSE-S3, SQS SSE-SQS, the DynamoDB AWS-owned key, CloudTrail digest signing, the IAM OIDC provider, and the Silk Reeling Lambda's outbound TLS from the Python runtime. For the viewer-facing paths AWS offers no validated option (no FIPS endpoint for a distribution's viewer TLS, an HTTP API's execute-api endpoint, or the Hosted UI). The stores on SSE-S3, SSE-SQS and the AWS-owned key hold no customer data (site content, logs, audit trail, Terraform state and lock, failed compliance events); moving them to customer-managed KMS keys would add per-request KMS cost for no customer-data benefit. Every store of app data that supports a customer-managed key uses one, on the KMS HSM (CMVP #4884). The system holds no federal customer data. Listed per service in the Secure Configuration Guide's module list (CMU-CSO-CMD). AI-drafted for the operator to confirm.",
+      "controls": [
+        "sc-13",
+        "sc-8.1",
+        "sc-28.1"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution",
+          "aws-apigatewayv2-api::silk_reeling",
+          "aws-cognito-user-pool::silk_reeling",
+          "aws-s3-bucket",
+          "aws-sqs-queue::compliance_dlq",
+          "aws-dynamodb-table::tflock",
+          "aws-cloudtrail::management",
+          "aws-iam-oidc-provider::github",
+          "aws-lambda-function::silk_reeling"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
     }
   ]
 }

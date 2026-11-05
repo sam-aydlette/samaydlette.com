@@ -232,6 +232,28 @@
       "signature": ".well-known/certification-package-overview.bundle"
     },
     {
+      "path": ".well-known/secure-configuration-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/secure-configuration-guide.bundle"
+    },
+    {
+      "path": ".well-known/security-settings.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/security-settings.bundle"
+    },
+    {
       "path": ".well-known/boundary-map.json",
       "cadence": "deploy",
       "max_age_hours": 720,

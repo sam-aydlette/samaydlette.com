@@ -1,0 +1,14 @@
+{
+ "$comment": "Known-bad: an inventory with a component type no cryptographic module mapping covers (CMU-CSO-CMD).",
+ "signal_id": "fixture",
+ "components": [
+  {
+   "component_id": "aws::kms_key::k",
+   "type": "kms_key"
+  },
+  {
+   "component_id": "aws::vector_db::v",
+   "type": "vector_database"
+  }
+ ]
+}
