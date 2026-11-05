@@ -207,7 +207,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-008",
@@ -268,7 +269,8 @@
         "identifier": "CKV_AWS_86; CKV_AWS_310",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-010",
@@ -286,7 +288,9 @@
         ],
         "vuln_ids": [],
         "resources": [
-          "aws-lambda::compliance-monitor"
+          "aws::function::opa_compliance",
+          "aws::function::evidence_watchdog",
+          "aws::function::silk_reeling"
         ]
       },
       "decided_by": "Sam Aydlette",
@@ -297,7 +301,8 @@
         "identifier": "CKV_AWS_117",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-011",
