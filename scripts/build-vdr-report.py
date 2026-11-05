@@ -289,6 +289,7 @@ VERIFYING_SIGNALS = {"runtime", "deploy"}
 # The runtime emitter runs daily; two days allows one missed run. Moves to the
 # governed freshness config with the other windows.
 RUNTIME_SIGNAL_MAX_AGE_HOURS = 48
+RUNTIME_SIGNAL_URI = "https://samaydlette.com/.well-known/ksi-signal-runtime.json"
 
 
 def component_fingerprint(component):
@@ -378,12 +379,53 @@ def load_runtime_signal(path, pubkey_path=None, now=None, max_age_hours=RUNTIME_
         return out
     out["verified"] = True
     out["emitted_at"] = sig.get("emitted_at")
+    out["signal_id"] = sig.get("signal_id")
+    out["divergence"] = (sig.get("divergence") or {}).get("status")
     emitted = _ts(sig.get("emitted_at"), None) if sig.get("emitted_at") else None
     out["fresh"] = bool(emitted and timedelta(0) <= now - emitted <= timedelta(hours=max_age_hours))
     if not out["fresh"]:
         out["reason"] = f"runtime signal emitted {sig.get('emitted_at')} is outside {max_age_hours}h"
     out["validations"] = sig.get("validations") or []
     return out
+
+
+def runtime_verification_summary(runtime):
+    """The runtime V&V run this report read (VER-RPT-PER): when it ran, whether
+    its signature verified, how many validations it ran and how many failed.
+    Counts are published only from a verified signal."""
+    runtime = runtime or {}
+    out = {"uri": RUNTIME_SIGNAL_URI, "verified": bool(runtime.get("verified")),
+           "fresh": bool(runtime.get("fresh")), "reason": runtime.get("reason"),
+           "emitted_at": runtime.get("emitted_at"), "signal_id": runtime.get("signal_id"),
+           "validations": None, "failed": None, "divergence": None}
+    if out["verified"]:
+        vals = [v for v in runtime.get("validations") or [] if isinstance(v, dict)]
+        out["validations"] = len(vals)
+        out["failed"] = sum(1 for v in vals if v.get("result") != "pass")
+        out["divergence"] = runtime.get("divergence")
+    return out
+
+
+def dast_summary(zap_path):
+    """The DAST scan this report ingested: when ZAP generated it and how many
+    alert types it reported. None when no ZAP report was given."""
+    if not zap_path:
+        return None
+    p = Path(zap_path)
+    if not p.is_file():
+        return {"scanner": "zap", "status": "missing", "generated_at": None, "alerts": None}
+    try:
+        doc = json.loads(p.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return {"scanner": "zap", "status": "unreadable", "generated_at": None, "alerts": None}
+    if not isinstance(doc, dict):
+        return {"scanner": "zap", "status": "unreadable", "generated_at": None, "alerts": None}
+    # ZAP writes nanoseconds; datetime parses at most microseconds.
+    raw = re.sub(r"(\.\d{6})\d+", r"\1", doc["created"]) if isinstance(doc.get("created"), str) else None
+    created = _ts(raw, None) if raw else None
+    gen = created.astimezone(timezone.utc).isoformat() if created and created.tzinfo else None
+    alerts = sum(len(site.get("alerts") or []) for site in doc.get("site") or [] if isinstance(site, dict))
+    return {"scanner": "zap", "status": "ok", "generated_at": gen, "alerts": alerts}
 
 
 def mitigation_state(finding, mitigations, inventory, runtime, today):
@@ -739,6 +781,9 @@ def ingest_suppressions(checkov_yaml):
             "title": f"{check_id} suppressed",
             "description": rationale,
             "resource": ".checkov.yaml",
+            # What the suppression affects: the resources its decision names.
+            "affected_resources": list(_decisions.records(DECISIONS).get(
+                RISK_ACCEPTED_BY_CHECK_ID.get(check_id), {}).get("applies_to", {}).get("resources", [])),
             "current_disposition": "risk-accepted",
             "detected_at": detected.get(RISK_ACCEPTED_BY_CHECK_ID.get(check_id)),
             "pain": evaluation["pain"],
@@ -1642,6 +1687,42 @@ def resolve_component(finding, index, tf_components=()):
     return None
 
 
+_DECISION_RESOURCE = re.compile(r"^aws-([a-z0-9-]+?)(?:::([\w.-]+))?$")
+
+
+def resolve_decision_resource(name, inventory):
+    """The component a decision record's resource name denotes, or None. An
+    exact inventory identifier first; else the register's `aws-<type>[::<name>]`
+    form, matched to the one Terraform component of that resource type (and
+    name, when given). Ambiguous or unknown: None, never a guess."""
+    if not isinstance(name, str) or not name:
+        return None
+    if name in inventory["index"]:
+        return inventory["index"][name]
+    m = _DECISION_RESOURCE.match(name)
+    if not m:
+        return None
+    tf_type = "aws_" + m.group(1).replace("-", "_")
+    want = m.group(2).replace("-", "_") if m.group(2) else None
+    hits = {cid for cid, t, n in inventory["tf"] if t == tf_type and (want is None or n == want)}
+    return hits.pop() if len(hits) == 1 else None
+
+
+def resolve_decision_resources(names, inventory):
+    """The component a decision's resources resolve to: the one they all name,
+    or, when they name several, an internet-reachable one first (the
+    conservative choice for IRV). None when none resolves."""
+    cids = []
+    for n in names or []:
+        cid = resolve_decision_resource(n, inventory)
+        if cid and cid not in cids:
+            cids.append(cid)
+    if not cids:
+        return None
+    reachable = [c for c in cids if (inventory["classes"].get(c) or {}).get("internet_reachable") is True]
+    return (reachable or cids)[0]
+
+
 def tf_components_of(ksi_signal_path):
     """(component_id, tf_type, tf_name) for every Terraform-backed component."""
     p = Path(ksi_signal_path)
@@ -1954,8 +2035,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     sup_prepared = []
     for s in suppressions:
         s = apply_check_vector(s, check_vectors)
-        s_cid = resolve_component(s, inv["index"], inv["tf"])
-        s = {**s, "_classification": classification_for(s, inventory, index)}
+        # A .checkov.yaml suppression names a file, not a resource: it affects
+        # the resources its decision record names (VER-RPT-AVI), so those are
+        # what reachability and classification are decided from.
+        s_cid = (resolve_component(s, inv["index"], inv["tf"])
+                 or resolve_decision_resources(s.get("affected_resources"), inv))
+        s = {**s, "_classification": ((inv["classes"].get(s_cid) or _FAILSAFE_CLASSIFICATION)
+                                      if s_cid and inventory is not None
+                                      else classification_for(s, inventory, index))}
         s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
         items.append(triage_item(s, "suppression", pain=s_pain, is_kev=s.get("is_kev", False),
                                  epss_scores=epss_scores, reach=reach_facts(s, s_cid, inv)))
@@ -2111,6 +2198,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "tool_id": s.get("tool_id"),
             "title": s.get("title", ""),
             "resource": s.get("resource", ""),
+            **({"affected_resources": s["affected_resources"]} if s.get("affected_resources") else {}),
             "first_detected": s_clk["first_detected"],
             "first_evaluated": s_clk["first_evaluated"],
             "completed_evaluation": now.isoformat(),
@@ -2328,6 +2416,7 @@ def main():
 
     check_vectors = load_check_vectors(args.check_vectors)
     lev_overrides = load_lev_overrides(args.lev_overrides)
+    runtime = load_runtime_signal(args.runtime_signal, args.runtime_pubkey)
     report, blocking = build_report(findings, suppressions, kev_cves, ledger,
                                     index=classification_index, config=pain_config,
                                     epss_scores=epss_scores,
@@ -2336,7 +2425,7 @@ def main():
                                     lev_overrides=lev_overrides,
                                     inventory=load_inventory(args.ksi_signal),
                                     mitigations=load_mitigations(args.mitigations),
-                                    runtime=load_runtime_signal(args.runtime_signal, args.runtime_pubkey))
+                                    runtime=runtime)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can
@@ -2394,6 +2483,11 @@ def main():
     # REQ-GOV-2: the profile this report conforms to, and the results of that
     # profile's conformance tests it was built under.
     report["methodology"]["profile"] = load_conformance(args.conformance) if args.conformance else None
+    # VER-RPT-PER: the runs this report saw that the detection summary does not
+    # list: the runtime verification (its signed signal, verified above) and the
+    # DAST scan. Facts only; the CR26 period reports summarize them.
+    report["methodology"]["runtime_verification"] = runtime_verification_summary(runtime)
+    report["methodology"]["dast"] = dast_summary(args.zap)
     # G7: what each detection input was when this report was built (T52).
     report["methodology"]["detection"] = (json.loads(Path(args.detection).read_text())
                                           if args.detection else None)

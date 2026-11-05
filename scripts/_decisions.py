@@ -28,6 +28,8 @@ SCHEMA_PATH = REPO / "infrastructure" / "schemas" / "decisions.schema.json"
 ID_RE = re.compile(r"^DEC-\d{3}$")
 FORMER_RE = re.compile(r"^POAM-\d{3}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+PAIN_RE = re.compile(r"^N[0-5]$")
+PLAN_KEYS = {"date", "target_pain"}
 
 # Dispositions of an in-force record. Config-scanner suppressions use
 # risk-accepted / false-positive; vulnerabilities use the triage vocabulary.
@@ -39,7 +41,7 @@ DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
 # field is refused: a misspelt review_by would otherwise read as absent.
 TOP_KEYS = {"$comment", "_note", "schema", "decisions"}
 RECORD_KEYS = {"id", "former_id", "title", "status", "disposition", "justification", *DECISION_FIELDS,
-               "closed_on", "original_detection_date", "planned_completion", "remediation_plan",
+               "closed_on", "original_detection_date", "planned_completion", "planned_reduction", "remediation_plan",
                "vendor_dependency", "point_of_contact", "controls", "applies_to", "vuln_fields", "source"}
 APPLIES_KEYS = {"check_ids", "vuln_ids", "resources"}
 
@@ -93,6 +95,15 @@ def validate(doc, where="data/decisions.json"):
                     _fail(f"{rid}: {k} must be an ISO date")
         else:
             _fail(f"{rid}: status must be in-force or closed")
+        plan = r.get("planned_reduction")
+        if plan is not None:
+            # The next planned PAIN reduction (VER-RPT-VDT): when, and to what
+            # rating. A malformed plan would publish a projection nobody made.
+            if (not isinstance(plan, dict) or set(plan) != PLAN_KEYS
+                    or not DATE_RE.match(str(plan.get("date"))) or not PAIN_RE.match(str(plan.get("target_pain")))):
+                _fail(f"{rid}: planned_reduction must be {{date: YYYY-MM-DD, target_pain: N0-N5}}")
+            if status != "in-force":
+                _fail(f"{rid}: only an in-force record plans a reduction")
         applies = r.get("applies_to")
         if not isinstance(applies, dict) or set(applies) - APPLIES_KEYS:
             _fail(f"{rid}: applies_to must be an object with only {sorted(APPLIES_KEYS)}")

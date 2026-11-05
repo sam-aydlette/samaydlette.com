@@ -35,6 +35,8 @@ KNOWN_BAD = [
     ("duplicate-claim.json", "'CKV_AWS_68' is claimed by both DEC-001 and DEC-002"),
     ("closed-not-remediated.json", "a closed record's disposition must be one of"),
     ("unknown-field.json", "unknown field(s) ['reviewby']"),
+    ("planned-reduction-malformed.json", "planned_reduction must be {date: YYYY-MM-DD, target_pain: N0-N5}"),
+    ("planned-reduction-closed.json", "only an in-force record plans a reduction"),
 ]
 
 
