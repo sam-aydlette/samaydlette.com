@@ -1,0 +1,3 @@
+{"deliveries": [{"id": "fixture", "deliverySourceName": "samaydlette-com-edge-access",
+  "deliveryDestinationType": "S3",
+  "recordFields": ["date", "time", "c-ip", "cs-uri-stem", "cs-uri-query", "cs(User-Agent)", "sc-status"]}]}

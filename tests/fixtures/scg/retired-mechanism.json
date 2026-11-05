@@ -1,0 +1,335 @@
+{
+ "schema": "secure-configuration/1",
+ "$comment": "Known-bad: the guide describes a retired mechanism (the old shared app credential); scripts/build-scg.py must refuse it.",
+ "title": "Secure Configuration Guide: samaydlette.com",
+ "version": "2.0.0",
+ "obtain_and_use": [
+  "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
+  "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
+  "Change: every setting here is changed only through a reviewed pull request (Terraform for AWS resources, the repository settings for GitHub), never by hand in a console, except the root and owner settings that AWS and GitHub expose only to those accounts, which the operator applies and the deploy then checks."
+ ],
+ "accounts": [
+  {
+   "id": "aws-root",
+   "level": "top-level",
+   "name": "AWS root user",
+   "how_named": "The root user of the single AWS account that holds every production resource. It signs in with the account's email address, which is not published. AWS calls it the root user; this guide calls it aws-root.",
+   "access": "Console only, with MFA, from the operator's own device. No access keys. Used only for the tasks AWS reserves to the root user (account settings, closing the account, restoring IAM administrator access); day-to-day work never uses it.",
+   "configure": "The settings below under aws-root. AWS exposes the root user's own credentials (MFA device, access keys) only to the root user.",
+   "operate": "Sign in only for a root-only task, finish it, and sign out. CloudTrail records every root sign-in and action in the account's management trail.",
+   "decommission": "To retire the system: delete the deployed resources through Terraform, remove the root user's MFA device and any access keys, then close the account from the root user's account settings. Closing the account ends access for every IAM principal in it."
+  },
+  {
+   "id": "github-owner",
+   "level": "top-level",
+   "name": "GitHub repository owner",
+   "how_named": "The operator's personal GitHub account, which owns the repository sam-aydlette/samaydlette.com and so holds every repository and Actions setting, the environments and their reviewers, and the secrets.",
+   "access": "github.com sign-in with two-factor authentication. Local git pushes go to branches, never to main; main changes only through pull requests that pass the required checks.",
+   "configure": "The settings below under github-owner, in the repository's Settings (Branches, Environments, Actions, Code security).",
+   "operate": "Review and merge pull requests; approve each production deploy in the prod environment. The deploy's checks re-read the environment and branch settings every run.",
+   "decommission": "Transfer the repository with GitHub's transfer flow, or archive it. Before either, remove the AWS OIDC trust (infrastructure/bootstrap) so no workflow can assume an AWS role afterwards."
+  },
+  {
+   "id": "aws-operator-user",
+   "level": "privileged",
+   "name": "Operator IAM user",
+   "how_named": "The one IAM user that belongs to the IAM group `operators`. It is the operator's day-to-day administrative identity (bootstrap applies, read-only verification). Its user name is not published; this guide calls it aws-operator-user.",
+   "access": "Signs in with the Basic Auth credential.",
+   "configure": "Membership of the `operators` group gives its permissions; the settings below under aws-operator-user.",
+   "operate": "Used for the bootstrap stack (applied by hand) and read-only checks. Production changes to the main stack go through the reviewed deploy, never this user.",
+   "decommission": "Deactivate and delete its access keys, remove its MFA device and group membership, then delete the user."
+  },
+  {
+   "id": "ci-roles",
+   "level": "privileged",
+   "name": "CI roles (deploy, plan, nightly)",
+   "how_named": "Three IAM roles that GitHub Actions assumes through OIDC: the deploy role (aws_iam_role.deploy), the plan role (aws_iam_role.plan) and the nightly evidence role (aws_iam_role.evidence_nightly), all in infrastructure/bootstrap. No long-lived credential exists for any of them.",
+   "access": "Only through GitHub's OIDC token, and only for the workflow subjects in each role's trust policy.",
+   "configure": "infrastructure/bootstrap (operator-applied, reviewed). The settings below under ci-roles.",
+   "operate": "The deploy role exists only inside an approved prod deploy; the plan role is read-only; the nightly role writes only .well-known/vdr-* objects.",
+   "decommission": "Delete the roles and the OIDC provider from infrastructure/bootstrap and apply."
+  },
+  {
+   "id": "cognito-admin",
+   "level": "privileged",
+   "name": "Silk Reeling user-pool administration",
+   "how_named": "Administration of the Silk Reeling Cognito user pool (aws_cognito_user_pool.silk_reeling): creating users, and the pool's sign-in policy. Only the deploy role (through Terraform) and the operator user can administer it; app users cannot sign themselves up.",
+   "access": "Through Terraform in the reviewed deploy, or the operator user's CLI for creating an app user.",
+   "configure": "infrastructure/cognito.tf. The settings below under cognito-admin.",
+   "operate": "Create an app user with `aws cognito-idp admin-create-user`; the user sets a password meeting the policy and enrolls TOTP MFA at first sign-in.",
+   "decommission": "Delete the app users, then remove the pool from Terraform."
+  }
+ ],
+ "settings": [
+  {
+   "id": "aws-root.mfa-enabled",
+   "account": "aws-root",
+   "operable_by": "aws-root only",
+   "setting": "MFA on the root user",
+   "recommended": true,
+   "implication": "Without MFA, the root user's password alone controls the whole account, including closing it.",
+   "read": "aws iam get-account-summary (SummaryMap.AccountMFAEnabled)",
+   "change": "Root user console: Security credentials, Assign MFA device.",
+   "check": "aws-root-mfa-enabled"
+  },
+  {
+   "id": "aws-root.mfa-phishing-resistant",
+   "account": "aws-root",
+   "operable_by": "aws-root only",
+   "setting": "Root user MFA is phishing-resistant (FIDO2 security key or passkey)",
+   "recommended": true,
+   "implication": "A TOTP code can be relayed by a phishing site in real time; a FIDO2 credential is bound to the AWS sign-in origin and cannot be.",
+   "read": "aws iam list-virtual-mfa-devices --assignment-status Assigned (a root entry means virtual TOTP)",
+   "change": "Root user console: Security credentials, Assign MFA device, Passkey or security key; then remove the virtual device.",
+   "check": "aws-root-mfa-type",
+   "accepted_deviation": "DEC-150"
+  },
+  {
+   "id": "aws-root.access-keys",
+   "account": "aws-root",
+   "operable_by": "aws-root only",
+   "setting": "Root user access keys",
+   "recommended": 0,
+   "implication": "A root access key is an unrestricted, long-lived credential that no IAM policy can limit.",
+   "read": "aws iam get-account-summary (SummaryMap.AccountAccessKeysPresent)",
+   "change": "Root user console: Security credentials, Access keys, Delete.",
+   "check": "aws-root-access-keys"
+  },
+  {
+   "id": "aws-account.password-policy",
+   "account": "aws-root",
+   "operable_by": "aws-root and aws-operator-user",
+   "setting": "Account password policy for IAM users",
+   "recommended": {
+    "MinimumPasswordLength": {
+     "at_least": 14
+    },
+    "RequireSymbols": true,
+    "RequireNumbers": true,
+    "RequireUppercaseCharacters": true,
+    "RequireLowercaseCharacters": true,
+    "PasswordReusePrevention": {
+     "at_least": 24
+    },
+    "MaxPasswordAge": {
+     "at_most": 90
+    }
+   },
+   "implication": "Applies to any IAM user given a console password; weaker values make guessed or reused passwords work.",
+   "read": "aws iam get-account-password-policy",
+   "change": "aws iam update-account-password-policy",
+   "check": "aws-account-password-policy"
+  },
+  {
+   "id": "aws-account.s3-block-public-access",
+   "account": "aws-root",
+   "operable_by": "aws-root and aws-operator-user",
+   "setting": "Account-level S3 Block Public Access",
+   "recommended": {
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+   },
+   "implication": "Stops any bucket in the account being made public by an ACL or bucket policy, whatever its own settings. The site is served through CloudFront's origin access control, never a public bucket.",
+   "read": "aws s3control get-public-access-block --account-id <account>",
+   "change": "aws s3control put-public-access-block --account-id <account> --public-access-block-configuration ...",
+   "check": "aws-account-s3-bpa"
+  },
+  {
+   "id": "aws-account.iam-users",
+   "account": "aws-root",
+   "operable_by": "aws-root and aws-operator-user",
+   "setting": "IAM users other than the operator user hold no write permission and no console password",
+   "recommended": 0,
+   "implication": "Every other IAM user is a read-only collector (an AWS read-only or SecurityAudit policy) or has no permissions and no credentials. A second user with write access would be an unreviewed administrative path.",
+   "read": "aws iam list-users; for each: list-groups-for-user, list-attached-user-policies, list-user-policies, get-login-profile",
+   "change": "aws iam detach-user-policy / remove-user-from-group / delete-login-profile (operator user)",
+   "check": "aws-iam-users"
+  },
+  {
+   "id": "github.prod-reviewer",
+   "account": "github-owner",
+   "operable_by": "github-owner only",
+   "setting": "The prod environment requires a reviewer before a deploy",
+   "recommended": {
+    "at_least": 1
+   },
+   "implication": "Without a reviewer, a merged change would apply Terraform to production unattended.",
+   "read": "GET /repos/{owner}/{repo}/environments",
+   "change": "Repository Settings, Environments, prod, Required reviewers (or PUT /repos/{owner}/{repo}/environments/prod)",
+   "check": "github-prod-reviewer"
+  },
+  {
+   "id": "github.nightly-main-only",
+   "account": "github-owner",
+   "operable_by": "github-owner only",
+   "setting": "The evidence-nightly environment deploys only from main",
+   "recommended": [
+    "main"
+   ],
+   "implication": "The nightly role writes published evidence unattended; another branch must not be able to use it.",
+   "read": "GET /repos/{owner}/{repo}/environments/evidence-nightly/deployment-branch-policies",
+   "change": "Repository Settings, Environments, evidence-nightly, Deployment branches",
+   "check": "github-nightly-branches"
+  },
+  {
+   "id": "github.main-required-checks",
+   "account": "github-owner",
+   "operable_by": "github-owner only",
+   "setting": "main requires the four gate checks, for administrators too",
+   "recommended": {
+    "required": [
+     "OPA Compliance Check",
+     "Security Scan",
+     "Unit tests (pytest + opa test)",
+     "scn-tag"
+    ],
+    "enforced_for": "everyone"
+   },
+   "implication": "These checks are the policy, test, scanner and change-classification gates; without them a change could reach main unchecked.",
+   "read": "GET /repos/{owner}/{repo}/branches/main",
+   "change": "Repository Settings, Branches, main (or PUT /repos/{owner}/{repo}/branches/main/protection)",
+   "check": "github-main-checks"
+  },
+  {
+   "id": "github.owner-2fa",
+   "account": "github-owner",
+   "operable_by": "github-owner only",
+   "setting": "Two-factor authentication on the owner account, no classic personal access tokens",
+   "recommended": true,
+   "implication": "The owner account can change every setting above and the workflows that hold AWS trust.",
+   "read": "Not readable by the deploy's token (GitHub exposes a user's 2FA and tokens only to that user); the operator attests it (DEC-151).",
+   "change": "github.com Settings, Password and authentication; Developer settings, Personal access tokens.",
+   "check": "attested",
+   "attested_by": "DEC-151"
+  },
+  {
+   "id": "aws-operator-user.mfa-enabled",
+   "account": "aws-operator-user",
+   "operable_by": "aws-operator-user and aws-root",
+   "setting": "MFA on the operator user",
+   "recommended": true,
+   "implication": "The operator user can administer IAM; its access key alone must not be enough.",
+   "read": "aws iam list-mfa-devices --user-name <operator user>",
+   "change": "aws iam enable-mfa-device",
+   "check": "operator-mfa-enabled"
+  },
+  {
+   "id": "aws-operator-user.mfa-phishing-resistant",
+   "account": "aws-operator-user",
+   "operable_by": "aws-operator-user and aws-root",
+   "setting": "Operator user MFA is phishing-resistant (FIDO2 security key or passkey)",
+   "recommended": true,
+   "implication": "As for the root user: a TOTP code can be relayed by a phishing site; a FIDO2 credential cannot.",
+   "read": "aws iam list-virtual-mfa-devices --assignment-status Assigned (an entry for the user means virtual TOTP)",
+   "change": "IAM console: the user's Security credentials, Assign MFA device, Passkey or security key.",
+   "check": "operator-mfa-type",
+   "accepted_deviation": "DEC-150"
+  },
+  {
+   "id": "aws-operator-user.console-password",
+   "account": "aws-operator-user",
+   "operable_by": "aws-operator-user and aws-root",
+   "setting": "No console password on the operator user",
+   "recommended": false,
+   "implication": "The operator works from the CLI; a console password would add a second sign-in path to protect.",
+   "read": "aws iam get-login-profile --user-name <operator user> (NoSuchEntity means none)",
+   "change": "aws iam delete-login-profile",
+   "check": "operator-console-password"
+  },
+  {
+   "id": "aws-operator-user.access-keys",
+   "account": "aws-operator-user",
+   "operable_by": "aws-operator-user and aws-root",
+   "setting": "At most one active access key, no older than 90 days",
+   "recommended": {
+    "active": {
+     "at_most": 1
+    },
+    "oldest_age_days": {
+     "at_most": 90
+    }
+   },
+   "implication": "A long-lived key is the operator user's standing credential; rotating it every 90 days bounds the life of a leaked key.",
+   "read": "aws iam list-access-keys --user-name <operator user>",
+   "change": "aws iam create-access-key, then update-access-key --status Inactive and delete-access-key for the old one",
+   "check": "operator-access-keys"
+  },
+  {
+   "id": "ci-roles.deploy-trust",
+   "account": "ci-roles",
+   "operable_by": "aws-operator-user (bootstrap apply)",
+   "setting": "The deploy role trusts only this repository's prod environment",
+   "recommended": [
+    "repo:sam-aydlette/samaydlette.com:environment:prod"
+   ],
+   "implication": "The prod environment requires a reviewer, so deploy credentials exist only inside an approved deploy.",
+   "read": "aws iam get-role (AssumeRolePolicyDocument, token.actions.githubusercontent.com:sub)",
+   "change": "infrastructure/bootstrap/main.tf, data.aws_iam_policy_document.trust; operator-applied",
+   "check": "role-trust-deploy"
+  },
+  {
+   "id": "ci-roles.plan-trust",
+   "account": "ci-roles",
+   "operable_by": "aws-operator-user (bootstrap apply)",
+   "setting": "The read-only plan role trusts only this repository's pull requests and main",
+   "recommended": [
+    "repo:sam-aydlette/samaydlette.com:pull_request",
+    "repo:sam-aydlette/samaydlette.com:ref:refs/heads/main"
+   ],
+   "implication": "Pull request runs get read-only credentials, never deploy permissions.",
+   "read": "aws iam get-role (AssumeRolePolicyDocument)",
+   "change": "infrastructure/bootstrap/plan-role.tf; operator-applied",
+   "check": "role-trust-plan"
+  },
+  {
+   "id": "ci-roles.nightly-trust",
+   "account": "ci-roles",
+   "operable_by": "aws-operator-user (bootstrap apply)",
+   "setting": "The nightly role trusts only this repository's evidence-nightly environment",
+   "recommended": [
+    "repo:sam-aydlette/samaydlette.com:environment:evidence-nightly"
+   ],
+   "implication": "The unattended write path stays limited to the one environment that deploys only from main.",
+   "read": "aws iam get-role (AssumeRolePolicyDocument)",
+   "change": "infrastructure/bootstrap/evidence-nightly.tf; operator-applied",
+   "check": "role-trust-nightly"
+  },
+  {
+   "id": "cognito-admin.sign-in-policy",
+   "account": "cognito-admin",
+   "operable_by": "ci-roles (Terraform) and aws-operator-user",
+   "setting": "Silk Reeling user pool: MFA required, admin-created users only, 14-character passwords with every character class",
+   "recommended": {
+    "MfaConfiguration": "ON",
+    "AllowAdminCreateUserOnly": true,
+    "MinimumLength": {
+     "at_least": 14
+    },
+    "RequireUppercase": true,
+    "RequireLowercase": true,
+    "RequireNumbers": true,
+    "RequireSymbols": true
+   },
+   "implication": "App users cannot sign themselves up, and every app user signs in with a strong password and TOTP MFA.",
+   "read": "aws cognito-idp describe-user-pool --user-pool-id <pool>",
+   "change": "infrastructure/cognito.tf (reviewed deploy)",
+   "check": "cognito-pool-policy"
+  }
+ ],
+ "changelog": [
+  {
+   "version": "2.0.0",
+   "date": "2026-11-05",
+   "changes": [
+    "First machine-readable release, replacing the prose guide in docs/policies.",
+    "Root and operator MFA stated as it is: virtual TOTP, an accepted deviation from the phishing-resistant default (DEC-150).",
+    "Deployer access-key rotation removed: CI uses OIDC roles and has no access key.",
+    "The retired Silk Reeling shared credential removed: app users sign in through Cognito with MFA.",
+    "Added the account-level settings, the operator user, the CI roles and the user-pool administration, each with the call that reads and changes it."
+   ],
+   "defaults_sha256": "a21ebfa28dc9e0b8b12a2f0029e163d782d92848c422b85702bec6de65352727"
+  }
+ ]
+}

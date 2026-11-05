@@ -1,0 +1,7 @@
+{
+  "schema": "agency-access/1",
+  "_note": "Known-bad: a denial on 2026-11-02 with no FedRAMP notice; the 5-business-day window closed on 2026-11-09. Validation as of 2026-11-10 must fail.",
+  "requests": [
+    {"id": "AAR-B01", "agency": "Bureau of Known-Bad Fixtures (simulated)", "kind": "access", "channel": "issue form", "received_on": "2026-11-02", "decision": "denied", "decided_on": "2026-11-02", "decided_by": "Operator", "reason": "Fixture."}
+  ]
+}

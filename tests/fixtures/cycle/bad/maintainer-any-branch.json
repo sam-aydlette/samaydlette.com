@@ -1,0 +1,14 @@
+{
+  "role_arn": "arn:aws:iam::123456789012:role/github-actions-package-maintenance-oidc",
+  "env_state": "ok",
+  "environment": {
+    "deployment_branch_policy": {
+      "protected_branches": false,
+      "custom_branch_policies": true
+    }
+  },
+  "branch_policies": [
+    "main",
+    "*"
+  ]
+}

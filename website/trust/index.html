@@ -58,6 +58,7 @@
                     <a href="#record"><span class="tc-toc-n">5</span>Record</a>
                     <a href="#posture"><span class="tc-toc-n">6</span>Posture</a>
                     <a href="#verify"><span class="tc-toc-n">7</span>Verify</a>
+                    <a href="#data"><span class="tc-toc-n">8</span>Data &amp; access</a>
                 </nav>
             </header>
 
@@ -118,6 +119,35 @@ cosign verify-blob trust-center.json --bundle trust-center.bundle \
   https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main</code></pre>
                 <p>The same command verifies every JSON artifact below except the runtime signal, each from the <code>.bundle</code> beside it. <a href="https://github.com/sam-aydlette/samaydlette.com/blob/main/scripts/verify-published.sh" rel="noopener"><code>verify-published.sh</code></a> checks them all, including that each is bound to the same inventory.</p>
                 <ul class="tc-artifacts" data-tc="artifacts"></ul>
+            </section>
+
+            <section id="data" class="tc-section" aria-labelledby="data-h">
+                <h2 id="data-h"><span class="tc-num">8</span> Certification data, access and sharing</h2>
+                <p class="tc-intro">This section is plain HTML: it reads the same with JavaScript off.</p>
+
+                <h3 id="data-index">All the certification data, in one index</h3>
+                <p>The signed <a href="/.well-known/trust-manifest.json">trust manifest</a> (<a href="/.well-known/trust-manifest.md">readable version</a>) lists every piece of FedRAMP certification data this trust center shares: its URL, media type, update cadence, signature and signer, and its human-readable forms. Every JSON artifact has a complete readable view (<code>.view.md</code>) that the build checks reproduces the JSON exactly, and the policies and procedures are served as Markdown from the <a href="/.well-known/policy-index.md">policy and procedure index</a>. Fetch anything with a plain HTTPS GET; no account or key is needed. The <a href="/.well-known/assessor-guide.md">assessor guide</a> says how to check each FedRAMP rule and KSI yourself.</p>
+                <p>Availability is measured from outside AWS, by a monitor on GitHub Actions that publishes to GitHub: <a href="https://github.com/sam-aydlette/samaydlette.com/blob/availability-status/availability-status.md" rel="noopener">current and 30-day availability, with incidents</a>. It stays readable when this site is not.</p>
+
+                <h3 id="assessment">Independent assessment (simulated)</h3>
+                <p>No FedRAMP Recognized assessor has assessed this system. To show the assessor port working end to end, every deploy is assessed by <strong>Totally Real Assessment Services, LLC (simulated)</strong>, which is a GitHub Actions workflow in this repository wearing a lanyard. It re-runs the checks in the assessor guide and signs its results under its own workflow identity: <a href="/.well-known/simulated-assessment.json">simulated-assessment.json</a>. Its findings appear, verbatim, in the Security Decision Record. It is not independent, and it is not a FedRAMP assessment.</p>
+
+                <h3 id="request-access">Request access</h3>
+                <p><strong>Everything is already public</strong>, so an agency can obtain the whole certification package without asking. An agency that wants to be on record, counted in the access inventory and told of changes, can file the <a href="https://github.com/sam-aydlette/samaydlette.com/issues/new?template=agency-access.yml" rel="noopener">agency access form</a>, or write privately to the security contact in <a href="/.well-known/security.txt">security.txt</a>. Name agencies and systems, never people. The same form withdraws a record, and FedRAMP can use it to request the inventory. If a request is ever denied, FedRAMP is told within 5 business days. The procedure is <a href="/.well-known/policies/agency-access.md">Agency Access to the Certification Package</a>; it is exercised on every deploy with plainly fictional agencies (<a href="/.well-known/agency-access-exercise.md">the exercise log</a>).</p>
+
+                <h3 id="sharing">What is shared, and why it is safe to share</h3>
+                <p>The package is public because this proof of concept holds no federal data and exists to show its evidence. What is never published (account IDs, secrets, personal email addresses, IAM user names, raw logs, the people behind an access request), what is published on purpose, and the determination that publishing it is not likely to harm the system are in the <a href="/.well-known/policies/information-sharing.md">information sharing and disclosure standard</a>.</p>
+
+                <h3 id="access-logging-privacy">Access logging and your privacy</h3>
+                <p>FedRAMP asks trust centers to log access to certification data and keep summaries of it. This is what this site logs, and what it does not.</p>
+                <ul>
+                    <li><strong>What is logged.</strong> For each request to the site, the CDN records the date and time, the edge location and country it was served from, the method, the path, the response status, the bytes sent and whether it came from cache. It does <em>not</em> record your IP address, user agent, referrer, cookies or query string: those fields are switched off at the edge, so they are never stored.</li>
+                    <li><strong>Why.</strong> To show, in aggregate, how the certification data under <code>/.well-known/</code> and this trust center are used, as FedRAMP requires.</li>
+                    <li><strong>How long.</strong> The raw records are deleted after 90 days. Only monthly counts (per artifact, per response class, per country) are kept, for 13 months, and published at <a href="/.well-known/access-summary.json">/.well-known/access-summary.json</a> (<a href="/.well-known/access-summary.md">readable version</a>). Requests to other pages of the site are not counted.</li>
+                    <li><strong>Who can see the raw records.</strong> Only the operator and the deploy pipeline&rsquo;s read-only role, in an encrypted bucket that is not public.</li>
+                    <li><strong>Agencies.</strong> An agency is identified only by what it states in its own access request. Nothing is inferred from network addresses, which are not logged.</li>
+                    <li><strong>Your own records.</strong> You can ask for the summaries and for the records of your own requests, identified by the times and paths you give (the records hold nothing that identifies a requester). Write to the security contact in <a href="/.well-known/security.txt">security.txt</a>; the answer comes within 10 business days.</li>
+                </ul>
             </section>
         </article>
     </main>

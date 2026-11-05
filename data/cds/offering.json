@@ -1,41 +1,129 @@
 {
-  "_note": "Operator-declared editorial values for the CDS certification-overview package (CDS-CSO-PUB / CDS-CSO-SVC / CDS-CSO-FID). scripts/build-cds-overview.py reads this plus the system profile and the canonical inventory to emit /.well-known/certification-overview-package.json. Honest placeholders are used where a value requires sponsorship the PoC does not have (FedRAMP ID, UEI).",
-  "fedramp_id": "<not assigned — unsponsored self-attested PoC; CDS-CSO-FID placeholder>",
-  "service_model": "SaaS",
+  "_note": "Operator-declared editorial values for the Certification Package Overview (CPO-CSO-OVR: CDS-CSO-PUB, CDS-CSO-SVC, CDS-CSO-FID). scripts/build-cpo.py reads this plus the system profile, the CCM calendar and the canonical inventory and writes /.well-known/certification-package-overview.json in FedRAMP's schema. Where a value needs an outside party this proof of concept does not have (a FedRAMP ID, a SAM.gov UEI), the value is SIMULATED, says so, and the CPO flags it under providerExtensions.simulated. No published value here is an email address: contacts point to /.well-known/security.txt or the contact page.",
+  "provider_name": "Sam Aydlette",
+  "service_name": "samaydlette.com",
+  "service_acronym": "SAMCOM",
+  "fedramp_id": "Sam Aydlette (SAMCOM): PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID",
+  "fedramp_id_simulated": "No FedRAMP ID exists or is coming: nothing has been submitted to FedRAMP. FedRAMP's schema says to use the provider's name and acronym until an ID is assigned; the suffix makes sure nobody mistakes it for one.",
+  "uei": "NOT-A-REAL-UEI-0000",
+  "uei_simulated": "Simulated. The operator is not registering on SAM.gov, so there is no Unique Entity Identifier; this value is a placeholder that no SAM.gov lookup will ever find.",
+  "service_model": [
+    "SaaS"
+  ],
   "deployment_model": "Public Cloud",
-  "business_category": "Personal demonstration / compliance-automation reference architecture",
-  "uei": "<not assigned — no SAM.gov registration>",
-  "sales_contact": { "name": "Sam Aydlette", "url": "https://samaydlette.com/pages/contact.html" },
-  "security_contact": { "name": "Sam Aydlette", "email": "sam.aydlette@gmail.com", "source": "/.well-known/security.txt" },
+  "business_category": [
+    "Governance, Risk, and Compliance (GRC)",
+    "Cybersecurity & Risk Management",
+    "Health & Wellness"
+  ],
+  "sales_contact": {
+    "name": "Sam Aydlette. Nothing here is for sale; say hello through the contact page: https://samaydlette.com/pages/contact.html"
+  },
+  "security_contact": {
+    "name": "Sam Aydlette, through the security contact in https://samaydlette.com/.well-known/security.txt"
+  },
   "product_website": "https://samaydlette.com",
   "logo_url": "https://samaydlette.com/assets/images/brand/logo.png",
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
   "secure_configuration_guidance_url": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
   "documentation_overview_url": "https://samaydlette.com/trust/index.html",
-  "current_independent_assessment_service": "None — self-attested; no FedRAMP-Recognized independent assessment service engaged (IVV is N/A for this unsponsored proof of concept).",
+  "current_independent_assessment_service": "None: no FedRAMP Recognized independent assessment service is engaged. Every deploy is assessed by Totally Real Assessment Services, LLC (simulated), a workflow in this repository that is not a FedRAMP Recognized assessment service; its overall summary is quoted below.",
   "accountable_official": {
     "name": "Sam Aydlette",
     "title": "System Owner / Authorizing Operator",
-    "contact": "sam.aydlette@gmail.com"
+    "contact": "https://samaydlette.com/.well-known/security.txt"
   },
   "cryptographic_modules": [
-    { "module": "AWS KMS", "validation": "FIPS 140-3 (CMVP, HSM-backed)", "role": "key store for all four customer-managed CMKs: at-rest (the compliance and watchdog Lambdas' environments and log groups, the DNS query log, the alert topic), runtime signing (the runtime signal), DNSSEC KSK, and the Silk Reeling app (its Lambda environment and log groups; the app holds no secrets since SCN-2026-006)", "inherited": true },
-    { "module": "ACM TLS termination on CloudFront", "validation": "FIPS-validated cipher suites; TLS 1.2+", "role": "TLS in transit", "inherited": true },
-    { "module": "S3 SSE-S3", "validation": "AES-256 (AWS-managed keys)", "role": "at-rest on the public website + log buckets", "inherited": true },
-    { "module": "Sigstore Fulcio + Rekor", "validation": "ECDSA P-256 (FIPS-approved algorithm); the implementations are NOT CMVP-validated modules", "role": "deploy-time keyless signing", "inherited": false, "compensating_control": "trust anchored in the public Rekor transparency log" }
+    {
+      "module": "AWS KMS",
+      "validation": "FIPS 140-3 Level 3, CMVP certificate #4884 (AWS Key Management Service HSM)",
+      "role": "key store for all four customer-managed CMKs: at-rest (the compliance and watchdog Lambdas' environments and log groups, the DNS query log, the alert topic), runtime signing (the runtime signal), DNSSEC KSK, and the Silk Reeling app (its Lambda environment and log groups; the app holds no secrets since SCN-2026-006)",
+      "inherited": true
+    },
+    {
+      "module": "ACM TLS termination on CloudFront",
+      "validation": "TLS 1.2+ (TLSv1.2_2021); AWS publishes no CMVP module for CloudFront viewer TLS (accepted, DEC-152)",
+      "role": "TLS in transit",
+      "inherited": true
+    },
+    {
+      "module": "S3 SSE-S3",
+      "validation": "AES-256 (AWS-managed keys); AWS publishes no CMVP module for SSE-S3 (accepted, DEC-152)",
+      "role": "at-rest on the public website + log buckets",
+      "inherited": true
+    },
+    {
+      "module": "Sigstore Fulcio + Rekor",
+      "validation": "ECDSA P-256 (FIPS-approved algorithm); the implementations are NOT CMVP-validated modules",
+      "role": "deploy-time keyless signing",
+      "inherited": false,
+      "compensating_control": "trust anchored in the public Rekor transparency log"
+    }
   ],
   "services": [
     {
       "name": "samaydlette.com static website",
-      "description": "Public static content (S3 origin behind CloudFront), plus the signed compliance artifacts published under /.well-known/.",
-      "security_category": "FIPS-199 Moderate (FedRAMP 20x Class C)",
+      "description": "Public static content (S3 origin behind CloudFront), plus the signed compliance artifacts published under /.well-known/ and the trust center at /trust/.",
+      "boundary_groups": [
+        "website"
+      ],
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low",
+        "rationale": "Public content: nothing confidential. Integrity is moderate because defacement or tampering of published evidence would mislead readers. Availability is low: a personal site."
+      },
       "in_mas_scope": true
     },
     {
       "name": "Silk Reeling Mirror application",
       "description": "Cognito-gated HTTP API (API Gateway -> Lambda) serving a browser SPA that coaches Tai Chi; writes feedback text from the scores in the Lambda, with no external interconnection (optional LLM feedback is customer-configurable and disabled here).",
-      "security_category": "FIPS-199 Moderate (FedRAMP 20x Class C)",
+      "date_available": "2026-06-03",
+      "boundary_groups": [
+        "app"
+      ],
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low",
+        "rationale": "Holds invited users' sign-in accounts and the pose scores they submit, no federal data: confidentiality low. Integrity moderate: wrong coaching or tampered accounts are the harm. Availability low."
+      },
       "in_mas_scope": true
+    },
+    {
+      "name": "Continuous compliance evidence (pipeline trust root, runtime KSI emitter, evidence watchdog)",
+      "description": "The deploy's trust root (OIDC roles, CloudFront, DNSSEC, remote state), the daily runtime re-validation of live configuration (signed runtime KSI signal), the hourly evidence-freshness watchdog with its alarms, and the audit trail and keys behind them. GitHub Actions and Sigstore, which build and sign the evidence, are third-party information resources inside the boundary.",
+      "boundary_groups": [
+        "compliance",
+        "watchdog",
+        "audit",
+        "trust-root"
+      ],
+      "security_category": {
+        "confidentiality": "low",
+        "integrity": "moderate",
+        "availability": "low",
+        "rationale": "The evidence is public by design. Integrity is moderate: false evidence is the harm this system exists to prevent. Availability is low."
+      },
+      "in_mas_scope": true
+    }
+  ],
+  "not_included": [
+    {
+      "name": "Podcast and video audio hosted by third parties",
+      "why": "Linked from pages, served by their own hosts; not part of the offering."
+    },
+    {
+      "name": "MediaPipe libraries and models (cdn.jsdelivr.net, storage.googleapis.com)",
+      "why": "Loaded by the visitor's browser from third-party hosts at run time; listed as third-party information resources, not services of this offering."
+    },
+    {
+      "name": "Optional LLM coaching feedback",
+      "why": "Customer-configurable and disabled; no external AI service is called."
+    },
+    {
+      "name": "Newsletter, RSS and social feeds",
+      "why": "None is offered under this certification."
     }
   ]
 }

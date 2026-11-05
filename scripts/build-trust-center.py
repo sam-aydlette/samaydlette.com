@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _freshness import load_freshness_config  # noqa: E402
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _offering  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
 VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
@@ -768,6 +769,7 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
     pending = build_decisions_pending(inp, now, log, gaps)
     return {
         "schema": SCHEMA,
+        "fedRampId": _offering.fedramp_id(),
         "generated_at": now.isoformat(timespec="seconds"),
         "commit": commit,
         "ksi_signal_id": signal_id,

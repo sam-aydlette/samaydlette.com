@@ -1,0 +1,4 @@
+{
+  "ksi-signal.json": {"content-type": "application/json", "access-control-allow-origin": "*", "x-content-type-options": "nosniff"},
+  "ksi-signal.schema.json": {"Content-Type": "application/schema+json", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff"}
+}

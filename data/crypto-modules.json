@@ -1,0 +1,215 @@
+{
+  "schema": "crypto-modules/1",
+  "$comment": "Cryptographic modules per service (CMU-CSO-CMD, CMU-CSO-UVM, CMU-CSO-CAT). scripts/build-scg.py joins this with the deploy's inventory and publishes the per-service list inside /.well-known/secure-configuration-guide.json; it fails the build when the inventory holds a component type that is neither mapped here nor listed as using no cryptography. Every certificate number was read from NIST's CMVP pages on the date given; no number is typed from memory. AI-drafted 2026-11-05; for the operator's review.",
+  "checked_on": "2026-11-05",
+  "modules": {
+    "aws-kms-hsm": {
+      "name": "AWS Key Management Service HSM",
+      "vendor": "Amazon Web Services, Inc.",
+      "cmvp_certificate": "4884",
+      "standard": "FIPS 140-3",
+      "level": "3",
+      "status": "Active (sunset 2029-11-17)",
+      "source": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4884"
+    },
+    "not-published": {
+      "name": "Not published by AWS for this service path",
+      "vendor": "Amazon Web Services, Inc.",
+      "cmvp_certificate": null,
+      "standard": null,
+      "level": null,
+      "status": "AWS's FIPS page lists FIPS endpoints and module families but names no CMVP module for this path; treated as not validated (DEC-152).",
+      "source": "https://aws.amazon.com/compliance/fips/"
+    },
+    "sigstore": {
+      "name": "Sigstore Fulcio and Rekor (public-good instance), cosign client",
+      "vendor": "Sigstore (OpenSSF)",
+      "cmvp_certificate": null,
+      "standard": null,
+      "level": null,
+      "status": "Not a CMVP-validated module. ECDSA P-256 (a FIPS-approved algorithm). Signs published evidence; protects no customer data.",
+      "source": "https://docs.sigstore.dev/"
+    }
+  },
+  "services": [
+    {
+      "service": "CloudFront viewer TLS (site and app)",
+      "types": [
+        "cdn_distribution",
+        "tls_certificate"
+      ],
+      "protects": "data in transit between users and the edge, including app sign-in tokens",
+      "module": "not-published",
+      "configuration": "Security policy TLSv1.2_2021 (TLS 1.2 or later, forward-secret AES-GCM suites); ACM certificate.",
+      "customer_data": true,
+      "tenant_default": "TLSv1.2_2021 on every request; no FIPS-validated viewer TLS option is offered for a distribution."
+    },
+    {
+      "service": "API Gateway HTTP API TLS (Silk Reeling)",
+      "types": [
+        "api_gateway"
+      ],
+      "protects": "the app's API calls in transit (CloudFront to API Gateway)",
+      "module": "not-published",
+      "configuration": "HTTPS only; CloudFront connects with TLS 1.2 (origin_ssl_protocols).",
+      "customer_data": true,
+      "tenant_default": "HTTPS only; AWS's API Gateway FIPS endpoint covers the management API, not an HTTP API's execute-api endpoint."
+    },
+    {
+      "service": "Amazon Cognito user pool (Silk Reeling sign-in)",
+      "types": [
+        "identity_provider"
+      ],
+      "protects": "app users' credentials and MFA secrets, tokens",
+      "module": "not-published",
+      "configuration": "Hosted UI over TLS; tokens signed by Cognito; user records encrypted at rest by Cognito.",
+      "customer_data": true,
+      "tenant_default": "The Hosted UI sign-in domain has no FIPS endpoint (AWS lists cognito-idp-fips for the API only)."
+    },
+    {
+      "service": "AWS KMS customer-managed keys",
+      "types": [
+        "kms_key"
+      ],
+      "protects": "the keys that encrypt the app's Lambda environment and log groups, the alert topic, the runtime signing key and the DNSSEC key-signing key",
+      "module": "aws-kms-hsm",
+      "configuration": "Four customer-managed keys, automatic rotation enabled on the symmetric keys.",
+      "customer_data": true,
+      "tenant_default": "Every app data store that supports a customer-managed key uses one (Lambda environment, log groups)."
+    },
+    {
+      "service": "AWS Lambda (functions and their environments)",
+      "types": [
+        "function"
+      ],
+      "protects": "function environment variables at rest; the app's outbound TLS to Cognito's key endpoint",
+      "module": "aws-kms-hsm",
+      "configuration": "Environments encrypted with a customer-managed KMS key (kms_key_arn). Outbound TLS uses the Python runtime's own TLS library, which is not run as a validated module (DEC-152).",
+      "customer_data": true,
+      "tenant_default": "kms_key_arn set on the app function."
+    },
+    {
+      "service": "CloudWatch Logs",
+      "types": [
+        "log_group"
+      ],
+      "protects": "application and gateway logs at rest",
+      "module": "aws-kms-hsm",
+      "configuration": "Every log group encrypted with a customer-managed KMS key.",
+      "customer_data": true,
+      "tenant_default": "kms_key_id set on every app log group."
+    },
+    {
+      "service": "Amazon SNS (evidence alerts)",
+      "types": [
+        "notification_topic"
+      ],
+      "protects": "alert messages at rest",
+      "module": "aws-kms-hsm",
+      "configuration": "Topic encrypted with a customer-managed KMS key.",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "AWS Secrets Manager",
+      "types": [
+        "secrets_manager"
+      ],
+      "protects": "secret values at rest (none exist today: the app holds no secret since SCN-2026-006)",
+      "module": "aws-kms-hsm",
+      "configuration": "A secret, if added, is encrypted under a customer-managed KMS key; the app key's policy admits Secrets Manager use only through the service.",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "Amazon S3 (site, logs, CloudTrail, Terraform state)",
+      "types": [
+        "object_store"
+      ],
+      "protects": "objects at rest; the site's public content, access logs, the audit trail, Terraform state",
+      "module": "not-published",
+      "configuration": "SSE-S3 (AES-256, AWS-managed keys); TLS-only bucket policies on the state bucket.",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "Amazon SQS (compliance dead-letter queue)",
+      "types": [
+        "message_queue"
+      ],
+      "protects": "failed compliance events at rest",
+      "module": "not-published",
+      "configuration": "SSE-SQS (AWS-managed keys).",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "Amazon DynamoDB (Terraform state lock)",
+      "types": [
+        "kv_table"
+      ],
+      "protects": "lock items at rest",
+      "module": "not-published",
+      "configuration": "AWS-owned key encryption.",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "AWS CloudTrail (management trail)",
+      "types": [
+        "audit_log_trail"
+      ],
+      "protects": "the integrity of the audit trail (log file validation digests)",
+      "module": "not-published",
+      "configuration": "Management events; delivered to the CloudTrail bucket (SSE-S3).",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "Route 53 DNSSEC signing",
+      "types": [
+        "dns_zone"
+      ],
+      "protects": "the integrity of the site's DNS answers",
+      "module": "aws-kms-hsm",
+      "configuration": "Key-signing key is an asymmetric customer-managed KMS key in us-east-1 (ECC_NIST_P256).",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "IAM OIDC provider (GitHub Actions)",
+      "types": [
+        "oidc_provider"
+      ],
+      "protects": "CI's federation to AWS (token signature verification by AWS STS)",
+      "module": "not-published",
+      "configuration": "Trusts token.actions.githubusercontent.com for sts.amazonaws.com only.",
+      "customer_data": false,
+      "tenant_default": null
+    },
+    {
+      "service": "External services (Sigstore signing and others)",
+      "types": [
+        "external_service"
+      ],
+      "protects": "the authenticity of published evidence (keyless signatures); other external services carry no customer data",
+      "module": "sigstore",
+      "configuration": "cosign sign-blob with a Fulcio certificate and a Rekor entry; verification pins the workflow identity.",
+      "customer_data": false,
+      "tenant_default": null
+    }
+  ],
+  "no_cryptography": {
+    "types": [
+      "npm_package",
+      "pypi_package",
+      "html_artifact",
+      "iam_policy",
+      "iam_role",
+      "iam_group",
+      "metric_alarm",
+      "event_schedule"
+    ],
+    "why": "Software packages, page content, IAM policy documents and alarm or schedule definitions: inventoried components that provide no cryptographic service of their own."
+  }
+}

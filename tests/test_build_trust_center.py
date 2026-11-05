@@ -410,3 +410,8 @@ def test_the_output_records_the_governed_freshness_config():
     assert doc["freshness_windows_hours"]["corroboration"] == fc["windows_hours"][".well-known/boundary-corroboration.json"]
     sources = {t["name"]: t["source"] for t in doc["policy_catalog"]["thresholds"]["items"]}
     assert sources["Vulnerability evidence freshness"] == fc["source"]
+
+
+def test_the_trust_center_carries_the_offerings_fedramp_id():
+    import _offering
+    assert build()["fedRampId"] == _offering.fedramp_id()

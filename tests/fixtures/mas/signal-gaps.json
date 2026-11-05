@@ -1,0 +1,11 @@
+{"_note": "Known-bad: a log group with no metadata entry and in no flow, and a component type in no KSI's evidence domain with no whole-set reason.",
+ "signal_id": "fixture-gaps",
+ "components": [
+  {"component_id": "aws::log_group::brand_new", "type": "log_group", "security_category": {"confidentiality": "low", "integrity": "moderate", "availability": "low"}, "attributes": {"region": "us-east-2"}},
+  {"component_id": "aws::mystery::thing", "type": "mystery", "security_category": {"confidentiality": "low", "integrity": "low", "availability": "low"}, "attributes": {}},
+  {"component_id": "aws::function::app", "type": "function", "security_category": {"confidentiality": "moderate", "integrity": "moderate", "availability": "low"}, "attributes": {}}
+ ],
+ "ksis": [
+  {"id": "KSI-AAA-ONE", "method": "policy-validation", "status": "pass", "evidence": {"component_refs": ["aws::function::app", "aws::log_group::brand_new"]}},
+  {"id": "KSI-PIY-ALL", "method": "inventory-attestation", "status": "pass", "evidence": {"component_refs": ["aws::function::app", "aws::log_group::brand_new", "aws::mystery::thing"]}}
+ ]}

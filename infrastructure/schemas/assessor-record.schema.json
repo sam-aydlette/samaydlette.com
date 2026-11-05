@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://samaydlette.com/schemas/assessor-record.schema.json",
   "title": "Assessor record (REQ-ASR-1)",
-  "description": "A finding, summary or comment written and signed by an assessor. The signature is ECDSA P-256 with SHA-256 over the canonical form of the record without its \"signature\" member: keys sorted, separators \",\" and \":\" with no whitespace, UTF-8, non-ASCII characters unescaped. The signer must be the assessor identity pinned at infrastructure/keys/assessor-identity.json. The provider never edits a record; outputs carry its text verbatim with the signature.",
+  "description": "A finding, summary or comment written and signed by an assessor. The signature is ECDSA P-256 with SHA-256 over the canonical form of the record without its \"signature\" member: keys sorted, separators \",\" and \":\" with no whitespace, UTF-8, non-ASCII characters unescaped. The signer must be the assessor identity pinned at infrastructure/keys/assessor-identity.json. The provider never edits a record; outputs carry its text verbatim with the signature. A keyless assessor (pinned identity algorithm SIGSTORE_KEYLESS) instead signs one set file holding all its records with Sigstore, and each record carries algorithm SIGSTORE_KEYLESS_SET.",
   "type": "object",
   "additionalProperties": false,
   "required": ["record_type", "schema_version", "record_id", "assessor", "issued_at", "kind", "text", "signature"],
@@ -28,8 +28,9 @@
       "additionalProperties": false,
       "required": ["algorithm", "value"],
       "properties": {
-        "algorithm": {"const": "ECDSA_P256_SHA256"},
-        "value": {"type": "string", "minLength": 1, "description": "Base64 DER signature."}
+        "algorithm": {"enum": ["ECDSA_P256_SHA256", "SIGSTORE_KEYLESS_SET"]},
+        "value": {"type": "string", "minLength": 1, "description": "Base64 DER signature (ECDSA_P256_SHA256), or the hex sha256 of the record's canonical form (SIGSTORE_KEYLESS_SET)."},
+        "signed_set": {"type": "string", "minLength": 1, "description": "SIGSTORE_KEYLESS_SET only: the name of the Sigstore-signed set file holding this record."}
       }
     }
   }

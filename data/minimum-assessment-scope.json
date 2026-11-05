@@ -1,0 +1,36 @@
+{
+  "schema": "mas-inputs/1",
+  "$comment": "Operator-owned inputs to scripts/build-mas.py, which joins them with the canonical inventory (ksi-signal.json), the boundary classification and the third-party records to produce /.well-known/minimum-assessment-scope.json (MAS-CSO-IIR, MAS-CSO-FLO, MAS-CSO-MDI, MAS-CSO-TPR, FRC-CSX-MAS). The builder fails the deploy when an off-origin host in a CSP is not placed here, when a data store or log in the inventory has no metadata entry, or when a component type is in no KSI evidence domain and has no whole-set reason. AI-drafted 2026-11-05 from the Terraform and the CSPs, for the operator's review.",
+  "off_origin_hosts": {
+    "cdn.jsdelivr.net": {"component": "ext::jsdelivr"},
+    "storage.googleapis.com": {"component": "ext::google-cloud-storage"},
+    "samaydlette-com-silk-reeling.auth.us-east-2.amazoncognito.com": {"component": "aws::identity_provider::silk_reeling"},
+    "ochelli.com": {"out_of_scope": "Podcast audio on the activities page (CSP media-src only): the reader's browser streams a public episode directly from the host. Media cannot run code in the page, the host receives nothing from this system, and it is unrelated to the Silk Reeling app or the published evidence, so it neither handles nor affects federal customer data."},
+    "traffic.libsyn.com": {"out_of_scope": "Podcast audio redirect host (CSP media-src only), as for ochelli.com: public episode audio streamed directly by the reader's browser; no code, no data from this system."},
+    "content.libsyn.com": {"out_of_scope": "Podcast audio file host behind traffic.libsyn.com (CSP media-src only), as for ochelli.com."}
+  },
+  "data_store_types": ["object_store", "log_group", "kv_table", "message_queue", "identity_provider", "notification_topic", "secrets_manager", "audit_log_trail"],
+  "metadata": {
+    "aws::object_store::website": {"holds": "Site content and the published /.well-known/ evidence", "personal_data": [], "retention": "Current objects kept; replaced versions expire after 90 days", "retention_days": 90},
+    "aws::object_store::logs": {"holds": "S3 server access logs for the site bucket (origin reads)", "personal_data": ["requester IP address", "user agent"], "retention": "400 days, then expired", "retention_days": 400},
+    "aws::object_store::cloudtrail": {"holds": "CloudTrail management-event log files", "personal_data": ["operator source IP address", "IAM principal names", "user agent"], "retention": "913 days (moved to infrequent access after 365)", "retention_days": 913},
+    "aws::object_store::tfstate": {"holds": "Terraform state: resource configuration and attributes, including secret values", "personal_data": [], "retention": "Current state kept; replaced versions expire after 90 days", "retention_days": 90},
+    "aws::kv_table::tflock": {"holds": "Terraform state lock: lock ID, holder and timestamp", "personal_data": [], "retention": "Deleted when the lock is released"},
+    "aws::log_group::opa_compliance": {"holds": "Runtime KSI emitter run logs", "personal_data": [], "retention": "365 days", "retention_days": 365},
+    "aws::log_group::evidence_watchdog": {"holds": "Evidence-freshness watchdog run logs (artifact ages)", "personal_data": [], "retention": "365 days", "retention_days": 365},
+    "aws::log_group::silk_reeling": {"holds": "Silk Reeling app Lambda runtime logs: invocations, errors", "personal_data": [], "retention": "365 days", "retention_days": 365},
+    "aws::log_group::silk_apigw": {"holds": "Silk Reeling API access log: request ID, source IP, time, method, route, status, response length", "personal_data": ["source IP address"], "retention": "365 days", "retention_days": 365},
+    "aws::log_group::route53_query_log": {"holds": "Route 53 DNS query logs (created only when DNS query logging is enabled)", "personal_data": ["resolver IP address"], "retention": "365 days", "retention_days": 365},
+    "aws::message_queue::compliance_dlq": {"holds": "Scheduled events whose emitter invocation failed", "personal_data": [], "retention": "14 days", "retention_days": 14},
+    "aws::identity_provider::silk_reeling": {"holds": "App user records: email address, TOTP enrollment, sign-in events", "personal_data": ["email address", "sign-in IP address and device data"], "retention": "Until the operator deletes the user"},
+    "aws::notification_topic::evidence_alerts": {"holds": "The operator's email subscription and in-flight alarm notifications", "personal_data": ["operator email address (subscription endpoint, set out of band; never in Terraform or published)"], "retention": "Until the subscription is removed"},
+    "aws::audit_log_trail::management": {"holds": "Management events for the account, delivered to the CloudTrail bucket (flow P)", "personal_data": ["operator source IP address", "IAM principal names"], "retention": "As the CloudTrail bucket (913 days)", "retention_days": 913},
+    "aws::secrets_manager::*": {"holds": "Application secrets (none today)", "personal_data": [], "retention": "Until deleted, then a 7 to 30 day recovery window"},
+    "ext::jsdelivr": {"holds": "Third-party observation: jsDelivr's request logs when a user's browser fetches the MediaPipe runtime", "personal_data": ["user IP address", "user agent"], "retention": "Set by the third party; not controlled by this provider"},
+    "ext::google-cloud-storage": {"holds": "Third-party observation: Google's request logs when a user's browser fetches the pose model", "personal_data": ["user IP address", "user agent"], "retention": "Set by the third party; not controlled by this provider"}
+  },
+  "whole_set_types": {
+    "html_artifact": "Static pages are content of the website bucket: the whole-inventory KSIs (PIY) cover them, and every page is sha256-hashed into the inventory so any change is a recorded change.",
+    "kv_table": "The state lock table holds lock metadata only; it is covered by the whole-inventory KSIs (PIY) and by the trust-root review of the bootstrap stack."
+  }
+}

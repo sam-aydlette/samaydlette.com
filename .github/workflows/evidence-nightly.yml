@@ -448,20 +448,28 @@ jobs:
     # -------------------------------------------------------------------------
     # scripts/reconcile.py loads the signal, VDR, SDR and CPO and reads the
     # decision register from the checkout. The SDR and CPO are the ones the last
-    # reviewed deploy published with this inventory; they arrive over the public
-    # internet, so each is verified against the deploy workflow's pinned identity
-    # before use, exactly like the inventory above. Fail closed: an unverifiable
+    # reviewed deploy published with this inventory (or the daily package
+    # maintainer rebuilt from it); they arrive over the public internet, so each
+    # is verified against one of those two pinned identities before use, exactly like the inventory above. Fail closed: an unverifiable
     # artifact is not evidence. They are not re-signed or re-published here.
     - name: Fetch and verify the published SDR and CPO (reconciliation inputs)
       working-directory: infrastructure
       run: |
         set -euo pipefail
+        # Signed by the deploy, or by the daily package maintainer that rebuilds
+        # them at the deployed commit (package-maintenance.yml, CPO-CSX-CPM).
+        MAINTAINER_IDENTITY="https://github.com/${{ github.repository }}/.github/workflows/package-maintenance.yml@refs/heads/main"
         for art in security-decision-record certification-package-overview; do
           curl -sfL --retry 3 --retry-delay 5 -o "$art.json" "${SITE_ORIGIN}/.well-known/$art.json"
           curl -sfL --retry 3 --retry-delay 5 -o "$art.bundle" "${SITE_ORIGIN}/.well-known/$art.bundle"
           cosign verify-blob \
             --bundle "$art.bundle" \
             --certificate-identity "${DEPLOY_SIGNER_IDENTITY}" \
+            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            "$art.json" \
+          || cosign verify-blob \
+            --bundle "$art.bundle" \
+            --certificate-identity "${MAINTAINER_IDENTITY}" \
             --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
             "$art.json"
         done
@@ -694,6 +702,15 @@ jobs:
     # SSE-S3 (AES256), so no KMS grant is involved.
     # Publication redaction gate over exactly the files the next step uploads
     # (scripts/_redact.py): fails closed on any AWS account ID.
+    # CDS-CSO-CBF: the complete human-readable view of each JSON republished
+    # below, parsed back and required to reproduce it, so the views the deploy
+    # published never drift from the JSON this run replaces.
+    - name: Rebuild the human-readable views (format parity)
+      working-directory: infrastructure
+      run: >-
+        python3 ../scripts/build-human-views.py
+        vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
+
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
       run: >-
@@ -701,6 +718,8 @@ jobs:
         vdr-report.json vdr-report.md vdr-trend.json
         vdr-detail-report.json vdr-detail-report.md vdr-accepted-vulnerabilities.json
         vdr-accepted-vulnerabilities.md vdr-history.json
+        vdr-report.view.md vdr-trend.view.md vdr-detail-report.view.md
+        vdr-accepted-vulnerabilities.view.md vdr-history.view.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -729,6 +748,10 @@ jobs:
         done
         put vdr-detail-report.md            "text/markdown; charset=utf-8"
         put vdr-accepted-vulnerabilities.md "text/markdown; charset=utf-8"
+        # The complete human-readable views, rebuilt with the JSON above.
+        for a in vdr-report vdr-trend vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
+          put "$a.view.md" "text/markdown; charset=utf-8"
+        done
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"
