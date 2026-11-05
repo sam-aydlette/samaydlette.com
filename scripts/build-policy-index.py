@@ -6,7 +6,8 @@
 # and procedure, with seven fields each: name; file/page name; brief summary;
 # word count; current version; date of last update; related FedRAMP Practices.
 # This scans the repo's policy and procedure markdown and emits that index as
-# JSON + human-readable markdown. Last-update dates come from git where available.
+# JSON + human-readable markdown. Each entry's last-update date and version are the last commit that changed
+# it; the build refuses a shallow clone, where every file looks changed today.
 #
 #   build-policy-index.py            # run from repo root
 # =============================================================================
@@ -38,15 +39,25 @@ RELATED = {
 }
 
 
-def _last_updated(path):
-    try:
-        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(path)],
-                             cwd=REPO, capture_output=True, text=True, timeout=10)
-        if out.returncode == 0 and out.stdout.strip():
-            return out.stdout.strip()
-    except Exception:
-        pass
-    return None
+def _is_shallow():
+    out = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                         cwd=REPO, capture_output=True, text=True, timeout=10)
+    if out.returncode != 0:
+        sys.exit(f"build-policy-index: not a git checkout ({out.stderr.strip()}); refusing to guess dates")
+    return out.stdout.strip() == "true"
+
+
+def _last_change(path):
+    """(date, commit) of the last commit that changed `path`. Fails closed: a
+    date this index cannot read is never published as a guess or a blank. In a
+    shallow clone every file looks last changed by the one commit fetched, which
+    published the deploy date as every policy's date; main() refuses that."""
+    out = subprocess.run(["git", "log", "-1", "--format=%cs %H", "--", str(path)],
+                         cwd=REPO, capture_output=True, text=True, timeout=10)
+    parts = out.stdout.split()
+    if out.returncode != 0 or len(parts) != 2:
+        sys.exit(f"build-policy-index: no git history for {path}")
+    return parts[0], parts[1]
 
 
 def _summary(text):
@@ -71,6 +82,7 @@ def index_file(rel):
     text = path.read_text()
     stem = path.stem
     words = len(re.findall(r"\S+", text))
+    date, commit = _last_change(path)
     related = RELATED.get(stem) or (f"{stem.split('-')[0].upper()} family"
                                     if stem.endswith("-policy") else "general")
     return {
@@ -78,8 +90,8 @@ def index_file(rel):
         "file": rel,
         "summary": _summary(text),
         "word_count": words,
-        "version": "live (continuously maintained; regenerated each deploy)",
-        "last_updated": _last_updated(path),
+        "version": f"git:{commit[:12]}",
+        "last_updated": date,
         "related_practices": related,
     }
 
@@ -90,6 +102,9 @@ def main():
     ap.add_argument("--md-output", default="policy-index.md")
     a = ap.parse_args()
 
+    if _is_shallow():
+        sys.exit("build-policy-index: shallow clone; the last-update dates need full history "
+                 "(actions/checkout fetch-depth: 0)")
     files = sorted(str(p.relative_to(REPO)) for p in (REPO / "docs" / "policies").glob("*.md")
                    if p.name != "README.md")
     for extra in ("docs/continuous-monitoring-plan.md", "docs/incident-response.md",
@@ -115,7 +130,7 @@ def main():
         for e in entries:
             out.append("| {n} | `{f}` | {w} | {u} | {r} |".format(
                 n=e["name"], f=e["file"], w=e["word_count"],
-                u=e["last_updated"] or "—", r=e["related_practices"]))
+                u=e["last_updated"], r=e["related_practices"]))
         Path(a.md_output).write_text("\n".join(out) + "\n")
     print(f"policy-index: {len(entries)} policies indexed")
     return 0

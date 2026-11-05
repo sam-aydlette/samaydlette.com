@@ -599,8 +599,12 @@ jobs:
     # -------------------------------------------------------------------------
     # SET UP SAME ENVIRONMENT AS SECURITY CHECK
     # -------------------------------------------------------------------------
+    # Full history: the policy index dates each policy by the last commit that
+    # changed it, and a shallow clone makes every file look changed today.
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 0
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
