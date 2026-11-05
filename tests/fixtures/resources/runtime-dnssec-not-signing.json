@@ -1,0 +1,13 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "note": "Known-bad: hosted zone not serving DNSSEC signatures"
+  },
+  "resource": {
+    "type": "aws_route53_zone",
+    "name": "website",
+    "values": {
+      "dnssec_status": "NOT_SIGNING"
+    }
+  }
+}

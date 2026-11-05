@@ -89,7 +89,11 @@ test_partial_config_fails_closed if {
 			"required_classification_tags": ["DataSensitivity"],
 			"taggable_types": ["aws_s3_bucket"],
 			"accessibility": {"fail_on": ["error"]},
-			"tls": {"minimum": "TLSv1.2_2021"},
+			"tls": {"minimum": "TLSv1.2_2021", "min_days_to_expiry": 30},
+			"iam": {"github_oidc_audience": "sts.amazonaws.com", "github_oidc_subject_prefix": "repo:o/r:"},
+			"identity": {"min_password_length": 14},
+			"logging": {"min_retention_days": 365},
+			"api": {"protected_route_prefixes": ["/api"]},
 		}}
 }
 
