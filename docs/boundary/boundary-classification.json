@@ -20,7 +20,7 @@
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
      "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
     {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
-     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
+     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::incident_reports", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
     {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
      "match": ["ext::github-repo", "ext::github-oidc"]},
     {"key": "sigstore", "zone": "external", "label": "Sigstore (Fulcio CA and Rekor log)",
@@ -69,6 +69,8 @@
     {"id": "J", "label": "Evidence Nightly → S3 (.well-known/vdr-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::evidence_nightly"}, {"component": "aws::object_store::website"}],
      "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/vdr-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Refreshed VDR and trend (Sigstore-signed)"},
     {"id": "K", "label": "Watchdog → S3 (evidence freshness read)", "path": [{"component": "aws::event_schedule::evidence_watchdog"}, {"component": "aws::function::evidence_watchdog"}, {"component": "aws::object_store::website"}],
-     "protocol": "AWS-internal", "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only", "encryption": "In transit: TLS", "data": "Published evidence timestamps; results go out as CloudWatch metrics that drive flow I's alarms"}
+     "protocol": "AWS-internal", "auth": "Watchdog Lambda role: s3:GetObject on the published evidence keys only", "encryption": "In transit: TLS", "data": "Published evidence timestamps; results go out as CloudWatch metrics that drive flow I's alarms"},
+    {"id": "L", "label": "Incident Reports → S3 (.well-known/incident-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::incident_reports"}, {"component": "aws::object_store::website"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/incident-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Incident log and IIR/OIR/FIR reports (Sigstore-signed)"}
   ]
 }

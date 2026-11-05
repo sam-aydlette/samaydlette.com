@@ -87,6 +87,18 @@
       "note": "The nightly's status beacon. Unsigned and not evidence; listed because the watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
     },
     {
+      "path": ".well-known/incident-reports.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-reports.bundle",
+      "note": "The incident log (IEC-CSO-EFR) and, through it, every incident report it lists with its sha256. Rebuilt by .github/workflows/incident-reports.yml on every change to data/incidents.json and twice a day, and by every deploy. The report deadlines themselves are hours, so the watchdog also pages on each listed report past its deadline (IncidentReportsOverdue)."
+    },
+    {
       "path": ".well-known/ksi-signal-runtime.json",
       "cadence": "runtime",
       "max_age_hours": 26,

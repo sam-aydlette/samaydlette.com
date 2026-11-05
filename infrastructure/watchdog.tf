@@ -14,7 +14,7 @@
 #     nightly's status beacon and every other signed output under
 #     /.well-known/) straight from the site bucket
 #     -> CloudWatch metrics (Samaydlette/Evidence)
-#     -> four alarms -> SNS topic (CMK-encrypted) -> operator email
+#     -> five alarms -> SNS topic (CMK-encrypted) -> operator email
 #
 # The freshness windows are governed values (REQ-PUB-2, REQ-GOV-1). They are
 # read here with jsondecode(file(...)): the alarm thresholds, the objects the
@@ -30,7 +30,8 @@
 # Terraform lands in state and in the uploaded plan artifact of a public repo.
 # It is created once, out of band (docs/runbooks/evidence-sla-alarm.md).
 #
-# Cost: four standard alarms plus four custom metrics, roughly $1.60/month.
+# Cost: five standard alarms plus five custom metrics, roughly $2.00/month (the
+# fifth pair, for overdue incident reports, adds about $0.40).
 # Every listed artifact feeds one StaleArtifacts count rather than a metric
 # each, so the cost stays flat as the list grows.
 # SNS email at this volume and 720 short invocations a month are within free
@@ -77,6 +78,14 @@ locals {
       metric    = "StaleArtifacts"
       threshold = 0
       summary   = "At least one published /.well-known/ artifact is older than its governed freshness window, or unreadable. The watchdog's log names which."
+    }
+    # The Class C incident report clocks (IEC-CSO-IIR/OIR/FIR) are hours, not
+    # days, so this reads the deadlines the incident log lists rather than the
+    # log's age, and pages once one has passed without its report.
+    "incident-report-overdue" = {
+      metric    = "IncidentReportsOverdue"
+      threshold = 0
+      summary   = "An incident report is past its FedRAMP Class C deadline and has not been issued, or the incident log is unreadable. /.well-known/incident-reports.json lists what is due; issue it by adding the report to data/incidents.json."
     }
   }
 }

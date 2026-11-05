@@ -50,6 +50,9 @@
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},
     {"check": "reconcile.l", "gate": "G6", "mode": "block", "method_default": "block",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-04", "review_by": "2027-11-04"},
+    {"check": "reconcile.m", "gate": "G5", "mode": "block", "method_default": "block",
+     "reason": "Proposed with the incident register (W6, AI-drafted): an open incident naming a finding the VDR does not carry blocks, like every other cross-artifact invariant. Confirm at review.",
+     "decided_by": "Operator (proposed; confirm at review)", "decided_on": "2026-11-05", "review_by": "2027-11-05"},
     {
       "check": "reconcile.i.unreadable",
       "gate": "G7",

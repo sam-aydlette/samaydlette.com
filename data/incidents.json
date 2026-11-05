@@ -1,0 +1,109 @@
+{
+  "$comment": "The incident register (IEC-CSO-EFR/DPR/EFI/IIR/OIR/FIR). Every incident is recorded here once, with its FedRAMP reportability evaluation and reason; a reportable one carries its Incident Rating estimates and the Initial, Ongoing and Final reports issued, each with when it was issued and what it set. scripts/_incidents.py validates it (fail-closed) and scripts/build-incident-report.py renders the reports and the incident log; .github/workflows/incident-reports.yml publishes them on every change to this file. The report clocks are FedRAMP's Class C timeframes, read from the pinned rules, never set here. Everything in this file is published. Exercises are marked exercise: true. Shape: infrastructure/schemas/incidents.schema.json.",
+  "schema": "incidents/1",
+  "policy": {
+    "federal_incident_coordinator": "Sam Aydlette, System Owner and incident response lead; contact through https://samaydlette.com/.well-known/security.txt",
+    "notification": "published-only",
+    "notification_text": "Published only. Each report is signed and published under https://samaydlette.com/.well-known/ (incident-reports.json lists every report and its sha256). Nothing is sent to FedRAMP or to any agency: the operator has not authorized sending, and this system has no FedRAMP certification and no agency customers.",
+    "adopted_vulnerability_rules": ["VER-TFR-IRI", "VER-TFR-NRI"],
+    "federal_customer_data": "None. This system holds no federal customer data (FRD-FCD) and has no agency customers. Were an agency to use the Silk Reeling application, what its users supply to it (pose landmarks) would be the federal customer data to consider; the operator's public site content, account information and the published evidence are not.",
+    "decided_by": "Operator",
+    "decided_on": "2026-11-05",
+    "review_by": "2027-11-05"
+  },
+  "incidents": [
+    {
+      "id": "INC-2026-001",
+      "title": "Exercise: internet-reachable likely exploitable N5 vulnerability in the Silk Reeling API",
+      "exercise": true,
+      "started_at": "2026-11-05T02:40:00Z",
+      "detected_at": "2026-11-05T03:00:00Z",
+      "detection_source": "Exercise inject: a simulated VDR finding that policies/triage.rego flags under VER-TFR-IRI",
+      "evaluation": {
+        "evaluated_at": "2026-11-05T03:10:00Z",
+        "reportable": true,
+        "basis": "VER-TFR-IRI",
+        "reason": "Simulated timeline. An internet-reachable, likely exploitable vulnerability rated N5 in a dependency of the Silk Reeling API. The operator treats such a vulnerability as a FedRAMP Reportable Incident (VER-TFR-IRI) until it is partially mitigated to N3 or below. The scenario assumes one agency whose users supply data to the application.",
+        "federal_customer_data_considered": "Scenario assumption: pose landmarks supplied by one agency's users of the Silk Reeling application. In reality the system holds no federal customer data."
+      },
+      "findings": ["CVE-2099-0001"],
+      "estimates": [
+        {
+          "estimated_at": "2026-11-05T04:30:00Z",
+          "rating": 3,
+          "customer_effect": "disruptive",
+          "agencies": "single",
+          "reason": "Exploitation could expose the landmark data of many of the assumed agency's users without interrupting the service for long; no other agency is assumed."
+        }
+      ],
+      "reports": [
+        {
+          "type": "Initial",
+          "at": "2026-11-05T03:40:00Z",
+          "set": {
+            "description": "A request-parsing dependency of the Silk Reeling API has a vulnerability (simulated CVE-2099-0001) that an unauthenticated client could exploit over the internet to read other users' submitted data.",
+            "functional_impact": "Potential loss of confidentiality of pose landmarks submitted by the assumed agency's users; no integrity or availability effect is expected.",
+            "recovery_plan": "Throttle the affected endpoint now; upgrade the dependency to the fixed release and redeploy through the reviewed pipeline. Targets: partial mitigation within 3 hours, remediation within 1 day.",
+            "affected_agencies": ["Hypothetical agency A (exercise assumption)"],
+            "related_cves": ["CVE-2099-0001"],
+            "milestones": [
+              {"at": "2026-11-05T03:00:00Z", "description": "Triage flagged the finding under VER-TFR-IRI (simulated)"}
+            ]
+          }
+        },
+        {
+          "type": "Ongoing",
+          "at": "2026-11-05T09:20:00Z",
+          "set": {
+            "observed_activity": "No exploitation attempts in the API Gateway access logs since the vulnerable release was deployed (simulated review).",
+            "indicators_of_compromise": ["None observed (simulated)"],
+            "root_cause": "A vulnerable release of a request-parsing dependency (simulated CVE-2099-0001).",
+            "response_and_recovery_activities": "Endpoint throttled at 04:15 (simulated), a partial mitigation; Incident Rating estimated at N3; fixed release identified.",
+            "milestones": [
+              {"at": "2026-11-05T04:15:00Z", "description": "Partial mitigation: affected endpoint throttled (simulated)"}
+            ]
+          }
+        },
+        {
+          "type": "Ongoing",
+          "at": "2026-11-05T15:00:00Z",
+          "set": {
+            "response_and_recovery_activities": "Fixed release built and passing the pipeline's gates; deploy awaiting approval (simulated)."
+          }
+        },
+        {
+          "type": "Final",
+          "at": "2026-11-05T17:45:00Z",
+          "set": {
+            "response_and_recovery_activities": "Fixed release deployed at 16:30 and the finding no longer appears in the VDR (simulated); recovery verified at 17:00.",
+            "recovery_plan": "Complete.",
+            "milestones": [
+              {"at": "2026-11-05T16:30:00Z", "description": "Fixed release deployed (simulated)"}
+            ]
+          }
+        }
+      ],
+      "resolved_at": "2026-11-05T16:30:00Z",
+      "recovery_complete_at": "2026-11-05T17:00:00Z"
+    },
+    {
+      "id": "INC-2026-002",
+      "title": "Exercise: unauthorized change to a page of the public site",
+      "exercise": true,
+      "started_at": "2026-11-05T10:00:00Z",
+      "detected_at": "2026-11-05T10:20:00Z",
+      "detection_source": "Exercise inject: simulated drift of a website HTML artifact between the deploy-time and runtime KSI signals",
+      "evaluation": {
+        "evaluated_at": "2026-11-05T10:35:00Z",
+        "reportable": false,
+        "basis": "IEC-CSO-EFR",
+        "reason": "Simulated timeline. The changed content is the operator's public site content, which is not federal customer data (FRD-FCD), and the change is not likely to affect the confidentiality or integrity of any federal customer data. Not a FedRAMP Reportable Incident; handled under the incident response runbook without FedRAMP reports.",
+        "federal_customer_data_considered": "None present: public website content only."
+      },
+      "estimates": [],
+      "reports": [],
+      "resolved_at": "2026-11-05T11:30:00Z",
+      "recovery_complete_at": "2026-11-05T11:45:00Z"
+    }
+  ]
+}
