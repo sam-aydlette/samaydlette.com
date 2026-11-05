@@ -633,8 +633,8 @@
     },
     {
       "frr_id": "CDS-CSO-FID",
-      "status": "Partially Implemented",
-      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another. The trust-center, scope and assessor files also carry it at top level (trust-center.json, trust-manifest.json, availability.json, policy-index.json, assessor-guide.json, simulated-assessment.json, agency-access-exercise.json, frr-evidence.json, and the independent availability feed as the deploy reads it), and are in REPORTS; a file named to the gate without a top-level fedRampId fails.",
+      "status": "Implemented",
+      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). Every builder that publishes certification data stamps it through scripts/_offering.stamp_fedramp_id: under providerExtensions.fedRampId in reports in a FedRAMP schema (the SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history; each Significant Change Notification; each Initial, Ongoing and Final incident report), in serviceIdentification.fedRampPackageId in the CPO, and as a top-level fedRampId in every other published JSON file (the VDR report, trend, monthly report and non-machine V&V status; the KSI signal, which the runtime emitter copies into the runtime signal; the SCN index and evaluation log; the incident log and simulated delivery log; the simulated inbox run; the trust center, manifest, scope, configuration, boundary, reconciliation, conformance, access, assessor and agency files; the issue index, snapshots, FedRAMP Certification Reports index and package submission log). The SCN Atom feed carries it in its subtitle. The gate scripts/check-fedramp-id.py fails the run when a file it is given lacks the ID or carries another: the deploy runs it over its REPORTS list before anything is published, and the nightly, the incident publisher and the package maintainer run it over what each republishes. A test holds every freshness-governed JSON artifact to be in REPORTS or listed in the gate's EXEMPT map with its reason: the runtime signal (written by the Lambda, copied from the checked KSI signal), the nightly's status beacon (stamped where it is written), the issue index (checked by the package maintainer) and the independent boundary corroboration (another party's record, published unmodified).",
       "evidence": [
         {
           "kind": "test",
@@ -659,14 +659,39 @@
         {
           "kind": "test",
           "ref": "tests/test_fedramp_id_trust.py::test_known_bad_a_site_file_without_a_fedramp_id_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_every_governed_json_artifact_is_checked_or_exempt_with_a_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_known_bad_an_unlisted_artifact_and_an_unexplained_exemption_fail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_known_bad_a_fedramp_schema_report_without_the_id_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_scn_notifications_index_log_and_feed_carry_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_incident_log_reports_and_deliveries_carry_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_the_nightly_and_the_incident_publisher_run_the_gate_on_what_they_publish"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID)"
         }
-      ],
-      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
-      "closes_with": [
-        "W2",
-        "W5",
-        "W6",
-        "W8"
       ]
     },
     {
@@ -1424,7 +1449,7 @@
     {
       "frr_id": "FRC-CSO-JSN",
       "status": "Implemented",
-      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. SCN and incident JSON are not yet emitted; their builders must use write_validated when they are (SCN-CSO-HRM).",
+      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. Significant Change Notifications (scripts/build-scn.py, the SCN schema) and incident reports (scripts/build-incident-report.py, the incident schema) are written the same way: a notification or report that fails its schema is not written and the build stops.",
       "evidence": [
         {
           "kind": "test",
@@ -1457,6 +1482,22 @@
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_a_scn_notification_that_fails_the_schema_is_not_written"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_every_report_validates_against_fedramps_schema_and_is_listed_with_its_hash"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_an_incident_report_that_fails_the_schema_is_not_written"
         }
       ]
     },
@@ -1570,8 +1611,8 @@
     },
     {
       "frr_id": "FRC-CSX-VVK",
-      "status": "Partially Implemented",
-      "implementation": "Two automated methods per KSI, as the SDR counts them: the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, now covering IAM, identity, keys, logging, network, compute, API and packages) and the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect. On the 2026-11-05 plan and a local run of the runtime readers, 43 of 46 KSIs have both.",
+      "status": "Implemented",
+      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) for KSI-CED-RAT, an automated check that the operator's training attestation (DEC-192) is in force and was decided under 12 months ago. On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two. KSI-CED-RAT has one automated method, the attestation check: a second is not built, and that is an accepted finding (DEC-191), because training is a people-run process for a sole operator with no machine component to check. The SDR publishes the count and the acceptance on the KSI. The package maintainer, which every deploy runs after it publishes (the deploy is not done until it succeeds) and which runs daily, rebuilds the SDR against the runtime signal the deployed emitter produced and fails the run when any KSI has fewer than two automated methods and no in-force accepted decision record names it; the deploy's own build reports any shortfall as a warning.",
       "evidence": [
         {
           "kind": "test",
@@ -1588,11 +1629,43 @@
         {
           "kind": "artifact",
           "ref": ".well-known/ksi-signal-runtime.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_with_the_committed_register_every_ksi_has_two_methods_or_an_accepted_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_dependency_scanning_counts_only_for_ksis_with_package_components"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_vdrs_do_not_count_each_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_without_the_acceptance_ksi_ced_rat_is_a_shortfall"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the_vdr_signature"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-191"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-192"
         }
-      ],
-      "gap": "SCR-MIT and SCR-MON have one method (runtime package integrity; no plan rule touches packages) and CED-RAT has none (training records, no machine component). To close: either the SDR counts a fresh, verified VDR scan as a second method for KSIs with package components, and a governed automated check of the training-record attestation for CED-RAT (a counting change in scripts/build-sdr.py, owned by the SDR work), or the operator records a decision accepting fewer than two methods for these KSIs.",
-      "closes_with": [
-        "W7"
       ]
     },
     {
