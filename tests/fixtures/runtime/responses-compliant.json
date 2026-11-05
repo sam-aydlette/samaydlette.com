@@ -1,0 +1,376 @@
+{
+ "tags": {
+  "arn:aws:lambda:us-east-2:123456789012:function:samaydlette-com-opa-compliance": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:logs:us-east-2:123456789012:log-group:/aws/lambda/samaydlette-com-opa-compliance": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:cloudwatch:us-east-2:123456789012:alarm:samaydlette-com-evidence-watchdog-vdr-age": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:events:us-east-2:123456789012:rule/samaydlette-com-opa-compliance": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:sns:us-east-2:123456789012:samaydlette-com-evidence-alerts": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:sqs:us-east-2:123456789012:samaydlette-com-opa-compliance-dlq": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:cognito-idp:us-east-2:123456789012:userpool/us-east-2_EXAMPLE": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:kms:us-east-2:123456789012:key/11111111-2222-3333-4444-555555555555": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:kms:us-east-1:123456789012:key/66666666-7777-8888-9999-000000000000": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:apigateway:us-east-2::/apis/abc123": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  },
+  "arn:aws:apigateway:us-east-2::/apis/abc123/stages/$default": {
+   "Environment": "prod",
+   "CostCenter": "website-ops",
+   "DataClassification": "Internal",
+   "Owner": "sam-aydlette",
+   "DataSensitivity": "internal",
+   "MissionCriticality": "moderate",
+   "InternetReachable": "false",
+   "Archetype": "security-tooling",
+   "AgencyScope": "single",
+   "OwnerRole": "platform-operator"
+  }
+ },
+ "iam.getRole": {
+  "samaydlette-com-lambda-opa-role": {
+   "AssumeRolePolicyDocument": "%7B%22Version%22%3A%20%222012-10-17%22%2C%20%22Statement%22%3A%20%5B%7B%22Effect%22%3A%20%22Allow%22%2C%20%22Principal%22%3A%20%7B%22Service%22%3A%20%22lambda.amazonaws.com%22%7D%2C%20%22Action%22%3A%20%22sts%3AAssumeRole%22%7D%5D%7D",
+   "Tags": [
+    {
+     "Key": "Environment",
+     "Value": "prod"
+    },
+    {
+     "Key": "CostCenter",
+     "Value": "website-ops"
+    },
+    {
+     "Key": "DataClassification",
+     "Value": "Internal"
+    },
+    {
+     "Key": "Owner",
+     "Value": "sam-aydlette"
+    },
+    {
+     "Key": "DataSensitivity",
+     "Value": "internal"
+    },
+    {
+     "Key": "MissionCriticality",
+     "Value": "moderate"
+    },
+    {
+     "Key": "InternetReachable",
+     "Value": "false"
+    },
+    {
+     "Key": "Archetype",
+     "Value": "security-tooling"
+    },
+    {
+     "Key": "AgencyScope",
+     "Value": "single"
+    },
+    {
+     "Key": "OwnerRole",
+     "Value": "platform-operator"
+    }
+   ]
+  },
+  "github-actions-deploy-oidc": {
+   "AssumeRolePolicyDocument": "%7B%22Version%22%3A%20%222012-10-17%22%2C%20%22Statement%22%3A%20%5B%7B%22Effect%22%3A%20%22Allow%22%2C%20%22Principal%22%3A%20%7B%22Federated%22%3A%20%22arn%3Aaws%3Aiam%3A%3A123456789012%3Aoidc-provider/token.actions.githubusercontent.com%22%7D%2C%20%22Action%22%3A%20%22sts%3AAssumeRoleWithWebIdentity%22%2C%20%22Condition%22%3A%20%7B%22StringEquals%22%3A%20%7B%22token.actions.githubusercontent.com%3Aaud%22%3A%20%22sts.amazonaws.com%22%7D%2C%20%22StringLike%22%3A%20%7B%22token.actions.githubusercontent.com%3Asub%22%3A%20%22repo%3Asam-aydlette/samaydlette.com%3Aenvironment%3Aprod%22%7D%7D%7D%5D%7D",
+   "Tags": [
+    {
+     "Key": "Environment",
+     "Value": "prod"
+    },
+    {
+     "Key": "CostCenter",
+     "Value": "website-ops"
+    },
+    {
+     "Key": "DataClassification",
+     "Value": "Internal"
+    },
+    {
+     "Key": "Owner",
+     "Value": "sam-aydlette"
+    },
+    {
+     "Key": "DataSensitivity",
+     "Value": "internal"
+    },
+    {
+     "Key": "MissionCriticality",
+     "Value": "moderate"
+    },
+    {
+     "Key": "InternetReachable",
+     "Value": "false"
+    },
+    {
+     "Key": "Archetype",
+     "Value": "security-tooling"
+    },
+    {
+     "Key": "AgencyScope",
+     "Value": "single"
+    },
+    {
+     "Key": "OwnerRole",
+     "Value": "platform-operator"
+    }
+   ]
+  }
+ },
+ "iam.listAttachedRolePolicies": {
+  "samaydlette-com-lambda-opa-role": [],
+  "github-actions-deploy-oidc": [
+   "arn:aws:iam::123456789012:policy/github-actions-deploy"
+  ]
+ },
+ "iam.getRolePolicy": {
+  "samaydlette-com-lambda-opa-role|samaydlette-com-lambda-opa-policy": "%7B%22Version%22%3A%20%222012-10-17%22%2C%20%22Statement%22%3A%20%5B%7B%22Effect%22%3A%20%22Allow%22%2C%20%22Action%22%3A%20%5B%22s3%3AGetBucketVersioning%22%5D%2C%20%22Resource%22%3A%20%5B%22arn%3Aaws%3As3%3A%3A%3Asamaydlette.com%22%5D%7D%5D%7D"
+ },
+ "iam.listAttachedGroupPolicies": {
+  "operators": [
+   "arn:aws:iam::aws:policy/IAMFullAccess"
+  ]
+ },
+ "iam.listGroupPolicies": {
+  "operators": [
+   "s3-bucket-policy"
+  ]
+ },
+ "iam.getGroupPolicy": {
+  "operators|s3-bucket-policy": "%7B%22Version%22%3A%20%222012-10-17%22%2C%20%22Statement%22%3A%20%5B%7B%22Effect%22%3A%20%22Allow%22%2C%20%22Action%22%3A%20%22s3%3A%2A%22%2C%20%22Resource%22%3A%20%5B%22arn%3Aaws%3As3%3A%3A%3Ab%22%2C%20%22arn%3Aaws%3As3%3A%3A%3Ab/%2A%22%5D%7D%5D%7D"
+ },
+ "iam.getOpenIDConnectProvider": {
+  "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com": {
+   "ClientIDList": [
+    "sts.amazonaws.com"
+   ],
+   "Url": "token.actions.githubusercontent.com"
+  }
+ },
+ "lambda.getFunctionConfiguration": {
+  "samaydlette-com-opa-compliance": {
+   "KMSKeyArn": "arn:aws:kms:us-east-2:123456789012:key/11111111-2222-3333-4444-555555555555",
+   "CodeSha256": "Y29kZS1oYXNo",
+   "Runtime": "nodejs22.x"
+  }
+ },
+ "lambda.getFunctionUrlConfig": {
+  "samaydlette-com-opa-compliance": {
+   "$error": "ResourceNotFoundException"
+  }
+ },
+ "logs.describeLogGroup": {
+  "/aws/lambda/samaydlette-com-opa-compliance|us-east-2": {
+   "logGroupName": "/aws/lambda/samaydlette-com-opa-compliance",
+   "retentionInDays": 365,
+   "kmsKeyId": "arn:k"
+  }
+ },
+ "cloudtrail.getTrail": {
+  "arn:aws:cloudtrail:us-east-2:123456789012:trail/samaydlette-com-management|us-east-2": {
+   "IsMultiRegionTrail": true,
+   "LogFileValidationEnabled": true
+  }
+ },
+ "cloudtrail.getTrailStatus": {
+  "arn:aws:cloudtrail:us-east-2:123456789012:trail/samaydlette-com-management|us-east-2": {
+   "IsLogging": true
+  }
+ },
+ "cloudwatch.describeAlarm": {
+  "samaydlette-com-evidence-watchdog-vdr-age|us-east-2": {
+   "ActionsEnabled": true,
+   "AlarmActions": [
+    "arn:aws:sns:us-east-2:123456789012:samaydlette-com-evidence-alerts"
+   ]
+  }
+ },
+ "events.describeRule": {
+  "samaydlette-com-opa-compliance|us-east-2": {
+   "State": "ENABLED"
+  }
+ },
+ "sns.getTopicAttributes": {
+  "arn:aws:sns:us-east-2:123456789012:samaydlette-com-evidence-alerts|us-east-2": {
+   "KmsMasterKeyId": "arn:k"
+  }
+ },
+ "sqs.getQueueAttributes": {
+  "https://sqs.us-east-2.amazonaws.com/123456789012/samaydlette-com-opa-compliance-dlq|us-east-2": {
+   "SqsManagedSseEnabled": "true"
+  }
+ },
+ "dynamodb.describeContinuousBackups": {
+  "samaydlette-com-tflock|us-east-2": "ENABLED"
+ },
+ "cognito.describeUserPool": {
+  "us-east-2_EXAMPLE|us-east-2": {
+   "MfaConfiguration": "ON",
+   "Policies": {
+    "PasswordPolicy": {
+     "MinimumLength": 14
+    }
+   },
+   "AdminCreateUserConfig": {
+    "AllowAdminCreateUserOnly": true
+   }
+  }
+ },
+ "kms.describeKey": {
+  "arn:aws:kms:us-east-2:123456789012:key/11111111-2222-3333-4444-555555555555|us-east-2": {
+   "KeySpec": "SYMMETRIC_DEFAULT",
+   "KeyState": "Enabled"
+  },
+  "arn:aws:kms:us-east-1:123456789012:key/66666666-7777-8888-9999-000000000000|us-east-1": {
+   "KeySpec": "ECC_NIST_P256",
+   "KeyState": "Enabled"
+  }
+ },
+ "kms.getKeyRotationStatus": {
+  "arn:aws:kms:us-east-2:123456789012:key/11111111-2222-3333-4444-555555555555|us-east-2": true
+ },
+ "apigw.getStages": {
+  "abc123|us-east-2": [
+   {
+    "StageName": "$default",
+    "AccessLogSettings": {
+     "DestinationArn": "arn:logs"
+    },
+    "DefaultRouteSettings": {
+     "ThrottlingRateLimit": 20,
+     "ThrottlingBurstLimit": 10
+    }
+   }
+  ]
+ },
+ "apigw.getRoutes": {
+  "abc123|us-east-2": [
+   {
+    "RouteKey": "$default",
+    "AuthorizationType": "NONE"
+   },
+   {
+    "RouteKey": "ANY /api/{proxy+}",
+    "AuthorizationType": "JWT"
+   }
+  ]
+ },
+ "route53.getDnssecStatus": {
+  "Z0EXAMPLE": "SIGNING"
+ },
+ "acm.describeCertificate": {
+  "arn:aws:acm:us-east-1:123456789012:certificate/cert-1|us-east-1": {
+   "Status": "ISSUED",
+   "NotAfter": "2027-04-29T23:59:59Z"
+  }
+ },
+ "_note": "Live-shaped, compliant responses (shapes copied from read-only calls against the production account, identifiers replaced)."
+}

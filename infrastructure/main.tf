@@ -509,6 +509,123 @@ resource "aws_iam_role_policy" "lambda_opa" {
         ]
         Resource = data.aws_cloudfront_distribution.website.arn
       },
+      # -----------------------------------------------------------------------
+      # Runtime V&V of every machine component type (FRC-CSX-VVK, VDR-TFR-MVX,
+      # VDR-TFR-PDD): the readers in lambda/describers.js. Read-only Get /
+      # Describe / List actions, each scoped to this system's own resources by
+      # ARN; tests/test_runtime_grants.py fails a change that calls an API the
+      # role is not granted, or grants an action on "*" other than the tagging
+      # sweep below.
+      {
+        # Role trust, attached and inline policies: this stack's roles and the
+        # bootstrap stack's GitHub OIDC roles (named by convention).
+        Effect = "Allow"
+        Action = ["iam:GetRole", "iam:ListAttachedRolePolicies", "iam:GetRolePolicy"]
+        Resource = [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${replace(var.domain_name, ".", "-")}-*",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/github-actions-*-oidc",
+        ]
+      },
+      {
+        # The two bootstrap IAM groups' attached and inline policies.
+        Effect = "Allow"
+        Action = ["iam:ListAttachedGroupPolicies", "iam:ListGroupPolicies", "iam:GetGroupPolicy"]
+        Resource = [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/operators",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/read-only",
+        ]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["iam:GetOpenIDConnectProvider"]
+        Resource = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"]
+      },
+      {
+        # Function configuration (env CMK, code hash) and URL auth type. No
+        # GetFunction: that would return a presigned link to the code itself.
+        Effect   = "Allow"
+        Action   = ["lambda:GetFunctionConfiguration", "lambda:GetFunctionUrlConfig"]
+        Resource = ["arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${replace(var.domain_name, ".", "-")}-*"]
+      },
+      {
+        # Retention and key of the log groups. Metadata only: no read of events.
+        Effect   = "Allow"
+        Action   = ["logs:DescribeLogGroups"]
+        Resource = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:*"]
+      },
+      {
+        # The HTTP API's stages and routes (GET on the API and its children).
+        Effect = "Allow"
+        Action = ["apigateway:GET"]
+        Resource = concat(
+          formatlist("arn:aws:apigateway:${var.aws_region}::/apis/%s", aws_apigatewayv2_api.silk_reeling[*].id),
+          formatlist("arn:aws:apigateway:${var.aws_region}::/apis/%s/*", aws_apigatewayv2_api.silk_reeling[*].id),
+        )
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cognito-idp:DescribeUserPool"]
+        Resource = aws_cognito_user_pool.silk_reeling[*].arn
+      },
+      {
+        # Key spec, state and rotation of this system's four customer keys.
+        Effect = "Allow"
+        Action = ["kms:DescribeKey", "kms:GetKeyRotationStatus"]
+        Resource = concat(
+          [aws_kms_key.at_rest.arn, aws_kms_key.runtime_signing.arn],
+          aws_kms_key.dnssec_ksk[*].arn,
+          aws_kms_key.silk_reeling[*].arn,
+        )
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sns:GetTopicAttributes"]
+        Resource = aws_sns_topic.evidence_alerts[*].arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sqs:GetQueueAttributes"]
+        Resource = aws_sqs_queue.compliance_dlq[*].arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudwatch:DescribeAlarms"]
+        Resource = ["arn:aws:cloudwatch:${var.aws_region}:${data.aws_caller_identity.current.account_id}:alarm:${replace(var.domain_name, ".", "-")}-*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["events:DescribeRule"]
+        Resource = ["arn:aws:events:${var.aws_region}:${data.aws_caller_identity.current.account_id}:rule/${replace(var.domain_name, ".", "-")}-*"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["cloudtrail:GetTrail", "cloudtrail:GetTrailStatus"]
+        Resource = [aws_cloudtrail.management.arn]
+      },
+      {
+        # The bootstrap stack's state-lock table (named by convention).
+        Effect   = "Allow"
+        Action   = ["dynamodb:DescribeContinuousBackups"]
+        Resource = ["arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${replace(var.domain_name, ".", "-")}-tflock"]
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["route53:GetDNSSEC"]
+        Resource = formatlist("arn:aws:route53:::hostedzone/%s", data.aws_route53_zone.website[*].zone_id)
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["acm:DescribeCertificate"]
+        Resource = [data.aws_acm_certificate.website.arn]
+      },
+      {
+        # Tags for the tagging rules, one sweep per region. The Resource Groups
+        # Tagging API has no resource-level permissions, so this is the one
+        # action granted on "*"; it returns tag keys and values only.
+        Effect   = "Allow"
+        Action   = ["tag:GetResources"]
+        Resource = "*"
+      },
     ]
   })
 }
@@ -758,7 +875,7 @@ resource "aws_lambda_function" "opa_compliance" {
   role             = aws_iam_role.lambda_opa.arn
   handler          = "index.handler"
   runtime          = "nodejs22.x"
-  timeout          = 60
+  timeout          = 180 # every machine component is read live (~60 read-only calls)
   source_code_hash = data.local_file.lambda_zip.content_base64sha256
 
   # Customer-CMK encryption of the environment variables (POAM-011).
