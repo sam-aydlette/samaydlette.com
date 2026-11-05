@@ -131,9 +131,9 @@ def test_each_listed_artifact_past_its_own_window_is_counted():
     objects[".well-known/trust-center.json"] = {"generated_at": "2026-09-24T11:00:00Z"}
     objects[".well-known/vdr-trend.json"] = {"updated_at": "2026-09-24T11:00:00Z"}
     # 31 days: past the deploy window.
-    objects[".well-known/oscal-ssp.json"] = {"system-security-plan": {"metadata": {"last-modified": "2026-08-25T00:00:00Z"}}}
+    objects[".well-known/security-decision-record.json"] = {"metadata": {"last_updated": "2026-08-25T00:00:00Z"}}
     out = compute(objects)
-    assert sorted(out["stale"]) == [".well-known/oscal-ssp.json", ".well-known/vdr-trend.json"]
+    assert sorted(out["stale"]) == [".well-known/security-decision-record.json", ".well-known/vdr-trend.json"]
     assert out["metrics"]["StaleArtifacts"] == 2
 
 

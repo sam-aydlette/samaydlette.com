@@ -1,55 +1,41 @@
-#!/usr/bin/env python3
-# =============================================================================
-# OSCAL SSP GENERATOR
-# =============================================================================
-# Produces oscal-ssp.json — a NIST OSCAL System Security Plan in the
-# FedRAMP Rev 5 Moderate baseline shape, generated deterministically from the
-# canonical inventory and the KSI catalog. Sits alongside the KSI signal at
-# /.well-known/ for full Rev 5 transparency.
-#
-# Inputs:
-#   - infrastructure/ksi-signal.json                        → live canonical inventory
-#   - infrastructure/schemas/ksi-catalog.json               → FedRAMP KSI catalog
-#                                                              (FRMR.KSI source)
-#   - GITHUB_* env vars (when in CI)                        → metadata provenance
-#
-# Output:
-#   - infrastructure/oscal-ssp.json                         → OSCAL SSP document
-#
-# Run from the infrastructure/ directory after build-ksi-signal.py:
-#   python3 ../scripts/build-oscal-ssp.py
-# =============================================================================
+"""The control projection: one implemented-requirement per NIST 800-53 Rev5
+control, with its implementation status, origination and statement.
+
+This is the control hub that every framework view projects from: the SDR's
+per-control status, the published coverage figures, the CMMC projection and the
+trust center's framework figures. It used to live inside the OSCAL SSP builder
+(scripts/build-oscal-ssp.py), and consumers read it back out of the generated
+oscal-ssp.json. The SSP was retired under CR26 (the SDR and CPO replace it), so
+the projection now lives here and consumers compute it in memory from the same
+two inputs the SSP used:
+
+  - the canonical inventory  (infrastructure/ksi-signal.json)
+  - the FedRAMP KSI catalog  (infrastructure/schemas/ksi-catalog.json)
+
+The entries are exactly the implemented-requirements the SSP carried (same
+UUIDs, props, statements, links and set-parameters), so the projection is
+unchanged by the retirement; tests/test_controls.py pins that against the last
+SSP the retired builder produced.
+
+Control sources, in resolution order: the OSCAL component definition under
+data/component-definitions/ (CONTROL_OVERRIDES), the app-authentication
+profiles when the inventory carries an identity provider, the
+policy-and-procedures default, the per-family defaults, and the AWS-inherited
+list. A control that falls through every path raises: no control is published
+with an invented status. A contributing KSI that the signal marks failing
+downgrades the control from implemented to partial.
+"""
 
 import json
-import os
 import sys
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
-# Shared generator helpers. The insert is __file__-relative, so this script stays
-# runnable standalone from any working directory (see scripts/_common.py).
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _common import FEDRAMP_NS, OSCAL_VERSION  # noqa: E402
+REPO = Path(__file__).resolve().parent.parent
+DEFAULT_SIGNAL = REPO / "infrastructure" / "ksi-signal.json"
+DEFAULT_CATALOG = REPO / "infrastructure" / "schemas" / "ksi-catalog.json"
 
-# =============================================================================
-# CONSTANTS
-# =============================================================================
-
-SSP_VERSION = "1.0.0"
 SYSTEM_NAMESPACE = uuid.UUID("8be0e36b-1be1-4c8a-b76f-1b9d6e4b0a53")  # arbitrary stable namespace
-
-# FedRAMP-published Rev 5 Moderate baseline profile (canonical reference),
-# pinned at the authoritative source. NOTE: FedRAMP's OSCAL content moved from
-# GSA/fedramp-automation to OSCAL-Foundation/fedramp-resources (FedRAMP Notice
-# 0009 / RFC-0024); this is the current resolvable home. The profile is also
-# vendored at data/profiles/ (see data/PROVENANCE.md) and resolved against
-# locally; this href is the public, pinned, resolvable reference.
-FEDRAMP_PROFILE = (
-    "https://raw.githubusercontent.com/OSCAL-Foundation/fedramp-resources/"
-    "383977291aad960b0811faf6ebf5a893b0811f7f/"
-    "baselines/rev5/json/FedRAMP_rev5_MODERATE-baseline_profile.json"
-)
 
 # In-scope KSIs for this system after the current gap-closure round.
 # This list is the SSP's authoritative scope statement: it is the set of KSIs
@@ -880,13 +866,10 @@ def resolve_control_profile(control_id, control_title, app_overrides=None):
         f"No implementation profile defined for control {control_id} "
         f"({control_title}). Add a CONTROL_OVERRIDES entry or a "
         f"FAMILY_DEFAULTS entry for the {control_id.split('-', 1)[0]}- "
-        f"family in scripts/build-oscal-ssp.py."
+        f"family in scripts/_controls.py."
     )
 
 
-# =============================================================================
-# HELPERS
-# =============================================================================
 
 
 def stable_uuid(name):
@@ -894,493 +877,24 @@ def stable_uuid(name):
     return str(uuid.uuid5(SYSTEM_NAMESPACE, name))
 
 
-def now_iso():
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-# =============================================================================
-# OSCAL SECTION BUILDERS
-# =============================================================================
-
-
-def build_metadata(signal):
-    return {
-        "title": "samaydlette.com — System Security Plan (Self-Attested PoC, NOT FedRAMP-Certified)",
-        "last-modified": now_iso(),
-        "version": SSP_VERSION,
-        "oscal-version": OSCAL_VERSION,
-        "remarks": (
-            "This System Security Plan is a self-attested proof-of-concept artifact. "
-            "The system it describes is NOT FedRAMP-certified. No FedRAMP Recognized independent assessment has "
-            "been conducted; no agency Authorization to Operate is in place. The SSP "
-            "is published to demonstrate an architectural pattern (canonical-inventory-"
-            "derived OSCAL artifacts) aligned with FedRAMP NTC-0009. Treat all "
-            "implementation statements as the operator's self-attestation. Companion "
-            "artifacts: ksi-signal.json, vdr-report.json, iiw.csv at "
-            "https://samaydlette.com/.well-known/. See "
-            "https://samaydlette.com/trust/index.html for context."
-        ),
-        "parties": [
-            {
-                "uuid": stable_uuid("party:operator"),
-                "type": "person",
-                "name": "Sam Aydlette",
-                "short-name": "operator",
-                "email-addresses": ["sam.aydlette@gmail.com"],
-            },
-            {
-                "uuid": stable_uuid("party:organization"),
-                "type": "organization",
-                "name": "samaydlette.com (sole-operator)",
-                "short-name": "samaydlette",
-            },
-        ],
-        "responsible-parties": [
-            {
-                "role-id": "system-owner",
-                "party-uuids": [stable_uuid("party:operator")],
-            },
-            {
-                "role-id": "authorizing-official",
-                "party-uuids": [stable_uuid("party:operator")],
-            },
-            {
-                "role-id": "system-poc-technical",
-                "party-uuids": [stable_uuid("party:operator")],
-            },
-        ],
-        "props": [
-            {
-                "name": "ksi-signal-source",
-                "value": signal.get("signal_id", "unknown"),
-                "remarks": "signal_id of the canonical inventory used as evidence for this SSP",
-            },
-            {
-                "name": "ksi-signal-emitted-at",
-                "value": signal.get("emitted_at", "unknown"),
-            },
-            {
-                "name": "source-commit",
-                "value": signal.get("provenance", {}).get("source", {}).get("commit", "unknown"),
-            },
-            {
-                "name": "authorization-status",
-                "ns": "https://samaydlette.com/ns/oscal",
-                "value": "self-attested-proof-of-concept",
-                "remarks": "This SSP is operator-self-attested; no FedRAMP Recognized independent assessment, no agency ATO.",
-            },
-            {
-                "name": "fedramp-certified",
-                "ns": "https://samaydlette.com/ns/oscal",
-                "value": "false",
-            },
-            {
-                "name": "cloud-service-provider",
-                "ns": FEDRAMP_NS,
-                "value": "Sam Aydlette",
-            },
-            {
-                "name": "cloud-service-offering",
-                "ns": FEDRAMP_NS,
-                "value": "samaydlette.com",
-            },
-            {
-                "name": "impact-level",
-                "ns": FEDRAMP_NS,
-                "value": "moderate",
-            },
-            {
-                "name": "fedramp-class",
-                "ns": FEDRAMP_NS,
-                "value": "C",
-                "remarks": "FedRAMP 20x Class C target; equivalent to traditional Moderate.",
-            },
-        ],
-    }
-
-
-def _silk_reeling_present(signal):
-    """True when the gated Silk Reeling app Lambda is in the canonical inventory.
-
-    Lets the SSP document the app's data flow and ingress ONLY when the app is
-    actually deployed, so it never describes a path that doesn't exist.
-    """
-    for c in signal.get("components", []):
-        # Normalize separators: the canonical inventory names the function
-        # component `aws::function::silk_reeling` (underscore), while the cloud
-        # resources use `silk-reeling` (hyphen). Match either by folding both to
-        # hyphens before the substring test.
-        ident = f"{c.get('component_id', '')} {c.get('native_id', '')}".lower().replace("_", "-")
-        if c.get("type") == "function" and "silk-reeling" in ident:
-            return True
-    return False
-
-
-def build_system_characteristics(signal):
-    # Single source of truth for categorization (assessment F-2 / Decision 1).
-    # The SSP previously hardcoded "low" across every objective — a direct
-    # contradiction of the Moderate baseline it is built against. Read the
-    # authoritative FIPS-199 levels from data/system-profile.json so the SSP,
-    # KSI signal, VDR, and dashboard all assert the same impact level.
-    _profile = json.loads((Path(__file__).resolve().parent.parent / "data" / "system-profile.json").read_text())
-    _f199 = _profile["fips_199"]
-    _sens = _f199["high_water_mark"]  # "moderate"
-    sc = {
-        "system-ids": [
-            {
-                "identifier-type": "https://ietf.org/rfc/rfc4122",
-                "id": stable_uuid("system:samaydlette-website-prod"),
-            },
-            {
-                "identifier-type": "samaydlette:urn",
-                "id": signal.get("system_id", "urn:samaydlette:website-prod"),
-            },
-        ],
-        "system-name": "samaydlette.com",
-        "system-name-short": "samaydlette",
-        "description": (
-            "Static personal website served from S3 via CloudFront. Compliance "
-            "automation pipeline emits a signed canonical inventory and KSI "
-            "validation report on every deploy; runtime Lambda re-validates "
-            "the live AWS configuration on a schedule. Sole-operator "
-            "deployment; no end users, no federal customer data, no FedRAMP "
-            "certification in scope."
-        ),
-        "security-sensitivity-level": _sens,
-        "system-information": {
-            "information-types": [
-                {
-                    "uuid": stable_uuid("info:public-website-content"),
-                    "title": "Public website content",
-                    "description": (
-                        "Articles, books, and other public-facing content "
-                        "authored by the operator. No federal customer data."
-                    ),
-                    "categorizations": [
-                        {
-                            "system": "https://doi.org/10.6028/NIST.SP.800-60v2r1",
-                            "information-type-ids": ["C.2.8.12"],
-                        }
-                    ],
-                    "confidentiality-impact": {
-                        "base": f"fips-199-{_f199['confidentiality']}",
-                    },
-                    "integrity-impact": {
-                        "base": f"fips-199-{_f199['integrity']}",
-                    },
-                    "availability-impact": {
-                        "base": f"fips-199-{_f199['availability']}",
-                    },
-                }
-            ]
-        },
-        "security-impact-level": {
-            "security-objective-confidentiality": _f199["confidentiality"],
-            "security-objective-integrity": _f199["integrity"],
-            "security-objective-availability": _f199["availability"],
-        },
-        "status": {"state": "operational"},
-        "authorization-boundary": {
-            "description": (
-                "AWS account containing the site's S3 buckets (origin, access "
-                "logs, CloudTrail delivery), a CloudFront distribution (CDN), a "
-                "Route 53 hosted zone for DNS, three Lambda functions (the "
-                "runtime KSI emitter, the Silk Reeling app behind an HTTP API "
-                "Gateway and a Cognito user pool, and the evidence SLA "
-                "watchdog), their IAM roles and policies, EventBridge schedules, "
-                "customer-managed KMS keys, Secrets Manager, CloudWatch log "
-                "groups, a CloudTrail management-event trail, an SQS "
-                "dead-letter queue, and the evidence-alert path (CloudWatch "
-                "alarms and a CMK-encrypted SNS topic). The canonical inventory "
-                "in ksi-signal.json enumerates every component. GitHub "
-                "repository and GitHub Actions runners are part of the build "
-                "chain and produce signed attestations recorded in Rekor; they "
-                "are inside the boundary for provenance purposes. Alarm "
-                "notifications leave the boundary by email to the operator "
-                "email, which is outside the boundary (Rule of Thumb "
-                "#3); they carry alarm metadata only."
-            )
-        },
-        # Base network architecture (always emitted). No public inbound compute
-        # ingress exists in the base system; the only compute is the internal
-        # scheduled KSI Lambda. See the Authorization Boundary Diagram (ABD)
-        # back-matter resource for the rendered topology.
-        "network-architecture": {
-            "description": (
-                "Route 53 resolves the apex and www records to a single "
-                "CloudFront distribution. CloudFront terminates TLS (minimum "
-                "TLS 1.2; the viewer-protocol policy fails secure by redirecting "
-                "or rejecting cleartext, SC-7/SC-8) and serves the static site "
-                "from the private S3 origin via origin access control. The daily "
-                "KSI-validation Lambda runs internally on an EventBridge schedule "
-                "with no public endpoint and writes the runtime signal to S3; it "
-                "is not reachable from the internet. The base system therefore "
-                "exposes no inbound public compute ingress — only the CloudFront "
-                "edge fronting static content."
-            ),
-            "links": [
-                {
-                    "href": "#" + stable_uuid("resource:authorization-boundary"),
-                    "rel": "diagram",
-                    "text": "Authorization Boundary Diagram (network topology)",
-                }
-            ],
-        },
-    }
-    # The gated Silk Reeling app, when deployed, adds an in-boundary data flow
-    # and a public ingress. Emitted only when the app is present in the canonical
-    # inventory. Its optional LLM feedback is off here, so there is no external
-    # interconnection (SCN-2026-006; formerly POAM-020).
-    if _silk_reeling_present(signal):
-        sc["data-flow"] = {
-            "description": (
-                "Browser captures pose landmarks client-side and POSTs them to "
-                "the Silk Reeling app Lambda over TLS (CloudFront → API Gateway "
-                "HTTP API → Lambda; the app's /api/* routes are gated by a "
-                "Cognito JWT authorizer at the gateway, and the app also "
-                "validates the JWT in-Lambda so it stays standalone-deployable, "
-                "per POAM-022). The Lambda "
-                "computes movement deviations and writes the feedback text from "
-                "those numbers itself, and returns both to the browser. No video "
-                "leaves the browser, and pose frames are processed transiently "
-                "and not persisted. No data leaves the boundary: the app's "
-                "optional LLM-written feedback is a customer-configurable "
-                "setting that is disabled in this deployment, and enabling it "
-                "would add an external interconnection and require a "
-                "significant change notification."
-            )
-        }
-        # Silk Reeling adds a public inbound path that does not exist in the
-        # base system. Extend (do not replace) the base
-        # network-architecture description.
-        sc["network-architecture"]["description"] += (
-            " When the Silk Reeling app is deployed, CloudFront adds a "
-            "dedicated /silk-reeling/* cache behavior (caching disabled, "
-            "forwarding the Authorization header, with a CloudFront Function "
-            "that strips the path prefix) that routes to an API Gateway HTTP "
-            "API. The $default route serves the SPA unauthenticated (so the "
-            "login page can load); the ANY /api/{proxy+} route carries a Cognito "
-            "JWT authorizer (required TOTP MFA), and the stage enforces "
-            "rate-limit throttling (POAM-022/POAM-023). The HTTP API uses an "
-            "AWS_PROXY integration to the Python 3.13 ZIP Lambda. This "
-            "introduces new public inbound compute ingress (SC-7) absent from "
-            "the base system. The Lambda calls no third-party service and "
-            "stores no third-party credential: its only outbound call is to "
-            "the Cognito user pool's public signing-key (JWKS) endpoint over "
-            "TLS, to validate tokens. It runs outside a VPC, so this limit is "
-            "set by its code and configuration, not by a network control."
-        )
-    return sc
-
-
-def build_system_implementation(signal):
-    """Components are sourced from the canonical inventory in the KSI signal.
-
-    Cloud resources become OSCAL `service` components. Software components
-    (npm packages) and static artifacts (HTML files) are summarized as
-    properties of the cloud component they ride on, rather than enumerated
-    as separate OSCAL components — the SSP would otherwise be unreadable
-    with 108 npm entries, and the canonical inventory at
-    /.well-known/ksi-signal.json is the authoritative full enumeration.
-    """
-    components = []
-
-    # The operator user, present for OSCAL completeness.
-    users = [
-        {
-            "uuid": stable_uuid("user:operator"),
-            "title": "Operator",
-            "short-name": "operator",
-            "description": "Sole operator and IR lead.",
-            "role-ids": ["system-owner"],
-            "authorized-privileges": [
-                {
-                    "title": "Full administrative access",
-                    "functions-performed": [
-                        "Deploy infrastructure",
-                        "Modify content",
-                        "Respond to incidents",
-                    ],
-                }
-            ],
-        }
-    ]
-
-    # Cloud components from the canonical inventory.
-    for c in signal.get("components", []):
-        ctype = c.get("type")
-        if ctype not in {"object_store", "cdn_distribution", "function"}:
-            continue
-        comp_uuid = stable_uuid(f"component:{c['component_id']}")
-        attrs = c.get("attributes") or {}
-        props = [
-            {"name": "canonical-inventory-id", "value": c["component_id"]},
-            {"name": "normalized-type", "value": ctype},
-        ]
-        if c.get("native_id"):
-            props.append({"name": "aws-arn", "value": c["native_id"]})
-        for k in ("region", "id", "domain_name", "function_name", "runtime"):
-            if k in attrs and attrs[k]:
-                props.append({"name": k.replace("_", "-"), "value": str(attrs[k])})
-
-        components.append({
-            "uuid": comp_uuid,
-            "type": "service",
-            "title": _component_title(ctype, attrs.get("tf_name")),
-            "description": _component_description(ctype, c),
-            "props": props,
-            "status": {"state": "operational"},
-            "responsible-roles": [
-                {
-                    "role-id": "system-owner",
-                    "party-uuids": [stable_uuid("party:operator")],
-                }
-            ],
-        })
-
-    # Summary of software components (npm packages from the Lambda runtime).
-    # Build-time packages are inventoried too (the accessibility scanner), and
-    # they are NOT part of the Lambda's runtime stack: counting them here would
-    # describe CI tooling as running inside the deployed function.
-    npm_runtime = [c for c in signal.get("components", [])
-                   if c.get("type") == "npm_package"
-                   and c.get("attributes", {}).get("lifecycle", "runtime") != "build-time"]
-    npm_build = [c for c in signal.get("components", [])
-                 if c.get("type") == "npm_package"
-                 and c.get("attributes", {}).get("lifecycle") == "build-time"]
-    npm_count = len(npm_runtime)
-    if npm_count:
-        components.append({
-            "uuid": stable_uuid("component:lambda-software-stack"),
-            "type": "software",
-            "title": "Lambda runtime software stack",
-            "description": (
-                f"Aggregated software components ({npm_count} npm packages) "
-                "running inside the runtime KSI emitter Lambda. The full "
-                "PURL-identified enumeration is in the canonical inventory at "
-                "/.well-known/ksi-signal.json (components[] where type == "
-                "'npm_package'). Supply-chain monitoring is via Dependabot; "
-                "see docs/supply-chain.md."
-            ),
-            "props": [
-                {"name": "package-count", "value": str(npm_count)},
-                {"name": "ecosystem", "value": "npm"},
-                {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
-            ],
-            "status": {"state": "operational"},
-        })
-
-    # Build-time software: inventoried, not deployed. Kept as its own component
-    # so a reader can see that the boundary distinction is deliberate rather
-    # than inferring it from a count that does not add up.
-    if npm_build:
-        components.append({
-            "uuid": stable_uuid("component:build-time-software-stack"),
-            "type": "software",
-            "title": "Build-time software stack",
-            "description": (
-                f"Aggregated software components ({len(npm_build)} npm packages) "
-                "that run only in the build pipeline and are never deployed. "
-                "Currently the accessibility scanner, whose output the deploy "
-                "gate evaluates as policy input, which is why it is inventoried "
-                "rather than treated as out of scope. The full PURL-identified "
-                "enumeration is in the canonical inventory at "
-                "/.well-known/ksi-signal.json (components[] where type == "
-                "'npm_package' and attributes.lifecycle == 'build-time')."
-            ),
-            "props": [
-                {"name": "package-count", "value": str(len(npm_build))},
-                {"name": "ecosystem", "value": "npm"},
-                {"name": "lifecycle", "value": "build-time"},
-                {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
-            ],
-            "status": {"state": "operational"},
-        })
-
-    # Summary of static content artifacts.
-    html_count = sum(1 for c in signal.get("components", []) if c.get("type") == "html_artifact")
-    if html_count:
-        components.append({
-            "uuid": stable_uuid("component:static-content"),
-            "type": "this-system",
-            "title": "Static website content",
-            "description": (
-                f"Aggregated HTML artifacts ({html_count} files) served by "
-                "CloudFront. Each file is content-addressable via SHA-256; the "
-                "full enumeration is in the canonical inventory."
-            ),
-            "props": [
-                {"name": "file-count", "value": str(html_count)},
-                {"name": "inventory-source", "value": "/.well-known/ksi-signal.json"},
-            ],
-            "status": {"state": "operational"},
-        })
-
-    return {
-        "users": users,
-        "components": components,
-    }
-
-
-# Per-resource titles and descriptions, keyed by (component type, Terraform
-# resource name). Each type used to get one title, so all three Lambdas read as
-# the "runtime KSI emitter" and all three buckets as the "website origin".
-_COMPONENT_TEXT = {
-    ("object_store", "logs"): (
-        "S3 bucket (access logs)",
-        "Access-log bucket for the site bucket and CDN. Public access fully "
-        "blocked; not an origin."),
-    ("object_store", "cloudtrail"): (
-        "S3 bucket (CloudTrail delivery)",
-        "Delivery bucket for the account's CloudTrail management-event trail. "
-        "Public access fully blocked; not an origin."),
-    ("function", "silk_reeling"): (
-        "Lambda function (Silk Reeling app)",
-        "Backend of the Silk Reeling Mirror application, invoked through the "
-        "API Gateway behind Cognito authentication."),
-    ("function", "evidence_watchdog"): (
-        "Lambda function (evidence SLA watchdog)",
-        "Hourly evidence SLA watchdog. Reads every artifact published under "
-        "/.well-known/ that the governed freshness configuration lists, from "
-        "the site bucket over the AWS API, and publishes the VDR's and runtime "
-        "signal's ages, the nightly's result and the count of artifacts past "
-        "their window as CloudWatch metrics; four alarms email the operator "
-        "through a CMK-encrypted SNS topic."),
-}
-
-
-def _component_title(ctype, tf_name=None):
-    if (ctype, tf_name) in _COMPONENT_TEXT:
-        return _COMPONENT_TEXT[(ctype, tf_name)][0]
-    return {
-        "object_store": "S3 bucket (website origin)",
-        "cdn_distribution": "CloudFront distribution",
-        "function": "Lambda function (runtime KSI emitter)",
-    }.get(ctype, ctype)
-
-
-def _component_description(ctype, c):
-    key = (ctype, (c.get("attributes") or {}).get("tf_name"))
-    if key in _COMPONENT_TEXT:
-        base = _COMPONENT_TEXT[key][1]
-        if c.get("native_id"):
-            base += f" Native ID: {c['native_id']}."
-        return base
-    base = {
-        "object_store": "Object store hosting site content. Versioning and "
-                        "encryption enabled; public access fully blocked; "
-                        "origin access scoped to the CloudFront distribution.",
-        "cdn_distribution": "CDN serving the site to viewers. Viewer protocol "
-                            "redirect-to-HTTPS; minimum TLS 1.2 (2021 cipher "
-                            "suite); HSTS, CSP, frame-deny enforced via "
-                            "response-headers policy.",
-        "function": "Runtime KSI emitter. Reads the deploy-time signal, "
-                    "queries live AWS configuration of named components, and "
-                    "publishes a fresh runtime KSI signal at /.well-known/.",
-    }.get(ctype, "Cloud component.")
-    if c.get("native_id"):
-        base += f" Native ID: {c['native_id']}."
-    return base
+def contributing_ksis(catalog):
+    """({control_id: set of in-scope KSI ids that claim it}, {control_id: title})
+    from the KSI catalog's controls[] arrays."""
+    controls_to_ksis = {}
+    control_titles = {}
+    for domain in catalog.get("KSI", {}).values():
+        for ind in domain.get("indicators") or []:
+            ksi_id = ind.get("id")
+            if not ksi_id or ksi_id not in IN_SCOPE_KSIS:
+                continue
+            for c in ind.get("controls") or []:
+                cid = c.get("control_id")
+                if not cid:
+                    continue
+                controls_to_ksis.setdefault(cid, set()).add(ksi_id)
+                if c.get("title"):
+                    control_titles.setdefault(cid, c["title"])
+    return controls_to_ksis, control_titles
 
 
 def build_control_implementation(signal, catalog):
@@ -1406,26 +920,7 @@ def build_control_implementation(signal, catalog):
     downgraded to `partial` regardless of the override, with a remark
     pointing at the live signal.
     """
-    # Reverse-index: control_id → (set of contributing KSI ids, control title)
-    controls_to_ksis = {}
-    control_titles = {}
-    ksi_records = {}
-
-    for domain_key, domain in catalog.get("KSI", {}).items():
-        for ind in domain.get("indicators") or []:
-            ksi_id = ind.get("id")
-            if not ksi_id:
-                continue
-            ksi_records[ksi_id] = ind
-            if ksi_id not in IN_SCOPE_KSIS:
-                continue
-            for c in ind.get("controls") or []:
-                cid = c.get("control_id")
-                if not cid:
-                    continue
-                controls_to_ksis.setdefault(cid, set()).add(ksi_id)
-                if c.get("title"):
-                    control_titles.setdefault(cid, c["title"])
+    controls_to_ksis, control_titles = contributing_ksis(catalog)
 
     # Per-KSI fail tracking from the live signal. We surface a per-control
     # remark when one of the contributing KSIs has an open failure.
@@ -1659,231 +1154,30 @@ def _links_for_ksis(ksis):
     return links
 
 
-def build_back_matter(signal):
-    return {
-        "resources": [
-            {
-                "uuid": stable_uuid("resource:ksi-signal"),
-                "title": "Canonical inventory and validation signal",
-                "description": (
-                    "Live KSI signal informed by a canonical inventory of "
-                    "this system's components. Regenerated on every deploy, "
-                    "signed via Sigstore keyless. The inventory layer is "
-                    "what makes this SSP's component definitions and "
-                    "control evidence compose with reports from other "
-                    "systems."
-                ),
-                "rlinks": [
-                    {
-                        "href": "https://samaydlette.com/.well-known/ksi-signal.json",
-                        "media-type": "application/json",
-                    }
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:ksi-signal-schema"),
-                "title": "KSI signal JSON Schema",
-                "rlinks": [
-                    {
-                        "href": "https://samaydlette.com/.well-known/ksi-signal.schema.json",
-                        "media-type": "application/schema+json",
-                    }
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:fedramp-ksi-catalog"),
-                "title": "FedRAMP 20x KSI Catalog (FRMR.KSI)",
-                "description": "FedRAMP-published KSI catalog with NIST 800-53 control mappings.",
-                "rlinks": [
-                    {
-                        "href": "https://www.fedramp.gov/",
-                        "media-type": "text/html",
-                    }
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:repo"),
-                "title": "Source repository",
-                "rlinks": [
-                    {
-                        "href": "https://github.com/sam-aydlette/samaydlette.com",
-                        "media-type": "text/html",
-                    }
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:decisions"),
-                "title": "Decision register",
-                "description": (
-                    "Every decision about a finding (false positive, accepted "
-                    "risk, operational requirement, remediation history), with "
-                    "who decided, when, and when it is reviewed. Replaces the "
-                    "POA&M under CR26; open findings are in the VDR report."
-                ),
-                "rlinks": [
-                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/data/decisions.json", "media-type": "application/json"},
-                    {"href": "https://samaydlette.com/.well-known/vdr-report.json", "media-type": "application/json"},
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:cmp"),
-                "title": "Continuous Monitoring Plan",
-                "description": "The system's continuous-monitoring strategy, mechanisms, and cadences. Satisfies NIST CA-7 and the FedRAMP 20x Collaborative Continuous Monitoring (CCM) rule.",
-                "rlinks": [
-                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/continuous-monitoring-plan.md", "media-type": "text/markdown"},
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:pta"),
-                "title": "Privacy Threshold Analysis (PTA)",
-                "description": "Determination that the system processes no PII; full PIA not required at this time.",
-                "rlinks": [
-                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/privacy-threshold-analysis.md", "media-type": "text/markdown"},
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:rob"),
-                "title": "Rules of Behavior",
-                "description": "Sole-operator acceptable-use commitments per NIST PL-4.",
-                "rlinks": [
-                    {"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/rules-of-behavior.md", "media-type": "text/markdown"},
-                ],
-            },
-            {
-                "uuid": stable_uuid("resource:incident-response"),
-                "title": "Incident Response Plan",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:recovery-plan"),
-                "title": "Recovery / Contingency Plan",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/recovery-plan.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:supply-chain"),
-                "title": "Supply Chain Risk Management Plan",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/supply-chain.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:training-log"),
-                "title": "Training Log",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/training-log.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:security-review"),
-                "title": "Annual Security Review",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/security-review.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:architecture-decisions"),
-                "title": "Architectural and Operational Decisions",
-                "description": "ADR-style records, including the SA-11.2 threat model.",
-                "rlinks": [{"href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/architecture-decisions.md", "media-type": "text/markdown"}],
-            },
-            {
-                "uuid": stable_uuid("resource:authorization-boundary"),
-                "title": "Authorization Boundary Diagram",
-                "description": "ABD per FedRAMP guidance, with data flows, FIPS-validated cryptographic modules, and out-of-boundary items.",
-                "rlinks": [{"href": "https://samaydlette.com/research/authorization-boundary.html", "media-type": "text/html"}],
-            },
-            *_policy_doc_resources(),
-        ]
-    }
+def project(signal, catalog):
+    """The implemented-requirements for this inventory and catalog."""
+    return build_control_implementation(signal, catalog)["implemented-requirements"]
 
 
-def _policy_doc_resources():
-    """Emit one back-matter resource per per-family policy doc plus SCG.
-
-    Each family policy doc (docs/policies/<family>-policy.md) becomes a resource
-    so the SSP's *-1 implementation-requirement can reference it via
-    link rel='reference' href='#<uuid>'.
-    """
-    families = [
-        ("ac", "Access Control"),
-        ("at", "Awareness and Training"),
-        ("au", "Audit and Accountability"),
-        ("ca", "Assessment, Authorization, and Monitoring"),
-        ("cm", "Configuration Management"),
-        ("cp", "Contingency Planning"),
-        ("ia", "Identification and Authentication"),
-        ("ir", "Incident Response"),
-        ("ma", "Maintenance"),
-        ("mp", "Media Protection"),
-        ("pe", "Physical and Environmental Protection"),
-        ("pl", "Planning"),
-        ("ps", "Personnel Security"),
-        ("pt", "PII Processing and Transparency"),
-        ("ra", "Risk Assessment"),
-        ("sa", "System and Services Acquisition"),
-        ("sc", "System and Communications Protection"),
-        ("si", "System and Information Integrity"),
-        ("sr", "Supply Chain Risk Management"),
-    ]
-    resources = []
-    for code, name in families:
-        resources.append({
-            "uuid": stable_uuid(f"resource:policy-{code}"),
-            "title": f"{name} Policy and Procedures ({code.upper()}-1)",
-            "description": f"Per-family policy document satisfying {code.upper()}-1, with FedRAMP 20x rule integration where applicable.",
-            "rlinks": [{
-                "href": f"https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/{code}-policy.md",
-                "media-type": "text/markdown",
-            }],
-        })
-    resources.append({
-        "uuid": stable_uuid("resource:scg"),
-        "title": "Secure Configuration Guide",
-        "description": "FedRAMP 20x Secure Configuration Guide for top-level administrative accounts (AWS root, GitHub repo owner).",
-        "rlinks": [{
-            "href": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
-            "media-type": "text/markdown",
-        }],
-    })
-    return resources
+def load(signal_path=None, catalog_path=None):
+    """Read the inventory and catalog and project them. A missing input stops
+    the caller: a framework figure computed from no controls would read as a
+    real figure."""
+    sp = Path(signal_path) if signal_path else DEFAULT_SIGNAL
+    cp = Path(catalog_path) if catalog_path else DEFAULT_CATALOG
+    for p, what in ((sp, "canonical inventory"), (cp, "KSI catalog")):
+        if not p.is_file():
+            raise SystemExit(f"::error::control projection: {what} {p} not found (fail-closed)")
+    return project(json.loads(sp.read_text()), json.loads(cp.read_text()))
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+def prop(ir, name):
+    for p in ir.get("props", []) or []:
+        if p.get("name") == name:
+            return p.get("value")
+    return None
 
 
-def main():
-    cwd = Path.cwd()
-    signal_path = cwd / "ksi-signal.json"
-    catalog_path = cwd / "schemas" / "ksi-catalog.json"
-    output_path = cwd / "oscal-ssp.json"
-
-    if not signal_path.exists():
-        print(f"error: {signal_path} not found; run build-ksi-signal.py first", file=sys.stderr)
-        sys.exit(1)
-    if not catalog_path.exists():
-        print(f"error: {catalog_path} not found", file=sys.stderr)
-        sys.exit(1)
-
-    signal = json.loads(signal_path.read_text())
-    catalog = json.loads(catalog_path.read_text())
-
-    ssp = {
-        "system-security-plan": {
-            "uuid": stable_uuid("ssp:samaydlette-website-prod"),
-            "metadata": build_metadata(signal),
-            "import-profile": {"href": FEDRAMP_PROFILE},
-            "system-characteristics": build_system_characteristics(signal),
-            "system-implementation": build_system_implementation(signal),
-            "control-implementation": build_control_implementation(signal, catalog),
-            "back-matter": build_back_matter(signal),
-        }
-    }
-
-    output_path.write_text(json.dumps(ssp, indent=2) + "\n")
-
-    n_components = len(ssp["system-security-plan"]["system-implementation"]["components"])
-    n_reqs = len(ssp["system-security-plan"]["control-implementation"]["implemented-requirements"])
-    print(
-        f"Wrote {output_path} "
-        f"({n_components} components, {n_reqs} control requirements)"
-    )
-
-
-if __name__ == "__main__":
-    main()
+def status_map(irs):
+    """{control-id: (implementation-status, control-origination)}."""
+    return {ir["control-id"]: (prop(ir, "implementation-status"), prop(ir, "control-origination")) for ir in irs}

@@ -1602,7 +1602,7 @@ KSI_FAMILY_EVIDENCE_TYPES = {
 
 def build_ksi_statuses(catalog, components, validations):
     """Emit a per-KSI status block for every in-scope (Moderate) indicator in
-    the catalog, so a consumer can trace each KSI the SSP names to a live
+    the catalog, so a consumer can trace each KSI the SDR records to a live
     pass/fail backed by the validations and components that evidence it.
 
     Status is derived consistently from the catalog's KSI→family domain: a KSI
@@ -1812,7 +1812,7 @@ def main():
     validations = build_validations(validations_doc, components)
 
     # Per-KSI status block: maps every in-scope FedRAMP 20x KSI to a live
-    # pass/fail with the validations + components that evidence it, so the SSP's
+    # pass/fail with the validations + components that evidence it, so the SDR's
     # named KSIs are machine-traceable to results in this signal (assessment
     # Task 4 — the SSP↔signal linkage gap).
     catalog_path = repo_root / "infrastructure" / "schemas" / "ksi-catalog.json"
@@ -1860,7 +1860,7 @@ def main():
                 "context and limitations."
             ),
             "related_artifacts": {
-                "oscal_ssp": "https://samaydlette.com/.well-known/oscal-ssp.json",
+                "security_decision_record": "https://samaydlette.com/.well-known/security-decision-record.json",
                 "vdr_report": "https://samaydlette.com/.well-known/vdr-report.json",
                 "iiw_csv": "https://samaydlette.com/.well-known/iiw.csv",
                 "runtime_signal": "https://samaydlette.com/.well-known/ksi-signal-runtime.json",

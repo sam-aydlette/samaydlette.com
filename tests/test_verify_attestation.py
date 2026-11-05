@@ -26,7 +26,7 @@ def _bundle(subject_sha, inv_sha, signal_id="sig-1", commit="c0ffee"):
     stmt = {
         "_type": "https://in-toto.io/Statement/v1",
         "predicateType": va.SLSA_V1,
-        "subject": [{"name": "oscal-ssp.json", "digest": {"sha256": subject_sha}}],
+        "subject": [{"name": "security-decision-record.json", "digest": {"sha256": subject_sha}}],
         "predicate": {
             "buildDefinition": {
                 "buildType": "https://samaydlette.com/buildtypes/compliance-artifact/v1",
@@ -34,7 +34,7 @@ def _bundle(subject_sha, inv_sha, signal_id="sig-1", commit="c0ffee"):
                     {"uri": "git+x@refs/heads/main", "digest": {"gitCommit": commit}},
                     {"uri": "ksi-signal.json", "digest": {"sha256": inv_sha},
                      "annotations": {"role": "canonical-inventory", "signal_id": signal_id}},
-                    {"uri": "scripts/build-oscal-ssp.py", "digest": {"sha256": "abcd"},
+                    {"uri": "scripts/build-sdr.py", "digest": {"sha256": "abcd"},
                      "annotations": {"role": "generator"}},
                 ],
             },
@@ -52,7 +52,7 @@ def _write(tmp_path, name, data: bytes):
 
 
 def test_accepts_correct_attestation(tmp_path):
-    art = _write(tmp_path, "oscal-ssp.json", b'{"system":"x"}')
+    art = _write(tmp_path, "security-decision-record.json", b'{"system":"x"}')
     inv = _write(tmp_path, "ksi-signal.json", b'{"signal_id":"sig-1"}')
     bundle = _write(tmp_path, "a.intoto.jsonl",
                     json.dumps(_bundle(_sha(art.read_bytes()), _sha(inv.read_bytes()))).encode())
@@ -62,7 +62,7 @@ def test_accepts_correct_attestation(tmp_path):
 
 
 def test_fails_on_subject_mismatch(tmp_path):
-    art = _write(tmp_path, "oscal-ssp.json", b'{"system":"x"}')
+    art = _write(tmp_path, "security-decision-record.json", b'{"system":"x"}')
     inv = _write(tmp_path, "ksi-signal.json", b'{"signal_id":"sig-1"}')
     # subject digest is for DIFFERENT bytes -> binding must fail
     bundle = _write(tmp_path, "a.intoto.jsonl",
@@ -72,7 +72,7 @@ def test_fails_on_subject_mismatch(tmp_path):
 
 
 def test_fails_on_tampered_inventory_digest(tmp_path):
-    art = _write(tmp_path, "oscal-ssp.json", b'{"system":"x"}')
+    art = _write(tmp_path, "security-decision-record.json", b'{"system":"x"}')
     inv = _write(tmp_path, "ksi-signal.json", b'{"signal_id":"sig-1"}')
     # predicate claims an inventory digest that is not the real ksi-signal bytes
     bundle = _write(tmp_path, "a.intoto.jsonl",
@@ -82,7 +82,7 @@ def test_fails_on_tampered_inventory_digest(tmp_path):
 
 
 def test_rejects_non_dsse_bundle(tmp_path):
-    art = _write(tmp_path, "oscal-ssp.json", b"x")
+    art = _write(tmp_path, "security-decision-record.json", b"x")
     bundle = _write(tmp_path, "legacy.json", json.dumps({"cert": "...", "rekorBundle": {}}).encode())
     try:
         va.check(str(bundle), str(art))

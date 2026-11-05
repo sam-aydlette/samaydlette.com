@@ -11,7 +11,8 @@
 # EVERY mapped hub control is inherited; any provider/shared part downgrades it
 # to partially-inherited. Never overclaim inheritance.
 #
-# Usage: build-cmmc.py --ssp REV5_SSP [--output COVERAGE.json]
+# Usage: build-cmmc.py [--ksi-signal PATH] [--catalog PATH] [--output COVERAGE.json]
+#   (the Rev5 hub is the control projection, scripts/_controls.py)
 # =============================================================================
 
 import argparse
@@ -25,6 +26,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import classify, load_hub  # noqa: E402
+import _controls  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -95,14 +97,15 @@ def guard_no_vacuous_inheritance(req, cls, srm, hub_controls):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--ssp", required=True)
+    ap.add_argument("--ksi-signal", default=str(_controls.DEFAULT_SIGNAL))
+    ap.add_argument("--catalog", default=str(_controls.DEFAULT_CATALOG))
     ap.add_argument("--output", default=None)
     a = ap.parse_args()
 
     reqs = load_catalog_reqs()
     m171 = load_171_53()
     r45 = load_rev4_rev5()
-    hub = load_hub(a.ssp)
+    hub = load_hub(_controls.load(a.ksi_signal, a.catalog))
     disp = json.loads((REPO / "data/dispositions/beyond-moderate.json").read_text())
     for c, d in disp["controls"].items():          # beyond-Moderate dispositions extend the hub
         hub[c] = (d["status"], d["origination"])

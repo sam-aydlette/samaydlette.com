@@ -227,7 +227,7 @@ def test_reconcile_names_the_invariants_its_broken_fixture_violates(tmp_path):
                        capture_output=True, text=True)
     assert r.returncode == 1
     failed = {line.split("(")[1][0] for line in r.stderr.splitlines() if line.strip().startswith("✗ (")}
-    assert {"c", "d", "e"} <= failed, r.stderr
+    assert {"b", "c", "d", "e"} <= failed, r.stderr
 
 
 def test_reconcile_check_names_cover_every_invariant():

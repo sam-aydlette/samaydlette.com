@@ -149,41 +149,30 @@ curl -O https://samaydlette.com/.well-known/ksi-signal.schema.json
 python3 -c "import json, jsonschema; jsonschema.validate(json.load(open('ksi-signal.json')), json.load(open('ksi-signal.schema.json'))); print('valid')"
 ```
 
-## OSCAL Rev 5 SSP
+## The control projection and the Security Decision Record
 
-Alongside the KSI signal, every deploy emits a NIST OSCAL System Security Plan in the FedRAMP Rev 5 Moderate baseline shape, published at `/.well-known/oscal-ssp.json`. The two artifacts are two views of the same underlying state:
+The KSI signal is the wire format: it carries the canonical inventory and the validation report in the shape FedRAMP 20x intends. The NIST 800-53 Rev 5 view of the same state is the **control projection** in [`scripts/_controls.py`](../scripts/_controls.py), computed deterministically from two inputs:
 
-- The **KSI signal** is the wire format. It carries the canonical inventory and the validation report, in the shape FedRAMP 20x intends. It is the artifact that composes across CSPs.
-- The **OSCAL SSP** is the human-and-tool-friendly compliance artifact. It re-expresses the same state in NIST 800-53 Rev 5 control vocabulary, suitable for ingestion by GRC tooling, FedRAMP assessors, or any consumer that already speaks OSCAL.
+1. The KSI signal (`infrastructure/ksi-signal.json` post-build): the canonical-inventory snapshot and the per-KSI verdicts.
+2. The FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, sourced from FRMR.KSI): the KSI → NIST 800-53 control mapping.
 
-Generation is deterministic. The generator [`scripts/build-oscal-ssp.py`](../scripts/build-oscal-ssp.py) reads two inputs:
+It yields one entry per control in scope (the FedRAMP Rev 5 Moderate baseline, the controls in-scope KSIs claim, and the AWS-inherited controls), each with:
 
-1. The live KSI signal (`infrastructure/ksi-signal.json` post-build) — provides component definitions and the canonical-inventory snapshot.
-2. The FedRAMP KSI catalog (`infrastructure/schemas/ksi-catalog.json`, sourced from FRMR.KSI) — provides the KSI → NIST 800-53 control mapping.
+- an implementation status (`implemented` | `partial` | `planned` | `alternative` | `not-applicable`), resolved from the component definition under `data/component-definitions/`, the app-authentication profiles, or a family default, and downgraded to `partial` automatically when a contributing KSI is failing in the signal;
+- an origination (`sp-system` | `sp-corporate` | `shared` | `inherited` | `not-applicable`);
+- an implementation statement naming the contributing KSIs;
+- the FedRAMP-defined parameter values from the vendored Moderate profile.
 
-For every in-scope KSI, the generator iterates the controls listed in the catalog and emits one OSCAL `implemented-requirement` per unique control. Each requirement carries:
-
-- `props.implementation-status` — `implemented` | `partial` | `not-applicable`. Differentiated per control rather than mass-assigned. The status is resolved from a per-control override (for ~30 load-bearing controls the system actively implements) or from a family-level fallback (for the rest), and is downgraded to `partial` automatically if a contributing KSI shows failing validations in the live signal.
-- `props.control-origination` — `sp-system` | `sp-corporate` | `shared` | `inherited` | `not-applicable`, with the FedRAMP namespace `https://fedramp.gov/ns/oscal`. Distinguishes controls implemented in this system's code (`sp-system`), at the operator/organization level (`sp-corporate`, e.g., training, IR planning), shared with AWS (`shared`, e.g., TLS configuration), or fully inherited from AWS (`inherited`, e.g., physical security, hardware maintenance).
-- `statements[].remarks` — actual implementation prose describing how the control is met, with a footer naming the contributing KSIs so a reader can trace back to the catalog. Statements are either explicit per-control overrides (~30 controls) or family-level fall-throughs that name how the family is addressed at the operator/inherited level. No mass-assigned "implemented via KSI-X" default — every control gets specific prose.
-- `links` — to the live KSI signal (as `evidence`), the Sigstore bundle (as `evidence`), the runtime KSI signal (as `evidence`), and the documentation file recording the implementation rationale (as `reference`).
-
-The status distribution on the current SSP is roughly half-implemented, one-third partial, and one-sixth not-applicable, reflecting the honest reality that most controls in a one-CSP, one-operator, no-customer-data system are either inherited, partial-by-virtue-of-being-self-attested, or N/A by virtue of system simplicity.
-
-The SSP is not currently signed independently; it references the signed KSI signal as evidence. Closing that loop in a later iteration would sign the SSP with the same Sigstore chain, producing two signed artifacts that both reduce to the same source-of-truth.
+The projection is published in the CR26 **Security Decision Record** (`/.well-known/security-decision-record.json`, built by [`scripts/build-sdr.py`](../scripts/build-sdr.py)): `rule_records` summarize each KSI (`SDR-CSX-KSI`) and `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`). The same projection feeds the framework coverage figures and the CMMC projection. The SDR carries `ksi_signal_id`, and reconciliation invariant (e) fails the deploy if it names a different inventory than the signal. Until 2026-11-05 this view was published as an OSCAL Rev 5 SSP (`oscal-ssp.json`); CR26 retired the SSP and the deploy deleted it.
 
 ```bash
-# Fetch and inspect the SSP at any time:
-curl -s https://samaydlette.com/.well-known/oscal-ssp.json | jq '{
-  uuid: ."system-security-plan".uuid,
-  oscal_version: ."system-security-plan".metadata."oscal-version",
-  controls: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
-  components: (."system-security-plan"."system-implementation".components | length),
-  ksi_signal_id: ."system-security-plan".metadata.props[0].value
+# Fetch and inspect the per-control record at any time:
+curl -s https://samaydlette.com/.well-known/security-decision-record.json | jq '{
+  ksi_signal_id,
+  controls: (.rev5_controls | length),
+  by_status: (.rev5_controls | group_by(.implementation_status) | map({(.[0].implementation_status): length}) | add)
 }'
 ```
-
-The `ksi_signal_id` returned is the `signal_id` of the KSI signal the SSP was generated from. Two consumers comparing the SSP and the signal can confirm they match by that field; mismatch means one was published without the other being regenerated, which the CI pipeline does not allow under normal operation.
 
 ## Cross-CSP composition: the normalization decisions
 
@@ -214,10 +203,10 @@ The canonical inventory composes across CSPs because the schema makes a small nu
 | File | Purpose |
 |------|---------|
 | [`infrastructure/schemas/ksi-signal.schema.json`](../infrastructure/schemas/ksi-signal.schema.json) | The KSI signal schema. Self-publishes at `/.well-known/`. |
-| [`infrastructure/schemas/ksi-catalog.json`](../infrastructure/schemas/ksi-catalog.json) | FedRAMP KSI catalog (FRMR.KSI source). Drives the KSI→NIST control mapping in the OSCAL generator. |
+| [`infrastructure/schemas/ksi-catalog.json`](../infrastructure/schemas/ksi-catalog.json) | FedRAMP KSI catalog (FRMR.KSI source). Drives the KSI→NIST control mapping in the control projection. |
 | [`scripts/build-ksi-signal.py`](../scripts/build-ksi-signal.py) | Deploy-time KSI emitter. |
-| [`scripts/build-oscal-ssp.py`](../scripts/build-oscal-ssp.py) | OSCAL Rev 5 SSP generator. Runs after the KSI emitter; consumes the live signal + the catalog. |
+| [`scripts/_controls.py`](../scripts/_controls.py) | The control projection (per-control status, origination, statement). Consumes the live signal + the catalog; published through the SDR. |
 | [`scripts/terraform-plan.sh`](../scripts/terraform-plan.sh) | OPA gate; produces `validations.json` consumed by the emitter. |
 | [`infrastructure/lambda/index.js`](../infrastructure/lambda/index.js) | Runtime KSI emitter. |
 | [`infrastructure/policy/`](../infrastructure/policy/) | Source-of-truth policy packages for both enforcement points: the deploy gate evaluates them with the OPA CLI; CI compiles the same source to Wasm (`opa build -t wasm`) and the runtime emitter executes it via `@open-policy-agent/opa-wasm`. There is no JavaScript port of the rules; a CI parity test (`scripts/policy-parity-test.js`) proves the two evaluators agree on the full fixture corpus. |
-| [`.github/workflows/deploy-with-opa.yml`](../.github/workflows/deploy-with-opa.yml) | CI pipeline: gate → apply → build signal → cosign sign → build SSP → publish. |
+| [`.github/workflows/deploy-with-opa.yml`](../.github/workflows/deploy-with-opa.yml) | CI pipeline: gate → apply → build signal → cosign sign → build VDR, SDR, CPO → reconcile → publish. |

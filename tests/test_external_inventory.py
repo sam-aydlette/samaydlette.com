@@ -2,7 +2,7 @@
 
 The Anthropic API was once drawn on the boundary but missing from the canonical
 inventory. Since SCN-2026-006 the app's LLM feedback is off in this deployment,
-so the interconnection must be gone from the inventory, the map and the SSP.
+so the interconnection must be gone from the inventory and the map.
 """
 
 from __future__ import annotations
@@ -24,7 +24,6 @@ def _load(name: str, path: Path):
 
 bks = _load("bks", REPO / "scripts" / "build-ksi-signal.py")
 bbg = _load("bbg", REPO / "scripts" / "build-boundary-graph.py")
-ssp = _load("ssp", REPO / "scripts" / "build-oscal-ssp.py")
 CLASSIFICATION = json.loads((REPO / "docs" / "boundary" / "boundary-classification.json").read_text())
 
 
@@ -35,15 +34,6 @@ def test_anthropic_api_is_not_in_the_inventory_or_the_map():
     assert "ext::anthropic-api" not in matched
     for flow in CLASSIFICATION["flows"]:
         assert {"component": "ext::anthropic-api"} not in flow["path"], flow["id"]
-
-
-def test_ssp_declares_no_anthropic_interconnection_when_the_app_is_deployed():
-    signal = {"components": [{"component_id": "aws::function::silk_reeling",
-                               "type": "function", "native_id": "silk-reeling"}]}
-    assert ssp._silk_reeling_present(signal)
-    impl = ssp.build_system_implementation(signal)
-    assert not [c for c in impl["components"] if c["type"] == "interconnection"]
-    assert "anthropic" not in json.dumps(impl).lower()
 
 
 def test_every_external_service_is_placed_in_the_external_zone():

@@ -26,7 +26,7 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
   are retained.
 - **Notification mechanism (`SCN-CSO-NOM`):** the system has no agency customers today,
   so notification is met by publishing the updated certification data — the KSI signal,
-  OSCAL SSP, and VDR report at `/.well-known/` — alongside these records.
+  SDR, CPO and VDR report at `/.well-known/` — alongside these records.
 - **Emergency changes (`SCN-CSO-EMG`):** handled per the IR runbook
   ([`docs/incident-response.md`](../incident-response.md)); retroactive SCN materials are
   added here within the required window.

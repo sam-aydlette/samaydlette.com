@@ -7,8 +7,9 @@
 # a CSV with the IIW column headers so the same canonical layer that produces
 # the KSI signal and the OSCAL Rev 5 SSP also produces the IIW.
 #
-# This is the fourth report this codebase derives from one source (KSI signal,
-# OSCAL SSP, the OSCAL POA&M until its retirement, and this IIW). The point
+# This is one of several reports this codebase derives from one source (KSI
+# signal, SDR, CPO, VDR, and this IIW; the OSCAL SSP and POA&M until their
+# retirement under CR26). The point
 # of the projector is architectural rather than functional: a portfolio
 # consumer that already has the KSI signal does not need a separate IIW
 # deliverable, but FedRAMP processes still expect one. Projecting it from

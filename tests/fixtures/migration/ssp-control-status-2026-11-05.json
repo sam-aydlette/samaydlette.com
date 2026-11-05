@@ -1,0 +1,1338 @@
+{
+ "_note": "Frozen 2026-11-05 from the retired scripts/build-oscal-ssp.py run on tests/fixtures/clean/ksi-signal.json with infrastructure/schemas/ksi-catalog.json: {control-id: [implementation-status, control-origination]} for every implemented-requirement of the last SSP. tests/test_controls.py asserts scripts/_controls.py projects the same.",
+ "implemented_requirements": 333,
+ "controls": {
+  "ac-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ac-11": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-11.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-12": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-14": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-17": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-17.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-17.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-17.3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-17.4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-18": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-18.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-18.3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-19": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-19.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2": [
+   "implemented",
+   "sp-system"
+  ],
+  "ac-2.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.12": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.13": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.6": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-2.7": [
+   "implemented",
+   "sp-system"
+  ],
+  "ac-2.9": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-20": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-20.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-20.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-21": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-22": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ac-3": [
+   "implemented",
+   "shared"
+  ],
+  "ac-4": [
+   "implemented",
+   "sp-system"
+  ],
+  "ac-4.21": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6": [
+   "implemented",
+   "sp-system"
+  ],
+  "ac-6.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6.10": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6.7": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-6.9": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-7": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ac-8": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "at-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-2.2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-2.3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-3.5": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "at-4": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "au-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "au-11": [
+   "implemented",
+   "shared"
+  ],
+  "au-12": [
+   "implemented",
+   "shared"
+  ],
+  "au-2": [
+   "implemented",
+   "shared"
+  ],
+  "au-3": [
+   "implemented",
+   "shared"
+  ],
+  "au-3.1": [
+   "implemented",
+   "shared"
+  ],
+  "au-3.3": [
+   "implemented",
+   "shared"
+  ],
+  "au-4": [
+   "implemented",
+   "shared"
+  ],
+  "au-5": [
+   "implemented",
+   "shared"
+  ],
+  "au-6": [
+   "implemented",
+   "shared"
+  ],
+  "au-6.1": [
+   "implemented",
+   "shared"
+  ],
+  "au-6.3": [
+   "implemented",
+   "shared"
+  ],
+  "au-7": [
+   "implemented",
+   "shared"
+  ],
+  "au-7.1": [
+   "implemented",
+   "shared"
+  ],
+  "au-8": [
+   "implemented",
+   "inherited"
+  ],
+  "au-9": [
+   "implemented",
+   "shared"
+  ],
+  "au-9.4": [
+   "implemented",
+   "shared"
+  ],
+  "ca-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ca-2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-2.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-2.3": [
+   "implemented",
+   "shared"
+  ],
+  "ca-3": [
+   "implemented",
+   "sp-system"
+  ],
+  "ca-5": [
+   "implemented",
+   "sp-system"
+  ],
+  "ca-6": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-7": [
+   "implemented",
+   "sp-system"
+  ],
+  "ca-7.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-7.4": [
+   "implemented",
+   "sp-system"
+  ],
+  "ca-8": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-8.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-8.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ca-9": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "cm-10": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-11": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "cm-12": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-12.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-2.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-2.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-2.7": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-3.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-3.4": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-4": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-4.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-5": [
+   "implemented",
+   "shared"
+  ],
+  "cm-5.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-5.5": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-6": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-6.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-7": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-7.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-7.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-7.5": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-8": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-8.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-8.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cm-9": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "cp-10": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-10.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-2.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-2.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-2.8": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-4": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-4.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-6": [
+   "implemented",
+   "inherited"
+  ],
+  "cp-6.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-6.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-7": [
+   "implemented",
+   "inherited"
+  ],
+  "cp-7.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-7.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-7.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-8": [
+   "implemented",
+   "inherited"
+  ],
+  "cp-8.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-8.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-9": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-9.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "cp-9.8": [
+   "implemented",
+   "sp-system"
+  ],
+  "ia-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ia-11": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-12": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-12.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-12.3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-12.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.12": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.6": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-2.8": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-3": [
+   "implemented",
+   "shared"
+  ],
+  "ia-4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-4.4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-5.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-5.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-5.6": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-5.7": [
+   "implemented",
+   "sp-system"
+  ],
+  "ia-6": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-7": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-8": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-8.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-8.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ia-8.4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ir-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-2.3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-3.2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-4": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-4.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-5": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-6": [
+   "implemented",
+   "sp-system"
+  ],
+  "ir-6.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-6.3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-7": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-7.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-8": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-8.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-9": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-9.2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-9.3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ir-9.4": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ma-1": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-2": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-3": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-3.1": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-3.2": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-3.3": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-4": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-5": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-5.1": [
+   "implemented",
+   "inherited"
+  ],
+  "ma-6": [
+   "implemented",
+   "inherited"
+  ],
+  "mp-1": [
+   "implemented",
+   "inherited"
+  ],
+  "mp-2": [
+   "implemented",
+   "inherited"
+  ],
+  "mp-3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "mp-4": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "mp-5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "mp-6": [
+   "implemented",
+   "inherited"
+  ],
+  "mp-7": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-1": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-10": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-11": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-12": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-13": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-13.1": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-13.2": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-14": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-15": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-16": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-17": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "pe-2": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-3": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-4": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-5": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-6": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-6.1": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-8": [
+   "implemented",
+   "inherited"
+  ],
+  "pe-9": [
+   "implemented",
+   "inherited"
+  ],
+  "pl-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-10": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-11": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-4": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-4.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-8": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pl-9": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pm-3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "pm-7": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-3.3": [
+   "not-applicable",
+   "sp-corporate"
+  ],
+  "ps-4": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-5": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-6": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-7": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-8": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ps-9": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ra-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "ra-2": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-3": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-3.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-5": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-5.11": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-5.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-5.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-5.5": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "ra-7": [
+   "implemented",
+   "sp-system"
+  ],
+  "ra-9": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sa-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sa-10": [
+   "implemented",
+   "shared"
+  ],
+  "sa-11": [
+   "implemented",
+   "sp-system"
+  ],
+  "sa-11.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "sa-11.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "sa-15": [
+   "implemented",
+   "sp-system"
+  ],
+  "sa-15.3": [
+   "implemented",
+   "shared"
+  ],
+  "sa-2": [
+   "implemented",
+   "shared"
+  ],
+  "sa-22": [
+   "implemented",
+   "inherited"
+  ],
+  "sa-3": [
+   "implemented",
+   "shared"
+  ],
+  "sa-4": [
+   "implemented",
+   "shared"
+  ],
+  "sa-4.1": [
+   "implemented",
+   "shared"
+  ],
+  "sa-4.10": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "sa-4.2": [
+   "implemented",
+   "shared"
+  ],
+  "sa-4.9": [
+   "implemented",
+   "sp-system"
+  ],
+  "sa-5": [
+   "implemented",
+   "shared"
+  ],
+  "sa-8": [
+   "implemented",
+   "shared"
+  ],
+  "sa-9": [
+   "implemented",
+   "shared"
+  ],
+  "sa-9.1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sa-9.2": [
+   "implemented",
+   "shared"
+  ],
+  "sa-9.5": [
+   "implemented",
+   "sp-system"
+  ],
+  "sc-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sc-10": [
+   "implemented",
+   "shared"
+  ],
+  "sc-12": [
+   "implemented",
+   "shared"
+  ],
+  "sc-13": [
+   "implemented",
+   "shared"
+  ],
+  "sc-15": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "sc-17": [
+   "implemented",
+   "shared"
+  ],
+  "sc-18": [
+   "implemented",
+   "shared"
+  ],
+  "sc-2": [
+   "implemented",
+   "shared"
+  ],
+  "sc-20": [
+   "implemented",
+   "inherited"
+  ],
+  "sc-21": [
+   "implemented",
+   "inherited"
+  ],
+  "sc-22": [
+   "implemented",
+   "inherited"
+  ],
+  "sc-23": [
+   "implemented",
+   "shared"
+  ],
+  "sc-28": [
+   "implemented",
+   "shared"
+  ],
+  "sc-28.1": [
+   "implemented",
+   "shared"
+  ],
+  "sc-39": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "sc-4": [
+   "implemented",
+   "shared"
+  ],
+  "sc-45": [
+   "implemented",
+   "inherited"
+  ],
+  "sc-45.1": [
+   "implemented",
+   "inherited"
+  ],
+  "sc-5": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.12": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "sc-7.18": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.3": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.4": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.5": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.7": [
+   "implemented",
+   "shared"
+  ],
+  "sc-7.8": [
+   "implemented",
+   "shared"
+  ],
+  "sc-8": [
+   "implemented",
+   "shared"
+  ],
+  "sc-8.1": [
+   "implemented",
+   "shared"
+  ],
+  "si-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "si-10": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-11": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-12": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-12.3": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-16": [
+   "implemented",
+   "inherited"
+  ],
+  "si-18.4": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-2": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-2.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-2.3": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "si-3": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "si-4": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-4.1": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "si-4.16": [
+   "implemented",
+   "shared"
+  ],
+  "si-4.18": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "si-4.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-4.23": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "si-4.4": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-4.5": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-5": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-6": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-7": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-7.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-7.7": [
+   "implemented",
+   "sp-system"
+  ],
+  "si-8": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "si-8.2": [
+   "not-applicable",
+   "sp-system"
+  ],
+  "sr-1": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sr-10": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-11": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-11.1": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-11.2": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-12": [
+   "implemented",
+   "inherited"
+  ],
+  "sr-2": [
+   "implemented",
+   "sp-corporate"
+  ],
+  "sr-2.1": [
+   "not-applicable",
+   "sp-corporate"
+  ],
+  "sr-3": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-5": [
+   "implemented",
+   "sp-system"
+  ],
+  "sr-6": [
+   "implemented",
+   "shared"
+  ],
+  "sr-8": [
+   "implemented",
+   "sp-system"
+  ]
+ }
+}

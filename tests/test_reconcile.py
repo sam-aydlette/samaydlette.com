@@ -54,16 +54,16 @@ def clean_set():
              "resource_type": "AWS::S3::Bucket", "native_id": ARN_BUCKET},
         ],
     }
-    ssp = {"system-security-plan": {
-        "metadata": {"props": [{"name": "ksi-signal-source", "value": SIGNAL_ID}]},
-        "system-characteristics": {"security-sensitivity-level": "moderate"},
-        "system-implementation": {"components": [{"type": "this-system", "title": "whole system"}]},
-    }}
+    sdr = {"record_type": "security-decision-record", "impact_level": "Moderate", "ksi_signal_id": SIGNAL_ID}
+    cpo = {"package_type": "certification-package-overview", "impact_level": "Moderate",
+           "ksi_signal_id": SIGNAL_ID}
     vdr = {"impact_level": "Moderate", "class": "C", "ksi_signal_id": SIGNAL_ID,
+           "findings": [{"tracking_id": "CKV_AWS_18-app", "component_id": "aws::function::app",
+                         "decision_id": "DEC-007"}],
            "risk_accepted": [{"tracking_id": "CKV_AWS_68", "decision_id": "DEC-007"}]}
     dashboard = "<h3>FedRAMP Rev 5 Moderate</h3>"
     checkov = "skip-check:\n  - CKV_AWS_68\n"
-    return dict(signal=signal, ssp=ssp, vdr=vdr, dashboard_html=dashboard, checkov_text=checkov,
+    return dict(signal=signal, sdr=sdr, cpo=cpo, vdr=vdr, dashboard_html=dashboard, checkov_text=checkov,
                 register=copy.deepcopy(REGISTER))
 
 
@@ -105,13 +105,27 @@ def test_a_completeness_still_tolerates_log_group_wildcard():
     assert rc.check_a_completeness(signal, {base + ":*"}) == []
 
 
-def test_b_referential_catches_unresolved_ssp_component():
+def test_b_referential_catches_a_finding_on_a_component_outside_the_inventory():
     s = clean_set()
-    s["ssp"]["system-security-plan"]["system-implementation"]["components"].append(
-        {"type": "service", "title": "ghost",
-         "props": [{"name": "aws-arn", "value": f"arn:aws:lambda:us-east-2:{ACCOUNT}:function:ghost"}]})
-    v = rc.check_b_referential(s["signal"], s["ssp"])
-    assert any("does not resolve" in x for x in v)
+    s["vdr"]["findings"][0]["component_id"] = "aws::function::ghost"
+    v = rc.check_b_referential(s["signal"], s["vdr"])
+    assert v == ["(b) VDR finding 'CKV_AWS_18-app' names component 'aws::function::ghost', "
+                 "which is not in the inventory"]
+
+
+def test_b_referential_checks_every_disposition_bucket():
+    s = clean_set()
+    s["vdr"]["risk_accepted"][0]["component_id"] = "aws::object_store::gone"
+    assert any("aws::object_store::gone" in x for x in rc.check_b_referential(s["signal"], s["vdr"]))
+
+
+def test_b_referential_leaves_an_unresolved_finding_to_the_builder():
+    # The builder marks a finding it could not attribute (component_id null,
+    # unresolved_component true) and rates it fail-safe; (b) checks only the
+    # components findings do name.
+    s = clean_set()
+    s["vdr"]["findings"][0].update(component_id=None, unresolved_component=True)
+    assert rc.check_b_referential(s["signal"], s["vdr"]) == []
 
 
 def test_c_uncategorized_suppression_fails():
@@ -136,31 +150,41 @@ def test_c_risk_accepted_needs_vdr_decision_id():
     assert any("no non-null decision_id" in x for x in v)
 
 
-def test_d_impact_catches_low_ssp():
+@pytest.mark.parametrize("art", ["sdr", "cpo"])
+def test_d_impact_catches_a_low_sdr_or_cpo(art):
     s = clean_set()
-    s["ssp"]["system-security-plan"]["system-characteristics"]["security-sensitivity-level"] = "low"
-    v = rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"])
-    assert any("ssp" in x and "low" in x for x in v)
+    s[art]["impact_level"] = "Low"
+    v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
+    assert v == [f"(d) {art} impact level is 'low', expected 'moderate'"]
+
+
+@pytest.mark.parametrize("art", ["sdr", "cpo"])
+def test_d_impact_catches_an_sdr_or_cpo_with_no_impact_level(art):
+    s = clean_set()
+    del s[art]["impact_level"]
+    v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
+    assert v == [f"(d) {art} carries no extractable impact level"]
 
 
 def test_d_impact_reads_the_trust_center_page():
     s = clean_set()
     s["dashboard_html"] = (REPO / "website" / "trust" / "index.html").read_text()
-    assert rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"]) == []
+    assert rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"]) == []
 
 
 def test_d_impact_catches_low_dashboard():
     s = clean_set()
     s["dashboard_html"] = "<h3>FIPS-199 Low</h3>"
-    v = rc.check_d_impact(s["signal"], s["ssp"], s["vdr"], s["dashboard_html"])
+    v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
     assert any("dashboard" in x for x in v)
 
 
-def test_e_binding_catches_mismatched_signal_id():
+@pytest.mark.parametrize("art", ["vdr", "sdr", "cpo"])
+def test_e_binding_catches_mismatched_signal_id(art):
     s = clean_set()
-    s["vdr"]["ksi_signal_id"] = "99999999-9999-4999-8999-999999999999"
-    v = rc.check_e_binding(s["signal"], s["ssp"], s["vdr"])
-    assert any("vdr" in x and "!=" in x for x in v)
+    s[art]["ksi_signal_id"] = "99999999-9999-4999-8999-999999999999"
+    v = rc.check_e_binding(s["signal"], s["sdr"], s["cpo"], s["vdr"])
+    assert v == [f"(e) {art} signal_id '99999999-9999-4999-8999-999999999999' != inventory signal_id '{SIGNAL_ID}'"]
 
 
 def test_f_freshness_catches_stale_commit():
@@ -258,28 +282,36 @@ def test_state_backend_bucket_excluded_from_live_sweep():
 def test_j_unknown_decision_reference_fails():
     s = clean_set()
     s["signal"]["components"][0]["baseline_configuration"] = "hardened per POAM-999"
-    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
+    v = rc.check_j_decision_id_validity(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["register"])
     assert any("POAM-999" in x and "(j)" in x for x in v)
 
 
 def test_j_retired_id_is_referenceable():
     s = clean_set()
-    s["ssp"]["system-security-plan"]["metadata"]["remarks"] = "multi-region declined; see POAM-016 (retired)"
-    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
+    s["sdr"]["note"] = "multi-region declined; see POAM-016 (retired)"
+    v = rc.check_j_decision_id_validity(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["register"])
     assert v == [], v
 
 
 def test_j_register_items_and_valid_refs_pass():
     s = clean_set()
     s["signal"]["components"][0]["baseline_configuration"] = "throttled (POAM-007; now DEC-007)"
-    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
+    v = rc.check_j_decision_id_validity(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["register"])
     assert v == [], v
+
+
+@pytest.mark.parametrize("art", ["sdr", "cpo"])
+def test_j_reads_the_sdr_and_cpo(art):
+    s = clean_set()
+    s[art]["note"] = "see DEC-998"
+    v = rc.check_j_decision_id_validity(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["register"])
+    assert v == [f"(j) {art} references DEC-998, which is neither a decision record nor a retired ID"]
 
 
 def test_j_unknown_dec_reference_fails():
     s = clean_set()
     s["vdr"]["note"] = "see DEC-999"
-    v = rc.check_j_decision_id_validity(s["signal"], s["ssp"], s["vdr"], s["register"])
+    v = rc.check_j_decision_id_validity(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["register"])
     assert any("DEC-999" in x for x in v)
 
 

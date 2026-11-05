@@ -4,7 +4,7 @@
 # =============================================================================
 # Every framework-coverage number on the dashboard is derived from a generated
 # artifact, not typed by hand. This script computes those
-# figures from the canonical artifacts (the OSCAL SSP, the component definition,
+# figures from the canonical artifacts (the control projection, the component definition,
 # the spoke profiles, the dispositions, and the CMMC projector's own output) and
 # stamps them into HTML at marked sites:
 #
@@ -15,7 +15,7 @@
 # key is unknown is an error (the HTML references a figure the build cannot
 # produce); a computed key that no marker uses is reported but tolerated.
 #
-# This keeps the compliance representation honest: change the SSP and the
+# This keeps the compliance representation honest: change the projection and the
 # number on the dashboard changes on the next deploy, because the deploy runs
 # this with --check (CI fails if any stamped figure has drifted from its source)
 # and then in write mode. It targets the dashboard only. Article and research
@@ -25,9 +25,9 @@
 #   inject-figures.py --check         # exit 1 if any marker is stale (CI gate)
 #   inject-figures.py --print         # print the computed figure table and exit
 #
-# Acceptance: altering the SSP's implemented-requirement count changes
+# Acceptance: altering the projection's implemented-requirement count changes
 # hub_total / hub_generated everywhere they are marked; dropping a baseline
-# control from the SSP lowers moderate_coverage below N/N.
+# control from the projection lowers moderate_coverage below N/N.
 # =============================================================================
 
 import argparse
@@ -40,7 +40,10 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-SSP = REPO / "infrastructure" / "oscal-ssp.json"
+# The control projection's inputs (scripts/_controls.py): the canonical
+# inventory, built by the pipeline and gitignored, and the KSI catalog.
+SIGNAL = REPO / "infrastructure" / "ksi-signal.json"
+CATALOG = REPO / "infrastructure" / "schemas" / "ksi-catalog.json"
 
 COMPONENT_DEF = REPO / "data" / "component-definitions" / "samaydlette-com-component-definition.json"
 DISPOSITIONS = REPO / "data" / "dispositions" / "beyond-moderate.json"
@@ -119,7 +122,7 @@ def _cmmc_figures():
         out = tmp.name
     subprocess.run(
         [sys.executable, str(REPO / "scripts" / "build-cmmc.py"),
-         "--ssp", str(SSP), "--output", out],
+         "--ksi-signal", str(SIGNAL), "--catalog", str(CATALOG), "--output", out],
         check=True, capture_output=True, text=True,
     )
     cov = json.loads(Path(out).read_text())
@@ -128,12 +131,17 @@ def _cmmc_figures():
     return cov, srm
 
 
+def _projection():
+    """The control projection's implemented-requirements (scripts/_controls.py)."""
+    return _load_module("_controls", REPO / "scripts" / "_controls.py").load(SIGNAL, CATALOG)
+
+
 def compute_figures():
     """Compute every stamped figure from canonical artifacts. Returns
     {figure_key: string_value}. This is the single source of truth."""
     bc = _load_module("build_coverage", REPO / "scripts" / "build-coverage.py")
-    ssp = json.loads(SSP.read_text())
-    cov = bc.build_coverage(ssp, "FedRAMP Rev5 Moderate")
+    irs = _projection()
+    cov = bc.build_coverage(irs, "FedRAMP Rev5 Moderate")
     rs = cov["responsibility_stack"]
 
     hub_total = cov["in_scope_controls"]
@@ -143,15 +151,15 @@ def compute_figures():
     mod_inherited = rs["fully-inherited"] + rs["partially-inherited"]
     mod_na = rs["not-applicable"]
 
-    # Baseline coverage is measured, not assumed: the SSP's control-ids that fall
-    # inside the published baseline, over the baseline's size. A baseline control
-    # missing from the SSP lowers the numerator; the hub's extra controls are
+    # Baseline coverage is measured, not assumed: the projection's control-ids that
+    # fall inside the published baseline, over the baseline's size. A baseline
+    # control missing from the projection lowers the numerator; the hub's extra controls are
     # counted separately rather than inflating both sides.
     baseline_ids = _profile_selection_ids(MODERATE_PROFILE)
-    ssp_ids = {ir["control-id"] for ir in ssp["system-security-plan"]["control-implementation"]["implemented-requirements"]}
+    control_ids = {ir["control-id"] for ir in irs}
     moderate_baseline = len(baseline_ids)
-    moderate_covered = len(ssp_ids & baseline_ids)
-    moderate_beyond = len(ssp_ids - baseline_ids)
+    moderate_covered = len(control_ids & baseline_ids)
+    moderate_beyond = len(control_ids - baseline_ids)
     govramp = _profile_selection_count(PROFILES["govramp"])
     txramp1 = _profile_selection_count(PROFILES["txramp1"])
     txramp2 = _profile_selection_count(PROFILES["txramp2"])

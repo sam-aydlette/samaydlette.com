@@ -1389,37 +1389,12 @@ jobs:
           opa-policy-bundle.tar.gz
         echo "✅ OPA policy bundle signed and verified against the pinned identity"
 
-    # -------------------------------------------------------------------------
-    # BUILD THE OSCAL REV 5 SSP  (published after the reconciliation gate)
-    # -------------------------------------------------------------------------
-    # Generates a NIST OSCAL System Security Plan (FedRAMP Rev 5 Moderate
-    # baseline shape) from the canonical inventory and the FedRAMP KSI catalog. Sits
-    # alongside the KSI signal at /.well-known/oscal-ssp.json.
-    # -------------------------------------------------------------------------
-    - name: Build OSCAL Rev 5 SSP
-      working-directory: infrastructure
-      run: |
-        echo "Building OSCAL SSP..."
-        python3 ../scripts/build-oscal-ssp.py
-        echo "SSP summary:"
-        jq '{
-          uuid: ."system-security-plan".uuid,
-          oscal_version: ."system-security-plan".metadata."oscal-version",
-          components: (."system-security-plan"."system-implementation".components | length),
-          control_count: (."system-security-plan"."control-implementation"."implemented-requirements" | length),
-          ksi_signal_id: ."system-security-plan".metadata.props[0].value
-        }' oscal-ssp.json
-
-    # Framework-coverage figures are no longer stamped into committed HTML: the
-    # trust center renders them from trust-center.json, which
-    # build-trust-center.py computes from the just-built SSP on every deploy
-    # (inject-figures.compute_figures), so there is nothing committed to drift.
-
-    - name: Sign OSCAL SSP
-      working-directory: infrastructure
-      run: |
-        echo "Signing oscal-ssp.json with cosign keyless..."
-        cosign sign-blob --yes --new-bundle-format --bundle oscal-ssp.bundle oscal-ssp.json
+    # Framework-coverage figures are not stamped into committed HTML: the trust
+    # center renders them from trust-center.json, which build-trust-center.py
+    # computes on every deploy from the control projection (scripts/_controls.py,
+    # via inject-figures.compute_figures), so there is nothing committed to drift.
+    # The OSCAL SSP that used to be built here is retired (CR26): the SDR carries
+    # the per-control record (rev5_controls) and the CPO the package overview.
 
     # -------------------------------------------------------------------------
     # BUILD THE VDR REPORT  (published after the reconciliation gate) (FedRAMP 20x VDR-RPT-PER, VDR-TFR-MHR)
@@ -1519,10 +1494,10 @@ jobs:
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
     # -------------------------------------------------------------------------
-    # The IIW is the third report this codebase derives from one source. The
-    # KSI signal is the wire format, the OSCAL SSP is the Rev 5 view, and the
-    # IIW is the Excel-compatible shape FedRAMP processes still ask for. All
-    # three derive from the canonical inventory in ksi-signal.json.
+    # The IIW is one of several reports this codebase derives from one source.
+    # The KSI signal is the wire format, the SDR carries the per-KSI and per-Rev5-
+    # control record, and the IIW is the Excel-compatible shape FedRAMP processes
+    # still ask for. All derive from the canonical inventory in ksi-signal.json.
     # -------------------------------------------------------------------------
     - name: Build IIW (FedRAMP SSP Appendix M)
       working-directory: infrastructure
@@ -1568,11 +1543,11 @@ jobs:
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       run: |
-        echo "Building Security Decision Record (SDR-CSO-FRR). The Rev5 OSCAL SSP stays as the Rev5-paradigm artifact; both derive from the same hub."
+        echo "Building Security Decision Record (SDR-CSO-FRR per KSI, SDR-CSF-CTF per Rev5 control) from the control projection..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
           || echo '{}' > previous-sdr.json
         python3 ../scripts/build-sdr.py \
-          --ssp oscal-ssp.json --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
+          --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
@@ -1614,10 +1589,10 @@ jobs:
 
     # Reconciliation gate (assessment keystone, Task 1). Fails closed if any
     # cross-artifact invariant breaks: live-resource completeness (deny-by-default),
-    # SSP references resolve to inventory, every Checkov suppression is
+    # every VDR finding's component resolves to the inventory, every Checkov suppression is
     # categorized by an in-force decision record, every VDR finding resolves
-    # to one, one identical impact level everywhere, all
-    # artifacts bound to one signal_id, and the staged artifacts carry this run's
+    # to one, one identical impact level everywhere (signal, VDR, SDR, CPO, trust
+    # center), the VDR, SDR and CPO bound to one signal_id, and the staged artifacts carry this run's
     # commit. Runs after all artifacts are built and signed but BEFORE anything is
     # published (Task 1.5): nothing reaches /.well-known/ until this passes, so a
     # gate failure can never leave a partial/stale served set (root of P-1).
@@ -1704,9 +1679,6 @@ jobs:
         # Signed OPA policy bundle (S1): the compiled Wasm the gate + runtime use, plus its keyless signature.
         aws s3 cp opa-policy-bundle.tar.gz "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz" --content-type application/gzip --cache-control "public, max-age=300"
         aws s3 cp opa-policy-bundle.tar.gz.bundle "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz.bundle" --content-type application/json --cache-control "public, max-age=300"
-        # OSCAL SSP
-        aws s3 cp oscal-ssp.json "s3://$BUCKET_NAME/.well-known/oscal-ssp.json" --content-type application/oscal+json --cache-control "public, max-age=300"
-        aws s3 cp oscal-ssp.bundle "s3://$BUCKET_NAME/.well-known/oscal-ssp.bundle" --content-type application/json --cache-control "public, max-age=300"
         # VDR report + trend
         aws s3 cp vdr-report.json "s3://$BUCKET_NAME/.well-known/vdr-report.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1719,10 +1691,11 @@ jobs:
         aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
 
         # Retired artifacts (CR26): the OSCAL POA&M was replaced by the decision
-        # register (data/decisions.json) on 2026-11-04. Its published copies
-        # are deleted rather than left to go stale unwatched; the round-trip
-        # step below asserts they are gone.
-        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl; do
+        # register (data/decisions.json) on 2026-11-04, and the OSCAL SSP by the
+        # SDR (per-KSI and per-Rev5-control records) and CPO on 2026-11-05. Their
+        # published copies are deleted rather than left to go stale unwatched;
+        # the round-trip step below asserts they are gone.
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
           aws s3 rm "s3://$BUCKET_NAME/.well-known/$retired"
         done
         # Ongoing Certification Report (CCM-OCR-AVL) + human-readable rendering
@@ -1786,10 +1759,10 @@ jobs:
             --content-type application/json --cache-control "public, max-age=300"
           echo "  attested (inline-DSSE) + consumed + published: $art.intoto.jsonl"
         }
-        # Core canonical evidence set. Extending to the remaining CDS/SDR/CPO
-        # artifacts is one attest() line each (tracked follow-on).
+        # Core canonical evidence set (the SDR took the retired SSP's place). Extending
+        # to the remaining CDS/CPO artifacts is one attest() line each (tracked follow-on).
         attest ksi-signal.json scripts/build-ksi-signal.py
-        attest oscal-ssp.json  scripts/build-oscal-ssp.py
+        attest security-decision-record.json scripts/build-sdr.py
         attest vdr-report.json scripts/build-vdr-report.py
         attest iiw.csv         scripts/build-iiw.py
         echo "✅ SLSA/in-toto provenance attestations published for the core compliance artifacts"
@@ -1815,7 +1788,6 @@ jobs:
         }
         check ksi-signal.json .well-known/ksi-signal.json
         check opa-policy-bundle.tar.gz .well-known/opa-policy-bundle.tar.gz
-        check oscal-ssp.json .well-known/oscal-ssp.json
         check vdr-report.json .well-known/vdr-report.json
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
         check certification-overview-package.json .well-known/certification-overview-package.json
@@ -1830,12 +1802,12 @@ jobs:
         check conformance-results.json .well-known/conformance-results.json
         if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
-        for a in ksi-signal.json oscal-ssp.json vdr-report.json iiw.csv; do
+        for a in ksi-signal.json security-decision-record.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
         done
         # Retired artifacts must be gone from the origin. Only a 404 counts as
         # gone: any other error (e.g. AccessDenied) fails rather than passing.
-        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl; do
+        for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
           if head_err=$(aws s3api head-object --bucket "$BUCKET_NAME" --key ".well-known/$retired" 2>&1 >/dev/null); then
             echo "::error::retired artifact still published: .well-known/$retired"; fail=1
           elif printf '%s' "$head_err" | grep -q '(404)'; then
@@ -2002,7 +1974,6 @@ jobs:
           compliance-result.json
           infrastructure/ksi-signal.json
           infrastructure/ksi-signal.bundle
-          infrastructure/oscal-ssp.json
         retention-days: 30
 
     # The bootstrap state snapshot (read once by "Read the trust-root state")

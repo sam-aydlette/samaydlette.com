@@ -120,7 +120,7 @@ Through 2026-10 it called the Anthropic API instead, tracked as POAM-020 and
 removed under [SCN-2026-006](scn/SCN-2026-006-remove-anthropic-interconnection.md).
 
 Turning it on here would be a significant change: a new SCN, an `interconnection`
-component and boundary-crossing data flow in the SSP (`build-oscal-ssp.py`), an
+boundary-crossing data flow in the SDR and boundary map, an
 external component in the inventory (`build-ksi-signal.py`) and the boundary
 classification, a secret plus a least-privilege read grant, and an SA-9/CA-3
 POA&M decision. Claude on AWS Bedrock remains the in-boundary option if it is

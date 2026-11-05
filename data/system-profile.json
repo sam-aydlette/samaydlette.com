@@ -1,5 +1,5 @@
 {
-  "_note": "Single source of truth for system-wide categorization. Every generator (KSI signal, OSCAL SSP, OSCAL POA&M, VDR, dashboard) reads impact_level from here and emits the identical canonical string. The reconciliation gate (scripts/reconcile.py, invariant d) fails closed if the four artifacts ever disagree. Changing the system's impact level is a one-line edit here, not a hunt across generators.",
+  "_note": "Single source of truth for system-wide categorization. Every generator (KSI signal, VDR, SDR, CPO, dashboard) reads impact_level from here and emits the identical canonical string. The reconciliation gate (scripts/reconcile.py, invariant d) fails closed if they ever disagree. Changing the system's impact level is a one-line edit here, not a hunt across generators.",
   "system_id": "urn:samaydlette:website-prod",
   "impact_level": "Moderate",
   "fedramp_class": "Class C",

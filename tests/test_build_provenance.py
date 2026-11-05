@@ -48,7 +48,7 @@ def _deps(pred):
 def test_predicate_structure_and_bindings(tmp_path, monkeypatch):
     _ci_env(monkeypatch)
     sig = _signal(tmp_path)
-    gen = REPO / "scripts" / "build-oscal-ssp.py"
+    gen = REPO / "scripts" / "build-sdr.py"
     pred = bp.build_predicate(str(sig), str(gen))
 
     assert set(pred) == {"buildDefinition", "runDetails"}
@@ -62,7 +62,7 @@ def test_predicate_structure_and_bindings(tmp_path, monkeypatch):
     assert deps["canonical-inventory"]["annotations"]["signal_id"] == "test-uuid-1234"
     assert pred["buildDefinition"]["internalParameters"]["inventory_signal_id"] == "test-uuid-1234"
     # generator digest is the real sha256 of the generator file
-    assert deps["generator"]["uri"] == "scripts/build-oscal-ssp.py"
+    assert deps["generator"]["uri"] == "scripts/build-sdr.py"
     assert deps["generator"]["digest"]["sha256"] == hashlib.sha256(gen.read_bytes()).hexdigest()
 
 

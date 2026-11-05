@@ -34,22 +34,6 @@ import hashlib
 import uuid
 
 # =============================================================================
-# OSCAL constants
-# =============================================================================
-# Pinned at the value the live generators currently emit. This is a published
-# field: bumping it changes every consumer's view of the SSP, so treat
-# it as a reviewed artifact change, not a dependency refresh.
-#
-# scripts/staged/migrate_hub_to_component_def.py pins 1.2.2 instead. That
-# divergence is real and predates this module; it is left explicit there rather
-# than silently harmonised here, because the two would have to be reconciled
-# deliberately when that migration is actually taken.
-OSCAL_VERSION = "1.1.2"
-
-FEDRAMP_NS = "https://fedramp.gov/ns/oscal"
-
-
-# =============================================================================
 # hashing
 # =============================================================================
 def sha256_file(path):
@@ -95,7 +79,7 @@ def prop(obj, name):
 # the inheritance rule
 # =============================================================================
 def classify(status, origination):
-    """Project an SSP implemented-requirement onto the shared-responsibility
+    """Project a control implemented-requirement onto the shared-responsibility
     vocabulary every downstream framework view uses.
 
     This is the compliance semantic the downstream framework views have to agree
@@ -122,16 +106,13 @@ def classify(status, origination):
     return "implemented"                  # sp-system / sp-corporate (provider implements)
 
 
-def load_hub(ssp_path):
-    """Read the hub SSP's implemented-requirements into
-    {control-id: (implementation-status, control-origination)}.
+def load_hub(irs):
+    """Map the control projection's implemented-requirements (scripts/_controls.py)
+    to {control-id: (implementation-status, control-origination)}.
 
-    The "hub" is the 800-53 Rev5 SSP that every framework spoke projects from —
-    evidence is collected once there and re-projected, never re-collected.
+    The "hub" is the 800-53 Rev5 control projection that every framework spoke
+    projects from — evidence is collected once there and re-projected, never
+    re-collected.
     """
-    import json
-    from pathlib import Path
-
-    irs = json.loads(Path(ssp_path).read_text())["system-security-plan"]["control-implementation"]["implemented-requirements"]
     return {ir["control-id"]: (prop(ir, "implementation-status"), prop(ir, "control-origination"))
             for ir in irs}
