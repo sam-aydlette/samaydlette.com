@@ -659,7 +659,7 @@
     {
       "frr_id": "IEC-CSO-AIR",
       "status": "Partially Implemented",
-      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). ",
+      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Delivery is publish-only: nothing is sent to FedRAMP or to any agency (the operator has not authorized sending; there is no FedRAMP certification and no agency customer). Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main) and, after the deploy job, runs this workflow on its own role (deploy-with-opa.yml job incident-publisher), so the deploy fails if the publisher cannot publish.",
       "evidence": [
         {
           "kind": "step",
@@ -670,6 +670,14 @@
           "ref": "incident-reports.yml#Incident report clocks (fail when a report is due and missing)"
         },
         {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher preflight"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_deploy_proves_the_publisher_by_calling_it_after_the_deploy"
+        },
+        {
           "kind": "test",
           "ref": "tests/test_incidents.py::test_air_workflow_validates_builds_signs_publishes_and_checks_the_clock_in_order"
         },
@@ -678,7 +686,7 @@
           "ref": ".well-known/incident-reports.json"
         }
       ],
-      "gap": "Not yet running: the role in infrastructure/bootstrap/incident-reports.tf is operator-applied, and the incident-reports GitHub Environment and AWS_INCIDENT_REPORTS_ROLE_ARN variable must be set. Reporting reaches no affected party automatically because delivery is publish-only by the operator's choice. To close: apply the bootstrap role and set the environment and variable; then the operator's delivery decision (IEC-CSO-IIR).",
+      "gap": "Everything up to publication is automated; what is left is the last step of the rule, reaching all affected parties. Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). A person still records the incident's facts in the register, which the rule allows (it asks to minimize human intervention, not remove it). To close: the operator's delivery decision (IEC-CSO-IIR); the delivery is then built into this workflow.",
       "closes_with": [
         "sam"
       ]
@@ -762,7 +770,7 @@
           "ref": ".well-known/incident-reports.json"
         }
       ],
-      "gap": "Published, not delivered (see IEC-CSO-IIR). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
+      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
       "closes_with": [
         "sam"
       ]
@@ -789,7 +797,7 @@
           "ref": ".well-known/incident-reports.json"
         }
       ],
-      "gap": "Reports are published, not delivered: nothing notifies FedRAMP or an agency, and the operator has not decided to send. The unattended publisher needs infrastructure/bootstrap/incident-reports.tf applied and the AWS_INCIDENT_REPORTS_ROLE_ARN variable and incident-reports environment set before it runs. To close: the operator decides the delivery channel (e.g. SES from the system's domain to FedRAMP's incident address) and it is built behind that decision.",
+      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator decides a delivery channel (e.g. SES from the system's domain to FedRAMP's incident address) and it is built behind that decision.",
       "closes_with": [
         "sam"
       ]
@@ -812,7 +820,7 @@
           "ref": ".well-known/incident-reports.json"
         }
       ],
-      "gap": "Published, not delivered (see IEC-CSO-IIR). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
+      "gap": "Reports are published under /.well-known/incident-* and not delivered: nothing sends them to FedRAMP or to an agency, by the operator's decision (notification: published-only in data/incidents.json; this system has no FedRAMP certification and no agency customer). To close: the operator's delivery decision, as for IEC-CSO-IIR.",
       "closes_with": [
         "sam"
       ]
