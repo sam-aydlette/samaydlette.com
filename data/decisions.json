@@ -672,7 +672,7 @@
       "title": "Root and operator MFA is virtual TOTP, not hardware/phishing-resistant",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The root account and the operator IAM user (saydlette-dev) both authenticate with virtual authenticator-app (TOTP) MFA rather than a hardware/phishing-resistant authenticator. Multi-factor authentication (IA-2(1)/(2)) is met - MFA is enabled on both - but the stricter phishing-resistant objective (IA-2(8): hardware token or passkey) is not. Surfaced by the 2026-06-22 Prowler scan. Compensating control: virtual TOTP MFA is enabled on both principals now.",
+      "justification": "The root account and the operator IAM user both authenticate with virtual authenticator-app (TOTP) MFA rather than a hardware/phishing-resistant authenticator. Multi-factor authentication (IA-2(1)/(2)) is met - MFA is enabled on both - but the stricter phishing-resistant objective (IA-2(8): hardware token or passkey) is not. Surfaced by the 2026-06-22 Prowler scan. Compensating control: virtual TOTP MFA is enabled on both principals now.",
       "controls": [
         "ia-2.1",
         "ia-2.2",
