@@ -7,7 +7,7 @@ External communication paths:
 - **Public reporter:** [`/.well-known/security.txt`](../../website/.well-known/security.txt) is the published vulnerability-reporting mailbox.
 - **FedRAMP incident reports (IEC):** every incident is recorded in the incident register, [`data/incidents.json`](../../data/incidents.json), with its reportability evaluation. Initial, Ongoing and Final Incident Reports for a FedRAMP Reportable Incident are generated from it, validated against FedRAMP's incident report schema, signed, and published under `/.well-known/` (the incident log is `/.well-known/incident-reports.json`) by an unattended workflow on every change to the register.
 - **Notification is publish-only.** Nothing is sent to FedRAMP or to any agency. The operator has not authorized sending, and the system has no FedRAMP certification and no agency customers. Choosing a delivery channel is an operator decision; until it is made, publication is the only channel and every report says so.
-- **FedRAMP Security Inbox (FSI, 20x):** the system is not FedRAMP-certified; no actual FSI obligation applies. Notification path is documented in the runbook for reference.
+- **FedRAMP Security Inbox (FSI, 20x):** simulated for this proof of concept. No mail is received or sent; the inbox logic runs on every deploy over synthetic messages and its result is published as `/.well-known/fedramp-inbox-simulation.json`. The published contact directs FedRAMP to the operator on LinkedIn. Procedure: `docs/runbooks/fedramp-security-inbox.md`.
 
 **20x rule integration.** KSI-INR (Incident Response), IEC (Incident Evaluation and Communication), FSI (FedRAMP Security Inbox).
 

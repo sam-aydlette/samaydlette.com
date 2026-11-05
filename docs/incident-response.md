@@ -134,5 +134,5 @@ Single-tier. Author → author. External escalations:
 - **GitHub Support** — if the issue is GitHub-side (account, repo, workflow infrastructure)
 - The mailbox in `security.txt` for acknowledging external reporters
 
-There is no actual FedRAMP certification in scope, so the FedRAMP Security Inbox (FSI) does not apply. Incident reports under the FedRAMP Incident Evaluation and Communication rules are generated and published as described above; they are not sent.
+There is no actual FedRAMP certification in scope. Incident reports under the FedRAMP Incident Evaluation and Communication rules are generated and published as described above; they are not sent. The FedRAMP Security Inbox (FSI) is simulated for this proof of concept: no mail is received or sent, and its published contact directs FedRAMP to the operator on LinkedIn (`docs/runbooks/fedramp-security-inbox.md`).
 

@@ -249,6 +249,24 @@ jobs:
     - name: Exception register expiry check
       run: python3 scripts/check-exceptions.py
 
+    # AFC-CSO-NOC: the FedRAMP Security Inbox contact (data/cds/offering.json)
+    # cannot change without a history entry recording that FedRAMP was
+    # notified. Compared with the merge base on a pull request and with the
+    # previous commit on a push, so the history is also append-only.
+    - name: FedRAMP Security Inbox change notice (AFC-CSO-NOC)
+      env:
+        BASE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || '' }}
+        BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
+      run: |
+        base=""
+        if [ -n "$BASE_REF" ] && git fetch --no-tags --depth=1 origin "$BASE_REF"; then
+          git show FETCH_HEAD:data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        elif [ -n "$BEFORE_SHA" ] && git fetch --no-tags --depth=1 origin "$BEFORE_SHA"; then
+          git show "$BEFORE_SHA":data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        fi
+        # shellcheck disable=SC2086  # $base is an optional flag pair
+        python3 scripts/check-fsi-notice.py $base
+
     # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
     # banned at lint time; the parity test catches what the corpus exercises,
     # this catches the rest before it exists. It also requires every sprintf
@@ -1617,6 +1635,19 @@ jobs:
           --previous previous-availability.json --ksi-signal ksi-signal.json
         python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
 
+    # SIMULATION. The FedRAMP Security Inbox is simulated for this proof of
+    # concept (operator's decision): nothing real is received or sent. This
+    # runs the inbox logic (scripts/_fsi.py) over committed synthetic messages
+    # and fails the deploy if any outcome differs from the expected one
+    # (AFC-CSO-INB/TFG/RCV/CRA/EMR/IMA/ACK, simulated).
+    - name: FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/build-fsi-simulation.py \
+          --messages ../data/fsi-simulation/messages.json \
+          --offering ../data/cds/offering.json \
+          --output fedramp-inbox-simulation.json
+
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       run: |
@@ -1744,6 +1775,8 @@ jobs:
       run: |
         echo "Signing ongoing-certification-report.json with cosign keyless..."
         cosign sign-blob --yes --new-bundle-format --bundle ongoing-certification-report.bundle ongoing-certification-report.json
+        echo "Signing fedramp-inbox-simulation.json (SIMULATION) with cosign keyless..."
+        cosign sign-blob --yes --new-bundle-format --bundle fedramp-inbox-simulation.bundle fedramp-inbox-simulation.json
 
     - name: Sign CDS certification-data artifacts
       working-directory: infrastructure
@@ -1784,7 +1817,7 @@ jobs:
         files="ksi-signal.json schemas/ksi-signal.schema.json vdr-report.json vdr-report.md vdr-trend.json iiw.csv"
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
-        files="$files ongoing-certification-report.json ongoing-certification-report.md"
+        files="$files ongoing-certification-report.json ongoing-certification-report.md fedramp-inbox-simulation.json"
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
         for a in significant-change-notifications scn-evaluations; do files="$files $a.json $a.md"; done
         files="$files significant-change-notifications.atom"
@@ -1843,6 +1876,8 @@ jobs:
         aws s3 cp ongoing-certification-report.json "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp fedramp-inbox-simulation.json "s3://$BUCKET_NAME/.well-known/fedramp-inbox-simulation.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp fedramp-inbox-simulation.bundle "s3://$BUCKET_NAME/.well-known/fedramp-inbox-simulation.bundle" --content-type application/json --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
         for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
@@ -1950,6 +1985,7 @@ jobs:
           check "$a.json" ".well-known/$a.json"
         done
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
+        check fedramp-inbox-simulation.json .well-known/fedramp-inbox-simulation.json
         check certification-overview-package.json .well-known/certification-overview-package.json
         check availability.json .well-known/availability.json
         check policy-index.json .well-known/policy-index.json

@@ -5,83 +5,235 @@
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no auto-responder.",
-      "evidence": [],
-      "gap": "No prompt automatic acknowledgment of FedRAMP messages. To close: Configure an auto-acknowledgment for mail from @fedramp.gov/@gsa.gov (e.g. SES receipt rule -> Lambda reply, or provider auto-reply rule) and include it in the nightly configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The acknowledgement logic (scripts/_fsi.py, build_ack and receive) acknowledges each FedRAMP message once, even when it is redelivered, with headers inbound content cannot inject, and never to auto-replies, bulk mail, bounces, mail without a From address, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged). In the simulation each acknowledgement is built and checked for header safety, then filed nowhere. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_nothing_from_the_inbound_message_can_inject_a_header"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_redelivered_message_is_acknowledged_and_paged_once"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_unauthenticated_fedramp_mail_is_registered_and_paged_but_not_acknowledged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_no_acknowledgement_to_auto_replies_bulk_mail_or_bounces"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-CRA",
-      "status": "Not Implemented",
-      "implementation": "No FSI, no Emergency/Emergency Test handling runbook in docs/incident-response.md or ir-policy.md.",
-      "evidence": [],
-      "gap": "No procedure to recognize Emergency / Emergency Test designated messages, extract the required actions and timeframe, and complete them; no record of completion. To close: Write an FSI runbook (classify by designation, open a tracked item with the message's deadline, complete, reply with completion) and wire Emergency-designated mail to page the operator; keep a completion log. Rehearse with a self-generated Emergency Test.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; the receipt day counts and holidays are not skipped, both erring earlier), replaced at triage by the timeframe the message states; the register reports an item past its deadline until it is closed (scripts/_fsi.py, deadlines, triage, close, overdue). In the simulation the Emergency Test received on a Friday is due 3:00 p.m. ET the following Monday, is reported once that passes, and stops being reported when closed. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_class_c_default_deadline_is_3pm_eastern_on_the_second_business_day"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_emergency_records_carry_a_deadline_and_important_ones_ask_for_the_messages_own"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-EMR",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No routing of Emergency-designated messages to a senior security official; no mailbox configuration or automated validation (both artifacts missing). To close: Add a mail rule that routes subject-designated 'Emergency' FedRAMP messages to the senior security official (the accountable official in the CPO, plus SNS page), and include it in the nightly mailbox-configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Every FedRAMP message, Emergency-designated ones included, produces a page to the senior security official (the accountable official named in the CPO, the operator) naming the designation and the sender's domain (scripts/_fsi.py, receive and page_subject); an Emergency from an address other than FedRAMP's designated Emergency senders (AFC-FRP-UFS) is flagged, not demoted. In the simulation the page is recorded, not delivered: the operator's phone stays blissfully quiet. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_from_an_address_other_than_fedramp_security_is_flagged_not_demoted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_page_subject_is_ascii_and_names_the_domain_not_the_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-IMA",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no handling procedure for Important-designated messages.",
-      "evidence": [],
-      "gap": "No procedure to complete actions in Important messages within their stated timeframe. To close: Extend the FSI runbook to Important messages with tracked deadlines (same tracker as CRA).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Important-designated messages open a register item that cannot be triaged without recording the timeframe the message states; the register reports it while untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed (scripts/_fsi.py, triage and overdue). The simulation checks each of these. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_important_message_cannot_be_triaged_without_its_stated_timeframe"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-INB",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No dedicated FedRAMP Security Inbox address exists or is designated; the required artifact (an email address to receive messages from FedRAMP) cannot be produced. To close: Create a dedicated address on the system's domain (e.g. fedramp-security@samaydlette.com: MX record in dns.tf plus SES inbound or a mail provider, with SPF/DKIM/DMARC), document it as the FSI in the CPO certification_data (security_contact block) and trust center, and monitor it (alarm on delivery failure).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published FedRAMP Security Inbox contact (data/cds/offering.json, fedramp_security_inbox.contact, published in the CPO's certification_data) says, plainly, that the inbox does not exist and to hit the operator up on LinkedIn. The logic a real inbox would run receives, classifies, registers, acknowledges and pages. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_simulation_passes_and_publishes_a_labelled_result_without_addresses"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_cpo_publishes_the_simulated_contact_not_an_email_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-NOC",
-      "status": "Not Implemented",
-      "implementation": "No FSI exists, so no change-notification process exists; nothing in docs/incident-response.md or docs/policies/ir-policy.md covers notifying FedRAMP of an inbox change.",
-      "evidence": [],
-      "gap": "No process (manual or automated) to notify FedRAMP when the FSI address changes. To close: Make the FSI address a single value in the canonical inventory and add a CI check that fails a change to it unless the commit carries a 'FedRAMP notified on <date> via <channel>' record; document the runbook step (email FedRAMP from the old and new address) in ir-policy.md.",
-      "closes_with": [
-        "W9"
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history, and the notice rule applies to it unchanged. scripts/check-fsi-notice.py, run in the unit-test job on every pull request and push, fails a change to the contact unless a new history entry carries a dated fedramp_notified marker naming the channel (FedRAMP's '[CSP] Notification of Changes' form), and fails a rewritten history against the merge base. Known-bad fixtures in tests/fixtures/fsi/. Procedure: docs/runbooks/fedramp-security-inbox.md. The contact was established 2026-11-05 with nothing earlier on file with FedRAMP, so there has been no change to notify.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_the_fedramp_notified_marker_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_a_history_entry_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_rewriting_history_fails_against_the_base"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox change notice (AFC-CSO-NOC)"
+        }
       ]
     },
     {
       "frr_id": "AFC-CSO-RCV",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "Nothing receives FedRAMP mail without disruption (no inbox, no anti-spam allowlisting, no monitoring, no backup reader for a one-person operation). To close: After INB/TFG: allowlist FedRAMP senders, add delivery-failure and unread-age alarms (SNS to operator, reusing the watchdog path), and name a backup reader or an out-of-office auto-forward so a single absent operator does not disrupt receipt. Provider half is fully buildable; only an actual FedRAMP message demonstrates it end-to-end.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Nothing in the inbox logic asks anything of FedRAMP or drops FedRAMP mail: every FedRAMP message is registered and paged whatever its verdicts (the simulation fails the deploy otherwise), a failed acknowledgement is recorded, reported overdue and sent once on retry, and overdue items are reported by the register (scripts/_fsi.py, receive and overdue). Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_failed_acknowledgement_is_recorded_retried_and_counted_overdue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_each_register_check_fails_the_simulation_when_its_outcome_differs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-TFG",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No mailbox configuration treating @fedramp.gov / @gsa.gov senders as FedRAMP, and no automated validation of that configuration (both listed artifacts missing). To close: In the FSI mail rules, tag/route all mail from @fedramp.gov and @gsa.gov as FedRAMP (never spam-filtered/quarantined); export the rule set as code and add a nightly check (evidence-nightly.yml) that reads the live rules and compares them with the expected configuration, published to the trust center like check-manual-settings.py does for GitHub settings.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Classification (scripts/_fsi.py, classify): a message whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov is FedRAMP, whatever its spam verdict or SPF/DKIM/DMARC result; look-alike domains and display-name spoofs are not; failed authentication is recorded so the operator can confirm the sender, never used to filter. The simulation includes a forged @gsa.gov message (still FedRAMP), a FedRAMP envelope sender behind an unreadable From (still FedRAMP), a look-alike domain and a display-name spoof (neither is FedRAMP). Automated validation of the configuration is the deploy-time simulation itself. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_fedramp_senders_are_fedramp_even_when_unauthenticated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_look_alike_domains_and_display_name_spoofs_are_not_fedramp"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_fedramp_envelope_sender_counts_even_if_the_from_header_is_unparseable"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "CCM-OCR-AFS",

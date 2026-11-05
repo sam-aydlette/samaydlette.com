@@ -170,6 +170,18 @@
       "signature": ".well-known/ongoing-certification-report.bundle"
     },
     {
+      "path": ".well-known/fedramp-inbox-simulation.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/fedramp-inbox-simulation.bundle",
+      "note": "SIMULATION: the FedRAMP Security Inbox is simulated for this proof of concept; this is the deploy's run of the inbox logic over synthetic messages."
+    },
+    {
       "path": ".well-known/certification-overview-package.json",
       "cadence": "deploy",
       "max_age_hours": 720,

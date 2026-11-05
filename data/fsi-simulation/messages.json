@@ -1,0 +1,366 @@
+{
+  "_note": "SIMULATION INPUT. Synthetic messages for the simulated FedRAMP Security Inbox (this proof of concept receives and sends no mail, by the operator's decision). scripts/build-fsi-simulation.py runs scripts/_fsi.py over these on every deploy and fails the deploy if any observed outcome differs from 'expected'. Addresses here are synthetic test values and are never published; the published result carries sender domains only.",
+  "inbox": "fedramp-security-inbox@simulation.invalid",
+  "register_check": {
+    "now": "2026-11-06T17:00:00Z",
+    "expected_overdue": [
+      "sim-ack-send-fails",
+      "sim-emergency-other-sender",
+      "sim-emergency-test",
+      "sim-forged-gsa"
+    ],
+    "expected_retry": {
+      "acknowledgements_sent_again": 1,
+      "pages_sent_again": 0
+    },
+    "important_case": "sim-important",
+    "important_respond_by": "2026-11-10T22:00:00Z",
+    "later": "2026-11-09T21:00:00Z",
+    "emergency_case": "sim-emergency-test",
+    "untriaged_important_case": "sim-envelope-only"
+  },
+  "messages": [
+    {
+      "case": "emergency-test",
+      "description": "Emergency Test from FedRAMP's Emergency sender (AFC-FRP-UFS), authenticated",
+      "message_id": "sim-emergency-test",
+      "received_at": "2026-11-06T14:05:00Z",
+      "from": "FedRAMP Security <fedramp_security@fedramp.gov>",
+      "envelope": "fedramp_security@fedramp.gov",
+      "subject": "EMERGENCY TEST: FedRAMP Security Inbox exercise",
+      "headers": {
+        "Message-ID": "<sim-emergency-test@fedramp.gov>"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "EMERGENCY_TEST",
+        "sender_domain": "fedramp.gov",
+        "authenticated": true,
+        "emergency_sender_ok": true,
+        "ack": "sent",
+        "in_reply_to": true,
+        "page": true,
+        "triage_by": "2026-11-06T16:05:00Z",
+        "respond_by": "2026-11-09T20:00:00Z"
+      }
+    },
+    {
+      "case": "important",
+      "description": "Important message whose subject and Message-ID try to inject a Bcc header",
+      "message_id": "sim-important",
+      "received_at": "2026-11-06T14:10:00Z",
+      "from": "FedRAMP PMO <info@fedramp.gov>",
+      "envelope": "info@fedramp.gov",
+      "subject": "IMPORTANT: action requested\r\nBcc: injected@attacker.invalid",
+      "headers": {
+        "Message-ID": "<a@b>\r\nBcc: injected@attacker.invalid"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "IMPORTANT",
+        "sender_domain": "fedramp.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "sent",
+        "in_reply_to": false,
+        "page": true,
+        "triage_by": "2026-11-07T14:10:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "general",
+      "description": "General communication from @gsa.gov, no designator",
+      "message_id": "sim-general",
+      "received_at": "2026-11-06T14:15:00Z",
+      "from": "info@gsa.gov",
+      "envelope": "info@gsa.gov",
+      "subject": "FedRAMP program update",
+      "headers": {
+        "Message-ID": "<sim-general@gsa.gov>"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "GENERAL",
+        "sender_domain": "gsa.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "sent",
+        "in_reply_to": true,
+        "page": true,
+        "triage_by": "2026-11-09T14:15:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "forged-gsa",
+      "description": "Forged Emergency claiming to be from the gsa.gov Emergency sender; SPF, DKIM and DMARC fail. Still FedRAMP by default (AFC-CSO-TFG) and paged, but not acknowledged",
+      "message_id": "sim-forged-gsa",
+      "received_at": "2026-11-06T14:20:00Z",
+      "from": "FedRAMP Security <fedramp_security@gsa.gov>",
+      "envelope": "bounce@attacker.invalid",
+      "subject": "EMERGENCY: reply with your credentials",
+      "headers": {
+        "Message-ID": "<sim-forged@attacker.invalid>"
+      },
+      "auth": {
+        "spf": "FAIL",
+        "dkim": "FAIL",
+        "dmarc": "FAIL"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "EMERGENCY",
+        "sender_domain": "gsa.gov",
+        "authenticated": false,
+        "emergency_sender_ok": true,
+        "ack": "suppressed:unauthenticated",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-06T16:20:00Z",
+        "respond_by": "2026-11-09T20:00:00Z"
+      }
+    },
+    {
+      "case": "auto-reply",
+      "description": "An auto-reply from @fedramp.gov: registered, never answered (no mail loop)",
+      "message_id": "sim-auto-reply",
+      "received_at": "2026-11-06T14:25:00Z",
+      "from": "info@fedramp.gov",
+      "envelope": "info@fedramp.gov",
+      "subject": "Automatic reply: Received: FedRAMP Security Inbox exercise",
+      "headers": {
+        "Auto-Submitted": "auto-replied",
+        "Message-ID": "<sim-auto@fedramp.gov>"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "GENERAL",
+        "sender_domain": "fedramp.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "suppressed:auto-submitted",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-09T14:25:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "look-alike",
+      "description": "Emergency from a look-alike domain (fedramp.gov.attacker.invalid): not FedRAMP, exact domains only",
+      "message_id": "sim-look-alike",
+      "received_at": "2026-11-06T14:30:00Z",
+      "from": "fedramp_security@fedramp.gov.attacker.invalid",
+      "envelope": "fedramp_security@fedramp.gov.attacker.invalid",
+      "subject": "EMERGENCY: act now",
+      "headers": {},
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "other",
+        "designation": "GENERAL",
+        "sender_domain": "fedramp.gov.attacker.invalid",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "none",
+        "in_reply_to": null,
+        "page": false,
+        "triage_by": null,
+        "respond_by": null
+      }
+    },
+    {
+      "case": "display-name-spoof",
+      "description": "Display name impersonates the gsa.gov Emergency sender, actual address does not: not FedRAMP",
+      "message_id": "sim-display-name-spoof",
+      "received_at": "2026-11-06T14:35:00Z",
+      "from": "\"fedramp_security@gsa.gov\" <attacker@attacker.invalid>",
+      "envelope": "attacker@attacker.invalid",
+      "subject": "EMERGENCY: trust me",
+      "headers": {},
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "other",
+        "designation": "GENERAL",
+        "sender_domain": "attacker.invalid",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "none",
+        "in_reply_to": null,
+        "page": false,
+        "triage_by": null,
+        "respond_by": null
+      }
+    },
+    {
+      "case": "envelope-only",
+      "description": "Unreadable From header, @gsa.gov envelope sender: still FedRAMP, registered and paged; no reply without a From address",
+      "message_id": "sim-envelope-only",
+      "received_at": "2026-11-06T14:40:00Z",
+      "from": "garbage <<>>",
+      "envelope": "bounces@gsa.gov",
+      "subject": "Important: please confirm",
+      "headers": {},
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "IMPORTANT",
+        "sender_domain": "gsa.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "suppressed:no-from-address",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-07T14:40:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "emergency-other-sender",
+      "description": "Emergency from an @gsa.gov address other than the designated Emergency senders (AFC-FRP-UFS): flagged, not demoted, still paged",
+      "message_id": "sim-emergency-other-sender",
+      "received_at": "2026-11-06T14:45:00Z",
+      "from": "Someone <someone@gsa.gov>",
+      "envelope": "someone@gsa.gov",
+      "subject": "EMERGENCY: rotate your keys",
+      "headers": {
+        "Message-ID": "<sim-other@gsa.gov>"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "EMERGENCY",
+        "sender_domain": "gsa.gov",
+        "authenticated": true,
+        "emergency_sender_ok": false,
+        "ack": "sent",
+        "in_reply_to": true,
+        "page": true,
+        "triage_by": "2026-11-06T16:45:00Z",
+        "respond_by": "2026-11-09T20:00:00Z"
+      }
+    },
+    {
+      "case": "bulk",
+      "description": "Bulk mail from @gsa.gov: registered, not answered",
+      "message_id": "sim-bulk",
+      "received_at": "2026-11-06T14:50:00Z",
+      "from": "news@gsa.gov",
+      "envelope": "news@gsa.gov",
+      "subject": "Newsletter",
+      "headers": {
+        "Precedence": "bulk"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "GENERAL",
+        "sender_domain": "gsa.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "suppressed:precedence",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-09T14:50:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "bounce",
+      "description": "A bounce (null envelope sender) from @gsa.gov: registered, not answered",
+      "message_id": "sim-bounce",
+      "received_at": "2026-11-06T14:55:00Z",
+      "from": "mailer-daemon@gsa.gov",
+      "envelope": "<>",
+      "subject": "Undeliverable: Received: FedRAMP program update",
+      "headers": {},
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "GENERAL",
+        "sender_domain": "gsa.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "suppressed:null-sender",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-09T14:55:00Z",
+        "respond_by": null
+      }
+    },
+    {
+      "case": "ack-send-fails",
+      "description": "The first acknowledgement attempt fails: recorded as failed, reported overdue, and sent exactly once on the retry",
+      "message_id": "sim-ack-send-fails",
+      "received_at": "2026-11-06T15:00:00Z",
+      "simulate_send_failure": true,
+      "from": "info@fedramp.gov",
+      "envelope": "info@fedramp.gov",
+      "subject": "Checking in",
+      "headers": {
+        "Message-ID": "<sim-fail@fedramp.gov>"
+      },
+      "auth": {
+        "spf": "PASS",
+        "dkim": "PASS",
+        "dmarc": "PASS"
+      },
+      "expected": {
+        "kind": "fedramp",
+        "designation": "GENERAL",
+        "sender_domain": "fedramp.gov",
+        "authenticated": true,
+        "emergency_sender_ok": null,
+        "ack": "failed",
+        "in_reply_to": null,
+        "page": true,
+        "triage_by": "2026-11-09T15:00:00Z",
+        "respond_by": null
+      }
+    }
+  ]
+}

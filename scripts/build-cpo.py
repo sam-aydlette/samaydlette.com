@@ -61,6 +61,18 @@ SCN_NOTIFICATION = {
 }
 
 
+def _fsi(off):
+    """The FedRAMP Security Inbox as published. The inbox is simulated for this
+    proof of concept, so this is a contact statement, never an email address,
+    plus the simulation's published results. The change history stays in the
+    repository."""
+    fsi = off.get("fedramp_security_inbox")
+    if not fsi:
+        return None
+    return {"simulated": True, "contact": fsi["contact"], "rule": "AFC-CSO-INB",
+            "simulation": fsi.get("simulation"), "runbook": fsi.get("runbook")}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--offering", default="../data/cds/offering.json")
@@ -102,6 +114,9 @@ def main():
             "service_model": off.get("service_model"),
             "deployment_model": off.get("deployment_model"),
             "security_contact": off.get("security_contact"),
+            # AFC-CSO-INB: the FedRAMP Security Inbox contact, from its one
+            # source. Simulated for this proof of concept (no mail is received).
+            "fedramp_security_inbox": _fsi(off),
             "overview_package": BASE + "certification-overview-package.json",
         },
         "minimum_assessment_scope": {                            # MAS
@@ -141,6 +156,8 @@ def render_markdown(c):
     out = ["# Certification Package Overview", "",
            f"_{c['note']}_", "",
            f"- **Accountable official:** {ao.get('name')}, {ao.get('title')} ({ao.get('contact')})",
+           f"- **FedRAMP Security Inbox (AFC-CSO-INB):** "
+           f"{(c['certification_data'].get('fedramp_security_inbox') or {}).get('contact', 'not established')}",
            f"- **Class:** {c['class']} | **Impact:** {c['impact_level_canonical']}",
            f"- **Version:** {c['metadata']['version']} | **Last updated:** {c['metadata']['last_updated']}",
            f"- **Maintenance:** {c['maintenance_cadence']}",
