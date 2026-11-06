@@ -8,7 +8,7 @@
     {
       "key": "audit-log-review",
       "mechanism": "Nightly audit-log review (scripts/audit-log-review.py)",
-      "measure": "Every CloudTrail write event and every GitHub change to main, workflows, rulesets and environments since the previous review is judged by rule, a planted simulated intruder must be caught on every run, and a write evaluated reportable that names an IAM user or role starts the quarantine responder against it.",
+      "measure": "Every CloudTrail write event and every GitHub change to main, workflows, rulesets and environments since the previous review is judged by rule, a planted simulated intruder must be caught on every run, and a write evaluated reportable that names an IAM role or user starts the quarantine responder against it (an operator identity, listed in data/operator-identities.json, is paged about and never quarantined).",
       "ksis": ["KSI-CMT-RMV", "KSI-CMT-RVP", "KSI-IAM-SUS", "KSI-MLA-RVL", "KSI-SVC-PRR"],
       "input": "real",
       "verifier": {"kind": "published", "artifact": ".well-known/vdr-audit-log-review.json", "check": "audit-log-review"}
@@ -225,7 +225,7 @@
     {
       "key": "quarantine-drill",
       "mechanism": "Nightly quarantine responder drill (scripts/_quarantine.py, run by scripts/audit-log-review.py)",
-      "measure": "A planted reportable event (Mallory McHypothetical (simulated), signed in from the Moon at 3 a.m. as a permissionless stand-in role) is caught by the audit-log rules, the responder attaches AWS's deny-all policy to the role it names, reads the deny back, removes it and reads the removal back, a planted request to quarantine a trust-root role is refused with no IAM call, and every real reportable event of the night was answered.",
+      "measure": "A planted reportable event (Mallory McHypothetical (simulated), signed in from the Moon at 3 a.m. as a permissionless stand-in role) is caught by the audit-log rules, the responder attaches AWS's deny-all policy to the role it names, reads the deny back, removes it and reads the removal back, a planted request to quarantine a trust-root role is refused with no IAM call, and every real reportable event of the night was answered (a role or non-operator user quarantined; an operator identity paged about and never quarantined; and if the operator list cannot be loaded, every user paged about only and the night failed).",
       "ksis": ["KSI-IAM-SUS"],
       "input": "stand-in",
       "verifier": {"kind": "published", "artifact": ".well-known/vdr-audit-log-review.json", "check": "quarantine-drill"},

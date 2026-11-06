@@ -65,6 +65,18 @@
       ]
      },
      {
+      "Sid": "NeverAnOperator",
+      "Effect": "Deny",
+      "Action": [
+       "iam:AttachUserPolicy",
+       "iam:DetachUserPolicy",
+       "iam:PutUserPolicy"
+      ],
+      "Resource": [
+       "arn:aws:iam::123456789012:user/placeholder-operator"
+      ]
+     },
+     {
       "Sid": "OnlyRolesAndUsers",
       "Effect": "Deny",
       "Action": [

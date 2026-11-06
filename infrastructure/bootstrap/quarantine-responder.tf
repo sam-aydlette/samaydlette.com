@@ -19,11 +19,17 @@
 # AWS's AWSDenyAll, which only ever takes permissions away. AWS owns that
 # policy's document; nothing in this account can change it.
 #
+# NEVER AN OPERATOR. The people who operate the system are listed in
+# data/operator-identities.json (governed, never inferred from a login
+# profile). The code pages about them and attaches nothing; this policy denies
+# the responder those users by name, read from the same file, as it denies the
+# trust root, so a code bug cannot reach them either.
+#
 # WHAT IT CAN NEVER DO. Touch itself or the CI/CD trust root (explicit Deny),
 # touch a group or anything that is not a role or user (explicit Deny with
 # NotResource), write any policy document, assume another role, or read or
 # write data. Its blast radius is denial of service: it can switch off a
-# non-trust-root role or user, which is the point. A person removes a real
+# non-trust-root role or non-operator user, which is the point. A person removes a real
 # quarantine (docs/incident-response.md).
 #
 # WHO CAN USE IT. Only a job in the evidence-nightly GitHub Environment (no PR,
@@ -41,8 +47,10 @@
 # =============================================================================
 
 locals {
-  quarantine_policy_arn  = "arn:aws:iam::aws:policy/AWSDenyAll"
-  quarantine_actions     = ["iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy"]
+  quarantine_policy_arn = "arn:aws:iam::aws:policy/AWSDenyAll"
+  quarantine_actions    = ["iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy"]
+  # Users only: names are never published (the SCG publishes a count).
+  operator_identities    = [for u in jsondecode(file("${path.module}/../../data/operator-identities.json")).users : u.name]
   quarantine_alert_topic = "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${local.domain_dashed}-evidence-alerts"
 }
 
@@ -150,6 +158,14 @@ data "aws_iam_policy_document" "quarantine_responder" {
       aws_iam_role.package_maintenance.arn,
       aws_iam_role.incident_reports.arn,
     ]
+  }
+
+  # Never an operator's user (data/operator-identities.json).
+  statement {
+    sid       = "NeverAnOperator"
+    effect    = "Deny"
+    actions   = ["iam:AttachUserPolicy", "iam:DetachUserPolicy", "iam:PutUserPolicy"]
+    resources = [for u in local.operator_identities : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${u}"]
   }
 
   # Nothing that is not a role or a user.

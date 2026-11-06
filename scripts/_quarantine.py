@@ -10,6 +10,14 @@ names an IAM user or role, the responder:
      five CI roles and the responder itself): quarantining the trust root is a
      person's decision, and the role cannot do it anyway (an explicit Deny in
      infrastructure/bootstrap/quarantine-responder.tf);
+  1a. never quarantines an operator: a user in the governed list of operator
+     identities (data/operator-identities.json) is paged about and nothing
+     is attached, again without any IAM call. Who is an operator is never
+     inferred from the account (a login profile can be absent or deleted);
+     if the list cannot be loaded, every user is paged about only (fail
+     closed), recorded as not handled so the nightly fails. IAM denies the
+     responder the same users by name (quarantine-responder.tf reads the same
+     file), as it does the trust root;
   2. attaches AWS's managed deny-all policy (QUARANTINE_POLICY_ARN) to the user
      or role, the only policy its role may attach (the IAM condition
      iam:PolicyARN), so every request the principal makes is denied from the
@@ -47,6 +55,7 @@ import os
 import re
 import subprocess
 import time
+from pathlib import Path
 
 QUARANTINE_POLICY_ARN = "arn:aws:iam::aws:policy/AWSDenyAll"
 QUARANTINE_POLICY = "AWSDenyAll (AWS managed: denies every action)"
@@ -61,6 +70,8 @@ TRUST_ROOT = frozenset({"github-actions-deploy-oidc", "github-actions-plan-oidc"
                         "github-actions-evidence-nightly-oidc", "github-actions-package-maintenance-oidc",
                         "github-actions-incident-reports-oidc", RESPONDER_ROLE})
 ALERT_TOPIC = "samaydlette-com-evidence-alerts"
+OPERATORS_PATH = Path(__file__).resolve().parent.parent / "data" / "operator-identities.json"
+OPERATOR_KEYS = {"$schema", "schema", "version", "description", "users", "rationale"}
 # IAM's own character set and length for user and role names: anything else in
 # an event is not passed to the AWS CLI (defence in depth; the CLI is called
 # with an argument list, never a shell).
@@ -145,6 +156,36 @@ class AwsCli:
                    "--subject", subject[:99], "--message", message])
 
 
+class OperatorListError(Exception):
+    """The governed operator list is missing or malformed."""
+
+
+def load_operators(path=None):
+    """The governed operator identities, validated; raises OperatorListError."""
+    p = Path(path) if path else OPERATORS_PATH
+    try:
+        doc = json.loads(p.read_text())
+    except (OSError, ValueError) as exc:
+        raise OperatorListError(f"{p.name}: {type(exc).__name__}") from None
+    if not isinstance(doc, dict) or doc.get("schema") != "operator-identities/1":
+        raise OperatorListError("not an operator-identities/1 document")
+    if set(doc) - OPERATOR_KEYS or OPERATOR_KEYS - {"$schema"} - set(doc):
+        raise OperatorListError(f"fields must be {sorted(OPERATOR_KEYS)}")
+    users = doc["users"]
+    if not isinstance(users, list) or not users:
+        raise OperatorListError("users must be a non-empty list")
+    for u in users:
+        if not isinstance(u, dict) or set(u) != {"name", "kind", "source"} or u["kind"] != "iam-user":
+            raise OperatorListError("each user must be {name, kind: iam-user, source}")
+        if not isinstance(u["name"], str) or not IAM_NAME.fullmatch(u["name"]):
+            raise OperatorListError("a user name is not a valid IAM user name")
+    return doc
+
+
+def operator_users(path=None):
+    return frozenset(u["name"] for u in load_operators(path)["users"])
+
+
 def _verify(iam, kind, name, want_attached, sleep=time.sleep):
     """Read the attachment back until it shows the wanted state (IAM is
     eventually consistent); True when it does."""
@@ -163,6 +204,13 @@ def quarantine(iam, kind, name, sleep=time.sleep):
     trust root before any call."""
     if kind == "role" and name in TRUST_ROOT:
         return "refused", "a CI/CD trust-root role: quarantining it is the operator's decision (and IAM denies it)"
+    if kind == "user":
+        try:
+            operators = operator_users()
+        except OperatorListError as exc:
+            return "page-only-unverified", f"the operator list could not be loaded ({exc}); nothing attached"
+        if name in operators:
+            return "page-only", "an operator identity (data/operator-identities.json): never quarantined by a machine"
     try:
         iam.attach(kind, name)
         if not _verify(iam, kind, name, True, sleep):
@@ -174,8 +222,8 @@ def quarantine(iam, kind, name, sleep=time.sleep):
 
 def respond(event, iam, now, sleep=time.sleep):
     """The published record of the response to one reportable event, and
-    whether it was handled (quarantined, refused by design, or not an IAM
-    principal). Pages on a quarantine and on a failure."""
+    whether it was handled (quarantined, refused by design, a human paged
+    about, or not an IAM principal). Pages on every event."""
     kind, name = target_of(event)
     rec = {"event": event.get("EventName"), "at": event.get("EventTime"), "respondedAt": now.isoformat()}
     if kind is None:
@@ -201,7 +249,7 @@ def respond(event, iam, now, sleep=time.sleep):
             rec["detail"] += f" The page failed ({exc})."
     else:
         rec["paged"] = False
-    rec["handled"] = rec["action"] in ("quarantined", "refused", "not-applicable") and rec["paged"]
+    rec["handled"] = rec["action"] in ("quarantined", "refused", "page-only", "not-applicable") and rec["paged"]
     return rec
 
 

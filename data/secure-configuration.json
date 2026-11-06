@@ -407,14 +407,15 @@
       "id": "ci-roles.responder-scope",
       "account": "ci-roles",
       "operable_by": "aws-operator-user (bootstrap apply)",
-      "setting": "The quarantine responder may attach and detach only AWS's deny-all policy on roles and users, read attachments back and page the operator, and is denied on itself and the five CI roles",
+      "setting": "The quarantine responder may attach and detach only AWS's deny-all policy on roles and users, read attachments back and page the operator, and is denied on itself, the five CI roles and every operator identity",
       "recommended": {
         "allow": ["iam:AttachRolePolicy", "iam:AttachUserPolicy", "iam:DetachRolePolicy", "iam:DetachUserPolicy", "iam:ListAttachedRolePolicies", "iam:ListAttachedUserPolicies", "kms:Decrypt", "kms:GenerateDataKey", "sns:Publish"],
         "attach_only": ["arn:aws:iam::aws:policy/AWSDenyAll"],
-        "trust_root_denied": 6
+        "trust_root_denied": 6,
+        "operator_users_denied": 1
       },
-      "implication": "A principal named by a reportable audit-log finding is quarantined with no person in the loop (KSI-IAM-SUS), but the responder can never grant a permission, never write a policy document, and never switch off the CI/CD trust root.",
-      "read": "aws iam get-role-policy (quarantine-responder; allowed actions, the iam:PolicyARN condition, and a count of the roles its Deny names)",
+      "implication": "A role or non-operator user named by a reportable audit-log finding is quarantined with no person in the loop (KSI-IAM-SUS), but the responder can never grant a permission, never write a policy document, never switch off the CI/CD trust root, and never quarantine an operator: the users in data/operator-identities.json are paged about only, in code and by an explicit IAM Deny read from the same file.",
+      "read": "aws iam get-role-policy (quarantine-responder; allowed actions, the iam:PolicyARN condition, and counts of the roles and users its Denies name)",
       "change": "infrastructure/bootstrap/quarantine-responder.tf, aws_iam_role_policy.quarantine_responder; operator-applied",
       "check": "role-actions-responder"
     },
@@ -486,11 +487,11 @@
     "version": "2.5.0",
     "date": "2026-11-06",
     "changes": [
-      "Added the quarantine responder (KSI-IAM-SUS): its trust (the evidence-nightly environment only) and its scope (attach and detach AWS's deny-all policy only, never on itself or the five CI roles), compared on every deploy.",
+      "Added the quarantine responder (KSI-IAM-SUS): its trust (the evidence-nightly environment only) and its scope (attach and detach AWS's deny-all policy only, never on itself, the five CI roles or an operator identity), compared on every deploy.",
       "Added the quarantine drill's stand-in role, which no GitHub workflow can assume.",
       "Added the evidence nightly role's recovery-drill grant: object put, read, version read and delete, and version listing, in the scratch bucket only, for the monthly Chaos Gremlin drill (KSI-RPL-TRC)."
     ],
-    "defaults_sha256": "02b55f67c361fa480ff3ff1897f2b00861598319d7a0ff194baa178193bcfb3b"
+    "defaults_sha256": "b3ae703b703ba8fa97113362a66b2e7cabece8158d50612bfb1d9347e04c6029"
   }
   ]
 }

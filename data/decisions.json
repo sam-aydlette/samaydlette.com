@@ -104,7 +104,7 @@
       "title": "S3 event notifications not configured",
       "disposition": "false-positive",
       "status": "in-force",
-      "justification": "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope.",
+      "justification": "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope. The same holds for the Chaos Gremlin restore drill's scratch bucket (samaydlette-com-recovery-drill): the evidence nightly writes, damages and restores its objects directly and reads the results back itself, so no workflow consumes S3 events from it.",
       "controls": [
         "au-2"
       ],
@@ -115,7 +115,8 @@
         ],
         "vuln_ids": [],
         "resources": [
-          "aws-s3-bucket::website-prod"
+          "aws-s3-bucket::website-prod",
+          "aws-s3-bucket::samaydlette-com-recovery-drill"
         ]
       },
       "decided_by": "Sam Aydlette",
@@ -125,7 +126,14 @@
         "detector": "Checkov",
         "identifier": "CKV_AWS_23",
         "original_risk_rating": "low",
-        "risk_adjustment": false
+        "risk_adjustment": false,
+        "reworded": {
+          "on": "2026-11-06",
+          "by": "AI-drafted (Claude), for the operator's review",
+          "for": "the recovery-drill scratch bucket (infrastructure/bootstrap/recovery-drill.tf) cites this decision; its text and resources now cover it (operator's direction, 2026-11-06)",
+          "before": "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope.",
+          "after": "Lambda writes to S3 but does not subscribe to S3 events. No event-driven workflow in scope. The same holds for the Chaos Gremlin restore drill's scratch bucket (samaydlette-com-recovery-drill): the evidence nightly writes, damages and restores its objects directly and reads the results back itself, so no workflow consumes S3 events from it."
+        }
       },
       "confirmed_on": "2026-06-15"
     },
@@ -832,7 +840,7 @@
       "title": "Selected internal storage uses AWS-managed at-rest encryption (AES256) rather than a customer CMK",
       "disposition": "false-positive",
       "status": "in-force",
-      "justification": "Scanners flag internal resources for encrypting at rest with AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler s3_bucket_default_encryption — a check Prowler marks deprecated), the Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — extended 2026-07-09 — the CloudTrail management trail's log files (CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket samaydlette-com-cloudtrail (CKV_AWS_145), all inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every case; a customer CMK is declined deliberately, for a different reason per resource: the log bucket holds only low-sensitivity public-resource access logs (a CMK would need to grant the AWS log-delivery services key access for no confidentiality benefit); the lock table holds only lock metadata, no secrets; and the state bucket, though it can contain secret material, is private (public-access-blocked), TLS-only, versioned, and reachable only by the deploy role and operator, so a CMK is defense-in-depth rather than required and is declined to avoid adding another key to manage. Accepted as a low residual (SSP SC-28 narrative).",
+      "justification": "Scanners flag internal resources for encrypting at rest with AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler s3_bucket_default_encryption — a check Prowler marks deprecated), the Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — extended 2026-07-09 — the CloudTrail management trail's log files (CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket samaydlette-com-cloudtrail (CKV_AWS_145), all inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every case; a customer CMK is declined deliberately, for a different reason per resource: the log bucket holds only low-sensitivity public-resource access logs (a CMK would need to grant the AWS log-delivery services key access for no confidentiality benefit); the lock table holds only lock metadata, no secrets; and the state bucket, though it can contain secret material, is private (public-access-blocked), TLS-only, versioned, and reachable only by the deploy role and operator, so a CMK is defense-in-depth rather than required and is declined to avoid adding another key to manage. Extended 2026-11-06 to the Chaos Gremlin restore drill's scratch bucket samaydlette-com-recovery-drill (CKV_AWS_145, inline-skipped): it holds only copies of public site pages for at most seven days, so a CMK protects nothing that is not already public. Accepted as a low residual (SSP SC-28 narrative).",
       "controls": [
         "sc-28"
       ],
@@ -846,7 +854,8 @@
         "resources": [
           "aws-s3-bucket::samaydlette-logs",
           "aws-s3-bucket::samaydlette-com-tfstate",
-          "aws-dynamodb-table::samaydlette-com-tflock"
+          "aws-dynamodb-table::samaydlette-com-tflock",
+          "aws-s3-bucket::samaydlette-com-recovery-drill"
         ]
       },
       "decided_by": "Sam Aydlette",
@@ -856,7 +865,14 @@
       "source": {
         "detector": "Checkov; tfsec; Prowler",
         "identifier": "CKV_AWS_145; CKV_AWS_119; AVD-AWS-0132; s3_bucket_default_encryption",
-        "original_risk_rating": "low"
+        "original_risk_rating": "low",
+        "reworded": {
+          "on": "2026-11-06",
+          "by": "AI-drafted (Claude), for the operator's review",
+          "for": "the recovery-drill scratch bucket (infrastructure/bootstrap/recovery-drill.tf) cites this decision; its text and resources now cover it (operator's direction, 2026-11-06)",
+          "before": "Scanners flag internal resources for encrypting at rest with AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler s3_bucket_default_encryption — a check Prowler marks deprecated), the Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — extended 2026-07-09 — the CloudTrail management trail's log files (CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket samaydlette-com-cloudtrail (CKV_AWS_145), all inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every case; a customer CMK is declined deliberately, for a different reason per resource: the log bucket holds only low-sensitivity public-resource access logs (a CMK would need to grant the AWS log-delivery services key access for no confidentiality benefit); the lock table holds only lock metadata, no secrets; and the state bucket, though it can contain secret material, is private (public-access-blocked), TLS-only, versioned, and reachable only by the deploy role and operator, so a CMK is defense-in-depth rather than required and is declined to avoid adding another key to manage. Accepted as a low residual (SSP SC-28 narrative).",
+          "after": "Scanners flag internal resources for encrypting at rest with AWS-managed/AES256 rather than a customer-managed CMK: the access-log bucket samaydlette-logs (Checkov CKV_AWS_145, tfsec AVD-AWS-0132, Prowler s3_bucket_default_encryption — a check Prowler marks deprecated), the Terraform-state bucket samaydlette-com-tfstate (CKV_AWS_145), the Terraform-state lock table samaydlette-com-tflock (CKV_AWS_119), and — extended 2026-07-09 — the CloudTrail management trail's log files (CKV_AWS_35, tfsec AVD-AWS-0015) and delivery bucket samaydlette-com-cloudtrail (CKV_AWS_145), all inline-skipped. SC-28 at-rest encryption is met by SSE-S3/AES256 in every case; a customer CMK is declined deliberately, for a different reason per resource: the log bucket holds only low-sensitivity public-resource access logs (a CMK would need to grant the AWS log-delivery services key access for no confidentiality benefit); the lock table holds only lock metadata, no secrets; and the state bucket, though it can contain secret material, is private (public-access-blocked), TLS-only, versioned, and reachable only by the deploy role and operator, so a CMK is defense-in-depth rather than required and is declined to avoid adding another key to manage. Extended 2026-11-06 to the Chaos Gremlin restore drill's scratch bucket samaydlette-com-recovery-drill (CKV_AWS_145, inline-skipped): it holds only copies of public site pages for at most seven days, so a CMK protects nothing that is not already public. Accepted as a low residual (SSP SC-28 narrative)."
+        }
       },
       "confirmed_on": "2026-06-29"
     },

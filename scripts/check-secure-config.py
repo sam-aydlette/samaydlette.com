@@ -326,12 +326,14 @@ ATTACH_ACTIONS = {"iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUse
 
 
 def _responder_scope(raw):
-    """{allow, attach_only, trust_root_denied}: the actions allowed; the managed
-    policy ARNs every attach/detach grant is conditioned to (an unconditioned
-    grant reads as ["*"]); and how many trust-root roles the explicit Deny names
-    (a count: role names are not published)."""
+    """{allow, attach_only, trust_root_denied, operator_users_denied}: the actions
+    allowed; the managed policy ARNs every attach/detach grant is conditioned
+    to (an unconditioned grant reads as ["*"]); how many trust-root roles the
+    explicit Deny names; and how many users, by name, a Deny of user attach,
+    detach and put names (data/operator-identities.json). Counts: names are
+    not published."""
     doc = _policy_doc(raw)
-    allow, only, denied = set(), set(), set()
+    allow, only, denied, operators = set(), set(), set(), set()
     for st in _statements(doc):
         acts = set(_list(st.get("Action", [])))
         if st.get("Effect") == "Allow":
@@ -344,7 +346,10 @@ def _responder_scope(raw):
                 only |= arns or {"*"}
         elif st.get("Effect") == "Deny" and ATTACH_ACTIONS <= acts:
             denied |= {r.rsplit("/", 1)[-1] for r in _list(st.get("Resource", [])) if ":role/" in r and "*" not in r}
-    return {"allow": sorted(allow), "attach_only": sorted(only), "trust_root_denied": len(denied)}
+        if st.get("Effect") == "Deny" and {"iam:AttachUserPolicy", "iam:DetachUserPolicy", "iam:PutUserPolicy"} <= acts:
+            operators |= {r.rsplit("/", 1)[-1] for r in _list(st.get("Resource", [])) if ":user/" in r and "*" not in r}
+    return {"allow": sorted(allow), "attach_only": sorted(only), "trust_root_denied": len(denied),
+            "operator_users_denied": len(operators)}
 
 
 def _s3_grants(raw):

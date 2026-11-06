@@ -176,6 +176,11 @@ AMENDED_SINCE_MIGRATION = {
     # DEC-019 restated as rotate-on-compromise; DEC-032 names the nightly
     # automated audit-log review in place of a quarterly manual one.
     ("POAM-019", "justification"), ("POAM-032", "justification"),
+    # Widened 2026-11-06 (operator's direction, #526), each with source.reworded:
+    # the Chaos Gremlin drill's scratch bucket cites DEC-004 and DEC-029, and a
+    # check ID can be claimed by one in-force record only, so these two cover it.
+    ("POAM-004", "justification"), ("POAM-004", "resources"),
+    ("POAM-029", "justification"), ("POAM-029", "resources"),
 }
 
 

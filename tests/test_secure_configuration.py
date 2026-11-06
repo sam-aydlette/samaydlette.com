@@ -417,6 +417,11 @@ def test_known_bad_a_responder_that_can_attach_any_policy_fails_the_deploy():
     assert _merged("aws-responder-unconditioned.json") == {"ci-roles.responder-scope": "deviation"}
 
 
+def test_known_bad_a_responder_not_denied_the_operator_fails_the_deploy():
+    """Without the Deny on the operator identities, IAM alone would let the responder quarantine a person."""
+    assert _merged("aws-responder-may-quarantine-operator.json") == {"ci-roles.responder-scope": "deviation"}
+
+
 def test_known_bad_a_drill_grant_on_the_site_bucket_fails_the_deploy():
     assert _merged("aws-nightly-drill-on-site-bucket.json") == {"ci-roles.nightly-recovery-drill-scope": "deviation"}
 
@@ -434,8 +439,9 @@ def test_the_responder_scope_publishes_no_role_name_or_account():
     by = {r["id"]: r for r in _compare("aws-good.json")["settings"]}
     cur = by["ci-roles.responder-scope"]["current"]
     assert cur["attach_only"] == ["arn:aws:iam::aws:policy/AWSDenyAll"] and cur["trust_root_denied"] == 6
+    assert cur["operator_users_denied"] == 1
     text = json.dumps([by[k]["current"] for k in ("ci-roles.responder-scope", "ci-roles.nightly-recovery-drill-scope")])
-    assert "123456789012" not in text and "github-actions" not in text
+    assert "123456789012" not in text and "github-actions" not in text and "placeholder-operator" not in text
 
 
 def test_the_recommended_scopes_are_the_bootstrap_terraform():
@@ -448,5 +454,6 @@ def test_the_recommended_scopes_are_the_bootstrap_terraform():
     for a in src["role-actions-responder"]["recommended"]["allow"]:
         assert f'"{a}"' in tf, a
     assert 'variable = "iam:PolicyARN"' in tf and "arn:aws:iam::aws:policy/AWSDenyAll" in tf
+    assert 'for u in local.operator_identities' in tf and "data/operator-identities.json" in tf
     reads = (REPO / "infrastructure" / "bootstrap" / "deploy-config-reads.tf").read_text()
     assert "aws_iam_role.quarantine_responder.arn" in reads and "aws_iam_role.quarantine_target.arn" in reads

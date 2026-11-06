@@ -28,14 +28,21 @@ resource "aws_s3_bucket" "recovery_drill" {
   bucket = local.recovery_drill_bucket
 
   # Copies of public pages, expired after seven days; same at-rest posture as
-  # the state bucket (SSE-S3, DEC-029). No server access log target: the
-  # nightly role is the only writer and its calls are in CloudTrail (DEC-028's
-  # check), and no event-notification consumer exists (DEC-004).
+  # the state bucket (SSE-S3, DEC-029, which names this bucket). Server access
+  # logs go to the access-log bucket (below), and no event-notification
+  # consumer exists (DEC-004, which names this bucket).
   # checkov:skip=CKV_AWS_145:SSE-S3/AES256 at rest for short-lived copies of public pages; CMK declined (DEC-029).
-  # checkov:skip=CKV_AWS_18:Scratch bucket holding copies of public pages for seven days; no separate S3 access-log target (DEC-028).
   # checkov:skip=CKV2_AWS_62:S3 event notifications are an integration feature, not an audit control; none is configured (DEC-004).
 
   tags = merge(local.bootstrap_tags, local.bootstrap_cls.recovery_drill, { Name = local.recovery_drill_bucket })
+}
+
+# S3 server access logs to the access-log bucket (infrastructure/logging.tf,
+# whose policy names this bucket as a source), beside the website bucket's.
+resource "aws_s3_bucket_logging" "recovery_drill" {
+  bucket        = aws_s3_bucket.recovery_drill.id
+  target_bucket = "${local.domain_dashed}-logs"
+  target_prefix = "s3-access/recovery-drill/"
 }
 
 resource "aws_s3_bucket_versioning" "recovery_drill" {

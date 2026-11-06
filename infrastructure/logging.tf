@@ -84,7 +84,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
 
 # Allow the AWS log-delivery services to write to their respective prefixes,
 # constrained to this account (and, for S3 server access logs, the website
-# bucket as the source).
+# bucket and the Chaos Gremlin drill's scratch bucket as the sources; the
+# scratch bucket is in infrastructure/bootstrap/recovery-drill.tf, named here
+# by the same convention).
 resource "aws_s3_bucket_policy" "logs" {
   bucket = aws_s3_bucket.logs.id
   policy = jsonencode({
@@ -98,7 +100,10 @@ resource "aws_s3_bucket_policy" "logs" {
         Resource  = "${aws_s3_bucket.logs.arn}/s3-access/*"
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
-          ArnLike      = { "aws:SourceArn" = data.aws_s3_bucket.website.arn }
+          ArnLike = { "aws:SourceArn" = [
+            data.aws_s3_bucket.website.arn,
+            "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-recovery-drill",
+          ] }
         }
       },
       {

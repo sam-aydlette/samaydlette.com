@@ -10,6 +10,7 @@ trust-root role.
 
 import importlib.util
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -78,10 +79,83 @@ def test_a_role_named_by_a_reportable_event_is_quarantined_read_back_and_paged()
     assert iam.pages and "some-app-role" in iam.pages[0][0]
 
 
-def test_a_user_is_quarantined_with_the_user_calls():
+def test_a_machine_user_is_quarantined_with_the_user_calls():
     iam = StubIam()
     assert q.respond(_event("IAMUser", "mallory-user"), iam, NOW, **NO_SLEEP)["action"] == "quarantined"
     assert ("attach", "user", "mallory-user") in iam.calls
+
+
+OPERATORS = sorted(q.operator_users())
+MALFORMED = REPO / "tests" / "fixtures" / "quarantine" / "operator-identities-malformed.json"
+
+
+def test_known_bad_a_reportable_event_by_an_operator_attaches_nothing_and_still_pages():
+    for name in OPERATORS:
+        iam = StubIam()
+        rec = q.respond(_event("IAMUser", name), iam, NOW, **NO_SLEEP)
+        assert rec["action"] == "page-only" and rec["paged"] and rec["handled"]
+        assert [c for c in iam.calls if c[0] != "page"] == []
+        assert iam.pages and name in iam.pages[0][0]
+
+
+def test_known_bad_without_the_operator_guard_an_operator_would_be_quarantined(monkeypatch):
+    """The operator event is real bad input: a responder without the list check attaches deny-all to a person."""
+    monkeypatch.setattr(q, "operator_users", lambda path=None: frozenset())
+    iam = StubIam()
+    assert q.respond(_event("IAMUser", OPERATORS[0]), iam, NOW, **NO_SLEEP)["action"] == "quarantined"
+    assert ("attach", "user", OPERATORS[0]) in iam.calls
+
+
+def test_known_bad_an_unloadable_operator_list_pages_about_every_user_and_attaches_nothing(monkeypatch):
+    monkeypatch.setattr(q, "OPERATORS_PATH", MALFORMED)
+    iam = StubIam()
+    rec = q.respond(_event("IAMUser", "mallory-user"), iam, NOW, **NO_SLEEP)
+    assert rec["action"] == "page-only-unverified" and rec["paged"] and not rec["handled"]
+    assert [c for c in iam.calls if c[0] != "page"] == []
+    monkeypatch.setattr(q, "OPERATORS_PATH", REPO / "data" / "no-such-file.json")
+    assert q.respond(_event("IAMUser", "mallory-user"), StubIam(), NOW, **NO_SLEEP)["action"] == "page-only-unverified"
+    # Roles do not depend on the list.
+    assert q.respond(_event(), StubIam(), NOW, **NO_SLEEP)["action"] == "quarantined"
+
+
+def test_the_operator_list_is_governed_and_valid():
+    doc = q.load_operators()
+    schema = json.loads((REPO / "infrastructure" / "schemas" / "operator-identities.schema.json").read_text())
+    assert set(schema["required"]) | {"$schema"} == q.OPERATOR_KEYS
+    assert doc["users"] and all(u["kind"] == "iam-user" for u in doc["users"])
+    try:
+        q.load_operators(MALFORMED)
+        raise AssertionError("the malformed list must not load")
+    except q.OperatorListError:
+        pass
+
+
+def test_the_iam_deny_and_the_governed_list_name_the_same_identities():
+    tf = (REPO / "infrastructure" / "bootstrap" / "quarantine-responder.tf").read_text()
+    local = re.search(r"operator_identities\s*=\s*(.+)", tf).group(1)
+    assert 'jsondecode(file("${path.module}/../../data/operator-identities.json")).users : u.name' in local
+    assert (REPO / "infrastructure" / "bootstrap" / "../../data/operator-identities.json").resolve() == \
+        q.OPERATORS_PATH.resolve()
+    deny = tf[tf.index('"NeverAnOperator"'):]
+    deny = deny[:deny.index("}")]
+    for a in ("iam:AttachUserPolicy", "iam:DetachUserPolicy", "iam:PutUserPolicy"):
+        assert f'"{a}"' in deny
+    assert 'effect    = "Deny"' in deny and "for u in local.operator_identities" in deny
+    # The bootstrap's operator user (group membership) is on the list.
+    default = re.search(r'variable "operator_user_name" \{[^}]*default\s*=\s*"([^"]+)"',
+                        (REPO / "infrastructure" / "bootstrap" / "main.tf").read_text()).group(1)
+    assert default in OPERATORS
+    scg = json.loads((REPO / "data" / "secure-configuration.json").read_text())
+    rec = next(x for x in scg["settings"] if x["id"] == "ci-roles.responder-scope")["recommended"]
+    assert rec["operator_users_denied"] == len(OPERATORS)
+
+
+def test_no_operator_name_reaches_published_output():
+    doc = _review([_event("IAMUser", n) for n in OPERATORS], StubIam())
+    assert [r["action"] for r in doc["quarantine"]["responses"]] == ["page-only"] * len(OPERATORS)
+    text = json.dumps(doc)
+    for n in OPERATORS:
+        assert n not in text
 
 
 def test_only_the_deny_all_policy_is_ever_attached():
