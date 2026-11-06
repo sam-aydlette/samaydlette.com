@@ -6,8 +6,12 @@
 # assessor so the assessor port (IVV-CSO-FIA/ICP, IVV-CSX-AIA, CPO-CSO-OSA,
 # SDR-CSO-FRR) is exercised end to end on every deploy.
 #
-# The deploy calls this as a reusable workflow before its deploy job. Because it
-# is a reusable workflow, the Sigstore certificate that signs its record names
+# The deploy calls this as a reusable workflow twice: before its deploy job
+# (phase pre-deploy: the commit being deployed and the published state it
+# replaces; the SDR is built from this set) and after the deploy has published
+# (phase post-deploy: the just-published state, which must carry this commit).
+# Each set names the commit and KSI signal it covered, and the provider refuses
+# it for any other. Because it is a reusable workflow, the Sigstore certificate that signs its record names
 # THIS file (job_workflow_ref), not deploy-with-opa.yml: the assessor signs
 # under its own identity, which infrastructure/keys/assessor-identity.json pins.
 # It holds no AWS credentials and reads only public URLs and the repository.
@@ -23,6 +27,11 @@ name: Simulated assessor (not a FedRAMP assessment)
 
 on:
   workflow_call:
+    inputs:
+      phase:
+        description: pre-deploy (the gate before the SDR is built) or post-deploy (the just-published state)
+        type: string
+        default: pre-deploy
 
 permissions: {}
 
@@ -62,12 +71,14 @@ jobs:
       run: python3 scripts/build-assessor-guide.py --commit "$GITHUB_SHA" --output assessor-guide.json --md-output assessor-guide.md
 
     - name: Assess every rule and KSI (verification and validation)
-      run: python3 tools/simulated-assessor/assess.py --guide assessor-guide.json --repo . --commit "$GITHUB_SHA" --output simulated-assessment.json
+      env:
+        PHASE: ${{ inputs.phase }}
+      run: python3 tools/simulated-assessor/assess.py --guide assessor-guide.json --repo . --commit "$GITHUB_SHA" --phase "$PHASE" --output simulated-assessment.json
 
     - name: Pass the unsigned assessment to the signing job
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: simulated-assessment-unsigned
+        name: simulated-assessment-${{ inputs.phase }}-unsigned
         path: simulated-assessment.json
         if-no-files-found: error
 
@@ -88,7 +99,7 @@ jobs:
     - name: Receive the unsigned assessment
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
-        name: simulated-assessment-unsigned
+        name: simulated-assessment-${{ inputs.phase }}-unsigned
 
     - name: Install cosign
       uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
@@ -106,7 +117,7 @@ jobs:
     - name: Hand the signed assessment to the provider
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
-        name: simulated-assessment
+        name: simulated-assessment-${{ inputs.phase }}
         path: |
           simulated-assessment.json
           simulated-assessment.bundle

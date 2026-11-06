@@ -153,11 +153,19 @@
     {
       "frr_id": "AFC-CSO-NOC",
       "status": "Implemented",
-      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history, and the notice rule applies to it unchanged. scripts/check-fsi-notice.py, run in the unit-test job on every pull request and push, fails a change to the contact unless a new history entry carries a dated fedramp_notified marker naming the channel (FedRAMP's '[CSP] Notification of Changes' form), and fails a rewritten history against the merge base. Known-bad fixtures in tests/fixtures/fsi/. Procedure: docs/runbooks/fedramp-security-inbox.md. The contact was established 2026-11-05 with nothing earlier on file with FedRAMP, so there has been no change to notify.",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and the published contact points to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history; each change is a history entry dated by since. scripts/check-fsi-notice.py, in the unit-test job on every pull request and push, fails a changed contact without a new dated history entry, a hand-recorded notice, or a rewritten history against the merge base. On every deploy, scripts/submit-package.py files a change notice with the simulated FedRAMP for every change not yet filed (an entry in changeNotices of the signed /.well-known/package-submission-log.json, with the simulated FedRAMP's receipt; nothing is sent), carries earlier notices over unchanged, and fails the deploy unless every notice is dated within one business day of its change. The contact was established 2026-11-05 with no earlier contact to change from, so no notice has been filed yet. Procedure: docs/runbooks/fedramp-security-inbox.md.",
       "evidence": [
         {
           "kind": "test",
-          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_the_fedramp_notified_marker_fails"
+          "ref": "tests/test_fsi_notice.py::test_the_deploy_files_a_change_notice_once_and_carries_it_over"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_notice_filed_more_than_one_business_day_after_the_change_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_known_bad_a_late_notice_on_record_fails_the_deploy"
         },
         {
           "kind": "test",
@@ -170,8 +178,20 @@
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#FedRAMP Security Inbox change notice (AFC-CSO-NOC)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/package-submission-log.json"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "fedramp",
+        "how": "No FedRAMP counterpart exists. A change notice is filed with FedRAMP (simulated): simulated_fedramp_notice_intake() in scripts/submit-package.py, a function that never touches the network, returns the receipt, and the only trace is the entry in the signed submission log. No real FedRAMP is notified (DEC-194)."
+      }
     },
     {
       "frr_id": "AFC-CSO-RCV",
@@ -841,15 +861,47 @@
     {
       "frr_id": "CDS-CSO-FRC",
       "status": "Implemented",
-      "implementation": "FedRAMP Certification Reports received are stored verbatim under data/fedramp-certification-reports/ with the sha256 and date of receipt in register.json. Each deploy checks every report against its sha256 (an edited report fails the deploy), publishes it byte-identical under /.well-known/fedramp-certification-reports/, and writes a signed index recording when it was first published and whether that was within 2 weeks of receipt.",
+      "implementation": "FedRAMP is simulated, and the system is not certified. The simulated FedRAMP issues a stand-in certification report only in response to a simulated package submission (scripts/submit-package.py): for the first submission, then after any adaptive or transformative Significant Change Notification no earlier report covered, and once a year; an ordinary deploy issues none. Each report is logged verbatim, with the date received and its sha256, in its submission's entry of the append-only /.well-known/package-submission-log.json. On every deploy scripts/publish-certification-reports.py publishes every logged report byte-identical under /.well-known/fedramp-certification-reports/ (an edited report fails the deploy), keeps each report's first publication date from the previously published index, and fails the deploy if a report would be first published more than 2 weeks after receipt. The previous log and index are fetched fail-closed: anything but a 404 fails the deploy rather than restarting either history. Every report's title and first line say it is a simulated report NOT ISSUED BY FEDRAMP and that the system is not certified, and one that does not is never published; the CPO states providerExtensions.certification.status 'not certified (proof of concept)'.",
       "evidence": [
         {
           "kind": "test",
-          "ref": "tests/test_certification_cycle.py::test_the_committed_reports_are_published_byte_identical"
+          "ref": "tests/test_certification_cycle.py::test_the_first_submission_gets_a_simulated_report_and_ordinary_deploys_do_not"
         },
         {
           "kind": "test",
-          "ref": "tests/test_certification_cycle.py::test_a_modified_or_unregistered_report_fails"
+          "ref": "tests/test_certification_cycle.py::test_an_adaptive_or_transformative_scn_brings_a_new_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_report_is_issued_annually_even_when_the_package_is_unchanged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_logged_reports_are_published_byte_identical_and_their_first_date_kept"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_known_bad_a_report_published_more_than_two_weeks_after_receipt_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_known_bad_a_modified_or_unlabelled_report_is_never_published"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_report_says_first_that_it_is_simulated_not_issued_by_fedramp_and_not_certified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_json_says_the_system_is_not_certified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_published_history.py::test_known_bad_a_failed_or_truncated_fetch_fails_and_keeps_nothing"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
         },
         {
           "kind": "step",
@@ -862,11 +914,15 @@
         {
           "kind": "artifact",
           "ref": ".well-known/fedramp-certification-reports.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/package-submission-log.json"
         }
       ],
       "simulated": {
         "counterparty": "fedramp",
-        "how": "No FedRAMP counterpart exists. The one report is a plainly fake stand-in the operator wrote, flagged simulated in the register and the index."
+        "how": "No FedRAMP counterpart exists. A Python function in scripts/submit-package.py stands in for FedRAMP and writes each report in response to a simulated package submission; every report says in its title and first line that it is NOT ISSUED BY FEDRAMP and that the system is not certified. Nothing is sent to or received from FedRAMP (DEC-194)."
       }
     },
     {
@@ -2142,7 +2198,7 @@
     {
       "frr_id": "IVV-CSO-FIA",
       "status": "Implemented",
-      "implementation": "Every deploy is independently verified and validated, across all applicable rules and KSIs, by the simulated assessor workflow before the SDR is built; the deploy fails on any failed check, so the cadence is far more frequent than once a year. Its signed set (simulated-assessment.json) is published and its per-rule results are carried in the SDR. The assessor is simulated: no FedRAMP Recognized assessment service is engaged (operator's decision of 2026-11-05).",
+      "implementation": "Every deploy is independently verified and validated, across all applicable rules and KSIs, twice by the simulated assessor workflow; the cadence is far more frequent than once a year. Before the deploy (a gate): it verifies the repository at the commit being deployed and validates the published state that commit replaces, and its signed set names that commit and the KSI signal it validated. The deploy reads the live KSI signal itself (signature verified against the deploy identity), scripts/_assessor.load_assessment refuses a set covering any other commit or signal, the deploy does not proceed on any failed check, and the SDR states which commit and signal the assessment covered (providerExtensions.assessmentCoverage). After the deploy has published, and the unattended package and incident publishers have run, the same assessor assesses the just-published state, which must carry the deployed commit; its set must verify against the pinned assessor identity and cover this commit and the KSI signal this deploy published. A failure there fails the run and raises the deployment-failure issue; what was published is not withdrawn. The pre-deploy set (simulated-assessment.json) is published and its per-rule results are carried in the SDR; the post-deploy set is kept with the run. The assessor is simulated: no FedRAMP Recognized assessment service is engaged (operator's decision of 2026-11-05).",
       "evidence": [
         {
           "kind": "test",
@@ -2179,17 +2235,41 @@
         {
           "kind": "artifact",
           "ref": ".well-known/simulated-assessment.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_known_bad_a_set_covering_another_commit_or_signal_is_refused"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_deploy_binds_the_pre_deploy_set_to_this_commit_and_the_live_signal"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_a_post_deploy_assessment_runs_after_publish_and_its_failure_alerts"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_after_the_deploy_the_live_signal_must_carry_the_deployed_commit"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Bind the pre-deploy assessment to the state it covered"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Verify the post-deploy assessment covers the just-published state"
         }
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
       }
     },
     {
       "frr_id": "IVV-CSO-ICP",
       "status": "Implemented",
-      "implementation": "The assessment results are published unmodified: the signed set itself (simulated-assessment.json with its cosign bundle), and in the SDR, where scripts/_assessor.py admits the set only if its keyless signature verifies against the pinned assessor identity and every record's hash matches, carries each record verbatim, and verify_output fails the build if the SDR's copy differs in any byte.",
+      "implementation": "The assessment results are published unmodified: the signed pre-deploy set itself (simulated-assessment.json with its cosign bundle), and in the SDR, where scripts/_assessor.py admits the set only if its keyless signature verifies against the pinned assessor identity, every record's hash matches, and the set covers the commit being deployed and the published KSI signal the deploy itself read; it carries each record verbatim, and verify_output fails the build if the SDR's copy differs in any byte. The SDR states which commit and signal the carried results covered (providerExtensions.assessmentCoverage).",
       "evidence": [
         {
           "kind": "test",
@@ -2218,11 +2298,19 @@
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_known_bad_a_set_covering_another_commit_or_signal_is_refused"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_sdr_states_which_commit_and_signal_its_assessment_covered"
         }
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
       }
     },
     {
@@ -2325,7 +2413,7 @@
     {
       "frr_id": "IVV-CSX-AIA",
       "status": "Implemented",
-      "implementation": "The simulated assessor checks every Key Security Indicator in the catalog on every deploy, alongside every rule: it fetches the published KSI signal, verifies its signature against the deploy identity, and fails a KSI the signal does not report passing (one missing from the signal is an observation). Its signed result per KSI is carried verbatim in the SDR.",
+      "implementation": "The simulated assessor checks every Key Security Indicator in the catalog alongside every rule, twice on every deploy: it fetches the published KSI signal, verifies its signature against the deploy identity, and fails a KSI the signal does not report passing (before the deploy, one missing from the signal is an observation). Before the deploy the signal is the published one the deploy replaces; its signal_id is bound into the signed set, the deploy refuses a set naming any other, and the SDR states it. After publish the check runs again on the just-published signal, which must carry the deployed commit and be the signal this deploy published; a failure fails the run and raises the deployment-failure issue. The pre-deploy result per KSI is carried verbatim in the SDR.",
       "evidence": [
         {
           "kind": "test",
@@ -2346,11 +2434,23 @@
         {
           "kind": "artifact",
           "ref": ".well-known/simulated-assessment.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_after_the_deploy_the_live_signal_must_carry_the_deployed_commit"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_known_bad_a_set_covering_another_commit_or_signal_is_refused"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Verify the post-deploy assessment covers the just-published state"
         }
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
       }
     },
     {
@@ -3064,7 +3164,7 @@
     {
       "frr_id": "SDR-CSO-FRR",
       "status": "Implemented",
-      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap. Each rule's independent verification and validation (frrAssessment) is the simulated assessor's signed result for it, carried verbatim; the human-readable form is the SDR's .md summary and its complete .view.md.",
+      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap. Each rule's independent verification and validation (frrAssessment) is the simulated assessor's signed pre-deploy result for it, carried verbatim. The SDR states which commit and published KSI signal that assessment covered (providerExtensions.assessmentCoverage): the commit the SDR was built from, and the published state that commit replaced; a set covering anything else is refused. The post-deploy assessment of the just-published state runs after publish and fails the run on any failure. The human-readable form is the SDR's .md summary and its complete .view.md.",
       "evidence": [
         {
           "kind": "test",
@@ -3093,11 +3193,23 @@
         {
           "kind": "artifact",
           "ref": ".well-known/simulated-assessment.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_sdr_states_which_commit_and_signal_its_assessment_covered"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_deploy_binds_the_pre_deploy_set_to_this_commit_and_the_live_signal"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Bind the pre-deploy assessment to the state it covered"
         }
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
       }
     },
     {

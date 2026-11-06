@@ -1,0 +1,81 @@
+{
+  "$comment": "KNOWN-BAD: the logged report was edited after it was received; its bytes no longer match the logged sha256, so it is never published (CDS-CSO-FRC: unmodified).",
+  "schema": "package-submission-log/1",
+  "generated_at": "2026-10-01T12:00:00+00:00",
+  "fedRampId": "Example Provider (EXD)",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "nothingSent": true,
+  "simulated": {
+    "counterparty": "fedramp",
+    "how": "FedRAMP is simulated. The package goes to simulated_fedramp_intake() in scripts/submit-package.py, a function that never touches the network, and the only trace is this signed log. Nothing has been submitted to the real FedRAMP, and nothing will be."
+  },
+  "entries": [
+    {
+      "submittedAt": "2026-10-01T12:00:00+00:00",
+      "manifest": {
+        "components": [
+          {
+            "component": "CPO",
+            "rule": "CPO-CSO-OVR",
+            "url": "https://samaydlette.com/.well-known/certification-package-overview.json",
+            "sha256": "bdc9dcb20f748409072216beaa4fd621ff2303a34400dea920865b5feadd5252",
+            "contentSha256": "98b0de339ac1bf2eae4bc307716cd57c3078aaf9cfbc8e23fb3c966323ac3366",
+            "version": null
+          },
+          {
+            "component": "SDR",
+            "rule": "SDR-CSO-FRR",
+            "url": "https://samaydlette.com/.well-known/security-decision-record.json",
+            "sha256": "34f510919de0e3b74a338cf7c0502d062e95efc17b75f7341e9723580a90111a",
+            "contentSha256": "6ada229987020103f85b4b3a991a34aed52ed919d01a6c3f0ac1fd40c2093e6e",
+            "version": "1"
+          },
+          {
+            "component": "OCR",
+            "rule": "CCM-OCR-AVL",
+            "url": "https://samaydlette.com/.well-known/ongoing-certification-report.json",
+            "sha256": "d4a13fbd228c74a1ad6bcd307d07df358519dbbe020954a22ddbf233e9add736",
+            "contentSha256": "1541eb3e8db587c701aef2b148933e3581f89a91b4142ec2e422675e01ed2efd",
+            "version": null
+          }
+        ],
+        "packageSha256": "36f34d30f61ce96592b46ade8b0207be24b203aafea6ec54cb86072cb8dbafd7",
+        "commit": "abc"
+      },
+      "receipt": {
+        "receiptId": "SIM-36F34D30F61C",
+        "receivedBy": "Simulated FedRAMP intake: a Python function in this repository. Nothing left the building.",
+        "packageSha256": "36f34d30f61ce96592b46ade8b0207be24b203aafea6ec54cb86072cb8dbafd7",
+        "message": "Thank you for your submission. It has been placed in a queue that does not exist."
+      },
+      "certificationReport": {
+        "file": "2026-10-01-sim-36f34d30f61c-simulated-certification-report.json",
+        "receivedOn": "2026-10-01",
+        "from": "FedRAMP (simulated)",
+        "trigger": "initial certification report (first package submission)",
+        "scnsCovered": [],
+        "sha256": "b0cf598b5ef7bf2077afe0add06a85636b65be0fe607b38c7d96ee108d96d1b6",
+        "report": {
+          "title": "SIMULATED REPORT, NOT ISSUED BY FEDRAMP: samaydlette.com is NOT FedRAMP certified (proof of concept)",
+          "notice": "This is not a FedRAMP Certification Report. FedRAMP did not write it, has never seen it, and has certified nothing. A Python function in scripts/submit-package.py wrote it in response to a simulated package submission, so the path that publishes FedRAMP Certification Reports unmodified within two weeks (CDS-CSO-FRC) runs end to end. This system is not certified.",
+          "simulated": true,
+          "notIssuedByFedRAMP": true,
+          "certificationStatus": "not certified (proof of concept)",
+          "issuer": "FedRAMP (simulated): a Python function in this repository, with no authority whatsoever.",
+          "cloudServiceOffering": "samaydlette.com",
+          "fedRampId": "Example Provider (EXD)",
+          "received": "2026-10-01",
+          "inResponseTo": {
+            "receiptId": "SIM-36F34D30F61C",
+            "submittedAt": "2026-10-01T12:00:00+00:00",
+            "packageSha256": "36f34d30f61ce96592b46ade8b0207be24b203aafea6ec54cb86072cb8dbafd7"
+          },
+          "trigger": "initial certification report (first package submission)",
+          "determination": "Certified. (Edited after receipt.)",
+          "findings": [],
+          "noteToAgencies": "If you came here hoping for a FedRAMP certification, sorry: this one is pretend. Hit me up on LinkedIn: https://www.linkedin.com/in/sa2/"
+        }
+      }
+    }
+  ]
+}

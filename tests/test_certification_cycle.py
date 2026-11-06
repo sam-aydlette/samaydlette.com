@@ -9,6 +9,7 @@ that fails for the reason the test names."""
 import argparse
 import copy
 import fnmatch
+import hashlib
 import importlib.util
 import json
 import re
@@ -41,7 +42,8 @@ def _assessment():
     with tempfile.TemporaryDirectory() as d:
         s = Path(d) / "simulated-assessment.json"
         s.write_text((REPO / "tests" / "fixtures" / "assessor" / "simulated-set.json").read_text())
-        return _assessor.load_assessment(s, s, verifier=lambda *_a: True)
+        return _assessor.load_assessment(s, s, verifier=lambda *_a: True, expect_commit="0" * 40,
+                                         expect_signal_id="00000000-0000-4000-8000-000000000001")
 
 
 ASSESSMENT = _assessment()
@@ -154,8 +156,13 @@ def test_the_cpo_validates_against_fedramps_schema(built_cpo):
 
 def test_the_cpo_seeks_20x_only(built_cpo):
     assert built_cpo["serviceIdentification"]["certificationType"] == "20x"
-    assert "Rev5" not in built_cpo["providerExtensions"]["certification"].replace(" ", "")
-    assert "Rev 5" not in built_cpo["providerExtensions"]["certification"]
+    assert "Rev5" not in built_cpo["providerExtensions"]["certification"]["program"].replace(" ", "")
+    assert "Rev 5" not in built_cpo["providerExtensions"]["certification"]["program"]
+
+
+def test_the_cpo_json_says_the_system_is_not_certified(built_cpo):
+    assert built_cpo["providerExtensions"]["certification"]["status"] == "not certified (proof of concept)"
+    assert "not certified (proof of concept)" in cpo.render_markdown(built_cpo)
 
 
 def test_no_cpo_or_ocr_label_names_rev5_as_a_program(built_cpo, rolling):
@@ -390,26 +397,92 @@ def test_a_tampered_issue_index_fails(fixture, reason):
 
 # --- FedRAMP Certification Reports (CDS-CSO-FRC, simulated FedRAMP) -------------------
 
-def test_the_committed_reports_are_published_byte_identical(tmp_path):
-    reg = frc.load_register(today=NOW.date())
-    idx = frc.build(reg, {}, NOW, tmp_path)
-    for e in idx["reports"]:
-        assert (tmp_path / "fedramp-certification-reports" / e["file"]).read_bytes() == \
-            (frc.REPORTS_DIR / e["file"]).read_bytes()
-        assert e["simulated"] is True and e["withinTwoWeeks"] is True
-    assert idx["simulated"]["counterparty"] == "fedramp"
-    later = datetime(2026, 12, 31, tzinfo=timezone.utc)
-    again = frc.build(reg, idx, later, tmp_path)
-    assert [e["firstPublished"] for e in again["reports"]] == [e["firstPublished"] for e in idx["reports"]]
+SCN_ROWS = [{"scn_id": "SCN-2026-001", "scn_type": "adaptive"}, {"scn_id": "SCN-2026-002", "scn_type": "adaptive"}]
+
+
+def _submit(previous, when, scn_rows=SCN_ROWS, content=None):
+    docs, paths = _pkg()
+    if content:
+        docs["ocr"]["providerExtensions"]["contentSha256"] = content
+    return submit.build(docs, paths, previous, when, "abc", PKG_RULES, PKG_ID, scn_rows)
+
+
+def _reports(log):
+    return [e["certificationReport"] for e in log["entries"] if e.get("certificationReport")]
+
+
+def test_the_first_submission_gets_a_simulated_report_and_ordinary_deploys_do_not():
+    log = _submit({}, NOW)
+    (r,) = _reports(log)
+    assert r["receivedOn"] == "2026-11-05" and r["trigger"].startswith("initial")
+    assert r["scnsCovered"] == ["SCN-2026-001", "SCN-2026-002"]
+    # An ordinary deploy, even one whose package changed, re-issues nothing.
+    later = _submit(log, datetime(2027, 2, 1, tzinfo=timezone.utc), content="e" * 64)
+    assert len(later["entries"]) == 2 and len(_reports(later)) == 1
+
+
+def test_an_adaptive_or_transformative_scn_brings_a_new_report():
+    log = _submit({}, NOW)
+    rows = SCN_ROWS + [{"scn_id": "SCN-2026-009", "scn_type": "transformative"},
+                       {"scn_id": "SCN-2026-010", "scn_type": "routine-recurring"}]
+    later = _submit(log, datetime(2026, 12, 1, tzinfo=timezone.utc), rows)
+    assert len(_reports(later)) == 2 and "SCN-2026-009" in _reports(later)[-1]["trigger"]
+    assert "SCN-2026-010" not in _reports(later)[-1]["trigger"]
+    again = _submit(later, datetime(2026, 12, 2, tzinfo=timezone.utc), rows)
+    assert len(_reports(again)) == 2  # that SCN is covered now
+
+
+def test_a_report_is_issued_annually_even_when_the_package_is_unchanged():
+    log = _submit({}, NOW)
+    assert len(_reports(_submit(log, datetime(2027, 11, 4, tzinfo=timezone.utc)))) == 1
+    annual = _submit(log, datetime(2027, 11, 5, tzinfo=timezone.utc))
+    assert len(_reports(annual)) == 2 and _reports(annual)[-1]["trigger"].startswith("annual")
+
+
+def test_the_report_says_first_that_it_is_simulated_not_issued_by_fedramp_and_not_certified():
+    (r,) = _reports(_submit({}, NOW))
+    first = submit.report_bytes(r["report"]).decode().splitlines()[1]
+    assert first.startswith('  "title": "SIMULATED REPORT, NOT ISSUED BY FEDRAMP')
+    assert "NOT FedRAMP certified" in first
+    assert r["report"]["certificationStatus"] == "not certified (proof of concept)"
+    assert r["report"]["simulated"] is True and r["report"]["notIssuedByFedRAMP"] is True
+
+
+def test_logged_reports_are_published_byte_identical_and_their_first_date_kept(tmp_path):
+    log = _submit({}, NOW)
+    idx = frc.build(log, {}, NOW, tmp_path)
+    (e,) = idx["reports"]
+    raw = (tmp_path / "fedramp-certification-reports" / e["file"]).read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == e["sha256"] == _reports(log)[0]["sha256"]
+    assert e["daysToPublish"] == 0 and e["withinTwoWeeks"] and idx["certificationStatus"].startswith("not certified")
+    again = frc.build(log, idx, datetime(2026, 12, 31, tzinfo=timezone.utc), tmp_path)
+    assert again["reports"][0]["firstPublished"] == "2026-11-05"
+
+
+def test_known_bad_a_report_published_more_than_two_weeks_after_receipt_fails_the_deploy(tmp_path, monkeypatch):
+    class Late(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return NOW
+    monkeypatch.setattr(frc, "datetime", Late)
+    with pytest.raises(SystemExit, match="past the 14-day window"):
+        frc.main(["--submission-log", str(BAD / "submission-log-late-report.json"), "--out", str(tmp_path)])
+    assert not (tmp_path / "fedramp-certification-reports.json").exists()
 
 
 @pytest.mark.parametrize("fixture,reason", [
-    ("frc-modified", "differs from the sha256 recorded"),
-    ("frc-unlisted", "files not in the register"),
+    ("submission-log-report-modified.json", "differs from the sha256 logged"),
+    ("submission-log-report-not-labelled.json", "NOT ISSUED BY FEDRAMP"),
 ])
-def test_a_modified_or_unregistered_report_fails(fixture, reason):
+def test_known_bad_a_modified_or_unlabelled_report_is_never_published(tmp_path, fixture, reason):
     with pytest.raises(SystemExit, match=reason):
-        frc.load_register(BAD / fixture, NOW.date())
+        frc.build(_json(BAD / fixture), {}, NOW, tmp_path)
+
+
+def test_a_cpo_without_the_not_certified_status_is_never_submitted():
+    docs, paths = _pkg(cpo="cpo-without-not-certified-status.json")
+    with pytest.raises(SystemExit, match="not certified"):
+        submit.build(docs, paths, {}, NOW, "abc", PKG_RULES, PKG_ID)
 
 
 # --- the simulated package submission (FRC-CSO-PKG, FRC-CSO-POP) ----------------------

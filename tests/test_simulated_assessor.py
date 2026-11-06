@@ -31,6 +31,8 @@ spec.loader.exec_module(assess)
 
 NOW = datetime(2026, 11, 5, 12, 0, tzinfo=timezone.utc)
 SITE = "https://samaydlette.com"
+SIG = "00000000-0000-4000-8000-000000000001"
+BIND = {"expect_commit": "0" * 40, "expect_signal_id": SIG}  # what the fixture set covers
 
 
 def ok(*_a):
@@ -48,7 +50,7 @@ def _set(tmp_path, fixture="simulated-set.json"):
 # --- the provider accepts only the pinned assessor's signed set ------------------------
 
 def test_genuine_set_loads_and_carries_an_overall_summary(tmp_path):
-    recs = _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=ok)
+    recs = _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=ok, **BIND)
     assert len(recs) == 4
     summary = _assessor.overall_summary(recs)
     assert summary["kind"] == "summary" and "IVV-IAS-OSA" in summary["text"]
@@ -56,12 +58,12 @@ def test_genuine_set_loads_and_carries_an_overall_summary(tmp_path):
 
 def test_known_bad_tampered_record_fails(tmp_path):
     with pytest.raises(SystemExit, match="differs from the record the assessor signed"):
-        _assessor.load_assessment(*_set(tmp_path, "simulated-set-tampered.json"), IDENTITY, verifier=ok)
+        _assessor.load_assessment(*_set(tmp_path, "simulated-set-tampered.json"), IDENTITY, verifier=ok, **BIND)
 
 
 def test_set_whose_signature_does_not_verify_fails(tmp_path):
     with pytest.raises(SystemExit, match="does not verify"):
-        _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=lambda *_a: False)
+        _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=lambda *_a: False, **BIND)
 
 
 @pytest.mark.parametrize("missing", ["set", "bundle"])
@@ -69,7 +71,7 @@ def test_missing_assessment_fails_the_build(tmp_path, missing):
     s, b = _set(tmp_path)
     (s if missing == "set" else b).unlink()
     with pytest.raises(SystemExit, match="missing"):
-        _assessor.load_assessment(s, b, IDENTITY, verifier=ok)
+        _assessor.load_assessment(s, b, IDENTITY, verifier=ok, **BIND)
 
 
 def test_set_from_another_assessor_fails(tmp_path):
@@ -78,7 +80,7 @@ def test_set_from_another_assessor_fails(tmp_path):
     doc["assessor"]["organization"] = "Some Other Auditor"
     s.write_text(json.dumps(doc))
     with pytest.raises(SystemExit, match="not the pinned assessor"):
-        _assessor.load_assessment(s, b, IDENTITY, verifier=ok)
+        _assessor.load_assessment(s, b, IDENTITY, verifier=ok, **BIND)
 
 
 def test_set_without_an_overall_summary_fails(tmp_path):
@@ -87,7 +89,7 @@ def test_set_without_an_overall_summary_fails(tmp_path):
     doc["records"] = [r for r in doc["records"] if r["kind"] != "summary"]
     s.write_text(json.dumps(doc))
     with pytest.raises(SystemExit, match="overall summary"):
-        _assessor.load_assessment(s, b, IDENTITY, verifier=ok)
+        _assessor.load_assessment(s, b, IDENTITY, verifier=ok, **BIND)
 
 
 def test_cosign_is_asked_for_exactly_the_pinned_identity(tmp_path, monkeypatch):
@@ -125,7 +127,7 @@ def test_set_records_match_the_published_record_schema():
 # --- the SDR carries every rule's and KSI's independent result verbatim ----------------
 
 def test_every_rule_and_ksi_gets_its_independent_result_and_t74_holds(tmp_path):
-    recs = _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=ok)
+    recs = _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=ok, **BIND)
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ("SDR-CSO-FRR", "CDS-CSO-RPS", "KSI-CED-RAT")]
     block = _assessor.attach(pseudo, recs)
     assert all(len(p["assessor_comment_responses"]) == 1 for p in pseudo)
@@ -232,12 +234,12 @@ def test_main_exits_non_zero_on_any_failure(tmp_path, monkeypatch):
 
 def test_the_set_round_trips_through_the_provider_port(tmp_path):
     rules, ksis = _run(_guide())
-    doc = assess.build_set(_guide(), rules, ksis, NOW, "0" * 40, "f" * 64)
+    doc = assess.build_set(_guide(), rules, ksis, NOW, "0" * 40, "f" * 64, {"signal_id": SIG, "commit": "f" * 40})
     s = tmp_path / "simulated-assessment.json"
     s.write_text(json.dumps(doc))
     b = tmp_path / "simulated-assessment.bundle"
     b.write_text("{}")
-    recs = _assessor.load_assessment(s, b, IDENTITY, verifier=ok)
+    recs = _assessor.load_assessment(s, b, IDENTITY, verifier=ok, **BIND)
     assert {r.get("rule_id") for r in recs} == {"SDR-CSO-FRR", "CDS-CSO-RPS", "KSI-CED-RAT", None}
 
 
@@ -324,3 +326,114 @@ def test_the_set_names_the_offering_and_a_guide_without_an_id_fails(tmp_path):
     del g["fedRampId"]
     with pytest.raises(SystemExit, match="CDS-CSO-FID"):
         assess.build_set(g, *_run(g), NOW, "0" * 40, "f" * 64)
+
+
+# --- binding: an assessment is evidence only for the state it covered ---------------------
+
+@pytest.mark.parametrize("fixture,needle", [("simulated-set-other-commit.json", "not the stated commit"),
+                                            ("simulated-set-other-signal.json", "not the stated signal")])
+def test_known_bad_a_set_covering_another_commit_or_signal_is_refused(tmp_path, fixture, needle):
+    with pytest.raises(SystemExit, match=needle):
+        _assessor.load_assessment(*_set(tmp_path, fixture), IDENTITY, verifier=ok, **BIND)
+
+
+@pytest.mark.parametrize("missing", ["expect_commit", "expect_signal_id"])
+def test_an_unbound_assessment_is_refused(tmp_path, missing):
+    with pytest.raises(SystemExit, match="unbound assessment is refused"):
+        _assessor.load_assessment(*_set(tmp_path), IDENTITY, verifier=ok, **dict(BIND, **{missing: None}))
+
+
+def test_the_cli_refuses_a_set_for_another_commit(tmp_path, monkeypatch):
+    monkeypatch.setattr(_assessor, "cosign_verify", ok)
+    s, b = _set(tmp_path, "simulated-set-other-commit.json")
+    argv = ["--assessment", str(s), "--assessment-bundle", str(b), "--identity", str(IDENTITY),
+            "--assessment-commit", "0" * 40, "--assessment-signal-id", SIG]
+    with pytest.raises(SystemExit, match="not the stated commit"):
+        _assessor.main(argv)
+
+
+def test_the_set_records_the_commit_signal_and_phase_it_covered():
+    signal = {"signal_id": SIG, "commit": "f" * 40}
+    g = _guide()
+    a = assess.Assessor(g, str(REPO), NOW, get=_get(), verify=ok, tests=lambda refs, _r: {r: "passed" for r in refs})
+    rules, ksis = a.assess()
+    assert a.signal == {"signal_id": "sig-1", "commit": None}
+    doc = assess.build_set(g, rules, ksis, NOW, "0" * 40, "f" * 64, signal, "post-deploy")
+    assert doc["subject"]["commit"] == "0" * 40 and doc["subject"]["signal_id"] == SIG
+    assert doc["subject"]["phase"] == "post-deploy" and doc["subject"]["signal_commit"] == "f" * 40
+    summary = next(r for r in doc["records"] if r["kind"] == "summary")["text"]
+    assert "post-deploy assessment" in summary and SIG in summary
+
+
+def _post(get):
+    return assess.Assessor(_guide(), str(REPO), NOW, get=get, verify=ok, phase="post-deploy", commit="a" * 40,
+                           tests=lambda refs, _r: {r: "passed" for r in refs}).assess()
+
+
+def test_after_the_deploy_the_live_signal_must_carry_the_deployed_commit():
+    base = _get()
+
+    def get(url, commit):
+        status, body, h = base(url)
+        if url.endswith("ksi-signal.json"):
+            doc = json.loads(body)
+            doc["provenance"] = {"source": {"commit": commit}}
+            body = json.dumps(doc).encode()
+        return status, body, h
+    _, ksis = _post(lambda u: get(u, "b" * 40))
+    assert ksis[0][1] == "fail" and "not the deployed commit" in ksis[0][2][0]
+    _, ksis = _post(lambda u: get(u, "a" * 40))
+    assert ksis[0][1] == "pass"
+
+
+def test_after_the_deploy_an_unpublished_artifact_is_recorded_and_a_bad_signature_fails():
+    rules, _ = _post(_get(status=404))
+    assert rules[0][1] == "observation" and "not published after the deploy" in rules[0][3][0]
+    rules, _ = assess.Assessor(_guide(), str(REPO), NOW, get=_get(), verify=lambda *_a: False, phase="post-deploy",
+                               commit="a" * 40, tests=lambda refs, _r: {r: "passed" for r in refs}).assess()
+    assert rules[0][1] == "fail"
+
+
+def test_the_sdr_states_which_commit_and_signal_its_assessment_covered(tmp_path):
+    spec2 = importlib.util.spec_from_file_location("build_sdr_cov", REPO / "scripts" / "build-sdr.py")
+    sdr = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(sdr)
+    _, subject = _assessor.load_assessment_with_subject(*_set(tmp_path), IDENTITY, verifier=ok, **BIND)
+    cov = sdr.assessment_coverage(subject)
+    assert cov["commit"] == "0" * 40 and cov["signalId"] == SIG and cov["phase"] == "pre-deploy"
+    assert "0" * 40 in cov["statement"] and SIG in cov["statement"] and "after publishing" in cov["statement"].lower()
+
+
+def _jobs():
+    import yaml
+    return yaml.safe_load(_deploy())["jobs"]
+
+
+def test_the_deploy_binds_the_pre_deploy_set_to_this_commit_and_the_live_signal():
+    deploy_job = _deploy().split("\n  deploy:\n", 1)[1]
+    for name in ("- name: Build Security Decision Record", "- name: Build Certification Package Overview (CPO)"):
+        step = deploy_job.split(name, 1)[1].split("\n    - name:", 1)[0]
+        assert step.count('--assessment-signal-id "$ASSESSED_SIGNAL_ID"') == step.count("--assessment simulated")
+        assert step.count("--assessment-commit") == step.count("--assessment simulated")
+    bind = deploy_job.index("- name: Bind the pre-deploy assessment to the state it covered")
+    assert bind < deploy_job.index("- name: Build Security Decision Record")
+    assert bind < deploy_job.index("- name: Publish")  # read before anything under /.well-known/ is replaced
+
+
+def test_a_post_deploy_assessment_runs_after_publish_and_its_failure_alerts():
+    jobs = _jobs()
+    post, binding = jobs["post-deploy-assessor"], jobs["post-deploy-binding"]
+    assert post["uses"] == "./.github/workflows/simulated-assessor.yml" and post["with"]["phase"] == "post-deploy"
+    assert {"deploy", "package-maintainer", "incident-publisher"} <= set(post["needs"])
+    assert jobs["deploy"]["outputs"]["signal_id"] == "${{ steps.ksi.outputs.signal_id }}"
+    run = "\n".join(s.get("run", "") for s in binding["steps"])
+    assert '--assessment-commit "$GITHUB_SHA"' in run and '--assessment-signal-id "$PUBLISHED_SIGNAL_ID"' in run
+    assert any(s.get("with", {}).get("name") == "simulated-assessment-post-deploy" for s in binding["steps"])
+    for need in ("post-deploy-assessor", "post-deploy-binding"):
+        assert need in jobs["notify"]["needs"] and f"needs.{need}.result == 'failure'" in jobs["notify"]["if"]
+
+
+def test_the_two_phases_upload_distinct_artifacts():
+    wf = (WF / "simulated-assessor.yml").read_text()
+    assert "name: simulated-assessment-${{ inputs.phase }}\n" in wf
+    assert '--phase "$PHASE"' in wf

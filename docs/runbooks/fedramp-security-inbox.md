@@ -12,7 +12,7 @@ Rules: AFC-CSO-INB, TFG, RCV, CRA, EMR, IMA, ACK and NOC (FedRAMP Consolidated R
 | Messages from FedRAMP | Simulated: synthetic messages in `data/fsi-simulation/messages.json` |
 | Mail system (receiving, sending acknowledgements, delivering pages) | Simulated: outbound legs are recorded, never sent |
 | Published contact (`data/cds/offering.json`, `fedramp_security_inbox.contact`, published in the CPO) | Real, and it says it is a simulation |
-| Change-notice check (AFC-CSO-NOC, `scripts/check-fsi-notice.py`) | Real, runs on every pull request and push |
+| Change-notice check and filing (AFC-CSO-NOC, `scripts/check-fsi-notice.py`) | Real: the check runs on every pull request and push; the deploy files each notice with the simulated FedRAMP (a log entry; nothing is sent) |
 
 ## What runs on every deploy
 
@@ -60,11 +60,12 @@ Edit `data/fsi-simulation/messages.json`, including the `expected` block, and ru
 
 ## Changing the published contact (AFC-CSO-NOC)
 
-1. Record the notice to the simulated FedRAMP (a real provider would use the "[CSP] Notification of Changes" form on help.fedramp.gov). Nothing is sent to anyone (DEC-194).
-2. In `data/cds/offering.json`, append a `history` entry with the new contact, `since`, and `fedramp_notified: {"on": "YYYY-MM-DD", "channel": "..."}`.
-3. Change `contact`.
+1. In `data/cds/offering.json`, change `contact` and append a `history` entry with the new contact and `since`, the date of the change.
+2. Merge and deploy within one business day of `since`.
 
 `scripts/check-fsi-notice.py` fails the pull request if the contact changes without that entry, or if the history is rewritten.
+
+On every deploy, `scripts/submit-package.py` files a change notice with the simulated FedRAMP for each change in the history that has none yet. The notice is dated the day of the deploy. It is an entry in `changeNotices` of the signed `/.well-known/package-submission-log.json`, with the simulated FedRAMP's receipt. Earlier notices are carried over unchanged. The deploy fails if any notice is dated more than one business day after its change. Nothing is sent to anyone, and no real FedRAMP is notified (DEC-194).
 
 ## What a real inbox would need
 

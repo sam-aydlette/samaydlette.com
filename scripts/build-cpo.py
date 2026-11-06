@@ -50,6 +50,7 @@ import _tpr  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 BOUNDARY = REPO / "docs" / "boundary" / "boundary-classification.json"
+NOT_CERTIFIED = "not certified (proof of concept)"
 BASE = "https://samaydlette.com/.well-known/"
 LEVELS = ("low", "moderate", "high")
 
@@ -276,7 +277,9 @@ def provider_extensions(off, prof, signal, dates, groups, assessment):
     components = signal.get("components", []) if signal else []
     return {
         "fedRampId": off["fedramp_id"],
-        "certification": "FedRAMP 20x, Program path, Class C",
+        # Sought, never held: this proof of concept is not certified, and says so
+        # in the JSON as well as the prose (submit-package.py refuses a CPO without it).
+        "certification": {"program": "FedRAMP 20x, Program path, Class C", "status": NOT_CERTIFIED},
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "fips_199": prof.get("fips_199"),
@@ -335,6 +338,9 @@ def main(argv=None):
     # assessor identity before its summary is quoted (CPO-CSO-OSA). Required.
     ap.add_argument("--assessment", required=True)
     ap.add_argument("--assessment-bundle", default=None)
+    # The commit and published KSI signal the set must cover (scripts/_assessor.py, bind).
+    ap.add_argument("--assessment-commit", default=None)
+    ap.add_argument("--assessment-signal-id", default=None)
     ap.add_argument("--assessor-identity", default=str(_assessor.IDENTITY_PATH))
     a = ap.parse_args(argv)
 
@@ -351,7 +357,8 @@ def main(argv=None):
         except json.JSONDecodeError:
             prev = {}
     assessment = _assessor.load_assessment(a.assessment, a.assessment_bundle or a.assessment[:-5] + ".bundle",
-                                           a.assessor_identity)
+                                           a.assessor_identity, expect_commit=a.assessment_commit,
+                                           expect_signal_id=a.assessment_signal_id)
     doc = build(off, prof, signal, _ccm.load(a.calendar, now.date()), prev, now, boundary_groups(), assessment)
     fs.write_validated(doc, "cpo", a.output)
     if a.md_output:
@@ -373,8 +380,8 @@ def render_markdown(c):
     ao = m["accountableOfficial"]
     ccm = pe["continuousMonitoring"]
     out = ["# Certification Package Overview", "",
-           f"_{pe['certification']}. With the Security Decision Record, the CR26 replacement for the System "
-           "Security Plan._", "", f"> {pe['engagement']}", "",
+           f"_{pe['certification']['program']} (sought; status: {pe['certification']['status']}). With the "
+           "Security Decision Record, the CR26 replacement for the System Security Plan._", "", f"> {pe['engagement']}", "",
            f"- **Provider:** {si['providerName']} | **Service:** {si['serviceName']} ({si['serviceAcronym']})",
            f"- **FedRAMP ID:** {si['fedRampPackageId']} (simulated: no FedRAMP ID has been assigned)",
            f"- **UEI:** {si['ueiNumber']} (simulated: no SAM.gov registration)",

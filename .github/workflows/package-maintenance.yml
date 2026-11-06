@@ -171,6 +171,15 @@ jobs:
         if grep -q -- '--assessment-bundle' ../scripts/build-cpo.py; then
           ASSESSMENT="--assessment $W/simulated-assessment.json --assessment-bundle $W/simulated-assessment.bundle"
         fi
+        # The set covers the deployed commit and the signal the deploy's SDR
+        # (signature verified above) states it validated; any other is refused.
+        if grep -q -- '--assessment-signal-id' ../scripts/build-cpo.py; then
+          ASSESSED=$(jq -r '.providerExtensions.assessmentCoverage.signalId // empty' "$W/security-decision-record.json")
+          if ! printf '%s' "$ASSESSED" | grep -qE '^[0-9a-f-]{36}$'; then
+            echo "::error::the published SDR does not state which KSI signal its assessment covered"; exit 1
+          fi
+          ASSESSMENT="$ASSESSMENT --assessment-commit $SIGNAL_COMMIT --assessment-signal-id $ASSESSED"
+        fi
         # FRC-CSX-VVK: the VDR's signature (verified above) for the dependency-scan
         # method, and a KSI short of two automated methods without an accepted
         # decision fails the run. Older deployed builders take neither.

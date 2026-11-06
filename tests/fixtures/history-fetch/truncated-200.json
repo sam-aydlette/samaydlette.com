@@ -1,0 +1,5 @@
+{
+  "$comment": "KNOWN-BAD: a 200 whose body was cut off mid-document. Treating it as empty would silently drop the history, so the fetch must fail the deploy.",
+  "status": 200,
+  "body": "{\"schema\": \"package-submission-log/1\", \"entries\": [{\"submittedAt\": \"2026-11-0"
+}

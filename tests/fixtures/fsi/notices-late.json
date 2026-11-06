@@ -1,0 +1,15 @@
+{
+  "$comment": "KNOWN-BAD: a previously published change notice filed 2026-12-03 for a change on 2026-12-01 (a Tuesday): more than one business day later, so the deploy must fail (AFC-CSO-NOC).",
+  "changeNotices": [
+    {
+      "changedOn": "2026-12-01",
+      "contact": "Simulated for this proof of concept: there is no FedRAMP Security Inbox. Hit me up on LinkedIn (new profile): https://www.linkedin.com/in/example/",
+      "filedOn": "2026-12-03",
+      "receipt": {
+        "receiptId": "SIM-NOC-000000000000",
+        "receivedBy": "FedRAMP (simulated): a Python function in this repository. Nothing left the building.",
+        "message": "Noted. Our records, which do not exist, have been updated."
+      }
+    }
+  ]
+}
