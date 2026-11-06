@@ -36,6 +36,18 @@ all_violations contains violation if {
 	some violation in value
 }
 
+# A rule whose credit depends on its condition applying (custom.credit:
+# applies_to) exports the resources it judged in its package's `applies_to`
+# set as {"rule": <rule id>, "address": <resource address>}. They are collected
+# the same way, and reported per resource and overall.
+all_applies contains a if {
+	walk(data.policy, [path, value])
+	path[count(path) - 1] == "applies_to"
+	some a in value
+}
+
+applied_rules(r) := sort({a.rule | some a in all_applies; a.address == gate.address_of(r)})
+
 # =============================================================================
 # EXCEPTIONS-AS-CODE
 # =============================================================================
@@ -125,6 +137,7 @@ resource_reports := [report |
 		"address": address,
 		"compliant": count(violations_for(r)) == 0,
 		"violations": violations_for(r),
+		"applies": applied_rules(r),
 		"policy_version": policy_version,
 	}
 ]
@@ -184,6 +197,7 @@ compliance_report := {
 	},
 	"violations_by_type": violations_by_type,
 	"violations": active_violations, # The findings the gate acts on
+	"applies": sort({a.rule | some a in all_applies}), # Rules whose condition applied (custom.credit)
 	"excepted": excepted, # Suppressed findings, kept visible for audit
 	# The emitter (terraform-plan.sh or the runtime Lambda) supplies the
 	# observation timestamp via the KSI signal's `emitted_at`; not duplicated

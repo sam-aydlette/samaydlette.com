@@ -226,7 +226,7 @@
       }
     },
     "divergence": {
-      "description": "Result of comparing this runtime evaluation against the deploy gate's published verdict for the same system. Emitted by the runtime emitter only; absent from deploy-time signals. `regressions` lists KSIs the deploy gate published as passing that this evaluation found failing \u2014 a genuine disagreement about the resource. `unassessed` lists KSIs this evaluation could not reach a verdict on (category:input violations such as resource_read_error), which is an observer fault and must never be treated as drift.",
+      "description": "Result of comparing this runtime evaluation against the deploy gate's published verdict for the same system. Emitted by the runtime emitter only; absent from deploy-time signals. `regressions` lists KSIs the deploy gate published as passing that this evaluation found failing — a genuine disagreement about the resource. `unassessed` lists KSIs this evaluation could not reach a verdict on (category:input violations such as resource_read_error), which is an observer fault and must never be treated as drift.",
       "$ref": "#/$defs/divergence"
     },
     "run_history": {
@@ -496,6 +496,15 @@
               }
             }
           }
+        },
+        "applies": {
+          "description": "The policy rules whose condition applied to the referenced components, for rules whose method credit depends on it (OPA annotation custom.credit: applies_to). Absent when no such rule applied.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         }
       }
     },

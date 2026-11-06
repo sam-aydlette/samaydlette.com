@@ -120,7 +120,8 @@ def policy_rules(policy_dir=POLICY_DIR):
         for k in custom.get("ksi_ids") or []:
             by_ksi.setdefault(k, []).append({"id": custom["id"], "title": ann.get("title", ""), "file": f,
                                              "resource_types": list(custom.get("resource_types") or []),
-                                             "runtime_only": bool(custom.get("runtime_only"))})
+                                             "runtime_only": bool(custom.get("runtime_only")),
+                                             "credit": custom.get("credit")})
     for rules in by_ksi.values():
         rules.sort(key=lambda r: (r["file"], r["id"]))
     return by_ksi
@@ -197,6 +198,11 @@ VVK = "FRC-CSX-VVK"
 # (infrastructure/lambda/describers.js).
 SUB_TYPES = {"api_gateway": ("aws_apigatewayv2_route", "aws_apigatewayv2_stage"),
              "function": ("lambda_deployment_package",)}
+# Sub-resources only the plan evaluates with the component: a bucket's policy is
+# a plan result credited to its bucket (build-ksi-signal.py
+# PLAN_VALIDATED_CHILD_TYPES), but the runtime reader of a bucket does not read
+# its policy, so it never adds runtime credit.
+PLAN_SUB_TYPES = {"object_store": ("aws_s3_bucket_policy",)}
 NOT_EVALUATED = _ksi_methods.NOT_EVALUATED
 
 
@@ -330,12 +336,14 @@ def method_results(methods_doc, published, vdr_ok, vdr, divergence, plan_gate, t
     return out
 
 
-def component_types(components):
-    """{component ID: the Terraform types a validation of it evaluates}."""
+def component_types(components, extra=None):
+    """{component ID: the Terraform types a validation of it evaluates}; `extra`
+    adds sub-types only one of the two paths evaluates (PLAN_SUB_TYPES)."""
     out = {}
     for c in components:
         types = {((c.get("attributes") or {}).get("tf_type"))} - {None}
-        out[c.get("component_id")] = types | set(SUB_TYPES.get(c.get("type"), ()))
+        subs = set(SUB_TYPES.get(c.get("type"), ())) | set((extra or {}).get(c.get("type"), ()))
+        out[c.get("component_id")] = types | subs
     return out
 
 
@@ -355,7 +363,21 @@ def _rule_matches(rule, types):
     return bool(set(rts) & types)
 
 
-def rule_methods(rules, plan_types, runtime_types):
+def applied_rules(validations):
+    """Every rule id the given validations say applied (custom.credit: applies_to)."""
+    return {a for v in validations for a in (v.get("applies") or [])}
+
+
+def _rule_credited(rule, types, applied):
+    """A rule annotated custom.credit: applies_to counts only where its condition
+    applied to a resource (e.g. a role federated to GitHub for the OIDC trust
+    rule); any other rule counts when a resource of its types was evaluated."""
+    if rule.get("credit") == "applies_to":
+        return rule["id"] in applied
+    return _rule_matches(rule, types)
+
+
+def rule_methods(rules, plan_types, runtime_types, plan_applied=frozenset(), runtime_applied=frozenset()):
     """(plan rules, runtime rules): the KSI's annotated rules that evaluated a
     resource of their types in this plan, and against live configuration.
 
@@ -364,9 +386,11 @@ def rule_methods(rules, plan_types, runtime_types):
     the Terraform plan through the deploy gate, at runtime it reads live
     configuration through the runtime emitter, so the inputs and the code paths
     that gather them differ. One annotated rule that evaluated a resource of its
-    type in both counts 2 for its KSI; in the plan only, 1."""
-    plan = [r for r in rules if not r.get("runtime_only") and _rule_matches(r, plan_types)]
-    rt = [r for r in rules if _rule_matches(r, runtime_types)]
+    type in both counts 2 for its KSI; in the plan only, 1. A rule annotated
+    custom.credit: applies_to counts only where the validations name it as
+    applied (plan_applied, runtime_applied; applied_rules)."""
+    plan = [r for r in rules if not r.get("runtime_only") and _rule_credited(r, plan_types, plan_applied)]
+    rt = [r for r in rules if _rule_credited(r, runtime_types, runtime_applied)]
     return plan, rt
 
 
@@ -632,8 +656,11 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         _fail(f"the KSI signal carries no result for {', '.join(missing)}")
     emitted = (signal.get("emitted_at") or "")[:10] or None
     types_of = component_types(signal.get("components", []))
-    plan_types = evaluated_types(signal.get("validations") or [], types_of)
+    plan_types = evaluated_types(signal.get("validations") or [],
+                                 component_types(signal.get("components", []), PLAN_SUB_TYPES))
     runtime_types = evaluated_types(runtime, types_of)
+    plan_applied = applied_rules(signal.get("validations") or [])
+    runtime_applied = applied_rules(runtime)
     table = {}
     for m in (methods_doc or {"methods": []})["methods"]:
         for kid in m["ksis"]:
@@ -650,7 +677,7 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         ev = k.get("evidence") or {}
         comps = set(ev.get("component_refs") or [])
         rules = rules_by_ksi.get(kid, [])
-        plan_rules, rt_rules = rule_methods(rules, plan_types, runtime_types)
+        plan_rules, rt_rules = rule_methods(rules, plan_types, runtime_types, plan_applied, runtime_applied)
         counted = [
             {"key": "plan", "mechanism": "OPA plan gate", "input": "real", "counted": bool(plan_rules),
              "measure": "the KSI's annotated rules evaluated resources of their types at plan (Terraform plan)",

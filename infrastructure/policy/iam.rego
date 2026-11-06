@@ -289,6 +289,7 @@ violations contains violation if {
 #   nist_controls: [ia-3, ac-6.5]
 #   ksi_ids: [KSI-IAM-SNU, KSI-CNA-MAT]
 #   resource_types: [aws_iam_role]
+#   credit: applies_to
 violations contains violation if {
 	some r in gate.resources
 	some s in trust_statements(r)
@@ -326,4 +327,13 @@ violations contains violation if {
 		gate.address_of(r),
 		"OIDC provider client ID list is not exactly the STS audience",
 	)
+}
+
+# The roles iam_oidc_trust_unscoped actually judged: those whose trust is
+# federated to GitHub. A role without that federation passes the rule vacuously,
+# so it earns the rule no credit (custom.credit: applies_to; build-sdr.py).
+applies_to contains {"rule": "iam_oidc_trust_unscoped", "address": gate.address_of(r)} if {
+	some r in gate.resources
+	some s in trust_statements(r)
+	github_federated(s)
 }

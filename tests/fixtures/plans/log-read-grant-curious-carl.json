@@ -1,0 +1,98 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "models": "Known-bad: Curious Carl (simulated), an intern, is handed log reads 'just to look around': an inline policy on his role reads CloudWatch Logs events and the access-log bucket's objects, and the CloudTrail bucket's policy lets his role read the trail. Every grant is outside the log-reader allowlist (log_read_grant_unexpected, KSI-MLA-ALA). The deploy's own two readers are present too, inside their allowlist entries, and must not fire."
+  },
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "resource_changes": [
+    {
+      "address": "aws_iam_role_policy.curious_carl_log_peek",
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "curious_carl_log_peek",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "just-looking-around",
+          "role": "curious-carl-intern",
+          "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"JustLookingAround\", \"Effect\": \"Allow\", \"Action\": [\"logs:GetLogEvents\", \"logs:FilterLogEvents\", \"s3:GetObject\"], \"Resource\": [\"*\", \"arn:aws:s3:::samaydlette-com-logs/*\"]}]}"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_s3_bucket_policy.cloudtrail",
+      "mode": "managed",
+      "type": "aws_s3_bucket_policy",
+      "name": "cloudtrail",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "bucket": "samaydlette-com-cloudtrail",
+          "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"AWSCloudTrailWrite\", \"Effect\": \"Allow\", \"Principal\": {\"Service\": \"cloudtrail.amazonaws.com\"}, \"Action\": \"s3:PutObject\", \"Resource\": \"arn:aws:s3:::samaydlette-com-cloudtrail/AWSLogs/123456789012/*\"}, {\"Sid\": \"LetCarlLook\", \"Effect\": \"Allow\", \"Principal\": {\"AWS\": \"arn:aws:iam::123456789012:role/curious-carl-intern\"}, \"Action\": \"s3:GetObject\", \"Resource\": \"arn:aws:s3:::samaydlette-com-cloudtrail/*\"}]}"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_iam_role_policy.edge_access_logs_read",
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "edge_access_logs_read",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "edge-access-logs-read",
+          "role": "github-actions-deploy-oidc",
+          "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"ReadEdgeAccessRecords\", \"Effect\": \"Allow\", \"Action\": \"s3:GetObject\", \"Resource\": [\"arn:aws:s3:::samaydlette-com-logs/cloudfront/*\", \"arn:aws:s3:::samaydlette-com-logs/AWSLogs/123456789012/CloudFront/*\"]}]}"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_iam_role_policy.evidence_nightly_audit_reads",
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "evidence_nightly_audit_reads",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "evidence-nightly-audit-log-review",
+          "role": "github-actions-evidence-nightly-oidc",
+          "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"AuditLogReviewReads\", \"Effect\": \"Allow\", \"Action\": \"cloudtrail:LookupEvents\", \"Resource\": \"*\"}]}"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": []
+    }
+  }
+}

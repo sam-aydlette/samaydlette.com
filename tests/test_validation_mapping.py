@@ -149,3 +149,131 @@ def test_npm_components_name_the_function_they_ship_in(tmp_path):
     comps = ksi.build_npm_components(lock, deployed_in="aws::function::opa_compliance")
     assert comps and all(c["attributes"]["deployed_in"] == "aws::function::opa_compliance" for c in comps)
     assert all("deployed_in" not in c["attributes"] for c in ksi.build_npm_components(lock))
+
+
+# --- the trust root's plan and the log buckets' policies (KSI-MLA-ALA, IAM-SNU, SVC-VCM) ---
+
+
+def test_bucket_policy_folds_into_its_bucket():
+    components = [comp("logs", "object_store", "logs", "aws_s3_bucket.logs"),
+                  comp("trail", "object_store", "cloudtrail", "aws_s3_bucket.cloudtrail")]
+    got = ksi.build_validations({"results": [result("aws_s3_bucket_policy", "cloudtrail", compliant=False,
+                                                    violations=[{"id": "log_read_grant_unexpected"}])]}, components)
+    assert [v["component_refs"] for v in got] == [["trail"]]
+    assert got[0]["result"] == "fail"
+
+
+def test_trust_root_identities_are_credited():
+    """The bootstrap plan's results reach the OIDC provider and the groups."""
+    components = [comp("oidc", "oidc_provider", "github", "aws_iam_openid_connect_provider.github"),
+                  comp("ops", "iam_group", "operators", "aws_iam_group.operators")]
+    doc = [result("aws_iam_openid_connect_provider", "github", "aws_iam_openid_connect_provider.github"),
+           result("aws_iam_group", "operators", "aws_iam_group.operators")]
+    assert refs(doc, components) == [["oidc"], ["ops"]]
+
+
+def test_data_source_distribution_takes_the_bootstrap_result_by_name():
+    """The main stack reads the distribution as a data source; the trust root's
+    plan result for the managed resource joins it by type and name."""
+    components = [comp("cdn", "cdn_distribution", "website", "data.aws_cloudfront_distribution.website")]
+    assert refs([result("aws_cloudfront_distribution", "website", "aws_cloudfront_distribution.website")],
+                components) == [["cdn"]]
+
+
+def _sdr():
+    s = importlib.util.spec_from_file_location("sdr_vm", REPO / "scripts" / "build-sdr.py")
+    m = importlib.util.module_from_spec(s)
+    s.loader.exec_module(m)
+    return m
+
+
+def test_bucket_policy_is_plan_credit_only():
+    """The plan judges a bucket's policy with the bucket; the runtime reader of a
+    bucket does not read its policy, so a rule of that type earns no runtime credit."""
+    sdr = _sdr()
+    comps = [{"component_id": "logs", "type": "object_store", "attributes": {"tf_type": "aws_s3_bucket"}}]
+    vals = [{"component_refs": ["logs"]}]
+    plan = sdr.evaluated_types(vals, sdr.component_types(comps, sdr.PLAN_SUB_TYPES))
+    runtime = sdr.evaluated_types(vals, sdr.component_types(comps))
+    rule = {"resource_types": ["aws_s3_bucket_policy"]}
+    assert sdr.rule_methods([rule], plan, runtime) == ([rule], [])
+
+
+# --- credit only where the condition applied (custom.credit: applies_to; KSI-IAM-SNU) ---
+import shutil  # noqa: E402
+import subprocess  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+def _opa1():
+    opa = shutil.which("opa")
+    return bool(opa) and "Rego Version: v1" in subprocess.run([opa, "version"], capture_output=True, text=True).stdout
+
+
+_TAGS = {"Environment": "prod", "CostCenter": "c", "DataClassification": "Internal", "Owner": "o",
+         "DataSensitivity": "internal", "MissionCriticality": "moderate", "InternetReachable": "false",
+         "Archetype": "security-tooling", "AgencyScope": "single", "OwnerRole": "platform-operator"}
+
+
+def _role(name, trust):
+    doc = json.dumps({"Version": "2012-10-17", "Statement": [trust]})
+    return {"address": f"aws_iam_role.{name}", "mode": "managed", "type": "aws_iam_role", "name": name,
+            "change": {"actions": ["create"], "before": None, "after_unknown": {},
+                       "after": {"name": name, "assume_role_policy": doc, "tags": _TAGS, "tags_all": _TAGS}}}
+
+
+_LAMBDA_TRUST = {"Effect": "Allow", "Action": "sts:AssumeRole", "Principal": {"Service": "lambda.amazonaws.com"}}
+_GITHUB_TRUST = {
+    "Effect": "Allow", "Action": "sts:AssumeRoleWithWebIdentity",
+    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Condition": {"StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                                   "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:ref:refs/heads/main"}},
+}
+
+
+def _snu_plan_credit(tmp_path, roles):
+    plan = tmp_path / "plan.json"
+    plan.write_text(json.dumps({"format_version": "1.2", "resource_changes": [_role(n, t) for n, t in roles]}))
+    out = subprocess.run(["opa", "eval", "--strict-builtin-errors", "-d", str(POLICY), "-i", str(plan),
+                          "data.terraform.compliance.resource_reports"], capture_output=True, text=True, check=True)
+    results = json.loads(out.stdout)["result"][0]["expressions"][0]["value"]
+    assert all(r["compliant"] for r in results)
+    components = [comp(f"role::{n}", "iam_role", n, f"aws_iam_role.{n}") for n, _ in roles]
+    for c in components:
+        c["attributes"]["tf_type"] = "aws_iam_role"
+    vals = ksi.build_validations({"results": results}, components)
+    sdr = _sdr()
+    rules = sdr.policy_rules()["KSI-IAM-SNU"]
+    plan_types = sdr.evaluated_types(vals, sdr.component_types(components, sdr.PLAN_SUB_TYPES))
+    credited, _ = sdr.rule_methods(rules, plan_types, set(), sdr.applied_rules(vals), set())
+    return credited
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_non_federated_roles_give_iam_snu_no_plan_credit(tmp_path):
+    """A role without GitHub federation passes the OIDC trust rule vacuously."""
+    assert _snu_plan_credit(tmp_path, [("lambda_opa", _LAMBDA_TRUST)]) == []
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_a_federated_role_gives_iam_snu_one_plan_credit(tmp_path):
+    got = _snu_plan_credit(tmp_path, [("lambda_opa", _LAMBDA_TRUST), ("deploy", _GITHUB_TRUST)])
+    assert [r["id"] for r in got] == ["iam_oidc_trust_unscoped"]
+
+
+def test_applies_rides_on_the_validation():
+    components = [comp("role::deploy", "iam_role", "deploy", "aws_iam_role.deploy")]
+    r = result("aws_iam_role", "deploy", "aws_iam_role.deploy")
+    r["applies"] = ["iam_oidc_trust_unscoped"]
+    got = ksi.build_validations({"results": [r, result("aws_iam_role", "deploy", "aws_iam_role.deploy")]}, components)
+    assert got[0]["applies"] == ["iam_oidc_trust_unscoped"] and "applies" not in got[1]
+
+
+def test_type_credited_rules_are_unchanged():
+    sdr = _sdr()
+    rule = {"id": "x", "resource_types": ["aws_iam_role"]}
+    assert sdr.rule_methods([rule], {"aws_iam_role"}, {"aws_iam_role"}) == ([rule], [rule])
+    gated = dict(rule, credit="applies_to")
+    assert sdr.rule_methods([gated], {"aws_iam_role"}, {"aws_iam_role"}) == ([], [])
+    assert sdr.rule_methods([gated], {"aws_iam_role"}, {"aws_iam_role"}, {"x"}, {"x"}) == ([gated], [gated])

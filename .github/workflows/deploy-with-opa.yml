@@ -523,7 +523,14 @@ jobs:
     # shows up in the trust center as a decision waiting on a person rather than
     # drifting unseen. -lock=false: a read-only plan never contends with an
     # operator apply. The summary carries resource addresses and actions only.
-    # Never fails the job: reporting drift is the point, not blocking on it.
+    # Pending drift never fails the job: reporting it is the point. A policy
+    # violation does: the plan is also written as JSON and run through the same
+    # OPA gate as the per-deploy stack (scripts/opa-gate-plan.sh), so the GitHub
+    # OIDC provider and roles and the CloudFront distribution face their rules
+    # at plan time, and its per-resource results join validations.json for plan
+    # credit (TRUST_ROOT_VALIDATIONS, read by scripts/terraform-plan.sh). When no
+    # plan could be made (empty state, a plan error) there is nothing to gate
+    # and no trust-root plan credit; the summary reports why.
     # GitHub runs this script with `bash -e`, and plan -detailed-exitcode exits 2
     # when changes are pending, so every exit code is captured with `|| rc=$?`
     # rather than left to kill the step (tests/test_trust_root_plan_step.py).
@@ -552,10 +559,21 @@ jobs:
             fi
           fi
         fi
+        gate=0
+        rm -f ../trust-root-validations.ndjson
+        if [ "$rc" != 1 ] && [ -s trust-root-plan-full.json ]; then
+          ../../scripts/opa-gate-plan.sh trust-root-plan-full.json ../trust-root-validations.ndjson || gate=1
+        else
+          echo "Trust root not gated: no plan was made (no trust-root plan credit this run)"
+        fi
         python3 ../../scripts/summarize-trust-root-plan.py --exit-code "$rc" $empty "${stateargs[@]}" \
           --plan-json trust-root-plan-full.json --commit "$GITHUB_SHA" > ../trust-root-plan.json
         rm -f trust-root-plan-full.json trust-root.tfplan
         echo "Trust root: $(python3 -c 'import json;print(json.load(open("../trust-root-plan.json"))["status"])')"
+        if [ "$gate" != 0 ]; then
+          echo "::error::The trust root's plan violates policy (see above); the deploy stops here."
+          exit 1
+        fi
 
     # -------------------------------------------------------------------------
     # THE ACTUAL SECURITY CHECK
@@ -578,6 +596,8 @@ jobs:
     - name: Run OPA Compliance Check
       working-directory: infrastructure
       id: compliance
+      env:
+        TRUST_ROOT_VALIDATIONS: trust-root-validations.ndjson
       run: |
         chmod +x ../scripts/terraform-plan.sh
         if ../scripts/terraform-plan.sh; then

@@ -22,7 +22,11 @@ annotation drifts from the catalog:
      config/*.json, which the rule reads) names as a string, or ["*"] for a
      rule that evaluates every resource, or [] for one that evaluates none (the
      gate's own input checks); `custom.runtime_only`, when present, is a
-     boolean.
+     boolean;
+  6. `custom.credit`, when present, is "applies_to", and the rule's file
+     exports that rule's id in an `applies_to` set ({"rule": "<id>", ...}):
+     the rule earns a KSI method only for the resources its condition applied
+     to (build-sdr.py rule_methods), never for mere type presence.
 
 Usage: python3 scripts/check-policy-annotations.py [--policy-dir DIR]
 Requires `opa` on PATH (the pinned version from the workflow).
@@ -98,6 +102,17 @@ def resource_type_errors(custom, file_text):
     return errs
 
 
+def credit_errors(custom, file_text):
+    """Why a rule's custom.credit annotation is malformed ([] if not)."""
+    if "credit" not in custom:
+        return []
+    if custom["credit"] != "applies_to":
+        return ['custom.credit must be "applies_to" (or absent for credit by resource type)']
+    if f'"rule": "{custom.get("id")}"' not in file_text or "applies_to contains" not in file_text:
+        return [f"custom.credit is applies_to but the rule's file exports no applies_to entry for {custom.get('id')}"]
+    return []
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
@@ -124,6 +139,7 @@ def main(argv=None):
         src = Path(rule["file"])
         text = (src.read_text() if src.is_file() else "") + config_text
         errors += [f"{where}: {e}" for e in resource_type_errors(custom, text)]
+        errors += [f"{where}: {e}" for e in credit_errors(custom, src.read_text() if src.is_file() else "")]
 
         ksi_ids = custom.get("ksi_ids")
         nist_controls = custom.get("nist_controls")

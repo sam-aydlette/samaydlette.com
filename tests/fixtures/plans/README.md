@@ -31,6 +31,7 @@ ARNs is `123456789012`, the AWS documentation placeholder.
 | `kms-rotation-disabled.json` | Symmetric customer key without rotation |
 | `log-group-unencrypted.json` | Log group with no customer key, known at plan time |
 | `apigw-route-unauthorized.json` | `/api` route without an authorizer |
+| `log-read-grant-curious-carl.json` | Curious Carl (simulated), an intern, granted log reads by an inline policy and by the CloudTrail bucket's policy; the deploy's two allowlisted log readers alongside, which must not fire |
 | `empty.json`, `garbage.json` | Malformed input; must yield an explicit `input_error`, never a silent pass |
 
 `tests/fixtures/resources/` holds the same resources flattened into the

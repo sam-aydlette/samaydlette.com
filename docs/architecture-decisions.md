@@ -74,7 +74,20 @@ The emitter's failures are covered by the evidence watchdog and the runtime sign
 
 ## Log access scoping (KSI-MLA-ALA)
 
-Log access is scoped via AWS IAM. The operator's IAM user holds the CloudWatch Logs read access (through group-attached policies); the OIDC-assumed deploy role can enumerate log groups for reconciliation but not read log events; neither Lambda role can read logs. No other principal exists in the system.
+Who may read log data is an allowlist in the policy configuration (`infrastructure/policy/config/data.json`, `gate.log_access.readers`). Each entry names one reader, the actions and the log resources it may read, the basis for it, and who decided it. The OPA rule `log_read_grant_unexpected` (`infrastructure/policy/iam.rego`) fails the deploy gate when an IAM policy (inline or customer-managed) or the policy of a log bucket (the access-log and CloudTrail buckets) grants a read of log content outside an entry: objects in a log bucket, CloudWatch Logs events and queries, or the CloudTrail event history. A broader grant to a listed reader still fails. The rule runs over the per-deploy stack's plan and over the trust root's plan on every deploy, and the runtime emitter re-applies it daily to the live inline policies. Its known-bad case, Curious Carl (simulated), an intern handed log reads "just to look around", must be stopped on every test run (`tests/fixtures/plans/log-read-grant-curious-carl.json`).
+
+Two readers are listed, both decided by the operator on 2026-11-06:
+
+- the deploy role reads the CloudFront access records under the access-log bucket's CloudFront prefixes, to build the aggregate access summary (CDS-TRC-ACL);
+- the nightly evidence role reads the CloudTrail event history for the automated audit-log review (DEC-195).
+
+Neither Lambda role can read logs. The rule does not yet cover AWS-managed policies attached by ARN, because their documents are not in the plan or the runtime input. Through such attachments, three identities can read log data outside the allowlist today:
+
+- the operators group, which the operator's IAM user belongs to, through AWSLambda_FullAccess: CloudWatch Logs event reads on the Lambda log groups;
+- the read-only group, through ReadOnlyAccess: objects in the log buckets, CloudWatch Logs events and queries, and the CloudTrail event history;
+- the plan role, through ReadOnlyAccess: its own inline policy denies CloudWatch Logs event reads and queries, but not objects in the log buckets, the CloudTrail event history, or CloudWatch Logs live tail and record reads.
+
+This is a gap in the authorization model, not an accepted state. The operator decides, per identity, whether to add an allowlist entry with its basis or remove the grant; until then these reads are not authorized by the allowlist. Customer-managed policies attached by ARN (on the deploy role and the operators group) are not evaluated either.
 
 ## CISA Secure-by-Design alignment (KSI-PIY-RSD)
 
@@ -149,5 +162,7 @@ Cross-component communications:
 - authenticated user ↔ API Gateway ↔ Silk Reeling Lambda: TLS, Cognito JWT verified at the gateway
 - Lambda ↔ AWS service APIs: TLS within the AWS network
 - CI ↔ AWS APIs: TLS, with an ephemeral OIDC-assumed role scoped via IAM
+
+The viewer-facing settings (HTTPS redirect, the TLS floor) are checked by the OPA gate twice: at plan time, over the trust root's plan, because the distribution belongs to the bootstrap stack, which CI never applies; the deploy plans it read-only and runs the same gate over it on every deploy (a violation stops the deploy), and daily by the runtime emitter against the live distribution.
 
 Authenticity at the application layer: the canonical inventory is signed (KSI-SVC-VRI). Communication integrity at the transport layer is AWS-default TLS. End-to-end signed-message integrity at the application layer beyond the signed signal is not implemented because no application-layer protocol exists between components beyond the standard AWS APIs.

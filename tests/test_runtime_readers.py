@@ -68,10 +68,11 @@ def evaluate(inputs, tmp_path):
 DRIFTED = {
     ("aws_iam_role", "lambda_opa"): {"iam_trust_public"},
     ("aws_iam_role", "deploy"): {"iam_oidc_trust_unscoped"},
-    ("aws_iam_role_policy", "lambda_opa"): {"iam_admin_wildcard"},
+    # Every action on every resource includes reading the logs (KSI-MLA-ALA).
+    ("aws_iam_role_policy", "lambda_opa"): {"iam_admin_wildcard", "log_read_grant_unexpected"},
     ("aws_iam_group", "operators"): {"iam_admin_policy_attached"},
     # A group's inline policy is read with GetGroupPolicy and judged like a role's.
-    ("aws_iam_group_policy", "operators_s3_bucket"): {"iam_admin_wildcard"},
+    ("aws_iam_group_policy", "operators_s3_bucket"): {"iam_admin_wildcard", "log_read_grant_unexpected"},
     # The managed policy the inventory records on the group is no longer
     # attached: the attachment cannot be validated, so it is unassessed.
     ("aws_iam_group_policy_attachment", "operators"): {"resource_read_error"},
@@ -112,6 +113,16 @@ def test_compliant_live_shapes_pass(tmp_path):
 def test_every_drift_is_caught_by_the_gate_rule(tmp_path):
     got = evaluate(run("drifted")["inputs"], tmp_path)
     assert got == DRIFTED
+
+
+@requires_node
+def test_inline_policies_carry_their_holder():
+    """The log-access rule keys its allowlist on the policy's holder; the reader
+    takes it from the inventory id it already read by (no further AWS call)."""
+    holders = {(i["type"], i["name"]): (i["values"].get("role"), i["values"].get("group"))
+               for i in run("compliant")["inputs"] if i["type"] in ("aws_iam_role_policy", "aws_iam_group_policy")}
+    assert holders[("aws_iam_role_policy", "lambda_opa")] == ("samaydlette-com-lambda-opa-role", None)
+    assert holders[("aws_iam_group_policy", "operators_s3_bucket")] == (None, "operators")
 
 
 @requires_node
@@ -241,3 +252,36 @@ const comps = JSON.parse(require('fs').readFileSync(0));
     process.stdout.write(JSON.stringify(out));
 })();
 """
+
+
+@requires_node
+@requires_opa1
+def test_live_github_federated_roles_carry_the_applies_marker(tmp_path):
+    """At runtime the compiled policy reports where the OIDC trust rule applied
+    (custom.credit: applies_to): the federated deploy role, not the Lambda role."""
+    inputs = [i for i in run("compliant")["inputs"] if i["type"] == "aws_iam_role"]
+    data = tmp_path / "inputs.json"
+    data.write_text(json.dumps({"fx": {"inputs": inputs}}))
+    query = ("[[x.name, a] | some x in data.fx.inputs; "
+             'a := data.terraform.compliance.compliance_report.applies with input as {"resource": x}]')
+    out = subprocess.run(["opa", "eval", "-d", str(POLICY), "-d", str(data), "--format", "json", query],
+                         capture_output=True, text=True, check=True)
+    got = dict(json.loads(out.stdout)["result"][0]["expressions"][0]["value"])
+    assert got["deploy"] == ["iam_oidc_trust_unscoped"] and got["lambda_opa"] == []
+
+
+@requires_node
+def test_validations_fold_the_applies_marker(tmp_path):
+    script = (
+        "const {validateComponents} = require(process.argv[1]);"
+        "const comps = [{component_id: 'r', type: 'iam_role', attributes: {id: 'x', tf_name: 'x'}}];"
+        "const iam = {getRole: async () => ({AssumeRolePolicyDocument: '{}'}),"
+        " listAttachedRolePolicies: async () => [], listRolePolicies: async () => []};"
+        "validateComponents({aws: {iam}, components: comps, tags: new Map()}, comps,"
+        " async () => ({compliant: true, violations: [], applies: ['b', 'a']}), 'p', 'v', () => 'id')"
+        ".then((v) => console.log(JSON.stringify(v)));"
+    )
+    out = subprocess.run(["node", "-e", script, str(REPO / "infrastructure" / "lambda" / "describers.js")],
+                         capture_output=True, text=True, check=True)
+    vals = json.loads(out.stdout)
+    assert vals and all(v["applies"] == ["a", "b"] for v in vals)
