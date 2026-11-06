@@ -195,7 +195,13 @@ jobs:
       run: python3 scripts/_frr.py --complete
 
     - name: Python unit tests
-      run: python3 -m pytest tests/ -q
+      run: python3 -m pytest tests/ -q --junitxml=pytest-results.xml
+
+    # FRC-CSX-VVR: every test a FedRAMP rule record cites as evidence ran and
+    # passed in the run above (a skipped or missing one fails too). The result
+    # per record is signed and published by the deploy as frr-evidence.json.
+    - name: FedRAMP rule evidence passed (cited tests)
+      run: python3 scripts/check-frr-evidence.py --junit pytest-results.xml --output frr-evidence.json --commit "${{ github.sha }}"
 
     # REQ-GOV-2: run the method's conformance tests (data/method-profile.json
     # maps Appendix B T1-T74 to the tests that implement them) and record the
@@ -211,7 +217,9 @@ jobs:
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: conformance-results
-        path: conformance-results.json
+        path: |
+          conformance-results.json
+          frr-evidence.json
         if-no-files-found: error
 
     # The policy suite is an exhibit: format is enforced, strict compilation
@@ -596,7 +604,7 @@ jobs:
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
       GATE_EVENTS_FILE: /tmp/gate-events.jsonl
-    needs: [test, compliance-check, security-scan]
+    needs: [test, compliance-check, security-scan, simulated-assessor]
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
@@ -704,6 +712,14 @@ jobs:
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: conformance-results
+        path: infrastructure/
+
+    # The simulated assessor's signed set (simulated-assessment.json + .bundle),
+    # verified against the pinned assessor identity when the SDR is built.
+    - name: Download the simulated assessment
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: simulated-assessment
         path: infrastructure/
 
     # -------------------------------------------------------------------------
@@ -1588,18 +1604,128 @@ jobs:
           --md-output ongoing-certification-report.md
         jq '.providerExtensions.continuousMonitoring | {nextOngoingCertificationReportDate, nextQuarterlyReviewDate}' ongoing-certification-report.json
 
+    # W8 edge checks (FRC-CSO-JSN, CDS-CSO-AVR, CDS-TRC-USH, CDS-TRC-ACL). Each
+    # depends on something outside this deploy (the operator-applied bootstrap
+    # stack, or the independent monitor on GitHub Actions) and fails the deploy
+    # when it is missing, before the SDR says the rule is met.
+    - name: Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)
+      env:
+        DOMAIN: ${{ vars.DOMAIN_NAME || 'samaydlette.com' }}
+      run: python3 scripts/check-wellknown-headers.py --site "https://$DOMAIN"
+
+    - name: Read the independent availability feed (fails when missing or stale)
+      working-directory: infrastructure
+      env:
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        curl -fsS --max-time 30 -o availability-probe.json \
+          "https://raw.githubusercontent.com/$REPO/availability-status/availability-status.json"
+        python3 ../scripts/availability-probe.py --check-fresh availability-probe.json --max-age-hours 2
+
+    # The CloudFront access records carry no IP, cookie, query string or user
+    # agent (the delivery's field allowlist, checked here); only /.well-known/
+    # and /trust/ requests are counted, and only monthly aggregates published.
+    - name: Check edge access logging and build the access summary
+      working-directory: infrastructure
+      env:
+        DOMAIN: ${{ vars.DOMAIN_NAME || 'samaydlette.com' }}
+      run: |
+        set -euo pipefail
+        umask 077
+        trap 'rm -rf edge-access-records edge-deliveries.json edge-delivery-source.json' EXIT
+        name="${DOMAIN//./-}-edge-access"
+        aws logs describe-deliveries --region us-east-1 --output json > edge-deliveries.json
+        aws logs get-delivery-source --name "$name" --region us-east-1 --output json > edge-delivery-source.json || true
+        python3 ../scripts/check-edge-access-logging.py \
+          --deliveries edge-deliveries.json --source edge-delivery-source.json --name "$name"
+        bucket="${DOMAIN//./-}-logs"
+        account=$(aws sts get-caller-identity --query Account --output text)
+        aws s3 sync "s3://$bucket/cloudfront/" edge-access-records/cloudfront/ --only-show-errors
+        aws s3 sync "s3://$bucket/AWSLogs/$account/CloudFront/" edge-access-records/default/ --only-show-errors
+        curl -fsS --max-time 20 -o previous-access-summary.json "https://$DOMAIN/.well-known/access-summary.json" \
+          || echo '{}' > previous-access-summary.json
+        python3 ../scripts/build-access-summary.py \
+          --records edge-access-records --previous previous-access-summary.json
+
     - name: Build CDS certification-data artifacts (availability, policy index, review calendar)
       working-directory: infrastructure
       run: |
         echo "Building availability feed, policy index, Quarterly Review calendar..."
-        # availability history: fetch the previously-published feed (best-effort)
-        curl -sfL -o previous-availability.json "https://samaydlette.com/.well-known/availability.json" \
-          || echo '{"history":[]}' > previous-availability.json
         # CCM-QTR-REG: the review calendar file, from the fixed CCM calendar.
         python3 ../scripts/_ccm.py --ics quarterly-review.ics
+        # Availability as measured by the independent monitor (read and checked above).
         python3 ../scripts/build-availability.py \
-          --previous previous-availability.json --ksi-signal ksi-signal.json
-        python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md
+          --probe-feed availability-probe.json --ksi-signal ksi-signal.json
+        python3 ../scripts/build-policy-index.py --output policy-index.json --md-output policy-index.md --publish-dir policies
+
+    # The Minimum Assessment Scope (MAS-CSO-IIR/FLO/MDI/TPR, FRC-CSX-MAS), generated
+    # from this build's inventory, the boundary classification's flows, the CSPs
+    # the edge serves and the third-party records. Fails the deploy, before the
+    # SDR, on an unplaced off-origin host, an external service or data store in
+    # no flow, a data store without a metadata entry, an undecided third-party
+    # record, or a component type no KSI covers. Signed and published with the
+    # rest after the gates.
+    # IVV-CSO-STE / IVV-CSO-DUS: the assessor guide, generated from the rule
+    # records (the simulated assessor received and ran the same guide before this
+    # job started). Signed and published with the rest.
+    - name: Build the assessor guide
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: python3 ../scripts/build-assessor-guide.py --commit "$GITHUB_SHA" --output assessor-guide.json --md-output assessor-guide.md
+
+    # CDS-TRC-AAI / CDS-TRC-SSM / CDS-UTC-AAD / CDS-UTC-AGA: the real register
+    # fails the deploy on a denial not notified to FedRAMP within 5 business
+    # days; the exercise runs the same code over fictional agencies dated from
+    # today and fails unless every expected outcome (late and overdue notices
+    # included) is observed. Nothing is sent to anyone.
+    - name: Agency access register check and simulated-agency exercise
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/agency-access.py validate
+        python3 ../scripts/agency-access.py exercise --output agency-access-exercise.json --md-output agency-access-exercise.md
+
+    - name: Build the Minimum Assessment Scope
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        python3 ../scripts/build-mas.py --ksi-signal ksi-signal.json --commit "$GITHUB_SHA" \
+          --output minimum-assessment-scope.json --md-output minimum-assessment-scope.md
+        cosign sign-blob --yes --new-bundle-format --bundle minimum-assessment-scope.bundle minimum-assessment-scope.json
+
+    # The Secure Configuration Guide and the per-service cryptographic module
+    # list (SCG-CSO-RSC/PUB/AUP, SCG-ENH-MRG/API/VRH; CMU-CSO-CMD/UVM/CAT), from
+    # data/secure-configuration.json and data/crypto-modules.json joined with this
+    # deploy's inventory. Fails on an unreleased change to a default, a decision
+    # that is not in force, an inventoried component type with no module mapping,
+    # or a retired mechanism in the guide.
+    - name: Build the secure configuration guide (SCG, cryptographic modules)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-scg.py --ksi-signal ksi-signal.json \
+          --output secure-configuration-guide.json --md-output secure-configuration-guide.md
+        cosign sign-blob --yes --new-bundle-format --bundle secure-configuration-guide.bundle secure-configuration-guide.json
+
+    # SCG-ENH-CMP / SCG-ENH-EXP: read the live settings of the top-level and
+    # privileged accounts (read-only; the deploy role's secure-configuration-reads
+    # policy in infrastructure/bootstrap) and compare each with the guide. A
+    # deviation no in-force decision covers, or a setting that cannot be read,
+    # fails the deploy here, before the SDR is built and before anything is
+    # published. The export carries values only: no account ID, ARN or IAM name.
+    - name: Compare live security settings with the secure configuration guide
+      working-directory: infrastructure
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        set -euo pipefail
+        pool=$(terraform output -raw cognito_user_pool_id)
+        python3 ../scripts/check-secure-config.py --cognito-pool-id "$pool" \
+          --output security-settings.json --md-output security-settings.md
+        cosign sign-blob --yes --new-bundle-format --bundle security-settings.bundle security-settings.json
 
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
@@ -1610,10 +1736,12 @@ jobs:
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
-          --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
+          --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
-        python3 ../scripts/_assessor.py --sdr security-decision-record.json
+        python3 ../scripts/_assessor.py --sdr security-decision-record.json \
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
 
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure
@@ -1623,7 +1751,8 @@ jobs:
           || echo '{}' > previous-cpo.json
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
-          --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json
+          --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json \
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
 
     # CDS-CSO-FRC: every FedRAMP Certification Report received is published
     # unmodified (its sha256 is checked against the register) with the days
@@ -1649,12 +1778,6 @@ jobs:
           || rm -f previous-package-submission-log.json
         python3 ../scripts/submit-package.py --previous previous-package-submission-log.json \
           --output package-submission-log.json --commit "$GITHUB_SHA"
-
-    # CDS-CSO-FID: every FedRAMP report this deploy publishes carries the
-    # offering's FedRAMP ID (scripts/check-fedramp-id.py REPORTS lists them).
-    - name: FedRAMP ID in every FedRAMP report (CDS-CSO-FID)
-      working-directory: infrastructure
-      run: python3 ../scripts/check-fedramp-id.py
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -1749,6 +1872,34 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle certification-package-overview.bundle certification-package-overview.json
         cosign sign-blob --yes --new-bundle-format --bundle fedramp-certification-reports.bundle fedramp-certification-reports.json
         cosign sign-blob --yes --new-bundle-format --bundle package-submission-log.bundle package-submission-log.json
+        cosign sign-blob --yes --new-bundle-format --bundle access-summary.bundle access-summary.json
+
+    # CDS-TRC-HMR / CDS-CSO-CBF / CDS-TRC-PAC: a complete human-readable view
+    # of every JSON and CSV artifact this deploy publishes, each parsed back and
+    # required to reproduce its original exactly (the build fails otherwise),
+    # then the signed manifest of all certification data. published-docs.txt
+    # lists the views and the policy documents; the redaction gate scans and
+    # the publish step uploads exactly that list.
+    - name: Build the human-readable views and the trust manifest (format parity)
+      working-directory: infrastructure
+      env:
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        : > published-docs.txt
+        ls policies/*.md >> published-docs.txt
+        python3 ../scripts/build-human-views.py --freshness schemas/freshness-config.json --dir . --list published-docs.txt
+        python3 ../scripts/build-trust-manifest.py --dir . --policy-index policy-index.json --commit "$GITHUB_SHA" \
+          --output trust-manifest.json --md-output trust-manifest.md
+        python3 ../scripts/build-human-views.py trust-manifest.json --list published-docs.txt
+
+    # CDS-CSO-FID: every FedRAMP report this deploy publishes carries the
+    # offering's FedRAMP ID (scripts/check-fedramp-id.py REPORTS lists them).
+    # Runs once every listed file is built (the trust center and manifest are
+    # the last), and before anything is published.
+    - name: FedRAMP ID in every FedRAMP report (CDS-CSO-FID)
+      working-directory: infrastructure
+      run: python3 ../scripts/check-fedramp-id.py
 
     - name: Sign trust-center artifacts (boundary map, gate report, trust center)
       working-directory: infrastructure
@@ -1760,6 +1911,11 @@ jobs:
         if [ -f boundary-corroboration.json ]; then
           cosign sign-blob --yes --new-bundle-format --bundle boundary-corroboration.bundle boundary-corroboration.json
         fi
+        # The simulated assessment arrives signed by the assessor's own identity
+        # and is published with that bundle, never re-signed here.
+        for a in assessor-guide agency-access-exercise frr-evidence trust-manifest; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
 
     # Publication redaction gate: no artifact this run is about to publish
     # carries an AWS account ID. The inventory builder redacts it
@@ -1776,12 +1932,18 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
         files="$files ongoing-certification-report.json ongoing-certification-report.md"
-        for a in availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
+        for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
+        for a in access-summary; do files="$files $a.json $a.md"; done
+        for a in assessor-guide agency-access-exercise trust-manifest; do files="$files $a.json $a.md"; done
+        files="$files frr-evidence.json simulated-assessment.json"
+        # The human-readable views and the policy documents (the list the publish step uploads).
+        if [ -f published-docs.txt ]; then files="$files $(cat published-docs.txt)"; fi
         files="$files fedramp-certification-reports.json package-submission-log.json quarterly-review.ics"
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
           [ -f "$a.json" ] || continue
           files="$files $a.json"
         done
+        files="$files minimum-assessment-scope.json minimum-assessment-scope.md"
         # shellcheck disable=SC2086  # a word list by design
         python3 ../scripts/check-published-redaction.py $files
 
@@ -1833,7 +1995,13 @@ jobs:
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
-        for a in availability policy-index security-decision-record certification-package-overview; do
+        for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        # Trust-center access summary (CDS-TRC-ACL): aggregate counts only.
+        for a in access-summary; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
@@ -1852,6 +2020,27 @@ jobs:
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
+        # Minimum Assessment Scope (MAS-CSO-IIR/FLO/MDI/TPR) + bundle + human-readable
+        aws s3 cp minimum-assessment-scope.json "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp minimum-assessment-scope.bundle "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp minimum-assessment-scope.md "s3://$BUCKET_NAME/.well-known/minimum-assessment-scope.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        # Trust-center data: the assessor guide, the agency access exercise and
+        # the manifest (JSON, signature, Markdown); the per-rule evidence result;
+        # the simulated assessor's set with ITS bundle (signed by the assessor's
+        # identity, not this workflow's).
+        for a in assessor-guide agency-access-exercise trust-manifest; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done
+        for a in frr-evidence simulated-assessment; do
+          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
+        done
+        # The complete human-readable views and the policies and procedures.
+        while read -r f; do
+          aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        done < published-docs.txt
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # CDS-CSO-FRC: each FedRAMP Certification Report exactly as received (data
@@ -2147,6 +2336,23 @@ jobs:
     - name: Remove the trust-root state snapshot
       if: always()
       run: rm -f infrastructure/tfstate-bootstrap.json
+
+  # ===========================================================================
+  # SIMULATED ASSESSOR (not a FedRAMP Recognized assessment)
+  # ===========================================================================
+  # "Totally Real Assessment Services, LLC (simulated)" verifies and validates
+  # every rule and KSI from the assessor guide and signs its record under its
+  # own workflow identity (a reusable workflow, so the certificate names
+  # simulated-assessor.yml). Runs where the deploy runs; the deploy needs it, and
+  # the SDR build fails without its signed set.
+  simulated-assessor:
+    name: Simulated assessor
+    needs: [test, compliance-check]
+    if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/simulated-assessor.yml
 
   # ===========================================================================
   # JOB 3: EXTRA SECURITY SCANS

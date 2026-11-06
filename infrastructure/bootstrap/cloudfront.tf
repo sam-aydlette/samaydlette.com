@@ -241,6 +241,85 @@ resource "aws_cloudfront_response_headers_policy" "silk_reeling" {
   }
 }
 
+# The published certification data under /.well-known/ (FRC-CSO-JSN, CDS-TRC-PAC):
+# the static site's security headers, plus CORS so a browser application on
+# another origin can read the JSON. Read-only (GET/HEAD/OPTIONS), any origin, no
+# credentials: the data is public. CORP is cross-origin here, not same-origin,
+# for the same reason. X-Content-Type-Options: nosniff is sent; the Content-Type
+# is the object's own (set at upload). The deploy checks all three live and
+# fails without them (scripts/check-wellknown-headers.py).
+resource "aws_cloudfront_response_headers_policy" "well_known" {
+  name    = "${local.domain_dashed}-well-known-headers"
+  comment = "Security headers and read-only CORS for ${var.domain_name}/.well-known/"
+
+  cors_config {
+    access_control_allow_credentials = false
+    access_control_allow_headers {
+      items = ["*"]
+    }
+    access_control_allow_methods {
+      items = ["GET", "HEAD", "OPTIONS"]
+    }
+    access_control_allow_origins {
+      items = ["*"]
+    }
+    access_control_max_age_sec = 3600
+    origin_override            = true
+  }
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+    content_type_options {
+      override = true
+    }
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+    content_security_policy {
+      content_security_policy = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
+      override                = true
+    }
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Opener-Policy"
+      value    = "same-origin"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Resource-Policy"
+      value    = "cross-origin"
+      override = true
+    }
+    items {
+      header   = "Cross-Origin-Embedder-Policy"
+      value    = "credentialless"
+      override = true
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "website" {
   # Scanner findings that describe this distribution's deliberate posture, each
   # classified here at scan-time (not silently dropped) and tracked in the POA&M
@@ -303,6 +382,30 @@ resource "aws_cloudfront_distribution" "website" {
     function_association {
       event_type   = "viewer-request"
       function_arn = aws_cloudfront_function.directory_index.arn
+    }
+  }
+
+  # Certification data: cached and forwarded like the static site, with the
+  # /.well-known/ headers policy (CORS) above. Read-only methods: nothing is
+  # written through the edge. The CORS headers come from the policy, so the
+  # Origin header is not forwarded and the cache is not split by it. No
+  # viewer-request function: every path here names a file.
+  ordered_cache_behavior {
+    path_pattern               = "/.well-known/*"
+    target_origin_id           = "S3-${var.domain_name}"
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.well_known.id
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["HEAD", "GET", "OPTIONS"]
+    cached_methods             = ["HEAD", "GET"]
+    compress                   = true
+    min_ttl                    = 0
+    default_ttl                = 3600
+    max_ttl                    = 86400
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
     }
   }
 

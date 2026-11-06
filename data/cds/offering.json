@@ -27,7 +27,7 @@
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
   "secure_configuration_guidance_url": "https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/policies/secure-configuration-guide.md",
   "documentation_overview_url": "https://samaydlette.com/trust/index.html",
-  "current_independent_assessment_service": "None — self-attested; no FedRAMP-Recognized independent assessment service engaged (IVV is N/A for this unsponsored proof of concept).",
+  "current_independent_assessment_service": "None: no FedRAMP Recognized independent assessment service is engaged. Every deploy is assessed by Totally Real Assessment Services, LLC (simulated), a workflow in this repository that is not a FedRAMP Recognized assessment service; its overall summary is quoted below.",
   "accountable_official": {
     "name": "Sam Aydlette",
     "title": "System Owner / Authorizing Operator",
@@ -36,19 +36,19 @@
   "cryptographic_modules": [
     {
       "module": "AWS KMS",
-      "validation": "FIPS 140-3 (CMVP, HSM-backed)",
+      "validation": "FIPS 140-3 Level 3, CMVP certificate #4884 (AWS Key Management Service HSM)",
       "role": "key store for all four customer-managed CMKs: at-rest (the compliance and watchdog Lambdas' environments and log groups, the DNS query log, the alert topic), runtime signing (the runtime signal), DNSSEC KSK, and the Silk Reeling app (its Lambda environment and log groups; the app holds no secrets since SCN-2026-006)",
       "inherited": true
     },
     {
       "module": "ACM TLS termination on CloudFront",
-      "validation": "FIPS-validated cipher suites; TLS 1.2+",
+      "validation": "TLS 1.2+ (TLSv1.2_2021); AWS publishes no CMVP module for CloudFront viewer TLS (accepted, DEC-152)",
       "role": "TLS in transit",
       "inherited": true
     },
     {
       "module": "S3 SSE-S3",
-      "validation": "AES-256 (AWS-managed keys)",
+      "validation": "AES-256 (AWS-managed keys); AWS publishes no CMVP module for SSE-S3 (accepted, DEC-152)",
       "role": "at-rest on the public website + log buckets",
       "inherited": true
     },

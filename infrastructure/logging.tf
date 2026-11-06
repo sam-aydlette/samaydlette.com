@@ -60,6 +60,26 @@ resource "aws_s3_bucket_lifecycle_configuration" "logs" {
     noncurrent_version_expiration { noncurrent_days = 30 }
     abort_incomplete_multipart_upload { days_after_initiation = 7 }
   }
+  # CloudFront access records (CDS-TRC-ACL) are kept 90 days, not 400: the
+  # operator's privacy limit. S3 applies the earliest expiration when rules
+  # overlap, so these prefixes expire at 90 days. Only aggregate monthly
+  # summaries outlive them (/.well-known/access-summary.json, 13 months).
+  rule {
+    id     = "expire-edge-access-records"
+    status = "Enabled"
+    filter { prefix = "cloudfront/" }
+    expiration { days = 90 }
+    noncurrent_version_expiration { noncurrent_days = 1 }
+    abort_incomplete_multipart_upload { days_after_initiation = 7 }
+  }
+  rule {
+    id     = "expire-edge-access-records-default-prefix"
+    status = "Enabled"
+    filter { prefix = "AWSLogs/${data.aws_caller_identity.current.account_id}/CloudFront/" }
+    expiration { days = 90 }
+    noncurrent_version_expiration { noncurrent_days = 1 }
+    abort_incomplete_multipart_upload { days_after_initiation = 7 }
+  }
 }
 
 # Allow the AWS log-delivery services to write to their respective prefixes,
@@ -86,7 +106,13 @@ resource "aws_s3_bucket_policy" "logs" {
         Effect    = "Allow"
         Principal = { Service = "delivery.logs.amazonaws.com" }
         Action    = "s3:PutObject"
-        Resource  = "${aws_s3_bucket.logs.arn}/cloudfront/*"
+        # cloudfront/ is the configured prefix (bootstrap/trust-access-logs.tf);
+        # AWSLogs/<account>/CloudFront/ is the service's default, kept so a
+        # delivery that ignores the prefix still lands under the 90-day expiry.
+        Resource = [
+          "${aws_s3_bucket.logs.arn}/cloudfront/*",
+          "${aws_s3_bucket.logs.arn}/AWSLogs/${data.aws_caller_identity.current.account_id}/CloudFront/*",
+        ]
         Condition = {
           StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
         }

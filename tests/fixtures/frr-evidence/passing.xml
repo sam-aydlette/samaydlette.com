@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites><testsuite name="pytest" tests="4">
+<testcase classname="tests.test_sdr" name="test_every_applicable_rule_is_listed_once" time="0.1"/>
+<testcase classname="tests.test_sdr" name="test_an_invalid_record_set_never_reaches_the_sdr" time="0.1"/>
+<testcase classname="tests.test_other.TestThing" name="test_method[a]" time="0.1"/>
+<testcase classname="tests.test_other.TestThing" name="test_method[b]" time="0.1"/>
+<testcase classname="tests.test_other" name="test_skipped" time="0.1"><skipped message="no tool"/></testcase>
+</testsuite></testsuites>

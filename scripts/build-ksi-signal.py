@@ -393,7 +393,7 @@ IIW_DEFAULTS = {
         "function": "Public TLS certificate for the CDN",
         "diagram_label": "ACM TLS certificate",
         "public": False,
-        "baseline_configuration": "AWS ACM-managed; auto-renewing; FIPS-validated cipher suites via CloudFront",
+        "baseline_configuration": "AWS ACM-managed; auto-renewing; TLS 1.2+ via CloudFront (TLSv1.2_2021)",
         "iiw_asset_type": "TLS Certificate (ACM)",
     },
     "event_schedule": {
@@ -1326,6 +1326,9 @@ def build_sbom_components(sbom_path, existing_components=None):
 THIRD_PARTY_PATH = Path(__file__).resolve().parent.parent / "data" / "third-party-components.json"
 NOT_RECORDED = "not recorded"
 TPR_FIELDS = ("upstream_offering", "upstream_component_id", "responsibility_split")
+# MAS-CSO-TPR: what FedRAMP requires documented about each third-party
+# information resource. A decided record must carry every one.
+MAS_TPR_FIELDS = ("usage_and_configuration", "justification", "mitigations", "compensating_controls")
 
 
 def load_third_party_records(path, known_ids):
@@ -1347,18 +1350,24 @@ def load_third_party_records(path, known_ids):
         split = rec.get("responsibility_split")
         if split is not None and not (isinstance(split, dict) and split.get("upstream_runs") and split.get("provider_configures")):
             raise SystemExit(f"::error::third-party record for {cid}: responsibility_split needs upstream_runs and provider_configures")
+        if rec.get("decided_by") and rec.get("decided_on"):
+            missing = [f for f in MAS_TPR_FIELDS if not (isinstance(rec.get(f), str) and rec[f].strip())]
+            if missing:
+                raise SystemExit(f"::error::third-party record for {cid} is decided but lacks {', '.join(missing)} "
+                                 "(MAS-CSO-TPR)")
     return recs
 
 
 def third_party_attributes(rec):
     """The TPR-1 fields for one component. A record without a decision
     (decided_by and decided_on) publishes every field as "not recorded"."""
+    fields = (*TPR_FIELDS, *MAS_TPR_FIELDS)
     if rec is None:
-        return {**{f: NOT_RECORDED for f in TPR_FIELDS}, "third_party_record": {"status": "no record"}}
+        return {**{f: NOT_RECORDED for f in fields}, "third_party_record": {"status": "no record"}}
     if not (rec.get("decided_by") and rec.get("decided_on")):
-        return {**{f: NOT_RECORDED for f in TPR_FIELDS},
+        return {**{f: NOT_RECORDED for f in fields},
                 "third_party_record": {"status": "drafted; no decision recorded"}}
-    out = {f: rec.get(f) or NOT_RECORDED for f in TPR_FIELDS}
+    out = {f: rec.get(f) or NOT_RECORDED for f in fields}
     out["third_party_record"] = {"status": "decided", "decided_by": rec["decided_by"],
                                  "decided_on": rec["decided_on"]}
     return out
@@ -1436,6 +1445,47 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
             "cia_impact": "VDR ingest accuracy",
             "verification": "U.S. federal government source",
             "fedramp_status": "external; U.S. federal government source",
+        },
+        # MAS-CSO-IIR: the vulnerability-data feeds the VDR build also reads
+        # (scripts/fetch-detection-feeds.sh, evidence-nightly.yml's grype scan).
+        {
+            "id": "ext::first-epss",
+            "native_id": "https://epss.cyentia.com/epss_scores-current.csv.gz",
+            "name": "FIRST Exploit Prediction Scoring System (EPSS) scores",
+            "purpose": "Daily exploit-likelihood scores the VDR uses to rate findings",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "Public feed; a failed fetch fails the detection gate (G7) rather than scoring with no data",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::anchore-grype-db",
+            "native_id": "https://grype.anchore.io/databases",
+            "name": "Grype vulnerability database (Anchore)",
+            "purpose": "The vulnerability database Grype matches the SBOMs against on every deploy and nightly scan",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "Grype verifies the database checksum on download; findings are corroborated against Dependabot and CISA KEV",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        # MAS-CSO-IIR: origins the Silk Reeling app loads code or data from in the
+        # user's browser, next to the camera feed (the app's CSP in
+        # infrastructure/bootstrap/cloudfront.tf allows exactly these).
+        {
+            "id": "ext::jsdelivr",
+            "native_id": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/",
+            "name": "jsDelivr CDN (MediaPipe Tasks Vision runtime)",
+            "purpose": "Serves the MediaPipe pose-estimation JavaScript and WebAssembly the app runs in the browser",
+            "cia_impact": "code executed next to the camera feed in the user's browser",
+            "verification": "Version pinned in the app bundle and in the CSP script-src path; the CSP allows no other jsDelivr path",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::google-cloud-storage",
+            "native_id": "https://storage.googleapis.com/mediapipe-models/",
+            "name": "Google Cloud Storage (MediaPipe model bucket)",
+            "purpose": "Serves the pose-landmarker model file the MediaPipe runtime loads in the browser",
+            "cia_impact": "model integrity for the pose scores the app computes",
+            "verification": "CSP connect-src limited to the mediapipe-models path; the model runs in the browser and returns landmarks only",
+            "fedramp_status": "external; no separate FedRAMP authorization",
         },
     ]
     tpr = load_third_party_records(third_party_path, {s["id"] for s in services})
@@ -1595,7 +1645,8 @@ KSI_FAMILY_EVIDENCE_TYPES = {
             "dns_zone", "tls_certificate", "secrets_manager", "identity_provider", "kms_key"},
     "IAM": {"iam_role", "iam_policy", "iam_group", "oidc_provider", "identity_provider", "secrets_manager"},
     "INR": {"log_group", "function", "notification_topic", "metric_alarm"},
-    "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue"},
+    "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue",
+            "audit_log_trail"},
     "PIY": None,  # policy & inventory — whole inventory is the evidence
     "RPL": {"object_store"},
     "SCR": {"npm_package", "pypi_package", "external_service"},

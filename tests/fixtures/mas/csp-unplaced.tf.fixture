@@ -1,0 +1,11 @@
+# Known-bad: the CSP allows a host no placement covers (MAS-CSO-IIR).
+resource "aws_cloudfront_response_headers_policy" "bad" {
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self' https://cdn.jsdelivr.net/npm/x/ https://unvetted-cdn.example.com/lib.js",
+      ])
+    }
+  }
+}

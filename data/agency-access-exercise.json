@@ -1,0 +1,23 @@
+{
+  "_note": "The agency-access exercise the deploy runs (scripts/agency-access.py exercise). Every agency here is fictional and every date is a business-day offset from the day it runs, so the 5-business-day denial clock is exercised against today's calendar. The exercise fails the deploy unless every outcome in `expected` is observed, including the late and overdue notices the processor must catch.",
+  "disclaimer": "SIMULATED. These agencies do not exist, no federal agency has requested access, and nothing is sent to FedRAMP or anyone: a denial notice is this log entry. Any resemblance to a real agency is the result of a very tired naming committee.",
+  "requests": [
+    {"id": "AAR-X01", "agency": "Department of Hypothetical Affairs (simulated)", "system": "Hypothetical Records Portal", "kind": "access", "channel": "issue form", "received_on_offset": -10, "decision": "granted", "decided_on_offset": -9, "decided_by": "Operator (exercise)"},
+    {"id": "AAR-X02", "agency": "Bureau of Made-Up Statistics (simulated)", "system": "Totally Average Dashboard", "kind": "access", "channel": "security contact", "received_on_offset": -9, "decision": "denied", "decided_on_offset": -8, "decided_by": "Operator (exercise)", "reason": "Asked for write access to a read-only website.", "fedramp_notified_on_offset": -4},
+    {"id": "AAR-X03", "agency": "Office of Strictly Imaginary Procurement (simulated)", "kind": "access", "channel": "issue form", "received_on_offset": -3, "decision": "denied", "decided_on_offset": -2, "decided_by": "Operator (exercise)", "reason": "Requested the package by fax."},
+    {"id": "AAR-X04", "agency": "Agency of Unverifiable Claims (simulated)", "kind": "access", "channel": "security contact", "received_on_offset": -13, "decision": "denied", "decided_on_offset": -12, "decided_by": "Operator (exercise)", "reason": "Could not verify the agency exists (it does not).", "fedramp_notified_on_offset": -5},
+    {"id": "AAR-X05", "agency": "Department of Hypothetical Affairs (simulated)", "system": "Second Opinion Service", "kind": "access", "channel": "issue form", "received_on_offset": -8, "decision": "granted", "decided_on_offset": -7, "decided_by": "Operator (exercise)"},
+    {"id": "AAR-X06", "agency": "Department of Hypothetical Affairs (simulated)", "system": "Second Opinion Service", "kind": "withdrawal", "channel": "issue form", "received_on_offset": -1, "withdraws": "AAR-X05"},
+    {"id": "AAR-X07", "agency": "Commission on Rhetorical Questions (simulated)", "kind": "access", "channel": "issue form", "received_on_offset": -8, "decision": "denied", "decided_on_offset": -7, "decided_by": "Operator (exercise)", "reason": "Asked whether access was really necessary, and we agreed."},
+    {"id": "AAR-X08", "agency": "FedRAMP (simulated)", "kind": "inventory-request", "channel": "security contact", "received_on_offset": -1}
+  ],
+  "expected": {
+    "AAR-X01": "in inventory",
+    "AAR-X02": "denial notice on time",
+    "AAR-X03": "denial notice pending",
+    "AAR-X04": "denial notice late",
+    "AAR-X05": "withdrawn",
+    "AAR-X07": "denial notice overdue",
+    "AAR-X08": "inventory supplied"
+  }
+}

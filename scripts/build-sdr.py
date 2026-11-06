@@ -589,6 +589,10 @@ def main(argv=None):
     ap.add_argument("--md-output", default="security-decision-record.md")
     ap.add_argument("--assessor-records", default=str(_assessor.RECORDS_DIR))
     ap.add_argument("--assessor-identity", default=str(_assessor.IDENTITY_PATH))
+    # A keyless-signed assessment set (the simulated assessor's, on every deploy):
+    # given, it is required to exist and verify; its records replace the loose ones.
+    ap.add_argument("--assessment", default=None)
+    ap.add_argument("--assessment-bundle", default=None)
     a = ap.parse_args(argv)
 
     now = datetime.now(timezone.utc)
@@ -608,7 +612,10 @@ def main(argv=None):
     applicable = _rules.applicable_provider_rules()
     irs = _controls.load(a.ksi_signal, a.catalog)
     runtime, reason = runtime_validations(a.runtime_signal)
-    assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
+    if a.assessment:
+        assessor_records = _assessor.load_assessment(a.assessment, a.assessment_bundle, a.assessor_identity)
+    else:
+        assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
     doc = build(catalog, signal, records, applicable, irs, moderate_ids(), policy_rules(), runtime, reason,
                 assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context())
     _assessor.verify_output(doc, assessor_records)  # T74
