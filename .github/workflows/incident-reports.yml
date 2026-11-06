@@ -148,13 +148,13 @@ jobs:
       working-directory: out
       run: python3 ../scripts/check-fedramp-id.py incident-*.json
 
-    # CDS-CSO-CBF: the complete human-readable view of the incident log and the
-    # delivery log, parsed back and required to reproduce each, so the views the
+    # CDS-CSO-CBF: the complete human-readable view of the incident log, the
+    # delivery log and every report, parsed back and required to reproduce each, so the views the
     # deploy published never drift from the JSON this run replaces. Built before
     # the redaction gate, which scans them (incident-*.md).
     - name: Rebuild the human-readable views (format parity)
       working-directory: out
-      run: python3 ../scripts/build-human-views.py incident-reports.json incident-deliveries.json
+      run: python3 ../scripts/build-human-views.py incident-reports.json incident-deliveries.json incident-INC-*.json
 
     - name: Sign incident reports
       working-directory: out
@@ -191,6 +191,7 @@ jobs:
         }
         # Every report first, the log that lists them last.
         for f in incident-INC-*.json; do
+          put "${f%.json}.view.md" "text/markdown; charset=utf-8"
           put "$f" "application/json"
           put "${f%.json}.bundle" "application/json"
         done

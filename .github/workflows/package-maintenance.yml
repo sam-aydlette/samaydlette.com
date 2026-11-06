@@ -276,14 +276,19 @@ jobs:
 
     # CDS-CSO-CBF: the complete human-readable view of each JSON republished
     # below, parsed back and required to reproduce it, so the views the deploy
-    # published never drift from the JSON this run replaces.
+    # published never drift from the JSON this run replaces. Every JSON or CSV
+    # issued this run (the frozen report, its snapshot manifest and copies, a
+    # Quarterly Review) gets its view too, issued and never rewritten with it.
     - name: Rebuild the human-readable views (format parity)
       working-directory: infrastructure/out
       run: |
         set -euo pipefail
+        issued=$(grep -E '\.(json|csv)$' issued.txt || true)
+        # shellcheck disable=SC2086  # $issued is a word list by design
         python3 ../../scripts/build-human-views.py \
           security-decision-record.json certification-package-overview.json ongoing-certification-report.json \
-          ocr-issues.json $( [ -f quarterly-reviews.json ] && echo quarterly-reviews.json )
+          ocr-issues.json $( [ -f quarterly-reviews.json ] && echo quarterly-reviews.json ) $issued
+        for f in $issued; do echo "${f%.*}.view.md" >> issued.txt; done
 
     - name: Gates (FedRAMP ID, redaction)
       working-directory: infrastructure/out

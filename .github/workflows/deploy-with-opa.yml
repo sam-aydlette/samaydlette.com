@@ -2179,6 +2179,17 @@ jobs:
         : > published-docs.txt
         ls policies/*.md >> published-docs.txt
         python3 ../scripts/build-human-views.py --freshness schemas/freshness-config.json --dir . --list published-docs.txt
+        # Every other JSON the publish steps put has its view too: each incident
+        # report, the inventory's JSON Schema (published beside the signal, so
+        # its view is built from a copy here), and each certification report
+        # (its view sits beside it in fedramp-certification-reports/ and is put
+        # by the step that publishes the reports).
+        cp schemas/ksi-signal.schema.json ksi-signal.schema.json
+        shopt -s nullglob
+        python3 ../scripts/build-human-views.py ksi-signal.schema.json incident-INC-*.json --list published-docs.txt
+        reports=(fedramp-certification-reports/*.json)
+        if [ "${#reports[@]}" -gt 0 ]; then python3 ../scripts/build-human-views.py "${reports[@]}"; fi
+        shopt -u nullglob
         python3 ../scripts/build-trust-manifest.py --dir . --policy-index policy-index.json --commit "$GITHUB_SHA" \
           --output trust-manifest.json --md-output trust-manifest.md
         python3 ../scripts/build-human-views.py trust-manifest.json --list published-docs.txt
@@ -2377,6 +2388,11 @@ jobs:
           got=$(aws s3 cp "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/$f" - | sha256sum | awk '{print $1}')
           [ "$got" = "$sha" ] || { echo "::error::$f served bytes differ from the report as received"; exit 1; }
           echo "published unmodified: fedramp-certification-reports/$f"
+          # Its complete human-readable view (CDS-TRC-HMR), built beside it and
+          # scanned by the gate above with the report.
+          aws s3 cp "fedramp-certification-reports/${f%.json}.view.md" \
+            "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/${f%.json}.view.md" \
+            --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
 
     # -------------------------------------------------------------------------

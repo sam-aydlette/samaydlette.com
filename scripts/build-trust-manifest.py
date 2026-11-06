@@ -6,9 +6,14 @@ CDS-TRC-HMR, CDS-CSO-UTC).
 It is generated, never hand-kept: the artifact list is the governed freshness
 config (every artifact published under /.well-known/ must have an entry there,
 or tests/test_freshness_config.py fails), the policies and procedures come from
-this build's policy index, and each artifact's human-readable forms are the
-files this build actually wrote beside it. So the manifest cannot omit a
-published artifact or name a view that does not exist.
+this build's policy index. Each artifact's complete view (`.view.md`) is the
+one every workflow that publishes it puts beside it (scripts/_signers.py, which
+tests/test_human_views_published.py holds to each publisher's publish step), so
+an artifact only another workflow writes (the quarterly issue index, the
+review index) lists its view too; and a view the deploy should have written
+beside a file it built but did not fails the build. The curated summary
+(`.md`) is listed when this build wrote one. So the manifest cannot omit a
+published artifact or name a view that is not published.
 
     python3 scripts/build-trust-manifest.py --dir . --policy-index policy-index.json \
         --output trust-manifest.json --md-output trust-manifest.md
@@ -91,10 +96,14 @@ def artifacts(fresh, d):
             entry["schema"] = schema
         human = []
         stem = name[:-len(suffix)] if suffix in (".json", ".csv") else None
-        if stem:
-            for twin in (f"{stem}.md", f"{stem}.view.md"):
-                if (d / twin).is_file():
-                    human.append(f"{SITE}/.well-known/{twin}")
+        if stem and (d / f"{stem}.md").is_file():
+            human.append(f"{SITE}/.well-known/{stem}.md")
+        view = _signers.view(name)
+        if view:
+            if local.is_file() and not (d / view).is_file():
+                raise SystemExit(f"::error::trust manifest: {name} was built here without its view {view}; every "
+                                 "publisher puts both (fail-closed)")
+            human.append(f"{SITE}/.well-known/{view}")
         if name in LIVE_RENDERED:
             human.append(f"{SITE}/trust/ (renders {LIVE_RENDERED[name]} from the live JSON)")
         entry["human_readable"] = human

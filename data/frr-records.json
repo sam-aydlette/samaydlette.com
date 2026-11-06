@@ -759,8 +759,16 @@
     {
       "frr_id": "CDS-CSO-CBF",
       "status": "Implemented",
-      "implementation": "Every JSON and CSV artifact the deploy publishes under /.well-known/ (the freshness-config list) gets a complete human-readable view, <name>.view.md, giving every value under its JSON Pointer path (scripts/build-human-views.py). The build then parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published; the nightly does the same for the VDR files it republishes. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index.",
+      "implementation": "Every JSON and CSV file any workflow publishes under /.well-known/ gets a complete human-readable view, <name>.view.md, beside it, giving every value under its JSON Pointer path (scripts/build-human-views.py): the deploy for everything it publishes (the freshness-config list, every incident report, the inventory's JSON Schema and every certification report), the evidence nightly for the VDR files, the package maintainer for the package it rewrites and every issued report, snapshot and Quarterly Review, and the incident publisher for the incident logs and every report. Each build parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published, and each workflow's redaction gate scans the views it puts. tests/test_human_views_published.py runs each workflow's view, gate and publish steps and fails if any JSON or CSV is put without its view. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index.",
       "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_every_json_a_publisher_puts_has_its_view_put_too"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_known_bad_a_publish_step_without_views_fails"
+        },
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
@@ -1228,8 +1236,20 @@
     {
       "frr_id": "CDS-TRC-HMR",
       "status": "Implemented",
-      "implementation": "Every JSON and CSV artifact the deploy publishes has a complete human-readable view (.view.md, checked to reproduce the JSON), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON.",
+      "implementation": "Every JSON and CSV file any workflow publishes has a complete human-readable view (.view.md, checked to reproduce the JSON, published by the same workflows that publish the file), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact, the view from the publisher table in scripts/_signers.py (so a file only the package maintainer writes lists its view too), and fails the build if a JSON built without its view and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON.",
       "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_the_manifest_lists_the_view_of_every_json_another_workflow_publishes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_every_json_a_publisher_puts_has_its_view_put_too"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_known_bad_a_publish_step_without_views_fails"
+        },
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
