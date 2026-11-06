@@ -155,7 +155,7 @@ def test_t74_output_dropping_a_signed_record_fails(tmp_path):
 def test_sdr_markdown_states_no_assessor_record():
     sdr = {"metadata": {"version": "1.0.0", "lastUpdated": "t", "updateSource": "s"},
            "fedRampRequirements": [], "keySecurityIndicators": [], "securityControls": [],
-           "providerExtensions": {"certification": "c", "ksi_signal_id": "s",
+           "providerExtensions": {"certification": {"program": "c", "status": "s"}, "ksi_signal_id": "s",
                                   "rules": {"version": "v", "commit": "0" * 40},
                                   "summary": {"fedRampRequirements": {}, "keySecurityIndicators": {},
                                               "securityControlsModerate": {}, "securityControlsBeyondModerate": {}},

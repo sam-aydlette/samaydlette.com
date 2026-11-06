@@ -9,8 +9,8 @@ two checks keep that from building up again.
   infrastructure code, a script, a test, a tool or the site's JavaScript) names
   it: its file name, plus its directory's name when it sits in a subdirectory
   (the scripts build paths as REPO / "data" / "profiles" / name). A file listed
-  by name in another data file that is read (a register listing its entries,
-  such as data/fedramp-certification-reports/register.json) is read too.
+  by name in another data file that is read (a register listing its entries)
+  is read too.
 - A file under scripts/ has a caller when something that runs names it: a
   workflow, a Makefile, the infrastructure code, a tool or another script. A
   test alone is not a caller: a script whose only caller is its own test is dead

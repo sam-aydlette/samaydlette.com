@@ -28,6 +28,11 @@ canonical form (algorithm SIGSTORE_KEYLESS_SET), so a record is bound to the
 signed set and cannot be altered alone. The set and its bundle are published,
 so anyone can repeat the check. This is how the simulated assessor
 (tools/simulated-assessor/, .github/workflows/simulated-assessor.yml) signs.
+
+Binding: a set states what it covered (subject.commit, the commit whose
+repository it verified, and subject.signal_id, the published KSI signal it
+validated). The caller states the commit and signal it expects, and
+load_assessment refuses a set covering anything else.
 """
 import base64
 import copy
@@ -173,15 +178,40 @@ def cosign_verify(set_path, bundle_path, ident):
     return r.returncode == 0
 
 
-def load_assessment(set_path, bundle_path, identity_path=IDENTITY_PATH, verifier=cosign_verify):
+def load_assessment(set_path, bundle_path, identity_path=IDENTITY_PATH, verifier=None, *,
+                    expect_commit, expect_signal_id):
     """Every record in a keyless-signed assessment set, verified. Fails closed when
     the set or its bundle is missing: the deploy depends on the assessment."""
+    return load_assessment_with_subject(set_path, bundle_path, identity_path, verifier,
+                                        expect_commit=expect_commit, expect_signal_id=expect_signal_id)[0]
+
+
+def bind(doc, name, expect_commit, expect_signal_id):
+    """The set's subject, when it covers exactly the commit and published KSI
+    signal the caller states. A validly signed set for any other state fails:
+    an assessment is evidence only for what it assessed."""
+    if not expect_commit or not expect_signal_id:
+        _fail("no commit or signal_id was stated for the assessment to cover; an unbound assessment is refused")
+    subj = doc.get("subject")
+    if not isinstance(subj, dict):
+        _fail(f"{name} names no subject (the commit and KSI signal it covered)")
+    if subj.get("commit") != expect_commit:
+        _fail(f"{name} covers commit {subj.get('commit')!r}, not the stated commit {expect_commit!r}")
+    if subj.get("signal_id") != expect_signal_id:
+        _fail(f"{name} covers KSI signal {subj.get('signal_id')!r}, not the stated signal {expect_signal_id!r}")
+    return copy.deepcopy(subj)
+
+
+def load_assessment_with_subject(set_path, bundle_path, identity_path=IDENTITY_PATH, verifier=None, *,
+                                 expect_commit, expect_signal_id):
+    """(records, subject): load_assessment, plus the set's subject (the commit,
+    KSI signal and phase it covered), checked against the stated ones."""
     sp, bp = Path(set_path), Path(bundle_path)
     for f, what in ((sp, "assessment set"), (bp, "assessment bundle")):
         if not f.is_file() or f.stat().st_size == 0:
             _fail(f"the {what} {f} is missing: the deploy depends on the assessor's signed record")
     ident = load_keyless_identity(identity_path)
-    if not verifier(sp, bp, ident):
+    if not (verifier or cosign_verify)(sp, bp, ident):
         _fail(f"{sp.name} signature does not verify against the pinned assessor identity")
     try:
         doc = json.loads(sp.read_text())
@@ -189,6 +219,7 @@ def load_assessment(set_path, bundle_path, identity_path=IDENTITY_PATH, verifier
         _fail(f"{sp.name} is not valid JSON")
     if not isinstance(doc, dict) or doc.get("assessment_type") != SET_TYPE or doc.get("schema_version") != "1":
         _fail(f"{sp.name} is not a {SET_TYPE} set, schema version 1")
+    subject = bind(doc, sp.name, expect_commit, expect_signal_id)
     a = doc.get("assessor") or {}
     if a.get("organization") != ident["assessor"] or a.get("key_id") != ident["key_id"]:
         _fail(f"{sp.name} names {a.get('organization')!r}, not the pinned assessor identity")
@@ -212,7 +243,7 @@ def load_assessment(set_path, bundle_path, identity_path=IDENTITY_PATH, verifier
         out.append(rec)
     if not any(r["kind"] == "summary" and "rule_id" not in r for r in out):
         _fail(f"{sp.name} has no overall summary (IVV-IAS-OSA)")
-    return out
+    return out, subject
 
 
 def overall_summary(records):
@@ -282,9 +313,14 @@ def main(argv=None):
     ap.add_argument("--sdr", default=None, help="a built security-decision-record.json to check")
     ap.add_argument("--assessment", default=None, help="a keyless-signed assessment set")
     ap.add_argument("--assessment-bundle", default=None)
+    # The state the set must cover: an assessment of any other commit or KSI
+    # signal is refused, however validly signed.
+    ap.add_argument("--assessment-commit", default=None)
+    ap.add_argument("--assessment-signal-id", default=None)
     a = ap.parse_args(argv)
     if a.assessment:
-        records = load_assessment(a.assessment, a.assessment_bundle or a.assessment[:-5] + ".bundle", a.identity)
+        records = load_assessment(a.assessment, a.assessment_bundle or a.assessment[:-5] + ".bundle", a.identity,
+                                  expect_commit=a.assessment_commit, expect_signal_id=a.assessment_signal_id)
     else:
         records = load_records(a.records, a.identity)
     if a.sdr:

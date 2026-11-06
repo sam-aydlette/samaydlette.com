@@ -12,7 +12,10 @@
   "issued_at": "2026-11-05T12:00:00+00:00",
   "subject": {
     "site": "https://samaydlette.com",
+    "phase": "pre-deploy",
     "commit": "0000000000000000000000000000000000000000",
+    "signal_id": "00000000-0000-4000-8000-000000000001",
+    "signal_commit": "ffffffffffffffffffffffffffffffffffffffff",
     "assessor_guide_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   },
   "results": {

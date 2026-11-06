@@ -807,6 +807,8 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
         "commit": commit,
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
+        # The program sought and that it is not held (scripts/_offering.py; the CPO and SDR carry the same).
+        "certification": _offering.certification(),
         "picture": build_picture(inp, now),
         # REQ-GOV-2: the profile and conformance results this build conforms to.
         "profile": (inp["vdr"].get("methodology") or {}).get("profile"),

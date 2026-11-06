@@ -1,0 +1,5 @@
+{
+  "$comment": "KNOWN-BAD: the site answers 500 for the previously published history. Starting over from nothing would silently drop the history, so the fetch must fail the deploy.",
+  "status": 500,
+  "body": "<html><body>Internal Server Error</body></html>"
+}

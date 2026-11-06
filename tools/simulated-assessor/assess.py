@@ -7,7 +7,20 @@ exercised end to end on every deploy. It is not independent of the provider,
 it is not a FedRAMP Recognized independent assessment service, it has no
 FedRAMP assessor ID, and nothing it writes is a FedRAMP independent assessment.
 
-What it does, on every deploy, before the Security Decision Record is built:
+What it does, twice on every deploy:
+
+  pre-deploy    before the Security Decision Record is built: it verifies the
+                repository at the commit being deployed and validates the
+                published state that commit replaces (the live KSI signal and
+                artifacts). The set names both: subject.commit and
+                subject.signal_id. The deploy refuses a set that covers any
+                other commit or signal, and the SDR states which they are.
+  post-deploy   after the deploy has published: the same checks against the
+                just-published state, which must carry the commit under
+                assessment. A failure fails the run (the deployment-failure
+                issue is raised); nothing is unpublished.
+
+Each run:
 
   verification  for each FedRAMP rule in the provider's assessor guide, checks
                 the status is Implemented or Not Applicable and re-runs or
@@ -29,9 +42,11 @@ imports nothing from the provider's scripts/.
 Exit status is non-zero, and the deploy does not proceed, when any cited test
 fails or does not run, a cited step or decision is missing, a status is short
 of Implemented or Not Applicable, or a published artifact's signature does not
-verify. An artifact not yet published (first published by the deploy under
-assessment) or past its window is an observation, recorded but not fatal: the
-deploy is what refreshes it.
+verify. Before the deploy, an artifact not yet published (first published by
+the deploy under assessment) or past its window is an observation, recorded but
+not fatal: the deploy is what refreshes it. After the deploy, an unpublished
+artifact is still an observation (some are first published on a schedule), and
+a live KSI signal carrying any commit but the deployed one fails.
 """
 
 import argparse
@@ -60,6 +75,7 @@ DISCLAIMER = (
 STEP_LINE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$")
 ISSUER = "https://token.actions.githubusercontent.com"
 COMPLETE = ("Implemented", "Not Applicable")
+PHASES = ("pre-deploy", "post-deploy")
 
 
 def canonical(record):
@@ -169,9 +185,13 @@ def _age_hours(body, headers, ts, now):
 
 
 class Assessor:
-    def __init__(self, guide, repo, now, get=None, verify=None, tests=None):
+    def __init__(self, guide, repo, now, get=None, verify=None, tests=None, phase="pre-deploy", commit=None):
+        if phase not in PHASES:
+            raise SystemExit(f"::error::simulated assessor: unknown phase {phase!r}")
         self.guide, self.repo, self.now = guide, repo, now
         self.get, self.verify, self.tests = get or http_get, verify or cosign_verify, tests or run_tests
+        self.phase, self.commit = phase, commit
+        self.signal = {"signal_id": None, "commit": None}  # the published KSI signal validated
         self._artifacts = {}
 
     def artifact(self, chk):
@@ -181,7 +201,11 @@ class Assessor:
             return self._artifacts[url]
         status, body, headers = self.get(url)
         name = url.rsplit("/", 1)[1]
-        if status == 404:
+        if status == 404 and self.phase == "post-deploy":
+            # Some artifacts are first published on a schedule (an issue date),
+            # not by the deploy, so absence is recorded, not fatal.
+            res = ("observation", f"{name} is not published after the deploy; recorded for the next assessment")
+        elif status == 404:
             res = ("observation", f"{name} is not yet published; it is first published by the deploy under "
                                   "assessment, and validated at the next assessment")
         elif status != 200:
@@ -267,6 +291,14 @@ class Assessor:
             return [(k["ksi_id"], "fail", ["the live KSI signal could not be fetched or its signature did "
                                            "not verify"], []) for k in guide["ksis"]]
         sig = json.loads(body)
+        self.signal = {"signal_id": sig.get("signal_id"),
+                       "commit": ((sig.get("provenance") or {}).get("source") or {}).get("commit")}
+        if self.phase == "post-deploy" and self.signal["commit"] != self.commit:
+            # After publish the live state must be the deploy's own; anything else
+            # is not the state this assessment exists to cover.
+            return [(k["ksi_id"], "fail", [f"the published signal {sig.get('signal_id')} carries commit "
+                                           f"{self.signal['commit']!r}, not the deployed commit {self.commit!r}"],
+                     []) for k in guide["ksis"]]
         by_id = {k["id"]: k for k in sig.get("ksis", [])}
         out = []
         for k in guide["ksis"]:
@@ -312,7 +344,7 @@ def _text(what, outcome, ver, val):
     return " ".join(parts)
 
 
-def build_set(guide, rule_results, ksi_results, now, commit, guide_sha):
+def build_set(guide, rule_results, ksi_results, now, commit, guide_sha, signal=None, phase="pre-deploy"):
     issued = now.replace(microsecond=0).isoformat()
     tag = now.strftime("%Y%m%dT%H%M%SZ")
     records = [_record(f"TRAS-{tag}-{rid}", "finding", _text(f"rule {rid}", o, ver, val), issued, rid)
@@ -326,9 +358,12 @@ def build_set(guide, rule_results, ksi_results, now, commit, guide_sha):
     rc, kc = count(rule_results), count(ksi_results)
     obs = [f"{x[0]}: {'; '.join(x[3] or x[2])}" for x in rule_results + ksi_results if x[1] == "observation"]
     fails = [x[0] for x in rule_results + ksi_results if x[1] == "fail"]
-    summary = (f"Overall summary (IVV-IAS-OSA), SIMULATED. {ORG} verified and validated all "
+    signal = signal or {}
+    covered = (f"the repository at commit {commit or 'unknown'} and the published state of KSI signal "
+               f"{signal.get('signal_id') or 'unknown'} (commit {signal.get('commit') or 'unknown'})")
+    summary = (f"Overall summary (IVV-IAS-OSA), SIMULATED, {phase} assessment. {ORG} verified and validated all "
                f"{len(rule_results)} applicable FedRAMP rules and all {len(ksi_results)} Key Security Indicators "
-               f"for commit {commit or 'unknown'}: rules {rc['pass']} pass, {rc['observation']} pass with "
+               f"for {covered}: rules {rc['pass']} pass, {rc['observation']} pass with "
                f"observation, {rc['fail']} fail; KSIs {kc['pass']} pass, {kc['observation']} pass with "
                f"observation, {kc['fail']} fail. Failures: {', '.join(fails) or 'none'}. Areas of dispute: none. "
                f"Observations: {' | '.join(sorted(set(obs))) or 'none'}. {DISCLAIMER}")
@@ -341,7 +376,11 @@ def build_set(guide, rule_results, ksi_results, now, commit, guide_sha):
             "simulated": True, "fedramp_recognized": False, "assessor_id": "NOT-A-REAL-ASSESSOR-ID",
             "disclaimer": DISCLAIMER, "assessor": {"organization": ORG, "key_id": KEY_ID},
             "issued_at": issued,
-            "subject": {"site": guide["site"], "commit": commit, "assessor_guide_sha256": guide_sha},
+            # What this set covers. The provider refuses it for any other commit
+            # or signal (scripts/_assessor.py, bind).
+            "subject": {"site": guide["site"], "phase": phase, "commit": commit,
+                        "signal_id": signal.get("signal_id"), "signal_commit": signal.get("commit"),
+                        "assessor_guide_sha256": guide_sha},
             "results": {"rules": rc, "ksis": kc},
             "records": records}
 
@@ -352,12 +391,14 @@ def main(argv=None):
     ap.add_argument("--repo", default=".")
     ap.add_argument("--commit", default=None)
     ap.add_argument("--output", default=SET_NAME)
+    ap.add_argument("--phase", choices=PHASES, default="pre-deploy")
     a = ap.parse_args(argv)
     raw = Path(a.guide).read_bytes()
     guide = json.loads(raw)
     now = datetime.now(timezone.utc)
-    rules, ksis = Assessor(guide, a.repo, now).assess()
-    doc = build_set(guide, rules, ksis, now, a.commit, hashlib.sha256(raw).hexdigest())
+    assessor = Assessor(guide, a.repo, now, phase=a.phase, commit=a.commit)
+    rules, ksis = assessor.assess()
+    doc = build_set(guide, rules, ksis, now, a.commit, hashlib.sha256(raw).hexdigest(), assessor.signal, a.phase)
     Path(a.output).write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
     fails = [x for x in rules + ksis if x[1] == "fail"]
     for x in fails:

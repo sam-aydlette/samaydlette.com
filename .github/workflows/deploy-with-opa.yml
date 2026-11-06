@@ -149,7 +149,7 @@ jobs:
         # from this file and fails when a dependent job is missing. A job that
         # calls a reusable workflow appears as "<caller name> / <called job>",
         # so a dependent name also excludes everything under it.
-        DEPENDENT='["Deploy Infrastructure","Simulated assessor","Prove the certification package maintainer","Prove the incident report publisher","Notify on Failure","Queue watchdog"]'
+        DEPENDENT='["Deploy Infrastructure","Simulated assessor","Prove the certification package maintainer","Prove the incident report publisher","Post-deploy simulated assessor","Post-deploy assessment binding","Notify on Failure","Queue watchdog"]'
         FILTER='[.jobs[] | select(.status == "queued") | .name | select(. as $n | '"$DEPENDENT"' | any(. as $d | $n == $d or ($n | startswith($d + " / "))) | not)] | join(", ")'
         stuck=''
         for _ in $(seq 1 $(( GRACE_MINUTES * 2 ))); do
@@ -632,6 +632,10 @@ jobs:
     env:
       GATE_EVENTS_FILE: /tmp/gate-events.jsonl
     needs: [test, compliance-check, security-scan, simulated-assessor]
+    # The KSI signal this deploy published: the post-deploy assessment must
+    # cover exactly it.
+    outputs:
+      signal_id: ${{ steps.ksi.outputs.signal_id }}
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
@@ -753,12 +757,13 @@ jobs:
         name: conformance-results
         path: infrastructure/
 
-    # The simulated assessor's signed set (simulated-assessment.json + .bundle),
-    # verified against the pinned assessor identity when the SDR is built.
+    # The simulated assessor's pre-deploy signed set (simulated-assessment.json +
+    # .bundle), verified against the pinned assessor identity, and bound to the
+    # commit and published signal it covered, when the SDR is built.
     - name: Download the simulated assessment
       uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
-        name: simulated-assessment
+        name: simulated-assessment-pre-deploy
         path: infrastructure/
 
     # -------------------------------------------------------------------------
@@ -1421,6 +1426,7 @@ jobs:
         fi
 
     - name: Build deploy-time KSI signal
+      id: ksi
       working-directory: infrastructure
       env:
         # Tells the emitter to pre-populate provenance.attestation with the
@@ -1432,6 +1438,11 @@ jobs:
       run: |
         echo "Building deploy-time KSI signal..."
         python3 ../scripts/build-ksi-signal.py
+        sid=$(jq -r '.signal_id' ksi-signal.json)
+        if ! printf '%s' "$sid" | grep -qE '^[0-9a-f-]{36}$'; then
+          echo "::error::the built KSI signal carries a malformed signal_id"; exit 1
+        fi
+        echo "signal_id=$sid" >> "$GITHUB_OUTPUT"
         echo "Signal contents (truncated):"
         jq '{signal_id, emitted_at, csp, system_id,
              component_count: (.components | length),
@@ -1459,6 +1470,30 @@ jobs:
     # -------------------------------------------------------------------------
     - name: Install cosign
       uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    # IVV-CSO-FIA / SDR-CSO-FRR: the pre-deploy assessment validated the state
+    # that is live now, before this deploy publishes anything. Read that state's
+    # KSI signal independently (signature verified against the deploy identity)
+    # so the SDR and CPO builders can refuse a set that covered any other signal
+    # or commit. Nothing under /.well-known/ has been replaced yet at this point.
+    - name: Bind the pre-deploy assessment to the state it covered
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        for f in ksi-signal.json ksi-signal.bundle; do
+          code=$(curl -sSL --max-time 30 -o "live-$f" -w '%{http_code}' "https://samaydlette.com/.well-known/$f") \
+            || { echo "::error::cannot fetch the published $f"; exit 1; }
+          [ "$code" = 200 ] || { echo "::error::fetching the published $f returned HTTP $code"; exit 1; }
+        done
+        cosign verify-blob --bundle live-ksi-signal.bundle \
+          --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
+          --certificate-oidc-issuer https://token.actions.githubusercontent.com live-ksi-signal.json
+        sid=$(jq -r '.signal_id' live-ksi-signal.json)
+        if ! printf '%s' "$sid" | grep -qE '^[0-9a-f-]{36}$'; then
+          echo "::error::the published KSI signal carries a malformed signal_id"; exit 1
+        fi
+        echo "ASSESSED_SIGNAL_ID=$sid" >> "$GITHUB_ENV"
+        echo "The pre-deploy assessment must cover commit $GITHUB_SHA and published signal $sid."
 
     - name: Sign KSI signal
       working-directory: infrastructure
@@ -1820,8 +1855,9 @@ jobs:
         account=$(aws sts get-caller-identity --query Account --output text)
         aws s3 sync "s3://$bucket/cloudfront/" edge-access-records/cloudfront/ --only-show-errors
         aws s3 sync "s3://$bucket/AWSLogs/$account/CloudFront/" edge-access-records/default/ --only-show-errors
-        curl -fsS --max-time 20 -o previous-access-summary.json "https://$DOMAIN/.well-known/access-summary.json" \
-          || echo '{}' > previous-access-summary.json
+        # Append-only: a 404 starts the history; any other failure stops the deploy.
+        python3 ../scripts/fetch-published-history.py access-summary.json previous-access-summary.json \
+          --site "https://$DOMAIN"
         python3 ../scripts/build-access-summary.py \
           --records edge-access-records --previous previous-access-summary.json
 
@@ -1951,18 +1987,6 @@ jobs:
         python3 ../scripts/build-scn.py --previous-index previous-scn-index.json \
           --previous-log previous-scn-evaluations.json --commit "$GITHUB_SHA"
 
-    # CDS-CSO-FRC: every FedRAMP Certification Report received is published
-    # unmodified (its sha256 is checked against the register) with the days
-    # from receipt to publication. FedRAMP is SIMULATED: the one report is a
-    # plainly fake stand-in. Nothing is received from or sent to FedRAMP.
-    - name: FedRAMP Certification Reports published unmodified (simulated FedRAMP)
-      working-directory: infrastructure
-      run: |
-        curl -sfL -o previous-fedramp-certification-reports.json \
-          "https://samaydlette.com/.well-known/fedramp-certification-reports.json" \
-          || echo '{}' > previous-fedramp-certification-reports.json
-        python3 ../scripts/publish-certification-reports.py --previous previous-fedramp-certification-reports.json --out .
-
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
       env:
@@ -1977,6 +2001,7 @@ jobs:
           --runtime-signal ksi-signal-runtime.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
           --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
+          --assessment-commit "$COMMIT" --assessment-signal-id "$ASSESSED_SIGNAL_ID" \
           --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER" \
           --runtime-commit "$COMMIT" --require-two-methods
         # FRC-CSX-VVK: a KSI short of two automated methods without an in-force
@@ -1986,7 +2011,8 @@ jobs:
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json \
-          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
+          --assessment-commit "$COMMIT" --assessment-signal-id "$ASSESSED_SIGNAL_ID"
 
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure
@@ -1997,20 +2023,42 @@ jobs:
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json \
-          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
+          --assessment-commit "$GITHUB_SHA" --assessment-signal-id "$ASSESSED_SIGNAL_ID"
 
     # FRC-CSO-PKG: the package (CPO, SDR, OCR) is checked against its schemas
     # and the applicable rules, and "submitted" to a simulated FedRAMP intake: a
     # function in scripts/submit-package.py. NOTHING IS SENT; the submission is
     # an entry in the signed, published log. Any unexpected outcome fails here.
+    # The same log records the simulated FedRAMP's certification report when one
+    # is due (CDS-CSO-FRC) and files a notice of every FedRAMP Security Inbox
+    # contact change, failing unless it is within one business day of the change
+    # (AFC-CSO-NOC, scripts/check-fsi-notice.py).
     - name: Simulated package submission to FedRAMP (nothing is sent)
       working-directory: infrastructure
       run: |
-        curl -sfL -o previous-package-submission-log.json \
-          "https://samaydlette.com/.well-known/package-submission-log.json" \
-          || rm -f previous-package-submission-log.json
+        # Append-only: a 404 starts the log; any other failure stops the deploy.
+        python3 ../scripts/fetch-published-history.py package-submission-log.json previous-package-submission-log.json
         python3 ../scripts/submit-package.py --previous previous-package-submission-log.json \
           --output package-submission-log.json --commit "$GITHUB_SHA"
+
+    # CDS-CSO-FRC: FedRAMP is SIMULATED. The simulated FedRAMP issues a stand-in
+    # certification report only in response to a simulated submission (the step
+    # above): the first, after any adaptive or transformative SCN, and once a
+    # year; the submission log holds it verbatim with the date received. Every
+    # logged report is published unmodified (its sha256 is checked against the
+    # log) and the deploy fails if one is first published more than 2 weeks
+    # after receipt. Each says it is NOT ISSUED BY FEDRAMP and the system is not
+    # certified. Nothing is received from or sent to FedRAMP.
+    - name: FedRAMP Certification Reports published unmodified (simulated FedRAMP)
+      working-directory: infrastructure
+      run: |
+        # Append-only (first-publication dates): a 404 starts the index; any
+        # other failure stops the deploy.
+        python3 ../scripts/fetch-published-history.py fedramp-certification-reports.json \
+          previous-fedramp-certification-reports.json
+        python3 ../scripts/publish-certification-reports.py --submission-log package-submission-log.json \
+          --previous previous-fedramp-certification-reports.json --out .
 
     # The authorization-boundary map the trust center draws: the inventory's
     # components placed by docs/boundary/boundary-classification.json, connected
@@ -2751,6 +2799,58 @@ jobs:
     secrets:
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
+  # IVV-CSO-FIA / IVV-CSX-AIA: the pre-deploy assessment is a gate on the state
+  # this deploy replaces. This one assesses the state it just published, once the
+  # unattended publishers have also run: the same assessor, the same checks, and
+  # the live KSI signal must carry this commit. A failure fails the run and the
+  # notify job raises the deployment-failure issue (what was published stays).
+  post-deploy-assessor:
+    name: Post-deploy simulated assessor
+    needs: [deploy, package-maintainer, incident-publisher]
+    if: github.ref == 'refs/heads/main' && needs.deploy.result == 'success' && needs.package-maintainer.result == 'success' && needs.incident-publisher.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/simulated-assessor.yml
+    with:
+      phase: post-deploy
+
+  # The post-deploy set is accepted only when its signature verifies against the
+  # pinned assessor identity and it covers this commit and the KSI signal this
+  # deploy published (scripts/_assessor.py, bind); anything else fails the run.
+  post-deploy-binding:
+    name: Post-deploy assessment binding
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy, post-deploy-assessor]
+    if: github.ref == 'refs/heads/main' && needs.post-deploy-assessor.result == 'success'
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout the pinned assessor identity
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Install cosign
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
+    - name: Download the post-deploy assessment
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: simulated-assessment-post-deploy
+        path: post-deploy/
+
+    - name: Verify the post-deploy assessment covers the just-published state
+      env:
+        PUBLISHED_SIGNAL_ID: ${{ needs.deploy.outputs.signal_id }}
+      run: |
+        python3 scripts/_assessor.py \
+          --assessment post-deploy/simulated-assessment.json --assessment-bundle post-deploy/simulated-assessment.bundle \
+          --assessment-commit "$GITHUB_SHA" --assessment-signal-id "$PUBLISHED_SIGNAL_ID"
+        jq -e '.subject.phase == "post-deploy"' post-deploy/simulated-assessment.json > /dev/null \
+          || { echo "::error::the post-deploy set is not a post-deploy assessment"; exit 1; }
+
   # ===========================================================================
   # JOB 4: ALERT WHEN THINGS BREAK
   # ===========================================================================
@@ -2775,8 +2875,8 @@ jobs:
     runs-on: ubuntu-latest
     # The simulated assessor fails a run without failing the deploy (the deploy
     # is then skipped), so its result is watched here too.
-    needs: [compliance-check, simulated-assessor, deploy, package-maintainer, incident-publisher]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.simulated-assessor.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure')
+    needs: [compliance-check, simulated-assessor, deploy, package-maintainer, incident-publisher, post-deploy-assessor, post-deploy-binding]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.simulated-assessor.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure' || needs.post-deploy-assessor.result == 'failure' || needs.post-deploy-binding.result == 'failure')
     permissions:
       contents: read
       issues: write
@@ -2793,6 +2893,8 @@ jobs:
         DEPLOY_RESULT: ${{ needs.deploy.result }}
         PUBLISHER_RESULT: ${{ needs.incident-publisher.result }}
         MAINTAINER_RESULT: ${{ needs.package-maintainer.result }}
+        POST_ASSESSOR_RESULT: ${{ needs.post-deploy-assessor.result }}
+        POST_BINDING_RESULT: ${{ needs.post-deploy-binding.result }}
       with:
         script: |
           const TITLE = `Deployment failing: ${context.workflow}`;
@@ -2811,6 +2913,8 @@ jobs:
             `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,
             `| Incident report publisher | \`${process.env.PUBLISHER_RESULT}\` |`,
             `| Package maintainer | \`${process.env.MAINTAINER_RESULT}\` |`,
+            `| Post-deploy simulated assessor | \`${process.env.POST_ASSESSOR_RESULT}\` |`,
+            `| Post-deploy assessment binding | \`${process.env.POST_BINDING_RESULT}\` |`,
             ``,
             `Review the failing step in the run log, and the compliance reports it uploaded.`,
             ``,

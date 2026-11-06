@@ -71,6 +71,10 @@
         "kind": "summary",
         "text": "Overall summary (simulated)."
       }
+    },
+    "certification": {
+      "program": "FedRAMP 20x, Program path, Class C",
+      "status": "not certified (proof of concept)"
     }
   }
 }

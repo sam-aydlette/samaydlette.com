@@ -686,9 +686,28 @@ def simulated_summary(reqs):
                          "the mechanism is real and runs on every deploy; only the outside party is simulated."}
 
 
+def assessment_coverage(subject):
+    """What the assessor results carried here covered (IVV-CSO-FIA, SDR-CSO-FRR),
+    from the set's subject after scripts/_assessor.py checked it against the
+    commit and signal the deploy stated."""
+    return {
+        "phase": subject.get("phase"),
+        "commit": subject["commit"],
+        "signalId": subject["signal_id"],
+        "signalCommit": subject.get("signal_commit"),
+        "statement": (
+            f"The assessor results in this record come from the pre-deploy assessment. It verified the repository "
+            f"at commit {subject['commit']} (the commit this record was built from) and validated the published "
+            f"state that commit replaces: KSI signal {subject['signal_id']} (commit "
+            f"{subject.get('signal_commit') or 'unknown'}). It is a gate: the deploy did not proceed until it "
+            f"passed. After publishing, the same assessor assesses the just-published state of this commit; a "
+            f"failure there fails the deploy run and raises the deployment-failure issue."),
+    }
+
+
 def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, runtime, runtime_reason,
           assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None,
-          dep_scan=(False, "not evaluated in this build"), training=None, accepted=None):
+          dep_scan=(False, "not evaluated in this build"), training=None, accepted=None, coverage=None):
     ids = [r["frr_id"] for r in records["records"]] + sorted(
         i["id"] for f in catalog["KSI"].values() for i in f["indicators"])
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ids]
@@ -715,7 +734,8 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
         "securityControls": controls,
         "providerExtensions": {
             "fedRampId": fedramp_id or _offering.fedramp_id(),
-            "certification": "FedRAMP 20x, Program path, Class C",
+            # Sought, never held (scripts/_offering.py, the CPO's same field).
+            "certification": _offering.certification(),
             "class": prof.get("fedramp_class"),
             "impact_level": prof.get("impact_level"),
             "ksi_signal_id": signal.get("signal_id"),
@@ -727,6 +747,7 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
                         "securityControlsBeyondModerate": _tally(beyond, "status")},
             "assessorRecords": block,
             "assessorCommentResponses": by_rule,
+            **({"assessmentCoverage": coverage} if coverage else {}),
             **({"training": training["summary"]} if training and training.get("summary") else {}),
             "metrics": build_metrics(counts, vdr, signal, previous_history(prev), now, ksi_point(ksis)),
         },
@@ -756,6 +777,11 @@ def main(argv=None):
     # given, it is required to exist and verify; its records replace the loose ones.
     ap.add_argument("--assessment", default=None)
     ap.add_argument("--assessment-bundle", default=None)
+    # The state the set must cover (required with --assessment): the commit
+    # being deployed and the published KSI signal the assessor validated. A set
+    # covering anything else is refused, and the SDR states these.
+    ap.add_argument("--assessment-commit", default=None)
+    ap.add_argument("--assessment-signal-id", default=None)
     # FRC-CSX-VVK: the VDR's Sigstore bundle and the identities allowed to sign
     # it (dependency scanning counts only when it verifies), the decision
     # register (taught in the training packet; accepted shortfalls), the incident
@@ -792,8 +818,12 @@ def main(argv=None):
     if a.runtime_commit and runtime:
         reason = runtime_bound(a.runtime_signal, a.runtime_commit)
         runtime = [] if reason else runtime
+    coverage = None
     if a.assessment:
-        assessor_records = _assessor.load_assessment(a.assessment, a.assessment_bundle, a.assessor_identity)
+        assessor_records, subject = _assessor.load_assessment_with_subject(
+            a.assessment, a.assessment_bundle, a.assessor_identity,
+            expect_commit=a.assessment_commit, expect_signal_id=a.assessment_signal_id)
+        coverage = assessment_coverage(subject)
     else:
         assessor_records = _assessor.load_records(a.assessor_records, a.assessor_identity)
     reg = _decisions.load(a.decisions)
@@ -803,7 +833,8 @@ def main(argv=None):
                 assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context(),
                 dep_scan=dep_scan, accepted=vvk_acceptances(reg, now),
                 training=training_methods(prev, reg, json.loads(Path(a.incidents).read_text()),
-                                          len(records["records"]), _ksi_count(catalog), now))
+                                          len(records["records"]), _ksi_count(catalog), now),
+                coverage=coverage)
     _assessor.verify_output(doc, assessor_records)  # T74
     short = vvk_shortfalls(doc)
     for msg in short:
@@ -836,6 +867,8 @@ def _assessor_lines(doc):
                 "or signed by an assessor."]
     out = [f"**Assessor records:** {pe['assessorRecords']['status']}. Each is quoted verbatim from the "
            "assessor's signed record; the signature is in the JSON."]
+    if pe.get("assessmentCoverage"):
+        out += ["", f"**What the assessment covered:** {pe['assessmentCoverage']['statement']}", ""]
     for e in sorted(entries, key=lambda e: e["record_id"]):
         rule = f" (`{e['rule_id']}`)" if e.get("rule_id") else ""
         out.append(f"- `{e['record_id']}`{rule}, {e['kind']}, {e['assessor']['organization']}, "
@@ -851,8 +884,8 @@ def render_markdown(doc):
     m, pe = doc["metadata"], doc["providerExtensions"]
     s = pe["summary"]
     out = ["# Security Decision Record", "",
-           f"_{pe['certification']}. Every applicable FedRAMP rule, every Key Security Indicator, and every "
-           "NIST 800-53 Rev5 control in the Moderate baseline, with how 20x evidence meets it._", "",
+           f"_{pe['certification']['program']} (sought; status: {pe['certification']['status']}). Every "
+           "applicable FedRAMP rule, every Key Security Indicator, and every NIST 800-53 Rev5 control in the Moderate baseline, with how 20x evidence meets it._", "",
            f"- **FedRAMP ID:** {pe.get('fedRampId')} (simulated: no FedRAMP ID has been assigned)",
            f"- **Version:** {m['version']} | **Last updated:** {m['lastUpdated']}",
            f"- **Source:** {m['updateSource']}",

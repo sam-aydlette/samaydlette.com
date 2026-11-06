@@ -35,7 +35,8 @@ def _assessment():
     with tempfile.TemporaryDirectory() as d:
         s = Path(d) / "simulated-assessment.json"
         s.write_text((REPO / "tests" / "fixtures" / "assessor" / "simulated-set.json").read_text())
-        return _assessor.load_assessment(s, s, verifier=lambda *_a: True)
+        return _assessor.load_assessment(s, s, verifier=lambda *_a: True, expect_commit="0" * 40,
+                                         expect_signal_id="00000000-0000-4000-8000-000000000001")
 
 
 def _build(assessment=None):

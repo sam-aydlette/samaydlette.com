@@ -5,7 +5,6 @@
       {
         "contact": "Simulated for this proof of concept: there is no FedRAMP Security Inbox, no mail is received or sent, and the inbox is permanently at zero because it does not exist. Hit me up on LinkedIn: https://www.linkedin.com/in/sa2/",
         "since": "2026-11-05",
-        "fedramp_notified": null,
         "basis": "Established. No earlier FedRAMP Security Inbox or Marketplace Security Email is on file with FedRAMP for this unsponsored system, so there was no prior contact to change from."
       },
       {

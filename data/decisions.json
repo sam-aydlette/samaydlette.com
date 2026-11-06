@@ -1230,7 +1230,7 @@
         ],
         "reworded": {
           "on": "2026-11-06",
-          "for": "no recurring manual work (DEC-194)",
+          "for": "no recurring manual work (operator's direction, 2026-11-06)",
           "before": "The operator reviews anything the screen cannot judge before the report is issued.",
           "after": "Nothing waits on a person: a report the screen rejects is not written, and the build fails."
         }

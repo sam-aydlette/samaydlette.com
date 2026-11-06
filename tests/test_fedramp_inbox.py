@@ -364,7 +364,8 @@ def _cpo_doc():
     with tempfile.TemporaryDirectory() as d:
         s = Path(d) / "simulated-assessment.json"
         s.write_text((REPO / "tests" / "fixtures" / "assessor" / "simulated-set.json").read_text())
-        assessment = _assessor.load_assessment(s, s, verifier=lambda *_a: True)
+        assessment = _assessor.load_assessment(s, s, verifier=lambda *_a: True, expect_commit="0" * 40,
+                                         expect_signal_id="00000000-0000-4000-8000-000000000001")
     now = datetime(2026, 11, 5, 12, tzinfo=timezone.utc)
     doc = cpo.build(_offering.load(), json.loads((REPO / "data" / "system-profile.json").read_text()),
                     json.loads((REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json").read_text()),

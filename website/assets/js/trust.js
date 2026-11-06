@@ -153,7 +153,9 @@ function statusChip(status) {
 function renderFacts(doc) {
     const dl = slot('facts');
     const add = (k, v) => dl.append(el('div', {}, el('dt', { text: k }), el('dd', {}, v)));
-    add('Program', el('span', {}, 'FedRAMP 20x Class C', el('span', { class: 'tc-fact-note', text: 'Adheres to; not certified' })));
+    // Status from trust-center.json (one source with the CPO and SDR); the fallback says the same.
+    const status = doc.certification?.status || 'not certified (proof of concept)';
+    add('Program', el('span', {}, 'FedRAMP 20x Class C', el('span', { class: 'tc-fact-note', text: `Adheres to; ${status}` })));
     add('Impact level', (doc.system?.impact_level || 'unknown').replace(/^./, (c) => c.toUpperCase()));
     add('Published', when(doc.generated_at) || 'unknown');
     add('Build', doc.commit ? el('a', { href: `${REPO}/commit/${doc.commit}` }, el('code', { text: doc.commit.slice(0, 7) })) : 'unknown');
