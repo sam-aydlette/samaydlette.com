@@ -760,6 +760,48 @@ jobs:
         done < recovery-new.txt
         exit "${rc:-0}"
 
+    # The drills (scripts/hold-drill.py; DEC-195, simulated casts per DEC-194):
+    # the Board of Sam and the CFO quarterly, the Choose-Your-Own-Disaster
+    # tabletop, the disclosure drill and the phishing drill monthly. Each runs
+    # real checks over the repository's data and feeds a planted bad case
+    # through them, which must be caught. Like the recovery exercise, a failing
+    # drill is not frozen and does not stop the VDR refresh: every index is
+    # still written and signed, and the run fails at the end (step "Scheduled
+    # reviews held and not overdue"). A held drill's files pass the FedRAMP ID
+    # and redaction gates here, before they are signed.
+    - name: Hold the drills when due (simulated participants)
+      id: drills
+      continue-on-error: true
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        : > drills-new.txt
+        [ -f ../scripts/hold-drill.py ] || { echo "::notice::this commit predates the drills"; exit 0; }
+        while read -r key index; do
+          prev=()
+          code=$(curl -s -o "previous-$index.json" -w '%{http_code}' "${SITE_ORIGIN}/.well-known/$index.json")
+          if [ "$code" = "200" ]; then
+            curl -sfL --retry 3 -o "previous-$index.bundle" "${SITE_ORIGIN}/.well-known/$index.bundle"
+            cosign verify-blob --bundle "previous-$index.bundle" --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+              --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
+              "previous-$index.json"
+            prev=(--previous-index "previous-$index.json")
+          elif [ "$code" != "404" ] && [ "$code" != "403" ]; then
+            echo "::error::$index.json answered HTTP $code"; exit 1
+          fi
+          python3 ../scripts/hold-drill.py --review "$key" "${prev[@]}" --out . --new-files "drill-$key-new.txt" \
+            || rc=$?
+          cosign sign-blob --yes --new-bundle-format --bundle "$index.bundle" "$index.json"
+          cat "drill-$key-new.txt" >> drills-new.txt
+        done < <(python3 ../scripts/hold-drill.py --list)
+        while read -r f; do
+          [[ "$f" =~ ^vdr-drill-[a-z-]+-[0-9]{4}-[0-9]{2}-[0-9]{2}\.json$ ]] || { echo "::error::unexpected file $f"; exit 1; }
+          python3 ../scripts/check-fedramp-id.py "$f"
+          python3 ../scripts/check-published-redaction.py "$f" "${f%.json}.view.md"
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done < drills-new.txt
+        exit "${rc:-0}"
+
     # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
     # in human-readable form, listing every kind of detection and response
     # activity ("none this period" when nothing happened). The previous published
@@ -860,6 +902,8 @@ jobs:
         python3 ../scripts/build-human-views.py
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
         vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
+        vdr-drill-board-meetings.json vdr-drill-cfo-reviews.json vdr-drill-tabletops.json
+        vdr-drill-disclosures.json vdr-drill-phishing.json
 
     # CDS-CSO-FID: every report this run republishes carries the offering's
     # FedRAMP ID (the same gate the deploy runs over its REPORTS list).
@@ -869,6 +913,8 @@ jobs:
         python3 ../scripts/check-fedramp-id.py
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
         vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
+        vdr-drill-board-meetings.json vdr-drill-cfo-reviews.json vdr-drill-tabletops.json
+        vdr-drill-disclosures.json vdr-drill-phishing.json
 
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
@@ -883,6 +929,11 @@ jobs:
         vdr-non-machine-vv.view.md vdr-monthly.view.md
         vdr-audit-log-review.json vdr-audit-log-review.view.md
         vdr-recovery-exercises.json vdr-recovery-exercises.view.md
+        vdr-drill-board-meetings.json vdr-drill-board-meetings.view.md
+        vdr-drill-cfo-reviews.json vdr-drill-cfo-reviews.view.md
+        vdr-drill-tabletops.json vdr-drill-tabletops.view.md
+        vdr-drill-disclosures.json vdr-drill-disclosures.view.md
+        vdr-drill-phishing.json vdr-drill-phishing.view.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -939,10 +990,26 @@ jobs:
           put "${f%.json}.view.md" "text/markdown; charset=utf-8"
           put "${f%.json}.bundle" "application/json"
           put "$f" "application/json"
-        done < <(cat recovery-new.txt 2>/dev/null || true)
+        done < <(cat recovery-new.txt drills-new.txt 2>/dev/null || true)
         put vdr-recovery-exercises.view.md "text/markdown; charset=utf-8"
         put vdr-recovery-exercises.bundle "application/json"
         put vdr-recovery-exercises.json "application/json"
+        # The drills' indexes (scripts/hold-drill.py), republished every run.
+        put vdr-drill-board-meetings.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-board-meetings.bundle "application/json"
+        put vdr-drill-board-meetings.json "application/json"
+        put vdr-drill-cfo-reviews.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-cfo-reviews.bundle "application/json"
+        put vdr-drill-cfo-reviews.json "application/json"
+        put vdr-drill-tabletops.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-tabletops.bundle "application/json"
+        put vdr-drill-tabletops.json "application/json"
+        put vdr-drill-disclosures.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-disclosures.bundle "application/json"
+        put vdr-drill-disclosures.json "application/json"
+        put vdr-drill-phishing.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-phishing.bundle "application/json"
+        put vdr-drill-phishing.json "application/json"
 
     # Scoped to exactly the paths this workflow wrote. The deploy path
     # invalidates `/*`; that is a whole-site operation and is not this
@@ -1016,12 +1083,19 @@ jobs:
       if: ${{ always() && steps.publish.outcome == 'success' }}
       env:
         RECOVERY: ${{ steps.recovery.outcome }}
+        DRILLS: ${{ steps.drills.outcome }}
       run: |
         set -euo pipefail
         if ! git cat-file -e "${SIGNAL_COMMIT}:scripts/check-scheduled-review.py" 2>/dev/null; then
           echo "::notice::the deployed commit predates the automated scheduled reviews"; exit 0
         fi
         [ "$RECOVERY" != "failure" ] || { echo "::error::the recovery exercise failed (see its step)"; exit 1; }
+        [ "$DRILLS" != "failure" ] || { echo "::error::a drill failed (see step 'Hold the drills when due')"; exit 1; }
+        if [ -f scripts/hold-drill.py ]; then
+          while read -r key index; do
+            python3 scripts/check-scheduled-review.py --review "$key" --index "infrastructure/$index.json"
+          done < <(python3 scripts/hold-drill.py --list)
+        fi
         python3 scripts/audit-log-review.py --enforce infrastructure/vdr-audit-log-review.json
         if [ -f infrastructure/vdr-recovery-exercises.json ]; then
           python3 scripts/check-scheduled-review.py --review recovery-exercise --index infrastructure/vdr-recovery-exercises.json

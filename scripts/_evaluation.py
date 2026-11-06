@@ -25,6 +25,7 @@ evaluates a group at its most exposed member.
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -269,7 +270,14 @@ PROCESS_SEVERITY = "MEDIUM"  # severity proxy: N2, narrow effect (detection degr
 PIPELINE_WORKFLOWS = ("Deploy Website with OPA Compliance", "Evidence Nightly (VDR refresh)", "ZAP DAST Scan")
 
 
-def process_findings(events, rows):
+def _slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")[:60]
+
+
+def process_findings(events, rows, recurrences=None):
+    """Process findings from this run's events, from findings still on a
+    default after the evaluation window, and from recurring incident patterns
+    (KSI-INR-RPI: scripts/_incidents.py patterns(), real incidents only)."""
     out = {}
     for ev in events or []:
         tid = f"process-{ev['check']}"
@@ -285,6 +293,14 @@ def process_findings(events, rows):
                         "title": "Process failure: evaluation still on a default after the VER-TFR-EVU window",
                         "description": f"{r['tracking_id']} has no vector and no prediction score",
                         "severity": PROCESS_SEVERITY, "resource": f"pipeline:evaluation:{r['tracking_id']}"}
+    for p in recurrences or []:
+        tid = f"process-incident-recurrence-{_slug(p['component'])}-{_slug(p['root_cause'])}"
+        out[tid] = {"source": "process", "tool_id": "incident.recurrence", "tracking_id": tid,
+                    "title": f"Process failure: a recurring incident pattern ({p['component']})",
+                    "description": f"{len(p['incidents'])} incidents within 12 months share the root cause "
+                                   f"'{p['root_cause']}': {', '.join(p['incidents'])}",
+                    "severity": PROCESS_SEVERITY, "resource": f"pipeline:incident-patterns:{_slug(p['component'])}",
+                    "detected_at": p.get("lastDetectedAt")}
     return sorted(out.values(), key=lambda f: f["tracking_id"])
 
 

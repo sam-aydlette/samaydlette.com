@@ -1,0 +1,4 @@
+# Known-bad: Expires is in the past and there is no Contact (RFC 9116).
+Expires: 2025-01-01T00:00:00.000Z
+Canonical: https://samaydlette.com/.well-known/security.txt
+Policy: https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md

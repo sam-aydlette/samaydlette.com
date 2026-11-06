@@ -116,6 +116,40 @@
         }
       },
       "expect": "plan-gate: a plan-gate verifier takes no other field"
+    },
+    {
+      "case": "a stand-in method without its stand-in proof",
+      "method": "phishing-drill",
+      "set": {
+        "stand_in_proof": null
+      },
+      "expect": "phishing-drill: a stand-in method needs stand_in_proof"
+    },
+    {
+      "case": "a stand-in proof naming a test that does not exist",
+      "method": "tabletop",
+      "set": {
+        "stand_in_proof": {
+          "bad_input": "tests/test_drills.py::test_nothing_here",
+          "replaceable": {
+            "statement": "x"
+          }
+        }
+      },
+      "expect": "tabletop: stand_in_proof test 'tests/test_drills.py::test_nothing_here' names no test function"
+    },
+    {
+      "case": "a stand-in proof on a real-input method",
+      "method": "cfo-review",
+      "set": {
+        "stand_in_proof": {
+          "bad_input": "tests/test_drills.py::test_known_bad_the_cfo_refuses_an_unfunded_mechanism",
+          "replaceable": {
+            "statement": "x"
+          }
+        }
+      },
+      "expect": "cfo-review: stand_in_proof is for a method whose input is a stand-in"
     }
   ]
 }

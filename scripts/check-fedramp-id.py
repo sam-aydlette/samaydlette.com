@@ -45,6 +45,9 @@ REPORTS = (
     # recovery exercises' index (the evidence nightly runs this gate over them).
     "vdr-audit-log-review.json",
     "vdr-recovery-exercises.json",
+    # The drills' indexes (scripts/hold-drill.py), checked by the evidence nightly.
+    "vdr-drill-board-meetings.json", "vdr-drill-cfo-reviews.json", "vdr-drill-tabletops.json",
+    "vdr-drill-disclosures.json", "vdr-drill-phishing.json",
     # The canonical inventory (the runtime emitter copies the ID from it).
     "ksi-signal.json",
     # Certification cycle: the FedRAMP Certification Reports index and

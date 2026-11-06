@@ -2012,7 +2012,12 @@ jobs:
         for k in audit-log-review:vdr-audit-log-review recovery-rebuild:vdr-recovery-exercises \
                  recovery-backup-read:vdr-recovery-exercises security-settings:security-settings \
                  reconcile:reconcile-report conformance:conformance-results \
-                 inbox-simulation:fedramp-inbox-simulation availability:availability; do
+                 inbox-simulation:fedramp-inbox-simulation availability:availability \
+                 scn-evaluations:scn-evaluations security-review:security-reviews \
+                 board-meeting:vdr-drill-board-meetings cfo-review:vdr-drill-cfo-reviews \
+                 groundhog-day:incident-reports incident-lessons:incident-reports tabletop:vdr-drill-tabletops \
+                 disclosure-drill:vdr-drill-disclosures security-txt:security-settings \
+                 phishing-drill:vdr-drill-phishing; do
           f="${k#*:}"
           if [ -f "methods/$f.json" ] || { curl -sfL -o "methods/$f.json" "https://samaydlette.com/.well-known/$f.json" \
              && curl -sfL -o "methods/$f.bundle" "https://samaydlette.com/.well-known/$f.bundle"; }; then
