@@ -228,7 +228,7 @@
       {
        "Condition": {
         "StringEquals": {
-         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:incident-reports"
+         "token.actions.githubusercontent.com:sub": ["repo:sam-aydlette/samaydlette.com:environment:incident-reports", "repo:sam-aydlette/samaydlette.com:environment:prod"]
         }
        }
       }
