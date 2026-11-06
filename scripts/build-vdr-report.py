@@ -52,11 +52,15 @@ from pathlib import Path
 
 # Shared helpers live next to this script; keep it runnable from any cwd.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+import _codeql  # noqa: E402
 import _decisions  # noqa: E402
+import _evaluation  # noqa: E402
 import _gates  # noqa: E402
 import _redact  # noqa: E402
 import _rules  # noqa: E402
 import _triage  # noqa: E402
+import _zap_api  # noqa: E402
 
 
 # =============================================================================
@@ -201,7 +205,7 @@ def classify_finding(tool_id):
 # Scanner sources whose findings are vulnerabilities (governed by the register)
 # rather than configuration findings (governed by .checkov.yaml + the maps
 # above). Mirrors vuln-gate.py's VULN_SOURCES.
-VULN_SOURCES = {"grype", "zap", "dependabot"}
+VULN_SOURCES = {"grype", "zap", "dependabot", "codeql"}
 
 # The disposition vocabulary (REQ-DSP-3), the dispositions that pass the
 # vulnerability gate, and those that close a finding for the deadline gate are
@@ -289,6 +293,7 @@ VERIFYING_SIGNALS = {"runtime", "deploy"}
 # The runtime emitter runs daily; two days allows one missed run. Moves to the
 # governed freshness config with the other windows.
 RUNTIME_SIGNAL_MAX_AGE_HOURS = 48
+RUNTIME_SIGNAL_URI = "https://samaydlette.com/.well-known/ksi-signal-runtime.json"
 
 
 def component_fingerprint(component):
@@ -378,12 +383,60 @@ def load_runtime_signal(path, pubkey_path=None, now=None, max_age_hours=RUNTIME_
         return out
     out["verified"] = True
     out["emitted_at"] = sig.get("emitted_at")
+    out["signal_id"] = sig.get("signal_id")
+    out["divergence"] = (sig.get("divergence") or {}).get("status")
     emitted = _ts(sig.get("emitted_at"), None) if sig.get("emitted_at") else None
     out["fresh"] = bool(emitted and timedelta(0) <= now - emitted <= timedelta(hours=max_age_hours))
     if not out["fresh"]:
         out["reason"] = f"runtime signal emitted {sig.get('emitted_at')} is outside {max_age_hours}h"
     out["validations"] = sig.get("validations") or []
+    # VER-RPT-PER: the emitter's bounded run history, inside the signed payload.
+    out["run_history"] = [r for r in sig.get("run_history") or [] if isinstance(r, dict) and r.get("emitted_at")]
     return out
+
+
+def runtime_verification_summary(runtime):
+    """The runtime V&V run this report read (VER-RPT-PER): when it ran, whether
+    its signature verified, how many validations it ran and how many failed.
+    Counts are published only from a verified signal."""
+    runtime = runtime or {}
+    out = {"uri": RUNTIME_SIGNAL_URI, "verified": bool(runtime.get("verified")),
+           "fresh": bool(runtime.get("fresh")), "reason": runtime.get("reason"),
+           "emitted_at": runtime.get("emitted_at"), "signal_id": runtime.get("signal_id"),
+           "validations": None, "failed": None, "divergence": None}
+    if out["verified"]:
+        vals = [v for v in runtime.get("validations") or [] if isinstance(v, dict)]
+        out["validations"] = len(vals)
+        out["failed"] = sum(1 for v in vals if v.get("result") != "pass")
+        out["divergence"] = runtime.get("divergence")
+        # Every run the emitter retained (signed with the signal), so a period
+        # report counts the runs a later run replaced (VER-RPT-PER).
+        out["run_history"] = [{k: r.get(k) for k in ("signal_id", "emitted_at", "validations", "failed",
+                                                     "unassessed", "divergence")}
+                              for r in runtime.get("run_history") or []]
+    return out
+
+
+def dast_summary(zap_path):
+    """The DAST scan this report ingested: when ZAP generated it and how many
+    alert types it reported. None when no ZAP report was given."""
+    if not zap_path:
+        return None
+    p = Path(zap_path)
+    if not p.is_file():
+        return {"scanner": "zap", "status": "missing", "generated_at": None, "alerts": None}
+    try:
+        doc = json.loads(p.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return {"scanner": "zap", "status": "unreadable", "generated_at": None, "alerts": None}
+    if not isinstance(doc, dict):
+        return {"scanner": "zap", "status": "unreadable", "generated_at": None, "alerts": None}
+    # ZAP writes nanoseconds; datetime parses at most microseconds.
+    raw = re.sub(r"(\.\d{6})\d+", r"\1", doc["created"]) if isinstance(doc.get("created"), str) else None
+    created = _ts(raw, None) if raw else None
+    gen = created.astimezone(timezone.utc).isoformat() if created and created.tzinfo else None
+    alerts = sum(len(site.get("alerts") or []) for site in doc.get("site") or [] if isinstance(site, dict))
+    return {"scanner": "zap", "status": "ok", "generated_at": gen, "alerts": alerts}
 
 
 def mitigation_state(finding, mitigations, inventory, runtime, today):
@@ -739,6 +792,9 @@ def ingest_suppressions(checkov_yaml):
             "title": f"{check_id} suppressed",
             "description": rationale,
             "resource": ".checkov.yaml",
+            # What the suppression affects: the resources its decision names.
+            "affected_resources": list(_decisions.records(DECISIONS).get(
+                RISK_ACCEPTED_BY_CHECK_ID.get(check_id), {}).get("applies_to", {}).get("resources", [])),
             "current_disposition": "risk-accepted",
             "detected_at": detected.get(RISK_ACCEPTED_BY_CHECK_ID.get(check_id)),
             "pain": evaluation["pain"],
@@ -1047,21 +1103,45 @@ def zap_report_age_days(path, now):
     for fmt in ("%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%dT%H:%M:%S"):
         try:
             gen = datetime.strptime(stamp.strip(), fmt)
-            return (now.replace(tzinfo=None) - gen).days
+            # Fractional days: a whole-day floor would let a 3-day window read 3.9 days as 3.
+            return round((now.replace(tzinfo=None) - gen).total_seconds() / 86400, 2)
         except ValueError:
             continue
     return None
 
 
+class KevCatalog(set):
+    """The CISA KEV catalog's CVE IDs, plus each entry's dates (VDR-TFR-KEV):
+    `entries` is {cveID: {"due_date", "date_added"}} from the catalog."""
+
+    def __init__(self, ids=(), entries=None):
+        super().__init__(ids)
+        self.entries = entries or {}
+
+
 def ingest_kev(path):
-    """Load CISA KEV catalog and return the set of CVE IDs."""
+    """Load the CISA KEV catalog: its CVE IDs, with the catalog's dueDate and
+    dateAdded for each (BOD 26-04 remediation dates)."""
     if not path or not Path(path).exists():
-        return set()
+        return KevCatalog()
     try:
         doc = json.loads(Path(path).read_text())
     except json.JSONDecodeError:
-        return set()
-    return {v.get("cveID") for v in (doc.get("vulnerabilities") or []) if v.get("cveID")}
+        return KevCatalog()
+    entries = {v["cveID"]: {"due_date": v.get("dueDate"), "date_added": v.get("dateAdded")}
+               for v in (doc.get("vulnerabilities") or []) if isinstance(v, dict) and v.get("cveID")}
+    return KevCatalog(entries, entries)
+
+
+def kev_dates(kev_cves, cve, now):
+    """(due_at, date_added, overdue) for a KEV finding from the catalog, or
+    (None, None, False). The catalog's due date is a day; it is read as the
+    start of that day, UTC, the earlier reading."""
+    entry = (getattr(kev_cves, "entries", None) or {}).get(cve) if cve else None
+    due = _ts(f"{entry['due_date']}T00:00:00+00:00", None) if entry and entry.get("due_date") else None
+    if due is None:
+        return None, (entry or {}).get("date_added"), False
+    return due.isoformat(), entry.get("date_added"), now >= due
 
 
 class EpssScores(dict):
@@ -1335,11 +1415,13 @@ PAIN_CLASSIFIER_DEVIATION = (
 
 
 def triage_item(f, kind, *, pain, is_kev, epss_scores, reach, mitigation=None,
-                check_decision=None, register=None, clock=None):
-    """The facts the triage policy decides one finding from."""
+                check_decision=None, register=None, clock=None, extra=None):
+    """The facts the triage policy decides one finding from. `extra`: the
+    grouping, projection and evaluation-time facts (group, projected_ns,
+    detected_ns, default_evaluation), only for report findings."""
     cve = f.get("cve")
     scores = epss_scores or {}
-    return {
+    return {**(extra or {}),
         "id": f["tracking_id"],
         "kind": kind,
         "pain": pain,
@@ -1357,6 +1439,32 @@ def triage_item(f, kind, *, pain, is_kev, epss_scores, reach, mitigation=None,
         "resource": str(f.get("resource") or ""),
         "fix_state": f.get("fix_state"),
         "clock": clock,
+    }
+
+
+def evaluation_facts(f, dec, clk, epss_scores, now):
+    """The triage facts beyond the ratings: the finding's group (VER-EVA-GRV),
+    a decision's projected remediation date (VER-TFR-MAV), when the source
+    detected it and when it was first evaluated (VER-TFR-EVU), and whether its
+    ratings rest on defaults (no vector, no prediction score)."""
+    plan = dec.get("planned_reduction") or {}
+    projected = None
+    if plan.get("target_pain") == "N0" and plan.get("date"):
+        projected = _triage.to_ns(datetime.combine(date.fromisoformat(plan["date"]), datetime.min.time(),
+                                                   tzinfo=timezone.utc))
+    # A decision record is an evaluation: a finding a person decided on before
+    # the pipeline first saw it was evaluated then.
+    evaluated = clk["first_evaluated_dt"]
+    if dec.get("decided_on"):
+        evaluated = min(evaluated, datetime.combine(date.fromisoformat(dec["decided_on"]), datetime.min.time(),
+                                                    tzinfo=timezone.utc))
+    cve = f.get("cve")
+    return {
+        "group": _evaluation.group_key(f, dec.get("id")),
+        "projected_ns": projected,
+        "detected_ns": _triage.to_ns(_ts(clk["first_detected"], now)),
+        "evaluated_ns": _triage.to_ns(evaluated),
+        "default_evaluation": not f.get("cvss_vector") and not (cve and cve in (epss_scores or {})),
     }
 
 
@@ -1425,10 +1533,11 @@ def _valid_v31(vector):
     return all(k in m and m[k] in _V3_VALUES[k] for k in _V3_REQUIRED) and len(m) == len(_V3_REQUIRED)
 
 
-def load_check_vectors(path=None, today=None):
+def load_check_vectors(path=None, today=None, decisions=None):
     """{check_id: entry} for entries in force today. Malformed file or entry fails closed."""
     p = Path(path) if path else DEFAULT_CHECK_VECTORS
     today = today or datetime.now(timezone.utc).date()
+    in_force_ids = {r["id"] for r in _decisions.in_force(decisions or DECISIONS)}
     try:
         doc = json.loads(p.read_text())
     except (OSError, json.JSONDecodeError) as exc:
@@ -1446,6 +1555,11 @@ def load_check_vectors(path=None, today=None):
         if not e.get("decided_by") or not e.get("decided_on"):
             continue  # proposed, not decided: not in force
         _parse_day(e["decided_on"], where)
+        # A vector is decided through the decision register (DEC-180): a decided
+        # entry that names no record in force would be a decision nobody made.
+        if e.get("decision") not in in_force_ids:
+            raise SystemExit(f"::error::{where}: decided, but decision {e.get('decision')!r} is not a decision "
+                             "record in force (fail-closed)")
         if review_by < today:
             continue  # lapsed
         in_force[check_id] = e
@@ -1459,7 +1573,32 @@ def apply_check_vector(finding, vectors):
     out = dict(finding)
     out["cvss_vector"] = vectors[finding["tool_id"]]["vector"]
     out["vector_source"] = "governed-check-vector"
+    out["vector_rationale"] = vectors[finding["tool_id"]].get("rationale")
+    out["vector_decision"] = vectors[finding["tool_id"]].get("decision")
     return out
+
+
+_EPA_EFFECT = {"N0": "no adverse effect on agencies is expected", "N1": "minimal customer effects",
+               "N2": "narrow customer effects", "N3": "a disruptive effect on one agency",
+               "N4": "a debilitating effect on one agency or a disruptive effect on more than one",
+               "N5": "a debilitating effect on more than one agency"}
+
+
+def impact_rationale(f, pain, fully_mitigated):
+    """VER-EVA-EPA: one line on the likely effect on agencies and what it rests on."""
+    if fully_mitigated:
+        return "Fully mitigated: the impact has been removed (N0)."
+    cls = f.get("_classification") or {}
+    where = (f"on a component holding {cls.get('data_sensitivity', 'unclassified')} data, "
+             f"{cls.get('mission_criticality', 'unrated')} criticality, "
+             f"{cls.get('agency_scope', 'multi')}-agency scope")
+    if f.get("vector_source") == "governed-check-vector":
+        basis = f"{f.get('vector_rationale') or 'governed vector'} (vector decided in {f.get('vector_decision')})"
+    elif f.get("cvss_vector"):
+        basis = "the advisory's CVSS vector"
+    else:
+        basis = "the scanner's severity (no vector): a default, not a contextual estimate"
+    return f"{pain}, {_EPA_EFFECT.get(pain, pain)}: {basis}; {where}."
 
 
 def load_lev_overrides(path=None):
@@ -1626,10 +1765,20 @@ def resolve_component(finding, index, tf_components=()):
         # (scripts/_redact.py); a finding that names a full ARN matches it so.
         if c and _redact.redact_text(str(c)) in index:
             return index[_redact.redact_text(str(c))]
+    # A site root ("https://host" or "https://host/") is the page it serves:
+    # the root object, index.html (VER-EVA-EIR: evaluated, not assumed).
+    root = str(finding.get("resource") or "")
+    if re.fullmatch(r"https?://[^/]+/?", root):
+        return resolve_component({"resource": root.rstrip("/") + "/index.html"}, index, tf_components)
     res = _redact.redact_text(str(finding.get("resource") or ""))
     m = _TF_ADDRESS.match(res)
     if m:
         rtype, rname = m.group(1), m.group(2)
+        # The exact resource type first: aws_iam_group_policy_attachment.operators
+        # is the attachment block, not the aws_iam_group.operators it prefixes.
+        exact = {cid for cid, tf_type, tf_name in tf_components if tf_name == rname and tf_type == rtype}
+        if exact:
+            return exact.pop() if len(exact) == 1 else None
         hits = {cid for cid, tf_type, tf_name in tf_components
                 if tf_name == rname and tf_type and rtype.startswith(tf_type)}
         return hits.pop() if len(hits) == 1 else None
@@ -1640,6 +1789,42 @@ def resolve_component(finding, index, tf_components=()):
             matches.sort(key=lambda kc: len(kc[0]), reverse=True)
             return matches[0][1]
     return None
+
+
+_DECISION_RESOURCE = re.compile(r"^aws-([a-z0-9-]+?)(?:::([\w.-]+))?$")
+
+
+def resolve_decision_resource(name, inventory):
+    """The component a decision record's resource name denotes, or None. An
+    exact inventory identifier first; else the register's `aws-<type>[::<name>]`
+    form, matched to the one Terraform component of that resource type (and
+    name, when given). Ambiguous or unknown: None, never a guess."""
+    if not isinstance(name, str) or not name:
+        return None
+    if name in inventory["index"]:
+        return inventory["index"][name]
+    m = _DECISION_RESOURCE.match(name)
+    if not m:
+        return None
+    tf_type = "aws_" + m.group(1).replace("-", "_")
+    want = m.group(2).replace("-", "_") if m.group(2) else None
+    hits = {cid for cid, t, n in inventory["tf"] if t == tf_type and (want is None or n == want)}
+    return hits.pop() if len(hits) == 1 else None
+
+
+def resolve_decision_resources(names, inventory):
+    """The component a decision's resources resolve to: the one they all name,
+    or, when they name several, an internet-reachable one first (the
+    conservative choice for IRV). None when none resolves."""
+    cids = []
+    for n in names or []:
+        cid = resolve_decision_resource(n, inventory)
+        if cid and cid not in cids:
+            cids.append(cid)
+    if not cids:
+        return None
+    reachable = [c for c in cids if (inventory["classes"].get(c) or {}).get("internet_reachable") is True]
+    return (reachable or cids)[0]
 
 
 def tf_components_of(ksi_signal_path):
@@ -1880,11 +2065,13 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     mitigations = mitigations or {}
     if decision_records is None:
         decision_records = load_decision_records()
+    full_records = {r["id"]: r for r in _decisions.in_force(DECISIONS)}
+    incidents = _evaluation.load_incidents()
     matched_register, matched_mitigations, lapsed = set(), set(), []
     margin_days = int(config["likely_overdue_margin_days"])
     report_findings = []
     summary = {
-        "by_pain": {"N1": 0, "N2": 0, "N3": 0, "N4": 0, "N5": 0},
+        "by_pain": {"N0": 0, "N1": 0, "N2": 0, "N3": 0, "N4": 0, "N5": 0},
         "blocking": 0,
         "kev": 0,
         "risk_accepted": len(suppressions),
@@ -1913,7 +2100,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             matched_mitigations.update(mit.get("matched") or [mit["id"]])
         if mit and mit["valid"]:
             f = {**f, "verified_mitigation_at": mit["verified_on"], "mitigation_id": mit["id"]}
-        if cid is None:
+        if cid is None and f.get("source") != "process":
+            # A process finding names the pipeline, not an inventory component.
             summary["unresolved_components"] += 1
         is_kev = bool(f.get("cve") and f["cve"] in kev_cves)
 
@@ -1941,21 +2129,30 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         else:
             summary["ledger_newly_detected"] += 1
         clk = clock_facts(f, ledger.get(tid), now)
+        dec_id = (check_decision or {}).get("decision_id") or (reg[1].get("decision_id") if reg else None)
+        dec = full_records.get(dec_id) or {}
         items.append(triage_item(
             f, "finding", pain=assign_pain(f, index, config), is_kev=is_kev, epss_scores=epss_scores,
             reach=reach_facts(f, cid, inv), mitigation=mit, check_decision=check_decision,
             register=({"key": reg[0], "entry": reg[1]} if reg else None),
             clock={"start_ns": _triage.to_ns(clk["start_dt"]),
-                   "first_evaluated_ns": _triage.to_ns(clk["first_evaluated_dt"])}))
-        prepared.append((f, cid, mit, is_kev, check_decision, reg, tid, clk))
+                   "first_evaluated_ns": _triage.to_ns(clk["first_evaluated_dt"])},
+            extra=evaluation_facts(f, dec, clk, epss_scores, now)))
+        prepared.append((f, cid, mit, is_kev, check_decision, reg, tid, clk, dec))
 
     # Risk-accepted entries (.checkov.yaml suppressions) are decided for
     # reachability and exploitability only: they carry no deadline.
     sup_prepared = []
     for s in suppressions:
         s = apply_check_vector(s, check_vectors)
-        s_cid = resolve_component(s, inv["index"], inv["tf"])
-        s = {**s, "_classification": classification_for(s, inventory, index)}
+        # A .checkov.yaml suppression names a file, not a resource: it affects
+        # the resources its decision record names (VER-RPT-AVI), so those are
+        # what reachability and classification are decided from.
+        s_cid = (resolve_component(s, inv["index"], inv["tf"])
+                 or resolve_decision_resources(s.get("affected_resources"), inv))
+        s = {**s, "_classification": ((inv["classes"].get(s_cid) or _FAILSAFE_CLASSIFICATION)
+                                      if s_cid and inventory is not None
+                                      else classification_for(s, inventory, index))}
         s_pain = assign_pain(s, index, config) if s.get("cvss_vector") else s.get("pain")
         items.append(triage_item(s, "suppression", pain=s_pain, is_kev=s.get("is_kev", False),
                                  epss_scores=epss_scores, reach=reach_facts(s, s_cid, inv)))
@@ -1963,10 +2160,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
 
     # 2. Decisions: one evaluation of policies/triage.rego for the whole report.
     decisions = _triage.decide(items, now=now, epss_threshold=config["epss_threshold"],
-                               margin_days=margin_days, lev_overrides=lev_overrides)
+                               margin_days=margin_days, lev_overrides=lev_overrides,
+                               evaluation_days=_rules.evaluation_days())
 
     # 3. Publish.
-    for (f, cid, mit, is_kev, check_decision, reg, tid, clk), d in zip(prepared, decisions[:len(prepared)], strict=True):
+    for (f, cid, mit, is_kev, check_decision, reg, tid, clk, dec), d in zip(prepared, decisions[:len(prepared)], strict=True):
         pain, irv, lev, sla = d["pain"], d["irv"], d["lev"], d["sla_days"]
         disposition, finding_decision_id = d["disposition"], d["decision_id"]
         is_suppressed, needs_remediation = d["closed"], d["needs_remediation"]
@@ -2006,8 +2204,17 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         # VER-RPT-VDT per-vulnerability record fields. History and reductions come
         # from the ledger (REQ-PAI-2); the deadline runs whatever the disposition.
         is_overdue = d["is_overdue"]
+        # VDR-TFR-KEV: a known exploited vulnerability is remediated by the
+        # catalog's due date, even when fully mitigated: the earlier of that and
+        # the Class C deadline, and overdue once the catalog's date has passed.
+        kev_due_at, kev_added, kev_overdue = kev_dates(kev_cves, f.get("cve"), now) if is_kev else (None, None, False)
+        if kev_due_at and due_at:
+            due_at = min(due_at, kev_due_at, key=lambda x: _ts(x, now))
+        elif kev_due_at and needs_remediation:
+            due_at = kev_due_at
+        is_overdue = is_overdue or kev_overdue
         next_reduction = ({"estimated_time": due_at, "target_pain": "remediated"}
-                          if sla is not None else None)
+                          if sla is not None or kev_due_at else None)
         overdue_explanation = (block_reason if block_this
                                else f"within Class C SLA: {days_since_detected}d of {sla}d allowed"
                                if sla is not None
@@ -2045,7 +2252,10 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "cvss_vector": f.get("cvss_vector"),
             "vector_source": f.get("vector_source") or ("scanner" if f.get("cvss_vector") else None),
             "technical_impact": technical_impact(f),
+            "impact_rationale": impact_rationale(f, pain, fully_mitigated),
             "is_kev": is_kev,
+            **({"kev_due_at": kev_due_at, "kev_date_added": kev_added, "kev_overdue": kev_overdue}
+               if is_kev and (kev_due_at or kev_added) else {}),
             "completed_reductions": hist["completed_reductions"],
             "next_reduction": next_reduction if needs_remediation else None,
             "current_disposition": d["label"] or "open",
@@ -2063,11 +2273,14 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "will_be_overdue": d["will_be_overdue"],
             "accepted": d["accepted"],
             "accepted_at": accepted_at,
+            **({"accepted_basis": d["accepted_basis"]} if d["accepted"] else {}),
             # VER-RPT-AVI: the recorded justification when an in-force record
             # carries one; otherwise the gap is stated, never filled in.
             "acceptance_explanation": (
                 ((reg[1].get("justification") or "").strip() or NOT_RECORDED
-                 if reg and d["record_status"] == "in-force" else NOT_RECORDED)
+                 if reg and d["record_status"] == "in-force"
+                 else (dec.get("justification") or "").strip() or NOT_RECORDED
+                 if d["accepted_basis"] == "projected-past-maximum-period" else NOT_RECORDED)
                 if d["accepted"] else None),
             "overdue_explanation": (block_reason if block_this
                                     else f"documented suppression ({disposition}); tracked as {finding_decision_id}"
@@ -2075,7 +2288,25 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "supplementary_info": "",
             "is_blocking": block_this,
             "block_reason": block_reason,
+            # VER-EVA-GRV: the group the finding is evaluated in, at its most
+            # exposed open member; the group's deadline binds this finding.
+            "group_id": d["group"],
+            "group_pain": d["group_pain"],
+            "group_lev": d["group_lev"],
+            "group_irv": d["group_irv"],
+            "group_due_at": (_triage.from_ns(d["group_due_ns"], clk["start_dt"].tzinfo)
+                             if d["group_due_ns"] is not None else None),
+            # VER-TFR-EVU: null when evaluated in time; otherwise why not.
+            "evaluation_late": d["evaluation_late"],
+            "evaluation": _evaluation.evaluation_record(
+                {"internet_reachable": irv, "irv_basis": d["irv_basis"], "likely_exploitable": lev,
+                 "lev_basis": d["lev_basis"]}, f,
+                cid=cid, ctype=inv["types"].get(cid), metrics=parse_vector(f.get("cvss_vector")),
+                classification=f.get("_classification"), auto=_evaluation.automatable(f, dec),
+                expl=_evaluation.exploitation(f, is_kev, incidents, now.isoformat()),
+                proximate=None, prevalence=None, epss=epss_used, is_kev=is_kev),
         })
+        report_findings[-1]["public_disclosure"] = _evaluation.disclosure(report_findings[-1])
         # Histogram and blocking counts reflect genuinely-open findings only;
         # suppressed findings are summarized via the risk-accepted/FP counts.
         if not is_suppressed:
@@ -2111,6 +2342,8 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "tool_id": s.get("tool_id"),
             "title": s.get("title", ""),
             "resource": s.get("resource", ""),
+            **({"affected_resources": _redact.withhold_iam_users(s["affected_resources"])}
+               if s.get("affected_resources") else {}),
             "first_detected": s_clk["first_detected"],
             "first_evaluated": s_clk["first_evaluated"],
             "completed_evaluation": now.isoformat(),
@@ -2127,6 +2360,11 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
             "explanation": s.get("explanation", ""),
         })
 
+    # VER-EVA-GRV/EFA: groups, prevalence and proximate findings are read across
+    # every finding; then each finding's public form follows its disclosure
+    # determination (VER-RPT-NID).
+    groups = _evaluation.attach_groups(report_findings, len(inv.get("classes") or {}))
+    report_findings = [_evaluation.redact(r) for r in report_findings]
     cve_findings = consolidate_by_cve(report_findings, risk_accepted_records)
     summary["unique_cves"] = len(cve_findings)
     summary["unique_cves_open"] = sum(1 for c in cve_findings if "open" in c["dispositions"])
@@ -2144,6 +2382,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         "impact_level": _profile["impact_level"],
         "summary": summary,
         "findings": report_findings,
+        "groups": groups,
         "cve_findings": cve_findings,
         "risk_accepted": risk_accepted_records,
         "rules_reference": {
@@ -2236,6 +2475,8 @@ def main():
     parser.add_argument("--grype", default=None, help="Grype SCA scan output (grype -o json)")
     parser.add_argument("--zap", default=None, help="OWASP ZAP JSON report (committed monthly DAST scan)")
     parser.add_argument("--zap-max-age-days", type=int, default=14, help="Fail the build if the ZAP report is older than this or missing; default 14 tracks the VDR-TFR-PDD Class C drift-detection cadence (0 disables)")
+    parser.add_argument("--zap-api", default=None, help="Authenticated ZAP API scan report of the Silk Reeling API (scripts/_zap_api.py); presence and age are the detection gate's (detection.zap-api)")
+    parser.add_argument("--codeql", default=None, help="CodeQL code-scanning alerts and analyses (scripts/_codeql.py); completeness and age are the detection gate's (detection.codeql)")
     parser.add_argument("--kev", default=None, help="CISA KEV catalog JSON")
     parser.add_argument("--conformance", default=None, help="Signed conformance results (scripts/build-conformance.py): the report names their profile version and sha256 (REQ-GOV-2). Given but missing or invalid: the build fails.")
     parser.add_argument("--detection", default=None, help="The detection gate's summary (scripts/detection-gate.py --output): recorded in the methodology so the report says what its inputs were and how old.")
@@ -2248,6 +2489,7 @@ def main():
     parser.add_argument("--epss", default=None, help="EPSS scores (FIRST epss_scores-current.csv, optionally gzipped, or JSON). Enables the EPSS likely-exploitable union (EPSS >= threshold OR active); without it, LEV falls back to the severity proxy.")
     parser.add_argument("--checkov-yaml", default=".checkov.yaml", help="Path to .checkov.yaml whose skip-check list defines suppressions (default: .checkov.yaml in CWD)")
     parser.add_argument("--previous-vdr", default=None, help="Path to previous VDR report; preserves first_detected timestamps across builds for SLA-clock enforcement.")
+    parser.add_argument("--failed-runs", default=None, help="Failed runs of the pipeline (gh run list --status failure --json workflowName,createdAt,updatedAt,event,headBranch): each stopped run on main since the previous report is listed in process_failures (VDR-CSO-FAV). Given but unreadable: the build fails.")
     parser.add_argument("--output", default="vdr-report.json", help="Output report path")
     parser.add_argument("--md-output", default="vdr-report.md", help="Human-readable VDR rendering path (VER-TFR-MHR); empty to skip")
     parser.add_argument("--ksi-signal", default="ksi-signal.json", help="Canonical inventory; its signal_id binds this VDR to one inventory (reconciliation invariant e)")
@@ -2280,6 +2522,7 @@ def main():
     findings.extend(ingest_tfsec(args.tfsec))
     findings.extend(ingest_dependabot(args.dependabot))
     findings.extend(ingest_grype(args.grype))
+    findings.extend(_codeql.ingest_codeql(args.codeql))
 
     # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
     # a MISSING report only warns (DAST coverage absent until the first scan is
@@ -2310,6 +2553,8 @@ def main():
                         return 1
                     _gates.record_event(gates, "detection.zap.stale", stale)
 
+    findings.extend(_zap_api.ingest_zap_api(args.zap_api, ingest_zap, load_zap_allowlist()))
+
     findings = dedupe_findings(findings)
     kev_cves = ingest_kev(args.kev)
     epss_scores = ingest_epss(args.epss)
@@ -2328,15 +2573,59 @@ def main():
 
     check_vectors = load_check_vectors(args.check_vectors)
     lev_overrides = load_lev_overrides(args.lev_overrides)
-    report, blocking = build_report(findings, suppressions, kev_cves, ledger,
-                                    index=classification_index, config=pain_config,
-                                    epss_scores=epss_scores,
-                                    disposition_register=disposition_register,
-                                    check_vectors=check_vectors,
-                                    lev_overrides=lev_overrides,
-                                    inventory=load_inventory(args.ksi_signal),
-                                    mitigations=load_mitigations(args.mitigations),
-                                    runtime=load_runtime_signal(args.runtime_signal, args.runtime_pubkey))
+    runtime = load_runtime_signal(args.runtime_signal, args.runtime_pubkey)
+    inventory = load_inventory(args.ksi_signal)
+    mitigations = load_mitigations(args.mitigations)
+
+    def _build(fs):
+        return build_report(fs, suppressions, kev_cves, ledger,
+                            index=classification_index, config=pain_config,
+                            epss_scores=epss_scores,
+                            disposition_register=disposition_register,
+                            check_vectors=check_vectors,
+                            lev_overrides=lev_overrides,
+                            inventory=inventory, mitigations=mitigations, runtime=runtime)
+
+    # VDR-CSO-FAV: a detect-and-recover failure recorded earlier in this run,
+    # or a finding still on a default after the evaluation window, is itself a
+    # finding. The second is known only once the findings are decided, so the
+    # report is decided again with them.
+    events_path = os.environ.get(_gates.EVENTS_ENV)
+    run_events = _gates.read_events(events_path) if events_path else []
+    # VDR-TFR-PCD: every inventory component reached by a detection technique
+    # within the month; a component none reached is a recorded gap.
+    detection_doc = json.loads(Path(args.detection).read_text()) if args.detection else None
+    coverage = _evaluation.coverage(inventory["components"], detection_doc, dast_summary(args.zap),
+                                    datetime.now(timezone.utc))
+    if coverage["uncovered"] and detection_doc is not None:
+        run_events.append(_gates.record_event(
+            gates, "vdr.coverage", f"no detection in {coverage['window_days']} days: "
+                                   f"{', '.join(coverage['uncovered'][:10])}"))
+    report, blocking = _build(findings + _evaluation.process_findings(run_events, []))
+    # VER-EVA-EIR: a finding that resolves to no component was rated at the
+    # fail-safe, not evaluated; that is recorded until it resolves.
+    # (Without an inventory, as in unit fixtures, nothing resolves and nothing is recorded.)
+    if report["summary"].get("unresolved_components") and inventory["components"]:
+        unresolved = sorted(f["tracking_id"] for f in report["findings"]
+                            if f.get("unresolved_component") and f.get("source") != "process")
+        run_events.append(_gates.record_event(
+            gates, "vdr.unresolved-component",
+            f"{len(unresolved)} finding(s) resolve to no inventory component: {', '.join(unresolved[:5])}"))
+    process = _evaluation.process_findings(run_events, report["findings"])
+    if {p["tracking_id"] for p in process} - {f["tracking_id"] for f in report["findings"]}:
+        report, blocking = _build(findings + process)
+    report["coverage"] = coverage
+    # Stopped runs of the pipeline since the previous report (block-mode
+    # failures): each is listed with when it failed. Given but unreadable fails.
+    if args.failed_runs:
+        try:
+            runs = json.loads(Path(args.failed_runs).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"::error::--failed-runs {args.failed_runs}: unreadable ({exc.__class__.__name__}) "
+                             "(fail-closed)") from exc
+        since = (json.loads(Path(args.previous_vdr).read_text()).get("emitted_at")
+                 if args.previous_vdr and Path(args.previous_vdr).is_file() else None)
+        report["process_failures"] = _evaluation.failed_runs(runs, since)
     report["ksi_signal_id"] = ksi_signal_id
     report["false_positives"] = false_positives
     # Name the inventory component each finding affects, so the trust center can
@@ -2376,6 +2665,13 @@ def main():
         "fedramp_rules": rules_pin(),
         "reference": pain_config.get("method_reference", ""),
         "gates": _gates.published_view(gates),
+        # VER-EVA-EFA: what each factor in a finding's evaluation record means.
+        "evaluation_factors": _evaluation.FACTORS,
+        "process_failures": ("VDR-CSO-FAV: a detect-and-recover check that failed this run, or a finding still "
+                             "on a default after the VER-TFR-EVU window, is a finding with source 'process' "
+                             f"(severity proxy {_evaluation.PROCESS_SEVERITY}); it is remediated when the check "
+                             "passes. A block-mode failure stops the run; each stopped run is listed in "
+                             "process_failures of the next report."),
     }
 
     # Apply each blocking finding's governed mode before writing, so a
@@ -2394,10 +2690,16 @@ def main():
     # REQ-GOV-2: the profile this report conforms to, and the results of that
     # profile's conformance tests it was built under.
     report["methodology"]["profile"] = load_conformance(args.conformance) if args.conformance else None
+    # VER-RPT-PER: the runs this report saw that the detection summary does not
+    # list: the runtime verification (its signed signal, verified above) and the
+    # DAST scan. Facts only; the CR26 period reports summarize them.
+    report["methodology"]["runtime_verification"] = runtime_verification_summary(runtime)
+    report["methodology"]["dast"] = dast_summary(args.zap)
     # G7: what each detection input was when this report was built (T52).
     report["methodology"]["detection"] = (json.loads(Path(args.detection).read_text())
                                           if args.detection else None)
 
+    report = _offering.stamp_fedramp_id(report)  # CDS-CSO-FID
     output_path = Path(args.output)
     output_path.write_text(json.dumps(report, indent=2, sort_keys=False))
     print(f"vdr-report.json: {report['summary']['total_findings']} findings, {report['summary']['blocking']} blocking, {report['summary']['risk_accepted']} risk-accepted")

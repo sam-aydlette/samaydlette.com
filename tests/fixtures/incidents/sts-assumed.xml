@@ -1,0 +1,9 @@
+<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+  <AssumeRoleWithWebIdentityResult>
+    <AssumedRoleUser>
+      <Arn>arn:aws:sts::000000000000:assumed-role/github-actions-incident-reports-oidc/deploy-proves-incident-publisher</Arn>
+      <AssumedRoleId>AROAEXAMPLE:deploy-proves-incident-publisher</AssumedRoleId>
+    </AssumedRoleUser>
+    <Credentials><AccessKeyId>EXAMPLE</AccessKeyId><SecretAccessKey>EXAMPLE</SecretAccessKey><SessionToken>EXAMPLE</SessionToken></Credentials>
+  </AssumeRoleWithWebIdentityResult>
+</AssumeRoleWithWebIdentityResponse>

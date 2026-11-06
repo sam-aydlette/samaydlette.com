@@ -193,7 +193,7 @@ def test_the_system_and_fedramp_addresses_are_allowed(applicable, resolve):
     doc = copy.deepcopy(_committed())
     for r in doc["records"]:
         if r["frr_id"] == "AFC-CSO-ACK":
-            r["gap"] = "Acknowledge mail from x@fedramp.gov and x@gsa.gov at fedramp-security@samaydlette.com."
+            r["implementation"] = "Acknowledge mail from x@fedramp.gov and x@gsa.gov at fedramp-security@samaydlette.com."
     _frr.validate(doc, applicable, resolve)
 
 
@@ -267,6 +267,7 @@ def test_the_summary_counts_simulated_counterparties(applicable, resolve):
                     simulated={"counterparty": "assessor", "how": "A plainly fictional assessor."})
     _frr.validate(doc, applicable, resolve)
     before = _frr.summary(_committed(), applicable)["simulated"]
+    assert "simulated" not in next(r for r in _committed()["records"] if r["frr_id"] == "VDR-CSO-MSP")
     assert _frr.summary(doc, applicable)["simulated"] == {**before, "assessor": before.get("assessor", 0) + 1}
 
 

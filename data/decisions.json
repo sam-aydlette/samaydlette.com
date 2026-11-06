@@ -207,7 +207,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-008",
@@ -268,7 +269,8 @@
         "identifier": "CKV_AWS_86; CKV_AWS_310",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-010",
@@ -286,7 +288,9 @@
         ],
         "vuln_ids": [],
         "resources": [
-          "aws-lambda::compliance-monitor"
+          "aws::function::opa_compliance",
+          "aws::function::evidence_watchdog",
+          "aws::function::silk_reeling"
         ]
       },
       "decided_by": "Sam Aydlette",
@@ -297,7 +301,8 @@
         "identifier": "CKV_AWS_117",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "original_detection_date": "2025-06-14"
     },
     {
       "id": "DEC-011",
@@ -1501,6 +1506,139 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-180",
+      "title": "Governed CVSS vectors for the configuration checks in infrastructure/schemas/check-vectors.json",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
+      "controls": [
+        "ra-3",
+        "ra-5"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "infrastructure/schemas/check-vectors.json"
+        ]
+      }
+    },
+    {
+      "id": "DEC-181",
+      "title": "Exploitation assessment of detected vulnerabilities (VDR-CSO-RES)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+      "controls": [
+        "ra-5",
+        "si-4",
+        "ir-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-182",
+      "title": "Responsible disclosure of vulnerability information (VER-RPT-NID, VER-RPT-RPD)",
+      "status": "in-force",
+      "disposition": "operational-requirement",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "justification": "AI-drafted for the operator's confirmation. The provider discloses its vulnerability reports publicly (VER-RPT-RPD) and determines per finding that doing so will not likely lead to exploitation, recorded as public_disclosure on each finding. An open finding that is internet-reachable, likely exploitable and rated N3 or above is published in summary until it is remediated, fully mitigated or dispositioned: tracking ID, ratings, reachability, exploitability, dates, deadline and status stay public, so any party can make a risk-based decision; the description, observed locations, fixed versions and supplementary detail are withheld from the public artifacts (VDR report, detail report, accepted-vulnerability report and their renderings). Every other finding is disclosed in full: a dispositioned or lower-rated finding, or configuration already readable in the public source repository, gives an attacker nothing it would not otherwise have. Necessary parties (FedRAMP, agency customers) receive the withheld detail from the provider on request through the security contact in /.well-known/security.txt.",
+      "controls": [
+        "ra-5",
+        "si-5",
+        "ir-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      }
+    },
+    {
+      "id": "DEC-190",
+      "title": "Quarterly verification and validation of non-machine resources, 2026-Q4 (VDR-TFR-NMV)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that on 2026-11-05 he verified and validated each non-machine resource listed in data/non-machine-resources.json against current practice, as each entry's 'verifies' states: the family policies, the runbooks, the incident response and recovery procedures, the continuous monitoring plan, the rules of behavior, the operator role and training record, the supply chain and significant change procedures, the privacy threshold analysis, this decision register and the governance domain registry. This replaces the overdue 2026-Q2 review (2026-05-08, next due 2026-08-08) in docs/security-review.md. Anything found out of date is recorded as its own decision or fixed in the resource. scripts/check-non-machine-vv.py fails the deploy when any entry is older than 92 days; the next verification is due by 2027-02-05 and is recorded as a new decision record.",
+      "controls": [
+        "ca-7",
+        "pl-2",
+        "pm-31"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "data/non-machine-resources.json"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)"
+      }
+    },
+    {
+      "id": "DEC-191",
+      "title": "KSI-CED-RAT has one automated method, not two: the second is accepted as not built (FRC-CSX-VVK)",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. Extends the pattern of DEC-150. FRC-CSX-VVK asks Class C providers for at least two automated methods to verify and validate each KSI. KSI-CED-RAT (reviewing all training) has one: on every SDR build, scripts/build-sdr.py checks that the operator's training attestation (DEC-192) exists, is in force and was decided under 12 months ago. A second automated method is not built. Training here is a people-run process for a sole operator: no machine-based resource carries it, so there is nothing for the plan gate or the runtime re-validation to evaluate, and an automated check of training effectiveness (a learning-management system with tracked completions and assessments) would be a purchase and a third-party interconnection out of proportion to a one-person proof of concept. Residual risk: a lapse in training, or training that stops being effective, is caught only by the annual attestation and the quarterly non-machine review (DEC-190), not by a machine check. Why it is accepted: the system has one operator, who holds every role; the attestation's age is checked automatically and the build counts the KSI at one method, publishing this acceptance beside the count; the SDR states the shortfall plainly. Every other KSI has at least two automated methods, and the SDR build fails the package maintenance run when any KSI is short without an accepted record like this one.",
+      "controls": [
+        "at-2",
+        "at-3",
+        "ca-2"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "ksi::KSI-CED-RAT"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
+    },
+    {
+      "id": "DEC-192",
+      "title": "The operator completes and reviews his security training each year (KSI-CED-RAT attestation)",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that he completes the training docs/training-log.md requires (general security, the privileged roles he holds, secure software delivery, and incident response and recovery), reviews whether it is effective at least once a year, and records each review as a dated entry in docs/training-log.md. This record is the attestation the Security Decision Record checks automatically for KSI-CED-RAT: it must be in force and decided under 12 months ago, so it is renewed with a new record each year. The quarterly non-machine verification (DEC-190, data/non-machine-resources.json NMR-REC-TRAINING) checks the training log itself.",
+      "controls": [
+        "at-2",
+        "at-3",
+        "at-4"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "docs/training-log.md"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
     }
   ]
 }

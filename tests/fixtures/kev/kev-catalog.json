@@ -1,0 +1,18 @@
+{
+  "catalogVersion": "fixture",
+  "dateReleased": "2026-11-04T20:00:00Z",
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2099-1111",
+      "vulnerabilityName": "Fixture known-exploited flaw",
+      "dateAdded": "2026-10-01",
+      "dueDate": "2026-10-22"
+    },
+    {
+      "cveID": "CVE-2099-2222",
+      "vulnerabilityName": "Another",
+      "dateAdded": "2026-10-15",
+      "dueDate": "2026-11-05"
+    }
+  ]
+}

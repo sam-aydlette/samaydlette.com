@@ -1,0 +1,16 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "note": "Known-bad: AdministratorAccess attached to a group"
+  },
+  "resource": {
+    "type": "aws_iam_group",
+    "name": "operators",
+    "values": {
+      "attached_policy_arns": [
+        "arn:aws:iam::aws:policy/AdministratorAccess"
+      ],
+      "inline_policies": []
+    }
+  }
+}

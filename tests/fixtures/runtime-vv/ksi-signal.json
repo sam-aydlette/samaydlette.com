@@ -1,0 +1,29 @@
+{
+ "_note": "Known-bad for reconcile invariant (m): a minimal inventory whose runtime signal (runtime-signal-bad.json) leaves machine components unvalidated or unassessed, plus a component type nobody classified.",
+ "components": [
+  {
+   "component_id": "aws::iam_role::deploy",
+   "type": "iam_role"
+  },
+  {
+   "component_id": "aws::kms_key::at_rest",
+   "type": "kms_key"
+  },
+  {
+   "component_id": "aws::function::app",
+   "type": "function"
+  },
+  {
+   "component_id": "aws::object_store::site",
+   "type": "object_store"
+  },
+  {
+   "component_id": "npm::left-pad@1.3.0",
+   "type": "npm_package"
+  },
+  {
+   "component_id": "aws::quantum_widget::x",
+   "type": "quantum_widget"
+  }
+ ]
+}

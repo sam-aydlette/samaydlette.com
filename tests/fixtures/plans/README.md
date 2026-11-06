@@ -23,6 +23,14 @@ ARNs is `123456789012`, the AWS documentation placeholder.
 | `data-source-website-bucket.json` | Production shape: bucket is a data source, only sub-resources planned |
 | `s3-computed-bucket-name.json` | Bucket name unknown until apply; join only possible via `configuration` references |
 | `delete-only.json` | Non-compliant resource being destroyed (must not gate) |
+| `service-stack-compliant.json` | Every service type the runtime emitter re-validates (IAM role + inline policy, Cognito, KMS, log group, API stage + routes, Lambda, SNS, SQS, alarm, schedule, CloudTrail), compliant |
+| `service-stack-computed-key.json` | As above with a log group KMS key unknown until apply: deferred to the runtime check, not failed |
+| `iam-admin-wildcard.json` | Inline role policy allowing `*` on `*` |
+| `iam-oidc-trust-unscoped.json` | GitHub OIDC trust with no subject condition |
+| `cognito-mfa-optional.json` | User pool MFA `OPTIONAL` |
+| `kms-rotation-disabled.json` | Symmetric customer key without rotation |
+| `log-group-unencrypted.json` | Log group with no customer key, known at plan time |
+| `apigw-route-unauthorized.json` | `/api` route without an authorizer |
 | `empty.json`, `garbage.json` | Malformed input; must yield an explicit `input_error`, never a silent pass |
 
 `tests/fixtures/resources/` holds the same resources flattened into the

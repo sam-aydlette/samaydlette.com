@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "incidents.schema.json",
+  "title": "Incident register",
+  "description": "data/incidents.json: every incident, its FedRAMP reportability evaluation (IEC-CSO-EFR), its Incident Rating estimates (IEC-CSO-EFI; until one exists the IEC-CSO-DPR default applies) and the Initial, Ongoing and Final reports issued (IEC-CSO-IIR/OIR/FIR). scripts/_incidents.py enforces these rules at build time without a jsonschema dependency, plus the ones a schema cannot state: IDs are unique; times are in order (started, detected, evaluated, each report); an estimate's rating is the IEC-CSO-EFI rating for its customer effect and agency count; the first report is Initial and sets the description, and a Final report is last and follows recovery; a vulnerability basis is an adopted rule and names a finding; nothing is dated after now; and no account ID or outside email address appears.",
+  "type": "object",
+  "required": ["schema", "policy", "incidents"],
+  "properties": {
+    "$comment": {"type": "string"},
+    "schema": {"const": "incidents/1"},
+    "policy": {"$ref": "#/$defs/policy"},
+    "incidents": {"type": "array", "items": {"$ref": "#/$defs/incident"}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "text": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "time": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$"},
+    "texts": {"type": "array", "items": {"$ref": "#/$defs/text"}, "uniqueItems": true},
+    "policy": {
+      "type": "object",
+      "required": ["federal_incident_coordinator", "notification", "notification_text", "adopted_vulnerability_rules",
+                   "federal_customer_data", "decided_by", "decided_on", "review_by"],
+      "properties": {
+        "federal_incident_coordinator": {"$ref": "#/$defs/text", "description": "Who coordinates federal incident response and how to reach them (IEC-CSO-IIR item 1)."},
+        "notification": {"enum": ["published-only"], "description": "How reports reach all affected parties. Only publication under /.well-known/ is built; sending is the operator's decision."},
+        "notification_text": {"$ref": "#/$defs/text"},
+        "adopted_vulnerability_rules": {"type": "array", "items": {"enum": ["VER-TFR-IRI", "VER-TFR-NRI"]}, "uniqueItems": true, "description": "Which of VER-TFR-IRI (SHOULD) and VER-TFR-NRI (MAY) the operator applies."},
+        "federal_customer_data": {"$ref": "#/$defs/text", "description": "What would be federal customer data (FRD-FCD) for this offering."},
+        "decided_by": {"$ref": "#/$defs/text"},
+        "decided_on": {"$ref": "#/$defs/date"},
+        "review_by": {"$ref": "#/$defs/date"}
+      },
+      "additionalProperties": false
+    },
+    "incident": {
+      "type": "object",
+      "required": ["id", "title", "exercise", "started_at", "detected_at", "detection_source", "evaluation", "estimates", "reports"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^INC-\\d{4}-\\d{3}$"},
+        "title": {"$ref": "#/$defs/text"},
+        "exercise": {"type": "boolean", "description": "true for a simulated incident run to exercise the process."},
+        "started_at": {"$ref": "#/$defs/time"},
+        "detected_at": {"$ref": "#/$defs/time"},
+        "detection_source": {"$ref": "#/$defs/text"},
+        "evaluation": {
+          "type": "object",
+          "required": ["evaluated_at", "reportable", "basis", "reason", "federal_customer_data_considered"],
+          "properties": {
+            "evaluated_at": {"$ref": "#/$defs/time"},
+            "reportable": {"type": "boolean"},
+            "basis": {"enum": ["IEC-CSO-EFR", "VER-TFR-IRI", "VER-TFR-NRI"]},
+            "reason": {"$ref": "#/$defs/text"},
+            "federal_customer_data_considered": {"$ref": "#/$defs/text"}
+          },
+          "additionalProperties": false
+        },
+        "findings": {"$ref": "#/$defs/texts", "description": "VDR tracking IDs or CVE IDs the incident is about."},
+        "estimates": {"type": "array", "items": {
+          "type": "object",
+          "required": ["estimated_at", "rating", "customer_effect", "agencies", "reason"],
+          "properties": {
+            "estimated_at": {"$ref": "#/$defs/time"},
+            "rating": {"type": "integer", "minimum": 1, "maximum": 5},
+            "customer_effect": {"enum": ["minimal", "narrow", "disruptive", "debilitating"]},
+            "agencies": {"enum": ["single", "multiple"]},
+            "reason": {"$ref": "#/$defs/text"}
+          },
+          "additionalProperties": false
+        }},
+        "reports": {"type": "array", "items": {
+          "type": "object",
+          "required": ["type", "at"],
+          "properties": {
+            "type": {"enum": ["Initial", "Ongoing", "Final"]},
+            "at": {"$ref": "#/$defs/time"},
+            "set": {
+              "type": "object",
+              "minProperties": 1,
+              "properties": {
+                "description": {"$ref": "#/$defs/text"},
+                "functional_impact": {"$ref": "#/$defs/text"},
+                "recovery_plan": {"$ref": "#/$defs/text"},
+                "observed_activity": {"$ref": "#/$defs/text"},
+                "root_cause": {"$ref": "#/$defs/text"},
+                "response_and_recovery_activities": {"$ref": "#/$defs/text"},
+                "affected_agencies": {"$ref": "#/$defs/texts"},
+                "indicators_of_compromise": {"$ref": "#/$defs/texts"},
+                "related_cves": {"type": "array", "items": {"type": "string", "pattern": "^CVE-[0-9]{4}-[0-9]{4,}$"}, "uniqueItems": true},
+                "milestones": {"type": "array", "items": {
+                  "type": "object", "required": ["at", "description"],
+                  "properties": {"at": {"$ref": "#/$defs/time"}, "description": {"$ref": "#/$defs/text"}},
+                  "additionalProperties": false
+                }}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }},
+        "resolved_at": {"$ref": "#/$defs/time"},
+        "recovery_complete_at": {"$ref": "#/$defs/time"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

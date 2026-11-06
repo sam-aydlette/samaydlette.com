@@ -34,6 +34,9 @@ from collections import Counter
 from datetime import date, datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _offering  # noqa: E402
+
 MONTHS_KEPT = 13
 MIN_MONTHS_KEPT = 6
 PREFIXES = ("/.well-known/", "/trust/")
@@ -192,6 +195,7 @@ def main(argv=None):
     lost = sorted(set(newest) - {e["month"] for e in doc["months"]})
     if lost:
         _fail(f"would drop month(s) {lost} younger than {MIN_MONTHS_KEPT} months")
+    doc = _offering.stamp_fedramp_id(doc)  # CDS-CSO-FID
     Path(a.output).write_text(json.dumps(doc, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(doc) + "\n")

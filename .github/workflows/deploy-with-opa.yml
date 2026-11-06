@@ -257,6 +257,24 @@ jobs:
     - name: Exception register expiry check
       run: python3 scripts/check-exceptions.py
 
+    # AFC-CSO-NOC: the FedRAMP Security Inbox contact (data/cds/offering.json)
+    # cannot change without a history entry recording that FedRAMP was
+    # notified. Compared with the merge base on a pull request and with the
+    # previous commit on a push, so the history is also append-only.
+    - name: FedRAMP Security Inbox change notice (AFC-CSO-NOC)
+      env:
+        BASE_REF: ${{ github.event_name == 'pull_request' && github.base_ref || '' }}
+        BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
+      run: |
+        base=""
+        if [ -n "$BASE_REF" ] && git fetch --no-tags --depth=1 origin "$BASE_REF"; then
+          git show FETCH_HEAD:data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        elif [ -n "$BEFORE_SHA" ] && git fetch --no-tags --depth=1 origin "$BEFORE_SHA"; then
+          git show "$BEFORE_SHA":data/cds/offering.json > fsi-base.json 2>/dev/null && base="--base fsi-base.json"
+        fi
+        # shellcheck disable=SC2086  # $base is an optional flag pair
+        python3 scripts/check-fsi-notice.py $base
+
     # Known Go-vs-Wasm builtin divergences (%q, %v-on-sets, host time) are
     # banned at lint time; the parity test catches what the corpus exercises,
     # this catches the rest before it exists. It also requires every sprintf
@@ -596,10 +614,11 @@ jobs:
       # signal via the GitHub Actions OIDC provider. Without it, the Sigstore
       # signing step cannot obtain an OIDC token and `cosign sign-blob` fails.
       id-token: write
-      # actions: read lets GITHUB_TOKEN download the weekly ZAP DAST artifact.
-      # Dependabot alerts are read with the DEPENDABOT_ALERTS_TOKEN secret:
-      # GITHUB_TOKEN cannot read them.
+      # actions: read lets GITHUB_TOKEN download the ZAP DAST artifacts, and
+      # security-events: read the CodeQL code-scanning alerts. Dependabot alerts
+      # are read with the DEPENDABOT_ALERTS_TOKEN secret: GITHUB_TOKEN cannot.
       actions: read
+      security-events: read
     # Detect-and-recover gate events (infrastructure/schemas/gate-modes.json) are
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
@@ -630,6 +649,18 @@ jobs:
         PACKAGE_MAINTENANCE_ROLE_ARN: ${{ vars.AWS_PACKAGE_MAINTENANCE_ROLE_ARN }}
         GITHUB_TOKEN: ${{ github.token }}
       run: python3 scripts/check-package-maintainer.py
+    # The incident report records (IEC-CSO-IIR/OIR/FIR/AIR) describe the system
+    # after a successful deploy, which includes the unattended publisher in
+    # .github/workflows/incident-reports.yml. Fail before anything is applied if
+    # its prerequisites are missing: the role variable set and naming the
+    # bootstrap role, and the incident-reports environment main-only (checked
+    # when the job token can read it; said so when it cannot). The
+    # incident-publisher job below then proves the role publishes.
+    - name: Incident report publisher preflight
+      env:
+        INCIDENT_REPORTS_ROLE_ARN: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}
+        GITHUB_TOKEN: ${{ github.token }}
+      run: python3 scripts/check-incident-publisher.py
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
@@ -1179,10 +1210,27 @@ jobs:
     # DETECTION INPUTS AND G7 — before anything is applied
     # -------------------------------------------------------------------------
     # The previous VDR, Dependabot alerts, the CISA KEV catalog, FIRST EPSS and
-    # the latest weekly DAST report, fetched here (not after apply) so that a
+    # the latest DAST reports and CodeQL alerts, fetched here (not after apply) so that a
     # detection failure stops the deploy before it mutates anything (T52: G7
     # blocks every team). A failed fetch leaves <file>.error, never an empty
     # stand-in. The SAST files come from the security-scan job, Grype from above.
+    # The authenticated DAST of the Silk Reeling API (zap-dast.yml) signs in with
+    # these; without them the API scan fails and, 72 hours later, so does every
+    # VDR build. Stop here instead, before anything is applied or published.
+    - name: Require the DAST scanner credentials
+      env:
+        SILK_DAST_USERNAME: ${{ secrets.SILK_DAST_USERNAME }}
+        SILK_DAST_PASSWORD: ${{ secrets.SILK_DAST_PASSWORD }}
+        SILK_DAST_TOTP_SECRET: ${{ secrets.SILK_DAST_TOTP_SECRET }}
+        SILK_DAST_USER_POOL_ID: ${{ secrets.SILK_DAST_USER_POOL_ID }}
+      run: |
+        missing=""
+        for k in SILK_DAST_USERNAME SILK_DAST_PASSWORD SILK_DAST_TOTP_SECRET SILK_DAST_USER_POOL_ID; do
+          [ -n "${!k:-}" ] || missing="$missing $k"
+        done
+        [ -z "$missing" ] || { echo "::error::repository secret(s) not set:$missing (docs/runbooks/dast-scanner-user.md)"; exit 1; }
+        echo "DAST scanner credentials present."
+
     - name: Fetch detection feeds
       working-directory: infrastructure
       env:
@@ -1199,7 +1247,18 @@ jobs:
           --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
           --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
           --checkov checkov-results.sarif --tfsec tfsec-results.json \
+          --codeql codeql-alerts.json --zap-api zap-api-report.json \
           --output detection.json
+
+    # VDR-CSO-AKE: nothing with a known exploited vulnerability is activated.
+    # Runs before the plan, the apply and the website sync (G1 in the VDR build
+    # runs after them).
+    - name: KEV gate before apply (VDR-CSO-AKE)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/kev-gate.py --kev kev-catalog.json \
+          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
+          --dependabot dependabot-alerts.json
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
@@ -1447,20 +1506,62 @@ jobs:
     # fetched and checked by the detection gate (G7) before apply.
     # The signed runtime signal is the only live read a mitigation can cite
     # (rule 1: a mitigation verified by a live read makes a finding fully
-    # mitigated). The builder verifies its signature against
-    # infrastructure/keys/runtime-signing-key.json and its age; anything short
-    # of verified and fresh voids every mitigation that needs a live read, so a
-    # failed fetch can only keep findings open, never close them.
-    - name: Fetch the signed runtime signal (live read for mitigations)
+    # mitigated), and the second automated method the SDR counts per KSI
+    # (FRC-CSX-VVK). It must re-validate THIS deploy's system against THIS
+    # deploy's inventory: the emitter is invoked synchronously, after apply,
+    # with the signed inventory staged under deploy-staging/<sha>/ (redaction
+    # gate first: the staged copy is in the website bucket). The emitter writes
+    # its signed signal next to it; the deploy reads it back, deletes the
+    # staging objects, and the VDR and SDR builders verify its signature
+    # (infrastructure/keys/runtime-signing-key.json), its age, and (the SDR)
+    # that it re-validated this commit. Any failure fails the deploy: the SDR
+    # step requires two automated methods per KSI. The deploy role's
+    # lambda:InvokeFunction and S3 object writes are existing grants (the
+    # post-publish compliance check and the site sync use them).
+    - name: Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)
       working-directory: infrastructure
+      env:
+        COMMIT: ${{ github.sha }}
       run: |
-        if curl -sfL --retry 3 --retry-delay 2 -o ksi-signal-runtime.json \
-            "https://samaydlette.com/.well-known/ksi-signal-runtime.json"; then
-          echo "Runtime signal fetched: emitted $(jq -r '.emitted_at' ksi-signal-runtime.json 2>/dev/null || echo 'unreadable; the builder will reject it')"
-        else
-          echo "::warning::Could not fetch the runtime signal; mitigations that need a live read are void this run."
-          rm -f ksi-signal-runtime.json
+        set -euo pipefail
+        python3 ../scripts/check-published-redaction.py ksi-signal.json
+        BUCKET=$(terraform output -raw s3_bucket_name)
+        FN=$(terraform output -raw lambda_function_name)
+        STAGE="deploy-staging/${COMMIT}"
+        cleanup() { aws s3 rm "s3://${BUCKET}/${STAGE}/" --recursive --only-show-errors || true; }
+        trap cleanup EXIT
+        aws s3 cp ksi-signal.json "s3://${BUCKET}/${STAGE}/ksi-signal.json" \
+          --content-type application/json --cache-control no-store --only-show-errors
+        if ! aws lambda invoke --function-name "$FN" --cli-binary-format raw-in-base64-out --cli-read-timeout 300 \
+            --payload "{\"stage\":\"${COMMIT}\"}" runtime-invoke.json > runtime-invoke-meta.json; then
+          echo "::error::Could not invoke the runtime emitter. The deploy role needs lambda:InvokeFunction on the emitter (bootstrap)."
+          exit 1
         fi
+        if jq -e '.FunctionError' runtime-invoke-meta.json >/dev/null \
+            || [ "$(jq -r '.statusCode' runtime-invoke.json)" != "200" ]; then
+          echo "::error::The runtime emitter's staged run failed: $(jq -c '.body // .errorMessage' runtime-invoke.json)"
+          exit 1
+        fi
+        aws s3 cp "s3://${BUCKET}/${STAGE}/ksi-signal-runtime.json" ksi-signal-runtime.json --only-show-errors
+        GOT=$(jq -r '.provenance.source.commit // ""' ksi-signal-runtime.json)
+        if [ "$GOT" != "$COMMIT" ]; then
+          echo "::error::The staged runtime signal re-validated commit ${GOT:-none}, not ${COMMIT}"
+          exit 1
+        fi
+        echo "Runtime signal for ${COMMIT}: $(jq -c '.validations | group_by(.result) | map({(.[0].result): length}) | add' ksi-signal-runtime.json)"
+
+    # VDR-CSO-FAV: runs of the pipeline that a block-mode check stopped. The
+    # next report lists each one (no run IDs or URLs are kept). A failed query
+    # fails the step: no list cannot read as "no failures".
+    - name: Collect failed pipeline runs (VDR-CSO-FAV)
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        gh run list --repo "${{ github.repository }}" --branch main --status failure --limit 100 \
+          --json workflowName,createdAt,updatedAt,event,headBranch > failed-runs.json
+        jq length failed-runs.json
 
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
@@ -1475,11 +1576,15 @@ jobs:
           --dependabot dependabot-alerts.json \
           --grype grype.json \
           --zap zap-report.json \
+          --zap-max-age-days 3 \
+          --zap-api zap-api-report.json \
+          --codeql codeql-alerts.json \
           --kev kev-catalog.json \
           --epss epss-scores.csv.gz \
           --detection detection.json \
           --conformance conformance-results.json \
           --runtime-signal ksi-signal-runtime.json \
+          --failed-runs failed-runs.json \
           --output vdr-report.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
@@ -1564,6 +1669,70 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
+
+    # Incident reports (IEC-CSO-IIR/OIR/FIR) and the incident log, from the
+    # incident register and this build's VDR (VER-TFR-IRI/NRI triggers). The
+    # same builder runs unattended in incident-reports.yml on every change to
+    # the register; the deploy republishes them so a deploy never serves a log
+    # older than the register it was built from. Each report is validated
+    # against FedRAMP's schema before it is written. No clock check here: an
+    # overdue report must not block the deploy that may be the fix; the
+    # incident-reports workflow and the evidence watchdog alarm on it.
+    - name: Build incident reports (IIR, OIR, FIR)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/build-incident-report.py --incidents ../data/incidents.json --vdr vdr-report.json --out-dir .
+        # SIMULATED delivery (IEC-CSO-IIR/OIR/FIR/AIR): every listed report is
+        # read back, hash- and schema-checked and "delivered" to a simulated
+        # FedRAMP and agency recipient; nothing is sent. A failed delivery
+        # stops the deploy here, before the SDR is built or anything published.
+        python3 ../scripts/deliver-incident-reports.py --dir .
+        for f in incident-*.json; do
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done
+    # VDR-TFR-NMV: every non-machine resource (policies, procedures, plans, the
+    # operator role, records, registers) verified and validated within 92 days,
+    # each under an in-force decision record (data/non-machine-resources.json).
+    # The deploy stops otherwise, before anything is published; the status is
+    # published with the VDR, and its freshness window lapses with it.
+    - name: Non-machine verification and validation (VDR-TFR-NMV)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        python3 ../scripts/check-non-machine-vv.py --enforce --out vdr-non-machine-vv.json
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
+
+    # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
+    # in human-readable form, listing every kind of detection and response
+    # activity ("none this period" when nothing happened). The previous published
+    # report carries the month's earlier runs forward, read only if its signature
+    # verifies against this workflow or the other publisher.
+    - name: Build monthly VDR activity report (VER-TFR-MHR)
+      working-directory: infrastructure
+      env:
+        SITE: https://${{ vars.DOMAIN_NAME || 'samaydlette.com' }}/.well-known
+      run: |
+        set -euo pipefail
+        prev=()
+        if curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.json "$SITE/vdr-monthly.json"; then
+          curl -sfL --retry 3 --retry-delay 5 -o previous-vdr-monthly.bundle "$SITE/vdr-monthly.bundle"
+          ok=0
+          for identity in \
+              "https://github.com/${{ github.repository }}/.github/workflows/deploy-with-opa.yml@refs/heads/main" \
+              "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main"; do
+            if cosign verify-blob --bundle previous-vdr-monthly.bundle --certificate-identity "$identity" \
+                 --certificate-oidc-issuer https://token.actions.githubusercontent.com previous-vdr-monthly.json 2>/dev/null; then ok=1; break; fi
+          done
+          [ "$ok" -eq 1 ] || { echo "::error::previous vdr-monthly.json does not verify; refusing to carry it forward"; exit 1; }
+          prev=(--previous previous-vdr-monthly.json)
+        else
+          echo "No previous vdr-monthly.json published; the month starts with this build's runs."
+        fi
+        python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
+          --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
+          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
 
     # -------------------------------------------------------------------------
     # PROJECT THE CANONICAL INVENTORY INTO FEDRAMP IIW (APPENDIX M) SHAPE
@@ -1727,8 +1896,69 @@ jobs:
           --output security-settings.json --md-output security-settings.md
         cosign sign-blob --yes --new-bundle-format --bundle security-settings.bundle security-settings.json
 
+    # The IEC records claim an unattended publisher that assumes its own role.
+    # Prove the role can be assumed, from this job, before the SDR is built:
+    # if it cannot, the deploy stops here and nothing claiming it is published.
+    # The incident-publisher job after the deploy then runs the publisher itself.
+    - name: Incident report publisher role can be assumed
+      env:
+        INCIDENT_REPORTS_ROLE_ARN: ${{ vars.AWS_INCIDENT_REPORTS_ROLE_ARN }}
+      run: python3 scripts/check-incident-role.py
+
+    # SIMULATION. The FedRAMP Security Inbox is simulated for this proof of
+    # concept (operator's decision): nothing real is received or sent. This
+    # runs the inbox logic (scripts/_fsi.py) over committed synthetic messages
+    # and fails the deploy if any outcome differs from the expected one
+    # (AFC-CSO-INB/TFG/RCV/CRA/EMR/IMA/ACK, simulated).
+    - name: FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)
+      working-directory: infrastructure
+      run: |
+        python3 ../scripts/build-fsi-simulation.py \
+          --messages ../data/fsi-simulation/messages.json \
+          --offering ../data/cds/offering.json \
+          --output fedramp-inbox-simulation.json
+
+    # Significant Change Notifications (SCN-CSO-HIS/HRM/NOM/INF) and the
+    # append-only evaluation log (SCN-CSO-MAR). The builder fails if this build
+    # would drop or rewrite anything the previous published copies hold, so they
+    # are fetched first: a 404 means nothing has been published yet, any other
+    # failure stops the deploy rather than restarting the record.
+    - name: Build Significant Change Notifications and the evaluation log
+      working-directory: infrastructure
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        fetch() {
+          code=$(curl -sSL -o "$2" -w '%{http_code}' "https://samaydlette.com/.well-known/$1") \
+            || { echo "::error::cannot fetch the published $1"; exit 1; }
+          case "$code" in
+            200) ;;
+            404) rm -f "$2"; echo "$1 not published yet" ;;
+            *) echo "::error::fetching the published $1 returned HTTP $code"; exit 1 ;;
+          esac
+        }
+        fetch significant-change-notifications.json previous-scn-index.json
+        fetch scn-evaluations.json previous-scn-evaluations.json
+        python3 ../scripts/build-scn.py --previous-index previous-scn-index.json \
+          --previous-log previous-scn-evaluations.json --commit "$GITHUB_SHA"
+
+    # CDS-CSO-FRC: every FedRAMP Certification Report received is published
+    # unmodified (its sha256 is checked against the register) with the days
+    # from receipt to publication. FedRAMP is SIMULATED: the one report is a
+    # plainly fake stand-in. Nothing is received from or sent to FedRAMP.
+    - name: FedRAMP Certification Reports published unmodified (simulated FedRAMP)
+      working-directory: infrastructure
+      run: |
+        curl -sfL -o previous-fedramp-certification-reports.json \
+          "https://samaydlette.com/.well-known/fedramp-certification-reports.json" \
+          || echo '{}' > previous-fedramp-certification-reports.json
+        python3 ../scripts/publish-certification-reports.py --previous previous-fedramp-certification-reports.json --out .
+
     - name: Build Security Decision Record (SDR — 20x SSP replacement)
       working-directory: infrastructure
+      env:
+        VDR_SIGNER: https://github.com/${{ github.workflow_ref }}
+        COMMIT: ${{ github.sha }}
       run: |
         echo "Building the Security Decision Record (FedRAMP schema): every applicable rule, KSI and Moderate control..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
@@ -1737,7 +1967,13 @@ jobs:
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
-          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
+          --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
+          --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER" \
+          --runtime-commit "$COMMIT" --require-two-methods
+        # FRC-CSX-VVK: a KSI short of two automated methods without an in-force
+        # accepted decision (KSI-CED-RAT: DEC-191) fails the deploy here, before
+        # anything is published. The runtime method counts only for the signal
+        # the staged emitter run produced for this commit.
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json \
@@ -1753,18 +1989,6 @@ jobs:
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json \
           --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle
-
-    # CDS-CSO-FRC: every FedRAMP Certification Report received is published
-    # unmodified (its sha256 is checked against the register) with the days
-    # from receipt to publication. FedRAMP is SIMULATED: the one report is a
-    # plainly fake stand-in. Nothing is received from or sent to FedRAMP.
-    - name: FedRAMP Certification Reports published unmodified (simulated FedRAMP)
-      working-directory: infrastructure
-      run: |
-        curl -sfL -o previous-fedramp-certification-reports.json \
-          "https://samaydlette.com/.well-known/fedramp-certification-reports.json" \
-          || echo '{}' > previous-fedramp-certification-reports.json
-        python3 ../scripts/publish-certification-reports.py --previous previous-fedramp-certification-reports.json --out .
 
     # FRC-CSO-PKG: the package (CPO, SDR, OCR) is checked against its schemas
     # and the applicable rules, and "submitted" to a simulated FedRAMP intake: a
@@ -1861,6 +2085,8 @@ jobs:
       run: |
         echo "Signing ongoing-certification-report.json with cosign keyless..."
         cosign sign-blob --yes --new-bundle-format --bundle ongoing-certification-report.bundle ongoing-certification-report.json
+        echo "Signing fedramp-inbox-simulation.json (SIMULATION) with cosign keyless..."
+        cosign sign-blob --yes --new-bundle-format --bundle fedramp-inbox-simulation.bundle fedramp-inbox-simulation.json
 
     - name: Sign CDS certification-data artifacts
       working-directory: infrastructure
@@ -1873,6 +2099,10 @@ jobs:
         cosign sign-blob --yes --new-bundle-format --bundle fedramp-certification-reports.bundle fedramp-certification-reports.json
         cosign sign-blob --yes --new-bundle-format --bundle package-submission-log.bundle package-submission-log.json
         cosign sign-blob --yes --new-bundle-format --bundle access-summary.bundle access-summary.json
+        for a in significant-change-notifications scn-evaluations; do
+          cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
+        done
+        cosign sign-blob --yes --new-bundle-format --bundle significant-change-notifications.atom.bundle significant-change-notifications.atom
 
     # CDS-TRC-HMR / CDS-CSO-CBF / CDS-TRC-PAC: a complete human-readable view
     # of every JSON and CSV artifact this deploy publishes, each parsed back and
@@ -1931,9 +2161,12 @@ jobs:
         files="ksi-signal.json schemas/ksi-signal.schema.json vdr-report.json vdr-report.md vdr-trend.json iiw.csv"
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
-        files="$files ongoing-certification-report.json ongoing-certification-report.md"
+        files="$files vdr-non-machine-vv.json vdr-monthly.json vdr-monthly.md"
+        files="$files ongoing-certification-report.json ongoing-certification-report.md fedramp-inbox-simulation.json"
         for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do files="$files $a.json $a.md"; done
         for a in access-summary; do files="$files $a.json $a.md"; done
+        for a in significant-change-notifications scn-evaluations; do files="$files $a.json $a.md"; done
+        files="$files significant-change-notifications.atom"
         for a in assessor-guide agency-access-exercise trust-manifest; do files="$files $a.json $a.md"; done
         files="$files frr-evidence.json simulated-assessment.json"
         # The human-readable views and the policy documents (the list the publish step uploads).
@@ -1944,6 +2177,8 @@ jobs:
           files="$files $a.json"
         done
         files="$files minimum-assessment-scope.json minimum-assessment-scope.md"
+        # Incident log and reports (built every deploy, so the glob always matches).
+        for f in incident-*.json incident-*.md; do files="$files $f"; done
         # shellcheck disable=SC2086  # a word list by design
         python3 ../scripts/check-published-redaction.py $files
 
@@ -1977,6 +2212,13 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities; do
           aws s3 cp "$a.md" "s3://$BUCKET_NAME/.well-known/$a.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
+        # Non-machine V&V status (VDR-TFR-NMV) + bundle.
+        aws s3 cp vdr-non-machine-vv.json "s3://$BUCKET_NAME/.well-known/vdr-non-machine-vv.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-non-machine-vv.bundle "s3://$BUCKET_NAME/.well-known/vdr-non-machine-vv.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Monthly activity report (VER-TFR-MHR) + bundle + human-readable rendering.
+        aws s3 cp vdr-monthly.json "s3://$BUCKET_NAME/.well-known/vdr-monthly.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-monthly.bundle "s3://$BUCKET_NAME/.well-known/vdr-monthly.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp vdr-monthly.md "s3://$BUCKET_NAME/.well-known/vdr-monthly.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         # IIW
         aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
         aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
@@ -1994,14 +2236,17 @@ jobs:
         aws s3 cp ongoing-certification-report.json "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.json" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
         aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp fedramp-inbox-simulation.json "s3://$BUCKET_NAME/.well-known/fedramp-inbox-simulation.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp fedramp-inbox-simulation.bundle "s3://$BUCKET_NAME/.well-known/fedramp-inbox-simulation.bundle" --content-type application/json --cache-control "public, max-age=300"
         # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
         for a in availability policy-index security-decision-record certification-package-overview secure-configuration-guide security-settings; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
-        # Trust-center access summary (CDS-TRC-ACL): aggregate counts only.
-        for a in access-summary; do
+        # Trust-center access summary (CDS-TRC-ACL): aggregate counts only; and the
+        # Significant Change Notifications + evaluation log (SCN-*) + bundles + human-readable.
+        for a in access-summary significant-change-notifications scn-evaluations; do
           aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
           aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
@@ -2013,6 +2258,8 @@ jobs:
           aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
         aws s3 cp quarterly-review.ics "s3://$BUCKET_NAME/.well-known/quarterly-review.ics" --content-type "text/calendar; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp significant-change-notifications.atom "s3://$BUCKET_NAME/.well-known/significant-change-notifications.atom" --content-type "application/atom+xml; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp significant-change-notifications.atom.bundle "s3://$BUCKET_NAME/.well-known/significant-change-notifications.atom.bundle" --content-type application/json --cache-control "public, max-age=300"
         # Trust center: the generated boundary map, the gate's own report (it exists
         # only because the gate above passed) and the trust center's data.
         for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
@@ -2041,6 +2288,16 @@ jobs:
         while read -r f; do
           aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done < published-docs.txt
+        # Incident log (IEC-CSO-EFR) + every Initial/Ongoing/Final report + signatures
+        aws s3 cp incident-reports.json "s3://$BUCKET_NAME/.well-known/incident-reports.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-reports.bundle "s3://$BUCKET_NAME/.well-known/incident-reports.bundle" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-reports.md "s3://$BUCKET_NAME/.well-known/incident-reports.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
+        aws s3 cp incident-deliveries.json "s3://$BUCKET_NAME/.well-known/incident-deliveries.json" --content-type application/json --cache-control "public, max-age=300"
+        aws s3 cp incident-deliveries.bundle "s3://$BUCKET_NAME/.well-known/incident-deliveries.bundle" --content-type application/json --cache-control "public, max-age=300"
+        for f in incident-INC-*.json; do
+          aws s3 cp "$f" "s3://$BUCKET_NAME/.well-known/$f" --content-type application/json --cache-control "public, max-age=300"
+          aws s3 cp "${f%.json}.bundle" "s3://$BUCKET_NAME/.well-known/${f%.json}.bundle" --content-type application/json --cache-control "public, max-age=300"
+        done
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
     # CDS-CSO-FRC: each FedRAMP Certification Report exactly as received (data
@@ -2137,7 +2394,10 @@ jobs:
         for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
           check "$a.json" ".well-known/$a.json"
         done
+        check vdr-non-machine-vv.json .well-known/vdr-non-machine-vv.json
+        check vdr-monthly.json .well-known/vdr-monthly.json
         check ongoing-certification-report.json .well-known/ongoing-certification-report.json
+        check fedramp-inbox-simulation.json .well-known/fedramp-inbox-simulation.json
         check availability.json .well-known/availability.json
         check policy-index.json .well-known/policy-index.json
         check security-decision-record.json .well-known/security-decision-record.json
@@ -2145,12 +2405,16 @@ jobs:
         check fedramp-certification-reports.json .well-known/fedramp-certification-reports.json
         check package-submission-log.json .well-known/package-submission-log.json
         check quarterly-review.ics .well-known/quarterly-review.ics
+        check significant-change-notifications.json .well-known/significant-change-notifications.json
+        check significant-change-notifications.atom .well-known/significant-change-notifications.atom
+        check scn-evaluations.json .well-known/scn-evaluations.json
         check iiw.csv .well-known/iiw.csv
         check boundary-map.json .well-known/boundary-map.json
         check reconcile-report.json .well-known/reconcile-report.json
         check trust-center.json .well-known/trust-center.json
         check conformance-results.json .well-known/conformance-results.json
         if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
+        for f in incident-*.json; do check "$f" ".well-known/$f"; done
         # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
         for a in ksi-signal.json security-decision-record.json vdr-report.json iiw.csv; do
           check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
@@ -2481,11 +2745,27 @@ jobs:
     secrets:
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
+  # A deploy is not done until the unattended incident report publisher has run
+  # on its own role from the incident-reports environment: the IEC records say
+  # it publishes, so a deploy where it cannot fails here.
+  incident-publisher:
+    name: Prove the incident report publisher
+    needs: [deploy]
+    if: needs.deploy.result == 'success'
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    uses: ./.github/workflows/incident-reports.yml
+    # Least privilege: the one secret the publisher uses, not `inherit`.
+    secrets:
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [compliance-check, deploy, package-maintainer]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure')
+    needs: [compliance-check, deploy, package-maintainer, incident-publisher]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure')
     permissions:
       contents: read
       issues: write
@@ -2499,6 +2779,8 @@ jobs:
       env:
         COMPLIANCE_RESULT: ${{ needs.compliance-check.result }}
         DEPLOY_RESULT: ${{ needs.deploy.result }}
+        PUBLISHER_RESULT: ${{ needs.incident-publisher.result }}
+        MAINTAINER_RESULT: ${{ needs.package-maintainer.result }}
       with:
         script: |
           const TITLE = `Deployment failing: ${context.workflow}`;
@@ -2514,6 +2796,8 @@ jobs:
             `| Ref | ${context.ref} |`,
             `| Compliance check | \`${process.env.COMPLIANCE_RESULT}\` |`,
             `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,
+            `| Incident report publisher | \`${process.env.PUBLISHER_RESULT}\` |`,
+            `| Package maintainer | \`${process.env.MAINTAINER_RESULT}\` |`,
             ``,
             `Review the failing step in the run log, and the compliance reports it uploaded.`,
             ``,

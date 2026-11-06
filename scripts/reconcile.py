@@ -42,6 +42,16 @@
 #                        every boundary component of the inventory (no more, no
 #                        fewer), leaves none unclassified, and carries no ARN,
 #                        account ID or email address
+#   (m) incident findings — every finding or CVE an unresolved incident in the
+#                        incident register (data/incidents.json) names is in
+#                        this build's VDR report; exercises are exempt (their
+#                        findings are simulated)
+#   (n) runtime V&V coverage — every machine component in the inventory has an
+#                        assessed validation in a verified runtime signal no
+#                        older than the governed window (VDR-TFR-MVX, 72h);
+#                        every component type is classified machine or excluded
+#                        in infrastructure/schemas/runtime-vv-config.json
+#                        (with --runtime-signal; run by evidence-nightly.yml)
 #
 # Usage:
 #   reconcile.py --artifacts-dir infrastructure [--live] [--expect-commit SHA]
@@ -64,6 +74,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _incidents  # noqa: E402
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -533,9 +545,106 @@ def check_l_boundary_map(signal, boundary_map, expected_commit=None):
     return violations
 
 
+def check_m_incident_findings(vdr, incidents):
+    """(m) Every finding an unresolved, non-exercise incident names (a VDR
+    tracking ID or a CVE ID) is in this build's VDR report. An incident about a
+    vulnerability the VDR does not carry is reporting on something the
+    vulnerability evidence says is not there: one of the two is wrong."""
+    if incidents is None:
+        return []
+    ids, cves = set(), set()
+    for f in _all_vdr_findings(vdr):
+        ids.add(f.get("tracking_id"))
+        if f.get("cve"):
+            cves.add(f["cve"])
+    return [f"(m) incident {inc_id} names {ref!r}, which is not in the VDR report"
+            for ref, inc_id in sorted(_incidents.open_findings(incidents).items())
+            if ref not in ids and ref not in cves]
+
+
+# ----------------------------------------------------------------------------
+# (n) runtime V&V coverage — VDR-TFR-MVX requires machine-based resources to be
+# verified and validated at least every 3 days. The daily runtime emitter
+# re-evaluates every machine component's live configuration against the deploy
+# gate's policy; this invariant proves it did, from the signed result, for every
+# machine component of the inventory. A validation that could not read an
+# attribute (any category "input" violation: resource_read_error,
+# package_integrity_unverifiable, ...) is unassessed and does not count, and a
+# component with any unassessed validation is not validated.
+# ----------------------------------------------------------------------------
+RUNTIME_VV_CONFIG = REPO / "infrastructure" / "schemas" / "runtime-vv-config.json"
+
+
+def load_runtime_vv_config(path=RUNTIME_VV_CONFIG):
+    """The governed runtime V&V scope; raises ValueError when it is unusable."""
+    cfg = load_json(path)
+    for key in ("decided_by", "decided_on", "review_by"):
+        if not cfg.get(key):
+            raise ValueError(f"runtime V&V config has no {key}")
+    hours = cfg.get("max_age_hours")
+    if not isinstance(hours, int) or isinstance(hours, bool) or not 0 < hours <= 72:
+        raise ValueError("runtime V&V config max_age_hours must be an integer in (0, 72] (VDR-TFR-MVX)")
+    machine = cfg.get("machine_types")
+    excluded = cfg.get("excluded_types")
+    if not isinstance(machine, dict) or not machine or not isinstance(excluded, dict):
+        raise ValueError("runtime V&V config needs machine_types and excluded_types")
+    both = set(machine) & set(excluded)
+    if both:
+        raise ValueError(f"runtime V&V config lists {sorted(both)} as both machine and excluded")
+    for t, entry in machine.items():
+        if not isinstance(entry, dict) or not isinstance(entry.get("likely_to_drift"), bool) or not entry.get("why"):
+            raise ValueError(f"runtime V&V config machine type {t} needs likely_to_drift and why")
+    for t, why in excluded.items():
+        if not isinstance(why, str) or not why.strip():
+            raise ValueError(f"runtime V&V config excluded type {t} needs a reason")
+    return cfg
+
+
+def _unassessed(validation):
+    return any(isinstance(v, dict) and v.get("category") == "input"
+               for v in validation.get("violations") or [])
+
+
+def check_n_runtime_coverage(signal, runtime, config):
+    """`runtime` is build-vdr-report.load_runtime_signal()'s result, loaded with
+    the config's max_age_hours: {verified, fresh, reason, validations}."""
+    violations = []
+    machine = set(config["machine_types"])
+    excluded = set(config["excluded_types"])
+    for t in sorted({c.get("type") for c in signal.get("components", [])} - machine - excluded):
+        violations.append(f"(n) component type {t} is neither a machine type nor excluded in runtime-vv-config.json")
+    if not (runtime or {}).get("verified") or not runtime.get("fresh"):
+        reason = (runtime or {}).get("reason") or "runtime signal not verified or not fresh"
+        return violations + [f"(n) no usable runtime V&V within {config['max_age_hours']}h: {reason}"]
+    assessed, unassessed = set(), set()
+    for v in runtime.get("validations") or []:
+        target = unassessed if _unassessed(v) else assessed
+        target.update(v.get("component_refs") or [])
+    for c in signal.get("components", []):
+        if c.get("type") not in machine:
+            continue
+        cid = c.get("component_id")
+        if cid in unassessed:
+            violations.append(f"(n) {cid}: the runtime check could not read all of its configuration (unassessed)")
+        elif cid not in assessed:
+            violations.append(f"(n) {cid}: no runtime validation within {config['max_age_hours']}h")
+    return violations
+
+
+def load_verified_runtime(path, max_age_hours):
+    """The runtime signal verified and age-checked by the VDR builder's own
+    loader (signature against the pinned key infrastructure/keys/)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("vdr_builder", REPO / "scripts" / "build-vdr-report.py")
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod.load_runtime_signal(path, max_age_hours=max_age_hours)
+
+
 def run_all(signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
             live_arns=None, expected_commit=None, live_tags=None,
-            boundary_map=None):
+            boundary_map=None, incidents=None, runtime=None, runtime_config=None):
     violations = []
     violations += check_d_impact(signal, sdr, cpo, vdr, dashboard_html)
     violations += check_e_binding(signal, sdr, cpo, vdr)
@@ -545,10 +654,13 @@ def run_all(signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
     violations += check_h_finding_coverage(vdr, register)
     violations += check_j_decision_id_validity(signal, sdr, cpo, vdr, register)
     violations += check_l_boundary_map(signal, boundary_map, expected_commit)
+    violations += check_m_incident_findings(vdr, incidents)
     if live_arns is not None:
         violations += check_a_completeness(signal, live_arns)
     if live_tags is not None:
         violations += check_i_classification_tags(signal, live_tags)
+    if runtime_config is not None:
+        violations += check_n_runtime_coverage(signal, runtime, runtime_config)
     return violations
 
 
@@ -570,6 +682,13 @@ def main():
                     help="path to .checkov.yaml (overridable for hermetic tests)")
     ap.add_argument("--decisions", default=str(_decisions.DEFAULT_PATH),
                     help="the decision register (overridable for hermetic tests); missing or invalid fails closed")
+    ap.add_argument("--incidents", default=str(_incidents.DEFAULT_PATH),
+                    help="the incident register (overridable for hermetic tests); missing or invalid fails closed")
+    ap.add_argument("--runtime-signal", default=None,
+                    help="the published runtime signal; checks invariant (n) runtime V&V coverage. "
+                         "A path that does not exist fails (n), never skips it")
+    ap.add_argument("--runtime-vv-config", default=str(RUNTIME_VV_CONFIG),
+                    help="the governed runtime V&V scope (invariant n)")
     args = ap.parse_args()
     gates = _gates.load_gate_modes()
 
@@ -591,6 +710,7 @@ def main():
     dashboard_html = Path(args.dashboard).read_text() if Path(args.dashboard).exists() else None
     checkov_text = Path(args.checkov).read_text()
     register = _decisions.load(args.decisions)
+    incidents = _incidents.load(args.incidents)
 
     live_arns = None
     live_tags = None
@@ -622,10 +742,19 @@ def main():
             else:
                 raise
 
+    runtime = runtime_config = None
+    if args.runtime_signal:
+        try:
+            runtime_config = load_runtime_vv_config(args.runtime_vv_config)
+        except (OSError, ValueError) as e:
+            print(f"reconcile: runtime V&V config unusable: {e}", file=sys.stderr)
+            return 1
+        runtime = load_verified_runtime(args.runtime_signal, runtime_config["max_age_hours"])
+
     violations = run_all(
         signal, sdr, cpo, vdr, dashboard_html, checkov_text, register,
         live_arns=live_arns, expected_commit=args.expect_commit, live_tags=live_tags,
-        boundary_map=boundary_map,
+        boundary_map=boundary_map, incidents=incidents, runtime=runtime, runtime_config=runtime_config,
     )
 
     # Each violation names its invariant, "(x) ..."; its check's governed mode
@@ -645,13 +774,14 @@ def main():
             print(f"  ✗ {v}", file=sys.stderr)
         return 1
     optional = ",l" if boundary_map is not None else ""
+    optional += ",m" if runtime_config is not None else ""
     if live_arns is not None and live_tags is not None:
-        checks = "a-f,h-j" + optional
+        checks = "a-f,h-j" + optional + ",m"
     elif live_arns is not None:
-        checks = "a-f,h,j" + optional + " (i deferred: no live tags)"
+        checks = "a-f,h,j" + optional + ",m (i deferred: no live tags)"
     else:
-        checks = "b-f,h,j" + optional + " (a,i deferred: no --live)"
-    print(f"reconciliation OK — invariants {checks} hold across signal/VDR/SDR/CPO/decisions/dashboard")
+        checks = "b-f,h,j" + optional + ",m (a,i deferred: no --live)"
+    print(f"reconciliation OK — invariants {checks} hold across signal/VDR/SDR/CPO/decisions/incidents/dashboard")
     if args.report:
         Path(args.report).write_text(json.dumps(build_report(
             signal, args.expect_commit,
@@ -674,13 +804,17 @@ INVARIANT_TITLES = {
     "j": "Every decision reference resolves",
     # (k) is retired: the bundle it bound is no longer published by this site.
     "l": "The boundary map describes exactly this build's inventory",
+    "m": "Every finding an open incident names is in the VDR report",
 }
+# (n) runtime V&V coverage runs only in evidence-nightly.yml, which writes no
+# report; it is not in the governed gate-mode register (_gates.CHECKS), so a
+# violation always blocks.
 
 
 def build_report(signal, commit, deferred):
     """Written only when the gate passes; nothing is published otherwise, so a
     published report is itself evidence that every listed invariant held."""
-    return {
+    return _offering.stamp_fedramp_id({
         "schema": "reconcile-report/1",
         "result": "pass",
         "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
@@ -690,7 +824,7 @@ def build_report(signal, commit, deferred):
             {"id": k, "title": t, "status": "deferred" if deferred.get(k) else "held"}
             for k, t in INVARIANT_TITLES.items()
         ],
-    }
+    })
 
 
 if __name__ == "__main__":

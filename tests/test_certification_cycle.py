@@ -560,13 +560,19 @@ def _resolves(url):
     return False
 
 
+# The one deliberate outside link: the simulated FedRAMP Security Inbox's
+# contact line points at the operator's LinkedIn profile (AFC-CSO-INB, simulated).
+DELIBERATE_EXTERNAL = {"https://www.linkedin.com/in/sa2/"}
+
+
 def test_every_link_in_the_cpo_and_ocr_resolves(built_cpo, rolling):
     # Third-party resources' own websites (MAS-CSO-TPR) are outside this site by design.
     cpo_own = {k: v for k, v in built_cpo.items() if k != "thirdPartyInformationResources"}
     for doc in (cpo_own, rolling):
         urls = set(re.findall(r"https://[^\s\"')<>]+", json.dumps(doc)))
         assert urls
-        bad = sorted(u.rstrip(".,") for u in urls if not _resolves(u.rstrip(".,")))
+        bad = sorted(u.rstrip(".,") for u in urls
+                     if u.rstrip(".,") not in DELIBERATE_EXTERNAL and not _resolves(u.rstrip(".,")))
         assert not bad, bad
 
 

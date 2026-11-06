@@ -1,0 +1,23 @@
+{
+  "_note": "Known bad (FRC-CSX-VVK): no acceptance names KSI-CED-RAT and no training attestation exists, so the KSI is a shortfall.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "Unrelated",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "Fixture.",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "x"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    }
+  ]
+}

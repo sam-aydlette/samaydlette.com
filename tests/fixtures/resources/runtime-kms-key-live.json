@@ -1,0 +1,39 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "note": "Compliant KMS key as read live (tags from the tagging API)"
+  },
+  "resource": {
+    "type": "aws_kms_key",
+    "name": "at_rest",
+    "tags": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "Internal",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "internal",
+      "MissionCriticality": "moderate",
+      "InternetReachable": "false",
+      "Archetype": "security-tooling",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator"
+    },
+    "tags_all": {
+      "Environment": "prod",
+      "CostCenter": "website-ops",
+      "DataClassification": "Internal",
+      "Owner": "sam-aydlette",
+      "DataSensitivity": "internal",
+      "MissionCriticality": "moderate",
+      "InternetReachable": "false",
+      "Archetype": "security-tooling",
+      "AgencyScope": "single",
+      "OwnerRole": "platform-operator"
+    },
+    "values": {
+      "customer_master_key_spec": "SYMMETRIC_DEFAULT",
+      "enable_key_rotation": true,
+      "is_enabled": true
+    }
+  }
+}

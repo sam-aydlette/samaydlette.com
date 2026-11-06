@@ -1,0 +1,47 @@
+{
+ "_note": "Decoded runtime-signal validations (as build-vdr-report.load_runtime_signal returns them). iam_role has none; kms_key was only partly readable; the function passed; the bucket passed in one run and was unreadable in another.",
+ "validations": [
+  {
+   "validation_id": "r-1",
+   "result": "fail",
+   "component_refs": [
+    "aws::kms_key::at_rest"
+   ],
+   "violations": [
+    {
+     "id": "resource_read_error",
+     "category": "input"
+    }
+   ]
+  },
+  {
+   "validation_id": "r-2",
+   "result": "pass",
+   "component_refs": [
+    "aws::function::app"
+   ],
+   "violations": []
+  },
+  {
+   "validation_id": "r-3",
+   "result": "pass",
+   "component_refs": [
+    "aws::object_store::site"
+   ],
+   "violations": []
+  },
+  {
+   "validation_id": "r-4",
+   "result": "fail",
+   "component_refs": [
+    "aws::object_store::site"
+   ],
+   "violations": [
+    {
+     "id": "package_integrity_unverifiable",
+     "category": "input"
+    }
+   ]
+  }
+ ]
+}

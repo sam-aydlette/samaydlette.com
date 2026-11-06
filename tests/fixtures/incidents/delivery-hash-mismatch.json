@@ -1,0 +1,37 @@
+{
+  "schema": "incident-reports/1",
+  "emitted_at": "2026-11-05T00:00:00Z",
+  "incidents": [
+    {
+      "id": "INC-2026-001",
+      "exercise": true,
+      "evaluation": {
+        "reportable": true
+      },
+      "reports": [
+        {
+          "type": "Initial",
+          "issued_at": "2026-11-05T03:40:00Z",
+          "file": "incident-INC-2026-001-01-initial.json",
+          "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+          "changes": {
+            "coordinator": "updated",
+            "tracking_id": "updated",
+            "description": "updated",
+            "timeline": "updated",
+            "rating": "updated",
+            "functional_impact": "updated",
+            "recovery_plan": "updated",
+            "affected_agencies": "updated",
+            "observed_activity": "not yet available",
+            "indicators_of_compromise": "not yet available",
+            "related_cves": "updated",
+            "root_cause": "not yet available",
+            "response_and_recovery_activities": "not yet available"
+          }
+        }
+      ]
+    }
+  ],
+  "_note": "KNOWN-BAD: the log's sha256 for the Initial report is not the report's; delivery must refuse it."
+}

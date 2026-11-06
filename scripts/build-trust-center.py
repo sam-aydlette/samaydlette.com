@@ -45,6 +45,7 @@ from _freshness import load_freshness_config  # noqa: E402
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
 import _offering  # noqa: E402
+import _redact  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
 VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
@@ -203,6 +204,14 @@ def _props(item: dict[str, Any]) -> dict[str, str]:
     return {p["name"]: p["value"] for p in item.get("props", []) if "name" in p}
 
 
+def _published_scope(applies_to: dict[str, Any] | None) -> dict[str, Any]:
+    """A decision's scope as published: IAM user names withheld."""
+    scope = dict(applies_to or {})
+    if "resources" in scope:
+        scope["resources"] = _redact.withhold_iam_users(scope["resources"])
+    return scope
+
+
 def register_items(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """The decision register's records (data/decisions.json), flattened for the
     queue, the precedent count and the decision log. In force reads as open."""
@@ -213,7 +222,7 @@ def register_items(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "description": r.get("justification", ""),
             "status": "open" if r.get("status") == "in-force" else "closed", "disposition": r.get("disposition"),
             "scheduled_completion": r.get("planned_completion"),
-            "applies_to": r.get("applies_to") or {},
+            "applies_to": _published_scope(r.get("applies_to")),
             "decided_by": r.get("decided_by"), "decided_on": r.get("decided_on"), "review_by": r.get("review_by"),
         })
     return out

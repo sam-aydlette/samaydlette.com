@@ -1,0 +1,18 @@
+{
+  "schema": "non-machine-resources/1",
+  "max_age_days": 92,
+  "resources": [
+    {
+      "id": "NMR-POL-AC",
+      "path": "docs/policies/ac-policy.md",
+      "kind": "policy",
+      "title": "AC",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "matches practice",
+      "last_verified": {
+        "on": "2026-11-05",
+        "decision": "DEC-199"
+      }
+    }
+  ]
+}

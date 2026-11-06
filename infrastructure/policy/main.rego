@@ -122,6 +122,7 @@ resource_reports := [report |
 		"kind": "infrastructure",
 		"resource_type": r.type,
 		"resource_name": r.name,
+		"address": address,
 		"compliant": count(violations_for(r)) == 0,
 		"violations": violations_for(r),
 		"policy_version": policy_version,

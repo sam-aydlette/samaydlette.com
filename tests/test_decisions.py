@@ -35,6 +35,9 @@ KNOWN_BAD = [
     ("duplicate-claim.json", "'CKV_AWS_68' is claimed by both DEC-001 and DEC-002"),
     ("closed-not-remediated.json", "a closed record's disposition must be one of"),
     ("unknown-field.json", "unknown field(s) ['reviewby']"),
+    ("planned-reduction-malformed.json", "planned_reduction must be {date: YYYY-MM-DD, target_pain: N0-N5}"),
+    ("planned-reduction-closed.json", "only an in-force record plans a reduction"),
+    ("automatable-no-evidence.json", "'no' needs its evidence"),
 ]
 
 
@@ -136,8 +139,31 @@ def test_every_poam_item_landed_in_the_register_with_its_decision():
         assert r["status"] == ("closed" if i["category"] == "closed" else "in-force"), i["id"]
         assert r["title"] == i["title"] and r["justification"] == _published_text(i["description"]), i["id"]
         for k in ("decided_by", "decided_on", "review_by", "original_detection_date"):
-            assert r.get(k) == i.get(k), (i["id"], k)
-        assert r["applies_to"]["resources"] == i.get("asset_identifiers", []), i["id"]
+            if (i["id"], k) not in AMENDED_SINCE_MIGRATION:
+                assert r.get(k) == i.get(k), (i["id"], k)
+        if (i["id"], "resources") not in AMENDED_SINCE_MIGRATION:
+            assert r["applies_to"]["resources"] == i.get("asset_identifiers", []), i["id"]
+
+
+# Fields corrected after the migration, each for a stated reason; everything
+# else still matches the POA&M item it came from.
+AMENDED_SINCE_MIGRATION = {
+    # Detection dates the POA&M never recorded: the inline Checkov skips for
+    # CKV_AWS_68, CKV_AWS_86/310 and CKV_AWS_117 were added on 2025-06-14
+    # (commit f453e9d, "fixing Checkov findings"), so each was detected by then.
+    ("POAM-007", "original_detection_date"), ("POAM-009", "original_detection_date"),
+    ("POAM-010", "original_detection_date"),
+    # DEC-010 named "aws-lambda::compliance-monitor", which no inventory
+    # component carries; the CKV_AWS_117 skip is global, so it covers every Lambda.
+    ("POAM-010", "resources"),
+}
+
+
+def test_the_post_migration_amendments_are_the_stated_ones():
+    recs = _decisions.records(_decisions.load())
+    assert all(recs[d]["original_detection_date"] == "2025-06-14" for d in ("DEC-007", "DEC-009", "DEC-010"))
+    assert recs["DEC-010"]["applies_to"]["resources"] == [
+        "aws::function::opa_compliance", "aws::function::evidence_watchdog", "aws::function::silk_reeling"]
 
 
 def test_the_check_maps_are_the_ones_the_poam_held():

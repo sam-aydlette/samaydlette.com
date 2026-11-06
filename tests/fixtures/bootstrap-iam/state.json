@@ -1,0 +1,20 @@
+{"values": {"root_module": {"resources": [
+  {"type": "aws_iam_role", "name": "deploy", "address": "aws_iam_role.deploy",
+   "values": {"arn": "arn:aws:iam::123456789012:role/github-actions-deploy-oidc", "name": "github-actions-deploy-oidc", "assume_role_policy": "{\"x\":1}"}},
+  {"type": "aws_iam_group", "name": "operators", "address": "aws_iam_group.operators",
+   "values": {"arn": "arn:aws:iam::123456789012:group/operators", "name": "operators"}},
+  {"type": "aws_iam_group_policy", "name": "operators_assessment_readonly", "address": "aws_iam_group_policy.operators_assessment_readonly",
+   "values": {"group": "operators", "name": "assessment-readonly", "id": "operators:assessment-readonly", "policy": "{\"Statement\":[{\"Resource\":\"arn:aws:s3:::x-123456789012\"}]}"}},
+  {"type": "aws_iam_group_policy", "name": "operators_s3_bucket", "address": "aws_iam_group_policy.operators_s3_bucket",
+   "values": {"group": "operators", "name": "s3-bucket", "id": "operators:s3-bucket", "policy": "{}"}},
+  {"type": "aws_iam_group_policy", "name": "read_only_deny_sensitive", "address": "aws_iam_group_policy.read_only_deny_sensitive",
+   "values": {"group": "read-only", "name": "deny-secret-values-and-decrypt", "id": "read-only:deny-secret-values-and-decrypt", "policy": "{}"}},
+  {"type": "aws_iam_role_policy_attachment", "name": "legacy", "index": "github_policy_3", "address": "aws_iam_role_policy_attachment.legacy[\"github_policy_3\"]",
+   "values": {"role": "github-actions-deploy-oidc", "policy_arn": "arn:aws:iam::123456789012:policy/github_policy_3", "id": "github-actions-deploy-oidc-20260101"}},
+  {"type": "aws_iam_role_policy_attachment", "name": "legacy", "index": "github_actions_3", "address": "aws_iam_role_policy_attachment.legacy[\"github_actions_3\"]",
+   "values": {"role": "github-actions-deploy-oidc", "policy_arn": "arn:aws:iam::123456789012:policy/github_actions_3", "id": "github-actions-deploy-oidc-20260102"}},
+  {"type": "aws_iam_role_policy_attachment", "name": "plan_read_only", "address": "aws_iam_role_policy_attachment.plan_read_only",
+   "values": {"role": "github-actions-plan", "policy_arn": "arn:aws:iam::aws:policy/ReadOnlyAccess", "id": "github-actions-plan-20260101"}},
+  {"type": "aws_iam_group_policy_attachment", "name": "read_only", "address": "aws_iam_group_policy_attachment.read_only",
+   "values": {"group": "read-only", "policy_arn": "arn:aws:iam::aws:policy/ReadOnlyAccess", "id": "read-only-20260101"}}
+]}}}

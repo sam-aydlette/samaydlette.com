@@ -5,83 +5,235 @@
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no auto-responder.",
-      "evidence": [],
-      "gap": "No prompt automatic acknowledgment of FedRAMP messages. To close: Configure an auto-acknowledgment for mail from @fedramp.gov/@gsa.gov (e.g. SES receipt rule -> Lambda reply, or provider auto-reply rule) and include it in the nightly configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The acknowledgement logic (scripts/_fsi.py, build_ack and receive) acknowledges each FedRAMP message once, even when it is redelivered, with headers inbound content cannot inject, and never to auto-replies, bulk mail, bounces, mail without a From address, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged). In the simulation each acknowledgement is built and checked for header safety, then filed nowhere. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_nothing_from_the_inbound_message_can_inject_a_header"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_redelivered_message_is_acknowledged_and_paged_once"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_unauthenticated_fedramp_mail_is_registered_and_paged_but_not_acknowledged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_no_acknowledgement_to_auto_replies_bulk_mail_or_bounces"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-CRA",
-      "status": "Not Implemented",
-      "implementation": "No FSI, no Emergency/Emergency Test handling runbook in docs/incident-response.md or ir-policy.md.",
-      "evidence": [],
-      "gap": "No procedure to recognize Emergency / Emergency Test designated messages, extract the required actions and timeframe, and complete them; no record of completion. To close: Write an FSI runbook (classify by designation, open a tracked item with the message's deadline, complete, reply with completion) and wire Emergency-designated mail to page the operator; keep a completion log. Rehearse with a self-generated Emergency Test.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; the receipt day counts and holidays are not skipped, both erring earlier), replaced at triage by the timeframe the message states; the register reports an item past its deadline until it is closed (scripts/_fsi.py, deadlines, triage, close, overdue). In the simulation the Emergency Test received on a Friday is due 3:00 p.m. ET the following Monday, is reported once that passes, and stops being reported when closed. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_class_c_default_deadline_is_3pm_eastern_on_the_second_business_day"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_emergency_records_carry_a_deadline_and_important_ones_ask_for_the_messages_own"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-EMR",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No routing of Emergency-designated messages to a senior security official; no mailbox configuration or automated validation (both artifacts missing). To close: Add a mail rule that routes subject-designated 'Emergency' FedRAMP messages to the senior security official (the accountable official in the CPO, plus SNS page), and include it in the nightly mailbox-configuration check.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Every FedRAMP message, Emergency-designated ones included, produces a page to the senior security official (the accountable official named in the CPO, the operator) naming the designation and the sender's domain (scripts/_fsi.py, receive and page_subject); an Emergency from an address other than FedRAMP's designated Emergency senders (AFC-FRP-UFS) is flagged, not demoted. In the simulation the page is recorded, not delivered: the operator's phone stays blissfully quiet. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_emergency_from_an_address_other_than_fedramp_security_is_flagged_not_demoted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_page_subject_is_ascii_and_names_the_domain_not_the_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-IMA",
-      "status": "Not Implemented",
-      "implementation": "No FSI; no handling procedure for Important-designated messages.",
-      "evidence": [],
-      "gap": "No procedure to complete actions in Important messages within their stated timeframe. To close: Extend the FSI runbook to Important messages with tracked deadlines (same tracker as CRA).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Important-designated messages open a register item that cannot be triaged without recording the timeframe the message states; the register reports it while untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed (scripts/_fsi.py, triage and overdue). The simulation checks each of these. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_an_important_message_cannot_be_triaged_without_its_stated_timeframe"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-INB",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No dedicated FedRAMP Security Inbox address exists or is designated; the required artifact (an email address to receive messages from FedRAMP) cannot be produced. To close: Create a dedicated address on the system's domain (e.g. fedramp-security@samaydlette.com: MX record in dns.tf plus SES inbound or a mail provider, with SPF/DKIM/DMARC), document it as the FSI in the CPO certification_data (security_contact block) and trust center, and monitor it (alarm on delivery failure).",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published FedRAMP Security Inbox contact (data/cds/offering.json, fedramp_security_inbox.contact, published in the CPO's certification_data) says, plainly, that the inbox does not exist and to hit the operator up on LinkedIn. The logic a real inbox would run receives, classifies, registers, acknowledges and pages. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_simulation_passes_and_publishes_a_labelled_result_without_addresses"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_the_cpo_publishes_the_simulated_contact_not_an_email_address"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-NOC",
-      "status": "Not Implemented",
-      "implementation": "No FSI exists, so no change-notification process exists; nothing in docs/incident-response.md or docs/policies/ir-policy.md covers notifying FedRAMP of an inbox change.",
-      "evidence": [],
-      "gap": "No process (manual or automated) to notify FedRAMP when the FSI address changes. To close: Make the FSI address a single value in the canonical inventory and add a CI check that fails a change to it unless the commit carries a 'FedRAMP notified on <date> via <channel>' record; document the runbook step (email FedRAMP from the old and new address) in ir-policy.md.",
-      "closes_with": [
-        "W9"
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history, and the notice rule applies to it unchanged. scripts/check-fsi-notice.py, run in the unit-test job on every pull request and push, fails a change to the contact unless a new history entry carries a dated fedramp_notified marker naming the channel (FedRAMP's '[CSP] Notification of Changes' form), and fails a rewritten history against the merge base. Known-bad fixtures in tests/fixtures/fsi/. Procedure: docs/runbooks/fedramp-security-inbox.md. The contact was established 2026-11-05 with nothing earlier on file with FedRAMP, so there has been no change to notify.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_the_fedramp_notified_marker_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_change_without_a_history_entry_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_rewriting_history_fails_against_the_base"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox change notice (AFC-CSO-NOC)"
+        }
       ]
     },
     {
       "frr_id": "AFC-CSO-RCV",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "Nothing receives FedRAMP mail without disruption (no inbox, no anti-spam allowlisting, no monitoring, no backup reader for a one-person operation). To close: After INB/TFG: allowlist FedRAMP senders, add delivery-failure and unread-age alarms (SNS to operator, reusing the watchdog path), and name a backup reader or an out-of-office auto-forward so a single absent operator does not disrupt receipt. Provider half is fully buildable; only an actual FedRAMP message demonstrates it end-to-end.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Nothing in the inbox logic asks anything of FedRAMP or drops FedRAMP mail: every FedRAMP message is registered and paged whatever its verdicts (the simulation fails the deploy otherwise), a failed acknowledgement is recorded, reported overdue and sent once on retry, and overdue items are reported by the register (scripts/_fsi.py, receive and overdue). Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_failed_acknowledgement_is_recorded_retried_and_counted_overdue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_overdue_counts_untriaged_unclosed_and_failed_legs"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_each_register_check_fails_the_simulation_when_its_outcome_differs"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "AFC-CSO-TFG",
-      "status": "Not Implemented",
-      "implementation": "No inbox exists: no MX record in infrastructure/dns.tf, no mail infrastructure in infrastructure/*.tf; live /.well-known/security.txt Contact is a personal gmail address with no FSI designation; docs/incident-response.md:120 and docs/policies/ir-policy.md:9 declare FSI does not apply; docs/cr26-applicability.md:27 records AFC as N/A.",
-      "evidence": [],
-      "gap": "No mailbox configuration treating @fedramp.gov / @gsa.gov senders as FedRAMP, and no automated validation of that configuration (both listed artifacts missing). To close: In the FSI mail rules, tag/route all mail from @fedramp.gov and @gsa.gov as FedRAMP (never spam-filtered/quarantined); export the rule set as code and add a nightly check (evidence-nightly.yml) that reads the live rules and compares them with the expected configuration, published to the trust center like check-manual-settings.py does for GitHub settings.",
-      "closes_with": [
-        "W9"
-      ]
+      "status": "Implemented",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Classification (scripts/_fsi.py, classify): a message whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov is FedRAMP, whatever its spam verdict or SPF/DKIM/DMARC result; look-alike domains and display-name spoofs are not; failed authentication is recorded so the operator can confirm the sender, never used to filter. The simulation includes a forged @gsa.gov message (still FedRAMP), a FedRAMP envelope sender behind an unreadable From (still FedRAMP), a look-alike domain and a display-name spoof (neither is FedRAMP). Automated validation of the configuration is the deploy-time simulation itself. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Security Inbox simulation (synthetic messages; nothing received or sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-inbox-simulation.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_fedramp_senders_are_fedramp_even_when_unauthenticated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_look_alike_domains_and_display_name_spoofs_are_not_fedramp"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_inbox.py::test_a_fedramp_envelope_sender_counts_even_if_the_from_header_is_unparseable"
+        }
+      ],
+      "simulated": {
+        "counterparty": "mail",
+        "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      }
     },
     {
       "frr_id": "CCM-OCR-AFS",
@@ -481,8 +633,8 @@
     },
     {
       "frr_id": "CDS-CSO-FID",
-      "status": "Partially Implemented",
-      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another. The trust-center, scope and assessor files also carry it at top level (trust-center.json, trust-manifest.json, availability.json, policy-index.json, assessor-guide.json, simulated-assessment.json, agency-access-exercise.json, frr-evidence.json, and the independent availability feed as the deploy reads it), and are in REPORTS; a file named to the gate without a top-level fedRampId fails.",
+      "status": "Implemented",
+      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). Every builder that publishes certification data stamps it through scripts/_offering.stamp_fedramp_id: under providerExtensions.fedRampId in reports in a FedRAMP schema (the SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history; each Significant Change Notification; each Initial, Ongoing and Final incident report), in serviceIdentification.fedRampPackageId in the CPO, and as a top-level fedRampId in every other published JSON file (the VDR report, trend, monthly report and non-machine V&V status; the KSI signal, which the runtime emitter copies into the runtime signal; the SCN index and evaluation log; the incident log and simulated delivery log; the simulated inbox run; the trust center, manifest, scope, configuration, boundary, reconciliation, conformance, access, assessor and agency files; the issue index, snapshots, FedRAMP Certification Reports index and package submission log). The SCN Atom feed carries it in its subtitle. The gate scripts/check-fedramp-id.py fails the run when a file it is given lacks the ID or carries another: the deploy runs it over its REPORTS list before anything is published, and the nightly, the incident publisher and the package maintainer run it over what each republishes. A test holds every freshness-governed JSON artifact to be in REPORTS or listed in the gate's EXEMPT map with its reason: the runtime signal (written by the Lambda, copied from the checked KSI signal), the nightly's status beacon (stamped where it is written), the issue index (checked by the package maintainer) and the independent boundary corroboration (another party's record, published unmodified).",
       "evidence": [
         {
           "kind": "test",
@@ -507,14 +659,39 @@
         {
           "kind": "test",
           "ref": "tests/test_fedramp_id_trust.py::test_known_bad_a_site_file_without_a_fedramp_id_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_every_governed_json_artifact_is_checked_or_exempt_with_a_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_known_bad_an_unlisted_artifact_and_an_unexplained_exemption_fail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_known_bad_a_fedramp_schema_report_without_the_id_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_scn_notifications_index_log_and_feed_carry_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_incident_log_reports_and_deliveries_carry_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_the_nightly_and_the_incident_publisher_run_the_gate_on_what_they_publish"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID)"
         }
-      ],
-      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
-      "closes_with": [
-        "W2",
-        "W5",
-        "W6",
-        "W8"
       ]
     },
     {
@@ -1272,7 +1449,7 @@
     {
       "frr_id": "FRC-CSO-JSN",
       "status": "Implemented",
-      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. SCN and incident JSON are not yet emitted; their builders must use write_validated when they are (SCN-CSO-HRM).",
+      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. Significant Change Notifications (scripts/build-scn.py, the SCN schema) and incident reports (scripts/build-incident-report.py, the incident schema) are written the same way: a notification or report that fails its schema is not written and the build stops.",
       "evidence": [
         {
           "kind": "test",
@@ -1305,6 +1482,22 @@
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_a_scn_notification_that_fails_the_schema_is_not_written"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_every_report_validates_against_fedramps_schema_and_is_listed_with_its_hash"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_coverage.py::test_an_incident_report_that_fails_the_schema_is_not_written"
         }
       ]
     },
@@ -1418,12 +1611,77 @@
     },
     {
       "frr_id": "FRC-CSX-VVK",
-      "status": "Partially Implemented",
-      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration daily. The SDR counts the automated methods in place for each KSI (plan gate, plus runtime only when the signed runtime signal verifies and is fresh).",
-      "evidence": [],
-      "gap": "On the latest inputs 34 KSIs have two automated methods, 3 have one, and 9 have none (KSI-CED-RAT, KSI-IAM-AAM, KSI-IAM-APM, KSI-IAM-ELP, KSI-IAM-JIT, KSI-IAM-SNU, KSI-IAM-SUS, KSI-SCR-MIT, KSI-SCR-MON). To close: a second automated method for the 3, and two for the 9.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) for KSI-CED-RAT, an automated check that the operator's training attestation (DEC-192) is in force and was decided under 12 months ago. On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two. KSI-CED-RAT has one automated method, the attestation check: a second is not built, and that is an accepted finding (DEC-191), because training is a people-run process for a sole operator with no machine component to check. The SDR publishes the count and the acceptance on the KSI. After apply and before it builds anything it publishes, the deploy stages its signed inventory and invokes the runtime emitter synchronously; the emitter re-validates the deployed system against that inventory and writes its signed signal beside it, and the deploy reads it back. The deploy's SDR build counts the runtime method only for that signal (it must have re-validated this commit) and fails the deploy, before anything is published, when any KSI has fewer than two automated methods and no in-force accepted decision record names it. The package maintainer, which runs after every deploy and daily, applies the same requirement to the SDR it rebuilds.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_validation_mapping.py::test_every_plan_validated_type_has_a_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_with_the_committed_register_every_ksi_has_two_methods_or_an_accepted_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_dependency_scanning_counts_only_for_ksis_with_package_components"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_vdrs_do_not_count_each_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_without_the_acceptance_ksi_ced_rat_is_a_shortfall"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the_vdr_signature"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-191"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-192"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_deploy_invokes_the_emitter_after_apply_and_requires_two_methods_before_publishing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_the_runtime_signal_counts_only_for_this_commits_inventory"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)"
+        }
       ]
     },
     {
@@ -1455,73 +1713,236 @@
     },
     {
       "frr_id": "IEC-CSO-AIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No automation exists for incident reporting; nothing exists to automate. To close: Once the incident register and report builder exist, run them from a workflow (workflow_dispatch + on push to the incident register) that validates, signs, publishes and sends IIR/OIR/FIR automatically, and pages through the existing watchdog/SNS when a report deadline is near or missed.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main), assumes the publisher's role from the deploy job before the SDR is built (scripts/check-incident-role.py, step 'Incident report publisher role can be assumed'), so a deploy whose publisher role does not work stops before anything is published, and after the deploy job runs this workflow on its own role (job incident-publisher). Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "step",
+          "ref": "incident-reports.yml#Incident report clocks (fail when a report is due and missing)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher preflight"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_deploy_proves_the_publisher_by_calling_it_after_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_air_workflow_validates_builds_signs_publishes_and_checks_the_clock_in_order"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Incident report publisher role can be assumed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_the_role_check_runs_in_the_deploy_job_before_the_sdr_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_a_role_that_cannot_be_assumed_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_delivery_runs_before_signing_in_the_deploy_and_before_publishing_in_the_publisher"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-DPR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "Nothing assigns a PAIN rating to an incident, so there is no default-to-N5 behaviour and no record of whether a prompt estimate replaced it. The VDR PAIN classifier (scripts/build-vdr-report.py:1730 assign_pain) rates vulnerabilities, not incidents. To close: In the incident register, set pain=5 with basis 'default (IEC-CSO-DPR)' when a record becomes reportable, and allow it to drop only through an EFI estimate record (rating, reason, estimated_at). Drive the IIR/OIR/FIR clocks from the effective rating. Test both paths and show them in the simulated-incident log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A reportable incident is rated at the default the IEC-CSO-DPR text states (N5, read from the rule) until an IEC-CSO-EFI estimate record exists, and the report clocks use the rating in force at each start time. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFI",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Incident Rating step: nothing estimates likely adverse impact on agency customers for an incident or assigns N1-N5 using the minimal/narrow/disruptive/debilitating x 1 or >1 agency scale. The required artifact (an incident log showing the evaluation and its reason) does not exist. To close: Add an EFI record type to the incident register: rating N1-N5, the customer-effect word, single or multiple agencies, reason, estimated_at. Document the rubric in docs/incident-response.md (it can reuse the VDR effect words from infrastructure/schemas/vdr-pain-config.json). Exercise it in the simulated incidents.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). An estimate record carries rating, customer effect (minimal/narrow/disruptive/debilitating), one or several agencies, reason and time; the loader refuses a rating that is not the one the IEC-CSO-EFI bullets give for that effect and agency count (the rubric is parsed from the rule text). Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. ",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_rating_scale_and_default_come_from_the_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_shows_the_default_rating_then_the_estimate"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-EFR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. docs/policies/ir-policy.md:15 only restates the trigger.",
-      "evidence": [],
-      "gap": "No step that evaluates each incident for effect (actual or likely) on confidentiality/integrity of federal customer data, no recorded determination with its reason, and no incident log. The required artifact (an incident log showing one or more real or simulated incidents evaluated, with the reason for the determination) does not exist. The runbook explicitly scopes federal-data incidents out, so it can't make the determination the rule asks for. To close: Add an incident register (e.g. data/incidents.json + schema) whose records carry detected_at, evaluated_at, reportable (bool), reason, and the federal-customer-data types considered. Add an 'Evaluate FedRAMP reportability' step to docs/incident-response.md triage (before Contain), define the data types that would be federal customer data for this offering, and fail a check if any incident record lacks an evaluation. Exercise it with at least two simulated incidents (one reportable, one not) and publish the log.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Every incident record must carry an evaluation (evaluated_at, reportable true/false, basis, reason, the federal customer data considered); a record without one does not load. docs/incident-response.md triage now evaluates reportability before containment. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. The published incident log is the artifact the rule asks for.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_each_known_bad_register_fails_closed_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_logs_a_not_reportable_evaluation_with_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "IEC-CSO-FIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. A schema test fixture (tests/fixtures/cr26/good/incident.json, reportType Final, CVE-2099-0142) checks the validator only; it is not an incident.",
-      "evidence": [],
-      "gap": "No Final Incident Report generation on resolution/recovery, no final updates to all previously reported items, no clock (Class C: within 6 hours for N3-N5, 1 business day for N1-N2, after recovery), no delivery. No sample FIR. To close: Add reportType=Final generation when the incident record gets resolved_at and recovery_complete_at, with final values for every earlier IIR/OIR field. Alarm on the FIR deadline. Close the simulated incident with a FIR and link it from the incident log and the Ongoing Certification Report.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_the_final_report_is_due_after_recovery_and_ongoing_reports_stop"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-IIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A. The vendored schema infrastructure/schemas/fedramp-2026-06-24/fedramp-incident-report-schema-2026-06-24.json (reportType Initial/Ongoing/Final, federalIncidentCoordinator, timeline, potentialImpact, functionalImpact, recoveryPlan, affectedAgencies) and its validator are in place, but nothing produces a report.",
-      "evidence": [],
-      "gap": "No Initial Incident Report generator, no delivery to all affected parties (FedRAMP + affected agencies), and no clock (Class C: within 1 hour for N3-N5, 24 hours for N2, 1 business day for N1). None of the 8 items exists in any record: federal incident response coordinator contact, tracking ID, description, timeline (start, detection time/source, evaluation time, milestones), historical/current PAIN with EFI explanation, functional impact incl. C/I and federal data types, recovery plan/milestones, likely affected agencies. No sample IIR exists, real or simulated. To close: Build scripts/build-incident-report.py that renders an IIR from the incident register into the vendored schema (validated before write) plus a human-readable version; name the federal incident response coordinator contact; add a delivery step (e.g. signed publication to a restricted location plus email to a configured recipient list holding FedRAMP's incident address and each agency's contact) that starts on 'reportable' and is alarmed against the PAIN-based deadline (watchdog). Run a timed simulated incident end to end and keep the IIR.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_exercise_runs_initial_ongoing_final_all_on_time"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_every_report_validates_against_fedramps_schema_and_is_listed_with_its_hash"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_known_bad_logs_fail_delivery_and_write_nothing"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IEC-CSO-OIR",
-      "status": "Not Implemented",
-      "implementation": "No incident record, incident log, evaluation step or report generator exists in scripts/, policies/ or .github/workflows/ (grep for incident/IEC finds only build-ocr.py's static attestation text, scripts/_fedramp_schema.py:41 registering the vendored incident-report schema, and test fixtures tests/fixtures/cr26/{good,bad}/incident*.json). docs/incident-response.md 'Scope' lists federal-customer-data incidents as out of scope; docs/cr26-applicability.md records IEC as N/A.",
-      "evidence": [],
-      "gap": "No Ongoing Incident Report mechanism or cadence (Class C: every 6 hours for N3-N5, 24 hours for N2, 1 business day for N1), no 'updates or lack of updates' logic, and none of the additional items recorded: observed activity, IOCs, related CVE, root cause, response/recovery activities. No sample OIR. To close: Extend the incident report builder for reportType=Ongoing: diff against the previous report so every earlier item is restated (changed or 'no update'), add the 5 OIR fields to the incident record, and schedule/alarm the next OIR from the effective PAIN. Produce OIRs in the simulated exercise.",
-      "closes_with": [
-        "W6"
-      ]
+      "status": "Implemented",
+      "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_reports_are_due_every_oir_period_until_resolved"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_ongoing_and_final_reports_restate_every_earlier_item"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build incident reports (IIR, OIR, FIR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-deliveries.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incident_delivery.py::test_every_report_is_delivered_to_a_simulated_fedramp_and_agency_recipient"
+        }
+      ],
+      "simulated": {
+        "counterparty": "incident-recipient",
+        "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      }
     },
     {
       "frr_id": "IVV-CSO-DUS",
@@ -2087,165 +2508,369 @@
     },
     {
       "frr_id": "SCN-ADP-NTF",
-      "status": "Partially Implemented",
-      "implementation": "Each adaptive SCN record carries a new-risks summary (scn-register.csv new_risks_summary; SCN md section 5).",
-      "evidence": [],
-      "gap": "No notification has been sent to anyone: notify_by says 'No necessary parties'; FedRAMP is always a necessary party (FRD 'All Necessary Parties'), so this is not N/A; no sent-date is recorded for any SCN (artifact requires sent date and applied date). To close: Send each adaptive SCN through the NOM mechanism within 10 business days of date_finished, record sent_on in the register, and add a check that fails when date_finished + 10 business days passes without sent_on.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each adaptive record's notice, carrying its new-risks summary (required by the register), is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py). It is given by publication in the certification data, the method FedRAMP's rules name; nothing is sent to FedRAMP or anyone else. Every deploy builds and publishes all notices (a build or publish failure fails the deploy, and the post-publish round-trip compares the served index and feed), and the index records each notice's deadline and the date it was first published. The scheduled SCN deadline check fails and raises an issue when a notice is unpublished past its deadline. History: the six adaptive notices were first published by the deploy that introduced this mechanism. SCN-2026-001, SCN-2026-002, SCN-2026-003, SCN-2026-004 and SCN-2026-005 were published after their deadlines (2026-06-22, 2026-07-07, 2026-07-23, 2026-10-09, 2026-10-13) and are marked late (onTime false, lateNotices). SCN-2026-006 (deadline 2026-11-10) is on time only if that deploy ran by its deadline; the published index records which.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_adaptive_notice_is_due_ten_business_days_after_finishing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_new_notice_is_dated_today_and_late_ones_say_so"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_unpublished_notice_is_overdue_until_a_deploy_publishes_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_published_outputs_are_listed_signed_and_governed"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-ARI",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/SCN-2026-001-silk-reeling.md sections 3-5 (boundary delta, SIA by control family, verification result) add information beyond SCN-CSO-INF.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each published notification adds, beyond the required items, the change's status, initiation/finish/verification dates, the pull requests that made it, the new-risks summary, its notices with deadlines and publication dates, and a link to the full record (boundary change, impact by control family, verification result).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ],
       "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
     },
     {
       "frr_id": "SCN-CSO-EMG",
-      "status": "Partially Implemented",
-      "implementation": "docs/incident-response.md:86-104 emergency-change procedure; scn-tag.yml:53-58 recognizes 'emergency'.",
-      "evidence": [],
-      "gap": "Never exercised; 'notify all necessary parties' has no channel; no gate that requires the retroactive SCN materials (only a warning). To close: Add a check that opens/blocks until a retroactive SCN record exists for each emergency-tagged commit within 5 business days; route notification through the NOM mechanism.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/incident-response.md (Emergency-change procedure), linked from the Certification Package Overview: an emergency change carries SCN-Type emergency with its SCN-Record; the gate accepts it and states the record is due; the retroactive register row (emergency = yes) is due within 5 business days of the change merging, enforced by the scheduled SCN deadline check, and the published notification marks each retroactive notice against that deadline. Notification is publication. Not yet invoked.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_emergency_change_owes_its_record_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_emergency_notices_are_retroactive_within_five_business_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ],
       "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
     },
     {
       "frr_id": "SCN-CSO-EVA",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/scn-tag.yml (required check, confirmed live by check-manual-settings 'main requires 4 status checks', EXPECTED_REQUIRED_CHECKS l.39) validates an SCN-Type line; docs/policies/cm-policy.md:5; six adaptive records with categorization rationale (docs/scn/SCN-2026-00[1-6]*.md section 1).",
-      "evidence": [],
-      "gap": "Evaluation is not forced: a missing tag passes as routine-recurring (scn-tag.yml:59), and only 8 of 273 commits since 2026-08-01 carry any SCN-Type, so most changes have no recorded evaluation; the gate has no 'not significant' or 'class change' outcome and requires no rationale; commit 437be7b carries 'SCN-Type: Routine Recurring', a value the case statement (l.49-66) rejects. Adaptive tags do not require an SCN record (e.g. #376 tagged adaptive has none). Artifact gap: no example (real or fictitious) for routine-recurring, transformative or class change. SCN-2026-001 (new non-FedRAMP external interconnection) was judged adaptive 'at the upper edge'; the rationale should be revisited. To close: Require an explicit SCN-Type plus a one-line rationale on every PR (fail when missing); add values not-significant and class-change (class-change blocks and points to reassessment); fail when adaptive/transformative lacks a docs/scn record; add documented examples for each type (fictitious allowed).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every pull request (or direct push) must carry SCN-Type (not-significant, routine-recurring, adaptive, transformative, emergency, class-change), a one-line SCN-Rationale and, for adaptive/transformative/emergency, the SCN-Record that will document it; the required scn-tag check (scripts/scn-evaluate.py, rules in scripts/_scn.py) fails a change without them, with no default, and always fails class-change. A change named adaptive, transformative or emergency whose record is not in the register by its deadline fails the scheduled SCN deadline check. docs/scn/evaluation-examples.md gives one example per type (real for adaptive, fictitious otherwise), each checked against the gate. Changes merged before this gate mostly carry no evaluation; the evaluation log starts at the change that introduced it. SCN-2026-001's categorization (adaptive, at the upper edge, for a new external interconnection since removed by SCN-2026-006) is unchanged and left to the operator's review.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_empty_description_fails_there_is_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_workflow_runs_the_tested_gate_with_no_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_every_type_has_a_documented_example"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_adaptive_change_with_no_record_is_overdue_after_ten_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HIS",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ holds all six SCNs since 2026-06 (README: rows never deleted).",
-      "evidence": [],
-      "gap": "The SCN register and records are in the repository only; nothing under /.well-known/ publishes them, and the CPO lists no SCN material or how FedRAMP obtains it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Every notification is published with the certification data at /.well-known/significant-change-notifications.json (+ .md, Atom feed), listed in the Certification Package Overview, and never pruned: a deploy that would drop a published notification or re-date a notice fails (retention exceeds 12 months). The register rows are never deleted.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_build_that_would_drop_a_published_notification_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_a_published_notice_keeps_its_first_publication_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-HRM",
-      "status": "Partially Implemented",
-      "implementation": "Human-readable: docs/scn/*.md and scn-register.csv.",
-      "evidence": [],
-      "gap": "No JSON form of SCNs or of the related audit records (CSV is not JSON); no explanation of how to request them or how sharing is decided. To close: Emit SCN JSON (schema-valid) and the evaluation log as JSON; add access + sharing statement to the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Notifications are published in JSON (FedRAMP SCN schema) and as a Markdown view; the related audit records (the evaluation log) likewise in JSON and Markdown. The index and the Certification Package Overview state that everything is public with no request needed, and how sharing is decided (everything is shared: no federal data, no agency customer).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-INF",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/scn-register.csv columns cover all ten items (fedramp_id, assessor_name, related_vulnerability, scn_type, categorization_rationale, short_description, reason_for_change, customer_impact, plan_and_timeline, sia_reference, approver_name/title); per-change SIA in docs/scn/SCN-2026-00x-*.md.",
-      "evidence": [],
-      "gap": "Service Offering FedRAMP ID is the placeholder '<FR-CERT-ID>'; not emitted in FedRAMP's SCN schema (tests/fixtures/cr26/good/scn.json exists but no builder); SCN-2026-006 verification still unrecorded (trust center scn_unverified); some impacted-control lists reference the retired OSCAL SSP/POA&M. To close: Generate per-SCN JSON in fedramp-significant-change-notifications-schema via _fedramp_schema.write_validated; fill the FedRAMP ID when assigned; record SCN-2026-006 verification.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "docs/scn/scn-register.csv carries the ten items for every record and scripts/_scn.py refuses a row missing one; each deploy writes every row as a notification in FedRAMP's SCN schema (scripts/build-scn.py via _fedramp_schema.write_validated) inside /.well-known/significant-change-notifications.json, with the security impact analysis linked. The Service Offering FedRAMP ID is published as not assigned, with the reason (the offering is not certified). SCN-2026-006's verification is recorded (2026-10-27). Older records' plans name artifacts since retired (the OSCAL SSP/POA&M); they describe the plan as it was.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_build_publishes_every_register_row_in_the_fedramp_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_committed_register_is_valid"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-MAR",
-      "status": "Partially Implemented",
-      "implementation": "Git history + scn-tag.yml run logs; docs/scn/README.md 'How this relates' explains git history is the audit record; register and per-change records in docs/scn/.",
-      "evidence": [],
-      "gap": "Records of evaluation are incomplete because the default-to-routine path records no evaluation; Actions logs expire (default 90 days), so the gate's decisions are not durable; no explanation in the Certification Package of how FedRAMP obtains the records. To close: Write each evaluation (commit, type, rationale, evaluator, date) to an append-only signed log published with the certification data; state access in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Each deploy appends the evaluation of every first-parent commit on main since the last entry (commit, merge date, pull request, SCN type, rationale, record, who merged it) to /.well-known/scn-evaluations.json (+ .md), signed with Sigstore and freshness-governed. The log is append-only against the previous published version: a build that would drop or rewrite an entry, or whose last entry has left main's history, fails. A change merged without a valid evaluation is logged with the problem, not skipped. The Certification Package Overview states how to obtain the records (public, no request needed). The log starts at the change that introduced it; earlier evaluations exist only for the six records in docs/scn.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_log_appends_to_the_previous_published_version"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_append_only_check_fails_each_known_bad_log"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_logs_every_first_parent_commit_from_the_builder_onward"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_collect_fails_when_the_last_logged_commit_left_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/scn-evaluations.json"
+        }
       ]
     },
     {
       "frr_id": "SCN-CSO-NOM",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/README.md: notification = publishing updated certification data; register notify_by column says 'No necessary parties ... the public GitHub push ... is the notification'.",
-      "evidence": [],
-      "gap": "Mechanism documented only in the repo README, not in the Certification Package (CPO); no list of available notification mechanisms (artifact); a git push is not a notification any party receives. To close: Offer real mechanisms (signed SCN JSON feed + Atom/RSS at /.well-known/, email list) and list them in the CPO.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "Mechanisms: an Atom feed (/.well-known/significant-change-notifications.atom, one entry per notice, subscribable with any feed reader), the signed JSON index and its Markdown view. They are listed, with how to obtain the evaluation records, in the Certification Package Overview's significant_change_notifications section. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_cpo_lists_the_notification_mechanism"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_the_feed_is_atom_with_one_entry_per_notice"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/significant-change-notifications.atom"
+        }
       ],
       "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
     },
     {
       "frr_id": "SCN-RTR-NNR",
-      "status": "Partially Implemented",
-      "implementation": "docs/scn/ contains only adaptive SCNs; cm-policy.md:5 routine-recurring changes produce no SCN record.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "No formal notification for routine recurring changes: the register refuses a routine-recurring (or not-significant) row, and the evaluation gate refuses an SCN-Record on a routine-recurring or not-significant change.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAF",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-finish notice step or 5-business-day deadline check. To close: Add post-finish notice fields and a deadline check (finish + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "date_finished adds the after-finish notice, due 5 business days later and published with the record's current information; the scheduled SCN deadline check fails while it is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NAV",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No post-verification notice step carrying updates, new risks and the assessment report; no deadline check. To close: Add post-verification notice fields (updates, new risks, SAR link) and a deadline check (verification complete + 5 business days).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "verified_on adds the after-verification notice, due 5 business days later; the register requires the new-risks summary and sar_reference (the assessment report, or why there is none) once verified_on is set; the scheduled SCN deadline check fails while the notice is unpublished past the deadline. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_after_finish_and_verification_are_overdue_unpublished"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NFP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "No final-plan notice step or 10-business-day check. To close: Add final-plan notice fields and gate (>=10 business days before start).",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "plan_final = yes publishes the final-plan notice, which carries the record's current information (every notice republishes all of it). The evaluation gate blocks the merge until it has been published at least 10 business days. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-NIP",
-      "status": "Partially Implemented",
-      "implementation": "No transformative change has occurred (scn-register.csv: all adaptive); cm-policy.md:9 lists the transformative windows.",
-      "evidence": [],
-      "gap": "Only a sentence in policy; no template, no planned-start field, no 30-business-day check, no channel to notify parties. To close: Add a transformative SCN template with initial-plan and security-impact sections, sent_on fields and a gate that blocks merge of a transformative change until initial notice is >=30 business days old.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record (docs/scn/TEMPLATE-transformative.md) requires its planned start and a summary of likely security impacts; its initial-plan notice is published with the next deploy and dated. The evaluation gate blocks the merge of the transformative change until the initial-plan notice has been published at least 30 business days (read from the published index; fails closed when the index cannot be read). No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_evaluation_fails_for_its_reason"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_good_evaluation_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_fails_closed_without_the_published_index"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_notices_and_deadlines"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-tag.yml#Validate the SCN evaluation"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-TPR",
-      "status": "Not Implemented",
-      "implementation": "No transformative changes; no recorded policy on third-party review.",
-      "evidence": [],
-      "gap": "Neither a third-party review nor an explanation of why one was not engaged exists (artifact accepts either). To close: Add to the transformative template a required 'human validation needed? assessor engaged / reason not engaged' field.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A transformative record must state whether the change needs human validation (tpr_human_validation) and name the third-party assessor engaged or why none was (tpr_assessor_or_reason); the register refuses a transformative row without them, and the published notification carries both. No transformative change has occurred.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_an_incomplete_transformative_row_names_every_template_field"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_each_known_bad_register_fails_for_its_reason"
+        }
       ]
     },
     {
       "frr_id": "SCN-TRF-UPD",
-      "status": "Partially Implemented",
-      "implementation": "Machine-generated documentation (CPO, SDR, OCR) is rebuilt every deploy (deploy-with-opa.yml), so it tracks changes automatically.",
-      "evidence": [],
-      "gap": "Hand-written service documentation is not updated after changes: the Secure Configuration Guide still describes the Basic Auth gate retired by SCN-2026-002 (adaptive) months later; no check ties a transformative change to documentation updates within 30 business days. To close: Add a documentation-update checklist/fields to the SCN record (doc, updated_on) and a check that fails 30 business days after finish if listed docs are unchanged; fix the SCG now.",
-      "closes_with": [
-        "W5"
+      "status": "Implemented",
+      "implementation": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred. (The Secure Configuration Guide's stale Basic Auth text follows an adaptive change, SCN-2026-002, which this rule does not cover.)",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_scn.py::test_transformative_documentation_update_is_overdue_after_thirty_business_days"
+        },
+        {
+          "kind": "step",
+          "ref": "scn-deadlines.yml#Check SCN deadlines"
+        }
       ]
     },
     {
@@ -2397,32 +3022,115 @@
     },
     {
       "frr_id": "VDR-CSO-AKE",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:385 block_rule: any KEV blocks (G1, gate-modes.json 'vdr.kev' mode block, even when dispositioned). deploy-with-opa.yml: Grype scan (1002) runs before Terraform Apply (1171).",
-      "evidence": [],
-      "gap": "The KEV check doesn't run before activation. In deploy-with-opa.yml the KEV-blocking VDR build ('Build VDR Report', line 1428) and 'Vulnerability gate' (1454) run *after* 'Terraform Apply' (1171) and 'Sync Website Content' (1200). A new Lambda package or SPA bundle with a KEV dependency is deployed and live before the gate fails the run; G7 at 1157 only checks that feeds exist and are fresh. No pre-apply check either for KEVs in third-party runtimes (e.g. the Lambda runtime version). To close: Add a pre-apply KEV check: after the Grype step and KEV fetch, intersect grype.json CVEs with kev-catalog.json and fail before 'Generate fresh Terraform plan'/'Terraform Apply' and before the S3 sync. Add a test proving a KEV fixture stops the deploy pre-apply.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "scripts/kev-gate.py runs in the deploy after the detection gate and before the Terraform plan, apply and website sync: it intersects every Grype scan (Python, JS, the Lambda package, a11y tooling) and the open Dependabot alerts with the CISA KEV catalog and stops the deploy on any match, naming the catalog due date, under the governed mode of G1's check vdr.kev (block). A missing or unreadable input stops it. G1 in the VDR build still blocks any KEV finding afterwards.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_kev_in_a_grype_scan_stops_the_deploy_with_its_due_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_kev_in_a_dependabot_alert_stops_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_a_missing_input_stops_the_kev_gate"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_kev_gate_runs_before_anything_is_activated"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE)"
+        }
       ]
     },
     {
       "frr_id": "VDR-CSO-DAC",
-      "status": "Partially Implemented",
-      "implementation": "deploy-with-opa.yml on every push to main: 'Security Scan' job (tfsec + Checkov), 'Scan application and Lambda dependencies (Syft SBOM + Grype)' (line 1002), 'Detection gate (G7)' (1157), 'Build VDR Report' (1428), OPA plan check on the Terraform plan ('Run OPA Compliance Check').",
-      "evidence": [],
-      "gap": "Changed IaC and dependency trees are scanned on every change, but the changed *running* surfaces aren't: no DAST runs after a deploy (ZAP is weekly on a schedule, zap-dast.yml cron '23 7 * * 1'), and changed first-party code gets no SAST. A change to the Silk Reeling API or site pages isn't dynamically tested until the next Monday, and the API never is. To close: Trigger the ZAP workflow (baseline + authenticated API scan) via workflow_run after a successful deploy that changed website/ or the Silk Reeling app, and add code SAST to the deploy's Security Scan job.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Every change is scanned when it lands: the deploy runs IaC static analysis (Checkov, tfsec), Grype over every dependency tree and the KEV gate before apply, and the detection gate (G7) requires fresh CodeQL and DAST results; CodeQL (.github/workflows/codeql.yml) analyzes this repository's code and the Silk Reeling application on push and after each deploy; the ZAP baseline scan of the site and the authenticated ZAP scan of the Silk Reeling API (a dedicated Cognito scanner user, credentials in repository secrets, the deploy fails when they are missing) run after each successful deploy.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_codeql_runs_on_change_after_deploy_and_daily"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_zap_runs_at_least_every_three_days_and_after_each_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_publishers_fetch_gate_and_build_with_codeql_and_the_api_scan[deploy-with-opa.yml-deploy]"
+        },
+        {
+          "kind": "step",
+          "ref": "codeql.yml#Analyze"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP API Scan (authenticated)"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP Baseline Scan"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-CSO-DET",
-      "status": "Partially Implemented",
-      "implementation": ".github/workflows/evidence-nightly.yml (twice-daily cron, 07:17/19:17): job 'SAST (Checkov + tfsec)' over all Terraform; step 'Scan application and Lambda dependencies (Syft SBOM + Grype)' over Silk Reeling Python/JS, compliance Lambda and a11y tooling; Dependabot alerts, CISA KEV and FIRST EPSS via scripts/fetch-detection-feeds.sh; 'Reconciliation gate' runs scripts/reconcile.py --live (live completeness (a) and tag (i) invariants). .github/workflows/zap-dast.yml: weekly ZAP baseline on https://samaydlette.com. infrastructure/lambda/index.js: daily runtime OPA (Wasm) re-validation. VDP: https://samaydlette.com/.well-known/security.txt (fetched). Live vdr-report.json methodology.detection (fetched 2026-11-05): all feeds ok.",
-      "evidence": [],
-      "gap": "Some techniques and resources aren't covered. (1) No DAST of the Cognito-gated Silk Reeling API Gateway/Lambda; ZAP is unauthenticated and targets the static site only (zap-dast.yml header: authenticated coverage is a 'Phase 2 follow-up'). (2) No SAST of first-party application code (Silk Reeling Python Lambda, SPA JS, compliance Lambda): no CodeQL/Semgrep/Bandit anywhere in .github/. (3) No penetration testing, ever. (4) No cloud-native threat/vulnerability detection (GuardDuty, Inspector, IAM Access Analyzer, Security Hub: none in infrastructure/*.tf). (5) 'Persistently verifying and validating that resources operate as intended' covers only 5 live components at runtime (see VDR-TFR-MVX) and nothing for non-machine resources (see VDR-TFR-NMV). (6) Inventory gaps: 5 of 35 live findings name IAM policies that don't resolve to an inventory component (irv_basis 'unresolved'). To close: Add authenticated ZAP (or API scan from the OpenAPI/route list) against the Silk Reeling API with a test Cognito user; add CodeQL or Semgrep on scripts/, the Lambdas and the SPA, ingested into the VDR; enable IAM Access Analyzer (free) and either Inspector Lambda scanning or GuardDuty, ingested as a VDR source; commission or perform and record an annual penetration test of the app; close the inventory gaps so every finding resolves.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources quarterly (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_api_scan_is_authenticated_and_never_prints_the_token"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_codeql_covers_this_repos_code_and_the_silk_reeling_app"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_codeql_zap_api_ingest.py::test_codeql_finding_is_published_in_the_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_components_no_technique_reached_this_month_are_uncovered"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP API Scan (authenticated)"
+        },
+        {
+          "kind": "step",
+          "ref": "codeql.yml#Analyze"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -2450,12 +3158,41 @@
     },
     {
       "frr_id": "VDR-CSO-FAV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/detection-gate.py (G7, 'fail the run when detection itself failed (T52, VDR-CSO-FAV)'); scripts/_gates.py + infrastructure/schemas/gate-modes.json (block by default, detect-and-recover events published in methodology.gate_events); build-vdr-report.py main(): missing/stale ZAP report blocks (detection.zap.missing/stale); infrastructure/watchdog.tf + infrastructure/watchdog/logic.mjs: hourly freshness alarms emailed via SNS; deploy-with-opa.yml job 'Notify on Failure' opens an issue; evidence-nightly.yml failure summary.",
-      "evidence": [],
-      "gap": "Detection and response failures are alarmed and stop the run, but they aren't treated *as vulnerabilities*: no failure becomes a tracked finding with a tracking ID, PAIN/IRV/LEV evaluation, a Class C deadline, a disposition, and an entry in the VDR/VDT. A stale feed, a skipped DAST or a watchdog breach leaves only a failed run, an email or an issue, so its history and time-to-recover aren't in the vulnerability record. To close: When a G7 check, a watchdog alarm or a gate in detect-and-recover mode fails, emit a synthetic finding (source 'process', e.g. process-detection-zap-stale) into the next VDR with first_detected = failure time, a governed PAIN for process failures, and normal deadline/disposition/remediation handling. Close it automatically when the check passes again (Remediated with time).",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "A detect-and-recover failure recorded in the run (e.g. runtime-divergence.observer-fault), a detection coverage gap (vdr.coverage), a finding that resolves to no component (vdr.unresolved-component) and a finding still on a default after the VER-TFR-EVU window each become a VDR finding with source 'process': tracking ID, clock from the failure, rating (severity proxy N2), Class C deadline, disposition and VDT record, remediated when the check passes. A block-mode failure stops the run (and the deploy opens an issue); each stopped run of the deploy, nightly or ZAP workflow on main is listed in the next report's process_failures with its times, from the 'Collect failed pipeline runs' step. scripts/build-vdr-report.py with scripts/_evaluation.py.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_detect_and_recover_event_becomes_one_process_finding_per_check"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_finding_on_a_default_past_the_window_becomes_a_process_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_unresolved_finding_becomes_a_process_finding_in_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_stopped_runs_on_main_since_the_previous_report_are_listed_without_ids"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_deploy_and_nightly_pass_failed_runs_to_the_vdr_build"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Collect failed pipeline runs (VDR-CSO-FAV)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Collect failed pipeline runs (VDR-CSO-FAV)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -2475,12 +3212,37 @@
     },
     {
       "frr_id": "VDR-CSO-RES",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py: ledger carries first_detected/first_evaluated/clock across builds (1142 ingest_previous_ledger, 1176 clock_facts), rating history and completed reductions (1225); policies/triage.rego decides IRV/LEV/disposition/deadline/blocking per finding; verified mitigations against the signed runtime signal (build-vdr-report.py:387 mitigation_state); scripts/vuln-gate.py forces fix-or-decide; data/decisions.json register (39 records); reconcile.py invariant (h) needs a decision for every finding; published nightly (live vdr-report.json, 35 findings, all dispositioned).",
-      "evidence": [],
-      "gap": "'Assess exploitation of' isn't mechanized: the 'exploitation' fact read by triage.rego (figure7 'exploitation-observed') is never set by any ingester (build-vdr-report.py:1345 reads f.get('exploitation'); nothing writes it), and nothing checks logs/CloudTrail for exploitation of detected vulnerabilities. Monitoring/reporting halves are partial; see VER-RPT-* (CR26 reports not yet live, supplementary info never filled). To close: Add an exploitation-assessment step: for each open IRV/LEV finding, query CloudFront/API Gateway/CloudTrail logs for indicators tied to the advisory (or record a dated operator assessment in the decision register), and set exploitation='active'|'none-observed' with basis on the finding. Merge the CR26 reports PR.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. The operator's log review for open IRV+LEV findings runs under incident response (DEC-181).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_incident_naming_the_finding_makes_exploitation_active"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_policies_named_are_in_force_in_the_register"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-181"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
@@ -2493,62 +3255,204 @@
     },
     {
       "frr_id": "VDR-TFR-KEV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1054 ingest_kev loads the CISA catalog; triage.rego:385 blocks any KEV (even when dispositioned or fully mitigated) via G1; detection-gate.py checks catalog freshness (14 days, detection-feeds.json). Live: kev feed ok, 1768 entries, 0 KEV findings.",
-      "evidence": [],
-      "gap": "CISA due dates aren't tracked: ingest_kev keeps only cveID and drops dueDate/dateAdded, so the report never states the BOD 26-04 due date or whether remediation met it. A KEV blocks publication, but nothing records a remediation deadline tied to the catalog. A fully mitigated KEV is still blocked (good), but its remediation due date isn't reported either. G1 runs after apply in deploys (see AKE). To close: Keep {cveID: dueDate, dateAdded} from the catalog; set remediation_due_at = min(Class C deadline, CISA dueDate) for KEV findings even when fully mitigated; publish kev_due_date and overdue state in the VDR/VDT providerExtensions; add tests.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The VDR keeps each KEV entry's dueDate and dateAdded: a KEV finding's remediation deadline is the earlier of the Class C deadline and the catalog's due date, even when fully mitigated, and it is overdue once the catalog date passes; kev_due_at, kev_date_added and kev_overdue are published per finding and in the VDT's providerExtensions (kevDueAt, kevDateAdded, kevOverdue). A KEV blocks before activation (VDR-CSO-AKE) and in the VDR build (G1).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_catalog_due_date_is_kept_and_bounds_the_deadline"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_kev.py::test_the_vdt_names_the_kev_due_date"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-MVX",
-      "status": "Partially Implemented",
-      "implementation": "Runtime emitter daily (infrastructure/main.tf:809, variables.tf:144 rate(1 day)), live ksi-signal-runtime.json emitted 2026-11-05T14:01:20Z: 5 validations (4 object stores + CDN), all pass; divergence 'converged' over 46 KSIs. reconcile.py --live twice daily: live completeness and tags for every in-boundary resource. Watchdog alarms if the runtime signal is >26h old.",
-      "evidence": [],
-      "gap": "Of the ~30 cloud components in the live inventory (3 functions, API Gateway, Cognito, 6 IAM roles, 17 IAM policies, 4 KMS keys, log groups, alarms, DNS, SNS, SQS, DynamoDB, OIDC provider), only 5 have their configuration status verified and validated within 3 days; the rest get existence/tag checks only. Their full validation (52 validations) lives in the deploy-time signal, which may be up to 30 days old (freshness-config.json). Packages/html artifacts are covered by Grype/ZAP, not V&V. To close: Extend the runtime emitter (or a nightly OPA pass) to read live config for every machine component type and evaluate it against the same Rego, so ksi-signal-runtime.json carries one validation per machine component. Add a reconcile invariant that fails when any machine component lacks a runtime validation younger than 72h.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The runtime emitter (infrastructure/lambda, daily, signed with a KMS ECDSA key) re-validates every machine-based component live against the same gate policy the deploy enforces: live readers for each of the 20 machine types in infrastructure/schemas/runtime-vv-config.json (IAM roles, groups and the OIDC provider, Lambda, API Gateway, Cognito, KMS, log groups, SNS, SQS, alarms, rules, CloudTrail, DynamoDB, Route 53, ACM, S3, CloudFront), with read-only grants scoped by ARN. Reconciliation invariant (n) in the nightly fails closed unless every machine component was validated by a verified runtime run within 72 hours (Class C: 3 days); a denied read is unassessed, never a pass. Packages, static content and external services are excluded with their reasons (scans, content hashing, outside the boundary).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_unverified_or_stale_signal_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_missing_runtime_signal_fails_main"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_every_live_inventory_type_is_classified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_machine_type_has_a_reader_or_existing_check"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-NMV",
-      "status": "Not Implemented",
-      "implementation": "docs/security-review.md 'Quarterly continuous-monitoring reviews': one entry, 2026-Q2 dated 2026-05-08, 'Next review due: 2026-08-08'; no later entry anywhere in docs/ (grep for 2026-Q3). docs/training-log.md and docs/policies/*.md carry no dated quarterly verification. scripts/check-manual-settings.py observes three hand-applied *machine* settings on each deploy.",
-      "evidence": [],
-      "gap": "Non-machine resources (policies in docs/policies/, procedures/runbooks, the IR plan, the operator's training/role, decision records, the governance registry docs/governance/domains.json) have no verification-and-validation at least every 3 months. The only quarterly review on record is ~6 months old and overdue since 2026-08-08, and it reviewed machine signals (runtime emitter, VDR), not policies/people. No mechanism alarms when the 3-month window passes. To close: Create a non-machine resource register (each policy/procedure/role with owner, last_verified, evidence link) and a quarterly V&V record that checks each against what's actually practiced. Add a freshness entry (max 92 days) to infrastructure/schemas/freshness-config.json so the watchdog/trust center goes red when it lapses. Do the overdue Q3/Q4 review now.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "data/non-machine-resources.json registers every non-machine resource (policies and standards, runbooks, incident response, recovery, the continuous monitoring plan, the operator role and training record, rules of behavior, supply chain and significant change procedures, the PTA, the decision register and the governance registry), each with what its verification checks and the decision record that attests it. DEC-190 is the operator's 2026-Q4 verification and validation against practice (AI-drafted; Sam's attestation). scripts/check-non-machine-vv.py fails the deploy when an entry is older than 92 days, misses a policy or runbook, or cites a record not in force; the nightly publishes the status (.well-known/vdr-non-machine-vv.json, 92-day freshness window watched by the watchdog).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_the_register_lapses_after_92_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_the_register_lists_every_policy_and_runbook"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_every_entry_cites_an_in_force_decision_decided_on_its_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_non_machine_vv.py::test_enforce_fails_on_a_lapsed_register_and_writes_the_status"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-non-machine-vv.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-190"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PCD",
-      "status": "Partially Implemented",
-      "implementation": "Nightly (twice daily) Grype over every dependency tree and Checkov/tfsec over all Terraform (evidence-nightly.yml 'SAST (Checkov + tfsec)', 'Scan application and Lambda dependencies'); weekly ZAP over the static site; detection-gate enforces feed freshness (infrastructure/schemas/detection-feeds.json).",
-      "evidence": [],
-      "gap": "Monthly detection doesn't reach every resource: the Silk Reeling API/app surface gets no dynamic detection and first-party code gets no SAST (see DET). The rule's 'all information resources' includes non-machine resources, which get no vulnerability detection at all (see NMV). Nothing maps inventory components to the detection that covered them in the month, so completeness can't be shown. To close: Add a per-component coverage record to the VDR (component -> detection techniques -> last run) and fail/alarm when any inventory component has no detection in 30 days. Close the API DAST and code SAST gaps; fold the quarterly non-machine review in.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). External services are listed as the third party's to detect. Non-machine resources are verified quarterly (VDR-TFR-NMV). Live inputs on 2026-11-05: 207 of 207 own components covered, 7 external.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_components_no_technique_reached_this_month_are_uncovered"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_fresh_feed_covers_its_components"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_coverage_and_unresolved_components_are_governed_detect_and_recover_checks"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PDD",
-      "status": "Partially Implemented",
-      "implementation": "Twice daily: reconcile.py --live (evidence-nightly.yml:605) enumerates live AWS for completeness (a) and classification tags (i); Grype on all dependency trees; Checkov/tfsec on source. Daily: runtime emitter (infrastructure/lambda/index.js, rate(1 day)) re-evaluates live S3 buckets and the CloudFront distribution against the deploy Rego and computes divergence (live ksi-signal-runtime.json: 5 validations, divergence 'converged', 46 KSIs compared). Hourly watchdog for evidence availability.",
-      "evidence": [],
-      "gap": "Drift detection on live configuration covers only the 4 buckets and the distribution. Live drift in IAM roles/policies (privileges), the 3 Lambda functions (code/config), API Gateway, Cognito, KMS, DNS, Secrets isn't detected within 14 days: those are re-validated only on a human-initiated deploy (deploy-time ksi-signal.json, 52 validations, which freshness-config allows to be 30 days old) and by existence/tag checks. scripts/check-silk-runtime-config.py runs only in the deploy. No document says which resources are 'likely to drift'. To close: Extend buildRuntimeSignal (infrastructure/lambda/index.js:299) to read and evaluate live config for IAM roles/policies, Lambda (code SHA, env, runtime), API Gateway routes/authorizers, Cognito pool settings and KMS policies against the same Wasm policy; or run check-silk-runtime-config.py and a live OPA pass in the nightly. Record which component types are classed 'likely to drift' in the inventory.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "infrastructure/schemas/runtime-vv-config.json marks each machine type likely_to_drift or not, with the reason, and sets drift_window_days 14. Every machine type, drifting or not, is re-validated live daily by the runtime emitter, and invariant (n) fails the nightly when any machine component goes 72 hours without a verified run; dependency trees are scanned twice daily and IaC on every change. A config that would weaken the window is rejected.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_config_that_would_weaken_the_gate_is_rejected"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_reconcile_runtime_vv.py::test_known_bad_fixture_fails_every_way"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
       "frr_id": "VDR-TFR-PSD",
-      "status": "Partially Implemented",
-      "implementation": "Every 12h: Grype over all dependency SBOMs, Checkov/tfsec over all IaC (evidence-nightly.yml). Daily: runtime OPA over live S3/CloudFront (infrastructure/lambda/index.js). Weekly: ZAP baseline.",
-      "evidence": [],
-      "gap": "Over a 3-day window, live machine resources other than S3/CloudFront get no vulnerability detection: Lambda functions, API Gateway, Cognito, IAM. DAST of the web surface runs every 7 days, not 3, and the API never. To close: Run the ZAP baseline (and the authenticated API scan once built) at least every 3 days, e.g. in the nightly or a 2-day cron with the --zap-max-age-days window set to 3. Extend runtime live-config detection to all machine component types (see PDD).",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Similar machine-based resources are sampled well inside 3 days: the runtime emitter re-validates every machine component daily (not a sample: all of them), invariant (n) enforces 72 hours; CodeQL and the authenticated ZAP API scan run daily and after each deploy and the detection gate fails the run when either is older than 72 hours; the ZAP site scan is held to 3 days (--zap-max-age-days 3, fractional days).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_detection_gate.py::test_codeql_and_zap_api_windows_are_the_class_c_three_days"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_detect_wiring.py::test_zap_runs_at_least_every_three_days_and_after_each_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_denied_reads_are_unassessed_not_findings"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_zap_age_is_not_floored_to_whole_days"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
       ]
     },
     {
@@ -2599,22 +3503,60 @@
     },
     {
       "frr_id": "VER-EVA-AIA",
-      "status": "Partially Implemented",
-      "implementation": "triage.rego figure7 'floor': IRV + AV:N/PR:N/UI:N with direct impact is LEV regardless of EPSS (REQ-LEV-3); no score defaults to LEV.",
-      "evidence": [],
-      "gap": "No explicit 'automatable' assumption is recorded or evaluated. The floor covers only unauthenticated, no-interaction network vectors. An EPSS score below 0.10 makes a finding NLEV with no evidence that its exploitation can't be automated, so the rule's 'UNLESS they have evidence proving otherwise' isn't enforced. To close: Add an 'automatable' fact per finding (default true; CVSS 4.0 AU or SSVC Automatable when present), let only an evidence-bearing decision record set it false, and make automatable=true block the EPSS-only NLEV path (or document why EPSS < threshold is evidence). Publish automatable + basis.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Every finding's evaluation record carries automatable (VER-EVA-AIA): yes by default; no only from a decision record carrying the evidence (decisions.schema.json 'automatable', and _decisions.py refuses 'no' without evidence) or a CVSS 4.0 AU:N. Figure 7's floor reads the vector as the automatable proxy, and a finding with no prediction score is LEV, as the method states; an EPSS score below the governed threshold (published with its rationale, REQ-LEV-2) is the method's evidence for NLEV.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_automatable_by_default"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_only_a_decision_with_evidence_says_not_automatable"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_cvss4_automatable_is_read"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_decisions.py::test_each_known_bad_register_fails_closed_for_its_reason[automatable-no-evidence.json-'no' needs its evidence]"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-EFA",
-      "status": "Partially Implemented",
-      "implementation": "Criticality: inventory classification -> CR/IR/AR (build-vdr-report.py:1680). Reachability: IRV (triage.rego reach/irv). Exploitability: Figure 7/EPSS/CVSS. Known threats: CISA KEV + EPSS. Prevalence: consolidate_by_cve counts assets (display only). Privilege: CVSS PR in the LEV floor only.",
-      "evidence": [],
-      "gap": "No factor for Detectability (how easily an attacker learns of the vulnerability) or Proximate Vulnerabilities (interaction with earlier or partially mitigated findings). Prevalence and Privilege (privilege gained by exploitation) don't feed PAIN or LEV. For config findings (all current findings) only Reachability is actually evaluated (see ELX/EPA). To close: Add the missing factors to the evaluation record: detectability (e.g. public advisory + exposed surface), prevalence (asset count -> raise PAIN when >1 component), privilege (scope change/privileged component -> raise PAIN), proximate (link to other open/mitigated findings on the same component and re-evaluate together). Document each in the method profile and publish per finding.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each finding carries an evaluation record with every factor VER-EVA-EFA names, each with its basis: criticality (the component's classification, which PAIN is computed from), reachability (IRV and basis), exploitability (LEV and basis), detectability (outside-in, public advisory, public source), prevalence (findings and components in its group, share of the inventory), privilege (CVSS PR/S and identity or key components), proximate vulnerabilities (other findings and verified mitigations on the component, read with the group) and known threats (KEV, EPSS). The VDR methodology publishes what each factor means (methodology.evaluation_factors). The factors are recorded, not fed into the global impact tables (REQ-PAI-4); grouping feeds the policy.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_is_evaluated_at_its_most_exposed_open_member"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
@@ -2642,164 +3584,531 @@
     },
     {
       "frr_id": "VER-EVA-EIR",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:189 reach() / :199 irv(): outside-in observation (ZAP) -> IRV; unresolved component or package -> IRV; else the inventory's declared internet_reachable; verified 'not-reachable' mitigation -> NIRV; irv_basis published per finding.",
-      "evidence": [],
-      "gap": "In the live report, 5 findings and all 3 suppression records have irv_basis 'unresolved': their resource (e.g. aws_iam_group_policy.operators_assessment_readonly, aws_iam_role_policy_attachment.legacy, .checkov.yaml) doesn't resolve to an inventory component, so IRV=true was assumed, not evaluated. The suppression records name '.checkov.yaml' as the resource, not the affected AWS resource. To close: Add the bootstrap-stack IAM policies to the canonical inventory with declared reachability; make suppression records name their real resources (from the decision's applies_to.resources); make unresolved_components > 0 a reconciliation failure, or at least a recorded detect-and-recover event.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego decides IRV from an outside-in observation, the resolved inventory component's declared internet_reachable, or a verified not-reachable mitigation, with irv_basis per finding. Suppressions resolve to the resources their decision names, a site-root DAST finding resolves to its page, and a finding that still resolves to no component is rated at the method's fail-safe (IRV) and recorded as vdr.unresolved-component, a process finding with a deadline until it resolves.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_resolution_identity.py::test_t7_unresolved_finding_is_irv_failsafe_and_flagged"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_site_root_resolves_to_its_index_page"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_an_unresolved_finding_becomes_a_process_finding_in_the_build"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-ELX",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:207 figure7 (fully mitigated -> KEV -> exploitation observed -> floor IRV+AV:N/PR:N/UI:N -> no direct impact -> EPSS>=0.10 -> no score = LEV), plus verified 'not-likely-exploitable' mitigations and governed LEV overrides; per-finding lev_basis published. EPSS feed live (400,564 scores).",
-      "evidence": [],
-      "gap": "For every current finding, exploitability rests on the default, not an evaluation: all 35 live findings have lev_basis 'no-score' (config/DAST findings have no vector or EPSS; methodology.check_vectors_in_force = 0, lev_overrides_in_force = 0). So, for example, two ZAP false positives and a CloudTrail SNS setting are all 'likely exploitable', with no context considered. Only CVE findings get a contextual LEV path. To close: Put governed CVSS vectors in force for the Checkov/tfsec check IDs that recur (infrastructure/schemas/check-vectors.json needs decided_by/decided_on), and add a per-finding LEV judgment record (in the decision register) for DAST/config findings so LEV reflects the system context. Keep the default for anything unevaluated.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Figure 7 in policies/triage.rego, first match deciding, with lev_basis per finding. Configuration checks carry no CVE, so each recurring check has a governed CVSS vector (infrastructure/schemas/check-vectors.json) adopted by decision record DEC-180; a decided vector whose record is not in force stops the build. The vector drives the floor and the no-direct-impact rule, so LEV reflects what exploiting the misconfiguration needs in this system; DAST findings are evaluated by their decision records (DEC-039, DEC-040); anything unevaluated keeps the default (LEV).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_in_force_vector_is_applied_and_drives_lev_and_pain"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_known_bad_decided_vector_without_a_decision_record_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_the_committed_vectors_are_in_force_through_their_decision"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-180"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-EPA",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1730 assign_pain: CVSS-Environmental derivation for CVE findings, using asset CR/IR/AR from the inventory classification and a multi-agency scope term, bucketed into minimal/narrow/disruptive/debilitating x 1/>1 agency (_WORD_SCOPE_TO_N); governed config infrastructure/schemas/vdr-pain-config.json.",
-      "evidence": [],
-      "gap": "Findings without a CVSS vector, which is every current finding, use a severity proxy (SEVERITY_TO_PAIN, build-vdr-report.py:515: scanner severity -> N-level) with no system or agency context. N0 is never assigned: the scale is read from the PVR keys N1-N5 and fully mitigated maps to the lowest level N1 (triage.rego impact()), though EPA defines N0. The narrative 'potentialAgencyImpact' in the VDT is boilerplate ('Potential Agency Impact N2 (technical impact ...)'), not an estimate of effect on agencies. To close: Same governed per-check vectors as ELX so config findings go through the contextual derivation; add N0 to the scale for fully mitigated/no-effect cases; write a one-line agency-effect rationale per finding (or per check ID) into the record and the VDT potentialAgencyImpact.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "PAIN is computed by the CVSS-Environmental derivation from the vector (the advisory's, or the governed check vector adopted by DEC-180) and the component's classification, onto the rules' scale; a fully mitigated finding takes N0, read from VER-EVA-EPA in the rules. Each finding states its likely agency effect and what the rating rests on (impact_rationale), which the VDT carries as potentialAgencyImpact.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_fully_mitigated_takes_n0_from_the_rules_scale"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_dispositions_mitigations.py::test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_the_committed_vectors_are_in_force_through_their_decision"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-180"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-EVA-GRV",
-      "status": "Partially Implemented",
-      "implementation": "scripts/build-vdr-report.py:1777 consolidate_by_cve groups CVE findings across scanners/assets into cve_findings (live: 0 CVEs); decisions group check IDs/resources (e.g. DEC-032 covers CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162).",
-      "evidence": [],
-      "gap": "Grouping is for display only: deadlines, LEV/IRV and reporting still apply per instance (VDT emits one record per scanner finding; the 3 CloudTrail findings under DEC-032 are 3 VDT/AVI records). Config findings are never grouped by check or root cause, so the rules aren't 'applied to the consolidated groupings'. To close: Make a group (CVE, or check ID + root cause, or decision) the unit for clock, disposition and VDT record, listing its member instances/assets in providerExtensions, and derive the group's PAIN/IRV/LEV as the worst of its members.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Each finding belongs to a group: its CVE, else the decision record that decided it, else its check. policies/triage.rego evaluates the group at its most exposed open member (highest PAIN, LEV or IRV if any member is) with the clock of its earliest member, and the group's deadline binds every open member, so a new instance of an old group does not get a new clock. The VDR publishes groups[] (members, components, rating, deadline) and each finding's group; the VDT carries groupId and groupDueAt.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_known_bad_new_instance_of_an_old_group_is_on_the_groups_clock_and_blocks"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_is_evaluated_at_its_most_exposed_open_member"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_closed_member_does_not_set_the_groups_rating"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_group_keys"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-AVI",
-      "status": "Partially Implemented",
-      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496): each accepted vulnerability's detail and acceptance rationale from its decision record; the build fails if a rationale is missing.",
-      "evidence": [],
-      "gap": "Supplementary information is never populated. For the three suppression records, the detection time is when the ledger first saw the suppression rather than when the weakness was found, and the resource is the suppression file, so IRV is unresolved. To close: Take the detection date from the decision; resolve suppressions to the decision's resources so IRV is evaluated; populate supplementary information.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py): each accepted vulnerability's detail and acceptance rationale from its decision record (the build fails if a rationale is missing), supplementary information from the decision, and its detection time. A .checkov.yaml suppression resolves to the resources its decision names, so its IRV is decided from the inventory: DEC-010 (CKV_AWS_117) names the three Lambda components it covers and resolves; DEC-007, DEC-009 and DEC-010 record their original detection date (2025-06-14, from git history; AI-drafted for Sam's confirmation). Early acceptance (VER-TFR-MAV 'will not be') is included with its basis.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_decisions.py::test_the_post_migration_amendments_are_the_stated_ones"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-010"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-HLO",
-      "status": "Partially Implemented",
-      "implementation": "Live vdr-report.json methodology.detection lists each feed/scanner with status, count, source date and age; vdr-status.json shows gate results; security.txt is the VDP.",
-      "evidence": [],
-      "gap": "There's no high-level overview of *all* VDR activities in the period: no summary of DAST runs, the manual ZAP scans of 2026-10-26/27, VDP reports received (none recorded), penetration testing (none), assessments (the self-performed 2026-05-08 assessment), or remediations completed. The detection block is a machine feed inventory for one run, not a period overview. To close: Add an 'activities' section to the period report (VDT providerExtensions and the .md): each activity type (SCA, IaC SAST, DAST, VDP, pentest, assessment, runtime V&V) with runs in period, coverage, findings opened/closed, and an explicit 'none this period' when it didn't happen.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "scripts/build-vdr-monthly.py publishes .well-known/vdr-monthly.json and .md for the calendar month to date (and the last 12 finished months): an overview of every activity type (software composition analysis, IaC static analysis, CodeQL, the ZAP site scan and the authenticated API scan, KEV and EPSS feeds, runtime verification, non-machine V&V, the vulnerability disclosure program, bug bounty, penetration testing and assessments), each with its runs and counts or an explicit 'none this period'. Activities outside the pipeline come from data/vdr-activities.json, which the operator records (seeded with the 2026-05-08 self-assessment and the 2026-10-26/27 manual ZAP scans). The VDT and AVI also carry the period's activity summary.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_every_activity_type_is_stated_with_none_this_period_when_quiet"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_period_is_the_calendar_month_to_date"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-NID",
-      "status": "Partially Implemented",
-      "implementation": "The trust center and boundary map refuse ARNs, account IDs and email addresses before publishing, and since W0 every published artifact passes the account-ID gate (scripts/check-published-redaction.py).",
-      "evidence": [],
-      "gap": "Everything is published publicly the moment it's detected, with no sensitivity review: no rule or step decides what is too specific to disclose before remediation, and the VDR has no redaction pass. A real IRV+LEV CVE would be published with package, version, component and deadline before it's fixed, which the FRD 'Responsibly' definition warns against. The 'sufficient information to all necessary parties' half is met, but with no restricted channel there's no way to give FedRAMP/agencies detail while withholding it from the public. To close: Define a disclosure policy: until remediation, public artifacts carry only tracking ID, rating, IRV/LEV, dates and status for IRV+LEV findings at N3+; full detail goes to a restricted artifact (signed, access-controlled, e.g. a Cognito-gated or presigned location) for necessary parties. Apply a redaction pass + test to vdr-report/VDT/AVI, and record the disclosure decision per finding.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. Necessary parties receive the withheld detail from the provider on request through the security contact. All published artifacts also pass the account-ID redaction gate.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_open_irv_lev_n3_is_summarized_and_redacted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_dispositioned_or_lower_rated_findings_are_disclosed_in_full"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_the_policies_named_are_in_force_in_the_register"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-182"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-PER",
-      "status": "Partially Implemented",
-      "implementation": "vdr-report.json, vdr-trend.json, vdr-status.json and ksi-signal-runtime.json are refreshed twice daily and on each deploy; the VDT, AVI and history (#496) cover the period since the previous report.",
-      "evidence": [],
-      "gap": "No report summarizes the period's activity (detections, evaluations, reductions, remediations, scans and V&V runs with times), and V&V results are not cross-referenced from the period's report. To close: Add an activity summary for the period to each report (detections, evaluations, reductions, remediations, scans with times, V&V runs and failures), linking the runtime results for the period.",
-      "closes_with": [
-        "W2",
-        "W7"
+      "status": "Implemented",
+      "implementation": "Reports are refreshed by every deploy and twice-daily nightly and each summarizes all activity since the previous report: the VDT and AVI carry providerExtensions.activitySummary for their period (detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions, every scan and feed run), and the monthly report covers the month. Runtime V&V runs are all counted: the emitter signs a bounded run history into its signal, carried forward only from a previous signal that verifies, and the VDR passes it to the period reports. Activities outside the pipeline (VDP reports, penetration tests, assessments) come from data/vdr-activities.json, with 'none this period' when none.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_each_period_report_summarizes_the_periods_activity"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_every_retained_runtime_run_in_the_period_is_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_signed_run_history_the_vdr_carries_is_counted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_tampered_previous_restarts_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_runtime_history.py::test_history_is_bounded_keeping_the_newest"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-RPT-RPD",
-      "status": "Partially Implemented",
-      "implementation": "Checked: the provider discloses publicly (live /.well-known/vdr-report.json and .md; public data/decisions.json).",
-      "evidence": [],
-      "gap": "The permission depends on the provider having *determined* that disclosure won't likely lead to exploitation; no such determination is recorded per finding or as policy (see NID). To close: Record the determination: a disclosure policy plus a per-finding 'public_disclosure' field (full/summary/withheld, with reason) set by the triage policy and published.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "The provider discloses its vulnerability reports publicly and records, per finding, the determination that doing so will not likely lead to exploitation (public_disclosure, under policy DEC-182); a finding where it would is published in summary until it is not.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_open_irv_lev_n3_is_summarized_and_redacted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_dispositioned_or_lower_rated_findings_are_disclosed_in_full"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-182"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ],
       "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation."
     },
     {
       "frr_id": "VER-RPT-VDT",
-      "status": "Partially Implemented",
-      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py, #496), validated against the vendored VDT schema before writing: tracking ID, detection time and source, evaluation time, IRV, LEV, current rating, PAIN reductions, projected next reduction, overdue status and final disposition.",
-      "evidence": [],
-      "gap": "Historical PAIN and rating history are not carried into the record; the projected next reduction is always the remediation deadline; supplementary information is never produced; overdue explanations for closed findings describe the suppression instead; ZAP detection times start when the scans entered the pipeline, not at the earlier manual scans. To close: Carry historical PAIN and rating history; let a decision set a planned next reduction; populate supplementary information from the decision; take detection dates from the decision where the scanner never saw the finding.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py), validated against the vendored VDT schema before writing: tracking ID; detection time (the earliest evidence: the scanner's first report, or the original_detection_date of a decision naming that record, e.g. DEC-039/040 for the manual ZAP scans) and source; evaluation time; IRV; LEV; current rating, with the historical rating and full rating history under providerExtensions (the schema has no field for them); PAIN reductions; projected next reduction from the decision's planned_reduction, else the remediation deadline; overdue status whose explanation explains the overdue status (and likely-to-become-overdue); supplementary information from the decision (justification, dates, resources, plan, mitigation); final disposition. Each report carries an activity summary for its period.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_records_carry_their_historical_rating_and_rating_history"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_decision_sets_the_next_reduction_and_the_deadline_is_only_the_fallback"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_supplementary_information_comes_from_the_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_overdue_explanations_explain_the_overdue_status_not_the_suppression"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_detection_time_comes_from_a_decision_that_names_the_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-EVU",
-      "status": "Partially Implemented",
-      "implementation": "Evaluation is automatic in the build that first ingests a finding: clock_facts sets first_evaluated = now on first sight (build-vdr-report.py:1176); detection feeds are fetched twice daily, so first_evaluated - detection is < 1 day. scripts/_rules.py:129 evaluation_days() reads the 5-day rule.",
-      "evidence": [],
-      "gap": "The timing is met in practice, but nothing enforces or reports it: evaluation_days() is never called, so no check that evaluation completed within 5 days of the source's detection (e.g. Dependabot/Grype detection times). The evaluation completed within that window is the default-driven one for config/DAST findings (see ELX/EPA/EFA), not a full VER-EVA evaluation. To close: Use _rules.evaluation_days() in the triage policy: flag (and count as a process vulnerability, see FAV) any finding whose first_evaluated is more than 5 days after its source detection time, or whose LEV/PAIN still rests on a default 5 days after detection.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego reads the evaluation window from the rules (scripts/_rules.py evaluation_days(), passed in by the builder) and flags each finding evaluated more than 5 days after the source detected it (a decision made earlier counts as the evaluation), or still resting on a default 5 days after detection (evaluation_late, published per finding and in the VDT). A finding still on a default becomes a process finding (VDR-CSO-FAV). Feeds are fetched twice daily, so first evaluation follows detection within a day.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_evaluation_days_come_from_the_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_evaluated_more_than_five_days_after_detection_is_late"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_decision_before_the_pipeline_saw_it_counts_as_the_evaluation"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_still_on_a_default_after_the_window_is_late"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-IRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: policies/triage.rego block_rule 'top-impact-lev-irv' (G2) blocks only N5+LEV+IRV, as a pipeline block; docs/policies/ir-policy.md:13 states the IRI rule in prose.",
-      "evidence": [],
-      "gap": "Nothing treats an internet-reachable likely exploitable vulnerability at N4 or N5 as a FedRAMP Reportable Incident: no incident record is opened, no IIR/OIR/FIR clocks start, and nothing ends that status when it's partially mitigated to N3 or below. N4 IRV+LEV isn't even flagged beyond its 4-day deadline. Depends on the missing IEC machinery. To close: In triage.rego add an 'incident' decision (IRV and LEV and PAIN > N3) and in the builder open/update an incident record in the incident register (see IEC-CSO-EFR) with default PAIN-5 treatment, closing it when a verified partial mitigation brings it to N3 or below. Test with a synthetic finding.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego (incident_triggers) names every VDR finding that is internet-reachable, likely exploitable and above the N-rating the VER-TFR-IRI Class C text states (read from the rule; a changed text fails closed), unless it is a false positive or fully mitigated; once partially mitigated to N3 or below it no longer triggers. scripts/build-incident-report.py publishes each trigger in the incident log and, while no unresolved incident in data/incidents.json names it, puts an Initial report due from the finding's first evaluation at the default N5 clock: the incident-reports workflow fails and the evidence watchdog pages when that passes. Opening the incident record is the operator's act; its reports then follow IEC-CSO-IIR/OIR/FIR. Reconciliation invariant (m) fails a build whose open incident names a finding the VDR does not carry. Adopted in data/incidents.json policy.adopted_vulnerability_rules.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_irv_lev_n4_finding_with_no_incident_is_due_an_initial_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_a_partially_mitigated_finding_at_n3_is_no_longer_an_incident"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_reconcile_m_fails_the_known_bad_register"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-MAV",
-      "status": "Partially Implemented",
-      "implementation": "policies/triage.rego:372 accepted_ns = first_evaluated + 192 days (read from data.rules VER-TFR-MAV), :376 accepted_now; build-cr26-vdr.py treats accepted/risk-accepted/operational-requirement decisions and MAV-passed findings as accepted; tests/test_clock.py:136 test_t14_past_maximum_period...",
-      "evidence": [],
-      "gap": "Only the 'is not' half is mechanized: a finding becomes accepted only once day 192 has passed. Nothing categorizes a finding that *will not* be fully mitigated or remediated within 192 days (e.g. a vendor-dependency with no fix, or a 'remediate' decision whose plan date is past day 192) as accepted earlier. Never exercised live (oldest first_evaluated 2026-08-06, day ~91). To close: In triage.rego, mark accepted when the projected remediation/next-reduction date (or a decision's target date, or vendor-dependency with fix_state not-fixed past a governed horizon) falls after first_evaluated + 192 days; require an acceptance explanation at that point. Add tests.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "policies/triage.rego marks a finding accepted once 192 days (VER-TFR-MAV, from the rules) have passed since its first evaluation, with no reset, and also as soon as its projected remediation (a decision's planned reduction to N0) falls after that day ('will not be'); accepted_basis is published, the acceptance explanation is the decision's justification, and the AVI reports it. A closed finding is never accepted.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_projected_remediation_past_the_maximum_period_is_accepted_now"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_evaluation.py::test_a_closed_finding_is_never_accepted_early"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_clock.py::test_t14_past_maximum_period_is_reported_accepted_with_unrecorded_explanation"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-MHR",
-      "status": "Partially Implemented",
-      "implementation": "vdr-report.md under /.well-known/ is rebuilt twice daily (scripts/build-vdr-report.py render_markdown); since W1 its counts read Findings / Open / Dispositioned and accepted risks agree with the tables. vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published (#496).",
-      "evidence": [],
-      "gap": "It is a current-state report, not a report of the month's activity: no detections, evaluations, reductions, remediations, scans or V&V runs for the period.",
-      "closes_with": [
-        "W7"
+      "status": "Implemented",
+      "implementation": "A consistent, human-readable monthly activity report: .well-known/vdr-monthly.md (with .json), rebuilt and signed by every deploy and nightly, covers the calendar month to date and keeps the previous 12 months: detections, evaluations, rating changes, reductions, remediations, decisions, every scan and feed run, runtime verification runs, non-machine V&V and the non-pipeline activities. The current-state vdr-report.md, vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published beside it.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_runs_accumulate_over_the_month_from_the_previous_report"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_a_finished_month_moves_to_previous_months"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_monthly.py::test_the_nightly_and_deploy_build_sign_and_publish_it"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-monthly.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-MRH",
-      "status": "Partially Implemented",
-      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (#496), rebuilt twice daily with 366-day retention, alongside vdr-report.json (per-finding rating history) and vdr-trend.json.",
-      "evidence": [],
-      "gap": "A record that leaves the VDR is labelled Remediated even when it vanished because coverage stopped or a suppression was added; closed decisions from before the history began are not backfilled. To close: Set a final disposition only from evidence (coverage continued and the scanner stopped reporting it, or a decision); otherwise record 'no longer reported'; backfill closed decisions.",
-      "closes_with": [
-        "W2"
+      "status": "Implemented",
+      "implementation": "vdr-history.json under /.well-known/ in FedRAMP's history schema (scripts/build-cr26-vdr.py), rebuilt twice daily with 366-day retention, alongside vdr-report.json and vdr-trend.json. A record that leaves the VDR keeps the time it stopped being reported and gets a final disposition only from evidence (a closed decision, a false-positive suppression of its check, or its scanner running again over the same scope without reporting it), recorded in providerExtensions.dispositionBasis; otherwise noLongerReportedReason says why (suppressed, reported again, or unknown) and no final disposition is given. An unsupported Remediated carried from an earlier history is withdrawn. Closed (remediated) decisions from data/decisions.json are carried as history records (backfilledFromDecision) for 366 days from closing.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_history_keeps_a_finding_that_left_the_vdr_then_drops_it_after_a_year"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_record_that_vanished_without_evidence_has_no_final_disposition"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_an_unsupported_remediated_from_an_earlier_history_is_withdrawn"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_a_check_that_became_a_suppression_is_not_remediated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_closed_decisions_are_backfilled_into_the_history_once"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-history.json"
+        }
       ]
     },
     {
       "frr_id": "VER-TFR-NRI",
-      "status": "Not Implemented",
-      "implementation": "Checked: docs/policies/ir-policy.md:13 adopts NRI in prose ('non-internet-reachable likely-exploitable vulnerabilities at PAIN N5 are reportable until N4 or below per VER-TFR-NRI'); no code implements it.",
-      "evidence": [],
-      "gap": "MAY rule: optional, but the published policy claims it's adopted and nothing implements it. NLEV-IRV N5 findings never open an incident. To close: Either implement alongside IRI (NIRV and LEV and PAIN = N5 -> incident until a partial mitigation brings it to N4) or remove the claim from ir-policy.md and record the decision not to use the MAY.",
-      "closes_with": [
-        "W6"
+      "status": "Implemented",
+      "implementation": "Adopted (docs/policies/ir-policy.md; data/incidents.json policy.adopted_vulnerability_rules). policies/triage.rego names every likely exploitable, not internet-reachable VDR finding at the N-rating the VER-TFR-NRI Class C text states (N5), until partially mitigated to N4 or below; the incident log and clocks treat it exactly as VER-TFR-IRI does. An unadopted rule's triggers are still shown but start no clock.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_nirv_lev_n5_finding_opens_under_nri_and_n4_does_not"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_incidents.py::test_an_unadopted_rule_is_shown_but_starts_no_clock"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/incident-reports.json"
+        }
       ],
       "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
     }

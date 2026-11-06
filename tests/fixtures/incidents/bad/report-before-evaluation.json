@@ -1,0 +1,46 @@
+{
+  "$comment": "KNOWN-BAD FIXTURE: a report is dated before the evaluation",
+  "schema": "incidents/1",
+  "policy": {
+    "federal_incident_coordinator": "Test coordinator; contact through https://samaydlette.com/.well-known/security.txt",
+    "notification": "published-only",
+    "notification_text": "Published only (test fixture).",
+    "adopted_vulnerability_rules": [
+      "VER-TFR-IRI"
+    ],
+    "federal_customer_data": "Test fixture.",
+    "decided_by": "Operator",
+    "decided_on": "2026-11-05",
+    "review_by": "2027-11-05"
+  },
+  "incidents": [
+    {
+      "id": "INC-2026-101",
+      "title": "Fixture incident",
+      "exercise": false,
+      "started_at": "2026-11-02T09:00:00Z",
+      "detected_at": "2026-11-02T09:30:00Z",
+      "detection_source": "test",
+      "evaluation": {
+        "evaluated_at": "2026-11-02T10:00:00Z",
+        "reportable": true,
+        "basis": "VER-TFR-IRI",
+        "reason": "Fixture: an internet-reachable LEV at N4.",
+        "federal_customer_data_considered": "Fixture."
+      },
+      "findings": [
+        "CVE-2099-0001"
+      ],
+      "estimates": [],
+      "reports": [
+        {
+          "type": "Initial",
+          "at": "2026-11-02T09:45:00Z",
+          "set": {
+            "description": "Fixture description."
+          }
+        }
+      ]
+    }
+  ]
+}

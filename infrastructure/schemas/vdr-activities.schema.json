@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VDR activities outside the pipeline (VER-RPT-HLO)",
+  "description": "Validated in code by scripts/build-vdr-monthly.py validate_activities (the deploy installs no jsonschema).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "programs", "activities"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "$comment": {"type": "string"},
+    "schema": {"const": "vdr-activities/1"},
+    "programs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vdp", "bug-bounty", "penetration-testing"],
+      "properties": {
+        "vdp": {"$ref": "#/$defs/program"},
+        "bug-bounty": {"$ref": "#/$defs/program"},
+        "penetration-testing": {"$ref": "#/$defs/program"}
+      }
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "date", "performed_by", "summary", "evidence", "recorded_by"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^ACT-\\d{3}$"},
+          "kind": {"enum": ["vdp-report", "bug-bounty", "penetration-test", "assessment", "manual-scan"]},
+          "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "end_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "performed_by": {"type": "string", "minLength": 1},
+          "summary": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string", "minLength": 1},
+          "recorded_by": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "program": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active", "note"],
+      "properties": {"active": {"type": "boolean"}, "note": {"type": "string", "minLength": 1}}
+    }
+  }
+}

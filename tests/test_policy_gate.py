@@ -36,6 +36,16 @@ EXPECTED = {
     "s3-encryption-disabled": (False, {"encryption_disabled"}),
     "s3-public-access-open": (False, {"public_access_not_fully_blocked"}),
     "s3-computed-bucket-name": (False, {"encryption_disabled", "public_access_not_fully_blocked"}),
+    # Service types the runtime emitter re-validates daily (FRC-CSX-VVK,
+    # VDR-TFR-MVX): the same rules gate the plan.
+    "service-stack-compliant": (True, set()),
+    "service-stack-computed-key": (True, set()),
+    "iam-admin-wildcard": (False, {"iam_admin_wildcard"}),
+    "iam-oidc-trust-unscoped": (False, {"iam_oidc_trust_unscoped"}),
+    "cognito-mfa-optional": (False, {"cognito_mfa_not_required"}),
+    "kms-rotation-disabled": (False, {"kms_rotation_disabled"}),
+    "log-group-unencrypted": (False, {"log_group_not_cmk"}),
+    "apigw-route-unauthorized": (False, {"apigw_route_unauthorized"}),
 }
 
 

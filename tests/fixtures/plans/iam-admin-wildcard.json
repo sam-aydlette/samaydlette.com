@@ -1,0 +1,613 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "models": "Known-bad: an inline role policy grants every action on every resource"
+  },
+  "format_version": "1.2",
+  "terraform_version": "1.9.8",
+  "resource_changes": [
+    {
+      "address": "aws_iam_role.lambda_opa",
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "lambda_opa",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "samaydlette-com-lambda-opa-role",
+          "assume_role_policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": \"sts:AssumeRole\", \"Principal\": {\"Service\": \"lambda.amazonaws.com\"}}]}",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_iam_role_policy.lambda_opa",
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "lambda_opa",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "p",
+          "role": "r",
+          "policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Action\": \"*\", \"Resource\": \"*\"}]}"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cognito_user_pool.silk_reeling",
+      "mode": "managed",
+      "type": "aws_cognito_user_pool",
+      "name": "silk_reeling",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "pool",
+          "mfa_configuration": "ON",
+          "password_policy": [
+            {
+              "minimum_length": 14
+            }
+          ],
+          "admin_create_user_config": [
+            {
+              "allow_admin_create_user_only": true
+            }
+          ],
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_kms_key.at_rest",
+      "mode": "managed",
+      "type": "aws_kms_key",
+      "name": "at_rest",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "description": "k",
+          "enable_key_rotation": true,
+          "is_enabled": true,
+          "customer_master_key_spec": "SYMMETRIC_DEFAULT",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_kms_key.runtime_signing",
+      "mode": "managed",
+      "type": "aws_kms_key",
+      "name": "runtime_signing",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "description": "s",
+          "customer_master_key_spec": "ECC_NIST_P256",
+          "key_usage": "SIGN_VERIFY",
+          "is_enabled": true,
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cloudwatch_log_group.opa_compliance",
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "opa_compliance",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "/aws/lambda/x",
+          "retention_in_days": 365,
+          "kms_key_id": "arn:aws:kms:us-east-2:123456789012:key/k",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_apigatewayv2_stage.silk_reeling",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_stage",
+      "name": "silk_reeling",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "$default",
+          "access_log_settings": [
+            {
+              "destination_arn": "arn:aws:logs:us-east-2:123456789012:log-group:/aws/apigateway/x",
+              "format": "{}"
+            }
+          ],
+          "default_route_settings": [
+            {
+              "throttling_rate_limit": 20,
+              "throttling_burst_limit": 10
+            }
+          ],
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_apigatewayv2_route.silk_reeling",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_route",
+      "name": "silk_reeling",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "route_key": "$default",
+          "authorization_type": "NONE"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_apigatewayv2_route.silk_reeling_api",
+      "mode": "managed",
+      "type": "aws_apigatewayv2_route",
+      "name": "silk_reeling_api",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "route_key": "ANY /api/{proxy+}",
+          "authorization_type": "JWT"
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_lambda_function.opa_compliance",
+      "mode": "managed",
+      "type": "aws_lambda_function",
+      "name": "opa_compliance",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "function_name": "x",
+          "runtime": "nodejs22.x",
+          "kms_key_arn": "arn:aws:kms:us-east-2:123456789012:key/k",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_sns_topic.evidence_alerts",
+      "mode": "managed",
+      "type": "aws_sns_topic",
+      "name": "evidence_alerts",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "t",
+          "kms_master_key_id": "arn:aws:kms:us-east-2:123456789012:key/k",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_sqs_queue.compliance_dlq",
+      "mode": "managed",
+      "type": "aws_sqs_queue",
+      "name": "compliance_dlq",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "q",
+          "sqs_managed_sse_enabled": true,
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cloudwatch_metric_alarm.evidence",
+      "mode": "managed",
+      "type": "aws_cloudwatch_metric_alarm",
+      "name": "evidence",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "alarm_name": "a",
+          "actions_enabled": true,
+          "alarm_actions": [
+            "arn:aws:sns:us-east-2:123456789012:t"
+          ],
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cloudwatch_event_rule.opa_compliance",
+      "mode": "managed",
+      "type": "aws_cloudwatch_event_rule",
+      "name": "opa_compliance",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "e",
+          "state": "ENABLED",
+          "schedule_expression": "rate(1 day)",
+          "tags": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "CostCenter": "website-ops",
+            "DataClassification": "Internal",
+            "Owner": "sam-aydlette",
+            "DataSensitivity": "internal",
+            "MissionCriticality": "moderate",
+            "InternetReachable": "false",
+            "Archetype": "security-tooling",
+            "AgencyScope": "single",
+            "OwnerRole": "platform-operator"
+          }
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    },
+    {
+      "address": "aws_cloudtrail.management",
+      "mode": "managed",
+      "type": "aws_cloudtrail",
+      "name": "management",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": [
+          "create"
+        ],
+        "before": null,
+        "after": {
+          "name": "trail",
+          "enable_logging": true,
+          "is_multi_region_trail": true,
+          "enable_log_file_validation": true
+        },
+        "after_unknown": {},
+        "before_sensitive": false,
+        "after_sensitive": {}
+      }
+    }
+  ],
+  "configuration": {
+    "root_module": {
+      "resources": []
+    }
+  }
+}

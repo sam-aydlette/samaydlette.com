@@ -1,0 +1,18 @@
+{
+  "_note": "Known bad: the detection record lists no Grype scan.",
+  "ksi_signal_id": "sig-1",
+  "emitted_at": "2026-11-05T06:00:00+00:00",
+  "methodology": {
+    "detection": {
+      "schema": "detection/1",
+      "result": "ok",
+      "feeds": [
+        {
+          "feed": "kev",
+          "file": "kev-catalog.json",
+          "status": "ok"
+        }
+      ]
+    }
+  }
+}

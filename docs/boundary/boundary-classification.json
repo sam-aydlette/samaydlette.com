@@ -20,7 +20,7 @@
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
      "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
     {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
-     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
+     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::incident_reports", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
     {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
      "match": ["ext::github-repo", "ext::github-oidc"]},
     {"key": "sigstore", "zone": "external", "label": "Sigstore (Fulcio CA and Rekor log)",
@@ -105,6 +105,8 @@
     {"id": "Y3", "label": "Deploy and nightly → FIRST EPSS scores", "path": [{"component": "ext::github-repo"}, {"component": "ext::first-epss"}],
      "protocol": "HTTPS 443 (TLS)", "auth": "Anonymous public GET", "encryption": "In transit: TLS", "data": "EPSS scores file in (public)"},
     {"id": "Y4", "label": "Deploy and nightly → Grype vulnerability database", "path": [{"component": "ext::github-repo"}, {"component": "ext::anchore-grype-db"}],
-     "protocol": "HTTPS 443 (TLS)", "auth": "Anonymous public GET", "encryption": "In transit: TLS; checksum verified", "data": "Vulnerability database in (public)"}
+     "protocol": "HTTPS 443 (TLS)", "auth": "Anonymous public GET", "encryption": "In transit: TLS; checksum verified", "data": "Vulnerability database in (public)"},
+    {"id": "Z", "label": "Incident Reports → S3 (.well-known/incident-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::incident_reports"}, {"component": "aws::object_store::website"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/incident-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Incident log and IIR/OIR/FIR reports (Sigstore-signed)"}
   ]
 }

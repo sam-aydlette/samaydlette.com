@@ -629,6 +629,42 @@
    }
   },
   {
+   "component_id": "aws::iam_role::incident_reports",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Incident reports workflow role (unattended IIR/OIR/FIR publication)"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::incident_reports_cdn",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-incident-reports-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::incident_reports_publish",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-incident-reports-oidc"
+   }
+  },
+  {
    "component_id": "aws::iam_policy::evidence_watchdog_management",
    "type": "iam_policy",
    "security_category": {

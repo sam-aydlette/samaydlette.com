@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publication gate: no published artifact carries an AWS account ID.
+"""Publication gate: no published artifact carries an AWS account ID, an IAM user name or a GitHub run ID.
 
 Run immediately before a workflow uploads to /.well-known/, over the directory
 the artifacts were built in:
@@ -63,6 +63,12 @@ def violations(paths):
             where = "; ".join(re.sub(r"[0-9]", "#", text[max(0, m.start() - 30):m.start()]).replace("\n", " ")
                               for m in hits[:3])
             found.append(f"{p.name}: {len(hits)} account ID(s), e.g. after '{where}'")
+        runs = _redact.find_github_runs(text)
+        if runs:
+            found.append(f"{p.name}: {runs} GitHub run ID(s) or run URL(s)")
+        users = _redact.find_iam_users(text)
+        if users:
+            found.append(f"{p.name}: {users} IAM user name(s) after 'aws-iam-user::'")
     return found
 
 
@@ -86,12 +92,12 @@ def main(argv=None):
         return 2
     bad = violations(paths)
     if bad:
-        print(f"::error::publication redaction gate: {len(bad)} artifact(s) carry an AWS account ID; "
+        print(f"::error::publication redaction gate: {len(bad)} artifact(s) carry an AWS account ID, IAM user name or GitHub run ID; "
               "nothing is published (scripts/_redact.py)", file=sys.stderr)
         for b in bad:
             print(f"  ✗ {b}", file=sys.stderr)
         return 1
-    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID")
+    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID, IAM user name or GitHub run ID")
     return 0
 
 
