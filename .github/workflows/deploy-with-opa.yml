@@ -1804,8 +1804,9 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Building Ongoing Certification Report (CCM-OCR-AVL, FedRAMP's OCR schema, fixed CCM calendar)..."
-        curl -sfL -o previous-ocr.json "https://samaydlette.com/.well-known/ongoing-certification-report.json" \
-          || echo '{}' > previous-ocr.json
+        # Append-only (version, KSI metric and training history): a 404 starts
+        # it; any other failure stops the deploy instead of resetting it.
+        python3 ../scripts/fetch-published-history.py ongoing-certification-report.json previous-ocr.json
         python3 ../scripts/build-ocr.py \
           --vdr vdr-report.json \
           --decisions ../data/decisions.json \
@@ -1994,8 +1995,9 @@ jobs:
         COMMIT: ${{ github.sha }}
       run: |
         echo "Building the Security Decision Record (FedRAMP schema): every applicable rule, KSI and Moderate control..."
-        curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
-          || echo '{}' > previous-sdr.json
+        # Append-only (version, KSI metric and training history): a 404 starts
+        # it; any other failure stops the deploy instead of resetting it.
+        python3 ../scripts/fetch-published-history.py security-decision-record.json previous-sdr.json
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
@@ -2005,7 +2007,7 @@ jobs:
           --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER" \
           --runtime-commit "$COMMIT" --require-two-methods
         # FRC-CSX-VVK: a KSI short of two automated methods without an in-force
-        # accepted decision (KSI-CED-RAT: DEC-191) fails the deploy here, before
+        # accepted decision fails the deploy here, before
         # anything is published. The runtime method counts only for the signal
         # the staged emitter run produced for this commit.
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
@@ -2018,8 +2020,9 @@ jobs:
       working-directory: infrastructure
       run: |
         echo "Building Certification Package Overview (CPO-CSO-OVR, FedRAMP's CPO schema); with the SDR, the SSP replacement..."
-        curl -sfL -o previous-cpo.json "https://samaydlette.com/.well-known/certification-package-overview.json" \
-          || echo '{}' > previous-cpo.json
+        # Append-only (version, KSI metric and training history): a 404 starts
+        # it; any other failure stops the deploy instead of resetting it.
+        python3 ../scripts/fetch-published-history.py certification-package-overview.json previous-cpo.json
         python3 ../scripts/build-cpo.py \
           --offering ../data/cds/offering.json --profile ../data/system-profile.json \
           --ksi-signal ksi-signal.json --previous-cpo previous-cpo.json \
@@ -2032,8 +2035,8 @@ jobs:
     # an entry in the signed, published log. Any unexpected outcome fails here.
     # The same log records the simulated FedRAMP's certification report when one
     # is due (CDS-CSO-FRC) and files a notice of every FedRAMP Security Inbox
-    # contact change, failing unless it is within one business day of the change
-    # (AFC-CSO-NOC, scripts/check-fsi-notice.py).
+    # contact change, failing unless it is filed within one business day of the deploy that
+    # first published the change (AFC-CSO-NOC, scripts/check-fsi-notice.py).
     - name: Simulated package submission to FedRAMP (nothing is sent)
       working-directory: infrastructure
       run: |
@@ -2176,6 +2179,17 @@ jobs:
         : > published-docs.txt
         ls policies/*.md >> published-docs.txt
         python3 ../scripts/build-human-views.py --freshness schemas/freshness-config.json --dir . --list published-docs.txt
+        # Every other JSON the publish steps put has its view too: each incident
+        # report, the inventory's JSON Schema (published beside the signal, so
+        # its view is built from a copy here), and each certification report
+        # (its view sits beside it in fedramp-certification-reports/ and is put
+        # by the step that publishes the reports).
+        cp schemas/ksi-signal.schema.json ksi-signal.schema.json
+        shopt -s nullglob
+        python3 ../scripts/build-human-views.py ksi-signal.schema.json incident-INC-*.json --list published-docs.txt
+        reports=(fedramp-certification-reports/*.json)
+        if [ "${#reports[@]}" -gt 0 ]; then python3 ../scripts/build-human-views.py "${reports[@]}"; fi
+        shopt -u nullglob
         python3 ../scripts/build-trust-manifest.py --dir . --policy-index policy-index.json --commit "$GITHUB_SHA" \
           --output trust-manifest.json --md-output trust-manifest.md
         python3 ../scripts/build-human-views.py trust-manifest.json --list published-docs.txt
@@ -2374,6 +2388,11 @@ jobs:
           got=$(aws s3 cp "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/$f" - | sha256sum | awk '{print $1}')
           [ "$got" = "$sha" ] || { echo "::error::$f served bytes differ from the report as received"; exit 1; }
           echo "published unmodified: fedramp-certification-reports/$f"
+          # Its complete human-readable view (CDS-TRC-HMR), built beside it and
+          # scanned by the gate above with the report.
+          aws s3 cp "fedramp-certification-reports/${f%.json}.view.md" \
+            "s3://$BUCKET_NAME/.well-known/fedramp-certification-reports/${f%.json}.view.md" \
+            --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
         done
 
     # -------------------------------------------------------------------------
@@ -2874,9 +2893,12 @@ jobs:
     name: Notify on Failure
     runs-on: ubuntu-latest
     # The simulated assessor fails a run without failing the deploy (the deploy
-    # is then skipped), so its result is watched here too.
-    needs: [compliance-check, simulated-assessor, deploy, package-maintainer, incident-publisher, post-deploy-assessor, post-deploy-binding]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.simulated-assessor.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure' || needs.post-deploy-assessor.result == 'failure' || needs.post-deploy-binding.result == 'failure')
+    # is then skipped), so its result is watched here too. So are the unit
+    # tests (which hold the rule-completeness gate) and the security scan: on
+    # main their failure skips the deploy rather than failing it. On a pull
+    # request their failure is the PR's own red check, so no issue is raised.
+    needs: [test, security-scan, compliance-check, simulated-assessor, deploy, package-maintainer, incident-publisher, post-deploy-assessor, post-deploy-binding]
+    if: always() && ((github.event_name != 'pull_request' && (needs.test.result == 'failure' || needs.security-scan.result == 'failure')) || needs.compliance-check.result == 'failure' || needs.simulated-assessor.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure' || needs.post-deploy-assessor.result == 'failure' || needs.post-deploy-binding.result == 'failure')
     permissions:
       contents: read
       issues: write
@@ -2888,6 +2910,8 @@ jobs:
       # `${{ }}` interpolation into the script body — templating workflow context
       # straight into executable script is the habit that causes injection bugs.
       env:
+        TEST_RESULT: ${{ needs.test.result }}
+        SCAN_RESULT: ${{ needs.security-scan.result }}
         COMPLIANCE_RESULT: ${{ needs.compliance-check.result }}
         ASSESSOR_RESULT: ${{ needs.simulated-assessor.result }}
         DEPLOY_RESULT: ${{ needs.deploy.result }}
@@ -2908,6 +2932,8 @@ jobs:
             `| Trigger | \`${context.eventName}\` |`,
             `| Commit | ${context.sha} |`,
             `| Ref | ${context.ref} |`,
+            `| Unit tests (rule completeness included) | \`${process.env.TEST_RESULT}\` |`,
+            `| Security scan | \`${process.env.SCAN_RESULT}\` |`,
             `| Compliance check | \`${process.env.COMPLIANCE_RESULT}\` |`,
             `| Simulated assessor | \`${process.env.ASSESSOR_RESULT}\` |`,
             `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,

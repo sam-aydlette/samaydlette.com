@@ -109,10 +109,19 @@ def test_the_manifest_names_only_human_views_that_exist(tmp_path):
     assert ksi["human_readable"] == ["https://samaydlette.com/.well-known/ksi-signal.md",
                                      "https://samaydlette.com/.well-known/ksi-signal.view.md"]
     assert ksi["schema"].endswith("ksi-signal.schema.json")
+    # Not built here: its view is the one every publisher of it puts
+    # (scripts/_signers.py, held to the publish steps by
+    # tests/test_human_views_published.py); no curated summary is claimed.
     sdr = next(a for a in m["artifacts"] if a["name"] == "security-decision-record.json")
-    assert sdr["human_readable"] == []  # nothing written in this directory, nothing claimed
+    assert sdr["human_readable"] == ["https://samaydlette.com/.well-known/security-decision-record.view.md"]
     rt = next(a for a in m["artifacts"] if a["name"] == "ksi-signal-runtime.json")
+    assert rt["human_readable"] == [rt["human_readable"][0]]
     assert rt["human_readable"][0].startswith("https://samaydlette.com/trust/")
+
+
+def test_known_bad_a_json_built_without_its_view_fails_the_manifest(tmp_path):
+    with pytest.raises(SystemExit, match="without its view"):
+        _manifest(tmp_path, files=("ksi-signal.json", "ksi-signal.md"))
 
 
 def test_the_manifest_points_at_the_independent_availability_feed(tmp_path):

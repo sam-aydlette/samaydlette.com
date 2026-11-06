@@ -41,6 +41,7 @@ from xml.sax.saxutils import escape
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _fedramp_schema  # noqa: E402
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 import _redact  # noqa: E402
 import _scn  # noqa: E402
@@ -283,6 +284,7 @@ def build_index(rows, previous_index, now, commit, out_dir):
         "commit": commit,
         "certificationPackageOverviewUri": _fedramp_schema.CPO_URI,
         "notification": NOTIFICATION,
+        "engagement": _engagement.STATEMENT,
         "notificationMechanisms": MECHANISMS,
         "access": ACCESS,
         "sharing": SHARING,

@@ -15,7 +15,11 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 FIX = REPO / "tests" / "fixtures" / "history-fetch"
 WORKFLOW = REPO / ".github" / "workflows" / "deploy-with-opa.yml"
-HISTORIES = ("access-summary.json", "fedramp-certification-reports.json", "package-submission-log.json")
+HISTORIES = ("access-summary.json", "fedramp-certification-reports.json", "package-submission-log.json",
+             # the certification package carries its version, KSI metric and
+             # training history forward from the previous published copy
+             "ongoing-certification-report.json", "security-decision-record.json",
+             "certification-package-overview.json")
 
 spec = importlib.util.spec_from_file_location("fetch_history", REPO / "scripts" / "fetch-published-history.py")
 mod = importlib.util.module_from_spec(spec)

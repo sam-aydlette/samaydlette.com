@@ -30,6 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 
@@ -94,6 +95,7 @@ def deliver(log: dict, report_dir: Path, now: str | None = None, registry=None) 
         "schema": "incident-deliveries/1",
         "simulation": True,
         "notice": NOTICE,
+        "engagement": _engagement.STATEMENT,
         "emitted_at": now or datetime.now(timezone.utc).isoformat(),
         "generator": "scripts/deliver-incident-reports.py",
         "incident_log": "https://samaydlette.com/.well-known/incident-reports.json",

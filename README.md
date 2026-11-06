@@ -87,7 +87,7 @@ curl -O https://samaydlette.com/.well-known/ksi-signal.json
 curl -O https://samaydlette.com/.well-known/ksi-signal.bundle
 cosign verify-blob \
   --bundle ksi-signal.bundle \
-  --certificate-identity-regexp 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/.+' \
+  --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   ksi-signal.json
 ```
@@ -230,7 +230,7 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── schemas/                    # KSI signal schema, FedRAMP KSI catalog, policy-input schemas
 │   ├── lambda/index.js             # runtime KSI emitter; runs the SAME Rego, compiled to Wasm
 │   └── bootstrap/                  # operator-applied: OIDC, IAM, CloudFront, DNSSEC, tf state
-├── scripts/                        # the artifact generators — 25 live
+├── scripts/                        # the artifact generators and gates
 │   ├── _common.py                  # the shared helpers (classify, sha256_file, prop, ...)
 │   ├── build-ksi-signal.py         # THE CANONICAL INVENTORY; everything derives from it
 │   ├── _controls.py                # the control projection (per-control view)

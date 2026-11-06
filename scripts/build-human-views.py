@@ -22,6 +22,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _signers  # noqa: E402
+
 SUFFIX = ".view.md"
 HEADER = "| Path | Value |"
 RULE = "|---|---|"
@@ -169,10 +172,10 @@ def check(path, view):
         _fail(f"{Path(view).name} does not match {Path(path).name}")
 
 
-# Published by something other than the deploy (the runtime Lambda, the nightly
-# beacon): the deploy never publishes them, so it writes no view of them; the
-# trust page renders them from the live JSON.
-NOT_DEPLOY_PUBLISHED = ("ksi-signal-runtime.json", "vdr-status.json")
+# Published by something other than a workflow publish step (the runtime Lambda,
+# the nightly beacon), so no workflow writes a view of them; the trust page
+# renders them from the live JSON (scripts/_signers.py).
+NOT_DEPLOY_PUBLISHED = _signers.VIEWLESS
 
 
 def sources(freshness, d):

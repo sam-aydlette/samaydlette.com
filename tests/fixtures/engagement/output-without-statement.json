@@ -1,0 +1,6 @@
+{
+  "$comment": "KNOWN-BAD (tests/test_engagement.py): a simulated output that names a simulated counterparty but does not carry the DEC-194 no-engagement statement.",
+  "schema": "incident-deliveries/1",
+  "simulation": true,
+  "deliveries": [{"recipients": [{"recipient": "FedRAMP Incident Desk (simulated)", "simulated": true}]}]
+}

@@ -19,19 +19,27 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sys
+from pathlib import Path
 from typing import Any
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+import _signers  # noqa: E402
+
 REPOSITORY = "sam-aydlette/samaydlette.com"
-ISSUER = "https://token.actions.githubusercontent.com"
-WORKFLOWS = {
-    "deploy": ".github/workflows/deploy-with-opa.yml",
-    "nightly": ".github/workflows/evidence-nightly.yml",
-}
+ISSUER = _signers.ISSUER
+# Published by a workflow and signed by it. The operator-run corroboration and
+# the runtime signal (KMS-signed) have cadences of their own and are left out.
+WORKFLOW_CADENCES = ("deploy", "nightly")
 
 
-def expected_identity(cadence: str) -> str:
-    """The only certificate identity that may sign an artifact of this cadence."""
-    return f"https://github.com/{REPOSITORY}/{WORKFLOWS[cadence]}@refs/heads/main"
+def expected_identities(artifact: str) -> list[str]:
+    """The certificate identities allowed to sign a published file: the
+    workflows that write it, from the shared table (scripts/_signers.py, which
+    tests/test_publishers.py holds equal to the publish steps). Not its
+    cadence: several workflows write some files, and a file's cadence says how
+    often it is refreshed, not who signs it."""
+    return [_signers.IDENTITIES[k] for k in _signers.signers(artifact)]
 
 
 def section(findings: list[dict[str, Any]], compared: int, unchecked: list[dict[str, Any]] | None = None,
@@ -66,20 +74,22 @@ def signed_artifacts(freshness: dict[str, Any]) -> list[dict[str, Any]]:
     runtime_signing_key)."""
     out = []
     for a in freshness.get("artifacts", []):
-        if not a.get("signed") or a.get("cadence") not in WORKFLOWS:
+        if not a.get("signed") or a.get("cadence") not in WORKFLOW_CADENCES:
             continue
         p = a["path"]
         if p.endswith(".intoto.jsonl"):
-            out.append({"artifact": p, "kind": "dsse", "subject": p[: -len(".intoto.jsonl")], "cadence": a["cadence"]})
+            out.append({"artifact": p, "kind": "dsse", "subject": p[: -len(".intoto.jsonl")], "cadence": a["cadence"],
+                        "identities": expected_identities(p)})
         elif a.get("signature"):
-            out.append({"artifact": p, "kind": "bundle", "bundle": a["signature"], "cadence": a["cadence"]})
+            out.append({"artifact": p, "kind": "bundle", "bundle": a["signature"], "cadence": a["cadence"],
+                        "identities": expected_identities(p)})
     return out
 
 
 def judge_signatures(facts: list[dict[str, Any]], artifacts: list[dict[str, Any]]) -> dict[str, Any]:
-    """Every signed artifact verifies against the Sigstore trust root, under the one
-    workflow identity its cadence allows; an attestation's subject is the published
-    artifact, byte for byte."""
+    """Every signed artifact verifies against the Sigstore trust root, under a
+    workflow identity allowed to write that file (scripts/_signers.py); an
+    attestation's subject is the published artifact, byte for byte."""
     by_name = {f["artifact"]: f for f in facts}
     findings, unchecked = [], []
     compared = 0
@@ -90,12 +100,12 @@ def judge_signatures(facts: list[dict[str, Any]], artifacts: list[dict[str, Any]
             unchecked.append({"artifact": name, "why": (f or {}).get("fetch_error") or "not fetched"})
             continue
         compared += 1
-        want = expected_identity(a["cadence"])
+        want = expected_identities(a["artifact"])
         if f.get("verified") is not True:
             findings.append({"artifact": name, "problem": "signature does not verify",
                              "detail": f.get("failure_code") or "unknown failure"})
             continue
-        if f.get("signed_by") != want:
+        if f.get("signed_by") not in want:
             findings.append({"artifact": name, "problem": "signed by an unexpected identity",
                              "expected": want, "observed": f.get("signed_by")})
         if f.get("issuer") != ISSUER:
@@ -113,7 +123,7 @@ def judge_signatures(facts: list[dict[str, Any]], artifacts: list[dict[str, Any]
     return section(findings, compared, unchecked,
                    source="TAP sigstore_core (sigstore-python, production trust root)",
                    note="Re-verifies each published signature with a verifier that is not the deploy's cosign, "
-                        "pinned to the workflow identity for the artifact's cadence.")
+                        "pinned to the workflow identities allowed to write each file (scripts/_signers.py).")
 
 
 def sha256_hex(data: bytes) -> str:

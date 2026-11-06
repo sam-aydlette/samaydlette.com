@@ -65,6 +65,11 @@ jobs:
         chmod 755 ./opa
         sudo mv opa /usr/local/bin
 
+    # The assessor verifies every published artifact's Sigstore bundle with
+    # cosign (assess.py cosign_verify). Verifying needs no id-token.
+    - name: Install cosign (verify only)
+      uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+
     # IVV-CSO-STE: the provider supplies the technical explanation (the guide);
     # the assessor works from it.
     - name: Receive the provider's assessor guide

@@ -153,7 +153,7 @@
     {
       "frr_id": "AFC-CSO-NOC",
       "status": "Implemented",
-      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and the published contact points to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history; each change is a history entry dated by since. scripts/check-fsi-notice.py, in the unit-test job on every pull request and push, fails a changed contact without a new dated history entry, a hand-recorded notice, or a rewritten history against the merge base. On every deploy, scripts/submit-package.py files a change notice with the simulated FedRAMP for every change not yet filed (an entry in changeNotices of the signed /.well-known/package-submission-log.json, with the simulated FedRAMP's receipt; nothing is sent), carries earlier notices over unchanged, and fails the deploy unless every notice is dated within one business day of its change. The contact was established 2026-11-05 with no earlier contact to change from, so no notice has been filed yet. Procedure: docs/runbooks/fedramp-security-inbox.md.",
+      "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and the published contact points to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history; each change is a history entry dated by since. scripts/check-fsi-notice.py, in the unit-test job on every pull request and push, fails a changed contact without a new dated history entry, a hand-recorded notice, or a rewritten history against the merge base. On every deploy, scripts/submit-package.py files a change notice with the simulated FedRAMP for every change not yet filed (an entry in changeNotices of the signed /.well-known/package-submission-log.json, with the simulated FedRAMP's receipt; nothing is sent), carries earlier notices over unchanged, and fails the deploy unless every notice is filed within one business day of the deploy that first published the changed contact. A change takes effect when it is published, so the clock runs from that deploy (recorded in the log's inboxContact and on each notice as publishedOn and publishedIn): the deploy that first publishes a new contact files its notice the same day, a change merged but not yet deployed cannot go stale, and a failed deploy, which publishes nothing, cannot make the next one late. A notice filed later than one business day after the publishing deploy still fails. The contact was established 2026-11-05 with no earlier contact to change from, so no notice has been filed yet. Procedure: docs/runbooks/fedramp-security-inbox.md.",
       "evidence": [
         {
           "kind": "test",
@@ -161,7 +161,11 @@
         },
         {
           "kind": "test",
-          "ref": "tests/test_fsi_notice.py::test_a_notice_filed_more_than_one_business_day_after_the_change_fails"
+          "ref": "tests/test_fsi_notice.py::test_a_change_first_deployed_ten_business_days_after_it_was_merged_passes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fsi_notice.py::test_a_contact_an_earlier_deploy_published_keeps_that_deploy_as_its_clock"
         },
         {
           "kind": "test",
@@ -759,8 +763,16 @@
     {
       "frr_id": "CDS-CSO-CBF",
       "status": "Implemented",
-      "implementation": "Every JSON and CSV artifact the deploy publishes under /.well-known/ (the freshness-config list) gets a complete human-readable view, <name>.view.md, giving every value under its JSON Pointer path (scripts/build-human-views.py). The build then parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published; the nightly does the same for the VDR files it republishes. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index.",
+      "implementation": "Every JSON and CSV file any workflow publishes under /.well-known/ gets a complete human-readable view, <name>.view.md, beside it, giving every value under its JSON Pointer path (scripts/build-human-views.py): the deploy for everything it publishes (the freshness-config list, every incident report, the inventory's JSON Schema and every certification report), the evidence nightly for the VDR files, the package maintainer for the package it rewrites and every issued report, snapshot and Quarterly Review, and the incident publisher for the incident logs and every report. Each build parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published, and each workflow's redaction gate scans the views it puts. tests/test_human_views_published.py runs each workflow's view, gate and publish steps and fails if any JSON or CSV is put without its view. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index.",
       "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_every_json_a_publisher_puts_has_its_view_put_too"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_known_bad_a_publish_step_without_views_fails"
+        },
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
@@ -1228,8 +1240,20 @@
     {
       "frr_id": "CDS-TRC-HMR",
       "status": "Implemented",
-      "implementation": "Every JSON and CSV artifact the deploy publishes has a complete human-readable view (.view.md, checked to reproduce the JSON), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON.",
+      "implementation": "Every JSON and CSV file any workflow publishes has a complete human-readable view (.view.md, checked to reproduce the JSON, published by the same workflows that publish the file), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact, the view from the publisher table in scripts/_signers.py (so a file only the package maintainer writes lists its view too), and fails the build if a JSON built without its view and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON.",
       "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_the_manifest_lists_the_view_of_every_json_another_workflow_publishes"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_every_json_a_publisher_puts_has_its_view_put_too"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_human_views_published.py::test_known_bad_a_publish_step_without_views_fails"
+        },
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
@@ -3397,7 +3421,7 @@
     {
       "frr_id": "VDR-CSO-DET",
       "status": "Implemented",
-      "implementation": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources quarterly (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
+      "implementation": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources on every deploy and every night (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
       "evidence": [
         {
           "kind": "test",
@@ -3525,7 +3549,7 @@
     {
       "frr_id": "VDR-CSO-RES",
       "status": "Implemented",
-      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. The operator's log review for open IRV+LEV findings runs under incident response (DEC-181).",
+      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. No person reviews logs for this assessment (DEC-181).",
       "evidence": [
         {
           "kind": "test",
@@ -3669,7 +3693,7 @@
     {
       "frr_id": "VDR-TFR-PCD",
       "status": "Implemented",
-      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). The 11 external services the inventory declares (the ext:: components from scripts/build-ksi-signal.py build_external_components) are listed as the third party's to detect. Non-machine resources are verified quarterly (VDR-TFR-NMV).",
+      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). The 11 external services the inventory declares (the ext:: components from scripts/build-ksi-signal.py build_external_components) are listed as the third party's to detect. Non-machine resources are verified on every deploy and every night (VDR-TFR-NMV).",
       "evidence": [
         {
           "kind": "test",

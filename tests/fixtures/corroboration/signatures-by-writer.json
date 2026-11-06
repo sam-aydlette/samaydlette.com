@@ -1,0 +1,97 @@
+{
+  "$comment": "KNOWN-BAD (tests/test_corroborate_checks.py): signatures judged by who may write each file (scripts/_signers.py), not by cadence. ocr-issues.json is signed by the deploy, which never writes it, and vdr-report.json by the package maintainer, which never writes it: both differ. The others are signed by a workflow that writes them, though a cadence-based check expected another (the maintainer for the nightly-cadence indexes, the assessor and the incident publisher for their own files).",
+  "artifacts": [
+    {
+      "artifact": ".well-known/ocr-issues.json",
+      "kind": "bundle",
+      "bundle": ".well-known/ocr-issues.bundle",
+      "cadence": "nightly"
+    },
+    {
+      "artifact": ".well-known/quarterly-reviews.json",
+      "kind": "bundle",
+      "bundle": ".well-known/quarterly-reviews.bundle",
+      "cadence": "nightly"
+    },
+    {
+      "artifact": ".well-known/security-decision-record.json",
+      "kind": "bundle",
+      "bundle": ".well-known/security-decision-record.bundle",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/simulated-assessment.json",
+      "kind": "bundle",
+      "bundle": ".well-known/simulated-assessment.bundle",
+      "cadence": "deploy"
+    },
+    {
+      "artifact": ".well-known/incident-reports.json",
+      "kind": "bundle",
+      "bundle": ".well-known/incident-reports.bundle",
+      "cadence": "nightly"
+    },
+    {
+      "artifact": ".well-known/vdr-report.json",
+      "kind": "bundle",
+      "bundle": ".well-known/vdr-report.bundle",
+      "cadence": "nightly"
+    }
+  ],
+  "facts": [
+    {
+      "artifact": ".well-known/ocr-issues.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    },
+    {
+      "artifact": ".well-known/quarterly-reviews.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    },
+    {
+      "artifact": ".well-known/security-decision-record.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    },
+    {
+      "artifact": ".well-known/simulated-assessment.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/simulated-assessor.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    },
+    {
+      "artifact": ".well-known/incident-reports.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/incident-reports.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    },
+    {
+      "artifact": ".well-known/vdr-report.json",
+      "verified": true,
+      "signed_by": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main",
+      "issuer": "https://token.actions.githubusercontent.com",
+      "cert": {
+        "ref": "refs/heads/main"
+      }
+    }
+  ]
+}

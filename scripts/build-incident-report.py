@@ -46,6 +46,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _incidents  # noqa: E402
@@ -165,6 +166,8 @@ def report_document(inc, k, policy, default):
             "currentRating": rating,
             "evaluationNotes": notes,
         },
+        # DEC-194: the report's recipients are simulated; nothing is sent.
+        "providerExtensions": {"engagement": _engagement.STATEMENT},
     }
     for key, field in _incidents.TEXT_FIELDS.items():
         if key in state and key != "description":
@@ -261,6 +264,7 @@ def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR):
                         "Class C report clock. Exercises are marked exercise: true."),
         "rules": _rules.pin(rules_dir),
         "notification": {"mode": policy["notification"], "text": policy["notification_text"]},
+        "engagement": _engagement.STATEMENT,
         "policy": {k: policy[k] for k in ("federal_incident_coordinator", "adopted_vulnerability_rules",
                                           "federal_customer_data", "decided_by", "decided_on", "review_by")},
         "vdr": ({"emitted_at": vdr.get("emitted_at"), "report_id": vdr.get("report_id")} if vdr is not None

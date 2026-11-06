@@ -2,7 +2,7 @@
   "schema": "secure-configuration/1",
   "$comment": "The Secure Configuration Guide's single source (SCG-CSO-RSC, SCG-ENH-MRG). scripts/build-scg.py publishes it as /.well-known/secure-configuration-guide.json and .md; scripts/check-secure-config.py compares the live settings with `recommended` on every deploy (SCG-ENH-CMP/EXP). Changing a recommended default needs a new version and a changelog entry carrying the new defaults_sha256 (SCG-ENH-VRH); the builder and tests/test_secure_configuration.py fail otherwise. AI-drafted 2026-11-05 from the repository and read-only reads of the live account; for the operator's review.",
   "title": "Secure Configuration Guide: samaydlette.com",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "obtain_and_use": [
     "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
     "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
@@ -314,11 +314,12 @@
       "id": "ci-roles.incident-trust",
       "account": "ci-roles",
       "operable_by": "aws-operator-user (bootstrap apply)",
-      "setting": "The incident reports role trusts only this repository's incident-reports environment",
+      "setting": "The incident reports role trusts only this repository's incident-reports environment, and its prod environment so the deploy can prove the role can be assumed",
       "recommended": [
-        "repo:sam-aydlette/samaydlette.com:environment:incident-reports"
+        "repo:sam-aydlette/samaydlette.com:environment:incident-reports",
+        "repo:sam-aydlette/samaydlette.com:environment:prod"
       ],
-      "implication": "The unattended incident write path stays limited to the one environment that deploys only from main.",
+      "implication": "The incident write path stays limited to two environments that deploy only from main: incident-reports, which publishes, and prod, whose deploy step 'Incident report publisher role can be assumed' (scripts/check-incident-role.py) proves the role works before the SDR states it.",
       "read": "aws iam get-role (AssumeRolePolicyDocument)",
       "change": "infrastructure/bootstrap/incident-reports.tf; operator-applied",
       "check": "role-trust-incident"
@@ -394,6 +395,14 @@
       "Added the package maintenance role's write scope: exactly the objects its workflow publishes, the readable views included."
     ],
     "defaults_sha256": "cdbe9f627541a32b68cfec16be8782b5f352d05b8d239dc7c6ac5be08d6daad1"
+  },
+  {
+    "version": "2.3.0",
+    "date": "2026-11-06",
+    "changes": [
+      "The incident reports role's recommended trust adds the prod environment. The bootstrap already grants it so the deploy can prove the role can be assumed; the guide listed incident-reports only, so the deploy's comparison would have reported a deviation."
+    ],
+    "defaults_sha256": "436268d507aa31417d5b92c2615e8106f393bbbbba879375cbda4121201f89af"
   }
   ]
 }

@@ -377,3 +377,32 @@ def test_deploy_refreshes_the_runtime_signal_before_verifying_it():
     assert order == sorted(order)
     step = _step(text, "Run Post-Deployment Compliance Check")
     assert "aws lambda invoke" in step and "if:" not in step.split("run:", 1)[0]
+
+
+# --- email addresses (only the site's own domain may appear) -------------------------------
+
+def test_known_bad_a_personal_email_fails_the_gate_without_printing_it(capsys):
+    assert gate.main([str(FIXTURES / "personal-email.json")]) == 1
+    err = capsys.readouterr().err
+    assert "personal-email.json: 1 email address(es) not at samaydlette.com" in err
+    assert "someone@" not in err
+
+
+@pytest.mark.parametrize("text,count", [
+    ("security@samaydlette.com", 0),
+    ("zap-dast-scanner@samaydlette.com and a@www.samaydlette.com", 0),
+    ("someone@example.com", 1),
+    ("SOMEONE@Example.ORG, x@samaydlette.com.evil.example", 2),
+    ("deploy-with-opa.yml@refs/heads/main", 0),
+    ("pkg:npm/left-pad@1.3.0-beta.alpha pkg:golang/golang.org/x/net@v0.17.0 image@sha256:abc", 0),
+])
+def test_only_the_sites_own_domain_passes(text, count):
+    assert _redact.find_foreign_emails(text) == count
+
+
+def test_the_gate_screens_markdown_and_csv_for_emails(tmp_path):
+    md = tmp_path / "x.md"
+    md.write_text("Contact someone@example.com\n")
+    csvf = tmp_path / "x.csv"
+    csvf.write_text("a,b\nsomeone@example.com,1\n")
+    assert gate.main([str(md)]) == 1 and gate.main([str(csvf)]) == 1

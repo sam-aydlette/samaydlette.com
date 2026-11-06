@@ -71,3 +71,23 @@ def require_none(value, what):
         raise SystemExit(f"::error::{what} offers engagement with a real agency or FedRAMP ({DECISION}): "
                          f"{'; '.join(hits)[:300]} (fail-closed)")
     return value
+
+
+def names_simulated(value):
+    """Whether a JSON output names a simulated counterparty: a `simulated` or
+    `simulation` field that is set, or a party labelled "(simulated)"."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            if k in ("simulated", "simulation") and v:
+                return True
+            if names_simulated(v):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(names_simulated(v) for v in value)
+    return isinstance(value, str) and "(simulated)" in value
+
+
+def carries_statement(value):
+    """Whether the full DEC-194 statement appears anywhere in a JSON output."""
+    return any(s == STATEMENT for s in strings(value))

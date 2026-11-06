@@ -16,6 +16,14 @@ it. Several workflows write the same files:
   * the simulated assessor (simulated-assessor.yml) signs its own assessment;
     the deploy relays that file and its bundle unchanged.
 
+Every workflow that puts a JSON or CSV artifact also puts its complete
+human-readable view, `<stem>.view.md`, beside it (CDS-TRC-HMR, CDS-CSO-CBF), so
+the view of a file is published by exactly the workflows that publish the file;
+`view()` names it, and the trust manifest lists it from here rather than from
+whatever one build's folder holds. tests/test_human_views_published.py runs each
+publisher's view and publish steps and fails when one puts a JSON or CSV
+without its view.
+
 Every allowed-signer list (the assessor guide, the trust manifest,
 scripts/verify-published.sh, docs/verification.md) reads or matches this table.
 tests/test_publishers.py derives each file's writers from the workflows' publish
@@ -53,3 +61,18 @@ def signers(name):
         if base.startswith(prefixes):
             return list(who)
     return ["deploy"]
+
+
+# Published outside a workflow's publish step: the runtime signal (by the
+# runtime Lambda) and the evidence nightly's unsigned status beacon. No
+# workflow writes a view of them; the trust page renders both from the live JSON.
+VIEWLESS = ("ksi-signal-runtime.json", "vdr-status.json")
+
+
+def view(name):
+    """The complete human-readable view every publisher of `name` puts beside it
+    (`<stem>.view.md`, same folder), or None for a file that has none."""
+    base = name.rsplit("/", 1)[-1]
+    if base in VIEWLESS or not base.endswith((".json", ".csv")):
+        return None
+    return name.rsplit(".", 1)[0] + ".view.md"

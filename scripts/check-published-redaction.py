@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publication gate: no published artifact carries an AWS account ID, an IAM user name or a GitHub run ID.
+"""Publication gate: no published artifact carries an AWS account ID, an IAM user name, a GitHub run ID or an email address not at the site's own domain.
 
 Run immediately before a workflow uploads to /.well-known/, over the directory
 the artifacts were built in:
@@ -69,6 +69,9 @@ def violations(paths):
         users = _redact.find_iam_users(text)
         if users:
             found.append(f"{p.name}: {users} IAM user name(s) after 'aws-iam-user::'")
+        emails = _redact.find_foreign_emails(text)
+        if emails:
+            found.append(f"{p.name}: {emails} email address(es) not at {_redact.SITE_DOMAIN}")
     return found
 
 
@@ -92,12 +95,12 @@ def main(argv=None):
         return 2
     bad = violations(paths)
     if bad:
-        print(f"::error::publication redaction gate: {len(bad)} artifact(s) carry an AWS account ID, IAM user name or GitHub run ID; "
+        print(f"::error::publication redaction gate: {len(bad)} artifact(s) carry an AWS account ID, IAM user name, GitHub run ID or outside email address; "
               "nothing is published (scripts/_redact.py)", file=sys.stderr)
         for b in bad:
             print(f"  ✗ {b}", file=sys.stderr)
         return 1
-    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID, IAM user name or GitHub run ID")
+    print(f"publication redaction gate OK: {len(paths)} artifact(s) carry no AWS account ID, IAM user name, GitHub run ID or outside email address")
     return 0
 
 
