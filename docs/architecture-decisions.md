@@ -81,7 +81,13 @@ Two readers are listed, both decided by the operator on 2026-11-06:
 - the deploy role reads the CloudFront access records under the access-log bucket's CloudFront prefixes, to build the aggregate access summary (CDS-TRC-ACL);
 - the nightly evidence role reads the CloudTrail event history for the automated audit-log review (DEC-195).
 
-The plan role's AWS-managed ReadOnlyAccess is denied log-event reads by its own inline policy. Neither Lambda role can read logs. The rule does not cover AWS-managed policies attached by ARN, because their documents are not in the plan or the runtime input. Two such attachments grant log reads: the operators group, which the operator's IAM user belongs to, holds AWSLambda_FullAccess, which includes CloudWatch Logs event reads; the read-only group holds ReadOnlyAccess, which reads log buckets and log events.
+Neither Lambda role can read logs. The rule does not yet cover AWS-managed policies attached by ARN, because their documents are not in the plan or the runtime input. Through such attachments, three identities can read log data outside the allowlist today:
+
+- the operators group, which the operator's IAM user belongs to, through AWSLambda_FullAccess: CloudWatch Logs event reads on the Lambda log groups;
+- the read-only group, through ReadOnlyAccess: objects in the log buckets, CloudWatch Logs events and queries, and the CloudTrail event history;
+- the plan role, through ReadOnlyAccess: its own inline policy denies CloudWatch Logs event reads and queries, but not objects in the log buckets, the CloudTrail event history, or CloudWatch Logs live tail and record reads.
+
+This is a gap in the authorization model, not an accepted state. The operator decides, per identity, whether to add an allowlist entry with its basis or remove the grant; until then these reads are not authorized by the allowlist. Customer-managed policies attached by ARN (on the deploy role and the operators group) are not evaluated either.
 
 ## CISA Secure-by-Design alignment (KSI-PIY-RSD)
 
