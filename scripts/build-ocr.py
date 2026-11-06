@@ -14,9 +14,10 @@
 #
 # Sources: the SCN register (changes), the decision register (planned changes),
 # the VDR report (accepted vulnerabilities), the incident register when present
-# (reportable incidents and lessons learned), and the feedback register
-# (data/ocr-feedback.json: the operator's anonymized summary of the questions
-# and answers on the previous report, CCM-OCR-AFS).
+# (reportable incidents and lessons learned), and the Quarterly Review of the
+# previous report (scripts/_quarterly_review.py: the anonymized summary of the
+# questions and answers received through the feedback intake, CCM-OCR-AFS; the
+# parties are simulated, DEC-194).
 #
 # Before it is written, every string is screened (scripts/_sensitivity.py,
 # CCM-OCR-LSI) and the whole document validated against the vendored schema;
@@ -39,19 +40,19 @@ import _ccm  # noqa: E402
 import _decisions  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _incidents  # noqa: E402
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
+import _quarterly_review  # noqa: E402
 import _sensitivity  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
-FEEDBACK_PATH = REPO / "data" / "ocr-feedback.json"
 INCIDENTS_PATH = REPO / "data" / "incidents.json"
 SITE = "https://samaydlette.com"
 PLANNING_DAYS = 92  # at least 3 months past the report's end
 SUMMARY_MAX = 300
 # The decision records the report cites (data/decisions.json).
 PUBLIC_RELEASE_DECISION = "DEC-101"   # CCM-OCR-RPS / CCM-QTR-SCR: published in full
-FEEDBACK_DECISION = "DEC-102"         # CCM-OCR-AFS: the operator summarizes feedback, anonymized
-REVIEW_DECISION = "DEC-103"           # CCM-QTR-MTG: the operator hosts each review
+ENGAGEMENT_DECISION = _engagement.DECISION  # every review attendee and feedback party is simulated
 STANDING_AGENDA = [
     "Walk through the report's eight summaries and anything changed since it was issued.",
     "Standing item (CCM-QTR-ACT): Key Security Indicator results and their trend over the quarter, from the "
@@ -59,7 +60,7 @@ STANDING_AGENDA = [
     "Standing item (CCM-QTR-ACT): open and accepted vulnerabilities and their trend, from the vulnerability "
     "history (VER-TFR-MRH).",
     "Standing item (CCM-QTR-ACT): the plan for the next quarter, including planned changes to certification data.",
-    "Questions from attendees, and those received through the report's feedback channel.",
+    "Questions received through the feedback intake, and questions from the (simulated) attendees.",
 ]
 
 
@@ -174,38 +175,29 @@ def reportable_incidents(register, period):
 
 # --- feedback (CCM-OCR-FBM / AFS) ----------------------------------------------------
 
-def load_feedback(path=FEEDBACK_PATH):
-    doc = _load_json(path) or {"schema": "ocr-feedback/1", "summaries": []}
-    if doc.get("schema") != "ocr-feedback/1" or not isinstance(doc.get("summaries"), list):
-        _fail(f"{path} is not an ocr-feedback/1 document")
-    for s in doc["summaries"]:
-        for k in ("ocr", "received", "summarized_by", "summarized_on", "items"):
-            if k not in s:
-                _fail(f"feedback summary for {s.get('ocr')} has no {k}")
-        if not isinstance(s["items"], list) or len(s["items"]) > s["received"]:
-            _fail(f"feedback summary for {s['ocr']}: more summarized items than received")
-    return doc
-
-
-def feedback_summary(feedback, previous_issue):
-    """The anonymized summary of feedback on the previous issued report."""
+def feedback_summary(cal, previous_issue, today):
+    """The anonymized summary of the feedback on the previous issued report: the
+    one its Quarterly Review published (the same function builds both)."""
     if previous_issue is None:
         return {"ocr": None, "statement": "No report has been issued before this one, so there is no feedback "
                 "to summarize yet."}
-    entry = next((s for s in feedback["summaries"] if s["ocr"] == previous_issue.isoformat()), None)
-    if entry is None or entry["received"] == 0:
+    review = cal.review_date(previous_issue)
+    if review > today:
         return {"ocr": previous_issue.isoformat(), "received": 0,
-                "statement": f"No feedback or questions were received on the report issued {previous_issue}."}
-    return {"ocr": entry["ocr"], "received": entry["received"],
-            "summarizedOn": entry["summarized_on"],
-            "statement": f"{entry['received']} item(s) received on the report issued {entry['ocr']}, "
-                         "summarized without names, agencies or identifying detail.",
-            "items": [{"question": _short(i["question"]), "answer": _short(i["answer"])} for i in entry["items"]]}
+                "statement": f"The Quarterly Review of the report issued {previous_issue} is on {review}; its "
+                             "feedback summary appears here once it is held."}
+    qa = _quarterly_review.qa_summary(previous_issue.isoformat(), cal.issues.index(previous_issue))
+    return {"ocr": qa["ocr"], "received": qa["received"], "summarizedOn": review.isoformat(),
+            "simulated": True, "review": _ccm.review_url(previous_issue),
+            "statement": f"{qa['received']} item(s) received through the feedback intake on the report issued "
+                         f"{qa['ocr']}, all from simulated parties (DEC-194), summarized without names, agencies or "
+                         "identifying detail.",
+            "items": [{"question": _short(i["question"]), "answer": _short(i["answer"])} for i in qa["items"]]}
 
 
 # --- build ---------------------------------------------------------------------------
 
-def build(cal, today, vdr, decisions, scn_rows, incidents, feedback, signal, prof, off, prev, now, issue=None):
+def build(cal, today, vdr, decisions, scn_rows, incidents, signal, prof, off, prev, now, issue=None):
     if issue is None:
         period = cal.current_period(today)
         done = cal.issued(today)
@@ -226,7 +218,7 @@ def build(cal, today, vdr, decisions, scn_rows, incidents, feedback, signal, pro
     ref = issue or today
     review_issue = issue or (cal.issued(today)[-1] if cal.issued(today) else cal.issues[0])
     changes, transformative = scn_changes(scn_rows, period)
-    feedback_on = feedback_summary(feedback, prev_issue)
+    feedback_on = feedback_summary(cal, prev_issue, today)
     doc = {
         "$schema": fs.stamp("ocr"),
         "certificationPackageOverviewUri": fs.CPO_URI,
@@ -249,21 +241,23 @@ def build(cal, today, vdr, decisions, scn_rows, incidents, feedback, signal, pro
             "report": kind,
             "continuousMonitoring": _ccm.dates_summary(cal, ref),
             "activeAgenciesStatement": "No agency uses this offering: it is an unsponsored proof of concept.",
+            "engagement": _engagement.STATEMENT,
             "incidentAttestation": incident_summary(incidents, period[0].isoformat()),
             "incidentRegister": ("data/incidents.json" if incidents is not None else
                                  "No incident register in this build; the list above is empty because no "
                                  "FedRAMP Reportable Incident has been recorded."),
-            "feedback": {"channel": _ccm.feedback_url(ref if issue else review_issue),
-                         "howDelivered": "A public GitHub issue form per report. The operator answers there and "
-                                         "publishes an anonymized summary of the questions and answers in the next "
-                                         f"report ({FEEDBACK_DECISION}). Sensitive questions go to the security "
-                                         "contact in /.well-known/security.txt.",
+            "feedback": {"channel": _quarterly_review.INTAKE,
+                         "howDelivered": "Each quarter simulated parties submit questions about the issued report "
+                                         "through the intake; they are answered by rule and discussed at its "
+                                         "Quarterly Review, and the anonymized summary appears in the next report "
+                                         f"({ENGAGEMENT_DECISION}). No real feedback is solicited.",
                          "summaryOfPreviousReport": feedback_on},
             "quarterlyReview": {"date": cal.review_date(review_issue).isoformat(),
                                 "start": cal.review_start(review_issue).isoformat(),
                                 "durationMinutes": cal.duration,
-                                "calendar": _ccm.ICS_URL, "registration": _ccm.REGISTRATION_URL,
-                                "hostedBy": f"The operator hosts it by video call ({REVIEW_DECISION}).",
+                                "calendar": _ccm.ICS_URL, "review": _ccm.review_url(review_issue),
+                                "hostedBy": "Held on its date by package-maintenance.yml with simulated "
+                                            f"attendees; nobody needs to attend ({ENGAGEMENT_DECISION}).",
                                 "agenda": STANDING_AGENDA},
             "publicRelease": {"decision": PUBLIC_RELEASE_DECISION,
                               "statement": "Published in full: it carries no federal customer or agency data and "
@@ -271,9 +265,10 @@ def build(cal, today, vdr, decisions, scn_rows, incidents, feedback, signal, pro
                                            "have an adverse effect on the offering (CCM-OCR-RPS)."},
         },
     }
+    _engagement.require_none(doc, "the Ongoing Certification Report")
     doc["providerExtensions"]["sensitivityScreen"] = _sensitivity.require_clean(doc, "the Ongoing Certification Report")
     return _offering.stamp_version(doc, prev, now, "Automated: scripts/build-ocr.py, from the CCM calendar, the "
-                                   "SCN, decision, incident and feedback registers and the VDR report")
+                                   "SCN, decision and incident registers, the Quarterly Review feedback intake and the VDR report")
 
 
 def main(argv=None):
@@ -286,7 +281,6 @@ def main(argv=None):
     ap.add_argument("--offering", default=str(_offering.OFFERING_PATH))
     ap.add_argument("--calendar", default=str(_ccm.CALENDAR_PATH))
     ap.add_argument("--incidents", default=str(INCIDENTS_PATH))
-    ap.add_argument("--feedback", default=str(FEEDBACK_PATH))
     ap.add_argument("--previous", default=None, help="the previously published rolling report (for its version)")
     ap.add_argument("--issue", default=None, help="build the frozen report for this calendar issue date")
     ap.add_argument("--output", default="ongoing-certification-report.json")
@@ -299,7 +293,7 @@ def main(argv=None):
     prev = _load_json(a.previous) or {}
     issue = date.fromisoformat(a.issue) if a.issue else None
     doc = build(cal, today, _load_json(a.vdr), _decisions.load(a.decisions), _scn_rows(a.scn_register),
-                _incidents.load(a.incidents) if Path(a.incidents).is_file() else None, load_feedback(a.feedback), _load_json(a.ksi_signal),
+                _incidents.load(a.incidents) if Path(a.incidents).is_file() else None, _load_json(a.ksi_signal),
                 json.loads(Path(a.profile).read_text()), _offering.load(a.offering), prev, now, issue)
     fs.write_validated(doc, "ocr", a.output)
     if a.md_output:
@@ -328,7 +322,8 @@ def render_markdown(r):
            f"- **Bound to inventory signal:** `{pe['ksi_signal_id']}`",
            f"- **Next Ongoing Certification Report (CCM-OCR-NRD):** {cm['nextOngoingCertificationReportDate']}",
            f"- **Next Quarterly Review (CCM-QTR-NRD):** {cm['nextQuarterlyReviewDate']}",
-           f"- **Questions or feedback on this report:** {fb['channel']}", "",
+           f"- **Feedback on this report:** {fb['channel']}", "",
+           f"> {pe['engagement']}", "",
            f"> {rep['statement']}", ""]
 
     def section(n, t, lines):
@@ -355,7 +350,7 @@ def render_markdown(r):
     out += [f"- **Q:** {i['question']}  \n  **A:** {i['answer']}" for i in s.get("items", [])]
     out += ["", f"## Quarterly Review: {qr['date']}", "",
             f"{qr['hostedBy']} Starts {qr['start']}, {qr['durationMinutes']} minutes. Calendar file: "
-            f"{qr['calendar']}. Registration: {qr['registration']}.", "", "Agenda:", ""]
+            f"{qr['calendar']}. Review and transcript, once held: {qr['review']}.", "", "Agenda:", ""]
     out += [f"{n}. {x}" for n, x in enumerate(qr["agenda"], 1)]
     out += ["", "## Public release", "", f"{pe['publicRelease']['statement']} ({pe['publicRelease']['decision']}). "
             f"Sensitivity screen: {', '.join(pe['sensitivityScreen']['checks'])}; "

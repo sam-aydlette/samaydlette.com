@@ -29,7 +29,8 @@ The register is only allowed to claim what the repository can show:
 - No record text may carry an AWS account ID, or an email address outside the
   system's domain and FedRAMP's (the SDR is published).
 - A record that relies on a simulated outside party (an assessor, FedRAMP, an
-  agency, an incident recipient, the mail system, SAM.gov) says so in
+  agency, an incident recipient, the mail system, SAM.gov, or the personnel a
+  people-run process needs: review attendees, a trainee) says so in
   `simulated` {counterparty, how}. Only an Implemented record may, and it must
   cite deploy-time evidence (a workflow step or a published artifact): the
   mechanism is real and exercised on every deploy; only the party is not.
@@ -72,9 +73,11 @@ CONDITIONAL_SUBSETS = {
 WORKSTREAMS = tuple(f"W{n}" for n in range(2, 11))
 CLOSERS = (*WORKSTREAMS, "sam")
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
-# Outside parties this proof of concept stands in for (operator's decision of
-# 2026-11-05): the mechanism is real and runs on every deploy; the party is not.
-SIMULATED_COUNTERPARTIES = ("assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov")
+# Outside parties this proof of concept stands in for (DEC-194: no engagement):
+# the mechanism is real and runs on every deploy or on its schedule; the party
+# is not. `personnel` is the people a people-run process needs (Quarterly
+# Review attendees, a trainee), so that no process waits on a person.
+SIMULATED_COUNTERPARTIES = ("assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov", "personnel")
 SIMULATED_KEYS = {"counterparty", "how"}
 # What the completeness gate accepts: the deploy proceeds only when every
 # applicable rule is one of these.

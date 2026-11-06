@@ -1,7 +1,7 @@
 {
   "$schema": "../infrastructure/schemas/non-machine-resources.schema.json",
-  "schema": "non-machine-resources/1",
-  "$comment": "VDR-TFR-NMV: the non-machine information resources (policies, procedures, plans, the operator role, records and registers) and their verification and validation, at least every 3 months. Each entry's last_verified names the decision record in which the operator attests the verification. scripts/check-non-machine-vv.py fails the deploy when an entry is older than max_age_days, its decision is not in force, its file is gone, or a policy or runbook has no entry; the nightly publishes the status as /.well-known/vdr-non-machine-vv.json, whose freshness window is the same 92 days. AI-drafted from the repository on 2026-11-05 for the operator's review.",
+  "schema": "non-machine-resources/2",
+  "$comment": "VDR-TFR-NMV: the non-machine information resources (policies, procedures, plans, the operator role, records and registers). Nobody verifies them by hand: scripts/_nonmachine.py runs machine checks on each (the file exists; every path and DEC ID it cites resolves; it names no retired mechanism; every tagged count matches the code; a register validates), and scripts/check-non-machine-vv.py runs them on every deploy (failing it) and every night, publishing the status as /.well-known/vdr-non-machine-vv.json. A policy or runbook without an entry fails too. Replaces the operator attestation of DEC-190.",
   "max_age_days": 92,
   "resources": [
     {
@@ -10,11 +10,7 @@
       "kind": "policy",
       "title": "AC — Access Control",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-AT",
@@ -22,11 +18,7 @@
       "kind": "policy",
       "title": "AT — Awareness and Training",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-AU",
@@ -34,11 +26,7 @@
       "kind": "policy",
       "title": "AU — Audit and Accountability",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-CA",
@@ -46,11 +34,7 @@
       "kind": "policy",
       "title": "CA — Assessment, Authorization, and Monitoring",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-CM",
@@ -58,11 +42,7 @@
       "kind": "policy",
       "title": "CM — Configuration Management",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-CP",
@@ -70,11 +50,7 @@
       "kind": "policy",
       "title": "CP — Contingency Planning",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-IA",
@@ -82,11 +58,7 @@
       "kind": "policy",
       "title": "IA — Identification and Authentication",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-IR",
@@ -94,11 +66,7 @@
       "kind": "policy",
       "title": "IR — Incident Response",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-MA",
@@ -106,11 +74,7 @@
       "kind": "policy",
       "title": "MA — Maintenance",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-MP",
@@ -118,11 +82,7 @@
       "kind": "policy",
       "title": "MP — Media Protection",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-PE",
@@ -130,11 +90,7 @@
       "kind": "policy",
       "title": "PE — Physical and Environmental Protection",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-PL",
@@ -142,11 +98,7 @@
       "kind": "policy",
       "title": "PL — Planning",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-PS",
@@ -154,11 +106,7 @@
       "kind": "policy",
       "title": "PS — Personnel Security",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-PT",
@@ -166,11 +114,7 @@
       "kind": "policy",
       "title": "PT — PII Processing and Transparency",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-RA",
@@ -178,11 +122,7 @@
       "kind": "policy",
       "title": "RA — Risk Assessment",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-RESOURCE-TAGGING-STANDARD",
@@ -190,11 +130,7 @@
       "kind": "policy",
       "title": "Resource Tagging Standard",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-SA",
@@ -202,11 +138,7 @@
       "kind": "policy",
       "title": "SA — System and Services Acquisition",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-SC",
@@ -214,11 +146,7 @@
       "kind": "policy",
       "title": "SC — System and Communications Protection",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-SECURE-CONFIGURATION-GUIDE",
@@ -226,11 +154,7 @@
       "kind": "policy",
       "title": "Secure Configuration Guide (FedRAMP 20x SCG)",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-SI",
@@ -238,11 +162,7 @@
       "kind": "policy",
       "title": "SI — System and Information Integrity",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-POL-SR",
@@ -250,11 +170,7 @@
       "kind": "policy",
       "title": "SR — Supply Chain Risk Management",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each statement matches current practice: every procedure the policy names exists and is followed, every technical control it cites is in force in the deployed configuration, and its owner and review date are current.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-RUN-EVIDENCE-SLA-ALARM",
@@ -262,11 +178,7 @@
       "kind": "procedure",
       "title": "Runbook: an evidence SLA alarm fired",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The steps still work against the current pipeline: every command, workflow, step name, file and alarm the runbook names exists, and the response it describes is the one the operator would follow.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-RUN-VULN-GATE-FAILURE",
@@ -274,11 +186,7 @@
       "kind": "procedure",
       "title": "Runbook: the vulnerability gate failed",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The steps still work against the current pipeline: every command, workflow, step name, file and alarm the runbook names exists, and the response it describes is the one the operator would follow.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-RUN-DAST-SCANNER-USER",
@@ -286,11 +194,7 @@
       "kind": "procedure",
       "title": "Runbook: the authenticated DAST scanner user and its secrets",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The steps still work against the current pipeline: every command, workflow, step name, file and alarm the runbook names exists, and the response it describes is the one the operator would follow.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-RUN-FEDRAMP-SECURITY-INBOX",
@@ -298,11 +202,7 @@
       "kind": "procedure",
       "title": "Runbook: the FedRAMP Security Inbox (simulated)",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The steps still work against the current pipeline: every command, workflow, step name, file and alarm the runbook names exists, and the response it describes is the one the operator would follow.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PROC-IR",
@@ -310,11 +210,7 @@
       "kind": "procedure",
       "title": "Incident Response Runbook",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The incident response runbook names current contacts, channels, reporting deadlines and tooling, and its steps match how an incident would be handled today.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PLAN-RECOVERY",
@@ -322,11 +218,7 @@
       "kind": "plan",
       "title": "Recovery Plan",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Recovery objectives, backups and restore steps match the deployed resources; the last recovery exercise is recorded and within its interval.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PLAN-CONMON",
@@ -334,11 +226,7 @@
       "kind": "plan",
       "title": "Continuous Monitoring Plan",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The cadences, reports and mechanisms the plan states are the ones the workflows run and publish.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-ROLE-OPERATOR",
@@ -346,11 +234,7 @@
       "kind": "role",
       "title": "Operator role (sole operator)",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The operator role (Roles and responsibilities) is held by the named person, its separation-of-duties compensating controls are in force, and its access matches the IAM definitions.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PROC-ROB",
@@ -358,11 +242,7 @@
       "kind": "procedure",
       "title": "Rules of Behavior",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The rules of behavior are current and acknowledged by every person with access.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-REC-TRAINING",
@@ -370,11 +250,7 @@
       "kind": "record",
       "title": "Training Log",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each training the log requires was completed within its interval by the operator.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PROC-SUPPLY",
@@ -382,11 +258,7 @@
       "kind": "procedure",
       "title": "Supply Chain Risk Management",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The supply chain procedure matches the dependencies, scanners and third-party services in use.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-PROC-SCN",
@@ -394,11 +266,7 @@
       "kind": "procedure",
       "title": "Significant Change Notification (SCN) records",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The significant change procedure matches how changes are classified and recorded (SCN lines on every change, SCN records under docs/scn/).",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-REC-PTA",
@@ -406,11 +274,7 @@
       "kind": "record",
       "title": "Privacy Threshold Analysis (PTA)",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "The privacy threshold analysis still describes the personal information the system collects.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     },
     {
       "id": "NMR-REG-DECISIONS",
@@ -418,11 +282,7 @@
       "kind": "register",
       "title": "Decision register",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Every in-force decision still describes the situation it decides, and its review date has not passed; a decision whose basis changed is reopened.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine check: the register loads under its own validator (the decision register under scripts/_decisions.py) or parses as JSON."
     },
     {
       "id": "NMR-REG-GOVERNANCE",
@@ -430,11 +290,31 @@
       "kind": "register",
       "title": "Governance domain registry",
       "owner": "Sam Aydlette (operator)",
-      "verifies": "Each governance domain names the person and mechanism that actually decide it.",
-      "last_verified": {
-        "on": "2026-11-05",
-        "decision": "DEC-190"
-      }
+      "verifies": "Machine check: the register loads under its own validator (the decision register under scripts/_decisions.py) or parses as JSON."
+    },
+    {
+      "id": "NMR-PROC-AGENCY-ACCESS",
+      "path": "docs/procedures/agency-access.md",
+      "kind": "procedure",
+      "title": "Agency Access to the Certification Package",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-INFO-SHARING",
+      "path": "docs/procedures/information-sharing.md",
+      "kind": "procedure",
+      "title": "Information Sharing and Disclosure Standard",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-REC-SECURITY-REVIEW",
+      "path": "docs/security-review.md",
+      "kind": "record",
+      "title": "Annual security review",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     }
   ]
 }

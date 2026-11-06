@@ -1,6 +1,10 @@
 # Training Log
 
-This document satisfies KSI-CED-RAT through KSI-CED-RAT. The system has one employee (Sam Aydlette, the author), who holds every role in the org, including all privileged-access roles, all development, and all incident response. "Persistent review of training effectiveness" is therefore conducted in the same medium in which the training itself occurs: the practitioner's head, with periodic externalization to this document.
+**How KSI-CED-RAT is met.** Training is automated (`scripts/_training.py`): on every build of the Security Decision Record a training packet is generated from the system's own data (every decision of the last 12 months, every incident and exercise, the rule and KSI counts, and a fixed core covering the areas below), and a simulated trainee, Pat Placeholder (simulated), takes its quiz whenever the packet changes. Two automated methods check it: the latest completed packet covers everything the data requires, and the current packet was completed by its due date with a passing score and a steady score trend. The SDR publishes both, with the history, under `providerExtensions.training`. No person is enrolled (DEC-194).
+
+**This document** keeps the operator's own reading as context. It carries no obligation, no cadence and no attestation; nothing checks it, and nothing depends on it being updated.
+
+The system has one operator (Sam Aydlette), who holds every role, including all privileged-access roles, all development and all incident response.
 
 ## Coverage
 
@@ -43,6 +47,6 @@ Effectiveness signal: every commit to this repo is reviewed against these source
 
 The IR lead is the author. "Training" here means having read NIST SP 800-61, having a runbook (see [`incident-response.md`](incident-response.md)), and having practiced recovery (see [`recovery-plan.md`](recovery-plan.md)). The recovery procedure has been exercised end-to-end during the construction of this implementation; that counts as a tabletop with a much-larger-than-tabletop scope.
 
-## Review cadence
+## Updates
 
-Annually, or whenever a relevant standard updates substantively. Updates are appended to this file as a dated entry.
+None required. The operator may append a dated entry when he feels like it.

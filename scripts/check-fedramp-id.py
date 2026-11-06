@@ -89,6 +89,8 @@ EXEMPT = {
                        "outcome; it is stamped there (null only if the offering cannot be read).",
     "ocr-issues.json": "Issued by package-maintenance.yml (scripts/issue-ocr.py), which runs this gate over it "
                        "and the frozen reports before publishing.",
+    "quarterly-reviews.json": "Written by package-maintenance.yml (scripts/hold-quarterly-review.py), which runs this "
+                              "gate over it and each new quarterly-review-<date>.json before publishing.",
     "boundary-corroboration.json": "The independent corroboration (RAMPART on TAP), committed by the operator and "
                                    "published exactly as the corroborating tool wrote it; stamping it would alter "
                                    "another party's record. The boundary map it corroborates carries the ID.",

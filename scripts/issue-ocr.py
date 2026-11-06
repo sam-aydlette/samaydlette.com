@@ -11,7 +11,7 @@ date missing from the published index (ocr-issues.json):
    published at that moment, with its signatures) to snapshots/<date>/ and
    writes the snapshot manifest snapshot-<date>.json (name, sha256, bytes);
 3. appends the issue to ocr-issues.json with the report's and manifest's
-   sha256, the review date and the feedback channel.
+   sha256, the review date and where its Quarterly Review is published.
 
 Issued files are never rebuilt: an issue already in the index is carried over
 unchanged, and an index that loses or alters an earlier issue fails. The
@@ -130,7 +130,7 @@ def run(a, now):
         iso = d.isoformat()
         name = f"ocr-issue-{iso}"
         doc = ocr.build(cal, today, ocr._load_json(a.vdr), _decisions.load(a.decisions), ocr._scn_rows(a.scn_register),
-                        ocr._load_json(a.incidents), ocr.load_feedback(a.feedback), ocr._load_json(a.ksi_signal),
+                        ocr._load_json(a.incidents), ocr._load_json(a.ksi_signal),
                         json.loads(Path(a.profile).read_text()), off, {}, now, d)
         fs.write_validated(doc, "ocr", out / f"{name}.json")
         (out / f"{name}.md").write_text(ocr.render_markdown(doc) + "\n")
@@ -142,7 +142,7 @@ def run(a, now):
                        "snapshotManifest": f"{BASE}snapshot-{iso}.json",
                        "snapshotManifestSha256": _sha(out / f"snapshot-{iso}.json"),
                        "quarterlyReviewDate": cal.review_date(d).isoformat(),
-                       "feedback": _ccm.feedback_url(d)})
+                       "quarterlyReview": _ccm.review_url(d)})
         new_files += [f"{name}.json", f"{name}.md", *snap]
     issues.sort(key=lambda i: i["issueDate"])
     index = {"schema": "ocr-issues/1", "generated_at": now.isoformat(), "fedRampId": off["fedramp_id"],
@@ -168,7 +168,6 @@ def main(argv=None):
     ap.add_argument("--scn-register", default=str(REPO / "docs" / "scn" / "scn-register.csv"))
     ap.add_argument("--ksi-signal", default="ksi-signal.json")
     ap.add_argument("--incidents", default=str(REPO / "data" / "incidents.json"))
-    ap.add_argument("--feedback", default=str(REPO / "data" / "ocr-feedback.json"))
     a = ap.parse_args(argv)
     index, new = run(a, datetime.now(timezone.utc))
     print(f"ocr-issues: {len(index['issues'])} issued; {len([f for f in new if f.startswith('ocr-issue-')]) // 2} "

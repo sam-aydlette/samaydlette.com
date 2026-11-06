@@ -37,8 +37,8 @@ MRH = {"activeVulnerabilities": [], "acceptedVulnerabilities": []}
 
 
 def nmv(on="2026-11-05", status="ok"):
-    return {"schema": "non-machine-vv/1", "status": status,
-            "resources": [{"id": "NMR-POL-AC", "lastVerified": on, "decision": "DEC-190"}]}
+    return {"schema": "non-machine-vv/2", "status": status, "generatedAt": f"{on}T07:00:00+00:00",
+            "resources": [{"id": "NMR-POL-AC", "lastVerified": on, "result": "pass"}]}
 
 
 def build(v=None, previous=None, retained=None, now=NOW, acts=ACTS, n=None):

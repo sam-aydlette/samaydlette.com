@@ -2,6 +2,6 @@
   "schema": "agency-access/1",
   "_note": "Known-bad: the register names a person's email address; it records agencies and systems only.",
   "requests": [
-    {"id": "AAR-B02", "agency": "Bureau of Known-Bad Fixtures (simulated)", "kind": "access", "channel": "jane.doe@example.gov", "received_on": "2026-11-02"}
+    {"id": "AAR-B02", "agency": "Bureau of Known-Bad Fixtures (simulated)", "simulated": true, "kind": "access", "channel": "jane.doe@example.gov", "received_on": "2026-11-02"}
   ]
 }

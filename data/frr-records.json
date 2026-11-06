@@ -238,7 +238,7 @@
     {
       "frr_id": "CCM-OCR-AFS",
       "status": "Implemented",
-      "implementation": "Each OCR carries an anonymized, desensitized summary of the feedback and questions on the previous issued report, with the operator's answers (providerExtensions.feedback.summaryOfPreviousReport, from data/ocr-feedback.json), or says none were received; the OCR's sensitivity screen rejects names, handles and addresses (DEC-102).",
+      "implementation": "Each OCR carries an anonymized, desensitized summary of the questions and answers on the previous issued report (providerExtensions.feedback.summaryOfPreviousReport), built by the same function (scripts/_quarterly_review.py, qa_summary) that writes it into that report's Quarterly Review, once the review date has passed; before then it says the summary appears once the review is held. Submissions carry no party, name or agency into the summary, and the summary passes the OCR's sensitivity screen.",
       "evidence": [
         {
           "kind": "test",
@@ -246,17 +246,33 @@
         },
         {
           "kind": "test",
-          "ref": "tests/test_certification_cycle.py::test_a_feedback_summary_with_more_items_than_received_fails"
+          "ref": "tests/test_certification_cycle.py::test_a_feedback_summary_never_carries_a_name_or_an_agency"
         },
         {
-          "kind": "decision",
-          "ref": "DEC-102"
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_ocr_summary_and_the_review_carry_the_same_qa"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
         },
         {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No real feedback is solicited (DEC-194). Each quarter simulated agencies, the simulated FedRAMP and the simulated assessor submit scripted questions through the intake in scripts/_quarterly_review.py; they are answered by rule and published anonymized."
+      }
     },
     {
       "frr_id": "CCM-OCR-AVL",
@@ -288,21 +304,37 @@
     {
       "frr_id": "CCM-OCR-FBM",
       "status": "Implemented",
-      "implementation": "Each OCR links its own asynchronous feedback channel, a GitHub issue form (.github/ISSUE_TEMPLATE/ocr-feedback.yml) prefilled with the report's date, with the security contact for anything sensitive; the CPO and the issue index link it too (DEC-102).",
+      "implementation": "Each OCR names its asynchronous feedback intake (providerExtensions.feedback.channel): a submission names the report's issue date and a question, is validated (it must be about that report and from a party marked simulated), screened, and answered by rule, and the Q&A is published with that report's Quarterly Review. No form or channel is offered to real parties (DEC-194).",
       "evidence": [
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
         },
         {
-          "kind": "decision",
-          "ref": "DEC-102"
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_a_submission_not_from_a_simulated_party_is_refused"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
         },
         {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No real feedback is solicited (DEC-194). Each quarter simulated agencies, the simulated FedRAMP and the simulated assessor submit scripted questions through the intake in scripts/_quarterly_review.py; they are answered by rule and published anonymized."
+      }
     },
     {
       "frr_id": "CCM-OCR-LSI",
@@ -396,59 +428,115 @@
     {
       "frr_id": "CCM-QTR-ACT",
       "status": "Implemented",
-      "implementation": "Each Quarterly Review covers a standing agenda of agency-relevant items beyond the report (KSI trend, VDR trend, planned changes, upcoming roadmap), published with the OCR (DEC-103).",
+      "implementation": "Each Quarterly Review's agenda (scripts/_quarterly_review.py, agenda) is filled from the issued report: its changes, transformative changes and incidents, plus standing agency-relevant items (KSI results and trend, accepted vulnerabilities and trend, the next quarter's planned changes) and the intake's questions. The OCR publishes the standing agenda and the review publishes the filled one.",
       "evidence": [
-        {
-          "kind": "decision",
-          "ref": "DEC-103"
-        },
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
         },
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_review_is_simulated_says_so_and_invites_nobody"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-MTG",
       "status": "Implemented",
-      "implementation": "The operator hosts a synchronous Quarterly Review by video call 5 business days after each OCR issue, open to all necessary parties who register, held even if nobody registers (DEC-103). The schedule is the published calendar file and appears in the OCR and CPO.",
+      "implementation": "A Quarterly Review is held 5 business days after each OCR issue: package-maintenance.yml, which runs daily and after every deploy, holds it on its date with simulated attendees (scripts/hold-quarterly-review.py), reading the frozen report whose sha256 the verified issue index records, and publishes /.well-known/quarterly-review-<date>.json and .md (signed, never rewritten) and the index quarterly-reviews.json. The maintainer (called by every deploy) and the evidence nightly fail when a review date has passed with no review published (scripts/check-quarterly-review.py). The schedule is the published calendar file and appears in the OCR and CPO.",
       "evidence": [
-        {
-          "kind": "decision",
-          "ref": "DEC-103"
-        },
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_review_is_five_business_days_after_issue_skipping_thanksgiving"
         },
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_maintainer_holds_a_due_review_and_indexes_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_known_bad_a_passed_review_date_with_no_review_fails_the_check"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#No Quarterly Review overdue (published index)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#No Quarterly Review overdue"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
           "kind": "artifact",
           "ref": ".well-known/quarterly-review.ics"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-NID",
       "status": "Implemented",
-      "implementation": "Content for each Quarterly Review is the agenda published in the OCR, which passes the sensitivity screen, and the operator screens anything else shown against the same list before the review (DEC-106).",
+      "implementation": "Everything a Quarterly Review shows is generated: the agenda from the issued report (which passed the OCR's sensitivity screen), the scripted transcript and the screened Q&A. The whole review document passes the same sensitivity screen (scripts/_sensitivity.py) before it is written, and the build fails on a hit.",
       "evidence": [
-        {
-          "kind": "decision",
-          "ref": "DEC-106"
-        },
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_sensitivity_screen_catches_each_kind"
         },
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_review_passes_the_sensitivity_screen"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
           "kind": "artifact",
-          "ref": ".well-known/ongoing-certification-report.json"
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-NRD",
@@ -472,7 +560,7 @@
     {
       "frr_id": "CCM-QTR-REG",
       "status": "Implemented",
-      "implementation": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event and the OCR and CPO link the registration form (.github/ISSUE_TEMPLATE/quarterly-review-registration.yml).",
+      "implementation": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event carries the meeting information and links the report and the review as published once held. The simulated attendees take their meeting information from it; it invites no real party and says so (DEC-194).",
       "evidence": [
         {
           "kind": "test",
@@ -485,30 +573,70 @@
         {
           "kind": "artifact",
           "ref": ".well-known/quarterly-review.ics"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-RTP",
       "status": "Implemented",
-      "implementation": "Invitations go to agencies, FedRAMP and the assessor; other third parties only with specific relevance, recorded with the invitation; the registration form states the policy (DEC-105).",
+      "implementation": "The attendee policy is enforced in code (scripts/_quarterly_review.py, check_roster): simulated agencies, the simulated FedRAMP and the simulated assessor attend by default; any other attendee needs its specific relevance recorded, and every attendee must be marked simulated, or the review is not held.",
       "evidence": [
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_known_bad_the_attendee_policy_is_enforced_in_code"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
           "kind": "decision",
-          "ref": "DEC-105"
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-RTR",
       "status": "Implemented",
-      "implementation": "The operator records or transcribes each Quarterly Review and supplies it to the parties who registered (DEC-104).",
+      "implementation": "Each Quarterly Review is transcribed (a scripted transcript) and supplied to every attendee, all simulated, as a log entry: the review records the sha256 of the full transcript and the attendees it is supplied to. Nothing is sent to anyone (DEC-194).",
       "evidence": [
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_published_transcript_removes_every_agency_comment_and_name"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
           "kind": "decision",
-          "ref": "DEC-104"
+          "ref": "DEC-194"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CCM-QTR-SAR",
@@ -548,14 +676,30 @@
     {
       "frr_id": "CCM-QTR-SRR",
       "status": "Implemented",
-      "implementation": "Exercised: a recording or transcript published beyond registered parties has all agency comments, questions and names removed first and passes the same no-adverse-effect check (DEC-104).",
+      "implementation": "Exercised: each review's transcript is published with every agency comment, question and name removed (scripts/_quarterly_review.py, public_transcript and public_roster), after the sensitivity screen.",
       "evidence": [
         {
+          "kind": "test",
+          "ref": "tests/test_quarterly_review.py::test_the_published_transcript_removes_every_agency_comment_and_name"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Hold the Quarterly Review when due (simulated attendees)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-reviews.json"
+        },
+        {
           "kind": "decision",
-          "ref": "DEC-104"
+          "ref": "DEC-194"
         }
       ],
-      "may_rationale": "Exercised: each review's recording or transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package (DEC-104)."
+      "may_rationale": "Exercised: each review's transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package.",
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      }
     },
     {
       "frr_id": "CDS-CSO-AVR",
@@ -934,7 +1078,7 @@
     {
       "frr_id": "CDS-TRC-AAI",
       "status": "Implemented",
-      "implementation": "data/agency-access.json is the append-only register of agency access requests, grants, denials and withdrawals, naming agencies and systems, never people (a record with an email address fails). scripts/agency-access.py derives the current inventory and the full history from it; every deploy validates it and fails on an overdue FedRAMP denial notice. The package is public, so the register holds only agencies that asked to be on record; it is empty today. FedRAMP requests the inventory through the agency access form or the security contact, and receives `agency-access.py inventory` output (procedure: docs/procedures/agency-access.md, DEC-165).",
+      "implementation": "data/agency-access.json is the append-only register of agency access requests, grants, denials and withdrawals, naming agencies and systems, never people (a record with an email address fails). scripts/agency-access.py derives the inventory and the full history from it; every deploy validates it and fails on an overdue denial notice or on any entry not marked simulated for an agency named '(simulated)' (DEC-194). It is empty. The inventory and history are exercised on every deploy over the simulated scenario, whose inventory request from the simulated FedRAMP is answered in the published log (procedure: docs/procedures/agency-access.md, DEC-165).",
       "evidence": [
         {
           "kind": "test",
@@ -943,6 +1087,10 @@
         {
           "kind": "test",
           "ref": "tests/test_agency_access.py::test_known_bad_the_register_never_names_a_person"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_known_bad_a_register_entry_not_marked_simulated_fails"
         },
         {
           "kind": "test",
@@ -963,13 +1111,13 @@
       ],
       "simulated": {
         "counterparty": "agency",
-        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+        "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
       }
     },
     {
       "frr_id": "CDS-TRC-ACL",
       "status": "Implemented",
-      "implementation": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. A party can ask for the summaries and for the records of its own requests, identified by the times and paths it gives, since no requester identity is logged (DEC-160); the trust page's privacy notice says so.",
+      "implementation": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. The lookup of a party's own records, by the times and paths it gives (no requester identity is logged), is built into scripts/build-access-summary.py and exercised on every deploy against a simulated requester: it must find exactly the known answer in fixed synthetic records or the deploy fails, and the count it finds in the real records is logged in the summary (ownRecordsExercise). Nothing is delivered and no real request is answered (DEC-160, DEC-194); the trust page's privacy notice says so.",
       "evidence": [
         {
           "kind": "step",
@@ -998,8 +1146,20 @@
         {
           "kind": "decision",
           "ref": "DEC-160"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_every_build_exercises_the_lookup_and_delivers_nothing"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_known_bad_a_lookup_that_misses_fails_the_build"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "The requester is simulated ('A. Reader (simulated)'); its request runs through the real lookup on every deploy and the result is a log entry in access-summary.json. No real request is answered (DEC-194)."
+      }
     },
     {
       "frr_id": "CDS-TRC-HMR",
@@ -1058,11 +1218,15 @@
     {
       "frr_id": "CDS-TRC-SSM",
       "status": "Implemented",
-      "implementation": "Parties provision their own access directly: all data is public, so a user or service needs no account or key (the trust manifest documents how to fetch and verify). An agency that wants to be on record files the agency access issue form (.github/ISSUE_TEMPLATE/agency-access.yml) itself, and withdraws or asks for the inventory the same way; the trust page's Request access section says how (docs/procedures/agency-access.md, DEC-165).",
+      "implementation": "Parties provision their own access directly: all data is public, so a user or service needs no account or key (the trust manifest documents how to fetch and verify). Requests and withdrawals are processed without a person: scripts/agency-access.py decides each request by fixed rules and records it; the trust page's Access section says so (docs/procedures/agency-access.md, DEC-165). No real agency request is taken (DEC-194).",
       "evidence": [
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_code_rules_decide_each_request"
         },
         {
           "kind": "test",
@@ -1083,7 +1247,7 @@
       ],
       "simulated": {
         "counterparty": "agency",
-        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+        "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
       }
     },
     {
@@ -1120,7 +1284,7 @@
     {
       "frr_id": "CDS-UTC-AAD",
       "status": "Implemented",
-      "implementation": "The agency access procedure (docs/procedures/agency-access.md, DEC-165) requires the operator to notify FedRAMP within 5 business days of denying an agency access request and to record the notice date in the register. scripts/agency-access.py computes each deadline (weekends and US federal holidays skipped) and every deploy fails when a denial's notice is overdue. Since everything is public, a denial would be rare; the clock is exercised on every deploy with simulated denials.",
+      "implementation": "When a request is denied (by rule), the automated notifier writes a notice to the simulated FedRAMP as a log entry, and the clock requires it within 5 business days of the denial (docs/procedures/agency-access.md, DEC-165). scripts/agency-access.py computes each deadline (weekends and US federal holidays skipped) and every deploy fails when a notice is late or overdue. The clock and the notifier, with a simulated outage, are exercised on every deploy.",
       "evidence": [
         {
           "kind": "test",
@@ -1129,6 +1293,10 @@
         {
           "kind": "test",
           "ref": "tests/test_agency_access.py::test_known_bad_an_unnotified_denial_past_five_business_days_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_the_notifier_outage_leaves_a_denial_overdue_and_a_slow_queue_late"
         },
         {
           "kind": "test",
@@ -1149,17 +1317,21 @@
       ],
       "simulated": {
         "counterparty": "agency",
-        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+        "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
       }
     },
     {
       "frr_id": "CDS-UTC-AGA",
       "status": "Implemented",
-      "implementation": "Agencies get the whole package without asking, since it is public. The trust page's Request access section says what is provided, how to ask to be on record (the agency access form, or privately via security.txt) and the turnaround, and links the procedure (DEC-165) and the sharing standard that explains how sharing is decided (DEC-166).",
+      "implementation": "Agencies get the whole package without asking, since it is public. Access requests are decided by fixed rules in scripts/agency-access.py (granted unless they ask for write access, delivery other than HTTPS, data beyond the public package, or come from an agency that cannot be verified); the trust page's Access section says what is provided and links the procedure (DEC-165) and the sharing standard that explains how sharing is decided (DEC-166). No real agency request is taken (DEC-194).",
       "evidence": [
         {
           "kind": "test",
           "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_code_rules_decide_each_request"
         },
         {
           "kind": "test",
@@ -1180,7 +1352,7 @@
       ],
       "simulated": {
         "counterparty": "agency",
-        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+        "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
       }
     },
     {
@@ -1612,7 +1784,7 @@
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Implemented",
-      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) for KSI-CED-RAT, an automated check that the operator's training attestation (DEC-192) is in force and was decided under 12 months ago. On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two. KSI-CED-RAT has one automated method, the attestation check: a second is not built, and that is an accepted finding (DEC-191), because training is a people-run process for a sole operator with no machine component to check. The SDR publishes the count and the acceptance on the KSI. After apply and before it builds anything it publishes, the deploy stages its signed inventory and invokes the runtime emitter synchronously; the emitter re-validates the deployed system against that inventory and writes its signed signal beside it, and the deploy reads it back. The deploy's SDR build counts the runtime method only for that signal (it must have re-validated this commit) and fails the deploy, before anything is published, when any KSI has fewer than two automated methods and no in-force accepted decision record names it. The package maintainer, which runs after every deploy and daily, applies the same requirement to the SDR it rebuilds.",
+      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) and (5) for KSI-CED-RAT, the two training checks of scripts/_training.py: the training packet is generated from the system's own data (every decision of the last 12 months, every incident and exercise, the rule and KSI counts and a fixed core) and completed by a simulated trainee whenever it changes; (4) checks that the latest completed packet covers everything the current data requires, and (5) that the current packet was completed by its due date with a score of at least 0.8 and a steady score trend. The history is carried forward in the SDR (providerExtensions.training). On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two, and the training checks bring KSI-CED-RAT to two. No KSI relies on an accepted shortfall. The SDR publishes the count on each KSI. After apply and before it builds anything it publishes, the deploy stages its signed inventory and invokes the runtime emitter synchronously; the emitter re-validates the deployed system against that inventory and writes its signed signal beside it, and the deploy reads it back. The deploy's SDR build counts the runtime method only for that signal (it must have re-validated this commit) and fails the deploy, before anything is published, when any KSI has fewer than two automated methods and no in-force accepted decision record names it. The package maintainer, which runs after every deploy and daily, applies the same requirement to the SDR it rebuilds.",
       "evidence": [
         {
           "kind": "test",
@@ -1632,19 +1804,11 @@
         },
         {
           "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_with_the_committed_register_every_ksi_has_two_methods_or_an_accepted_finding"
-        },
-        {
-          "kind": "test",
           "ref": "tests/test_sdr_vvk.py::test_dependency_scanning_counts_only_for_ksis_with_package_components"
         },
         {
           "kind": "test",
           "ref": "tests/test_sdr_vvk.py::test_known_bad_vdrs_do_not_count_each_for_its_reason"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_known_bad_without_the_acceptance_ksi_ced_rat_is_a_shortfall"
         },
         {
           "kind": "test",
@@ -1657,14 +1821,6 @@
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
-        },
-        {
-          "kind": "decision",
-          "ref": "DEC-191"
-        },
-        {
-          "kind": "decision",
-          "ref": "DEC-192"
         },
         {
           "kind": "test",
@@ -1681,8 +1837,28 @@
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_with_the_committed_register_every_ksi_has_two_methods_and_none_is_accepted_short"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_vvk.py::test_known_bad_without_the_training_methods_ksi_ced_rat_is_a_shortfall"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_training.py::test_known_bad_a_packet_missing_a_new_decision_fails_currency"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_training.py::test_known_bad_a_late_or_failing_completion_fails_completion"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "The trainee is simulated ('Pat Placeholder (simulated)', DEC-194): it takes the generated quiz on every SDR build where the packet changed, in the deploy and the package maintainer, and misses every ninth question on purpose. No person is enrolled."
+      }
     },
     {
       "frr_id": "FRC-CSX-VVR",
@@ -2429,7 +2605,7 @@
     {
       "frr_id": "SCG-ENH-CMP",
       "status": "Implemented",
-      "implementation": "Every deploy reads the current settings of the top-level administrative and privileged accounts (root MFA and access keys, MFA type, account password policy, account-level S3 Block Public Access, other IAM users' permissions, the operator user's MFA, console password and access-key age, the CI roles' trust subjects, the user-pool sign-in policy, and the GitHub environment and branch settings) and compares each with the guide's recommended default (scripts/check-secure-config.py). A deviation no in-force decision covers, or a setting that cannot be read, fails the deploy before the SDR is built. The GitHub owner's own two-factor setting, which no API exposes to the deploy, is the operator's attestation (DEC-151). The comparison is published at /.well-known/security-settings.json and .md.",
+      "implementation": "Every deploy reads the current settings of the top-level administrative and privileged accounts (root MFA and access keys, MFA type, account password policy, account-level S3 Block Public Access, other IAM users' permissions, the operator user's MFA, console password and access-key age, the CI roles' trust subjects, the user-pool sign-in policy, and the GitHub environment and branch settings) and compares each with the guide's recommended default (scripts/check-secure-config.py). A deviation no in-force decision covers, or a setting that cannot be read, fails the deploy before the SDR is built. The repository settings the workflow token can read (rulesets and their bypass actors, Dependabot alerts, Dependabot version updates, and every workflow's top-level token permissions) are compared on every deploy and every night (evidence-nightly.yml). The GitHub owner's two-factor setting and personal access tokens, which no token the pipeline holds can read, are a one-time configuration fact with no recurring review (DEC-151, amended). The comparison is published at /.well-known/security-settings.json and .md.",
       "evidence": [
         {
           "kind": "step",
@@ -2450,6 +2626,18 @@
         {
           "kind": "decision",
           "ref": "DEC-151"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_repo_settings.py::test_known_bad_a_workflow_without_permissions_or_with_write_all_is_a_deviation"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_repo_settings.py::test_the_committed_workflows_and_dependabot_match_the_guide"
         }
       ]
     },
@@ -3322,23 +3510,23 @@
     {
       "frr_id": "VDR-TFR-NMV",
       "status": "Implemented",
-      "implementation": "data/non-machine-resources.json registers every non-machine resource (policies and standards, runbooks, incident response, recovery, the continuous monitoring plan, the operator role and training record, rules of behavior, supply chain and significant change procedures, the PTA, the decision register and the governance registry), each with what its verification checks and the decision record that attests it. DEC-190 is the operator's 2026-Q4 verification and validation against practice (AI-drafted; Sam's attestation). scripts/check-non-machine-vv.py fails the deploy when an entry is older than 92 days, misses a policy or runbook, or cites a record not in force; the nightly publishes the status (.well-known/vdr-non-machine-vv.json, 92-day freshness window watched by the watchdog).",
+      "implementation": "data/non-machine-resources.json registers every non-machine resource (policies and standards, runbooks, procedures, incident response, recovery, the continuous monitoring plan, the operator role and training record, rules of behavior, supply chain and significant change procedures, the PTA, the security review record, the decision register and the governance registry). Nobody verifies them by hand: scripts/_nonmachine.py runs machine checks on each (the file exists; every repository path and DEC ID it cites resolves; it names no retired mechanism such as the POA&M, the SSP or Basic Auth; every tagged count matches the code; a register validates). scripts/check-non-machine-vv.py runs them on every deploy, failing it, and every night, publishing the record (.well-known/vdr-non-machine-vv.json): verifiedAt is the run's time when everything passes and the epoch when anything fails, so the 26-hour freshness window the watchdog reads turns red at once. A policy, runbook or procedure without an entry fails too.",
       "evidence": [
         {
           "kind": "test",
-          "ref": "tests/test_non_machine_vv.py::test_the_register_lapses_after_92_days"
+          "ref": "tests/test_non_machine_vv.py::test_every_committed_resource_passes_its_machine_checks"
         },
         {
           "kind": "test",
-          "ref": "tests/test_non_machine_vv.py::test_the_register_lists_every_policy_and_runbook"
+          "ref": "tests/test_non_machine_vv.py::test_the_register_lists_every_policy_runbook_and_procedure"
         },
         {
           "kind": "test",
-          "ref": "tests/test_non_machine_vv.py::test_every_entry_cites_an_in_force_decision_decided_on_its_date"
+          "ref": "tests/test_non_machine_vv.py::test_known_bad_documents_fail_for_their_reason"
         },
         {
           "kind": "test",
-          "ref": "tests/test_non_machine_vv.py::test_enforce_fails_on_a_lapsed_register_and_writes_the_status"
+          "ref": "tests/test_non_machine_vv.py::test_enforce_fails_on_a_failing_check_and_writes_the_status"
         },
         {
           "kind": "step",
@@ -3351,10 +3539,6 @@
         {
           "kind": "artifact",
           "ref": ".well-known/vdr-non-machine-vv.json"
-        },
-        {
-          "kind": "decision",
-          "ref": "DEC-190"
         }
       ]
     },
@@ -3783,7 +3967,7 @@
     {
       "frr_id": "VER-RPT-NID",
       "status": "Implemented",
-      "implementation": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. Necessary parties receive the withheld detail from the provider on request through the security contact. All published artifacts also pass the account-ID redaction gate.",
+      "implementation": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. The path by which a necessary party would receive the withheld detail is exercised on every VDR build against a simulated requester (vdr-report.json withheld_detail_exercise): it logs, per withheld finding, the field names and a sha256 of the detail, never the detail, and a canned simulated finding keeps the path running when nothing is withheld. No real party receives anything (DEC-194). All published artifacts also pass the account-ID redaction gate.",
       "evidence": [
         {
           "kind": "test",
@@ -3808,8 +3992,20 @@
         {
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_disclosure_exercise.py::test_a_withheld_finding_is_logged_without_its_detail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vdr_disclosure_exercise.py::test_known_bad_a_disclosure_rule_that_stops_withholding_fails_the_exercise"
         }
-      ]
+      ],
+      "simulated": {
+        "counterparty": "personnel",
+        "how": "The necessary party is simulated ('Necessary Party, Esq. (simulated)'); its request for the withheld detail runs on every VDR build and is answered with a log entry only (DEC-194)."
+      }
     },
     {
       "frr_id": "VER-RPT-PER",

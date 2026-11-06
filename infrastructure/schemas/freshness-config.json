@@ -89,15 +89,15 @@
     },
     {
       "path": ".well-known/vdr-non-machine-vv.json",
-      "cadence": "operator",
-      "max_age_hours": 2208,
+      "cadence": "nightly",
+      "max_age_hours": 26,
       "timestamp": {
         "source": "json",
         "field": "verifiedAt"
       },
       "signed": true,
       "signature": ".well-known/vdr-non-machine-vv.bundle",
-      "note": "Non-machine verification and validation (VDR-TFR-NMV): verifiedAt is the oldest verification in data/non-machine-resources.json, so the 92-day window (3 months) lapses with the first resource out of date. Republished nightly; the verification itself is the operator's."
+      "note": "Non-machine verification and validation (VDR-TFR-NMV): machine checks of every resource in data/non-machine-resources.json (scripts/_nonmachine.py), run by the deploy (enforced) and the evidence nightly (twice a day). verifiedAt is the run's time when every check passes and the epoch when any fails, so a failing check turns this window red at once; 26 hours means nightly runs have been missed. No verification is manual."
     },
     {
       "path": ".well-known/vdr-status.json",
@@ -282,6 +282,18 @@
       "signed": true,
       "signature": ".well-known/ocr-issues.bundle",
       "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD), rewritten daily by package-maintenance.yml. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
+    },
+    {
+      "path": ".well-known/quarterly-reviews.json",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/quarterly-reviews.bundle",
+      "note": "Index of the Quarterly Reviews held with simulated attendees (CCM-QTR-MTG, CCM-QTR-RTR; DEC-194), rewritten daily by package-maintenance.yml from the first review date on. The reviews (quarterly-review-<date>.*) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256. The deploy and the evidence nightly fail when a review date has passed with no review in it (scripts/check-quarterly-review.py)."
     },
     {
       "path": ".well-known/quarterly-review.ics",

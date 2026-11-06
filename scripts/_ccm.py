@@ -18,8 +18,12 @@ Fails closed, stdlib only. The calendar must:
 
 import json
 import re
+import sys
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _engagement  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 CALENDAR_PATH = REPO / "infrastructure" / "schemas" / "ccm-calendar.json"
@@ -27,9 +31,7 @@ SITE = "https://samaydlette.com"
 REPO_URL = "https://github.com/sam-aydlette/samaydlette.com"
 ICS_URL = f"{SITE}/.well-known/quarterly-review.ics"
 ISSUES_INDEX_URL = f"{SITE}/.well-known/ocr-issues.json"
-FEEDBACK_FORM = "ocr-feedback.yml"
-REGISTRATION_FORM = "quarterly-review-registration.yml"
-REGISTRATION_URL = f"{REPO_URL}/issues/new?template={REGISTRATION_FORM}"
+REVIEWS_INDEX_URL = f"{SITE}/.well-known/quarterly-reviews.json"
 MIN_GAP_DAYS, MAX_GAP_DAYS = 84, 98
 EDGE_DAYS, MID_DAYS = 14, 7
 MIN_FUTURE_ISSUES = 2
@@ -157,10 +159,10 @@ def load(path=CALENDAR_PATH, today=None):
     return validate(doc, today)
 
 
-def feedback_url(issue):
-    """The asynchronous feedback channel for one OCR issue (CCM-OCR-FBM): a
-    GitHub issue form, prefilled with the issue's date."""
-    return f"{REPO_URL}/issues/new?template={FEEDBACK_FORM}&ocr={issue.isoformat()}"
+def review_url(issue):
+    """Where the review of one OCR issue is published once held: it carries the
+    feedback received through the intake (CCM-OCR-FBM) and its answers."""
+    return f"{SITE}/.well-known/quarterly-review-{issue.isoformat()}.json"
 
 
 # --- the review calendar file (CCM-QTR-REG) -----------------------------------------
@@ -198,15 +200,16 @@ def ics(cal, today):
             continue
         start = cal.review_start(issue)
         end = start + timedelta(minutes=cal.duration)
-        desc = (f"Quarterly Review (CCM-QTR-MTG) of the Ongoing Certification Report issued {issue}. "
+        desc = (f"Quarterly Review (CCM-QTR-MTG) of the Ongoing Certification Report issued {issue}, held "
+                f"with simulated attendees by the package maintenance workflow; nobody needs to attend. "
                 f"Report: {SITE}/.well-known/ocr-issue-{issue}.json (published on the issue date). "
-                f"Register: {REGISTRATION_URL} . The operator hosts the review by video call and sends "
-                f"the join link to registered parties. Questions about the report: {feedback_url(issue)}")
+                f"Review and transcript: {review_url(issue)} (published on the review date). "
+                f"{_engagement.SHORT}")
         lines += ["BEGIN:VEVENT", f"UID:qtr-review-{issue}@samaydlette.com", f"DTSTAMP:{stamp}",
                   f"DTSTART:{start.strftime('%Y%m%dT%H%M%SZ')}", f"DTEND:{end.strftime('%Y%m%dT%H%M%SZ')}",
-                  f"SUMMARY:{_ics_escape(f'samaydlette.com Quarterly Review (OCR {issue})')}",
-                  f"DESCRIPTION:{_ics_escape(desc)}", f"URL:{REGISTRATION_URL}",
-                  "LOCATION:Video call (link sent on registration)", "END:VEVENT"]
+                  f"SUMMARY:{_ics_escape(f'samaydlette.com Quarterly Review (OCR {issue}, simulated)')}",
+                  f"DESCRIPTION:{_ics_escape(desc)}", f"URL:{review_url(issue)}",
+                  "LOCATION:Simulated (package-maintenance.yml)", "END:VEVENT"]
     lines.append("END:VCALENDAR")
     return "\r\n".join(_fold(x) for x in lines) + "\r\n"
 
@@ -217,7 +220,7 @@ def dates_summary(cal, today):
     return {"nextOngoingCertificationReportDate": nxt.isoformat(),
             "nextQuarterlyReviewDate": cal.next_review(today).isoformat(),
             "quarterlyReviewCalendar": ICS_URL,
-            "quarterlyReviewRegistration": REGISTRATION_URL,
+            "quarterlyReviews": REVIEWS_INDEX_URL,
             "ongoingCertificationReportIssues": ISSUES_INDEX_URL,
             "issueDates": [d.isoformat() for d in cal.issues],
             "reviewBusinessDaysAfterIssue": cal.offset}

@@ -23,7 +23,7 @@
       "disposition": "risk-accepted",
       "justification": "SC-7 met via managed interfaces.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [

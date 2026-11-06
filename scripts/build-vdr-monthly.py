@@ -10,7 +10,7 @@ including persistent verification and validation.
 
 Writes vdr-monthly.json and vdr-monthly.md for the calendar month to date (UTC).
 Every build adds the runs it can see to the month: the scans and feeds the VDR
-build read, the runtime verification runs, the quarterly non-machine
+build read, the runtime verification runs, the nightly non-machine
 verification, and the activities the operator recorded outside the pipeline
 (data/vdr-activities.json). The previous published vdr-monthly.json carries the
 month's earlier runs forward; when the month turns, the finished month moves to
@@ -66,7 +66,7 @@ ACTIVITY_TYPES = [
      "feeds": {"kev", "epss"}, "recorded": set()},
     {"type": "runtime-vv", "title": "Runtime verification and validation of machine resources", "feeds": set(),
      "recorded": set()},
-    {"type": "non-machine-vv", "title": "Verification and validation of non-machine resources (quarterly)",
+    {"type": "non-machine-vv", "title": "Verification and validation of non-machine resources (machine checks, nightly)",
      "feeds": set(), "recorded": set()},
     {"type": "vdp", "title": "Vulnerability disclosure program: reports received", "feeds": set(),
      "recorded": {"vdp-report"}},
@@ -199,14 +199,11 @@ def runtime_runs(vdr, retained):
 
 
 def non_machine_runs(nmv):
-    if not isinstance(nmv, dict) or nmv.get("schema") != "non-machine-vv/1":
-        _fail("non-machine status is not a non-machine-vv/1 document")
-    by_day = {}
-    for r in nmv.get("resources") or []:
-        by_day.setdefault((r["lastVerified"], r["decision"]), []).append(r["id"])
-    return [{"type": "non-machine-vv", "source": f"{dec} ({len(ids)} resources)",
-             "at": f"{day}T00:00:00+00:00", "status": nmv.get("status"), "count": len(ids)}
-            for (day, dec), ids in sorted(by_day.items())]
+    if not isinstance(nmv, dict) or nmv.get("schema") != "non-machine-vv/2":
+        _fail("non-machine status is not a non-machine-vv/2 document")
+    n = len(nmv.get("resources") or [])
+    return [{"type": "non-machine-vv", "source": f"machine checks ({n} resources)",
+             "at": nmv.get("generatedAt"), "status": nmv.get("status"), "count": n}]
 
 
 def recorded_runs(acts):

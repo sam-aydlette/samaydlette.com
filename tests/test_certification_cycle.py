@@ -23,8 +23,10 @@ sys.path.insert(0, str(REPO / "scripts"))
 import _assessor  # noqa: E402
 import _ccm  # noqa: E402
 import _decisions  # noqa: E402
+import _engagement  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _offering  # noqa: E402
+import _quarterly_review  # noqa: E402
 import _sensitivity  # noqa: E402
 
 FIX = REPO / "tests" / "fixtures" / "cycle"
@@ -78,10 +80,9 @@ def _cpo(off=None, prev=None, now=NOW):
                      ASSESSMENT)
 
 
-def _ocr(now=NOW, issue=None, incidents=None, feedback=None, scn_rows=(), prev=None, decisions=None):
+def _ocr(now=NOW, issue=None, incidents=None, scn_rows=(), prev=None, decisions=None):
     return ocr.build(_cal(now.date()), now.date(), None, decisions or _decisions.load(), list(scn_rows), incidents,
-                     feedback or {"schema": "ocr-feedback/1", "summaries": []}, SIGNAL, PROFILE, _off(),
-                     prev or {}, now, issue)
+                     SIGNAL, PROFILE, _off(), prev or {}, now, issue)
 
 
 # --- the CCM calendar (CCM-OCR-SOR, CCM-QTR-SAR, CCM-OCR-NRD, CCM-QTR-NRD) -----------
@@ -133,7 +134,10 @@ def test_the_review_calendar_file_is_rfc5545():
     assert text.count("BEGIN:VEVENT") == len(_cal().issues)
     assert "DTSTART:20261202T170000Z" in text
     unfolded = text.replace("\r\n ", "")
-    assert f"URL:{_ccm.REGISTRATION_URL}" in unfolded
+    assert f"URL:{_ccm.review_url(_cal().issues[0])}" in unfolded
+    # no engagement (DEC-194): the event is simulated and invites nobody
+    assert "LOCATION:Simulated (package-maintenance.yml)" in unfolded and "Simulated (DEC-194)" in unfolded
+    assert _engagement.invitations(unfolded) == []
     assert _ccm.ics(_cal(), NOW.date()) == text  # deterministic
 
 
@@ -228,7 +232,8 @@ def test_the_cpo_publishes_the_fixed_cycle_dates(built_cpo):
     cal = _cal()
     assert built_cpo["serviceProperties"]["nextOngoingCertificationReportDate"] == cal.next_issue(NOW.date()).isoformat()
     cm = built_cpo["providerExtensions"]["continuousMonitoring"]
-    assert cm["quarterlyReviewCalendar"] == _ccm.ICS_URL and cm["quarterlyReviewRegistration"] == _ccm.REGISTRATION_URL
+    assert cm["quarterlyReviewCalendar"] == _ccm.ICS_URL and cm["quarterlyReviews"] == _ccm.REVIEWS_INDEX_URL
+    assert "quarterlyReviewRegistration" not in cm
 
 
 # --- the OCR (CCM-OCR-*, CCM-QTR-*) ---------------------------------------------------
@@ -247,13 +252,14 @@ def test_the_rolling_ocr_validates_and_carries_the_cycle(rolling):
     assert pe["quarterlyReview"]["date"] == "2026-12-02"
     assert pe["quarterlyReview"]["agenda"] == ocr.STANDING_AGENDA and len(ocr.STANDING_AGENDA) >= 3
     assert pe["publicRelease"]["decision"] == ocr.PUBLIC_RELEASE_DECISION
-    assert pe["feedback"]["channel"].startswith(_ccm.REPO_URL + "/issues/new?template=ocr-feedback.yml")
+    assert pe["feedback"]["channel"] == _quarterly_review.INTAKE
+    assert pe["engagement"] == _engagement.STATEMENT
     assert pe["sensitivityScreen"] == {"checks": list(_sensitivity.CHECKS), "findings": 0}
 
 
 def test_the_decisions_the_ocr_cites_are_in_force():
     ids = {d["id"] for d in _decisions.in_force(_decisions.load())}
-    assert {ocr.PUBLIC_RELEASE_DECISION, ocr.FEEDBACK_DECISION, ocr.REVIEW_DECISION} <= ids
+    assert {ocr.PUBLIC_RELEASE_DECISION, ocr.ENGAGEMENT_DECISION} <= ids
 
 
 def test_an_issued_ocr_covers_the_quarter_and_is_marked_frozen():
@@ -304,24 +310,24 @@ def test_reportable_incidents_come_from_the_register_and_exercises_say_so():
 
 
 def test_the_feedback_summary_covers_the_previous_issue():
-    fb = {"schema": "ocr-feedback/1", "summaries": [
-        {"ocr": "2026-11-24", "received": 2, "summarized_by": "Sam Aydlette", "summarized_on": "2026-12-03",
-         "items": [{"question": "Why monthly?", "answer": "It is quarterly."}]}]}
+    """Once the previous issue's review date has passed, the OCR carries the
+    review's anonymized Q&A, built by the same function as the review."""
+    before = datetime(2026, 12, 1, 12, tzinfo=timezone.utc)   # the review is 2026-12-02
+    s0 = _ocr(now=before)["providerExtensions"]["feedback"]["summaryOfPreviousReport"]
+    assert "once it is held" in s0["statement"] and "items" not in s0
     later = datetime(2026, 12, 10, 12, tzinfo=timezone.utc)
-    s = _ocr(now=later, feedback=fb)["providerExtensions"]["feedback"]["summaryOfPreviousReport"]
-    assert s["received"] == 2 and s["items"] == [{"question": "Why monthly?", "answer": "It is quarterly."}]
-    none = _ocr(now=later)["providerExtensions"]["feedback"]["summaryOfPreviousReport"]
-    assert none["received"] == 0 and "No feedback" in none["statement"]
+    s = _ocr(now=later)["providerExtensions"]["feedback"]["summaryOfPreviousReport"]
+    qa = _quarterly_review.qa_summary("2026-11-24", 0)
+    assert s["ocr"] == "2026-11-24" and s["received"] == qa["received"] and s["items"] == qa["items"]
+    assert "simulated" in s["statement"]
 
 
-def test_a_feedback_summary_with_more_items_than_received_fails(tmp_path):
-    p = tmp_path / "fb.json"
-    p.write_text(json.dumps({"schema": "ocr-feedback/1", "summaries": [
-        {"ocr": "2026-11-24", "received": 0, "summarized_by": "x", "summarized_on": "2026-12-01",
-         "items": [{"question": "q", "answer": "a"}]}]}))
-    with pytest.raises(SystemExit, match="more summarized items than received"):
-        ocr.load_feedback(p)
-    assert ocr.load_feedback(REPO / "data" / "ocr-feedback.json")["schema"] == "ocr-feedback/1"
+def test_a_feedback_summary_never_carries_a_name_or_an_agency():
+    for n in range(8):
+        qa = _quarterly_review.qa_summary(f"2027-0{1 + n % 8}-01", n)
+        text = json.dumps(qa)
+        assert _sensitivity.screen(qa) == []
+        assert "Department of" not in text and "Bureau of" not in text
 
 
 # --- issuing and snapshots (CCM-OCR-AVL, CDS-CSO-HAD) ---------------------------------
@@ -334,8 +340,7 @@ def _issue_args(tmp_path, work, prev=None):
         new_files=str(tmp_path / "issued.txt"), calendar=str(_ccm.CALENDAR_PATH),
         offering=str(_offering.OFFERING_PATH), profile=str(REPO / "data" / "system-profile.json"),
         vdr=str(tmp_path / "none.json"), decisions=str(REPO / "data" / "decisions.json"),
-        scn_register=str(tmp_path / "none.csv"), ksi_signal=str(sig), incidents=str(tmp_path / "none.json"),
-        feedback=str(REPO / "data" / "ocr-feedback.json"))
+        scn_register=str(tmp_path / "none.csv"), ksi_signal=str(sig), incidents=str(tmp_path / "none.json"))
 
 
 def _work(tmp_path, names=issue_ocr.REQUIRED):
@@ -503,7 +508,7 @@ def test_the_maintenance_role_may_write_exactly_what_the_workflow_publishes():
     literal = {k for k in keys if "*" not in k}
     assert literal == _maintenance_publishes()
     assert {k for k in keys if "*" in k} == {".well-known/ocr-issue-*", ".well-known/snapshot-*",
-                                              ".well-known/snapshots/*"}
+                                              ".well-known/snapshots/*", ".well-known/quarterly-review-*"}
 
 
 def test_the_maintainer_runs_daily_and_the_package_windows_are_two_weeks_at_most():
@@ -541,6 +546,8 @@ def test_the_maintainer_preflight_fails_when_not_in_place(fixture, reason, capsy
 
 def _resolves(url):
     site = "https://samaydlette.com"
+    if re.fullmatch(re.escape(site) + r"/\.well-known/quarterly-review-\d{4}-\d{2}-\d{2}\.(json|md)", url):
+        return ".well-known/quarterly-review-*" in _bootstrap_keys()   # published by the maintainer once held
     if url.startswith(site + "/.well-known/"):
         name = url[len(site + "/.well-known/"):]
         governed = {a["path"] for a in _json(REPO / "infrastructure" / "schemas" / "freshness-config.json")["artifacts"]}
@@ -553,15 +560,14 @@ def _resolves(url):
         return (REPO / "website" / url[len(site) + 1:].split("#")[0]).is_file()
     if url.startswith(_ccm.REPO_URL + "/blob/main/"):
         return (REPO / url[len(_ccm.REPO_URL + "/blob/main/"):].split("#")[0]).is_file()
-    if url.startswith(_ccm.REPO_URL + "/issues/new?template="):
-        return (REPO / ".github" / "ISSUE_TEMPLATE" / url.split("template=")[1].split("&")[0]).is_file()
     if url.startswith("https://fedramp.gov/schemas/"):
         return any((REPO / "infrastructure" / "schemas").glob("fedramp-*/" + url.rsplit("/", 1)[1]))
     return False
 
 
-# The one deliberate outside link: the simulated FedRAMP Security Inbox's
-# contact line points at the operator's LinkedIn profile (AFC-CSO-INB, simulated).
+# The one deliberate outside link: the operator's LinkedIn profile, in the
+# simulated FedRAMP Security Inbox's contact line (AFC-CSO-INB) and the
+# no-engagement statement (DEC-194).
 DELIBERATE_EXTERNAL = {"https://www.linkedin.com/in/sa2/"}
 
 

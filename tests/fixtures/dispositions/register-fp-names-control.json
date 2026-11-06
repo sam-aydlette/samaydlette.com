@@ -3,7 +3,7 @@
   "schema": "decisions/1",
   "decisions": [
     {"id": "DEC-003", "title": "fixture", "status": "in-force", "disposition": "false-positive", "justification": "a WAF rule blocks it",
-     "decided_by": "Fixture", "decided_on": "2026-10-01", "review_by": "2027-10-01",
+     "decided_by": "Fixture", "decided_on": "2026-10-01", "confirmed_on": "2026-10-01", "review_by": "2027-10-01",
      "applies_to": {"check_ids": [], "vuln_ids": ["CVE-0000-0201"], "resources": []},
      "vuln_fields": {"mitigation": "MIT-FIX-1"}}
   ]

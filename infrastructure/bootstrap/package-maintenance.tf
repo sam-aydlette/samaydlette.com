@@ -15,7 +15,7 @@
 # verified inputs, and assumes this role to publish them.
 #
 # THE WHOLE PERMISSION SET: PutObject on the named package objects and the
-# quarterly issue prefixes, and a CDN invalidation. No delete (an unattended job
+# quarterly issue and review prefixes, and a CDN invalidation. No delete (an unattended job
 # never unpublishes evidence), no read of any kind (the workflow verifies through
 # the public URL), no Terraform state, no website sync, no other object. The
 # bucket default-encrypts with SSE-S3, so no KMS grant is involved. If a future
@@ -48,6 +48,9 @@ locals {
     ".well-known/ocr-issues.json",
     ".well-known/ocr-issues.bundle",
     ".well-known/ocr-issue-*",
+    ".well-known/quarterly-reviews.json",
+    ".well-known/quarterly-reviews.bundle",
+    ".well-known/quarterly-review-*",
     ".well-known/snapshot-*",
     ".well-known/snapshots/*",
   ]
@@ -82,7 +85,7 @@ data "aws_iam_policy_document" "package_maintenance_trust" {
 
 resource "aws_iam_role" "package_maintenance" {
   name                 = "github-actions-package-maintenance-oidc"
-  description          = "Unattended certification package maintenance (CPO-CSX-CPM). PutObject on the CPO, SDR, OCR and quarterly issue objects, and a CDN invalidation; nothing else."
+  description          = "Unattended certification package maintenance (CPO-CSX-CPM). PutObject on the CPO, SDR, OCR, quarterly issue and review objects, and a CDN invalidation; nothing else."
   assume_role_policy   = data.aws_iam_policy_document.package_maintenance_trust.json
   max_session_duration = 3600
 

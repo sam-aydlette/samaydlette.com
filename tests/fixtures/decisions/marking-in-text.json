@@ -1,0 +1,24 @@
+{
+  "_note": "Known-bad: a drafting note in the justification instead of source.drafted_by and confirmed_on.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "AI-drafted for the operator's confirmation. fixture",
+      "decided_on": "2026-01-01",
+      "confirmed_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette"
+    }
+  ]
+}

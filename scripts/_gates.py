@@ -81,8 +81,14 @@ CHECKS = {
 }
 
 TOP_KEYS = {"$schema", "version", "description", "method_reference", "checks"}
-ENTRY_KEYS = {"check", "gate", "mode", "method_default", "reason", "decided_by", "decided_on", "review_by"}
-REQUIRED_ENTRY_KEYS = ENTRY_KEYS - {"reason"}
+ENTRY_KEYS = {"check", "gate", "mode", "method_default", "reason", "decided_by", "decided_on", "review_by",
+              "confirmed_on", "drafted_by"}
+# A mode is in force only once the operator has confirmed it (confirmed_on), as
+# for decision records; who drafted the wording, when not the operator, is
+# drafted_by, never a note in the reason.
+REQUIRED_ENTRY_KEYS = ENTRY_KEYS - {"reason", "drafted_by"}
+MARKING_RE = re.compile(r"(?i)\bAI[- ]drafted\b|not yet confirmed|confirm at review|\bproposed\b|"
+                        r"for the operator'?s? (to confirm|confirmation)")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 # Set by the workflows. When present, every detect-and-recover event is appended
@@ -146,7 +152,14 @@ def validate_gate_modes(cfg, where="(in memory)", today=None):
             _fail(where, f"{name}: the method's default for every gate is block")
         if not isinstance(e["decided_by"], str) or not e["decided_by"].strip():
             _fail(where, f"{name}: decided_by must name who decided the mode")
-        _date(where, name, "decided_on", e["decided_on"])
+        decided_on = _date(where, name, "decided_on", e["decided_on"])
+        if _date(where, name, "confirmed_on", e["confirmed_on"]) < decided_on:
+            _fail(where, f"{name}: confirmed_on is before decided_on")
+        if "drafted_by" in e and (not isinstance(e["drafted_by"], str) or not e["drafted_by"].strip()):
+            _fail(where, f"{name}: drafted_by must be a non-empty string")
+        for key in ("reason", "decided_by"):
+            if isinstance(e.get(key), str) and MARKING_RE.search(e[key]):
+                _fail(where, f"{name}: {key} carries a drafting or confirmation note; use drafted_by and confirmed_on")
         review_by = _date(where, name, "review_by", e["review_by"])
         if e["mode"] != e["method_default"]:
             if not isinstance(e.get("reason"), str) or not e["reason"].strip():
