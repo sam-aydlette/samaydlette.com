@@ -91,8 +91,8 @@ def test_the_app_origins_are_inventoried_external_services():
 def test_unplaced_csp_host_fails():
     _, problems = _build(tf=(FIX / "csp-unplaced.tf.fixture").read_text())
     # Compare the named host exactly, not as a substring of the message.
+    named = {m.group(1) for p in problems for m in [re.match(r"the CSP allows (\S+), ", p)] if m}
     assert any(h == "unvetted-cdn.example.com" for h in named)
-    assert "unvetted-cdn.example.com" in named
 
 
 def test_unresolvable_csp_source_fails_closed():
