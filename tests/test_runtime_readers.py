@@ -70,6 +70,12 @@ DRIFTED = {
     ("aws_iam_role", "deploy"): {"iam_oidc_trust_unscoped"},
     ("aws_iam_role_policy", "lambda_opa"): {"iam_admin_wildcard"},
     ("aws_iam_group", "operators"): {"iam_admin_policy_attached"},
+    # A group's inline policy is read with GetGroupPolicy and judged like a role's.
+    ("aws_iam_group_policy", "operators_s3_bucket"): {"iam_admin_wildcard"},
+    # The managed policy the inventory records on the group is no longer
+    # attached: the attachment cannot be validated, so it is unassessed.
+    ("aws_iam_group_policy_attachment", "operators"): {"resource_read_error"},
+    ("aws_iam_role_policy_attachment", "legacy"): set(),
     ("aws_iam_openid_connect_provider", "github"): {"oidc_audience_unexpected"},
     ("aws_lambda_function", "opa_compliance"): {"lambda_env_not_cmk", "lambda_public_function_url"},
     ("lambda_deployment_package", "opa_compliance"): {"package_integrity_mismatch"},
@@ -175,3 +181,63 @@ def test_published_violations_carry_no_account_id(tmp_path):
     violations = json.loads(out.stdout)["result"][0]["expressions"][0]["value"]
     assert len(violations) >= len(DRIFTED) - 1
     assert "123456789012" not in json.dumps(violations)
+
+
+@requires_node
+def test_group_policies_and_attachments_are_read_with_their_own_apis():
+    """Inline group policies use GetGroupPolicy (their id is group:name) and
+    attachments list the holder's attached policies and compare names, so none
+    of the bootstrap IAM policy components comes back unread."""
+    by = {(i["type"], i["name"]): i for i in run("compliant")["inputs"]}
+    grp = by[("aws_iam_group_policy", "operators_s3_bucket")]
+    assert "read_errors" not in grp and '"s3:GetObject"' in grp["values"]["policy"]
+    role_att = by[("aws_iam_role_policy_attachment", "legacy")]
+    assert "read_errors" not in role_att
+    assert [a.rsplit("/", 1)[1] for a in role_att["values"]["attached_policy_arns"]] == ["github-actions-deploy"]
+    grp_att = by[("aws_iam_group_policy_attachment", "operators")]
+    assert "read_errors" not in grp_att
+    assert grp_att["values"]["attached_policy_arns"] == ["arn:aws:iam::aws:policy/IAMFullAccess"]
+
+
+@requires_node
+def test_every_bootstrap_iam_policy_shape_has_a_reader_that_is_not_the_role_policy_api():
+    """The inventory's iam_policy components from bootstrap (group inline
+    policies and the role and group attachments) each reach a reader that
+    calls the matching API, not GetRolePolicy on a split id."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("bks_rt", REPO / "scripts" / "build-ksi-signal.py")
+    bks = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bks)
+    state = json.loads((REPO / "tests" / "fixtures" / "bootstrap-iam" / "state.json").read_text())
+    comps = [c for c in bks.build_cloud_components(state, {}, module_dir="infrastructure/bootstrap")
+             if c["type"] == "iam_policy"]
+    assert {c["attributes"]["tf_type"] for c in comps} >= {
+        "aws_iam_group_policy", "aws_iam_role_policy_attachment", "aws_iam_group_policy_attachment"}
+    out = subprocess.run(
+        ["node", "-e", _CALLS, str(REPO / "infrastructure" / "lambda" / "describers.js")],
+        input=json.dumps(comps), capture_output=True, text=True, check=True)
+    calls = json.loads(out.stdout)
+    for c in comps:
+        made = calls[c["component_id"]]
+        t = c["attributes"]["tf_type"]
+        want = {"aws_iam_group_policy": "getGroupPolicy", "aws_iam_role_policy": "getRolePolicy",
+                "aws_iam_role_policy_attachment": "listAttachedRolePolicies",
+                "aws_iam_group_policy_attachment": "listAttachedGroupPolicies"}[t]
+        assert made == [want], (c["component_id"], made)
+
+
+# Records which IAM API each component's reader calls (every call denied).
+_CALLS = r"""
+const { READERS } = require(process.argv[1]);
+const comps = JSON.parse(require('fs').readFileSync(0));
+(async () => {
+    const out = {};
+    for (const c of comps) {
+        const calls = [];
+        const iam = new Proxy({}, { get: (_, m) => async () => { calls.push(m); const e = new Error('x'); e.name = 'AccessDenied'; throw e; } });
+        await READERS.iam_policy({ aws: { iam }, components: comps, taggableTypes: [] }, c);
+        out[c.component_id] = calls;
+    }
+    process.stdout.write(JSON.stringify(out));
+})();
+"""

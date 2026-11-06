@@ -154,6 +154,20 @@ def test_a_month_younger_than_six_is_never_dropped(tmp_path, monkeypatch):
                    "--output", str(tmp_path / "o.json"), "--md-output", str(tmp_path / "o.md")])
 
 
+def test_the_deploy_reads_only_this_sites_delivery():
+    """The Get* delivery reads are scoped to this site's delivery, source and
+    destination, never every delivery in the account."""
+    tf = (REPO / "infrastructure" / "bootstrap" / "trust-access-logs.tf").read_text()
+    stmt = tf[tf.index('sid = "ReadEdgeAccessDelivery"'):]
+    stmt = stmt[:stmt.index("\n  }\n")]
+    resources = re.search(r"resources = \[(.*?)\]", stmt, re.S).group(1)
+    assert "*" not in resources
+    assert {r.strip().rstrip(",") for r in resources.strip().splitlines()} == {
+        "aws_cloudwatch_log_delivery.edge_access.arn",
+        "aws_cloudwatch_log_delivery_source.edge_access.arn",
+        "aws_cloudwatch_log_delivery_destination.edge_access.arn"}
+
+
 # --- own-records lookup (DEC-160), exercised against a simulated requester -----------
 
 def test_the_own_records_lookup_finds_exactly_the_stated_window():

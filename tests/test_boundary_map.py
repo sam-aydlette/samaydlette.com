@@ -76,3 +76,18 @@ def test_every_icon_the_viewer_names_exists():
     assert names, "the viewer names no icons"
     for name in names:
         assert (ICONS / f"{name}.svg").is_file(), name
+
+
+def test_every_iam_role_terraform_declares_is_placed_by_a_group():
+    """Reconciliation invariant (l) fails the deploy on an unclassified
+    component. Every role the Terraform declares (the bootstrap OIDC roles
+    included) is a component aws::iam_role::<name>, so each must be placed."""
+    c = classification()
+    patterns = [p for g in c["groups"] for p in g["match"]]
+    roles = set()
+    for tf in (REPO / "infrastructure").rglob("*.tf"):
+        if ".terraform" not in tf.parts:
+            roles |= set(re.findall(r'^resource "aws_iam_role" "(\w+)"', tf.read_text(), re.M))
+    assert "package_maintenance" in roles and "incident_reports" in roles
+    for r in sorted(roles):
+        assert any(fnmatch.fnmatchcase(f"aws::iam_role::{r}", p) for p in patterns), r

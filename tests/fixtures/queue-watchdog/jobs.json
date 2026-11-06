@@ -1,0 +1,18 @@
+{
+  "_note": "A run's jobs as GitHub's API lists them while the deploy waits: the jobs of a called workflow are named '<caller job name> / <called job name>'. Only 'Security Scan' has no runner.",
+  "jobs": [
+    {"name": "Queue watchdog", "status": "in_progress"},
+    {"name": "Unit tests (pytest + opa test)", "status": "completed"},
+    {"name": "OPA Compliance Check", "status": "completed"},
+    {"name": "Security Scan", "status": "queued"},
+    {"name": "Simulated assessor / Totally Real Assessment Services, LLC (simulated) assesses", "status": "queued"},
+    {"name": "Simulated assessor / Totally Real Assessment Services, LLC (simulated) signs", "status": "queued"},
+    {"name": "Deploy Infrastructure", "status": "queued"},
+    {"name": "Prove the certification package maintainer / Rebuild, sign and publish the certification package", "status": "queued"},
+    {"name": "Prove the certification package maintainer / Alert on package maintenance", "status": "queued"},
+    {"name": "Prove the incident report publisher / Build, sign and publish incident reports", "status": "queued"},
+    {"name": "Prove the incident report publisher / Alert on incident reporting", "status": "queued"},
+    {"name": "Notify on Failure", "status": "queued"},
+    {"name": "Simulated assessorX", "status": "queued"}
+  ]
+}

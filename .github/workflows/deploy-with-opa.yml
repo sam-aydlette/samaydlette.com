@@ -119,8 +119,9 @@ jobs:
   # run if any of them is still queued after the grace period, turning an
   # open-ended hang into a fast, re-runnable failure.
   #
-  # `deploy` and `notify` are deliberately not watched: they are queued waiting
-  # on their dependencies, which is correct behaviour and not a stuck runner.
+  # Jobs with `needs:` (the deploy, the simulated assessor, the two publisher
+  # proofs, notify) are deliberately not watched: they are queued waiting on
+  # their dependencies, which is correct behaviour and not a stuck runner.
   #
   # Known limitation: this job needs a runner too, so it cannot help when
   # allocation fails completely. It covers the partial case actually observed,
@@ -139,17 +140,20 @@ jobs:
         GRACE_MINUTES: '12'
       run: |
         set -euo pipefail
-        # Watch by exclusion, not by listing the jobs to watch. `deploy` and
-        # `notify` are queued waiting on their dependencies, which is correct;
+        # Watch by exclusion, not by listing the jobs to watch. A job with
+        # `needs:` is queued waiting on its dependencies, which is correct;
         # everything else queued has no runner. Excluding is the fail-safe
         # direction: renaming a watched job would silently drop it from an
-        # inclusion list, whereas here it stays watched, and only a NEW dependent
-        # job could cause a false cancel — which is loud and gets noticed.
-        DEPENDENT='["Deploy Infrastructure","Notify on Failure","Queue watchdog"]'
+        # inclusion list, whereas here it stays watched. DEPENDENT is every job
+        # with `needs:` plus this one; tests/test_queue_watchdog.py derives it
+        # from this file and fails when a dependent job is missing. A job that
+        # calls a reusable workflow appears as "<caller name> / <called job>",
+        # so a dependent name also excludes everything under it.
+        DEPENDENT='["Deploy Infrastructure","Simulated assessor","Prove the certification package maintainer","Prove the incident report publisher","Notify on Failure","Queue watchdog"]'
+        FILTER='[.jobs[] | select(.status == "queued") | .name | select(. as $n | '"$DEPENDENT"' | any(. as $d | $n == $d or ($n | startswith($d + " / "))) | not)] | join(", ")'
         stuck=''
         for _ in $(seq 1 $(( GRACE_MINUTES * 2 ))); do
-          stuck=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" \
-                    --jq "[.jobs[] | select(.status == \"queued\") | .name] - $DEPENDENT | join(\", \")")
+          stuck=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --jq "$FILTER")
           if [ -z "$stuck" ]; then
             echo "All independent jobs have runners."
             exit 0
@@ -173,6 +177,10 @@ jobs:
     name: Unit tests (pytest + opa test)
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # No credentials of any kind: this job runs the test suite and its unpinned
+    # test tools, so it gets no OIDC token (the workflow default grants one).
+    permissions:
+      contents: read
     steps:
     - name: Checkout code
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -2765,8 +2773,10 @@ jobs:
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [compliance-check, deploy, package-maintainer, incident-publisher]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure')
+    # The simulated assessor fails a run without failing the deploy (the deploy
+    # is then skipped), so its result is watched here too.
+    needs: [compliance-check, simulated-assessor, deploy, package-maintainer, incident-publisher]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.simulated-assessor.result == 'failure' || needs.deploy.result == 'failure' || needs.package-maintainer.result == 'failure' || needs.incident-publisher.result == 'failure')
     permissions:
       contents: read
       issues: write
@@ -2779,6 +2789,7 @@ jobs:
       # straight into executable script is the habit that causes injection bugs.
       env:
         COMPLIANCE_RESULT: ${{ needs.compliance-check.result }}
+        ASSESSOR_RESULT: ${{ needs.simulated-assessor.result }}
         DEPLOY_RESULT: ${{ needs.deploy.result }}
         PUBLISHER_RESULT: ${{ needs.incident-publisher.result }}
         MAINTAINER_RESULT: ${{ needs.package-maintainer.result }}
@@ -2796,6 +2807,7 @@ jobs:
             `| Commit | ${context.sha} |`,
             `| Ref | ${context.ref} |`,
             `| Compliance check | \`${process.env.COMPLIANCE_RESULT}\` |`,
+            `| Simulated assessor | \`${process.env.ASSESSOR_RESULT}\` |`,
             `| Deploy | \`${process.env.DEPLOY_RESULT}\` |`,
             `| Incident report publisher | \`${process.env.PUBLISHER_RESULT}\` |`,
             `| Package maintainer | \`${process.env.MAINTAINER_RESULT}\` |`,

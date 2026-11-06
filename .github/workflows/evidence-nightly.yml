@@ -629,9 +629,9 @@ jobs:
       if: ${{ !cancelled() && steps.vdr.outcome == 'success' }}
       working-directory: infrastructure
       run: |
-        # --runtime-signal adds invariant (m): every machine component has an
+        # --runtime-signal adds invariant (n): every machine component has an
         # assessed runtime validation under 72h (VDR-TFR-MVX). A runtime signal
-        # that failed to fetch was removed above, which fails (m), never skips it.
+        # that failed to fetch was removed above, which fails (n), never skips it.
         python3 ../scripts/reconcile.py --artifacts-dir . --live --expect-commit "${SIGNAL_COMMIT}" \
           --runtime-signal ksi-signal-runtime.json
 

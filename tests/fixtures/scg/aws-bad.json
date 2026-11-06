@@ -206,6 +206,49 @@
     }
    }
   },
+  "iam get-role --role-name github-actions-package-maintenance-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringEquals": {
+         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:package-maintenance"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role --role-name github-actions-incident-reports-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringEquals": {
+         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:incident-reports"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role-policy --role-name github-actions-package-maintenance-oidc --policy-name package-maintenance-publish": {
+   "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+     {
+      "Sid": "PublishCertificationPackageOnly",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": ["arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.bundle", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.md", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.view.md", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json.intoto.jsonl", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.json", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.bundle", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.md", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.view.md", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.json", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.bundle", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.md", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.view.md", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-review.ics", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.json", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.view.md", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.bundle", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issue-*", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.json", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.view.md", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.bundle", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-review-*", "arn:aws:s3:::samaydlette.com/.well-known/snapshot-*", "arn:aws:s3:::samaydlette.com/.well-known/snapshots/*"]
+     }
+    ]
+   }
+  },
   "cognito-idp describe-user-pool --region us-east-2 --user-pool-id pool-1": {
    "UserPool": {
     "MfaConfiguration": "ON",

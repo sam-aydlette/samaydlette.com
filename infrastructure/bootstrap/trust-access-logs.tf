@@ -95,7 +95,7 @@ data "aws_iam_policy_document" "edge_access_logs_read" {
       "logs:GetDeliveryDestination",
     ]
     resources = [
-      "arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:delivery:*",
+      aws_cloudwatch_log_delivery.edge_access.arn,
       aws_cloudwatch_log_delivery_source.edge_access.arn,
       aws_cloudwatch_log_delivery_destination.edge_access.arn,
     ]

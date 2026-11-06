@@ -26,18 +26,16 @@ import _freshness  # noqa: E402
 import _frr  # noqa: E402
 import _offering  # noqa: E402
 import _rules  # noqa: E402
+import _signers  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SITE = "https://samaydlette.com"
-REPO_URL = "https://github.com/sam-aydlette/samaydlette.com"
-ISSUER = "https://token.actions.githubusercontent.com"
-WF = f"{REPO_URL}/.github/workflows"
-IDENTITIES = {
-    "deploy": f"{WF}/deploy-with-opa.yml@refs/heads/main",
-    "nightly": f"{WF}/evidence-nightly.yml@refs/heads/main",
-    # The simulated assessor signs its own record under its own workflow identity.
-    "assessor": f"{WF}/simulated-assessor.yml@refs/heads/main",
-}
+REPO_URL = _signers.REPO_URL
+ISSUER = _signers.ISSUER
+# Every workflow that signs something published, from the one table of who
+# writes what (scripts/_signers.py). The simulated assessor signs its own record
+# under its own workflow identity.
+IDENTITIES = dict(_signers.IDENTITIES)
 SCHEMA = "assessor-guide/1"
 SAMPLING = ("No representative samples are used in verification or validation (IVV-CSO-DUS). Every check runs "
             "over its full population: the OPA gate and the KSI signal evaluate every inventoried component; the "
@@ -61,8 +59,7 @@ def _artifact_check(ref, fresh):
     name = ref.split("/", 1)[1]
     sig = entry.get("signature")
     return {"url": f"{SITE}/{ref}", "bundle_url": f"{SITE}/{sig}" if sig else None,
-            "identities": (["assessor"] if name.startswith("simulated-assessment")
-                           else ["deploy", "nightly"] if name.startswith("vdr-") else ["deploy"]),
+            "identities": _signers.signers(name),
             "timestamp": entry["timestamp"], "max_age_hours": entry["max_age_hours"]}
 
 
@@ -78,9 +75,12 @@ def reproduce(ev, fresh):
         chk = _artifact_check(ref, fresh)
         cmd = f"curl -fsSLO {chk['url']}"
         if chk["bundle_url"]:
-            cmd += (f" && curl -fsSLO {chk['bundle_url']} && cosign verify-blob --bundle {chk['bundle_url'].rsplit('/', 1)[1]} "
-                    f"--certificate-identity {IDENTITIES[chk['identities'][0]]} --certificate-oidc-issuer {ISSUER} "
-                    f"{ref.rsplit('/', 1)[1]}")
+            # One verification per workflow allowed to have signed it; any one passing is enough.
+            verify = " || ".join(
+                f"cosign verify-blob --bundle {chk['bundle_url'].rsplit('/', 1)[1]} "
+                f"--certificate-identity {IDENTITIES[i]} --certificate-oidc-issuer {ISSUER} {ref.rsplit('/', 1)[1]}"
+                for i in chk["identities"])
+            cmd += f" && curl -fsSLO {chk['bundle_url']} && {{ {verify}; }}"
         return cmd, {"artifact": chk}
     if kind == "decision":
         return f"jq '.decisions[] | select(.id == \"{ref}\")' data/decisions.json", {"decision": ref}

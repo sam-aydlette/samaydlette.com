@@ -22,6 +22,15 @@ import data.policy.gate
 
 policy_types := {"aws_iam_role_policy", "aws_iam_policy", "aws_iam_group_policy"}
 
+# Resources whose managed-policy attachments are checked: roles and groups, and
+# the attachment resources the runtime emitter reads (attached_policy_arns).
+attachment_holders := {
+	"aws_iam_role",
+	"aws_iam_group",
+	"aws_iam_role_policy_attachment",
+	"aws_iam_group_policy_attachment",
+}
+
 statements(doc) := gate.as_list(doc.Statement)
 
 # Every policy document a resource carries, as raw strings.
@@ -195,7 +204,9 @@ violations contains violation if {
 
 # METADATA
 # title: No administrator policy attached
-# description: The AWS-managed AdministratorAccess policy must not be attached to a role or group.
+# description: >-
+#   The AWS-managed AdministratorAccess policy must not be attached to a role or
+#   group, whether read on the role or group or on a managed-policy attachment.
 # custom:
 #   id: iam_admin_policy_attached
 #   category: infrastructure
@@ -204,7 +215,7 @@ violations contains violation if {
 #   ksi_ids: [KSI-IAM-ELP, KSI-IAM-JIT]
 violations contains violation if {
 	some r in gate.resources
-	r.type in {"aws_iam_role", "aws_iam_group"}
+	r.type in attachment_holders
 	some arn in array.concat(
 		gate.as_list(gate.value(r, "managed_policy_arns", [])),
 		gate.as_list(gate.value(r, "attached_policy_arns", [])),

@@ -23,16 +23,14 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
 import _offering  # noqa: E402
+import _signers  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SITE = "https://samaydlette.com"
-WF = "https://github.com/sam-aydlette/samaydlette.com/.github/workflows"
-ISSUER = "https://token.actions.githubusercontent.com"
-SIGNERS = {
-    "deploy": f"{WF}/deploy-with-opa.yml@refs/heads/main",
-    "nightly": f"{WF}/evidence-nightly.yml@refs/heads/main",
-    "assessor": f"{WF}/simulated-assessor.yml@refs/heads/main",
-}
+ISSUER = _signers.ISSUER
+# Every workflow that signs a published artifact (scripts/_signers.py, which
+# tests/test_publishers.py holds equal to the workflows' publish steps).
+SIGNERS = dict(_signers.IDENTITIES)
 MEDIA = {".json": "application/json", ".md": "text/markdown; charset=utf-8", ".csv": "text/csv",
          ".jsonl": "application/x-ndjson", ".gz": "application/gzip"}
 # Published by something other than the deploy, so not built here; shown
@@ -49,8 +47,8 @@ EXTERNAL = [{
 }]
 ACCESS = (
     "All certification data is public: no account, key or request is needed. Fetch any artifact with an HTTPS GET "
-    "(CORS is open for read-only use from a browser). Verify a signed artifact with cosign against the identity "
-    "named in `signed_by`: `cosign verify-blob --bundle <signature> --certificate-identity <signed_by identity> "
+    "(CORS is open for read-only use from a browser). Verify a signed artifact with cosign against an identity "
+    "named in `signed_by` (one passing is enough): `cosign verify-blob --bundle <signature> --certificate-identity <signed_by identity> "
     "--certificate-oidc-issuer https://token.actions.githubusercontent.com <artifact>`. Every JSON artifact has a "
     "complete human-readable view (`.view.md`) that this build checked reproduces the JSON exactly, and most have a "
     "curated Markdown summary (`.md`). The policies and procedures are served as Markdown. This manifest is itself "
@@ -59,11 +57,7 @@ ACCESS = (
 
 
 def _signer(name):
-    if name.startswith("simulated-assessment"):
-        return "assessor"
-    if name.startswith("vdr-"):
-        return "deploy or nightly"
-    return "deploy"
+    return " or ".join(_signers.signers(name))
 
 
 def _schema(path):

@@ -14,7 +14,7 @@
 // A failed read is never evidence that a setting is off. Every attribute that
 // could not be read is listed in `read_errors`; the gate reports it as
 // resource_read_error (category input), which the divergence block counts as
-// unassessed and reconciliation invariant (m) refuses to count as validated.
+// unassessed and reconciliation invariant (n) refuses to count as validated.
 //
 // Only SDK error NAMES are kept (never messages), because the signal is public.
 //
@@ -112,18 +112,63 @@ async function iamRole(ctx, c) {
     return [attachTags(ctx, r, null, tags)];
 }
 
+// The name an attached policy's ARN ends in (arn:...:policy[/path]/<name>).
+function policyName(arn) {
+    return String(arn || '').split('/').pop();
+}
+
+// Managed-policy attachments: the inventory records each attachment's policies
+// by name only (their ARNs carry the account ID). The holder's live attached
+// policies are listed and compared by name; every recorded policy must still
+// be attached, or the attachment is reported unread (it cannot be validated),
+// never passed. The live ARNs of the recorded policies are the input, under
+// the same runtime attribute the role and group readers use.
+async function iamAttachment(ctx, c, tfType) {
+    const errors = [];
+    const attrs = c.attributes || {};
+    const group = tfType === 'aws_iam_group_policy_attachment';
+    const holder = group ? attrs.attached_to_group : attrs.attached_to_role;
+    const expected = (attrs.attached_policies || []).map((p) => p.policy_name).filter(Boolean);
+    const values = {};
+    if (!holder || expected.length === 0) {
+        errors.push('attached_policies');
+        return [resource(tfType, c, values, errors)];
+    }
+    const live = await read(errors, 'attached_policies', () => (group
+        ? ctx.aws.iam.listAttachedGroupPolicies(holder)
+        : ctx.aws.iam.listAttachedRolePolicies(holder)));
+    if (live) {
+        const byName = new Map(live.map((arn) => [policyName(arn), arn]));
+        if (expected.every((n) => byName.has(n))) {
+            values.attached_policy_arns = expected.map((n) => byName.get(n));
+        } else {
+            errors.push('attached_policies');
+        }
+    }
+    return [resource(tfType, c, values, errors)];
+}
+
 async function iamPolicy(ctx, c) {
     const errors = [];
     const tfType = c.attributes?.tf_type || 'aws_iam_role_policy';
+    if (tfType === 'aws_iam_role_policy_attachment' || tfType === 'aws_iam_group_policy_attachment') {
+        return iamAttachment(ctx, c, tfType);
+    }
     let doc;
     if (tfType === 'aws_iam_policy') {
         // No managed-policy component is inventoried today, so the role holds
         // no iam:GetPolicyVersion grant; one that appears is reported unread
-        // (and fails invariant m) until the grant and a reader are added.
+        // (and fails invariant n) until the grant and a reader are added.
         errors.push('policy');
     } else {
-        const [roleName, policyName] = String(attrId(c) || '').split(':');
-        doc = await read(errors, 'policy', () => ctx.aws.iam.getRolePolicy(roleName, policyName));
+        // Inline policies: the Terraform id is "<role or group>:<policy name>".
+        const id = String(attrId(c) || '');
+        const at = id.indexOf(':');
+        const [holder, policyName_] = at < 0 ? [id, ''] : [id.slice(0, at), id.slice(at + 1)];
+        const get = tfType === 'aws_iam_group_policy'
+            ? () => ctx.aws.iam.getGroupPolicy(holder, policyName_)
+            : () => ctx.aws.iam.getRolePolicy(holder, policyName_);
+        doc = await read(errors, 'policy', get);
     }
     const values = {};
     if (doc !== undefined) values.policy = decodeDocument(doc);

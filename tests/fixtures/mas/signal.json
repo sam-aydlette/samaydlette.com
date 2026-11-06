@@ -665,6 +665,42 @@
    }
   },
   {
+   "component_id": "aws::iam_role::package_maintenance",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Certification package maintenance workflow role (unattended SDR, CPO and OCR publication)"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::package_maintenance_cdn",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-package-maintenance-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::package_maintenance_publish",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-package-maintenance-oidc"
+   }
+  },
+  {
    "component_id": "aws::iam_policy::evidence_watchdog_management",
    "type": "iam_policy",
    "security_category": {

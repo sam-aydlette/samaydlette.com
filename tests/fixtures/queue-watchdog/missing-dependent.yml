@@ -1,0 +1,29 @@
+# Known-bad: a workflow whose queue watchdog does not exclude the dependent job
+# "Prove the publisher" (it has `needs:`), so the watchdog would cancel a run
+# while that job correctly waits for the deploy. tests/test_queue_watchdog.py
+# must report exactly that job.
+name: Fixture
+on: push
+jobs:
+  queue-watchdog:
+    name: Queue watchdog
+    runs-on: ubuntu-latest
+    steps:
+    - name: Cancel the run if a job never gets a runner
+      run: |
+        DEPENDENT='["Deploy Infrastructure","Queue watchdog"]'
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+    - run: true
+  deploy:
+    name: Deploy Infrastructure
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+    - run: true
+  publisher:
+    name: Prove the publisher
+    needs: [deploy]
+    uses: ./.github/workflows/publisher.yml
