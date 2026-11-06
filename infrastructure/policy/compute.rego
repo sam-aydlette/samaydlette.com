@@ -34,6 +34,7 @@ package_hashes_present(r) if {
 #   severity: MEDIUM
 #   nist_controls: [sc-28]
 #   ksi_ids: [KSI-SVC-SIN]
+#   resource_types: [aws_lambda_function]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_lambda_function"
@@ -59,6 +60,8 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [si-7.1]
 #   ksi_ids: [KSI-SCR-MIT]
+#   resource_types: [lambda_deployment_package]
+#   runtime_only: true
 violations contains violation if {
 	some r in packages
 	gate.attribute_read_ok(r, "code_sha256")
@@ -82,6 +85,8 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [si-7, si-7.1]
 #   ksi_ids: [KSI-SCR-MIT, KSI-SVC-VRI]
+#   resource_types: [lambda_deployment_package]
+#   runtime_only: true
 violations contains violation if {
 	some r in packages
 	package_hashes_present(r)
@@ -103,6 +108,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [sc-28]
 #   ksi_ids: [KSI-SVC-SIN]
+#   resource_types: [aws_sns_topic]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_sns_topic"
@@ -126,6 +132,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [sc-28]
 #   ksi_ids: [KSI-SVC-SIN]
+#   resource_types: [aws_sqs_queue]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_sqs_queue"
@@ -150,6 +157,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [cp-9]
 #   ksi_ids: [KSI-RPL-ABO]
+#   resource_types: [aws_dynamodb_table]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_dynamodb_table"

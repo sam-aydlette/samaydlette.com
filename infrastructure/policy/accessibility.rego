@@ -56,6 +56,7 @@ gating_issues(page) := [issue |
 #   framework: section-508
 #   nist_controls: []
 #   ksi_ids: []
+#   resource_types: []
 violations contains violation if {
 	gate.is_scan_input
 	some page in input.accessibility_scan.pages

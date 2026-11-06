@@ -145,6 +145,7 @@ github_trust_scoped(s) if {
 #   severity: HIGH
 #   nist_controls: [ac-6]
 #   ksi_ids: [KSI-IAM-ELP]
+#   resource_types: [aws_iam_group, aws_iam_group_policy, aws_iam_policy, aws_iam_role_policy]
 violations contains violation if {
 	some r in gate.resources
 	document_unreadable(r)
@@ -166,7 +167,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ac-6]
-#   ksi_ids: [KSI-IAM-ELP]
+#   ksi_ids: [KSI-IAM-ELP, KSI-CNA-DFP]
+#   resource_types: [aws_iam_group, aws_iam_group_policy, aws_iam_policy, aws_iam_role_policy]
 violations contains violation if {
 	some r in gate.resources
 	some s in allows(r)
@@ -187,7 +189,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ac-6]
-#   ksi_ids: [KSI-IAM-ELP]
+#   ksi_ids: [KSI-IAM-ELP, KSI-CNA-DFP]
+#   resource_types: [aws_iam_group, aws_iam_group_policy, aws_iam_policy, aws_iam_role_policy]
 violations contains violation if {
 	some r in gate.resources
 	some s in allows(r)
@@ -212,7 +215,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ac-6]
-#   ksi_ids: [KSI-IAM-ELP, KSI-IAM-JIT]
+#   ksi_ids: [KSI-IAM-ELP, KSI-IAM-JIT, KSI-IAM-AAM]
+#   resource_types: [aws_iam_group, aws_iam_group_policy_attachment, aws_iam_role, aws_iam_role_policy_attachment]
 violations contains violation if {
 	some r in gate.resources
 	r.type in attachment_holders
@@ -238,6 +242,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [ac-3]
 #   ksi_ids: [KSI-IAM-ELP]
+#   resource_types: [aws_iam_role]
 violations contains violation if {
 	some r in gate.resources
 	trust_unreadable(r)
@@ -258,6 +263,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [ac-3, ac-6]
 #   ksi_ids: [KSI-IAM-ELP]
+#   resource_types: [aws_iam_role]
 violations contains violation if {
 	some r in gate.resources
 	some s in trust_statements(r)
@@ -281,7 +287,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ia-3, ac-6.5]
-#   ksi_ids: [KSI-IAM-SNU]
+#   ksi_ids: [KSI-IAM-SNU, KSI-CNA-MAT]
+#   resource_types: [aws_iam_role]
 violations contains violation if {
 	some r in gate.resources
 	some s in trust_statements(r)
@@ -305,7 +312,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ia-3]
-#   ksi_ids: [KSI-IAM-SNU]
+#   ksi_ids: [KSI-IAM-SNU, KSI-CNA-MAT]
+#   resource_types: [aws_iam_openid_connect_provider]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_iam_openid_connect_provider"

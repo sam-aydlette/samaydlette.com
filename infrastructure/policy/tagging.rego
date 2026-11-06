@@ -80,6 +80,7 @@ missing_classification(r) := {key |
 #   severity: HIGH
 #   nist_controls: [cm-8, cm-12]
 #   ksi_ids: [KSI-PIY-GIV]
+#   resource_types: [aws_apigatewayv2_api, aws_apigatewayv2_stage, aws_cloudwatch_event_rule, aws_cloudwatch_log_group, aws_cloudwatch_metric_alarm, aws_cognito_user_pool, aws_iam_role, aws_kms_key, aws_lambda_function, aws_s3_bucket, aws_secretsmanager_secret, aws_sns_topic, aws_sqs_queue]
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
@@ -107,6 +108,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [cm-8, cm-8.1, cm-12]
 #   ksi_ids: [KSI-PIY-GIV]
+#   resource_types: [aws_apigatewayv2_api, aws_apigatewayv2_stage, aws_cloudwatch_event_rule, aws_cloudwatch_log_group, aws_cloudwatch_metric_alarm, aws_cognito_user_pool, aws_iam_role, aws_kms_key, aws_lambda_function, aws_s3_bucket, aws_secretsmanager_secret, aws_sns_topic, aws_sqs_queue]
 violations contains violation if {
 	some r in gate.resources
 	is_managed(r)
