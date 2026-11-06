@@ -76,11 +76,13 @@ def _intake(notice):
 
 
 def test_the_deploy_files_a_change_notice_once_and_carries_it_over():
-    notices, problems = mod.file_notices(load("changed"), None, date(2026, 12, 2), _intake)
+    notices, problems = mod.file_notices(load("changed"), None, date(2026, 12, 2), _intake, "c" * 40)
     assert problems == [] and len(notices) == 1
     n = notices[0]
     assert n["changedOn"] == "2026-12-01" and n["filedOn"] == "2026-12-02" and n["receipt"]["receiptId"]
-    again, problems = mod.file_notices(load("changed"), notices, date(2027, 3, 1), _intake)
+    assert n["publishedOn"] == "2026-12-02" and n["publishedIn"] == "c" * 40  # filed by the publishing deploy
+    current, _ = mod.published_contact(load("changed"), None, date(2026, 12, 2), "c" * 40)
+    again, problems = mod.file_notices(load("changed"), notices, date(2027, 3, 1), _intake, "d" * 40, current)
     assert problems == [] and again == notices  # filed once; never re-filed or re-dated
 
 
@@ -89,23 +91,37 @@ def test_the_establishing_entry_needs_no_notice():
     assert notices == [] and problems == []
 
 
-def test_a_notice_filed_more_than_one_business_day_after_the_change_fails():
-    # 2026-12-01 is a Tuesday: the notice is due by Wednesday 2026-12-02.
-    _, problems = mod.file_notices(load("changed"), None, date(2026, 12, 3), _intake)
-    assert any("one business day" in p for p in problems), problems
+def test_a_change_first_deployed_ten_business_days_after_it_was_merged_passes():
+    """The recovery trap: a change dated D (Tuesday 2026-12-01) that is first
+    deployed ten business days later is filed by that deploy, on time."""
+    import _bizdays
+    deployed = _bizdays.add_business_days(date(2026, 12, 1), 10)
+    notices, problems = mod.file_notices(load("changed"), None, deployed, _intake, "e" * 40)
+    assert problems == [], problems
+    assert notices[0]["changedOn"] == "2026-12-01" and notices[0]["publishedOn"] == deployed.isoformat()
+
+
+def test_a_contact_an_earlier_deploy_published_keeps_that_deploy_as_its_clock():
+    """A contact already published without its notice (say, by a deploy before
+    this check) is late: its clock runs from that deploy, not this one."""
+    published = {"contact": load("changed")["fedramp_security_inbox"]["contact"],
+                 "firstPublishedOn": "2026-12-01", "firstPublishedIn": "f" * 40}
+    notices, problems = mod.file_notices(load("changed"), None, date(2026, 12, 3), _intake, "a" * 40, published)
+    assert notices[0]["publishedOn"] == "2026-12-01" and notices[0]["publishedIn"] == "f" * 40
+    assert any("first published on 2026-12-01 was filed 2026-12-03" in p for p in problems), problems
 
 
 def test_known_bad_a_late_notice_on_record_fails_the_deploy():
+    """A notice filed two business days after the deploy that published the change."""
     prev = json.loads((FIX / "notices-late.json").read_text())["changeNotices"]
     _, problems = mod.file_notices(load("changed"), prev, date(2026, 12, 4), _intake)
-    assert any("filed 2026-12-03" in p and "one business day" in p for p in problems), problems
+    assert any("first published on 2026-12-01 was filed 2026-12-03" in p and "one business day" in p
+               for p in problems), problems
 
 
-def test_a_change_over_a_weekend_is_due_the_next_business_day():
-    doc = load("changed")
-    doc["fedramp_security_inbox"]["history"][-1]["since"] = "2026-11-27"  # Friday after Thanksgiving
-    _, problems = mod.file_notices(doc, None, date(2026, 11, 30), _intake)  # the next Monday
-    assert problems == []
+def test_a_malformed_published_contact_record_fails():
+    _, problems = mod.file_notices(load("changed"), None, date(2026, 12, 2), _intake, "a" * 40, {"contact": "x"})
+    assert any("inboxContact is malformed" in p for p in problems)
 
 
 def test_a_rewritten_earlier_notice_fails():
@@ -138,3 +154,21 @@ def test_establishing_the_inbox_needs_a_basis():
 
 def test_a_missing_inbox_block_fails():
     assert mod.check({}, today=TODAY)
+
+
+def test_the_submission_log_records_the_publishing_deploy_and_files_on_it():
+    """Through scripts/submit-package.py: the deploy that first publishes the
+    changed contact records itself in inboxContact and files the notice; a
+    later deploy carries both over."""
+    from datetime import datetime, timezone
+    cyc = importlib.util.spec_from_file_location("cycle_for_noc", REPO / "tests" / "test_certification_cycle.py")
+    cm = importlib.util.module_from_spec(cyc)
+    cyc.loader.exec_module(cm)
+    docs, paths = cm._pkg()
+    deployed = datetime(2026, 12, 15, tzinfo=timezone.utc)  # ten business days after the change's since
+    log = cm.submit.build(docs, paths, {}, deployed, "a" * 40, cm.PKG_RULES, cm.PKG_ID, cm.SCN_ROWS, load("changed"))
+    assert log["inboxContact"]["firstPublishedOn"] == "2026-12-15" and log["inboxContact"]["firstPublishedIn"] == "a" * 40
+    assert log["changeNotices"][0]["publishedOn"] == log["changeNotices"][0]["filedOn"] == "2026-12-15"
+    later = cm.submit.build(docs, paths, log, datetime(2027, 1, 20, tzinfo=timezone.utc), "b" * 40, cm.PKG_RULES,
+                            cm.PKG_ID, cm.SCN_ROWS, load("changed"))
+    assert later["inboxContact"] == log["inboxContact"] and later["changeNotices"] == log["changeNotices"]

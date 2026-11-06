@@ -61,11 +61,11 @@ Edit `data/fsi-simulation/messages.json`, including the `expected` block, and ru
 ## Changing the published contact (AFC-CSO-NOC)
 
 1. In `data/cds/offering.json`, change `contact` and append a `history` entry with the new contact and `since`, the date of the change.
-2. Merge and deploy within one business day of `since`.
+2. Merge it. The change takes effect when a deploy first publishes it; nothing has to happen by a date.
 
 `scripts/check-fsi-notice.py` fails the pull request if the contact changes without that entry, or if the history is rewritten.
 
-On every deploy, `scripts/submit-package.py` files a change notice with the simulated FedRAMP for each change in the history that has none yet. The notice is dated the day of the deploy. It is an entry in `changeNotices` of the signed `/.well-known/package-submission-log.json`, with the simulated FedRAMP's receipt. Earlier notices are carried over unchanged. The deploy fails if any notice is dated more than one business day after its change. Nothing is sent to anyone, and no real FedRAMP is notified (DEC-194).
+On every deploy, `scripts/submit-package.py` files a change notice with the simulated FedRAMP for each change in the history that has none yet. The deploy that first publishes a new contact files its notice that day, recording the deploy's date and commit (`publishedOn`, `publishedIn`); the log's `inboxContact` records which deploy first published the contact in force. The notice is an entry in `changeNotices` of the signed `/.well-known/package-submission-log.json`, with the simulated FedRAMP's receipt. Earlier notices are carried over unchanged. The deploy fails if any notice was filed more than one business day after the deploy that first published its change. The clock runs from publication, not from `since`, so a change merged but not deployed for a while is still notified on time, and a failed deploy (which publishes nothing) cannot make later deploys late. Nothing is sent to anyone, and no real FedRAMP is notified (DEC-194).
 
 ## What a real inbox would need
 

@@ -27,8 +27,9 @@ applicable rule (SDR-CSO-FRR), and an Ongoing Certification Report
    simulated report NOT ISSUED BY FEDRAMP and that the system is not certified;
 6. AFC-CSO-NOC: files a change notice with the simulated FedRAMP for every
    change of the FedRAMP Security Inbox contact not yet filed
-   (scripts/check-fsi-notice.py), and fails unless each notice is dated
-   within one business day of the change.
+   (scripts/check-fsi-notice.py), and fails unless each notice is filed
+   within one business day of the deploy that first published the change
+   (recorded in the log's inboxContact).
 
 NOTHING IS SENT. There is no network call: FedRAMP is simulated, and the
 "submission", the report and every notice are entries in this log. Any
@@ -244,10 +245,14 @@ def build(docs, paths, previous, now, commit, applicable, fedramp_id, scn_rows=(
            "certificationPackageOverviewUri": fs.CPO_URI, "nothingSent": True,
            "simulated": {"counterparty": "fedramp", "how": SIMULATION}, "entries": entries}
     if offering is not None:
+        prev_contact = (previous or {}).get("inboxContact")
         notices, problems = fsi_notice.file_notices(offering, (previous or {}).get("changeNotices"), now.date(),
-                                                    simulated_fedramp_notice_intake)
+                                                    simulated_fedramp_notice_intake, commit, prev_contact)
+        current, more = fsi_notice.published_contact(offering, prev_contact, now.date(), commit)
+        problems += [p for p in more if p not in problems]
         if problems:
             _fail("FedRAMP Security Inbox change notice (AFC-CSO-NOC): " + "; ".join(problems))
+        log["inboxContact"] = current
         log["changeNotices"] = notices
     return log
 

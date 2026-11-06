@@ -20,8 +20,14 @@ Two halves:
   file_notices()  on every deploy (scripts/submit-package.py): files a notice
                   with the simulated FedRAMP for every change not yet filed,
                   keeps earlier notices unchanged, and reports any notice
-                  dated more than one business day after its change, which
-                  fails the deploy. NOTHING IS SENT: a notice is an entry in
+                  filed more than one business day after the deploy that
+                  first published the changed contact, which fails the
+                  deploy. A change takes effect when it is published, so it
+                  is that deploy (recorded in the log's inboxContact, and on
+                  each notice as publishedOn/publishedIn) that the clock runs
+                  from, not the date in "since": a change merged but not yet
+                  deployed cannot go stale, and a failed deploy, which
+                  publishes nothing, cannot make the next one late. NOTHING IS SENT: a notice is an entry in
                   the published package-submission-log.json, and the
                   simulated FedRAMP's receipt is a Python function's return
                   value. No real FedRAMP is notified (DEC-194).
@@ -46,7 +52,8 @@ DEFAULT = REPO / "data" / "cds" / "offering.json"
 CONTACT = re.compile(r"^[\x20-\x7e]{1,300}$")
 DAY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 NOTICE_BUSINESS_DAYS = 1  # "immediately": filed no later than the next business day
-NOTICE_KEYS = {"changedOn", "contact", "filedOn", "receipt"}
+NOTICE_KEYS = {"changedOn", "contact", "publishedOn", "publishedIn", "filedOn", "receipt"}
+PUBLISHED_KEYS = {"contact", "firstPublishedOn", "firstPublishedIn"}
 
 
 def _inbox(doc):
@@ -101,33 +108,59 @@ def check(head: dict, base: dict | None = None, today: date | None = None) -> li
     return out
 
 
-def file_notices(head: dict, previous, today: date, intake) -> tuple[list[dict], list[str]]:
+def published_contact(head: dict, previous, today: date, commit: str) -> tuple[dict | None, list[str]]:
+    """(record, problems): the contact this deploy publishes and the deploy that
+    first published it. Carried over from the previous log while the contact is
+    unchanged; otherwise this deploy is the first to publish it."""
+    contact = _inbox(head)["contact"]
+    if previous is not None:
+        if not isinstance(previous, dict) or set(previous) != PUBLISHED_KEYS \
+                or _date(previous.get("firstPublishedOn")) is None or not isinstance(previous.get("firstPublishedIn"), str):
+            return None, ["the previously published inboxContact is malformed; it is carried over unchanged"]
+        if previous["contact"] == contact:
+            return dict(previous), []
+    return {"contact": contact, "firstPublishedOn": today.isoformat(), "firstPublishedIn": commit}, []
+
+
+def file_notices(head: dict, previous, today: date, intake, commit: str = "",
+                 published=None) -> tuple[list[dict], list[str]]:
     """(notices, problems). Carries over every earlier notice unchanged, files a
     notice through `intake` (the simulated FedRAMP) for each contact change in
     the history that has none, dated today, and reports every notice filed more
-    than NOTICE_BUSINESS_DAYS business days after its change."""
+    than NOTICE_BUSINESS_DAYS business days after the deploy that first
+    published its contact. `published` is the previous log's inboxContact (who
+    first published the contact now in force); a change no earlier deploy
+    published is published by this one (`today`, `commit`)."""
     problems = check(head, today=today)
     if problems:
+        return [], problems
+    current, problems = published_contact(head, published, today, commit)
+    if problems or current is None:
         return [], problems
     notices = list(previous or [])
     for i, n in enumerate(notices):
         if not isinstance(n, dict) or set(n) != NOTICE_KEYS or _date(n.get("changedOn")) is None \
-                or _date(n.get("filedOn")) is None:
+                or _date(n.get("filedOn")) is None or _date(n.get("publishedOn")) is None:
             return [], [f"the previously published change notice {i} is malformed; notices are carried over "
                         "unchanged"]
     filed = {(n["changedOn"], n["contact"]) for n in notices}
     for h in _inbox(head)["history"][1:]:
         if (h["since"], h["contact"]) in filed:
             continue
-        notice = {"changedOn": h["since"], "contact": h["contact"], "filedOn": today.isoformat()}
+        if h["contact"] == current["contact"]:
+            pub_on, pub_in = current["firstPublishedOn"], current["firstPublishedIn"]
+        else:  # superseded before any deploy published it: this deploy is the first to publish the change
+            pub_on, pub_in = today.isoformat(), commit
+        notice = {"changedOn": h["since"], "contact": h["contact"], "publishedOn": pub_on, "publishedIn": pub_in,
+                  "filedOn": today.isoformat()}
         notice["receipt"] = intake(dict(notice))
         notices.append(notice)
         filed.add((h["since"], h["contact"]))
     for n in notices:
-        deadline = _bizdays.add_business_days(_date(n["changedOn"]), NOTICE_BUSINESS_DAYS)
+        deadline = _bizdays.add_business_days(_date(n["publishedOn"]), NOTICE_BUSINESS_DAYS)
         if _date(n["filedOn"]) > deadline:
-            problems.append(f"the notice of the change on {n['changedOn']} was filed {n['filedOn']}, after "
-                            f"{deadline.isoformat()} (one business day)")
+            problems.append(f"the notice of the change first published on {n['publishedOn']} was filed "
+                            f"{n['filedOn']}, after {deadline.isoformat()} (one business day)")
     return notices, problems
 
 

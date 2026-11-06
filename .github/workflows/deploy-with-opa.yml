@@ -2035,8 +2035,8 @@ jobs:
     # an entry in the signed, published log. Any unexpected outcome fails here.
     # The same log records the simulated FedRAMP's certification report when one
     # is due (CDS-CSO-FRC) and files a notice of every FedRAMP Security Inbox
-    # contact change, failing unless it is within one business day of the change
-    # (AFC-CSO-NOC, scripts/check-fsi-notice.py).
+    # contact change, failing unless it is filed within one business day of the deploy that
+    # first published the change (AFC-CSO-NOC, scripts/check-fsi-notice.py).
     - name: Simulated package submission to FedRAMP (nothing is sent)
       working-directory: infrastructure
       run: |
