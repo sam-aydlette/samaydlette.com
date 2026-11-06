@@ -102,7 +102,7 @@ permissions:
   issues: write
   pull-requests: write
   security-events: write
-  id-token: write   # assume the plan (compliance-check) and deploy roles via GitHub OIDC (POAM-001)
+  id-token: write   # assume the plan (compliance-check) and deploy roles via GitHub OIDC
 
 jobs:
   # ===========================================================================
@@ -279,7 +279,7 @@ jobs:
     # banned at lint time; the parity test catches what the corpus exercises,
     # this catches the rest before it exists. It also requires every sprintf
     # format to be a literal (or concat of literals) with no precision
-    # specifier: the condition the closed POAM-035 (sprintf-js) rested on, kept
+    # specifier: the condition the closed sprintf-js finding rested on, kept
     # as a guard.
     - name: Wasm-safe builtin check
       run: python3 scripts/check-wasm-safe.py
@@ -351,7 +351,7 @@ jobs:
       # instead of hanging on GitHub's 6-hour default.
       timeout-minutes: 6
       with:
-        # GitHub OIDC role assumption — no long-lived access key (POAM-001).
+        # GitHub OIDC role assumption — no long-lived access key.
         # This job only plans, so it assumes the plan-only role
         # (infrastructure/bootstrap/plan-role.tf): read-only account access plus
         # the state lock. Deploy credentials exist only in the deploy job, behind
@@ -694,7 +694,7 @@ jobs:
       # retry the assume-role call to ride through a brief blip.
       timeout-minutes: 6
       with:
-        # GitHub OIDC role assumption — no long-lived access key (POAM-001).
+        # GitHub OIDC role assumption — no long-lived access key.
         # Role ARN is a repo variable so the account ID stays out of the YAML.
         role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
@@ -826,7 +826,7 @@ jobs:
           echo "No existing IAM role policy found - will be created"
         fi
         
-        # Import the at-rest CMK + its alias if they exist (Task 6, POAM-011/018).
+        # Import the at-rest CMK + its alias if they exist.
         # State is ephemeral per run, so the unconditional aws_kms_key.at_rest would
         # otherwise be created fresh every run — orphaning keys and colliding on the
         # alias. Resolve the key by its stable alias and adopt both into state.
@@ -851,8 +851,8 @@ jobs:
           echo "No existing at-rest CMK found - will be created"
         fi
 
-        # Import the compliance Lambda's dead-letter queue if it exists (Task 8b,
-        # POAM-013). Ephemeral state: adopt it so it isn't recreated each run.
+        # Import the compliance Lambda's dead-letter queue if it exists.
+        # Ephemeral state: adopt it so it isn't recreated each run.
         DLQ_URL=$(aws sqs get-queue-url --queue-name samaydlette-com-opa-compliance-dlq --query 'QueueUrl' --output text 2>/dev/null || true)
         if [ -n "$DLQ_URL" ] && [ "$DLQ_URL" != "None" ]; then
           if ! terraform state show 'aws_sqs_queue.compliance_dlq[0]' >/dev/null 2>&1; then
@@ -866,8 +866,8 @@ jobs:
           echo "No existing compliance DLQ found - will be created"
         fi
 
-        # Import the runtime-signal signing CMK + alias if they exist (Task 5,
-        # POAM-002). Ephemeral state: resolve the key by its stable alias and
+        # Import the runtime-signal signing CMK + alias if they exist.
+        # Ephemeral state: resolve the key by its stable alias and
         # adopt both so the asymmetric signing key is not recreated each run.
         if aws kms describe-key --key-id alias/samaydlette-com-runtime-signing >/dev/null 2>&1; then
           SIGNING_KEY_ID=$(aws kms describe-key --key-id alias/samaydlette-com-runtime-signing --query 'KeyMetadata.KeyId' --output text)
@@ -913,7 +913,7 @@ jobs:
           echo "No existing DNSSEC KSK found - will be created"
         fi
 
-        # Import the access-log bucket if it exists (Task 7, POAM-005). Ephemeral
+        # Import the access-log bucket if it exists. Ephemeral
         # state: the bucket would otherwise be recreated each run (and fail as a
         # name collision), so adopt it when present.
         if aws s3api head-bucket --bucket samaydlette-com-logs >/dev/null 2>&1; then
@@ -929,7 +929,7 @@ jobs:
         fi
 
         # Import the compliance Lambda's log group if it exists (auto-created by
-        # Lambda; now managed for customer-CMK encryption + retention, POAM-018).
+        # Lambda; now managed for customer-CMK encryption + retention).
         # Must precede the Lambda import since the function depends_on it.
         if aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/samaydlette-com-opa-compliance" --query 'logGroups[?logGroupName==`/aws/lambda/samaydlette-com-opa-compliance`]' --output text | grep -q .; then
           echo "Compliance Lambda log group exists in AWS"
@@ -1269,7 +1269,7 @@ jobs:
       run: terraform apply -lock-timeout=300s -auto-approve tfplan
 
     # The app Lambda once ran a stale environment for four months while every
-    # apply reported it updated (POAM-038). Ask the running app which Cognito
+    # apply reported it updated. Ask the running app which Cognito
     # settings it sees and stop before publishing if they differ from Terraform.
     - name: Silk Reeling runtime config matches Terraform
       run: |
@@ -1485,10 +1485,10 @@ jobs:
           opa-policy-bundle.tar.gz
         echo "✅ OPA policy bundle signed and verified against the pinned identity"
 
-    # Framework-coverage figures are not stamped into committed HTML: the trust
+    # The Rev5 Moderate figures are not stamped into committed HTML: the trust
     # center renders them from trust-center.json, which build-trust-center.py
-    # computes on every deploy from the control projection (scripts/_controls.py,
-    # via inject-figures.compute_figures), so there is nothing committed to drift.
+    # computes on every deploy from the control projection (scripts/_controls.py),
+    # so there is nothing committed to drift.
     # The OSCAL SSP that used to be built here is retired (CR26): the SDR carries
     # the per-control record (rev5_controls) and the CPO the package overview.
 
