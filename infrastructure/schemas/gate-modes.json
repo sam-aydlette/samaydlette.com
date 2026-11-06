@@ -1,6 +1,6 @@
 {
   "$schema": "./gate-modes.schema.json",
-  "version": "2026-11-06.1",
+  "version": "2026-11-06.2",
   "description": "The mode each gate check runs in, and the decision behind it (REQ-GAT-1, REQ-GAT-4). The method's default is block. A detect-and-recover check publishes its failure, queues it and starts a recovery clock instead of stopping the run. Read by scripts/_gates.py, which fails the build on a missing decision field (an entry needs confirmed_on: an unconfirmed mode is not in force), a non-default mode with no reason or a lapsed review date, or an unrecorded check.",
   "method_reference": "website/research/vulnerability-evidence.html#gates",
   "checks": [
@@ -131,6 +131,13 @@
     {"check": "vdr.unresolved-component", "gate": "G7", "mode": "detect-and-recover", "method_default": "block",
      "reason": "A finding that resolves to no inventory component is rated at the fail-safe (internet-reachable, most sensitive) until it is resolved (VER-EVA-EIR); blocking would also block the inventory change that resolves it. The unresolved evaluation becomes a process finding (VDR-CSO-FAV) with a clock and a deadline until every finding resolves.",
      "decided_by": "Sam Aydlette", "decided_on": "2026-11-05", "review_by": "2027-05-05",
+     "confirmed_on": "2026-11-06", "drafted_by": "AI-drafted (Claude)"},
+    {"check": "audit-log.unexpected", "gate": "G7", "mode": "detect-and-recover", "method_default": "block",
+     "reason": "A write by an unexpected principal, or a change to main, a workflow, a ruleset or an environment outside a merged pull request, is a signal about the operating process, not a defect in what is deployed; blocking would stop the evidence refresh that publishes it. It becomes a process finding (VDR-CSO-FAV) with a clock and a deadline, and an automated incident evaluation in vdr-audit-log-review.json, for as long as it is in the review's window (scripts/audit-log-review.py). One evaluated reportable is stopped by audit-log.reportable.",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-06", "review_by": "2027-05-06",
+     "confirmed_on": "2026-11-06", "drafted_by": "AI-drafted (Claude)"},
+    {"check": "audit-log.reportable", "gate": "G7", "mode": "block", "method_default": "block",
+     "decided_by": "Sam Aydlette", "decided_on": "2026-11-06", "review_by": "2027-11-06",
      "confirmed_on": "2026-11-06", "drafted_by": "AI-drafted (Claude)"}
   ]
 }

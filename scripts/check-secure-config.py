@@ -43,6 +43,10 @@ ROLES = {"role-trust-deploy": "github-actions-deploy-oidc",
 # removed), so a grant the deploy's publishers need but bootstrap does not yet
 # hold is a deviation, and the deploy stops before the SDR is built.
 ROLE_SCOPES = {"role-scope-maintenance": ("github-actions-package-maintenance-oidc", "package-maintenance-publish")}
+# The unattended roles' read grants compared action for action: {check id: (role,
+# inline policy name)}. The nightly's audit-log review needs cloudtrail:LookupEvents;
+# a deploy whose bootstrap lacks it stops before the SDR is built.
+ROLE_READS = {"role-reads-nightly": ("github-actions-evidence-nightly-oidc", "evidence-nightly-audit-log-review")}
 SUB_KEY = "token.actions.githubusercontent.com:sub"
 READ_ONLY_MANAGED = {"ReadOnlyAccess", "SecurityAudit", "ViewOnlyAccess"}
 READ_VERBS = ("Get", "List", "Describe", "Search", "BatchGet", "Lookup", "View")
@@ -203,6 +207,10 @@ def read_aws(call, pool_id, now=None):
         out[check] = _guard(lambda role=role, name=name: _put_keys(call(
             ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
 
+    for check, (role, name) in ROLE_READS.items():
+        out[check] = _guard(lambda role=role, name=name: _allowed_actions(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
+
     def cognito():
         if not pool_id:
             raise ValueError("no user pool id was given")
@@ -265,6 +273,18 @@ def _put_keys(raw):
                 raise ValueError("a PutObject resource is not an S3 object ARN")
             keys.append(r.split("/", 1)[1])
     return sorted(keys)
+
+
+def _allowed_actions(raw):
+    """The actions an inline policy allows, sorted (no resources: no ARN, no account)."""
+    doc = _policy_doc(raw)
+    sts = doc.get("Statement", [])
+    out = set()
+    for st in [sts] if isinstance(sts, dict) else sts:
+        if st.get("Effect") == "Allow":
+            acts = st.get("Action", [])
+            out |= set([acts] if isinstance(acts, str) else acts)
+    return sorted(out)
 
 
 def _trust_subjects(role):
