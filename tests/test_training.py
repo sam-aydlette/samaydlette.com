@@ -36,21 +36,21 @@ def test_the_history_is_carried_and_a_new_completion_only_when_the_packet_change
     assert same["history"] == first["history"]
     reg = copy.deepcopy(REG)
     new = copy.deepcopy(next(r for r in reg["decisions"] if r["id"] == "DEC-194"))
-    new.update(id="DEC-195", title="A brand-new decision")
+    new.update(id="DEC-999", title="A brand-new decision")
     reg["decisions"].append(new)
     _, _, changed = _eval(previous=first, reg=reg)
-    assert len(changed["history"]) == 2 and "decision:DEC-195" in changed["history"][-1]["covers"]
+    assert len(changed["history"]) == 2 and "decision:DEC-999" in changed["history"][-1]["covers"]
 
 
 def test_known_bad_a_packet_missing_a_new_decision_fails_currency():
     _, _, first = _eval()
     reg = copy.deepcopy(REG)
     new = copy.deepcopy(next(r for r in reg["decisions"] if r["id"] == "DEC-194"))
-    new.update(id="DEC-195")
+    new.update(id="DEC-999")
     reg["decisions"].append(new)
     required = _training.required_items(reg, INC, 150, 46, NOW.date())
     ok, why = _training.currency(first["history"], required)
-    assert not ok and "decision:DEC-195" in why
+    assert not ok and "decision:DEC-999" in why
 
 
 def test_known_bad_a_late_or_failing_completion_fails_completion():

@@ -172,6 +172,10 @@ AMENDED_SINCE_MIGRATION = {
     ("POAM-007", "justification"), ("POAM-009", "justification"),
     # DEC-026 cited the retired POAM-025 for the operator's MFA; it now cites DEC-025.
     ("POAM-026", "justification"),
+    # No recurring manual work (DEC-195), 2026-11-06, each with source.reworded:
+    # DEC-019 restated as rotate-on-compromise; DEC-032 names the nightly
+    # automated audit-log review in place of a quarterly manual one.
+    ("POAM-019", "justification"), ("POAM-032", "justification"),
 }
 
 
