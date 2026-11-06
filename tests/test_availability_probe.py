@@ -4,6 +4,7 @@ import importlib.util
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -30,7 +31,8 @@ def _sample(t, fail=None):
 def test_core_services_are_probed_including_the_app_and_its_sign_in():
     urls = {u for _k, _s, u, _ok in probe.TARGETS}
     assert any(u.endswith("/silk-reeling/") for u in urls)
-    assert any("amazoncognito.com" in u for u in urls)
+    hosts = {urlparse(u).hostname or "" for u in urls}
+    assert any(h == "amazoncognito.com" or h.endswith(".amazoncognito.com") for h in hosts)
     assert any("/.well-known/" in u for u in urls) and any(u.endswith("/trust/") for u in urls)
     assert all(u.startswith("https://") for u in urls)
 

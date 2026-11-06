@@ -4,7 +4,7 @@ SRP-6a and TOTP are checked against fixed vectors: TOTP against RFC 6238's
 own, SRP against a vector cross-checked with pycognito 2024.5.1 (the PASSWORD_VERIFIER
 signature for a fixed secret exponent, server value, salt, secret block and
 time). The flow is checked against a scripted Cognito: the password never
-leaves the process, only the token reaches stdout, and an unexpected challenge
+leaves the process, only the token reaches the owner-only --out file, and an unexpected challenge
 stops the sign-in.
 """
 import importlib.util
@@ -139,7 +139,7 @@ FULL = {"SILK_DAST_USERNAME": "u", "SILK_DAST_PASSWORD": PASSWORD, "SILK_DAST_TO
         "SILK_DAST_USER_POOL_ID": POOL}
 
 
-def test_main_prints_only_the_token(monkeypatch, tmp_path):
+def test_main_writes_only_the_token_to_an_owner_only_file(monkeypatch, tmp_path):
     cfg = tmp_path / "auth.json"
     cfg.write_text(json.dumps({"clientId": "abc123"}))
     seen = {}
@@ -148,13 +148,23 @@ def test_main_prints_only_the_token(monkeypatch, tmp_path):
         seen.update(pool=pool, cid=cid)
         return "the-token"
     monkeypatch.setattr(tok, "access_token", fake)
-    rc, out, err = _main(monkeypatch, FULL, ["token", "--auth-config", str(cfg)])
-    assert (rc, out, err) == (0, "the-token\n", "")
+    dest = tmp_path / "token"
+    dest.write_text("stale")
+    dest.chmod(0o644)
+    rc, out, err = _main(monkeypatch, FULL, ["token", "--auth-config", str(cfg), "--out", str(dest)])
+    assert (rc, out, err) == (0, "", "")
+    assert dest.read_text() == "the-token"
+    assert dest.stat().st_mode & 0o777 == 0o600
     assert seen == {"pool": POOL, "cid": "abc123"}
 
 
+def test_main_requires_an_output_file(monkeypatch):
+    with pytest.raises(SystemExit):
+        _main(monkeypatch, FULL, ["token"])
+
+
 def test_main_refuses_missing_credentials_without_naming_values(monkeypatch):
-    rc, out, err = _main(monkeypatch, {"SILK_DAST_PASSWORD": PASSWORD}, ["token"])
+    rc, out, err = _main(monkeypatch, {"SILK_DAST_PASSWORD": PASSWORD}, ["token", "--out", "/nonexistent/x"])
     assert rc == 2 and out == ""
     assert "SILK_DAST_USERNAME" in err and PASSWORD not in err
 
@@ -163,6 +173,6 @@ def test_a_failed_sign_in_says_why_without_secrets(monkeypatch):
     def boom(*a):
         raise tok.AuthError("RespondToAuthChallenge: NotAuthorizedException: Incorrect username or password.")
     monkeypatch.setattr(tok, "access_token", boom)
-    rc, out, err = _main(monkeypatch, {**FULL, "SILK_DAST_CLIENT_ID": "abc"}, ["token"])
+    rc, out, err = _main(monkeypatch, {**FULL, "SILK_DAST_CLIENT_ID": "abc"}, ["token", "--out", "/nonexistent/x"])
     assert rc == 1 and out == ""
     assert "NotAuthorizedException" in err and PASSWORD not in err and SEED not in err
