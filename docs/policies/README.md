@@ -16,7 +16,7 @@ These policies reference operational documents elsewhere in `docs/`:
 
 - [`incident-response.md`](../incident-response.md) — IR procedures
 - [`recovery-plan.md`](../recovery-plan.md) — CP procedures
-- [`security-review.md`](../security-review.md) — annual review record
+- [`security-review.md`](../security-review.md) — how the Annual Security Review is generated (`scripts/hold-security-review.py`), and its history
 - [`supply-chain.md`](../supply-chain.md) — SR procedures
 - [`training-log.md`](../training-log.md) — AT records
 - [`architecture-decisions.md`](../architecture-decisions.md) — system design rationale, threat model
@@ -25,4 +25,4 @@ These policies reference operational documents elsewhere in `docs/`:
 
 ## Review
 
-The full family-policy set is reviewed annually as part of [`security-review.md`](../security-review.md), and after any Transformative significant change per SCN.
+The full family-policy set is machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`) and re-checked, with each file's sha256, in the Annual Security Review ([`security-review.md`](../security-review.md), `scripts/hold-security-review.py`); a Transformative significant change (SCN) revisits it in the same pull request.

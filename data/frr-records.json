@@ -695,7 +695,7 @@
           "ref": ".well-known/ongoing-certification-report.json"
         }
       ],
-      "may_rationale": "Exercised: content prepared for each quarterly review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101)."
+      "may_rationale": "Exercised: content prepared for each Quarterly Review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101)."
     },
     {
       "frr_id": "CCM-QTR-SRR",
@@ -3534,7 +3534,7 @@
     {
       "frr_id": "VDR-CSO-MSP",
       "status": "Implemented",
-      "implementation": "security/zap/allowlist.json has no entries: no edge allowlist exists for the scanner, and the VDR builder flags any DAST finding observed only at allowlisted URLs (scripts/build-vdr-report.py load_zap_allowlist and _zap_location, REQ-IRV-11). The nightly's AWS access for the reconciliation sweep is read-only (infrastructure/bootstrap/evidence-nightly.tf, policy document evidence_nightly_reconcile_reads: List, Describe and GET calls only). ZAP runs two scans of production (zap-dast.yml): an unauthenticated baseline of the site, as a stranger sees it, and an authenticated scan of the Silk Reeling API signed in as a dedicated, standing Cognito scanner user. That user is an ordinary user of the pool, created like every other user and holding the TOTP MFA the pool requires; it signs in with the flows the app client already allows (scripts/dast-cognito-token.py, docs/runbooks/dast-scanner-user.md). No app-client flow, authorizer or edge control was widened, disabled or opened for scanning.",
+      "implementation": "security/zap/allowlist.json has no entries: no edge allowlist exists for the scanner, and the VDR builder flags any DAST finding observed only at allowlisted URLs (scripts/build-vdr-report.py load_zap_allowlist and _zap_location, REQ-IRV-11). The nightly's AWS access for the reconciliation sweep is read-only (infrastructure/bootstrap/evidence-nightly.tf, policy document evidence_nightly_reconcile_reads: List, Describe and GET calls only; the audit-log review's separate grant, evidence_nightly_audit_reads, is cloudtrail:LookupEvents only). ZAP runs two scans of production (zap-dast.yml): an unauthenticated baseline of the site, as a stranger sees it, and an authenticated scan of the Silk Reeling API signed in as a dedicated, standing Cognito scanner user. That user is an ordinary user of the pool, created like every other user and holding the TOTP MFA the pool requires; it signs in with the flows the app client already allows (scripts/dast-cognito-token.py, docs/runbooks/dast-scanner-user.md). No app-client flow, authorizer or edge control was widened, disabled or opened for scanning.",
       "evidence": [
         {
           "kind": "test",

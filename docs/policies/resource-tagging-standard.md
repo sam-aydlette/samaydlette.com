@@ -91,8 +91,11 @@ true`, `agency_scope: single`) so it scores loudly and surfaces itself for
 classification rather than hiding. Silence never makes a resource look safer
 than it is.
 
-## Review cadence
+## Verification
 
-Annually with the security review, and after any Transformative change that adds
-a resource type or changes a resource's reachability, data sensitivity, or
-criticality.
+Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`),
+and re-checked in each Annual Security Review (`scripts/hold-security-review.py`),
+which fails when a component type added since the previous review is not named in
+the threat model. A Transformative change that adds a resource type or changes a
+resource's reachability, data sensitivity, or criticality revisits this standard
+in the same pull request.

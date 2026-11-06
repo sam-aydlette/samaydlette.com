@@ -95,7 +95,7 @@ Response procedure:
 4. **Preserve evidence.** Record the timeline, the surface, and the actions taken before the public surface is updated. Record in the after-action template.
 5. **Notify if applicable.** External notification is generally not required for a personal site; this section exists for the case where it ever is.
 
-(IR-9.2) Training: spillage scenarios are part of the annual review of this runbook (see [`docs/training-log.md`](training-log.md), KSI-CED-RAT section).
+(IR-9.2) Training: spillage scenarios are part of the generated training packet's fixed core (`scripts/_training.py`; see [`docs/training-log.md`](training-log.md), KSI-CED-RAT section), taken by a simulated trainee whenever the packet changes.
 
 (IR-9.3) Post-spill operations: the spillage scope is bounded by the public-static-site surface. After containment, normal site operation continues; there is no production environment to quarantine because the production environment is the public site itself.
 
@@ -119,13 +119,13 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 2. Follow the rest of this IR runbook: detect, contain, eradicate, recover, after-action.
 3. Within 5 business days, retroactively produce the SCN materials that would have been produced in advance for the equivalent non-emergency change (per `SCN-CSO-EMG`): summary of the change, summary of new risks identified, copy of the security impact analysis, plan for any verification or assessment of impacted KSIs. Count the 5 business days from the day the emergency change merged. The materials are a row in `docs/scn/scn-register.csv` with `emergency` = `yes` and the change in `evaluation_prs`, plus its record; the next deploy publishes them, which is the notification to all necessary parties. The scheduled SCN deadline check (`.github/workflows/scn-deadlines.yml`) fails and raises an issue if the record is not in the register within 5 business days of the emergency change merging, and the published index marks each retroactive notice against that deadline.
 4. Append an after-action entry to the section above with the emergency-procedure invocation noted in the timeline.
-5. Reopen the threat model in `docs/architecture-decisions.md` if the emergency change altered the threat surface, and update before the next security review.
+5. Reopen the threat model in `docs/architecture-decisions.md` if the emergency change altered the threat surface, and update it in a follow-up pull request; the Annual Security Review (`scripts/hold-security-review.py`) fails while a component type added since the previous review is not named there.
 
 **Documentation evidence.** Emergency-change procedures are documented in this section, in `docs/policies/cm-policy.md` (referenced under SCN integration), in the `.github/workflows/scn-tag.yml` gate (which accepts `emergency`), and in the Certification Package Overview, which links this section. Together these satisfy `SCN-CSO-EMG`'s "procedures should be documented in the FedRAMP Certification package" requirement.
 
 ## Pattern review (KSI-INR-RPI)
 
-KSI-INR-RPI calls for persistent review of past incidents for patterns. With zero incidents to date, the review is short. The cadence is annual, conducted as part of [`security-review.md`](security-review.md). When the incident count is greater than zero, the review will look for: repeated root causes, common detection-time gaps, and any patterns that suggest systemic rather than individual fixes.
+KSI-INR-RPI calls for persistent review of past incidents for patterns. It is generated: the Annual Security Review (`scripts/hold-security-review.py`, [`security-review.md`](security-review.md)) groups the incidents of the last 12 months by their evaluation basis, exercises excluded, and fails when a basis recurs, so a systemic cause is fixed in a pull request rather than noted in a meeting. Each incident's own after-action record is written when it closes.
 
 ## Escalation
 

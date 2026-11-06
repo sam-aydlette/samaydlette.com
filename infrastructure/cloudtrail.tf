@@ -120,8 +120,8 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
 
 resource "aws_cloudtrail" "management" {
   # checkov:skip=CKV_AWS_35:Trail log-file SSE-KMS declined for the same POAM-029 rationale as the delivery bucket — SSE-S3 on control-plane records about this account's own infrastructure; a CMK adds key-sprawl and a decrypt dependency for every consumer without a confidentiality benefit.
-  # checkov:skip=CKV2_AWS_10:CloudWatch Logs integration declined — it duplicates every event into paid log-group storage to enable metric filters this single-operator system reviews quarterly instead (KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.
-  # checkov:skip=CKV_AWS_252:SNS delivery notifications declined — no consumer exists for a per-delivery notification; the quarterly review reads the bucket directly.
+  # checkov:skip=CKV2_AWS_10:CloudWatch Logs integration declined — it duplicates every event into paid log-group storage to enable metric filters; this system reviews the trail automatically every night instead (scripts/audit-log-review.py, KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.
+  # checkov:skip=CKV_AWS_252:SNS delivery notifications declined — no consumer exists for a per-delivery notification; the nightly audit-log review reads CloudTrail's event history directly (scripts/audit-log-review.py).
   name                          = "${replace(var.domain_name, ".", "-")}-management"
   s3_bucket_name                = aws_s3_bucket.cloudtrail.id
   is_multi_region_trail         = true

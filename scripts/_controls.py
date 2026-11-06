@@ -102,7 +102,7 @@ KSI_DOC_REFS = {
     "KSI-MLA-EVC": "docs/architecture-decisions.md",
     "KSI-MLA-LET": "docs/architecture-decisions.md",
     "KSI-MLA-OSM": "infrastructure/policies.rego",
-    "KSI-MLA-RVL": "docs/ksi-signal.md",
+    "KSI-MLA-RVL": "docs/architecture-decisions.md",
     "KSI-PIY-GIV": "docs/ksi-signal.md",
     "KSI-PIY-RES": "docs/security-review.md",
     "KSI-PIY-RIS": "docs/security-review.md",
@@ -405,8 +405,10 @@ FAMILY_DEFAULTS = {
             "IR support staff, IR-3 IR testing exercises with multiple "
             "participants) collapse into self-attestation by the operator "
             "for a sole-operator system; the procedures and capabilities "
-            "are in place. Tabletops are run annually per "
-            "docs/security-review.md."
+            "are in place. Incident exercises are recorded in "
+            "data/incidents.json and the recovery tabletop is held by "
+            "scripts/hold-recovery-exercise.py each November with "
+            "simulated responders (DEC-194, DEC-195)."
         ),
     },
     # System and Communications Protection — explicit overrides handle
@@ -447,18 +449,20 @@ FAMILY_DEFAULTS = {
         ),
     },
 
-    # Awareness and Training — implemented; sole-operator self-attestation.
+    # Awareness and Training — implemented; generated training, simulated trainee.
     "at-": {
         "status": "implemented",
         "origination": "sp-corporate",
         "statement": (
-            "Training is self-attested in docs/training-log.md. The "
-            "system has one employee (the operator), who holds every "
-            "role; coverage of role-specific topics (privileged-access, "
-            "development, IR/DR) collapses into ongoing professional "
-            "reading and the artifacts produced. Effectiveness review is "
-            "annual, recorded in docs/security-review.md. The training "
-            "regimen is in place; external evidence (training certs, "
+            "Training is generated and taken by machine "
+            "(scripts/_training.py): the packet is built from the "
+            "system's own data (decisions, incidents, rules, and a core "
+            "covering privileged access, development and IR/DR; "
+            "docs/training-log.md lists the areas), and a simulated "
+            "trainee takes its quiz whenever it changes (DEC-194). The "
+            "Security Decision Record counts the packet's currency and "
+            "the trainee's completion and score trend as two automated "
+            "methods for KSI-CED-RAT. External evidence (training certs, "
             "attendance logs) is not produced because there is no "
             "workforce to maintain rosters for."
         ),
@@ -472,8 +476,11 @@ FAMILY_DEFAULTS = {
             "with declared RTO of 21 days and RPO of 24 hours. Backups "
             "are S3 object versioning + git history (RPO satisfied with "
             "orders of magnitude headroom). Recovery testing was "
-            "exercised end-to-end during initial implementation; annual "
-            "tabletops are scheduled. Enhancements that presume alternate "
+            "exercised end-to-end during initial implementation and is "
+            "exercised by scripts/hold-recovery-exercise.py every month "
+            "(the live site rebuilt from the deployed commit and compared, "
+            "versioning and point-in-time recovery re-read) with a "
+            "simulated tabletop each November. Enhancements that presume alternate "
             "processing sites or geographically distributed operations "
             "centers are tracked as separate not-applicable entries; the "
             "single-region static-site deployment does not exercise them."
@@ -538,10 +545,13 @@ FAMILY_DEFAULTS = {
         "statement": (
             "Planning is documented across the docs/ tree: "
             "docs/architecture-decisions.md (system architecture and "
-            "design choices), docs/security-review.md (annual planning "
-            "cycle), docs/recovery-plan.md (contingency planning), "
-            "docs/incident-response.md (response planning). Plans are "
-            "version-controlled and reviewed annually."
+            "design choices), docs/security-review.md (the generated "
+            "Annual Security Review), docs/recovery-plan.md (contingency "
+            "planning), docs/incident-response.md (response planning). "
+            "Plans are version-controlled, machine-checked on every "
+            "deploy and night (scripts/check-non-machine-vv.py) and "
+            "re-checked with their sha256 in each Annual Security Review "
+            "(scripts/hold-security-review.py)."
         ),
     },
     # Program Management — sole-operator self-attestation; multi-person
@@ -552,7 +562,9 @@ FAMILY_DEFAULTS = {
         "statement": (
             "Program management functions (governance, policy, investment "
             "review) collapse into self-attestation for a sole-operator "
-            "system; reviews are recorded in docs/security-review.md. "
+            "system; the investment review is the generated Annual "
+            "Security Review (scripts/hold-security-review.py, "
+            "docs/security-review.md). "
             "Enhancements that presume a CISO, a board, or an enterprise-"
             "architecture function are tracked as separate not-applicable "
             "entries."
@@ -567,7 +579,9 @@ FAMILY_DEFAULTS = {
             "time, automated SCA via Dependabot, and IaC scanning via "
             "Checkov + tfsec in CI. Findings are surfaced through "
             "GitHub Security and reviewed against severity gates. "
-            "Annual review is recorded in docs/security-review.md."
+            "The Annual Security Review (scripts/hold-security-review.py, "
+            "docs/security-review.md) re-checks the threat model against "
+            "new component types."
         ),
     },
     # System and Services Acquisition — shared between AWS (managed services)
@@ -617,8 +631,10 @@ POLICY_AND_PROCEDURES_DEFAULT = {
         "responsibilities (where applicable, citing AWS authorization "
         "package AGENCYAMAZONEW), the FedRAMP 20x rule integration relevant "
         "to the family (e.g., SCN/VDR/MAS/SCG/CCM/ICP/UCM as applicable), "
-        "and the review cadence. Reviews and updates occur on the cadences "
-        "defined in docs/security-review.md and the per-policy doc."
+        "and how it is verified: machine checks on every deploy and night "
+        "(scripts/check-non-machine-vv.py) and the generated Annual Security "
+        "Review (scripts/hold-security-review.py); updates are reviewed pull "
+        "requests."
     ),
 }
 

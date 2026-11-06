@@ -12,4 +12,4 @@ Several IA enhancements (network access for non-privileged accounts in AWS infra
 
 **20x rule integration.** Operator-side complement to KSI-IAM. Cryptographic primitives used in authentication are governed under SC and the Using Cryptographic Modules (UCM) rule.
 
-**Review cadence.** Annually.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

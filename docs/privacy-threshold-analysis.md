@@ -50,10 +50,10 @@ Per the FedRAMP 20x Significant Change Notifications rule, any change that intro
 | Determination date | 2026-05-08 |
 | Re-determined | 2026-06-07 — re-determination under [SCN-2026-001](scn/SCN-2026-001-silk-reeling.md) (Silk Reeling Mirror app). Determination unchanged: **no PII processed.** Pose video is processed client-side and never leaves the device; only derived non-PII metrics cross the boundary; the app credential is an operator-set shared secret, not third-party PII. No PIA triggered. |
 | Reviewer | Sam Aydlette (operator) |
-| Next review | 2027-05-08 (annual), or upon SCN trigger |
+| Re-check | every deploy and night by machine (`scripts/check-non-machine-vv.py`), each Annual Security Review (`scripts/hold-security-review.py`), and any SCN that changes data processing |
 | Full PIA required | No |
 
-This determination is reviewed annually as part of [`docs/security-review.md`](security-review.md), and re-determined if the system's data-processing posture changes.
+This determination is re-checked, with its sha256, in each Annual Security Review ([`docs/security-review.md`](security-review.md), `scripts/hold-security-review.py`), and re-determined in the pull request of any change to the system's data-processing posture.
 
 ## Reference
 

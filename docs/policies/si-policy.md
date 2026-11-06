@@ -10,4 +10,4 @@ Information input validation, error handling, and memory protections (SI-10/11/1
 
 **20x rule integration.** Vulnerability Detection and Response (VDR) — see RA. KSI-MLA monitoring boundary.
 
-**Review cadence.** Continuous (automated); annual structural review.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

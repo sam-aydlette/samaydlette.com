@@ -10,4 +10,4 @@ Significant changes to any supply-chain input trigger SCN evaluation per the cri
 
 **20x rule integration.** Significant Change Notifications applied to supply-chain changes (`SCN-* family`). KSI-SCR (Supply Chain Risk).
 
-**Review cadence.** Continuous via Dependabot; annual structural review.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request. Dependencies are scanned continuously (Dependabot, and Grype on every deploy and night).
