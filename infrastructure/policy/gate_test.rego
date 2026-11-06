@@ -94,6 +94,7 @@ test_partial_config_fails_closed if {
 			"identity": {"min_password_length": 14},
 			"logging": {"min_retention_days": 365},
 			"api": {"protected_route_prefixes": ["/api"]},
+			"log_access": {"log_buckets": ["b-logs"], "readers": []},
 		}}
 }
 

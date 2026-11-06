@@ -40,12 +40,15 @@ EXPECTED = {
     # VDR-TFR-MVX): the same rules gate the plan.
     "service-stack-compliant": (True, set()),
     "service-stack-computed-key": (True, set()),
-    "iam-admin-wildcard": (False, {"iam_admin_wildcard"}),
+    # Every action on every resource includes reading the logs.
+    "iam-admin-wildcard": (False, {"iam_admin_wildcard", "log_read_grant_unexpected"}),
     "iam-oidc-trust-unscoped": (False, {"iam_oidc_trust_unscoped"}),
     "cognito-mfa-optional": (False, {"cognito_mfa_not_required"}),
     "kms-rotation-disabled": (False, {"kms_rotation_disabled"}),
     "log-group-unencrypted": (False, {"log_group_not_cmk"}),
     "apigw-route-unauthorized": (False, {"apigw_route_unauthorized"}),
+    # Curious Carl (simulated): log reads granted outside the allowlist (KSI-MLA-ALA).
+    "log-read-grant-curious-carl": (False, {"log_read_grant_unexpected"}),
 }
 
 
@@ -108,3 +111,20 @@ def test_accessibility_scan_fixture():
     assert report["compliant"] is False
     failing = {v["resource"] for v in report["violations"]}
     assert failing == {"missing-alt.html", "missing-lang.html"}
+
+
+@requires_opa1
+def test_curious_carl_is_stopped_and_the_allowlisted_readers_are_not():
+    """The planted bad grant is caught on Carl's two grants and nowhere else: the
+    deploy's own log readers in the same plan stay inside their entries."""
+    import sys
+
+    sys.path.insert(0, str(REPO / "scripts"))
+    import _scheduled_review
+
+    path = PLANS / "log-read-grant-curious-carl.json"
+    carl = _scheduled_review.CAST["log-snooper"]
+    assert carl.endswith("(simulated)") and carl.split(" (")[0] in json.loads(path.read_text())["_fixture"]["models"]
+    report = eval_report(path)
+    flagged = {v["address"] for v in report["violations"] if v["id"] == "log_read_grant_unexpected"}
+    assert flagged == {"aws_iam_role_policy.curious_carl_log_peek", "aws_s3_bucket_policy.cloudtrail"}

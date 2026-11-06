@@ -11,6 +11,8 @@ from pathlib import Path
 
 import yaml
 
+REPO = Path(__file__).resolve().parents[1]
+
 WORKFLOW = Path(__file__).resolve().parents[1] / ".github" / "workflows" / "deploy-with-opa.yml"
 
 
@@ -24,6 +26,14 @@ def test_plan_exit_code_is_captured():
     script = step_script()
     plan_line = next(line for line in script.splitlines() if "terraform plan" in line)
     assert "|| rc=$?" in plan_line
+
+
+def _stub_gate(root, code):
+    """A stand-in for scripts/opa-gate-plan.sh at the step's relative path."""
+    (root / "scripts").mkdir(exist_ok=True)
+    gate = root / "scripts" / "opa-gate-plan.sh"
+    gate.write_text(f"#!/bin/sh\necho gated \"$1\" > \"$2\"\nexit {code}\n")
+    gate.chmod(0o755)
 
 
 def test_script_survives_bash_e_when_changes_are_pending(tmp_path):
@@ -46,6 +56,7 @@ def test_script_survives_bash_e_when_changes_are_pending(tmp_path):
     work = tmp_path / "infrastructure" / "bootstrap"
     work.mkdir(parents=True)
     (tmp_path / "infrastructure" / "trust-root-plan.json").write_text('{"status": "changes_pending"}')
+    _stub_gate(tmp_path, 0)
     result = subprocess.run(
         ["bash", "-e", "-c", step_script()],
         cwd=work,
@@ -100,6 +111,7 @@ def stubs(tmp_path, serial):
     work = tmp_path / "infrastructure" / "bootstrap"
     work.mkdir(parents=True)
     (tmp_path / "infrastructure" / "trust-root-plan.json").write_text('{"status": "changes_pending"}')
+    _stub_gate(tmp_path, 0)
     return bin_dir, work
 
 
@@ -140,3 +152,90 @@ def test_the_inventory_and_the_boundary_map_use_that_one_snapshot():
 def test_the_snapshot_is_removed_whatever_happens():
     last = deploy_steps()[-1]
     assert last.get("if") == "always()" and "rm -f infrastructure/tfstate-bootstrap.json" in last["run"]
+
+
+# ---------------------------------------------------------------------------
+# The trust root faces the deploy's OPA gate (KSI-IAM-SNU, KSI-SVC-VCM): its
+# plan is written as JSON and gated by scripts/opa-gate-plan.sh; a violation
+# stops the job, its per-resource results feed the KSI signal's plan credit.
+# ---------------------------------------------------------------------------
+
+
+def _run_step(tmp_path, plan_json, gate=None):
+    """Run the step with terraform stubbed to plan `plan_json` (a path whose
+    text `terraform show -json` prints) and either the real gate (gate=None,
+    copied with the policy into the temporary tree) or a stub exiting `gate`."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    (bin_dir / "terraform").write_text(
+        "#!/bin/sh\n"
+        'case "$1" in\n'
+        "  plan) exit 2 ;;\n"
+        "  state) echo aws_iam_role.deploy ;;\n"
+        f"  show) cat '{plan_json}' ;;\n"
+        "esac\n"
+        "exit 0\n"
+    )
+    (bin_dir / "python3").write_text("#!/bin/sh\necho changes_pending\nexit 0\n")
+    for f in bin_dir.iterdir():
+        f.chmod(0o755)
+    work = tmp_path / "infrastructure" / "bootstrap"
+    work.mkdir(parents=True)
+    (tmp_path / "infrastructure" / "trust-root-plan.json").write_text('{"status": "changes_pending"}')
+    if gate is None:
+        (tmp_path / "scripts").mkdir()
+        shutil.copy(REPO / "scripts" / "opa-gate-plan.sh", tmp_path / "scripts" / "opa-gate-plan.sh")
+        shutil.copytree(REPO / "infrastructure" / "policy", tmp_path / "infrastructure" / "policy")
+        path = f"{bin_dir}:{Path(shutil.which('opa')).parent}:/usr/bin:/bin"
+    else:
+        _stub_gate(tmp_path, gate)
+        path = f"{bin_dir}:/usr/bin:/bin"
+    return subprocess.run(["bash", "-e", "-c", step_script()], cwd=work,
+                          env={"PATH": path, "GITHUB_SHA": "abc"}, capture_output=True, text=True)
+
+
+def test_trust_root_plan_is_gated_and_its_results_kept(tmp_path):
+    plan = tmp_path / "plan.json"
+    plan.write_text("{}")
+    result = _run_step(tmp_path, plan, gate=0)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "infrastructure" / "trust-root-validations.ndjson").read_text().startswith("gated")
+    assert not (tmp_path / "infrastructure" / "bootstrap" / "trust-root-plan-full.json").exists()
+
+
+def test_a_trust_root_violation_stops_the_job(tmp_path):
+    plan = tmp_path / "plan.json"
+    plan.write_text("{}")
+    result = _run_step(tmp_path, plan, gate=1)
+    assert result.returncode != 0
+    assert "violates policy" in result.stdout
+    # The full plan (account identifiers) is removed even when the gate fails.
+    assert not (tmp_path / "infrastructure" / "bootstrap" / "trust-root-plan-full.json").exists()
+
+
+def _opa1():
+    opa = shutil.which("opa")
+    return bool(opa) and "Rego Version: v1" in subprocess.run([opa, "version"], capture_output=True, text=True).stdout
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_the_real_gate_stops_curious_carl_in_the_trust_root(tmp_path):
+    """The committed known-bad plan, offered as the trust root's plan, fails the step."""
+    result = _run_step(tmp_path, REPO / "tests" / "fixtures" / "plans" / "log-read-grant-curious-carl.json")
+    assert result.returncode != 0, result.stdout
+    assert "log_read_grant_unexpected" in result.stdout
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_the_real_gate_passes_a_compliant_trust_root(tmp_path):
+    result = _run_step(tmp_path, REPO / "tests" / "fixtures" / "plans" / "compliant-stack.json")
+    assert result.returncode == 0, result.stdout + result.stderr
+    rows = (tmp_path / "infrastructure" / "trust-root-validations.ndjson").read_text().splitlines()
+    assert rows and all('"kind":"infrastructure"' in r for r in rows)
+
+
+def test_the_compliance_check_reads_the_trust_root_results():
+    wf = yaml.safe_load(WORKFLOW.read_text())
+    step = next(s for s in wf["jobs"]["compliance-check"]["steps"] if s.get("name") == "Run OPA Compliance Check")
+    assert step["env"]["TRUST_ROOT_VALIDATIONS"] == "trust-root-validations.ndjson"
+    assert "TRUST_ROOT_VALIDATIONS" in (REPO / "scripts" / "terraform-plan.sh").read_text()

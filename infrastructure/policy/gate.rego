@@ -245,6 +245,8 @@ required_config_paths := {
 	["gate", "logging", "min_retention_days"],
 	["gate", "api", "protected_route_prefixes"],
 	["gate", "tls", "min_days_to_expiry"],
+	["gate", "log_access", "log_buckets"],
+	["gate", "log_access", "readers"],
 }
 
 # =============================================================================

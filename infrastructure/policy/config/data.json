@@ -76,6 +76,37 @@
       "protected_route_prefixes": [
         "/api"
       ]
+    },
+    "log_access": {
+      "log_buckets": [
+        "samaydlette-com-logs",
+        "samaydlette-com-cloudtrail"
+      ],
+      "readers": [
+        {
+          "reader": "role:github-actions-deploy-oidc",
+          "actions": [
+            "s3:GetObject"
+          ],
+          "resources": [
+            "arn:aws:s3:::samaydlette-com-logs/cloudfront/*",
+            "arn:aws:s3:::samaydlette-com-logs/AWSLogs/*/CloudFront/*"
+          ],
+          "basis": "CDS-TRC-ACL: the deploy summarizes the CloudFront access records into /.well-known/access-summary.json (scripts/build-access-summary.py; infrastructure/bootstrap/trust-access-logs.tf)",
+          "decided_by": "Sam Aydlette (proposed, AI-drafted; not yet confirmed)"
+        },
+        {
+          "reader": "role:github-actions-evidence-nightly-oidc",
+          "actions": [
+            "cloudtrail:LookupEvents"
+          ],
+          "resources": [
+            "*"
+          ],
+          "basis": "DEC-195: the automated audit-log review reads the CloudTrail event history (scripts/audit-log-review.py; infrastructure/bootstrap/evidence-nightly.tf)",
+          "decided_by": "Sam Aydlette (proposed, AI-drafted; not yet confirmed)"
+        }
+      ]
     }
   }
 }

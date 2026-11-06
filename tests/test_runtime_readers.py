@@ -68,10 +68,11 @@ def evaluate(inputs, tmp_path):
 DRIFTED = {
     ("aws_iam_role", "lambda_opa"): {"iam_trust_public"},
     ("aws_iam_role", "deploy"): {"iam_oidc_trust_unscoped"},
-    ("aws_iam_role_policy", "lambda_opa"): {"iam_admin_wildcard"},
+    # Every action on every resource includes reading the logs (KSI-MLA-ALA).
+    ("aws_iam_role_policy", "lambda_opa"): {"iam_admin_wildcard", "log_read_grant_unexpected"},
     ("aws_iam_group", "operators"): {"iam_admin_policy_attached"},
     # A group's inline policy is read with GetGroupPolicy and judged like a role's.
-    ("aws_iam_group_policy", "operators_s3_bucket"): {"iam_admin_wildcard"},
+    ("aws_iam_group_policy", "operators_s3_bucket"): {"iam_admin_wildcard", "log_read_grant_unexpected"},
     # The managed policy the inventory records on the group is no longer
     # attached: the attachment cannot be validated, so it is unassessed.
     ("aws_iam_group_policy_attachment", "operators"): {"resource_read_error"},
@@ -112,6 +113,16 @@ def test_compliant_live_shapes_pass(tmp_path):
 def test_every_drift_is_caught_by_the_gate_rule(tmp_path):
     got = evaluate(run("drifted")["inputs"], tmp_path)
     assert got == DRIFTED
+
+
+@requires_node
+def test_inline_policies_carry_their_holder():
+    """The log-access rule keys its allowlist on the policy's holder; the reader
+    takes it from the inventory id it already read by (no further AWS call)."""
+    holders = {(i["type"], i["name"]): (i["values"].get("role"), i["values"].get("group"))
+               for i in run("compliant")["inputs"] if i["type"] in ("aws_iam_role_policy", "aws_iam_group_policy")}
+    assert holders[("aws_iam_role_policy", "lambda_opa")] == ("samaydlette-com-lambda-opa-role", None)
+    assert holders[("aws_iam_group_policy", "operators_s3_bucket")] == (None, "operators")
 
 
 @requires_node

@@ -172,6 +172,13 @@ async function iamPolicy(ctx, c) {
     }
     const values = {};
     if (doc !== undefined) values.policy = decodeDocument(doc);
+    // The holder, under its Terraform attribute name, from the same inventory id
+    // the read used (no further call): the log-access rule keys its allowlist on it.
+    if (tfType === 'aws_iam_role_policy' || tfType === 'aws_iam_group_policy') {
+        const id = String(attrId(c) || '');
+        const at = id.indexOf(':');
+        if (at > 0) values[tfType === 'aws_iam_group_policy' ? 'group' : 'role'] = id.slice(0, at);
+    }
     return [resource(tfType, c, values, errors)];
 }
 

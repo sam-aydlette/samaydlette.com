@@ -79,49 +79,17 @@ VIOLATIONS_FOUND=false
 # The evaluation timestamp rides in as DATA (data.runtime.evaluated_at), not
 # input — the input stays the raw terraform plan. The exceptions register
 # checks expiry against it; without it no exception is active (fail-safe).
+# (The accessibility evaluation below reads this file; the infrastructure
+# gate writes its own.)
 jq -n --arg now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '{runtime: {evaluated_at: $now}}' > eval-context.json
 
-opa eval --strict-builtin-errors \
-    -d policy/ \
-    -d eval-context.json \
-    -i tfplan.json \
-    "data.terraform.compliance.compliance_report" > opa-report.json
-
-opa eval --strict-builtin-errors \
-    -d policy/ \
-    -d eval-context.json \
-    -i tfplan.json \
-    "data.terraform.compliance.resource_reports" > opa-resources.json
-
-COMPLIANT=$(jq -r '.result[0].expressions[0].value.compliant' opa-report.json)
-
-# Per-resource results. These become validations.json entries for the KSI
-# signal emitter; the entry shape (kind / resource_type / resource_name /
-# compliant / violations / policy_version) is a published contract — see the
-# KSI signal schema.
-jq -c '.result[0].expressions[0].value[]' opa-resources.json > validations.ndjson
-
-while IFS= read -r entry; do
-    R_COMPLIANT=$(echo "$entry" | jq -r '.compliant')
-    R_TYPE=$(echo "$entry" | jq -r '.resource_type')
-    R_NAME=$(echo "$entry" | jq -r '.resource_name')
-    if [ "$R_COMPLIANT" = "true" ]; then
-        echo "✅ $R_TYPE.$R_NAME is compliant"
-    else
-        VIOLATIONS_FOUND=true
-        echo "❌ INFRASTRUCTURE VIOLATION in $R_TYPE.$R_NAME:"
-        echo "$entry" | jq -r '.violations[]? | "  - \(.type): \(.message) (Severity: \(.severity))"'
-        echo
-    fi
-done < validations.ndjson
-
-# The overall verdict is authoritative: it also covers violations that are
-# not attributable to a single resource (e.g. input_error when the plan JSON
-# is unreadable). Fail closed on anything other than an explicit "true".
-if [ "$COMPLIANT" != "true" ]; then
+# The same gate the deploy runs over the trust root's plan (scripts/
+# opa-gate-plan.sh): per-resource results become validations.json entries for
+# the KSI signal emitter; the entry shape (kind / resource_type / resource_name
+# / compliant / violations / policy_version) is a published contract — see the
+# KSI signal schema. The overall verdict is authoritative.
+if ! "$(dirname "$0")/opa-gate-plan.sh" tfplan.json validations.ndjson; then
     VIOLATIONS_FOUND=true
-    echo "❌ Overall policy verdict: non-compliant"
-    jq -r '.result[0].expressions[0].value.violations[]? | "  - \(.type): \(.message) (Severity: \(.severity))"' opa-report.json
 fi
 
 # =============================================================================
@@ -228,6 +196,14 @@ fi
 # Convert the NDJSON accumulated above into the single validations.json
 # document that scripts/build-ksi-signal.py consumes after terraform apply.
 # =============================================================================
+# The trust root's results (deploy-with-opa.yml, "Plan the trust root"), when the
+# deploy gated its plan, join the same stream so its validations earn plan
+# credit like the per-deploy stack's.
+if [ -n "${TRUST_ROOT_VALIDATIONS:-}" ] && [ -s "$TRUST_ROOT_VALIDATIONS" ]; then
+    cat "$TRUST_ROOT_VALIDATIONS" >> validations.ndjson
+    echo "Added $(wc -l < "$TRUST_ROOT_VALIDATIONS") trust-root results"
+fi
+
 if [ -s validations.ndjson ]; then
     jq -s --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         '{generated_at: $generated_at, results: .}' \
@@ -241,7 +217,7 @@ fi
 # =============================================================================
 # CLEAN UP TEMPORARY FILES
 # =============================================================================
-rm -f opa-report.json opa-resources.json a11y-scan.json a11y-report.json a11y-pages.json validations.ndjson eval-context.json
+rm -f a11y-scan.json a11y-report.json a11y-pages.json validations.ndjson eval-context.json
 
 # =============================================================================
 # FINAL DECISION: ALLOW OR BLOCK DEPLOYMENT

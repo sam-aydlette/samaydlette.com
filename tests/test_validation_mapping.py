@@ -149,3 +149,51 @@ def test_npm_components_name_the_function_they_ship_in(tmp_path):
     comps = ksi.build_npm_components(lock, deployed_in="aws::function::opa_compliance")
     assert comps and all(c["attributes"]["deployed_in"] == "aws::function::opa_compliance" for c in comps)
     assert all("deployed_in" not in c["attributes"] for c in ksi.build_npm_components(lock))
+
+
+# --- the trust root's plan and the log buckets' policies (KSI-MLA-ALA, IAM-SNU, SVC-VCM) ---
+
+
+def test_bucket_policy_folds_into_its_bucket():
+    components = [comp("logs", "object_store", "logs", "aws_s3_bucket.logs"),
+                  comp("trail", "object_store", "cloudtrail", "aws_s3_bucket.cloudtrail")]
+    got = ksi.build_validations({"results": [result("aws_s3_bucket_policy", "cloudtrail", compliant=False,
+                                                    violations=[{"id": "log_read_grant_unexpected"}])]}, components)
+    assert [v["component_refs"] for v in got] == [["trail"]]
+    assert got[0]["result"] == "fail"
+
+
+def test_trust_root_identities_are_credited():
+    """The bootstrap plan's results reach the OIDC provider and the groups."""
+    components = [comp("oidc", "oidc_provider", "github", "aws_iam_openid_connect_provider.github"),
+                  comp("ops", "iam_group", "operators", "aws_iam_group.operators")]
+    doc = [result("aws_iam_openid_connect_provider", "github", "aws_iam_openid_connect_provider.github"),
+           result("aws_iam_group", "operators", "aws_iam_group.operators")]
+    assert refs(doc, components) == [["oidc"], ["ops"]]
+
+
+def test_data_source_distribution_takes_the_bootstrap_result_by_name():
+    """The main stack reads the distribution as a data source; the trust root's
+    plan result for the managed resource joins it by type and name."""
+    components = [comp("cdn", "cdn_distribution", "website", "data.aws_cloudfront_distribution.website")]
+    assert refs([result("aws_cloudfront_distribution", "website", "aws_cloudfront_distribution.website")],
+                components) == [["cdn"]]
+
+
+def _sdr():
+    s = importlib.util.spec_from_file_location("sdr_vm", REPO / "scripts" / "build-sdr.py")
+    m = importlib.util.module_from_spec(s)
+    s.loader.exec_module(m)
+    return m
+
+
+def test_bucket_policy_is_plan_credit_only():
+    """The plan judges a bucket's policy with the bucket; the runtime reader of a
+    bucket does not read its policy, so a rule of that type earns no runtime credit."""
+    sdr = _sdr()
+    comps = [{"component_id": "logs", "type": "object_store", "attributes": {"tf_type": "aws_s3_bucket"}}]
+    vals = [{"component_refs": ["logs"]}]
+    plan = sdr.evaluated_types(vals, sdr.component_types(comps, sdr.PLAN_SUB_TYPES))
+    runtime = sdr.evaluated_types(vals, sdr.component_types(comps))
+    rule = {"resource_types": ["aws_s3_bucket_policy"]}
+    assert sdr.rule_methods([rule], plan, runtime) == ([rule], [])

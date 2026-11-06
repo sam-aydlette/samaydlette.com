@@ -58,6 +58,9 @@ CAST = {
     "intruder": "Mallory McHypothetical (simulated)",  # the audit-log review's planted event, caught every run
     "incident-commander": "Bea Kupp (simulated)",    # runs the recovery tabletop
     "scenario-injector": "Dee Saster (simulated)",   # reads out the tabletop's scenarios
+    # The intern handed log reads "just to look around": the OPA gate's planted
+    # bad grant (log_read_grant_unexpected; tests/fixtures/plans/log-read-grant-curious-carl.json).
+    "log-snooper": "Curious Carl (simulated)",
 }
 
 

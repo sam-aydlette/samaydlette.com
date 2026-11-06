@@ -197,6 +197,11 @@ VVK = "FRC-CSX-VVK"
 # (infrastructure/lambda/describers.js).
 SUB_TYPES = {"api_gateway": ("aws_apigatewayv2_route", "aws_apigatewayv2_stage"),
              "function": ("lambda_deployment_package",)}
+# Sub-resources only the plan evaluates with the component: a bucket's policy is
+# a plan result credited to its bucket (build-ksi-signal.py
+# PLAN_VALIDATED_CHILD_TYPES), but the runtime reader of a bucket does not read
+# its policy, so it never adds runtime credit.
+PLAN_SUB_TYPES = {"object_store": ("aws_s3_bucket_policy",)}
 NOT_EVALUATED = _ksi_methods.NOT_EVALUATED
 
 
@@ -330,12 +335,14 @@ def method_results(methods_doc, published, vdr_ok, vdr, divergence, plan_gate, t
     return out
 
 
-def component_types(components):
-    """{component ID: the Terraform types a validation of it evaluates}."""
+def component_types(components, extra=None):
+    """{component ID: the Terraform types a validation of it evaluates}; `extra`
+    adds sub-types only one of the two paths evaluates (PLAN_SUB_TYPES)."""
     out = {}
     for c in components:
         types = {((c.get("attributes") or {}).get("tf_type"))} - {None}
-        out[c.get("component_id")] = types | set(SUB_TYPES.get(c.get("type"), ()))
+        subs = set(SUB_TYPES.get(c.get("type"), ())) | set((extra or {}).get(c.get("type"), ()))
+        out[c.get("component_id")] = types | subs
     return out
 
 
@@ -632,7 +639,8 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         _fail(f"the KSI signal carries no result for {', '.join(missing)}")
     emitted = (signal.get("emitted_at") or "")[:10] or None
     types_of = component_types(signal.get("components", []))
-    plan_types = evaluated_types(signal.get("validations") or [], types_of)
+    plan_types = evaluated_types(signal.get("validations") or [],
+                                 component_types(signal.get("components", []), PLAN_SUB_TYPES))
     runtime_types = evaluated_types(runtime, types_of)
     table = {}
     for m in (methods_doc or {"methods": []})["methods"]:
