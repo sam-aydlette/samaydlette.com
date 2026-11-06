@@ -182,8 +182,10 @@ def run_nightly(tmp_path):
     text = (WORKFLOWS / "evidence-nightly.yml").read_text()
     d = _tree(tmp_path, "infrastructure")
     names = [f"{a}.json" for a in ("vdr-report", "vdr-trend", "vdr-detail-report", "vdr-accepted-vulnerabilities",
-                                   "vdr-history", "vdr-non-machine-vv", "vdr-monthly")]
+                                   "vdr-history", "vdr-non-machine-vv", "vdr-monthly", "vdr-audit-log-review",
+                                   "vdr-recovery-exercises", "vdr-recovery-exercise-2026-12-01")]
     _fill(d, names)
+    (d / "recovery-new.txt").write_text("vdr-recovery-exercise-2026-12-01.json\n")
     puts, gated = tmp_path / "puts.txt", tmp_path / "gated.txt"
     for name in ("Rebuild the human-readable views (format parity)", "Publish VDR + trend to /.well-known/"):
         _run(_script(_step(text, name)), d, puts, gated)

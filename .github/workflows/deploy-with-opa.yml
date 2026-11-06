@@ -1774,7 +1774,8 @@ jobs:
         fi
         python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
           --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
-          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+          --non-machine vdr-non-machine-vv.json "${prev[@]}" \
+          --incidents ../data/incidents.json --assessment simulated-assessment.json
         cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
 
     # -------------------------------------------------------------------------

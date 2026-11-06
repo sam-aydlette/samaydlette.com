@@ -10,7 +10,11 @@ it. Several workflows write the same files:
   * the package maintainer (package-maintenance.yml) rewrites the SDR, CPO and
     OCR daily, and alone writes the quarterly issue index, issued reports,
     snapshot indexes and Quarterly Reviews (`ocr-issue*`, `snapshot-*`,
-    `quarterly-reviews*`, `quarterly-review-*`);
+    `quarterly-reviews*`, `quarterly-review-*`) and the Annual Security Review
+    (`security-review*`);
+  * the evidence nightly alone writes its scheduled reviews: the audit-log
+    review and the recovery exercises (`vdr-audit-log-review*`,
+    `vdr-recovery-exercise*`);
   * the incident publisher (incident-reports.yml) rewrites the incident log,
     the delivery log and every report (`incident-*`);
   * the simulated assessor (simulated-assessor.yml) signs its own assessment;
@@ -46,10 +50,12 @@ IDENTITIES = {k: f"{WF}/{wf}@refs/heads/main" for k, wf in WORKFLOWS.items()}
 # (file-name prefixes, the identities that write them, the usual one first).
 _RULES = (
     (("simulated-assessment",), ("assessor",)),
+    # The nightly's scheduled reviews (scripts/_scheduled_review.py): the deploy never writes them.
+    (("vdr-audit-log-review", "vdr-recovery-exercise"), ("nightly",)),
     (("vdr-",), ("deploy", "nightly")),
     (("security-decision-record", "certification-package-overview", "ongoing-certification-report"),
      ("deploy", "maintenance")),
-    (("ocr-issue", "snapshot-", "quarterly-reviews", "quarterly-review-"), ("maintenance",)),
+    (("ocr-issue", "snapshot-", "quarterly-reviews", "quarterly-review-", "security-review"), ("maintenance",)),
     (("incident-",), ("deploy", "incident")),
 )
 

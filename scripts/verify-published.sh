@@ -65,10 +65,11 @@ ISSUER='https://token.actions.githubusercontent.com'
 signers_for() {
   case "$1" in
     simulated-assessment*) echo "$ASSESSOR_IDENTITY" ;;
+    vdr-audit-log-review*|vdr-recovery-exercise*) echo "$NIGHTLY_IDENTITY" ;;
     vdr-*) echo "$IDENTITY $NIGHTLY_IDENTITY" ;;
     security-decision-record*|certification-package-overview*|ongoing-certification-report*)
       echo "$IDENTITY $MAINT_IDENTITY" ;;
-    ocr-issue*|snapshot-*|quarterly-reviews*|quarterly-review-*) echo "$MAINT_IDENTITY" ;;
+    ocr-issue*|snapshot-*|quarterly-reviews*|quarterly-review-*|security-review*) echo "$MAINT_IDENTITY" ;;
     incident-*) echo "$IDENTITY $INCIDENT_IDENTITY" ;;
     *) echo "$IDENTITY" ;;
   esac

@@ -583,7 +583,8 @@ def test_the_maintenance_role_may_write_exactly_what_the_workflow_publishes():
     literal = {k for k in keys if "*" not in k}
     assert literal == _maintenance_publishes()
     assert {k for k in keys if "*" in k} == {".well-known/ocr-issue-*", ".well-known/snapshot-*",
-                                              ".well-known/snapshots/*", ".well-known/quarterly-review-*"}
+                                              ".well-known/snapshots/*", ".well-known/quarterly-review-*",
+                                              ".well-known/security-review-*"}
 
 
 def test_the_maintainer_runs_daily_and_the_package_windows_are_two_weeks_at_most():

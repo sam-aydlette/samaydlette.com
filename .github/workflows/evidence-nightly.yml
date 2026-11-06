@@ -531,6 +531,33 @@ jobs:
     # VDR-CSO-FAV: runs of the pipeline that a block-mode check stopped. The
     # next report lists each one (no run IDs or URLs are kept). A failed query
     # fails the step: no list cannot read as "no failures".
+    # KSI-MLA-RVL, KSI-CMT-RVP (DEC-195: nobody reads the logs by hand): CloudTrail
+    # write events and GitHub's record of main since the previous review, judged
+    # by rule; a planted simulated intruder must be caught every run. Anything
+    # unexpected goes into GATE_EVENTS_FILE (audit-log.unexpected, detect-and-
+    # recover), so the VDR built next carries it as a process finding. Needs
+    # cloudtrail:LookupEvents (infrastructure/bootstrap/evidence-nightly.tf); an
+    # AccessDenied stops the run with that instruction.
+    - name: Audit-log review (KSI-MLA-RVL)
+      working-directory: infrastructure
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        prev=()
+        code=$(curl -s -o previous-audit-log-review.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/vdr-audit-log-review.json")
+        if [ "$code" = "200" ]; then
+          curl -sfL --retry 3 -o previous-audit-log-review.bundle "${SITE_ORIGIN}/.well-known/vdr-audit-log-review.bundle"
+          cosign verify-blob --bundle previous-audit-log-review.bundle --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
+            previous-audit-log-review.json
+          prev=(--previous previous-audit-log-review.json)
+        elif [ "$code" != "404" ] && [ "$code" != "403" ]; then
+          echo "::error::vdr-audit-log-review.json answered HTTP $code"; exit 1
+        fi
+        python3 ../scripts/audit-log-review.py --out vdr-audit-log-review.json "${prev[@]}"
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-audit-log-review.bundle vdr-audit-log-review.json
+
     - name: Collect failed pipeline runs (VDR-CSO-FAV)
       working-directory: infrastructure
       env:
@@ -695,6 +722,44 @@ jobs:
         python3 ../scripts/check-non-machine-vv.py --out vdr-non-machine-vv.json
         cosign sign-blob --yes --new-bundle-format --bundle vdr-non-machine-vv.bundle vdr-non-machine-vv.json
 
+    # KSI-RPL-TRC (DEC-195): on the first of each month, the recovery exercise:
+    # the site rebuilt from the deployed commit and compared with what is served,
+    # versioning and PITR re-read from the verified runtime signal, and each
+    # November a simulated tabletop. Read-only; nothing is restored. A failing
+    # exercise is not frozen and does not stop the VDR refresh: the index is
+    # still written, and the run fails at the end instead (step "Scheduled
+    # reviews held and not overdue"). A frozen exercise's files pass the
+    # FedRAMP ID and redaction gates here, before they are signed.
+    - name: Hold the recovery exercise when due (KSI-RPL-TRC)
+      id: recovery
+      continue-on-error: true
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        : > recovery-new.txt
+        prev=()
+        code=$(curl -s -o previous-recovery-exercises.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/vdr-recovery-exercises.json")
+        if [ "$code" = "200" ]; then
+          curl -sfL --retry 3 -o previous-recovery-exercises.bundle "${SITE_ORIGIN}/.well-known/vdr-recovery-exercises.bundle"
+          cosign verify-blob --bundle previous-recovery-exercises.bundle --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
+            previous-recovery-exercises.json
+          prev=(--previous-index previous-recovery-exercises.json)
+        elif [ "$code" != "404" ] && [ "$code" != "403" ]; then
+          echo "::error::vdr-recovery-exercises.json answered HTTP $code"; exit 1
+        fi
+        python3 ../scripts/hold-recovery-exercise.py --commit "$SIGNAL_COMMIT" \
+          --runtime-signal ksi-signal-runtime.json "${prev[@]}" --out . --new-files recovery-new.txt \
+          || rc=$?
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-recovery-exercises.bundle vdr-recovery-exercises.json
+        while read -r f; do
+          [[ "$f" =~ ^vdr-recovery-exercise-[0-9]{4}-[0-9]{2}-[0-9]{2}\.json$ ]] || { echo "::error::unexpected file $f"; exit 1; }
+          python3 ../scripts/check-fedramp-id.py "$f"
+          python3 ../scripts/check-published-redaction.py "$f" "${f%.json}.view.md"
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done < recovery-new.txt
+        exit "${rc:-0}"
+
     # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
     # in human-readable form, listing every kind of detection and response
     # activity ("none this period" when nothing happened). The previous published
@@ -718,9 +783,28 @@ jobs:
         else
           echo "No previous vdr-monthly.json published; the month starts with this build's runs."
         fi
+        # Activities generated from run records (VER-RPT-HLO): the simulated
+        # assessor's and the inbox exercise's published runs, each used only
+        # when its signature verifies; the incident exercises; this run's
+        # recovery exercises and audit-log review.
+        gen=(--incidents ../data/incidents.json --recovery-exercises vdr-recovery-exercises.json
+             --audit-log-review vdr-audit-log-review.json)
+        for pair in "simulated-assessment:simulated-assessor.yml:--assessment" \
+                    "fedramp-inbox-simulation:deploy-with-opa.yml:--inbox"; do
+          IFS=: read -r name wf flag <<< "$pair"
+          if curl -sfL --retry 3 -o "run-$name.json" "${SITE_ORIGIN}/.well-known/$name.json" \
+             && curl -sfL --retry 3 -o "run-$name.bundle" "${SITE_ORIGIN}/.well-known/$name.bundle" \
+             && cosign verify-blob --bundle "run-$name.bundle" --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+                  --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/$wf@refs/heads/main" \
+                  "run-$name.json" 2>/dev/null; then
+            gen+=("$flag" "run-$name.json")
+          else
+            echo "::notice::$name.json is not published or does not verify; its runs are not listed this time"
+          fi
+        done
         python3 ../scripts/build-vdr-monthly.py --vdr vdr-report.json --history vdr-history.json \
           --decisions ../data/decisions.json --activities ../data/vdr-activities.json \
-          --non-machine vdr-non-machine-vv.json "${prev[@]}"
+          --non-machine vdr-non-machine-vv.json "${prev[@]}" "${gen[@]}"
         cosign sign-blob --yes --new-bundle-format --bundle vdr-monthly.bundle vdr-monthly.json
 
     # The published VDR carries a SLSA/in-toto provenance attestation, and that
@@ -775,7 +859,7 @@ jobs:
       run: >-
         python3 ../scripts/build-human-views.py
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
-        vdr-non-machine-vv.json vdr-monthly.json
+        vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
 
     # CDS-CSO-FID: every report this run republishes carries the offering's
     # FedRAMP ID (the same gate the deploy runs over its REPORTS list).
@@ -784,7 +868,7 @@ jobs:
       run: >-
         python3 ../scripts/check-fedramp-id.py
         vdr-report.json vdr-trend.json vdr-detail-report.json vdr-accepted-vulnerabilities.json vdr-history.json
-        vdr-non-machine-vv.json vdr-monthly.json
+        vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
 
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
@@ -797,6 +881,8 @@ jobs:
         vdr-report.view.md vdr-trend.view.md vdr-detail-report.view.md
         vdr-accepted-vulnerabilities.view.md vdr-history.view.md
         vdr-non-machine-vv.view.md vdr-monthly.view.md
+        vdr-audit-log-review.json vdr-audit-log-review.view.md
+        vdr-recovery-exercises.json vdr-recovery-exercises.view.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -839,6 +925,24 @@ jobs:
         # The refreshed provenance attestation. Its key matches the same
         # `.well-known/vdr-*` prefix, so it needs no extra IAM grant.
         put vdr-report.json.intoto.jsonl "application/json"
+        # Scheduled reviews (scripts/_scheduled_review.py), under the same prefix.
+        put vdr-audit-log-review.view.md "text/markdown; charset=utf-8"
+        put vdr-audit-log-review.bundle "application/json"
+        put vdr-audit-log-review.json "application/json"
+        # A held recovery exercise is frozen: never put over a served copy. Its
+        # files were gated and signed in the step that held it.
+        while read -r f; do
+          code=$(curl -s -o /dev/null -w '%{http_code}' "${SITE_ORIGIN}/.well-known/$f")
+          if [ "$code" != "404" ] && [ "$code" != "403" ]; then
+            echo "::error::.well-known/$f is already served (HTTP $code): a held exercise is never overwritten"; exit 1
+          fi
+          put "${f%.json}.view.md" "text/markdown; charset=utf-8"
+          put "${f%.json}.bundle" "application/json"
+          put "$f" "application/json"
+        done < <(cat recovery-new.txt 2>/dev/null || true)
+        put vdr-recovery-exercises.view.md "text/markdown; charset=utf-8"
+        put vdr-recovery-exercises.bundle "application/json"
+        put vdr-recovery-exercises.json "application/json"
 
     # Scoped to exactly the paths this workflow wrote. The deploy path
     # invalidates `/*`; that is a whole-site operation and is not this
@@ -901,6 +1005,39 @@ jobs:
             python3 scripts/check-quarterly-review.py --index qr-index.json ;;
           403|404) python3 scripts/check-quarterly-review.py --no-index ;;
           *) echo "::error::quarterly-reviews.json answered HTTP $code"; exit 1 ;;
+        esac
+
+    # DEC-195: the scheduled reviews ran. A recovery exercise or Annual Security
+    # Review due date passed with none published fails the nightly (the security
+    # review's index only counts when the maintainer's signature verifies); a
+    # recovery exercise that failed today fails it too, after the VDR published;
+    # and an unexpected write evaluated reportable stops it (audit-log.reportable).
+    - name: Scheduled reviews held and not overdue
+      if: ${{ always() && steps.publish.outcome == 'success' }}
+      env:
+        RECOVERY: ${{ steps.recovery.outcome }}
+      run: |
+        set -euo pipefail
+        if ! git cat-file -e "${SIGNAL_COMMIT}:scripts/check-scheduled-review.py" 2>/dev/null; then
+          echo "::notice::the deployed commit predates the automated scheduled reviews"; exit 0
+        fi
+        [ "$RECOVERY" != "failure" ] || { echo "::error::the recovery exercise failed (see its step)"; exit 1; }
+        python3 scripts/audit-log-review.py --enforce infrastructure/vdr-audit-log-review.json
+        if [ -f infrastructure/vdr-recovery-exercises.json ]; then
+          python3 scripts/check-scheduled-review.py --review recovery-exercise --index infrastructure/vdr-recovery-exercises.json
+        else
+          python3 scripts/check-scheduled-review.py --review recovery-exercise --no-index
+        fi
+        code=$(curl -s -o sr-index.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/security-reviews.json")
+        case "$code" in
+          200)
+            curl -sfL --retry 3 -o sr-index.bundle "${SITE_ORIGIN}/.well-known/security-reviews.bundle"
+            cosign verify-blob --bundle sr-index.bundle --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+              --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/package-maintenance.yml@refs/heads/main" \
+              sr-index.json
+            python3 scripts/check-scheduled-review.py --review security-review --index sr-index.json ;;
+          403|404) python3 scripts/check-scheduled-review.py --review security-review --no-index ;;
+          *) echo "::error::security-reviews.json answered HTTP $code"; exit 1 ;;
         esac
 
     # SCG-ENH-CMP: the repository settings the workflow token can read, compared
