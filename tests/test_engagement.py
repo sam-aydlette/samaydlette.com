@@ -97,3 +97,55 @@ def test_no_intake_form_or_engagement_label_remains():
     assert not (REPO / ".github" / "ISSUE_TEMPLATE").exists() or not list((REPO / ".github" / "ISSUE_TEMPLATE").iterdir())
     agency = json.loads((REPO / "data" / "agency-access.json").read_text())
     assert all(r.get("simulated") is True for r in agency["requests"])
+
+
+# --- every simulated output carries the statement ------------------------------------------
+
+def _simulated_outputs(tmp_path):
+    """{name: document} for each simulated output, built as the workflows build it."""
+    import subprocess
+    from datetime import datetime, timezone
+    out = {}
+    fsi = _load("fsi_for_engagement", REPO / "scripts" / "build-fsi-simulation.py")
+    assert fsi.main(["--output", str(tmp_path / "fedramp-inbox-simulation.json")]) == 0
+    (tmp_path / "vdr.json").write_text('{"findings": []}')
+    subprocess.run([sys.executable, str(REPO / "scripts" / "build-incident-report.py"), "--incidents",
+                    str(REPO / "data" / "incidents.json"), "--vdr", str(tmp_path / "vdr.json"),
+                    "--out-dir", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run([sys.executable, str(REPO / "scripts" / "deliver-incident-reports.py"), "--dir", str(tmp_path)],
+                   check=True, capture_output=True)
+    for p in sorted(tmp_path.glob("*.json")):
+        if p.name != "vdr.json":
+            out[p.name] = json.loads(p.read_text())
+    import _scn
+    scn = _load("scn_for_engagement", REPO / "scripts" / "build-scn.py")
+    _, rows = _scn.read_register()
+    now = datetime(2026, 11, 6, tzinfo=timezone.utc)
+    out["significant-change-notifications.json"] = scn.build_index(rows, None, now, "abc", tmp_path / "scn")
+    cyc = _load("cycle_for_engagement_outputs", REPO / "tests" / "test_certification_cycle.py")
+    log = cyc._submit({}, cyc.NOW)
+    out["package-submission-log.json"] = log
+    frc = _load("frc_for_engagement", REPO / "scripts" / "publish-certification-reports.py")
+    out["fedramp-certification-reports.json"] = frc.build(log, None, now, tmp_path / "frc")
+    return out
+
+
+def test_every_output_that_names_a_simulated_counterparty_carries_the_statement(tmp_path):
+    outputs = _simulated_outputs(tmp_path)
+    assert {"package-submission-log.json", "fedramp-certification-reports.json", "fedramp-inbox-simulation.json",
+            "incident-deliveries.json", "incident-reports.json", "significant-change-notifications.json"} <= set(outputs)
+    assert any(n.startswith("incident-INC-") for n in outputs)
+    # Every one of them carries it, whether or not it labels its counterparty
+    # (the incident log and reports name the recipients only through the
+    # delivery log); and no output that names one may lack it.
+    for name, doc in outputs.items():
+        assert _engagement.carries_statement(doc), f"{name}: no DEC-194 statement"
+    assert all(_engagement.carries_statement(d) for d in outputs.values() if _engagement.names_simulated(d))
+    for name, doc in outputs.items():  # a FedRAMP-shaped report carries it as a provider extension
+        if name.startswith("incident-INC-"):
+            assert doc["providerExtensions"]["engagement"] == _engagement.STATEMENT
+
+
+def test_known_bad_a_simulated_output_without_the_statement_is_caught():
+    doc = json.loads((REPO / "tests" / "fixtures" / "engagement" / "output-without-statement.json").read_text())
+    assert _engagement.names_simulated(doc) and not _engagement.carries_statement(doc)

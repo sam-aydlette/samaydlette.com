@@ -36,6 +36,7 @@ from email.parser import Parser
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 import _fsi  # noqa: E402
 
@@ -200,6 +201,7 @@ def main(argv=None) -> int:
         "report_type": "fedramp-inbox-simulation",
         "simulation": True,
         "notice": NOTICE,
+        "engagement": _engagement.STATEMENT,
         "contact": contact,
         "emitted_at": datetime.now(timezone.utc).isoformat(),
         "commit": sha if len(sha) == 40 and all(ch in "0123456789abcdef" for ch in sha) else None,

@@ -13,7 +13,7 @@
           "type": "Initial",
           "issued_at": "2026-11-05T03:40:00Z",
           "file": "incident-INC-2026-001-01-initial.json",
-          "sha256": "9380b0720b91152dffac17a5cb3cd3e89dd82c9d2df12ea9ec07df3e7529b320",
+          "sha256": "477eb43adc630f44f7e83060380d49c46f5e4f1a5fea22dbb33e16436c76536a",
           "changes": {
             "coordinator": "updated",
             "tracking_id": "updated",

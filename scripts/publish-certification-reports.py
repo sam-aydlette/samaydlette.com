@@ -38,6 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _fedramp_schema as fs  # noqa: E402
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 
 BASE = "https://samaydlette.com/.well-known/fedramp-certification-reports/"
@@ -110,6 +111,9 @@ def build(log, previous, now, out):
             "fedRampId": _offering.fedramp_id(), "certificationPackageOverviewUri": fs.CPO_URI,
             "certificationStatus": _offering.CERTIFICATION_STATUS,
             "simulated": {"counterparty": "fedramp", "how": SIMULATION},
+            # DEC-194. On the index, not in the reports: each is published
+            # byte-identical to the log's copy (its sha256 is checked).
+            "engagement": _engagement.STATEMENT,
             "rule": "CDS-CSO-FRC: FedRAMP Certification Reports are included unmodified and made available within "
                     "2 weeks of receipt.",
             "reports": entries}

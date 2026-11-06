@@ -243,7 +243,8 @@ def build(docs, paths, previous, now, commit, applicable, fedramp_id, scn_rows=(
         entries.append(entry)
     log = {"schema": "package-submission-log/1", "generated_at": now.isoformat(), "fedRampId": fedramp_id,
            "certificationPackageOverviewUri": fs.CPO_URI, "nothingSent": True,
-           "simulated": {"counterparty": "fedramp", "how": SIMULATION}, "entries": entries}
+           "simulated": {"counterparty": "fedramp", "how": SIMULATION},
+           "engagement": _engagement.STATEMENT, "entries": entries}
     if offering is not None:
         prev_contact = (previous or {}).get("inboxContact")
         notices, problems = fsi_notice.file_notices(offering, (previous or {}).get("changeNotices"), now.date(),
