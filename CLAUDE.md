@@ -18,13 +18,17 @@ This system shows that policy as code can automate CR26. It is not certified.
 Procedure may flex. Claims may not.
 
 - Implemented: a real mechanism ran on real inputs, and evidence exists.
-- Simulated: a real mechanism ran on a labeled stand-in input.
-- Not Demonstrated: not built; say why.
+- Simulated: a real mechanism ran on a labeled stand-in input. The stand-in may
+  replace an outside party, the people, or infrastructure deliberately not built
+  (an inbox, a meeting, a notification transport).
+- Not Demonstrated: not built, or nothing runs; say why.
 - Not Applicable: the rule does not apply; say why.
 
-Before using a stand-in, show that a bad input changes the result, and that a
-real input could replace it without changing the logic. If you can't, mark the
-record Not Demonstrated.
+Before using a stand-in, show with a test that a bad input changes the result.
+Then state in the record how a real input would replace the stand-in and what
+would have to change; cite a test where one exists. A guard that refuses real
+agencies or FedRAMP (DEC-194) is policy, not logic. If no mechanism runs, mark
+the record Not Demonstrated.
 
 You may propose a stand-in or scope cut. You may not approve one. Record each
 with what is real, what is simulated, and who approved it.
