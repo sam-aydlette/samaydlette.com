@@ -9,6 +9,8 @@ not screened.
 """
 import json
 import re
+
+import pytest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -82,3 +84,82 @@ def test_an_accepted_mfa_finding_publishes_no_planned_purchase():
     assert "DEC-150" in rows
     assert not rows["DEC-025"].get("remediation_plan")
     assert not rows["DEC-025"].get("planned_completion")
+
+
+# --- the relapse gate (DEC-195): no recurring manual work anywhere it can be promised ---
+# scripts/_nonmachine.manual_work screens every sentence for a person, a review-like
+# act and a recurring cadence (or a "Review cadence" line). Allowed: a sentence citing
+# DEC-195 (the three recurring human acts that remain), a section headed as history,
+# and the DEC-195 record itself.
+
+import ast  # noqa: E402
+import sys  # noqa: E402
+
+sys.path.insert(0, str(REPO / "scripts"))
+import _nonmachine  # noqa: E402
+
+ALLOWED_RECORDS = {"DEC-195"}
+
+
+def _hits(text):
+    return [s for _, s in _nonmachine.manual_work(text)]
+
+
+def test_known_bad_the_operator_reviews_cloudtrail_quarterly_is_caught():
+    assert _hits((FIXTURES / "bad-doc.md").read_text()) == ["The operator reviews CloudTrail quarterly."]
+    probs = _nonmachine.text_problems("NMR-X", (FIXTURES / "bad-doc.md").read_text(), FIXTURES / "bad-doc.md",
+                                      REPO, set())
+    assert probs == ["NMR-X: line 5 commits a person to recurring manual work: "
+                     "'The operator reviews CloudTrail quarterly.'"]
+
+
+def test_known_bad_a_passive_cadence_and_a_review_cadence_line_are_caught():
+    assert _hits((FIXTURES / "bad-passive.md").read_text()) == [
+        "**Review cadence.** Annually with the security review.",
+        "Plans are version-controlled and reviewed annually."]
+
+
+def test_dec_195_acts_mechanisms_and_history_sections_are_allowed():
+    assert _hits((FIXTURES / "allowed.md").read_text()) == []
+
+
+def test_no_document_commits_a_person_to_recurring_manual_work():
+    bad = {}
+    for p in sorted((REPO / "docs").rglob("*.md")) + [REPO / "README.md"]:
+        hits = _nonmachine.manual_work(p.read_text(encoding="utf-8"))
+        if hits:
+            bad[str(p.relative_to(REPO))] = hits
+    assert bad == {}
+
+
+def _screen(record):
+    return [s for t in _text(record) for _, s in _nonmachine.manual_work(t)]
+
+
+def test_no_in_force_decision_or_rule_record_commits_a_person_to_recurring_manual_work():
+    bad = {r["id"]: _screen(r) for r in _in_force(REPO / "data" / "decisions.json", "decisions")
+           if r["id"] not in ALLOWED_RECORDS and _screen(r)}
+    bad |= {r["frr_id"]: _screen(r) for r in _in_force(REPO / "data" / "frr-records.json", "records")
+            if _screen(r)}
+    assert bad == {}
+
+
+def _string_constants(path):
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            yield node.lineno, node.value
+
+
+@pytest.mark.parametrize("script", ["scripts/_controls.py", "scripts/build-vdr-report.py"])
+def test_no_published_statement_or_rationale_commits_a_person_to_recurring_manual_work(script):
+    bad = [(n, s) for n, text in _string_constants(REPO / script) for _, s in _nonmachine.manual_work(text)]
+    assert bad == []
+
+
+def test_no_data_record_commits_a_person_to_recurring_manual_work():
+    bad = {}
+    for name in ("vdr-activities.json", "non-machine-resources.json"):
+        hits = _screen(json.loads((REPO / "data" / name).read_text()))
+        if hits:
+            bad[name] = hits
+    assert bad == {}

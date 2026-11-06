@@ -46,8 +46,8 @@ By operating this system, the operator commits to the following:
 - Spillage scenarios trigger the IR-9 procedure regardless of severity.
 
 **Continuous monitoring.**
-- The operator reviews the runtime KSI signal at least weekly and reconciles any drift against the deploy-time signal.
-- The operator runs the annual security review per [`docs/security-review.md`](security-review.md).
+- The operator does not read the runtime KSI signal by hand: the evidence nightly verifies it and checks it against the deploy-time inventory on every run (`scripts/reconcile.py`, invariant (n)), and the run fails on a gap.
+- The operator does not hold the Annual Security Review: `scripts/hold-security-review.py` holds it on its due date with a simulated reviewer ([`docs/security-review.md`](security-review.md)). DEC-195 lists the only recurring acts left to the operator.
 
 **Acceptable use of the system's outputs.**
 - Published artifacts at `/.well-known/` are public. The operator does not publish anything to `/.well-known/` that would be confidential, sensitive, or restricted.
@@ -55,14 +55,14 @@ By operating this system, the operator commits to the following:
 
 ## Acknowledgment
 
-The Rules of Behavior are acknowledged by the operator on initial system stand-up and on each annual security review. The acknowledgment record is the security review entry for the corresponding year.
+The acknowledgement is recorded by machine. `scripts/hold-security-review.py` records it in `/.well-known/security-reviews.json` (`rulesOfBehavior`) with each Annual Security Review, and again whenever this document's sha256 changes; the person acknowledging is simulated, Pat Placeholder (simulated) (DEC-194). `scripts/check-scheduled-review.py --rules-of-behavior` fails the package maintainer's run, which every deploy calls, while the current version of this document has no acknowledgement.
 
 | Field | Value |
 | --- | --- |
 | Operator | Sam Aydlette |
-| Initial acknowledgment | 2026-05-08 |
-| Next review | 2027-05-08 (annual) |
-| Re-acknowledgment trigger | Any Transformative change per SCN |
+| Initial acknowledgment | 2026-05-08 (by hand, before the acknowledgement was automated) |
+| Acknowledged by | Pat Placeholder (simulated), recorded by `scripts/hold-security-review.py` |
+| Re-acknowledgment trigger | the Annual Security Review, and any change to this document (its sha256) |
 
 ## Reference
 

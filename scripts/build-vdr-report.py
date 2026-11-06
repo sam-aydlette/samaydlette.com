@@ -516,8 +516,8 @@ SUPPRESSION_RATIONALE = {
     "CKV_AWS_310": "The two origins serve distinct path patterns (static S3 site vs the Silk Reeling API), not a redundant failover pair; an origin group would require multi-region storage.",
     "CKV_AWS_117": "Lambda has no internet egress, no sensitive data, no private endpoint targets. NAT Gateway adds cost without commensurate isolation benefit.",
     "CKV_AWS_35":  "CloudTrail log files use SSE-S3, consistent with the DEC-029 decision family: service-written control-plane records about this account's own infrastructure; a CMK adds key sprawl and a decrypt dependency for every consumer without a confidentiality benefit.",
-    "CKV2_AWS_10": "CloudWatch Logs integration declined: it duplicates every management event into paid log-group storage to enable metric filters this single-operator system reviews quarterly instead (KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.",
-    "CKV_AWS_252": "SNS delivery notifications declined: no consumer exists for a per-delivery notification; the quarterly review reads the bucket directly.",
+    "CKV2_AWS_10": "CloudWatch Logs integration declined: it duplicates every management event into paid log-group storage to enable metric filters; this system reviews the trail automatically every night instead (scripts/audit-log-review.py, KSI-MLA-RVL). Log-file validation plus the TLS-only versioned bucket carry the integrity requirement.",
+    "CKV_AWS_252": "SNS delivery notifications declined: no consumer exists for a per-delivery notification; the nightly audit-log review reads CloudTrail's event history directly (scripts/audit-log-review.py).",
 }
 
 # Read .checkov.yaml as YAML if PyYAML is available; fall back to a forgiving

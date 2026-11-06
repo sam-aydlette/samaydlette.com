@@ -2,7 +2,7 @@
   "schema": "secure-configuration/1",
   "$comment": "The Secure Configuration Guide's single source (SCG-CSO-RSC, SCG-ENH-MRG). scripts/build-scg.py publishes it as /.well-known/secure-configuration-guide.json and .md; scripts/check-secure-config.py compares the live settings with `recommended` on every deploy (SCG-ENH-CMP/EXP). Changing a recommended default needs a new version and a changelog entry carrying the new defaults_sha256 (SCG-ENH-VRH); the builder and tests/test_secure_configuration.py fail otherwise. AI-drafted 2026-11-05 from the repository and read-only reads of the live account; for the operator's review.",
   "title": "Secure Configuration Guide: samaydlette.com",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "obtain_and_use": [
     "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
     "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
@@ -352,6 +352,10 @@
         ".well-known/security-decision-record.json.intoto.jsonl",
         ".well-known/security-decision-record.md",
         ".well-known/security-decision-record.view.md",
+        ".well-known/security-review-*",
+        ".well-known/security-reviews.bundle",
+        ".well-known/security-reviews.json",
+        ".well-known/security-reviews.view.md",
         ".well-known/snapshot-*",
         ".well-known/snapshots/*"
       ],
@@ -359,6 +363,17 @@
       "read": "aws iam get-role-policy (package-maintenance-publish; s3:PutObject resources, bucket removed)",
       "change": "infrastructure/bootstrap/package-maintenance.tf, local.package_maintenance_keys; operator-applied",
       "check": "role-scope-maintenance"
+    },
+    {
+      "id": "ci-roles.nightly-audit-reads",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The evidence nightly role may read CloudTrail's event history for the automated audit-log review, and nothing more in that policy",
+      "recommended": ["cloudtrail:LookupEvents"],
+      "implication": "The nightly's audit-log review (scripts/audit-log-review.py, KSI-MLA-RVL) can read the write events it judges; it is a read on the unattended path and adds no write.",
+      "read": "aws iam get-role-policy (evidence-nightly-audit-log-review; allowed actions)",
+      "change": "infrastructure/bootstrap/evidence-nightly.tf, aws_iam_role_policy.evidence_nightly_audit_reads; operator-applied",
+      "check": "role-reads-nightly"
     },
     {
       "id": "cognito-admin.sign-in-policy",
@@ -403,6 +418,15 @@
       "The incident reports role's recommended trust adds the prod environment. The bootstrap already grants it so the deploy can prove the role can be assumed; the guide listed incident-reports only, so the deploy's comparison would have reported a deviation."
     ],
     "defaults_sha256": "436268d507aa31417d5b92c2615e8106f393bbbbba879375cbda4121201f89af"
+  },
+  {
+    "version": "2.4.0",
+    "date": "2026-11-06",
+    "changes": [
+      "The package maintenance role's write scope adds the Annual Security Review: its index (security-reviews.json, view and signature) and each held review (security-review-*).",
+      "Added the evidence nightly role's audit-log read: cloudtrail:LookupEvents, for the automated audit-log review (DEC-195), compared on every deploy like the maintainer's scope."
+    ],
+    "defaults_sha256": "ca8968b522af43b3736f1444d0f93de75f434a9277b4f20d150aabec2717be57"
   }
   ]
 }

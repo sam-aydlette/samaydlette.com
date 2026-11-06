@@ -363,3 +363,41 @@ def test_the_published_scope_carries_no_arn():
     cur = by["ci-roles.maintenance-publish-scope"]["current"]
     assert cur and all(k.startswith(".well-known/") for k in cur)
     assert "arn:" not in json.dumps(cur)
+
+
+def _merged(*overrides, drop=()):
+    responses = json.loads((FIX / "aws-good.json").read_text())["responses"]
+    for name in overrides:
+        responses.update(json.loads((FIX / name).read_text())["responses"])
+    for k in drop:
+        del responses[k]
+
+    def call(args):
+        r = responses.get(" ".join(args))
+        if r is None:
+            raise chk.AwsError("AccessDenied")
+        if "error" in r:
+            raise chk.AwsError(r["error"])
+        return r
+    src = json.loads(SOURCE.read_text())
+    doc = chk.build(src, chk.compare(src, {**chk.read_aws(call, "pool-1", now=NOW), **chk.read_github(_github()),
+                                           **_repository()}, _in_force()), NOW)
+    return {r["id"]: r["result"] for r in chk.failures(doc)}
+
+
+NIGHTLY_READS = ("iam get-role-policy --role-name github-actions-evidence-nightly-oidc "
+                 "--policy-name evidence-nightly-audit-log-review")
+
+
+def test_known_bad_a_nightly_role_without_lookup_events_fails_the_deploy():
+    """The audit-log review (KSI-MLA-RVL) needs exactly cloudtrail:LookupEvents."""
+    assert _merged("aws-nightly-no-lookup.json") == {"ci-roles.nightly-audit-reads": "deviation"}
+
+
+def test_the_nightly_read_grant_unapplied_fails_the_deploy():
+    assert _merged(drop=[NIGHTLY_READS]) == {"ci-roles.nightly-audit-reads": "not-read"}
+
+
+def test_the_nightly_read_check_publishes_actions_only():
+    assert chk._allowed_actions(json.loads((FIX / "aws-good.json").read_text())["responses"][NIGHTLY_READS]["PolicyDocument"]) == \
+        ["cloudtrail:LookupEvents"]

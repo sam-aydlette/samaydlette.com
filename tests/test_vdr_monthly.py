@@ -162,3 +162,46 @@ def test_the_signed_run_history_the_vdr_carries_is_counted():
                           {"signal_id": "s", "emitted_at": "2026-11-20T03:00:00Z", "validations": 7, "failed": 0}]}
     doc = build(v=vdr(runtime_verification=rt))
     assert by_type(doc)["runtime-vv"]["runsInPeriod"] == 2 and doc["runtimeRunsBasis"].startswith("retained runs")
+
+
+# --- activities generated from run records (no typed-in entries) ---------------------------
+
+def test_parity_the_monthly_output_is_unchanged_but_for_the_added_exercise_type():
+    """The report as the builder at f0e4aef produced it from the same inputs
+    (tests/fixtures/vdr-monthly/parity-before-f0e4aef.json, built from the
+    activity record of that commit, parity-activities-f0e4aef.json): only the
+    new `exercise` activity type is added."""
+    acts = mo.validate_activities(json.loads((FIX / "parity-activities-f0e4aef.json").read_text()))
+    new = build(acts=acts)
+    assert [o["type"] for o in new["overview"]][-1] == "exercise"
+    new["overview"] = [o for o in new["overview"] if o["type"] != "exercise"]
+    before = json.loads((FIX / "parity-before-f0e4aef.json").read_text())
+    # `response` is counted from the decision register, which grows with every
+    # decision; the builder's response code is unchanged, so it is left out.
+    for doc in (new, before):
+        doc.pop("response")
+    assert json.loads(json.dumps(new)) == before
+
+
+def test_generated_activities_only_add_runs():
+    gen = mo.generated_runs(
+        incidents={"incidents": [{"id": "INC-X", "exercise": True, "detected_at": "2026-11-03T00:00:00+00:00"},
+                                 {"id": "INC-Y", "detected_at": "2026-11-03T00:00:00+00:00"}]},
+        assessment={"issued_at": "2026-11-04T00:00:00+00:00", "assessor": {"name": "Ima Assessor (simulated)"},
+                    "records": [1, 2]},
+        inbox={"emitted_at": "2026-11-05T00:00:00+00:00", "cases": [1]},
+        recovery={"reviews": [{"dueDate": "2026-11-01", "heldAt": "2026-11-02T00:00:00+00:00", "result": "pass"}]},
+        audit={"generated_at": "2026-11-06T00:00:00+00:00", "exercise": {"caught": True}})
+    assert [g["type"] for g in gen] == ["exercise", "assessment", "exercise", "exercise", "exercise"]
+    base, with_gen = build(), mo.build(vdr(), MRH, REG, ACTS, nmv(), None, None, NOW, gen)
+    o, o2 = by_type(base), by_type(with_gen)
+    assert o2["exercise"]["runsInPeriod"] == 4 and o2["assessment"]["runsInPeriod"] == o["assessment"]["runsInPeriod"] + 1
+    for t in o:
+        if t not in ("exercise", "assessment"):
+            assert o2[t] == o[t]
+    assert all(r in with_gen["runs"] for r in base["runs"])
+
+
+def test_a_missed_intruder_is_a_failed_exercise():
+    gen = mo.generated_runs(audit={"generated_at": "2026-11-06T00:00:00+00:00", "exercise": {"caught": False}})
+    assert gen[0]["status"] == "failed"

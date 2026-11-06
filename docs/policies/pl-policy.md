@@ -8,4 +8,4 @@ The architectural decision record [`architecture-decisions.md`](../architecture-
 
 **20x rule integration.** KSI-PIY (Policy and Inventory). The 20x meta-process rules — FedRAMP Certification (`CRT-*`), Certification Data Sharing (`CDS-*`), and Marketplace Listing (`MKT-*`) — are documented in this PoC at the procedure level. The system is not actually FedRAMP-certified, so the obligations these rules impose (data sharing to FedRAMP, marketplace metadata accuracy) are demonstrated rather than executed.
 
-**Review cadence.** Annually with the [security review](../security-review.md), plus after Transformative changes per SCN.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; a Transformative change (SCN) revisits it in the same pull request.

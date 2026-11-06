@@ -24,4 +24,4 @@ KEVs (CISA Known Exploited Vulnerabilities) are remediated according to the BOD 
 
 **20x rule integration.** Vulnerability Detection and Response (full VDR-* family at Class C cadence). KSI-PIY-RVD (Reviewing Vulnerability Disclosures).
 
-**Review cadence.** Continuous (per-PR + per-deploy); structural review annually.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request. Risk is re-evaluated on every pull request and every deploy.

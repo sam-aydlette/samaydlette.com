@@ -19,6 +19,6 @@ External communication paths:
 
 **Vulnerabilities as incidents (VER-TFR-IRI, VER-TFR-NRI).** The operator adopts both rules. An internet-reachable likely exploitable vulnerability above PAIN N3 (i.e. N4 or N5) is a FedRAMP Reportable Incident until it is partially mitigated to N3 or below (`VER-TFR-IRI`), and a non-internet-reachable likely exploitable vulnerability at PAIN N5 is one until it is N4 or below (`VER-TFR-NRI`, a MAY the operator has chosen to use). The VDR triage policy names each such finding; the incident log shows it, and until an incident in the register names it, its Initial report is due and the alarms above apply.
 
-**Review cadence.** Annually with the [security review](../security-review.md); after every actual incident (currently zero; the two recorded incidents are exercises).
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; an actual incident's after-action record revisits it (currently zero; the recorded incidents are exercises).
 
 _AI-drafted (2026-11-05) to describe what the incident register, report builder and workflow now do; for the operator's review._

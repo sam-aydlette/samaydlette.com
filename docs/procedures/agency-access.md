@@ -16,4 +16,4 @@ This procedure covers how the certification package is made available, how an ac
 
 **Access records.** Viewers are never identified in the trust center's access records (CDS-TRC-ACL); beyond the 90-day raw records, only the published monthly access summaries are kept.
 
-**Review cadence.** Annually with the [security review](../security-review.md).
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

@@ -20,7 +20,13 @@ more than a day old:
   counts       a stated count tagged `<!-- nmv-count NAME=N -->` equals what the
                code says (COUNTERS), and the tagged line states N;
   register     a register is loaded by its own validator (the decision register)
-               or parsed as JSON.
+               or parsed as JSON;
+  manual work  no sentence commits a person to a recurring review, reading,
+               tabletop, acknowledgement or reconciliation (MANUAL_WORK): those
+               are automated (scripts/_scheduled_review.py and its kin). A
+               sentence that cites DEC-195 (the three recurring human acts that
+               remain) may describe one, and a section headed as history may
+               record what used to be done.
 
 The status (/.well-known/vdr-non-machine-vv.json) is the quarterly V&V record:
 when every check passes, verifiedAt is the time of the run; when any fails,
@@ -59,6 +65,29 @@ RETIRED = {
 }
 RETIRED_OK = re.compile(r"\b(?:retired|replaced|replaces|formerly|superseded|no longer|backfilled|"
                         r"instead of|was removed|removed in)\b", re.I)
+# Manual work (DEC-195): a person, a review-like act and a recurring cadence in one
+# sentence, or a "Review cadence:" line. Everything recurring is a mechanism now.
+MANUAL_ACTOR = re.compile(r"\b(?:operator|owner|Sam|the team|staff|personnel|a person|a human|humans?|manually|"
+                          r"by hand|in person)\b", re.I)
+MANUAL_ACT = re.compile(r"\b(?:review(?:s|ed|ing)?|reads?|re-?reads?|inspect\w*|walk\w*|tabletops?|re-?acknowledg\w*|"
+                        r"acknowledg\w*|reconcil\w*|audits?|checks?|confirm\w*|examin\w*|look\w* (?:at|over))\b",
+                        re.I)
+MANUAL_CADENCE = re.compile(r"\b(?:daily|weekly|monthly|quarterly|annual(?:ly)?|yearly|biannual\w*|semi-?annual\w*|"
+                            r"every (?:day|week|month|quarter|year|\d+ (?:days|weeks|months))|"
+                            r"once an? (?:week|month|quarter|year)|each (?:week|month|quarter|year))\b", re.I)
+REVIEW_CADENCE_LINE = re.compile(r"\breview cadence\b", re.I)
+# A sentence that names the mechanism doing the recurring act describes automation.
+MECHANISM = re.compile(r"`?(?:scripts|tools|infrastructure)/[\w./-]+|\.github/workflows/|\b[\w-]+\.ya?ml\b|"
+                       r"\b(?:automat\w*|generated|simulated|machine|nightly|the deploy|every deploy|emitter|Lambda|the script|"
+                       r"the pipeline|workflow|the gate)\b", re.I)
+MANUAL_OK = re.compile(r"\bDEC-195\b")
+# Names of published, automated products, not acts: "the Quarterly Review" (CCM-QTR-MTG, held by
+# scripts/hold-quarterly-review.py), "the Ongoing Certification Report" and "the Annual Security
+# Review" (scripts/hold-security-review.py). Case-sensitive: "the annual security review" is not one.
+# Code spans and file names are not prose ("quarterly-reviews.json" commits nobody).
+CODE_OR_FILE = re.compile(r"`[^`]*`|[\w./<>-]+\.(?:json|ics|md|py|ya?ml|csv|bundle|html|js|tf)\b")
+PROPER_NAMES = re.compile(r"\bQuarterly Reviews?\b|\bOngoing Certification Reports?\b|\bAnnual Security Reviews?\b")
+HISTORY_HEADING = re.compile(r"^(#+)\s.*\b(?:history|historical|changelog|change log|revision log)\b", re.I)
 DEC_RE = re.compile(r"\bDEC-\d{3}\b")
 LINK_RE = re.compile(r"\]\(([^)\s]+)\)")
 CODE_PATH_RE = re.compile(r"`((?:scripts|data|docs|infrastructure|tests|\.github|website)/[^`\s]+)`")
@@ -138,9 +167,57 @@ def _resolves(ref, doc_path, repo):
     return any((base / ref).exists() for base in (doc_path.parent, repo))
 
 
+def _sentences(text):
+    """(first line number, sentence) for prose outside sections headed as history."""
+    out, buf, start, skip = [], [], None, None
+    for n, line in enumerate(text.splitlines(), 1):
+        h = re.match(r"^(#+)\s", line)
+        if h:
+            level = len(h.group(1))
+            if skip is not None and level <= skip:
+                skip = None
+            if skip is None and HISTORY_HEADING.match(line):
+                skip = level
+        if skip is not None:
+            continue
+        for part in re.split(r"(?<=[.!?])\s+|^\s*$|^\s*[-*|]\s|^#+\s", line):
+            if part is None:
+                continue
+            if start is None:
+                start = n
+            buf.append(part)
+            joined = " ".join(buf).strip()
+            if re.search(r"[.!?]$", joined) or not line.strip() or line.lstrip().startswith(("-", "*", "|", "#")):
+                if joined:
+                    out.append((start, joined))
+                buf, start = [], None
+        if not line.strip():
+            if buf and " ".join(buf).strip():
+                out.append((start, " ".join(buf).strip()))
+            buf, start = [], None
+    if buf and " ".join(buf).strip():
+        out.append((start, " ".join(buf).strip()))
+    return out
+
+
+def manual_work(text):
+    """[(line, sentence)] for every sentence that commits a person to recurring
+    manual work (MANUAL_WORK), outside history sections and DEC-195's acts."""
+    found = []
+    for n, s in _sentences(text):
+        if MANUAL_OK.search(s):
+            continue
+        prose = PROPER_NAMES.sub("", CODE_OR_FILE.sub("", s))
+        if not (MANUAL_ACT.search(prose) or REVIEW_CADENCE_LINE.search(prose)) or not MANUAL_CADENCE.search(prose):
+            continue
+        if MANUAL_ACTOR.search(prose) or not MECHANISM.search(s) or REVIEW_CADENCE_LINE.search(prose):
+            found.append((n, s))
+    return found
+
+
 def text_problems(rid, text, doc_path, repo, decision_ids):
     """Every machine-check failure for one Markdown resource."""
-    out = []
+    out = [f"{rid}: line {n} commits a person to recurring manual work: {s[:90]!r}" for n, s in manual_work(text)]
     for n, line in enumerate(text.splitlines(), 1):
         refs = [r for r in LINK_RE.findall(line) if not re.match(r"[a-z]+:|#|/", r)]
         refs += CODE_PATH_RE.findall(line)

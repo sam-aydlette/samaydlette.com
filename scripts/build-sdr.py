@@ -57,6 +57,8 @@ import _freshness  # noqa: E402
 import _frr  # noqa: E402
 import _offering  # noqa: E402
 import _rules  # noqa: E402
+import _scheduled_review as _sched  # noqa: E402
+import _signers  # noqa: E402
 import _training  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -144,15 +146,32 @@ def runtime_bound(path, commit):
 #    PyPI packages: the VDR built from this inventory's Syft SBOM and Grype scans,
 #    bound to this inventory, its signature verified, inside its freshness window,
 #    with every Grype scan passing the detection gate;
-# 4 and 5. for KSI-CED-RAT only, the two training checks of scripts/_training.py:
-#    the latest completed packet covers what the system's data requires
-#    (currency), and the current packet was completed by its due date with a
-#    passing score and a steady score trend (completion and effectiveness). The
-#    trainee is simulated (counterparty `personnel`, DEC-194).
+# 4 onward. the KSI's own mechanisms, from KSI_METHODS below: for KSI-CED-RAT
+#    the two training checks of scripts/_training.py (the latest completed packet
+#    covers what the system's data requires; the current packet was completed by
+#    its due date with a passing score and a steady trend), and for the KSIs of
+#    scripts/_scheduled_review.py the scheduled review that verifies them (the
+#    nightly audit-log review, the Annual Security Review, the monthly recovery
+#    exercise), each counted only when its published record's signature verifies
+#    against its publisher and the record is current and passing. Every person
+#    in them is simulated (DEC-194).
 # A KSI with fewer than two is a shortfall unless an in-force `accepted`
 # decision record names it (resource "ksi::<KSI ID>").
 PACKAGE_TYPES = ("npm_package", "pypi_package")
 TRAINING_KSI = "KSI-CED-RAT"
+
+
+def _ksi_method_table():
+    table = {TRAINING_KSI: ["training-currency", "training-completion"]}
+    for key, ksis in _sched.KSI_METHODS.items():
+        for kid in ksis:
+            table.setdefault(kid, []).append(key)
+    return table
+
+
+# {KSI ID: [method key, ...]}: the mechanisms that count for a KSI beyond the
+# plan gate, the runtime re-validation and dependency scanning.
+KSI_METHODS = _ksi_method_table()
 REQUIRED_METHODS = 2
 VDR_PATH = ".well-known/vdr-report.json"
 COSIGN_ISSUER = "https://token.actions.githubusercontent.com"
@@ -229,6 +248,58 @@ def _ksi_count(catalog):
 
 NO_TRAINING = {"currency": (False, "not evaluated in this build"),
                "completion": (False, "not evaluated in this build"), "summary": None}
+NOT_EVALUATED = (False, "not evaluated in this build")
+
+
+def scheduled_methods(records, now, verifier=cosign_verify):
+    """{mechanism key: (ok, reason)} for the scheduled reviews' published records.
+    `records` is {key: (json path, bundle path)}; a record counts only when its
+    bundle verifies against the workflows that publish it (scripts/_signers.py)
+    and scripts/_scheduled_review.method_status passes it."""
+    out = {}
+    for key in _sched.KSI_METHODS:
+        if key not in records:
+            out[key] = NOT_EVALUATED
+            continue
+        path, bundle = records[key]
+        name = _sched.METHOD_FILES[key]
+        if not Path(path).is_file() or not Path(bundle).is_file():
+            out[key] = (False, f"{name} or its signature is not published")
+            continue
+        try:
+            ok = verifier(path, bundle, [_signers.IDENTITIES[w] for w in _signers.signers(name)])
+        except OSError as exc:
+            out[key] = (False, f"the signature of {name} could not be checked ({type(exc).__name__})")
+            continue
+        if not ok:
+            out[key] = (False, f"the signature of {name} does not verify against its publisher")
+            continue
+        try:
+            doc = json.loads(Path(path).read_text())
+        except (OSError, json.JSONDecodeError):
+            out[key] = (False, f"{name} is unreadable")
+            continue
+        out[key] = _sched.method_status(key, doc, now)
+    return out
+
+
+def _method_lines(key, result):
+    """The SDR validation line for one KSI mechanism, counted or not."""
+    ok, why = result
+    if key == "training-currency":
+        return ("Training currency check: the latest completed training packet covers every decision of "
+                "the last 12 months, every incident and exercise, and the current rule and KSI counts "
+                "(providerExtensions.training)." if ok else
+                f"Training currency check not counted for this build: {why}.")
+    if key == "training-completion":
+        return ("Training completion and effectiveness check: the current packet was completed by its due "
+                f"date with a score of at least {_training.PASS}, and the score trend holds; the trainee "
+                "is simulated (DEC-194)." if ok else
+                f"Training completion and effectiveness check not counted for this build: {why}.")
+    title = _sched.METHOD_TITLES[key]
+    where = f"{SITE}/.well-known/{_sched.METHOD_FILES[key]}"
+    return (f"{title}; its signed record is current and passing ({where})." if ok else
+            f"{title.split(' (')[0]} not counted for this build: {why}.")
 
 
 def vvk_acceptances(reg, now):
@@ -395,7 +466,7 @@ def ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok
 
 
 def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_by_rule,
-               dep_scan=(False, "not evaluated in this build"), training=None, accepted=None):
+               dep_scan=(False, "not evaluated in this build"), training=None, accepted=None, scheduled=None):
     statements = {i["id"]: i for f in catalog["KSI"].values() for i in f["indicators"]}
     sig = {k["id"]: k for k in signal.get("ksis", [])}
     missing = sorted(set(statements) - set(sig))
@@ -416,8 +487,10 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         pkgs = sorted(c for c in comps if types.get(c) in PACKAGE_TYPES)
         dep_ok = bool(pkgs) and dep_scan[0]
         training = training or NO_TRAINING
-        train = [training[m] for m in ("currency", "completion")] if kid == TRAINING_KSI else []
-        methods = int(plan_ok) + int(bool(rt)) + int(dep_ok) + sum(int(ok) for ok, _ in train)
+        results = {"training-currency": training["currency"], "training-completion": training["completion"],
+                   **{key: (scheduled or {}).get(key, NOT_EVALUATED) for key in _sched.KSI_METHODS}}
+        own = [(m, results[m]) for m in KSI_METHODS.get(kid, [])]
+        methods = int(plan_ok) + int(bool(rt)) + int(dep_ok) + sum(int(r[0]) for _, r in own)
         rules = rules_by_ksi.get(kid, [])
         nval, nfail = len(ev.get("validation_ids") or []), len(ev.get("failed_validation_ids") or [])
         impl, val = ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok)
@@ -428,16 +501,8 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
                        f"detection gate ({SITE}/.well-known/vdr-report.json).")
         elif pkgs:
             val.append(f"Dependency vulnerability scanning not counted for this build: {dep_scan[1]}.")
-        if kid == TRAINING_KSI:
-            cur, comp = train
-            val.append("Training currency check: the latest completed training packet covers every decision of "
-                       "the last 12 months, every incident and exercise, and the current rule and KSI counts "
-                       "(providerExtensions.training)." if cur[0] else
-                       f"Training currency check not counted for this build: {cur[1]}.")
-            val.append("Training completion and effectiveness check: the current packet was completed by its due "
-                       f"date with a score of at least {_training.PASS}, and the score trend holds; the trainee "
-                       "is simulated (DEC-194)." if comp[0] else
-                       f"Training completion and effectiveness check not counted for this build: {comp[1]}.")
+        for m, r in own:
+            val.append(_method_lines(m, r))
         val.append(f"Automated methods in place: {methods} (FRC-CSX-VVK requires {REQUIRED_METHODS} for Class C).")
         if methods < REQUIRED_METHODS and kid in accepted:
             val.append(f"Fewer than {REQUIRED_METHODS} automated methods is an accepted finding: {accepted[kid]}.")
@@ -707,7 +772,8 @@ def assessment_coverage(subject):
 
 def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, runtime, runtime_reason,
           assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None,
-          dep_scan=(False, "not evaluated in this build"), training=None, accepted=None, coverage=None):
+          dep_scan=(False, "not evaluated in this build"), training=None, accepted=None, coverage=None,
+          scheduled=None):
     ids = [r["frr_id"] for r in records["records"]] + sorted(
         i["id"] for f in catalog["KSI"].values() for i in f["indicators"])
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ids]
@@ -716,7 +782,7 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
 
     reqs = build_requirements(records, applicable, by_rule, evidence_ctx)
     ksis, ksi_st = build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, by_rule,
-                              dep_scan, training, accepted)
+                              dep_scan, training, accepted, scheduled)
     controls = build_controls(irs, catalog, ksi_st, applicable, records, moderate, policies)
     in_mod = [c for c in controls if c["providerExtensions"]["inModerateBaseline"]]
     beyond = [c for c in controls if not c["providerExtensions"]["inModerateBaseline"]]
@@ -760,6 +826,17 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
     return doc
 
 
+def _scheduled_args(values):
+    out = {}
+    for v in values:
+        key, _, path = v.partition("=")
+        if key not in _sched.KSI_METHODS or not path.endswith(".json"):
+            _fail(f"--scheduled-record {v!r}: expected KEY=<file>.json with KEY one of "
+                  f"{', '.join(sorted(_sched.KSI_METHODS))}")
+        out[key] = (path, path[:-5] + ".bundle")
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--catalog", default="schemas/ksi-catalog.json")
@@ -793,6 +870,10 @@ def main(argv=None):
     ap.add_argument("--incidents", default=str(INCIDENTS_PATH))
     ap.add_argument("--freshness", default=None)
     ap.add_argument("--require-two-methods", action="store_true")
+    # The scheduled reviews' published records (scripts/_scheduled_review.py),
+    # each KEY=JSON with its Sigstore bundle beside it (<stem>.bundle); each
+    # counts for its KSIs only when the bundle verifies and the record is current.
+    ap.add_argument("--scheduled-record", action="append", default=[], metavar="KEY=JSON")
     # The commit whose inventory the runtime signal must have re-validated (the
     # deploy's staged emitter run); runtime validations of any other count for nothing.
     ap.add_argument("--runtime-commit", default=None)
@@ -834,7 +915,7 @@ def main(argv=None):
                 dep_scan=dep_scan, accepted=vvk_acceptances(reg, now),
                 training=training_methods(prev, reg, json.loads(Path(a.incidents).read_text()),
                                           len(records["records"]), _ksi_count(catalog), now),
-                coverage=coverage)
+                coverage=coverage, scheduled=scheduled_methods(_scheduled_args(a.scheduled_record), now))
     _assessor.verify_output(doc, assessor_records)  # T74
     short = vvk_shortfalls(doc)
     for msg in short:

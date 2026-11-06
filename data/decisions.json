@@ -511,7 +511,7 @@
       "title": "Secrets Manager automatic rotation not configured",
       "disposition": "remediated",
       "status": "closed",
-      "justification": "Closed (2026-10-27, SCN-2026-006): the check no longer applies. The app's only Secrets Manager secret, the Anthropic API key, was removed with the interconnection (POAM-020) and is scheduled for deletion, so no secret remains and the CKV2_AWS_57 skip was removed from .checkov.yaml. Original record: Reclassified false positive (Task 3): CKV2_AWS_57 flags the absence of automatic rotation, but no control mandates that specific mechanism. The basic-auth secret it shared the finding with was removed under Task 3, leaving only the third-party Anthropic API key, which has no programmatic rotation source (AWS cannot mint a new upstream key), so a Secrets Manager rotation Lambda is infeasible by construction. SC-12 rotation is met by documented annual manual rotation, and rotation currency is verified automatically: the runtime KSI emitter reads the secret's LastChangedDate daily and fails an SC-12 validation if rotation lapses past the cadence (395-day grace). Because rotation is met and self-verifying, this is a false positive, not an accepted risk.",
+      "justification": "Closed (2026-10-27, SCN-2026-006): the check no longer applies. The app's only Secrets Manager secret, the Anthropic API key, was removed with the interconnection (POAM-020) and is scheduled for deletion, so no secret remains and the CKV2_AWS_57 skip was removed from .checkov.yaml. Original record: Reclassified false positive (Task 3): CKV2_AWS_57 flags the absence of automatic rotation, but no control mandates that specific mechanism. The basic-auth secret it shared the finding with was removed under Task 3, leaving only the third-party Anthropic API key, which has no programmatic rotation source (AWS cannot mint a new upstream key), so a Secrets Manager rotation Lambda is infeasible by construction. SC-12 is met by rotation on compromise: a secret with no programmatic rotation source is rotated when it is exposed or suspected exposed (docs/incident-response.md, containment step 3), not on a calendar, so no recurring manual rotation is committed (DEC-195). No such secret remains. Because no control mandates automatic rotation and rotation on compromise is the stated mechanism, this is a false positive, not an accepted risk.",
       "controls": [
         "sc-12",
         "sc-28"
@@ -532,7 +532,13 @@
         "detector": "Checkov",
         "identifier": "CKV2_AWS_57",
         "original_risk_rating": "low",
-        "risk_adjustment": false
+        "risk_adjustment": false,
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (DEC-195): POAM-019 restated as rotate-on-compromise",
+          "before": "SC-12 rotation is met by documented annual manual rotation, and rotation currency is verified automatically: the runtime KSI emitter reads the secret's LastChangedDate daily and fails an SC-12 validation if rotation lapses past the cadence (395-day grace). Because rotation is met and self-verifying, this is a false positive, not an accepted risk.",
+          "after": "SC-12 is met by rotation on compromise: a secret with no programmatic rotation source is rotated when it is exposed or suspected exposed (docs/incident-response.md, containment step 3), not on a calendar, so no recurring manual rotation is committed (DEC-195). No such secret remains. Because no control mandates automatic rotation and rotation on compromise is the stated mechanism, this is a false positive, not an accepted risk."
+        }
       }
     },
     {
@@ -916,7 +922,7 @@
       "title": "CloudTrail trail has no CloudWatch Logs integration or SNS delivery notifications",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "The CloudTrail management trail (SCN-2026-003) delivers to S3 only: Checkov CKV2_AWS_10 / tfsec AVD-AWS-0162 flag the missing CloudWatch Logs integration and CKV_AWS_252 the missing SNS delivery topic, both inline-skipped in infrastructure/cloudtrail.tf. CloudWatch Logs integration duplicates every management event into paid log-group storage to enable real-time metric filters that this single-operator system replaces with the quarterly audit-log review (KSI-MLA-RVL); per-delivery SNS notifications have no consumer. Residual risk: no real-time alerting on control-plane events — accepted at this scale, revisited if the operating model gains a second principal or an incident shows the review cadence was too slow. Compensating: log-file validation on the trail; the delivery bucket is TLS-only, versioned, public-access-blocked, lifecycle-tiered (AU-11).",
+      "justification": "The CloudTrail management trail (SCN-2026-003) delivers to S3 only: Checkov CKV2_AWS_10 / tfsec AVD-AWS-0162 flag the missing CloudWatch Logs integration and CKV_AWS_252 the missing SNS delivery topic, both inline-skipped in infrastructure/cloudtrail.tf. CloudWatch Logs integration duplicates every management event into paid log-group storage to enable real-time metric filters that this system replaces with the automated audit-log review every night (scripts/audit-log-review.py, KSI-MLA-RVL), which reads CloudTrail's event history and flags any write by a principal that is not a CI role; per-delivery SNS notifications have no consumer. Residual risk: no real-time alerting on control-plane events, only a nightly one — accepted at this scale, revisited if the operating model gains a second principal or an incident shows the nightly cadence was too slow. Compensating: log-file validation on the trail; the delivery bucket is TLS-only, versioned, public-access-blocked, lifecycle-tiered (AU-11).",
       "controls": [
         "au-6",
         "si-4"
@@ -939,7 +945,13 @@
         "detector": "Checkov, tfsec",
         "identifier": "CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162",
         "original_risk_rating": "low",
-        "risk_adjustment": false
+        "risk_adjustment": false,
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (DEC-195)",
+          "before": "CloudWatch Logs integration duplicates every management event into paid log-group storage to enable real-time metric filters that this single-operator system replaces with the quarterly audit-log review (KSI-MLA-RVL); per-delivery SNS notifications have no consumer. Residual risk: no real-time alerting on control-plane events — accepted at this scale, revisited if the operating model gains a second principal or an incident shows the review cadence was too slow.",
+          "after": "CloudWatch Logs integration duplicates every management event into paid log-group storage to enable real-time metric filters that this system replaces with the automated audit-log review every night (scripts/audit-log-review.py, KSI-MLA-RVL), which reads CloudTrail's event history and flags any write by a principal that is not a CI role; per-delivery SNS notifications have no consumer. Residual risk: no real-time alerting on control-plane events, only a nightly one — accepted at this scale, revisited if the operating model gains a second principal or an incident shows the nightly cadence was too slow."
+        }
       },
       "confirmed_on": "2026-07-09"
     },
@@ -1549,7 +1561,7 @@
       "title": "Public sharing of the certification package: disclosure standard and determination of no likely adverse effect",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Reviewed annually and when a new kind of artifact is published.",
+      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Re-checked by machine on every publish (the redaction gate, scripts/check-published-redaction.py); a new kind of artifact is added to the publishers' lists in a reviewed pull request, which revisits this determination.",
       "controls": [
         "ac-22"
       ],
@@ -1562,7 +1574,13 @@
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
       "source": {
-        "drafted_by": "AI-drafted (Claude)"
+        "drafted_by": "AI-drafted (Claude)",
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (DEC-195)",
+          "before": "Reviewed annually and when a new kind of artifact is published.",
+          "after": "Re-checked by machine on every publish (the redaction gate, scripts/check-published-redaction.py); a new kind of artifact is added to the publishers' lists in a reviewed pull request, which revisits this determination."
+        }
       },
       "confirmed_on": "2026-11-06"
     },
@@ -1597,7 +1615,7 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "justification": "Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
+      "justification": "Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Revisited when its review_by date lapses (DEC-195); a changed check or a new resource type is re-decided in its pull request.",
       "controls": [
         "ra-3",
         "ra-5"
@@ -1610,7 +1628,13 @@
         ]
       },
       "source": {
-        "drafted_by": "AI-drafted (Claude)"
+        "drafted_by": "AI-drafted (Claude)",
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (DEC-195)",
+          "before": "Reviewed with the register; a changed check or a new resource type is re-decided.",
+          "after": "Revisited when its review_by date lapses (DEC-195); a changed check or a new resource type is re-decided in its pull request."
+        }
       },
       "confirmed_on": "2026-11-06"
     },
@@ -1811,6 +1835,33 @@
       "confirmed_on": "2026-11-06",
       "source": {
         "detector": "Operator direction, 2026-11-06",
+        "drafted_by": "AI-drafted (Claude)"
+      }
+    },
+    {
+      "id": "DEC-195",
+      "title": "Three recurring human acts remain; every other recurring review is a mechanism",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator holds no recurring review by hand. Three recurring acts remain his, and only these: (1) the independent boundary corroboration, run by the operator at least every 30 days with read-only credentials (tools/boundary-map/corroborate.py; the trust center asks for attention when its report is older than 30 days); (2) acting on a decision record when its review_by date lapses (the trust center lists it, the gate that reads a lapsed finding or gate-mode decision fails, and the Annual Security Review fails while one is lapsed); (3) approving deploys in the production environment, which keeps the 30-day freshness windows of the deploy-built artifacts current. Every other review a policy, plan, procedure, KSI or rule record used to ask a person for runs as a mechanism on its own calendar, with a plainly simulated participant where a person is needed (DEC-194): the audit-log review every night (scripts/audit-log-review.py, KSI-MLA-RVL and KSI-CMT-RVP), the recovery exercise every month with a tabletop each November (scripts/hold-recovery-exercise.py, KSI-RPL-TRC), the Annual Security Review with the rules-of-behavior acknowledgement (scripts/hold-security-review.py, KSI-PIY-RIS, KSI-PIY-RES, KSI-SVC-EIS, KSI-INR-RPI, PL-4), the Quarterly Review (scripts/hold-quarterly-review.py), training (scripts/_training.py) and the verification of every policy and procedure (scripts/check-non-machine-vv.py). scripts/check-scheduled-review.py fails the run from the day after a due date with nothing published. A document, decision, rule record or control statement that commits a person to any other recurring review fails the machine checks (scripts/_nonmachine.py, tests/test_no_manual_work.py). A secret with no programmatic rotation source is rotated on compromise, not on a calendar (DEC-019).",
+      "controls": [
+        "au-6",
+        "ca-7",
+        "cp-4",
+        "pl-4",
+        "pm-14"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-06",
+      "review_by": "2027-11-06",
+      "confirmed_on": "2026-11-06",
+      "source": {
+        "detector": "Operator direction, 2026-11-06 (no recurring manual work)",
         "drafted_by": "AI-drafted (Claude)"
       }
     }

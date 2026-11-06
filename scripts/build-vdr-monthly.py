@@ -11,8 +11,10 @@ including persistent verification and validation.
 Writes vdr-monthly.json and vdr-monthly.md for the calendar month to date (UTC).
 Every build adds the runs it can see to the month: the scans and feeds the VDR
 build read, the runtime verification runs, the nightly non-machine
-verification, and the activities the operator recorded outside the pipeline
-(data/vdr-activities.json). The previous published vdr-monthly.json carries the
+verification, the activities generated from the run records of the
+mechanisms that replace people (the simulated assessor's runs, the incident,
+inbox and recovery exercises and the audit-log review's planted intruder:
+generated_runs), and the historical entries kept in data/vdr-activities.json. The previous published vdr-monthly.json carries the
 month's earlier runs forward; when the month turns, the finished month moves to
 `previousMonths` (kept for twelve months) and a new month starts. Each activity
 type is listed every time, with "none this period" when nothing happened.
@@ -73,6 +75,9 @@ ACTIVITY_TYPES = [
     {"type": "bug-bounty", "title": "Bug bounty program", "feeds": set(), "recorded": {"bug-bounty"}},
     {"type": "pentest", "title": "Penetration testing", "feeds": set(), "recorded": {"penetration-test"}},
     {"type": "assessment", "title": "Assessments", "feeds": set(), "recorded": {"assessment"}},
+    {"type": "exercise", "title": "Exercises with simulated participants: incident response, the FedRAMP Security "
+                                 "Inbox, recovery, and the audit-log review's planted intruder",
+     "feeds": set(), "recorded": set()},
 ]
 TYPES = {t["type"] for t in ACTIVITY_TYPES}
 FEED_TYPE = {f: t["type"] for t in ACTIVITY_TYPES for f in t["feeds"]}
@@ -213,6 +218,32 @@ def recorded_runs(acts):
             for a in acts["activities"]]
 
 
+def generated_runs(incidents=None, assessment=None, inbox=None, recovery=None, audit=None):
+    """Activities taken from the run records of the automated mechanisms, never
+    typed in by a person (VER-RPT-HLO): every input is optional, and one not
+    given adds nothing."""
+    out = []
+    for i in (incidents or {}).get("incidents") or []:
+        if i.get("exercise") and i.get("detected_at"):
+            out.append({"type": "exercise", "source": f"{i['id']}: incident exercise (simulated)",
+                        "at": i["detected_at"], "status": "ok", "count": None})
+    if isinstance(assessment, dict) and assessment.get("issued_at"):
+        who = (assessment.get("assessor") or {}).get("name") or "the simulated assessor"
+        out.append({"type": "assessment", "source": f"{who}: simulated assessment run", "at": assessment["issued_at"],
+                    "status": "ok", "count": len(assessment.get("records") or [])})
+    if isinstance(inbox, dict) and inbox.get("emitted_at"):
+        out.append({"type": "exercise", "source": "FedRAMP Security Inbox exercise (simulated sender)",
+                    "at": inbox["emitted_at"], "status": "ok", "count": len(inbox.get("cases") or [])})
+    for r in (recovery or {}).get("reviews") or []:
+        out.append({"type": "exercise", "source": f"recovery exercise due {r.get('dueDate')}", "at": r.get("heldAt"),
+                    "status": "ok" if r.get("result") == "pass" else "failed", "count": None})
+    if isinstance(audit, dict) and audit.get("generated_at"):
+        caught = (audit.get("exercise") or {}).get("caught")
+        out.append({"type": "exercise", "source": "audit-log review: planted simulated intruder",
+                    "at": audit["generated_at"], "status": "ok" if caught else "failed", "count": None})
+    return [r for r in out if r["at"]]
+
+
 def _key(r):
     return (r["type"], r["source"], r["at"])
 
@@ -242,13 +273,13 @@ def overview(runs, programs):
     return rows
 
 
-def build(vdr, mrh, register, acts, nmv, retained, previous, now):
+def build(vdr, mrh, register, acts, nmv, retained, previous, now, generated=()):
     if not isinstance(vdr, dict) or not isinstance(vdr.get("findings"), list):
         _fail("vdr-report.json has no findings list")
     lo, hi = _month_bounds(now)
     month = lo.strftime("%Y-%m")
     rt_runs, rt_basis = runtime_runs(vdr, retained)
-    seen = pipeline_runs(vdr) + rt_runs + non_machine_runs(nmv) + recorded_runs(acts)
+    seen = pipeline_runs(vdr) + rt_runs + non_machine_runs(nmv) + recorded_runs(acts) + list(generated)
     archive = []
     carried = []
     if isinstance(previous, dict):
@@ -336,15 +367,26 @@ def main(argv=None):
     ap.add_argument("--non-machine", default="vdr-non-machine-vv.json")
     ap.add_argument("--runtime-runs", default=None)
     ap.add_argument("--previous", default=None)
+    ap.add_argument("--incidents", default=None, help="data/incidents.json: its exercises are activities")
+    ap.add_argument("--assessment", default=None, help="the verified simulated-assessment.json")
+    ap.add_argument("--inbox", default=None, help="the verified fedramp-inbox-simulation.json")
+    ap.add_argument("--recovery-exercises", default=None, help="vdr-recovery-exercises.json")
+    ap.add_argument("--audit-log-review", default=None, help="vdr-audit-log-review.json")
     ap.add_argument("--out-dir", default=".")
     ap.add_argument("--now", default=None, help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     now = datetime.fromisoformat(a.now) if a.now else datetime.now(timezone.utc)
+
+    def opt(path, what):
+        return _read(path, what) if path and Path(path).is_file() else None
+    generated = generated_runs(opt(a.incidents, "incident register"), opt(a.assessment, "simulated assessment"),
+                               opt(a.inbox, "inbox simulation"), opt(a.recovery_exercises, "recovery exercises"),
+                               opt(a.audit_log_review, "audit-log review"))
     doc = build(_read(a.vdr, "VDR report"), _read(a.history, "VDR history"), _decisions.load(a.decisions),
                 validate_activities(_read(a.activities, "activity record"), a.activities),
                 _read(a.non_machine, "non-machine status"),
                 _read(a.runtime_runs, "runtime runs") if a.runtime_runs else None,
-                _read(a.previous, "previous monthly report") if a.previous else None, now)
+                _read(a.previous, "previous monthly report") if a.previous else None, now, generated)
     doc = _offering.stamp_fedramp_id(doc)  # CDS-CSO-FID
     out = Path(a.out_dir)
     (out / JSON_OUT).write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")

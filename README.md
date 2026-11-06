@@ -122,13 +122,13 @@ The repository ships a documentation set that closes 27 KSI indicators with rati
 | [`docs/architecture-decisions.md`](docs/architecture-decisions.md) | KSI-CMT-RVP, KSI-CNA-RNT/ULN/RVP/OFA, KSI-IAM-JIT, KSI-MLA-OSM/RVL/ALA, KSI-PIY-RSD, KSI-SVC-EIS/ASM/PRR/VCM | ADR-style records of architectural decisions per KSI |
 | [`docs/incident-response.md`](docs/incident-response.md) | KSI-INR-RIR, KSI-INR-RPI, KSI-INR-AAR | IR runbook with detection sources, triage, after-action template |
 | [`docs/recovery-plan.md`](docs/recovery-plan.md) | KSI-RPL-RRO, KSI-RPL-ARP, KSI-RPL-ABO, KSI-RPL-TRC | RTO 21 days / RPO 24 hours, recovery procedure, tabletop log |
-| [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-RIS | Annual security review template + first entry |
+| [`docs/security-review.md`](docs/security-review.md) | KSI-PIY-RIS | How the Annual Security Review is generated (`scripts/hold-security-review.py`), and its history |
 | [`docs/supply-chain.md`](docs/supply-chain.md) | KSI-SCR-MIT, KSI-SCR-MON | SCRM with Dependabot config in `.github/dependabot.yml` |
 | [`docs/training-log.md`](docs/training-log.md) | KSI-CED-RAT | Self-attested training log |
 | [`data/decisions.json`](data/decisions.json) | (cross-cutting — meta) | The decision register: every decision about a finding (false positive, accepted risk, operational requirement, remediation history), with who decided, when, and the review date. Replaced the POA&M under CR26 |
 | [`data/frr-records.json`](data/frr-records.json) | SDR-CSO-FRR | One record per FedRAMP rule applicable to 20x Class C: status, implementation, evidence, and the gap and closing work when not implemented. Validated by `scripts/_frr.py`, which refuses a claim of "Implemented" without evidence that resolves |
 | [`docs/policies/`](docs/policies/) | NIST 800-53 Rev 5 *-1 controls (AC-1, AT-1, ... SR-1, PT-1) | Per-family policy and procedures docs, plus the FedRAMP 20x Secure Configuration Guide. Each file integrates the relevant 20x rules (SCN, VDR, MAS, SCG, CCM, ICP, FSI, UCM) and cites AWS authorization package AGENCYAMAZONEW for inherited families |
-| [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, annual review) |
+| [`docs/continuous-monitoring-plan.md`](docs/continuous-monitoring-plan.md) | CA-7, KSI-MLA, FedRAMP 20x CCM | Continuous Monitoring strategy and mechanisms (deploy-time gate, runtime emitter, VDR aggregator, generated Annual Security Review) |
 | [`docs/privacy-threshold-analysis.md`](docs/privacy-threshold-analysis.md) | PT-1 (negative determination) | PTA: no PII processed; full PIA not required |
 | [`docs/rules-of-behavior.md`](docs/rules-of-behavior.md) | PL-4 | Sole-operator acceptable-use commitments |
 | [`website/.well-known/security.txt`](website/.well-known/security.txt) | KSI-PIY-RVD | RFC 9116 vulnerability disclosure |

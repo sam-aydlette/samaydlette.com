@@ -312,7 +312,7 @@
       "id": "NMR-REC-SECURITY-REVIEW",
       "path": "docs/security-review.md",
       "kind": "record",
-      "title": "Annual security review",
+      "title": "Annual Security Review: how it is generated (scripts/hold-security-review.py), and its history",
       "owner": "Sam Aydlette (operator)",
       "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
     }

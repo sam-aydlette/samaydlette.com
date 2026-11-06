@@ -1,0 +1,8 @@
+[
+ {"$comment": "Known-bad: a role that is not one of the CI roles changes a bucket policy (a process finding, not reportable).",
+  "EventName": "PutBucketPolicy", "EventSource": "s3.amazonaws.com", "EventTime": "2026-11-06T04:00:00Z", "region": "us-east-2",
+  "userIdentity": {"type": "AssumedRole", "sessionContext": {"sessionIssuer": {"userName": "somebody-elses-role"}}}},
+ {"$comment": "Known-bad: an IAM user creates a long-lived access key (evaluated as a possible reportable incident).",
+  "EventName": "CreateAccessKey", "EventSource": "iam.amazonaws.com", "EventTime": "2026-11-06T04:01:00Z", "region": "us-east-1",
+  "userIdentity": {"type": "IAMUser", "userName": "a-real-looking-user"}}
+]

@@ -56,6 +56,10 @@ locals {
     ".well-known/quarterly-reviews.view.md",
     ".well-known/quarterly-reviews.bundle",
     ".well-known/quarterly-review-*",
+    ".well-known/security-reviews.json",
+    ".well-known/security-reviews.view.md",
+    ".well-known/security-reviews.bundle",
+    ".well-known/security-review-*",
     ".well-known/snapshot-*",
     ".well-known/snapshots/*",
   ]

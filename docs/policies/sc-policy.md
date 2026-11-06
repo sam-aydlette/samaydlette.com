@@ -14,4 +14,4 @@ Several SC controls are inherited from AWS East/West Moderate FedRAMP authorizat
 
 **20x rule integration.** Using Cryptographic Modules (`UCM-*`) — covered by AWS KMS/ACM and Sigstore. Communication integrity (KSI-SVC-VCM).
 
-**Review cadence.** Annually with the [security review](../security-review.md); after any Transformative change to the TLS or signing posture.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; a Transformative change (SCN) to the TLS or signing posture revisits it in the same pull request.

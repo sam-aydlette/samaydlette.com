@@ -8,6 +8,6 @@ Operator access uses GitHub branch protection on `main` plus AWS IAM with fixed-
 
 **20x rule integration.** SCG-CSO-RSC and SCG-CSO-AUP are satisfied by the [Secure Configuration Guide](secure-configuration-guide.md). This family is the operator-side complement to KSI-IAM (Identity and Access Management).
 
-Operator behavior (PL-4 Rules of Behavior) is documented in [`docs/rules-of-behavior.md`](../rules-of-behavior.md), which the operator acknowledges annually as part of the security review.
+Operator behavior (PL-4 Rules of Behavior) is documented in [`docs/rules-of-behavior.md`](../rules-of-behavior.md), whose acknowledgement is recorded by machine with each Annual Security Review and whenever the document changes (`scripts/hold-security-review.py`; the acknowledging person is simulated, DEC-194).
 
-**Review cadence.** Annually with the [security review](../security-review.md).
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

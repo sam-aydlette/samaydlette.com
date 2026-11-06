@@ -22,9 +22,9 @@ Five mechanisms operate concurrently:
 
 **4. Evidence freshness alerting (hourly).** Published reporting must be under 24 hours old, and an alert that only lands in a GitHub notifications tab is not an alert: from 2026-09-09 to 2026-09-24 the nightly VDR refresh failed every night without reaching the operator. The evidence SLA watchdog ([`infrastructure/watchdog.tf`](../infrastructure/watchdog.tf)) runs hourly on AWS's clock, reads every artifact listed in the governed freshness configuration ([`infrastructure/schemas/freshness-config.json`](../infrastructure/schemas/freshness-config.json): the VDR, the runtime signal, the nightly's status beacon `vdr-status.json` and every other signed output under `/.well-known/`) from the site bucket, and publishes the VDR's and runtime signal's ages, the nightly's last result and the number of artifacts past their window as CloudWatch metrics. Four alarms page the operator by email through a CMK-encrypted SNS topic, with a recovery email when each clears: the VDR older than its window (24 hours), the runtime signal older than its window (26 hours), the nightly failed or silent for 26 hours, and any listed artifact past its governed window (24 hours for nightly evidence, 26 for the runtime signal and beacon, 30 days for deploy-generated artifacts and the operator-run corroboration). Missing data counts as a breach, so a dead watchdog pages too. The nightly runs twice a day, which keeps the VDR well inside the 24-hour policy so the alarm fires on real misses, not on GitHub's late crons. Response: [`docs/runbooks/evidence-sla-alarm.md`](runbooks/evidence-sla-alarm.md). Frequency: hourly.
 
-**5. Annual structural review.** Documented in [`docs/security-review.md`](security-review.md). The review re-examines (a) cost/benefit of risk-accepted items, (b) whether the threat model still holds, (c) whether the conscious trade-offs in the README still apply. Frequency: annual, plus after any Transformative significant change per SCN.
+**5. Annual Security Review (generated).** `scripts/hold-security-review.py`, run by `package-maintenance.yml` on its due date, re-checks every document, the component types against the threat model, decisions, findings, incident patterns and the recurring cost of every billable line, with a simulated reviewer's sign-off (DEC-194), and publishes `/.well-known/security-review-<date>.json`; `scripts/check-scheduled-review.py` fails the run when one is overdue. A Transformative significant change (SCN) revisits the threat model and trade-offs in its own pull request. Detail: [`docs/security-review.md`](security-review.md).
 
-**6. Independent corroboration (operator-run, at least every 30 days).** [`tools/boundary-map/corroborate.py`](../tools/boundary-map/corroborate.py) checks the published evidence against sources the pipeline does not control: RAMPART on TAP (The Analogy Platform) reading AWS and GitHub with read-only credentials, and FedRAMP's rules read directly. It compares the boundary map with the live account, re-verifies every published signature with an independent Sigstore verifier, matches each signing run to GitHub's record of it, compares the configuration the artifacts claim with what AWS reports, checks the runtime signing key in KMS against its published and pinned copies, compares open Dependabot alerts with the VDR, and checks the claimed KSIs against FedRAMP's current catalog. A section that could not be checked is reported as such, never as agreement. The signed report is published at `/.well-known/boundary-corroboration.json`; the trust center shows each section and asks for attention on any difference, any unchecked section, or a report older than 30 days. Detail: [`tools/boundary-map/README.md`](../tools/boundary-map/README.md). Frequency: at least every 30 days.
+**6. Independent corroboration (operator-run, at least every 30 days; one of the three recurring human acts of DEC-195).** [`tools/boundary-map/corroborate.py`](../tools/boundary-map/corroborate.py) checks the published evidence against sources the pipeline does not control: RAMPART on TAP (The Analogy Platform) reading AWS and GitHub with read-only credentials, and FedRAMP's rules read directly. It compares the boundary map with the live account, re-verifies every published signature with an independent Sigstore verifier, matches each signing run to GitHub's record of it, compares the configuration the artifacts claim with what AWS reports, checks the runtime signing key in KMS against its published and pinned copies, compares open Dependabot alerts with the VDR, and checks the claimed KSIs against FedRAMP's current catalog. A section that could not be checked is reported as such, never as agreement. The signed report is published at `/.well-known/boundary-corroboration.json`; the trust center shows each section and asks for attention on any difference, any unchecked section, or a report older than 30 days. Detail: [`tools/boundary-map/README.md`](../tools/boundary-map/README.md). Frequency: at least every 30 days.
 
 ## Reporting
 
@@ -37,7 +37,7 @@ These artifacts are published continuously at `/.well-known/`:
 - `certification-package-overview.json` — the CR26 Certification Package Overview, Sigstore-signed; per-deploy emission
 - `vdr-report.json` — the FedRAMP 20x VDR report; per-deploy emission
 - `vdr-report.md` — human-readable VDR rendering (VER-TFR-MHR)
-- `ongoing-certification-report.json` / `.md` — the quarterly Ongoing Certification Report (CCM-OCR-AVL), Sigstore-signed; carries the eight required summaries plus the target dates for the next report (CCM-OCR-NRD) and next quarterly review (CCM-QTR-NRD)
+- `ongoing-certification-report.json` / `.md` — the quarterly Ongoing Certification Report (CCM-OCR-AVL), Sigstore-signed; carries the eight required summaries plus the target dates for the next report (CCM-OCR-NRD) and next Quarterly Review (CCM-QTR-NRD)
 
 All artifacts carry FedRAMP-namespaced provenance (deploy chain identity, system-id, ownership block). The deploy-time signal is signed via Sigstore keyless with verification anchored in the public Rekor transparency log; an external consumer can verify integrity via `cosign verify-blob` without trusting this site.
 
@@ -82,19 +82,22 @@ The compensating controls that stand in for a second human are **automated and n
 
 Together these provide *machine* independence in place of *human* independence: the operator can author changes but cannot unilaterally push an unreviewed, noncompliant, or tampered state to production without the automation refusing. This bounds the sole-operator risk; it does not eliminate the structural single-person constraint, which is recorded here as a residual.
 
-## Effectiveness review
+## Effectiveness checks
 
-Quarterly review of the runtime KSI signal against the deploy-time signal: are they reconciling? Are any drift events recorded? Are any findings persisting past their Class C SLAs?
+Automated; nobody reviews the signals by hand (DEC-195 lists the only recurring human acts):
 
-Annual structural review per [`docs/security-review.md`](security-review.md).
+- The evidence nightly checks the runtime KSI signal against the deploy-time inventory on every run (`scripts/reconcile.py`, invariant (n)) and fails on a gap; the runtime emitter's validations record drift.
+- A finding past its Class C deadline is blocked by the VDR's deadline gate (`scripts/build-vdr-report.py`).
+- The audit-log review (`scripts/audit-log-review.py`) runs every night, and the recovery exercise (`scripts/hold-recovery-exercise.py`) every month, with an annual simulated tabletop.
+- The Annual Security Review is generated per [`docs/security-review.md`](security-review.md).
 
 ## Reference: 20x rules and NIST controls satisfied
 
-- FedRAMP 20x Collaborative Continuous Monitoring (CCM-OCR-* and CCM-QTR-* rules) — the quarterly Ongoing Certification Report (`CCM-OCR-AVL`) and the next-report/next-review dates (`CCM-OCR-NRD` / `CCM-QTR-NRD`) are produced and published; mechanisms 1-4 feed it. The synchronous Quarterly Review (`CCM-QTR-MTG`), feedback channel (`CCM-OCR-FBM`), and feedback summary (`CCM-OCR-AFS`) are **N/A** absent a consuming agency (see scope note above)
+- FedRAMP 20x Collaborative Continuous Monitoring (CCM-OCR-* and CCM-QTR-* rules) — the Ongoing Certification Report (`CCM-OCR-AVL`) and the dates of the next report and the next Quarterly Review (`CCM-OCR-NRD` / `CCM-QTR-NRD`) are produced and published; mechanisms 1-4 feed it. The Quarterly Review (`CCM-QTR-MTG`), feedback channel (`CCM-OCR-FBM`), and feedback summary (`CCM-OCR-AFS`) are held and built by `package-maintenance.yml` with simulated parties (DEC-194)
 - FedRAMP 20x Vulnerability Detection and Response (VDR-* rules) — covered by mechanism 2
 - FedRAMP 20x Significant Change Notifications (SCN-* rules) — covered by SCN PR tag
 - KSI-MLA family (Monitoring, Logging, Auditing) — covered across all mechanisms
-- KSI-SVC-EIS (Continuous Improvement) — covered by drift detection + annual review
+- KSI-SVC-EIS (Continuous Improvement) — covered by drift detection and the generated Annual Security Review (`scripts/hold-security-review.py`)
 - NIST CA-7 (Continuous Monitoring) — primary control implemented by this plan
 - NIST CA-7.4 (Risk Monitoring) — covered by VDR cadence
 - NIST CM-3 (Configuration Change Control) — covered by SCN

@@ -41,6 +41,10 @@ REPORTS = (
     "vdr-history.json",
     "vdr-monthly.json",
     "vdr-non-machine-vv.json",
+    # The nightly's scheduled reviews (DEC-195): the audit-log review and the
+    # recovery exercises' index (the evidence nightly runs this gate over them).
+    "vdr-audit-log-review.json",
+    "vdr-recovery-exercises.json",
     # The canonical inventory (the runtime emitter copies the ID from it).
     "ksi-signal.json",
     # Certification cycle: the FedRAMP Certification Reports index and
@@ -91,6 +95,8 @@ EXEMPT = {
                        "and the frozen reports before publishing.",
     "quarterly-reviews.json": "Written by package-maintenance.yml (scripts/hold-quarterly-review.py), which runs this "
                               "gate over it and each new quarterly-review-<date>.json before publishing.",
+    "security-reviews.json": "Written by package-maintenance.yml (scripts/hold-security-review.py), which runs this "
+                             "gate over it and each new security-review-<date>.json before publishing.",
     "boundary-corroboration.json": "The independent corroboration (RAMPART on TAP), committed by the operator and "
                                    "published exactly as the corroborating tool wrote it; stamping it would alter "
                                    "another party's record. The boundary map it corroborates carries the ID.",

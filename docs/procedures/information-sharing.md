@@ -18,6 +18,6 @@ This standard says what certification data is published, what is never published
 - the API Gateway endpoint host and the CloudFront domain: both are already discoverable through DNS and every page load;
 - component configuration, scanner findings with their dispositions, and vulnerability reports: they show how the system is built and how each finding was decided, which an authorizing official cannot judge without.
 
-**Determination.** The operator has determined that sharing the package publicly in this form is not likely to have an adverse effect on the offering, because it carries none of the items listed above and the items published on purpose give no access on their own. The determination is reviewed annually, and whenever a new kind of artifact is published.
+**Determination.** The operator has determined that sharing the package publicly in this form is not likely to have an adverse effect on the offering, because it carries none of the items listed above and the items published on purpose give no access on their own. The determination is re-checked by machine: the redaction gate (`scripts/check-published-redaction.py`) screens every published file on every publish, and a new kind of artifact is a pull request that adds it to the publishers' lists, where this determination is revisited.
 
-**Review cadence.** Annually with the [security review](../security-review.md).
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

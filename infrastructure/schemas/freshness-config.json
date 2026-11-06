@@ -284,6 +284,42 @@
       "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD). Only package-maintenance.yml writes it, on its daily schedule and when every deploy calls it (job package-maintainer); cadence 'nightly', the scheduled unattended run, because the maintainer is what writes it. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
     },
     {
+      "path": ".well-known/vdr-audit-log-review.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-audit-log-review.bundle",
+      "note": "The automated audit-log review (KSI-MLA-RVL, KSI-CMT-RVP; DEC-195): CloudTrail write events and GitHub's record of main since the previous review, judged by rule, with a planted simulated intruder caught every run (scripts/audit-log-review.py). Written by evidence-nightly.yml, its only writer, twice a day; 26 hours means nightly runs have been missed."
+    },
+    {
+      "path": ".well-known/vdr-recovery-exercises.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-recovery-exercises.bundle",
+      "note": "Index of the monthly recovery exercises (KSI-RPL-TRC; DEC-195), rewritten on every evidence nightly run (scripts/hold-recovery-exercise.py), its only writer. Each exercise (vdr-recovery-exercise-<date>.*) is immutable and listed with its sha256, so it carries no window; the nightly and the deploy fail from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/security-reviews.json",
+      "cadence": "nightly",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/security-reviews.bundle",
+      "note": "Index of the Annual Security Reviews (KSI-PIY-RIS/RES, KSI-SVC-EIS, KSI-INR-RPI; DEC-195) and the rules-of-behavior acknowledgements (PL-4), rewritten daily by package-maintenance.yml (its only writer, so cadence 'nightly', the scheduled unattended run), with the same 14-day window as the package it maintains. Each review (security-review-<date>.*) is immutable and listed with its sha256. The deploy and the evidence nightly fail from the day after a due date with no review in it (scripts/check-scheduled-review.py)."
+    },
+    {
       "path": ".well-known/quarterly-reviews.json",
       "cadence": "nightly",
       "max_age_hours": 336,

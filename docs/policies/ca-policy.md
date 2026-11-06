@@ -10,4 +10,4 @@ There is no formal authorization process or independent assessor in scope for th
 
 The consolidated continuous-monitoring strategy (mechanisms, cadences, reporting, role mapping, NIST control coverage) is documented in [`docs/continuous-monitoring-plan.md`](../continuous-monitoring-plan.md), the document that backs CA-7 specifically.
 
-**Review cadence.** Continuous (automated); annual structural review.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.
