@@ -1,0 +1,6 @@
+{
+  "$comment": "KNOWN-BAD: a published contact that is a personal-looking mailbox, not an address at the site's own domain. The publication redaction gate must fail on it (scripts/_redact.py find_foreign_emails). The address is the reserved example domain, not a real one.",
+  "ownership": {"operator_contact": "someone@example.com"},
+  "security_contact": "security@samaydlette.com",
+  "dependency": "pkg:npm/left-pad@1.3.0-beta.alpha"
+}
