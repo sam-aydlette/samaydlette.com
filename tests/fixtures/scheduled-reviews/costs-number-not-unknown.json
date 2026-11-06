@@ -1,0 +1,4 @@
+{"$comment": "Known-bad: a line with no figure that does not say 'unknown'.",
+ "schema": "recurring-costs/1", "status": "AI-drafted estimate; operator to correct",
+ "lines": [{"id": "COST-VAGUE", "item": "Something that bills", "source": "external:a vendor",
+            "estimate_usd_per_year": null, "estimate": "cheap", "basis": "a feeling"}]}

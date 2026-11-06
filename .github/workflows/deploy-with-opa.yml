@@ -1999,6 +1999,23 @@ jobs:
         # Append-only (version, KSI metric and training history): a 404 starts
         # it; any other failure stops the deploy instead of resetting it.
         python3 ../scripts/fetch-published-history.py security-decision-record.json previous-sdr.json
+        # The scheduled reviews' published records (scripts/_scheduled_review.py):
+        # each counts as a method for its KSIs only when build-sdr.py verifies its
+        # signature against its publisher and finds it current and passing. One
+        # not published yet is not counted; it never stands in for another method.
+        mkdir -p scheduled
+        SCHED=""
+        for k in audit-log-review:vdr-audit-log-review recovery-exercise:vdr-recovery-exercises \
+                 security-review:security-reviews; do
+          f="${k#*:}"
+          if curl -sfL -o "scheduled/$f.json" "https://samaydlette.com/.well-known/$f.json" \
+             && curl -sfL -o "scheduled/$f.bundle" "https://samaydlette.com/.well-known/$f.bundle"; then
+            SCHED="$SCHED --scheduled-record ${k%%:*}=scheduled/$f.json"
+          else
+            echo "$f is not published yet; its method is not counted"; rm -f "scheduled/$f.json" "scheduled/$f.bundle"
+          fi
+        done
+        # shellcheck disable=SC2086  # $SCHED is a word list by design
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --runtime-signal ksi-signal-runtime.json \
@@ -2006,7 +2023,7 @@ jobs:
           --assessment simulated-assessment.json --assessment-bundle simulated-assessment.bundle \
           --assessment-commit "$COMMIT" --assessment-signal-id "$ASSESSED_SIGNAL_ID" \
           --vdr-bundle vdr-report.bundle --vdr-identity "$VDR_SIGNER" \
-          --runtime-commit "$COMMIT" --require-two-methods
+          --runtime-commit "$COMMIT" --require-two-methods $SCHED
         # FRC-CSX-VVK: a KSI short of two automated methods without an in-force
         # accepted decision fails the deploy here, before
         # anything is published. The runtime method counts only for the signal

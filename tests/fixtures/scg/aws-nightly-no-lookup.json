@@ -1,0 +1,8 @@
+{
+ "$comment": "Known-bad: the evidence nightly's audit-log read policy without cloudtrail:LookupEvents (an older or hand-edited grant). Merged over aws-good.json; ci-roles.nightly-audit-reads must be a deviation, so the deploy stops before the SDR counts the audit-log review.",
+ "responses": {
+  "iam get-role-policy --role-name github-actions-evidence-nightly-oidc --policy-name evidence-nightly-audit-log-review": {
+   "PolicyDocument": {"Version": "2012-10-17", "Statement": [{"Sid": "AuditLogReviewReads", "Effect": "Allow", "Action": "cloudtrail:GetTrailStatus", "Resource": "*"}]}
+  }
+ }
+}

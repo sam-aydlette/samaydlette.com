@@ -244,3 +244,87 @@ def test_the_emitter_may_write_only_the_staged_runtime_signal():
     js = (REPO / "infrastructure" / "lambda" / "index.js").read_text()
     assert "staged ? staged.runtimeSignal : '.well-known/ksi-signal-runtime.json'" in js
     assert "if (!staged) await publishPublicKey" in js
+
+
+# --- the scheduled reviews (scripts/_scheduled_review.py): one more method each ----------
+
+SCHEDULED_KSIS = {"KSI-MLA-RVL", "KSI-CMT-RVP", "KSI-PIY-RIS", "KSI-PIY-RES", "KSI-SVC-EIS", "KSI-INR-RPI",
+                  "KSI-RPL-TRC"}
+
+
+def _build_with(scheduled):
+    sig = _signal()
+    return sdr.build(CATALOG, sig, _frr.load(), _rules.applicable_provider_rules(), _controls.project(sig, CATALOG),
+                     sdr.moderate_ids(), {}, RUNTIME, None, [], {"fedramp_class": "C", "impact_level": "Moderate"},
+                     {}, {}, NOW, {"ac": "https://example.invalid/ac.md"},
+                     dep_scan=SIGNED, training=sdr.NO_TRAINING, accepted={}, scheduled=scheduled)
+
+
+def test_the_method_table_names_each_scheduled_ksi_once_and_keeps_training():
+    assert sdr.KSI_METHODS["KSI-CED-RAT"] == ["training-currency", "training-completion"]
+    assert {k for k, ms in sdr.KSI_METHODS.items() if set(ms) & set(sdr._sched.KSI_METHODS)} == SCHEDULED_KSIS
+    assert all(len(sdr.KSI_METHODS[k]) == 1 for k in SCHEDULED_KSIS)
+
+
+def test_each_scheduled_ksi_gains_one_method_when_its_record_passes():
+    before = _methods(_build_with(None))
+    after = _methods(_build_with({k: (True, None) for k in sdr._sched.KSI_METHODS}))
+    assert {k for k in after if after[k] != before[k]} == SCHEDULED_KSIS
+    assert all(after[k] == before[k] + 1 for k in SCHEDULED_KSIS)
+
+
+def test_known_bad_a_failing_record_is_not_counted_and_says_why():
+    doc = _build_with({"audit-log-review": (False, "the planted simulated intruder was not caught")})
+    k = next(k for k in doc["keySecurityIndicators"] if k["ksiId"] == "KSI-MLA-RVL")
+    assert k["providerExtensions"]["automatedMethods"] == 2
+    assert any("not counted for this build: the planted simulated intruder was not caught" in v
+               for v in k["ksiValidation"])
+
+
+def _records(tmp_path, doc):
+    out = {}
+    for key, name in sdr._sched.METHOD_FILES.items():
+        p = tmp_path / name
+        p.write_text(json.dumps(doc(key)))
+        (tmp_path / (name[:-5] + ".bundle")).write_text("{}")
+        out[key] = (p, tmp_path / (name[:-5] + ".bundle"))
+    return out
+
+
+def _passing(key):
+    if key == "audit-log-review":
+        return {"schema": "audit-log-review/1", "generated_at": NOW.isoformat(), "result": "pass",
+                "exercise": {"caught": True}}
+    return {"schema": "scheduled-reviews/1", "review": key,
+            "reviews": [{"dueDate": "2026-11-0" + ("1" if key == "recovery-exercise" else "5"), "sha256": "0" * 64,
+                         "result": "pass"}]}
+
+
+def test_scheduled_records_count_only_when_signed_by_their_publisher(tmp_path):
+    seen = {}
+
+    def verifier(path, bundle, ids):
+        seen[Path(path).name] = ids
+        return True
+    res = sdr.scheduled_methods(_records(tmp_path, _passing), NOW, verifier)
+    assert res == {k: (True, None) for k in sdr._sched.KSI_METHODS}
+    nightly = "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main"
+    maint = ("https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml"
+             "@refs/heads/main")
+    assert seen == {"vdr-audit-log-review.json": [nightly], "vdr-recovery-exercises.json": [nightly],
+                    "security-reviews.json": [maint]}
+
+
+def test_known_bad_an_unsigned_or_missing_record_is_not_counted(tmp_path):
+    res = sdr.scheduled_methods(_records(tmp_path, _passing), NOW, lambda *_a: False)
+    assert all(not ok and "does not verify" in why for ok, why in res.values())
+    assert sdr.scheduled_methods({}, NOW) == {k: sdr.NOT_EVALUATED for k in sdr._sched.KSI_METHODS}
+    gone = {"audit-log-review": (tmp_path / "nope.json", tmp_path / "nope.bundle")}
+    assert "not published" in sdr.scheduled_methods(gone, NOW, lambda *_a: True)["audit-log-review"][1]
+
+
+def test_the_scheduled_record_argument_is_validated():
+    assert sdr._scheduled_args(["security-review=d/security-reviews.json"]) == {
+        "security-review": ("d/security-reviews.json", "d/security-reviews.bundle")}
+    with pytest.raises(SystemExit):
+        sdr._scheduled_args(["nonsense=x.json"])

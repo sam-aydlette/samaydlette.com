@@ -140,6 +140,11 @@ jobs:
         fi
         # Verified in-band by build-sdr.py against the committed runtime key.
         fetch ksi-signal-runtime.json || rm -f ksi-signal-runtime.json
+        # The scheduled reviews' records, verified in-band by build-sdr.py against
+        # their publishers (scripts/_signers.py); one not published yet is not counted.
+        for a in vdr-audit-log-review vdr-recovery-exercises security-reviews; do
+          if ! { fetch "$a.json" && fetch "$a.bundle"; }; then rm -f "$a.json" "$a.bundle"; fi
+        done
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
         if ! printf '%s' "$SIGNAL_COMMIT" | grep -qE '^[0-9a-f]{40}$'; then
           echo "::error::published inventory carries a malformed commit id"; exit 1
@@ -193,6 +198,17 @@ jobs:
         # the deployed inventory (the same binding the deploy applies).
         if grep -q -- '--runtime-commit' ../scripts/build-sdr.py; then
           VVK="$VVK --runtime-commit $SIGNAL_COMMIT"
+        fi
+        # The scheduled reviews' records count for their KSIs (FRC-CSX-VVK) when
+        # their signatures verify; an older deployed builder takes no such argument.
+        if grep -q -- '--scheduled-record' ../scripts/build-sdr.py; then
+          for k in audit-log-review:vdr-audit-log-review recovery-exercise:vdr-recovery-exercises \
+                   security-review:security-reviews; do
+            f="${k#*:}"
+            if [ -f "$W/$f.json" ] && [ -f "$W/$f.bundle" ]; then
+              VVK="$VVK --scheduled-record ${k%%:*}=$W/$f.json"
+            fi
+          done
         fi
         cp "$W/ksi-signal.json" "$W/vdr-report.json" "$W/vdr-report.bundle" .
         [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
