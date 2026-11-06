@@ -2046,7 +2046,7 @@ def main():
         "ownership": {
             "system_owner": "Sam Aydlette",
             "application_owner": "Sam Aydlette",
-            "operator_contact": "sam.aydlette@gmail.com",
+            "operator_contact": "https://www.linkedin.com/in/sa2/",
         },
         "disclosure": {
             "authorization_status": "self-attested-proof-of-concept",
