@@ -29,6 +29,14 @@
 # report due from the finding's first evaluation at the default rating; the
 # clock check fails, and the evidence watchdog pages, once that time passes.
 #
+# Review of past incidents. The log also carries the after-action check
+# (KSI-INR-AAR: every resolved incident has lessons learned, each linking to a
+# commit, decision or test that exists) and the pattern review (KSI-INR-RPI,
+# "Groundhog Day": real incidents grouped by root cause and component). Each
+# feeds a planted case through the same check on every build and publishes
+# whether it was caught (scripts/_incidents.py); a planted case not caught
+# fails the build.
+#
 # Notification. Nothing is sent to FedRAMP or to agencies: the register's
 # policy says "published-only" and every report says so. After this builder,
 # scripts/deliver-incident-reports.py "delivers" each report to SIMULATED
@@ -46,6 +54,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _decisions  # noqa: E402
 import _engagement  # noqa: E402
 import _offering  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
@@ -201,9 +210,17 @@ def _changes(inc, k):
     return out
 
 
-def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR):
-    """Write every report and the incident log; return the log."""
+def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR, decisions=None):
+    """Write every report and the incident log; return the log. `decisions` is
+    the set of decision IDs a lesson may link to (default: the register's)."""
     out_dir = Path(out_dir)
+    if decisions is None:
+        decisions = set(_decisions.by_any_id(_decisions.load(None)))
+    lessons = _incidents.lessons_check(reg, decisions)
+    recurrence = _incidents.groundhog_day(reg, now.date())
+    for name, chk in (("after-action check", lessons), ("pattern review", recurrence)):
+        if not chk["planted"]["caught"]:
+            _fail(f"the {name}'s planted case was not caught; the check is broken")
     timeframes = _rules.incident_report_timeframes(rules_dir)
     default = _rules.default_incident_rating(rules_dir)
     policy = reg["policy"]
@@ -281,6 +298,8 @@ def build(reg, vdr, now, out_dir, rules_dir=_rules.RULES_DIR):
             "triggers_without_incident": sum(1 for t in triggers if t["adopted"] and t["incident"] is None),
             "overdue": len(overdue),
         },
+        "lessons_learned": lessons,
+        "patterns": recurrence,
         "incidents": incidents,
     }
     log = _offering.stamp_fedramp_id(log)  # CDS-CSO-FID
@@ -325,6 +344,16 @@ def render_markdown(log, out_dir):
            f"- **Federal incident response coordinator:** {log['policy']['federal_incident_coordinator']}",
            f"- **Vulnerabilities treated as incidents:** {', '.join(log['policy']['adopted_vulnerability_rules'])}",
            ""]
+    ll, pt = log.get("lessons_learned"), log.get("patterns")
+    if ll and pt:
+        out += ["## Lessons learned (KSI-INR-AAR) and recurring patterns (KSI-INR-RPI)", "",
+                f"- **After-action check:** {ll['result']}: {ll['resolved']} resolved incident(s), failing: "
+                f"{', '.join(ll['failing']) or 'none'}; planted orphan lesson caught: {ll['planted']['caught']}",
+                f"- **Pattern review (Groundhog Day):** {len(pt['groups'])} pattern(s) among real incidents in "
+                f"{pt['windowDays']} days, recurring: "
+                + (", ".join(f"{r['root_cause']} ({r['component']}, {len(r['incidents'])}x)" for r in pt["recurring"])
+                   or "none")
+                + f"; seeded scenario {pt['planted']['scenario']} flagged: {pt['planted']['caught']}", ""]
     out += ["## Vulnerabilities that are FedRAMP Reportable Incidents (VER-TFR-IRI / VER-TFR-NRI)", ""]
     if log["vdr"] is None:
         out += ["No VDR report was supplied to this build.", ""]

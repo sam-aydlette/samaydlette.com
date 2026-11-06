@@ -99,7 +99,13 @@
           "additionalProperties": false
         }},
         "resolved_at": {"$ref": "#/$defs/time"},
-        "recovery_complete_at": {"$ref": "#/$defs/time"}
+        "recovery_complete_at": {"$ref": "#/$defs/time"},
+        "pattern": {"type": "object", "required": ["root_cause", "component"], "additionalProperties": false,
+                    "description": "What the incident shares with others (KSI-INR-RPI): scripts/_incidents.py patterns() groups real incidents by it.",
+                    "properties": {"root_cause": {"$ref": "#/$defs/text"}, "component": {"$ref": "#/$defs/text"}}},
+        "lessons_learned": {"type": "array", "description": "KSI-INR-AAR: each lesson links to the commit, decision (DEC-NNN) or test (tests/<file>.py::<test>) that incorporated it; scripts/_incidents.py lessons_check() requires lessons on every resolved incident, each link resolving.",
+                            "items": {"type": "object", "required": ["lesson", "link"], "additionalProperties": false,
+                                      "properties": {"lesson": {"$ref": "#/$defs/text"}, "link": {"$ref": "#/$defs/text"}}}}
       },
       "additionalProperties": false
     }

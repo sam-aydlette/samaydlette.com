@@ -1,0 +1,5 @@
+# Known-bad: Expires is more than a year away (RFC 9116 recommends less than a year).
+Contact: https://www.linkedin.com/in/sa2/
+Expires: 2099-01-01T00:00:00.000Z
+Canonical: https://samaydlette.com/.well-known/security.txt
+Policy: https://github.com/sam-aydlette/samaydlette.com/blob/main/docs/incident-response.md

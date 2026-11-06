@@ -27,6 +27,13 @@ The reviews:
   recovery-exercise   monthly, evidence-nightly.yml (scripts/hold-recovery-exercise.py),
                       published as vdr-recovery-exercise-<date>.json and
                       vdr-recovery-exercises.json; each November's carries the tabletop.
+  the drills          monthly or quarterly, evidence-nightly.yml (scripts/hold-drill.py,
+                      the drill logic in scripts/_drills.py and scripts/_phishing.py),
+                      published as vdr-drill-<name>-<date>.json and vdr-drill-<names>.json:
+                      the Board of Sam, the CFO's budget review, the Choose-Your-Own-
+                      Disaster tabletop, the disclosure drill and the phishing drill. Each
+                      feeds a planted bad case through the same check on every run, which
+                      must be caught, or the drill fails.
 The audit-log review runs on every nightly instead (scripts/audit-log-review.py,
 vdr-audit-log-review.json); its window is its freshness entry.
 """
@@ -58,6 +65,17 @@ CAST = {
     "intruder": "Mallory McHypothetical (simulated)",  # the audit-log review's planted event, caught every run
     "incident-commander": "Bea Kupp (simulated)",    # runs the recovery tabletop
     "scenario-injector": "Dee Saster (simulated)",   # reads out the tabletop's scenarios
+    "board": "The Board of Sam (simulated)",         # quorum: 1; endorses risk acceptances each quarter
+    "cfo": "The Chief Financial Officer, also Sam (simulated)",  # funds every mechanism, or says no
+    "researcher": "Ima Finder (simulated)",          # files the disclosure drill's reports
+    "phisher": "The Prince of Compliance (simulated)",  # sends the phishing drill's lure
+    "intern": "Curious Carl (simulated)",            # reads logs he should not (the log-access drill)
+    "gremlin": "The Chaos Gremlin (simulated)",      # deletes and overwrites objects in the restore drill
+}
+# The scenarios the drills replay, each plainly simulated.
+SCENARIOS = {
+    "recurring-incident": "The Cache Was Stale Again (simulated)",
+    "big-one": "The Great Cache Invalidation of 2026 (simulated)",
 }
 
 
@@ -65,7 +83,8 @@ CAST = {
 class Review:
     key: str
     title: str
-    cadence: str          # "monthly" (on the 1st) or "annual" (on first_due's month and day)
+    cadence: str          # "monthly" or "quarterly" (on the 1st, every 1 or 3 months from first_due),
+                          # or "annual" (on first_due's month and day)
     first_due: date
     prefix: str           # published file name before "<due date>.json"
     index: str            # the published index's file name
@@ -77,7 +96,21 @@ REVIEWS = {
                               "security-review-", "security-reviews.json", "maintenance"),
     "recovery-exercise": Review("recovery-exercise", "Recovery exercise", "monthly", date(2026, 11, 1),
                                 "vdr-recovery-exercise-", "vdr-recovery-exercises.json", "nightly"),
+    # The drills (scripts/hold-drill.py). Under vdr-drill-*, the only prefix the
+    # nightly's role may write besides the VDR family.
+    "board-meeting": Review("board-meeting", "The Board of Sam: quarterly meeting", "quarterly", date(2026, 11, 1),
+                            "vdr-drill-board-meeting-", "vdr-drill-board-meetings.json", "nightly"),
+    "cfo-review": Review("cfo-review", "The CFO's quarterly budget review", "quarterly", date(2026, 11, 1),
+                         "vdr-drill-cfo-review-", "vdr-drill-cfo-reviews.json", "nightly"),
+    "tabletop": Review("tabletop", "Choose-Your-Own-Disaster tabletop", "monthly", date(2026, 11, 1),
+                       "vdr-drill-tabletop-", "vdr-drill-tabletops.json", "nightly"),
+    "disclosure-drill": Review("disclosure-drill", "Vulnerability disclosure drill", "monthly", date(2026, 11, 1),
+                               "vdr-drill-disclosure-", "vdr-drill-disclosures.json", "nightly"),
+    "phishing-drill": Review("phishing-drill", "Phishing drill", "monthly", date(2026, 11, 1),
+                             "vdr-drill-phishing-", "vdr-drill-phishing.json", "nightly"),
 }
+DRILLS = ("board-meeting", "cfo-review", "tabletop", "disclosure-drill", "phishing-drill")
+STEP_MONTHS = {"monthly": 1, "quarterly": 3}
 
 
 def _fail(msg):
@@ -101,8 +134,8 @@ def due_dates(rv, until):
     while d <= until:
         out.append(d)
         n += 1
-        d = _add_months(rv.first_due, n) if rv.cadence == "monthly" else rv.first_due.replace(
-            year=rv.first_due.year + n)
+        d = _add_months(rv.first_due, n * STEP_MONTHS[rv.cadence]) if rv.cadence in STEP_MONTHS else \
+            rv.first_due.replace(year=rv.first_due.year + n)
     return out
 
 

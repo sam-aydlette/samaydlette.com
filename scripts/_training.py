@@ -10,7 +10,8 @@ the Security Decision Record against a plainly simulated trainee:
               incident and exercise, the applicable FedRAMP rules and KSIs, and
               a fixed core (general security, the privileged roles, secure
               delivery, incident response and recovery: docs/training-log.md's
-              areas). Each lesson carries a question.
+              areas, plus the phishing drill's remedial lesson). Each lesson
+              carries a question.
   quiz        four choices per question, the distractors drawn from the other
               lessons, in a deterministic order.
   trainee     "Pat Placeholder (simulated)" takes the quiz whenever the packet
@@ -56,6 +57,10 @@ CORE = [
      "A simulated recipient: the report is a published log entry and nothing is sent (DEC-194)."),
     ("recovery", "Where does the site's content live if the bucket is lost?",
      "In git: the site and every artifact are rebuilt from any clone by the pipeline."),
+    # The phishing drill's remedial lesson (scripts/_phishing.py): a click assigns it.
+    ("phishing", "An email says your FedRAMP ID has expired and asks for your password through a link. What do you do?",
+     "Report it and do not click: check the sender's domain and where the link really goes; nobody legitimate asks "
+     "for a password by email."),
 ]
 
 

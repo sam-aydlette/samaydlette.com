@@ -127,6 +127,21 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 
 KSI-INR-RPI calls for persistent review of past incidents for patterns. It is generated: the Annual Security Review (`scripts/hold-security-review.py`, [`security-review.md`](security-review.md)) groups the incidents of the last 12 months by their evaluation basis, exercises excluded, and fails when a basis recurs, so a systemic cause is fixed in a pull request rather than noted in a meeting. Each incident's own after-action record is written when it closes.
 
+Each incident in the register also carries a `pattern` (root cause and component). On every build of the incident log, "Groundhog Day" (`scripts/_incidents.py` `patterns()`) groups the real incidents of the last 12 months by it, and a pattern seen twice becomes a VDR process finding (`scripts/build-vdr-report.py`) until it stops recurring. A seeded simulated scenario, The Cache Was Stale Again (three of the same incident), goes through the same function on every build and must be flagged; the incident log publishes that it was. Each resolved incident's `lessons_learned` link to the commit, decision or test that incorporated them, and the incident log publishes the check that they resolve (KSI-INR-AAR).
+
+## Vulnerability disclosure intake (KSI-PIY-RVD)
+
+_AI-drafted; the operator to review._ A report sent to the contact in [`security.txt`](../website/.well-known/security.txt) is read in this format, one field per line, a field running on until the next:
+
+```
+Summary: <one line>
+Affected: <the https URL on samaydlette.com>
+Steps to reproduce: <the steps>
+Impact: <what an attacker gains>
+```
+
+The intake (`scripts/_drills.py` `intake()`) parses it, triages it (accepted, needs-info when a field is missing, or out-of-scope when the URL is not this system's), opens a finding for an accepted report, and computes an acknowledgement deadline 3 business days after receipt. It drafts the reply; nothing is sent automatically. Each month the evidence nightly runs the disclosure drill through the same intake: Ima Finder (simulated) reports that the favicon is insufficiently threatening, and a planted report with no reproduction steps must be triaged to needs-info (`vdr-drill-disclosures.json`). Every deploy also checks that `security.txt` is valid (Contact, Policy, Canonical, and an Expires date in the future and no more than a year away) and publishes the result in `security-settings.json`.
+
 ## Escalation
 
 Single-tier. Author → author. External escalations:

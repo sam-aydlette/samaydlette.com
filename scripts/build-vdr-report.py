@@ -417,6 +417,12 @@ def runtime_verification_summary(runtime):
     return out
 
 
+def incident_recurrences(incidents, today):
+    """KSI-INR-RPI: the recurring patterns among the register's real incidents."""
+    import _incidents  # noqa: PLC0415
+    return _incidents.patterns(incidents, today)["recurring"]
+
+
 def dast_summary(zap_path):
     """The DAST scan this report ingested: when ZAP generated it and how many
     alert types it reported. None when no ZAP report was given."""
@@ -2603,7 +2609,10 @@ def main():
         run_events.append(_gates.record_event(
             gates, "vdr.coverage", f"no detection in {coverage['window_days']} days: "
                                    f"{', '.join(coverage['uncovered'][:10])}"))
-    report, blocking = _build(findings + _evaluation.process_findings(run_events, []))
+    # KSI-INR-RPI: a real incident pattern seen twice in 12 months is a process
+    # finding until it stops recurring (scripts/_incidents.py patterns()).
+    recurring = incident_recurrences(_evaluation.load_incidents(), datetime.now(timezone.utc).date())
+    report, blocking = _build(findings + _evaluation.process_findings(run_events, [], recurring))
     # VER-EVA-EIR: a finding that resolves to no component was rated at the
     # fail-safe, not evaluated; that is recorded until it resolves.
     # (Without an inventory, as in unit fixtures, nothing resolves and nothing is recorded.)
@@ -2613,7 +2622,7 @@ def main():
         run_events.append(_gates.record_event(
             gates, "vdr.unresolved-component",
             f"{len(unresolved)} finding(s) resolve to no inventory component: {', '.join(unresolved[:5])}"))
-    process = _evaluation.process_findings(run_events, report["findings"])
+    process = _evaluation.process_findings(run_events, report["findings"], recurring)
     if {p["tracking_id"] for p in process} - {f["tracking_id"] for f in report["findings"]}:
         report, blocking = _build(findings + process)
     report["coverage"] = coverage
