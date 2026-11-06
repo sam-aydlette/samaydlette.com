@@ -1562,21 +1562,21 @@
     {
       "frr_id": "FRC-APP-FCP",
       "status": "Not Applicable",
-      "implementation": "Package artifacts regenerate on every deploy (deploy-with-opa.yml build steps ~L1558-1600) and the runtime emitter re-validates daily (trust-center.json 'runtime' check).",
+      "implementation": "The package is rebuilt on every deploy (deploy-with-opa.yml steps 'Build Security Decision Record (SDR — 20x SSP replacement)' and 'Build Certification Package Overview (CPO)') and daily by the package maintainer (package-maintenance.yml), and the runtime emitter re-validates the deployed system daily (the trust center's runtime check).",
       "evidence": [],
       "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-FIA",
       "status": "Not Applicable",
-      "implementation": "certification-package-overview.json independent_assessment: none engaged; SDR assessor_records.status 'no assessor record'.",
+      "implementation": "No FedRAMP Recognized assessor has assessed this system. Every deploy is assessed by the simulated assessor, whose overall summary the CPO carries in providerExtensions.independentAssessment (flagged simulated) and whose records the SDR quotes in providerExtensions.assessorRecords; neither is a FedRAMP initial assessment.",
       "evidence": [],
       "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
     {
       "frr_id": "FRC-APP-MLF",
       "status": "Not Applicable",
-      "implementation": "Not listed in the FedRAMP Marketplace (stated in docs/cr26-applicability.md and COP).",
+      "implementation": "Not listed in the FedRAMP Marketplace, and no listing is sought (docs/cr26-applicability.md, MKT).",
       "evidence": [],
       "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
     },
@@ -2228,10 +2228,10 @@
     {
       "frr_id": "IVV-CSO-RAA",
       "status": "Not Applicable",
-      "implementation": "No assessor engaged.",
+      "implementation": "The only assessor is the simulated one (Totally Real Assessment Services, LLC (simulated)), which reports results and offers no advice; no FedRAMP Recognized assessor is engaged.",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised while no assessor is engaged. When one is, advice will be accepted where it improves the security posture or the evidence, and recorded with the assessment."
+      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept."
     },
     {
       "frr_id": "IVV-CSO-SEE",
@@ -2257,7 +2257,7 @@
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+        "how": "No FedRAMP Recognized assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it without a request; the simulated assessor (Totally Real Assessment Services, LLC (simulated), simulated-assessor.yml) reads it from there on every deploy."
       }
     },
     {
@@ -2284,7 +2284,7 @@
       ],
       "simulated": {
         "counterparty": "assessor",
-        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+        "how": "No FedRAMP Recognized assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it without a request; the simulated assessor (Totally Real Assessment Services, LLC (simulated), simulated-assessor.yml) reads it from there on every deploy."
       }
     },
     {
@@ -2484,16 +2484,16 @@
     {
       "frr_id": "MKT-CSO-MLR",
       "status": "Not Applicable",
-      "implementation": "CDS-CSO-PUB data exists (see CDS-CSO-PUB).",
+      "implementation": "The CDS-CSO-PUB data a listing would need exists (see CDS-CSO-PUB); no listing is requested.",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought."
     },
     {
       "frr_id": "MKT-CSO-PML",
       "status": "Not Applicable",
-      "implementation": "Checked: no listing request sent (docs/cr26-applicability.md records MKT as N/A).",
+      "implementation": "Checked: no listing request has been sent (docs/cr26-applicability.md records MKT as Not Applicable).",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought."
     },
     {
       "frr_id": "SCG-CSO-AUP",
@@ -3049,7 +3049,7 @@
     {
       "frr_id": "SCN-TRF-UPD",
       "status": "Implemented",
-      "implementation": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred. (The Secure Configuration Guide's stale Basic Auth text follows an adaptive change, SCN-2026-002, which this rule does not cover.)",
+      "implementation": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred.",
       "evidence": [
         {
           "kind": "test",
@@ -3188,7 +3188,7 @@
     {
       "frr_id": "VDR-CSO-ADT",
       "status": "Implemented",
-      "implementation": ".github/workflows/evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *'), deploy-with-opa.yml (every push to main), zap-dast.yml (weekly), infrastructure/main.tf:809 runtime emitter on EventBridge rate(1 day), watchdog rate(1 hour) (infrastructure/watchdog.tf:231). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; live vdr-status.json finished_at 2026-11-05T14:05:40Z.",
+      "implementation": "Automated on schedules and triggers: evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *', plus once after every successful deploy), deploy-with-opa.yml (every push to main, behind the prod approval), zap-dast.yml (daily, cron '23 7 * * *', plus after every successful deploy to main), the runtime emitter on its EventBridge schedule (aws_cloudwatch_event_rule.opa_compliance in infrastructure/main.tf, rate(1 day) from var.compliance_check_schedule) and the evidence watchdog (aws_cloudwatch_event_rule.evidence_watchdog in infrastructure/watchdog.tf, rate(1 hour)). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; the nightly publishes its outcome on every run in vdr-status.json.",
       "evidence": [
         {
           "kind": "step",
@@ -3324,23 +3324,27 @@
     {
       "frr_id": "VDR-CSO-DFR",
       "status": "Implemented",
-      "implementation": "Architecture: static content on private S3 behind CloudFront (infrastructure/main.tf), serverless Silk Reeling (API Gateway -> Lambda, Cognito-gated; infrastructure/silk-reeling.tf, cognito.tf); no servers/OS to patch; all infra as Terraform with OPA plan gating (deploy-with-opa.yml 'Run OPA Compliance Check'); runtime re-evaluation reuses the same Rego as Wasm (infrastructure/lambda/index.js header). The live inventory (ksi-signal.json) has no compute instances or containers.",
+      "implementation": "Architecture: static content on private S3 behind CloudFront (infrastructure/main.tf, infrastructure/bootstrap/cloudfront.tf), serverless Silk Reeling (API Gateway -> Lambda, Cognito-gated; infrastructure/silk-reeling.tf, cognito.tf); no servers or operating systems to patch, so detection is SCA, IaC analysis, DAST and CodeQL, with no host scanning; all infrastructure is Terraform, gated by OPA at plan time (deploy-with-opa.yml 'Run OPA Compliance Check'), and the same Rego re-validates the deployed system as Wasm (the policy parity test, and the runtime readers for every machine type). The published inventory (ksi-signal.json) has no compute instances or containers. The residual risks this design leaves are accepted separately and are not evidence for this rule (DEC-007 WAF, DEC-009 origin failover, DEC-026 operator IAM privileges).",
       "evidence": [
         {
           "kind": "step",
           "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
         },
         {
-          "kind": "decision",
-          "ref": "DEC-007"
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
         },
         {
-          "kind": "decision",
-          "ref": "DEC-009"
+          "kind": "test",
+          "ref": "tests/test_validation_mapping.py::test_every_plan_validated_type_has_a_rule"
         },
         {
-          "kind": "decision",
-          "ref": "DEC-026"
+          "kind": "test",
+          "ref": "tests/test_runtime_readers.py::test_every_machine_type_has_a_reader_or_existing_check"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal.json"
         }
       ]
     },
@@ -3386,7 +3390,7 @@
     {
       "frr_id": "VDR-CSO-MSP",
       "status": "Implemented",
-      "implementation": "Checked: security/zap/allowlist.json has entries [] ('No edge allowlist exists for the scanner today'); the VDR builder flags any allowlisted DAST finding (build-vdr-report.py:946-983, REQ-IRV-11). Scanner/reconcile AWS access is read-only (infrastructure/bootstrap/evidence-nightly.tf:142 read-only List*/Describe* policy). ZAP scans production unauthenticated as a stranger would; no security controls were disabled or opened for scanning.",
+      "implementation": "security/zap/allowlist.json has no entries: no edge allowlist exists for the scanner, and the VDR builder flags any DAST finding observed only at allowlisted URLs (scripts/build-vdr-report.py load_zap_allowlist and _zap_location, REQ-IRV-11). The nightly's AWS access for the reconciliation sweep is read-only (infrastructure/bootstrap/evidence-nightly.tf, policy document evidence_nightly_reconcile_reads: List, Describe and GET calls only). ZAP runs two scans of production (zap-dast.yml): an unauthenticated baseline of the site, as a stranger sees it, and an authenticated scan of the Silk Reeling API signed in as a dedicated, standing Cognito scanner user. That user is an ordinary user of the pool, created like every other user and holding the TOTP MFA the pool requires; it signs in with the flows the app client already allows (scripts/dast-cognito-token.py, docs/runbooks/dast-scanner-user.md). No app-client flow, authorizer or edge control was widened, disabled or opened for scanning.",
       "evidence": [
         {
           "kind": "test",
@@ -3436,7 +3440,7 @@
     {
       "frr_id": "VDR-CSO-SIR",
       "status": "Not Applicable",
-      "implementation": "Checked: no sampling is used. Grype scans every SBOM'd dependency tree, Checkov/tfsec scan all Terraform, and the runtime emitter validates each object store and the distribution individually (live ksi-signal-runtime.json: 5 validations, one per component).",
+      "implementation": "Checked: no sampling is used. Grype scans every SBOM'd dependency tree, Checkov/tfsec scan all Terraform, and the runtime emitter validates every machine component individually, one validation per component, across the 20 machine types in infrastructure/schemas/runtime-vv-config.json (VDR-TFR-MVX).",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
       "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain."
@@ -3545,7 +3549,7 @@
     {
       "frr_id": "VDR-TFR-PCD",
       "status": "Implemented",
-      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). External services are listed as the third party's to detect. Non-machine resources are verified quarterly (VDR-TFR-NMV). Live inputs on 2026-11-05: 207 of 207 own components covered, 7 external.",
+      "implementation": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). The 11 external services the inventory declares (the ext:: components from scripts/build-ksi-signal.py build_external_components) are listed as the third party's to detect. Non-machine resources are verified quarterly (VDR-TFR-NMV).",
       "evidence": [
         {
           "kind": "test",
@@ -3642,7 +3646,7 @@
     {
       "frr_id": "VDR-TFR-PVR",
       "status": "Implemented",
-      "implementation": "policies/triage.rego:87 timeframe() reads the Class C matrix from the pinned FedRAMP rules (data.rules ... VDR-TFR-PVR.varies_by_class.c, hash-checked by scripts/_rules.py) by PAIN x IRV x LEV; deadline from clock_start (triage.rego:363), clock moved only by a verified mitigation (build-vdr-report.py:1176 clock_facts); re-evaluation re-selects the timeframe; G3 'vdr.past-deadline' blocks publication (gate-modes.json mode block); likely-overdue margin (vdr-pain-config.json). Live vdr-report.json carries remediation_due_at per finding.",
+      "implementation": "policies/triage.rego timeframe() reads the Class C matrix from the pinned FedRAMP rules (data.rules ... VDR-TFR-PVR.varies_by_class.c, hash-checked by scripts/_rules.py) by PAIN x IRV x LEV; the deadline runs from the finding's clock start (triage.rego deadline(), item.clock.start_ns), which only a verified mitigation moves (scripts/build-vdr-report.py clock_facts()); re-evaluation re-selects the timeframe; G3 'vdr.past-deadline' blocks publication (gate-modes.json mode block); likely-overdue margin (vdr-pain-config.json). The published vdr-report.json carries remediation_due_at per finding.",
       "evidence": [
         {
           "kind": "test",
@@ -3665,7 +3669,7 @@
     {
       "frr_id": "VDR-TFR-RMN",
       "status": "Implemented",
-      "implementation": "N1 findings get no timeframe (triage.rego:87 'null for a level with no timeframe (N1: routine operations)'), yet scripts/vuln-gate.py and reconcile.py invariant (h) still need every finding fixed or dispositioned by an in-force decision with review_by. Live: both N1 findings (tfsec-AVD-AWS-0162, zap-10036-2) carry decisions DEC-032/DEC-040.",
+      "implementation": "N1 findings get no timeframe (policies/triage.rego timeframe(): 'null for a level with no timeframe (N1: routine operations)'), yet scripts/vuln-gate.py and reconcile.py invariant (h) still need every finding fixed or dispositioned by an in-force decision with review_by. Both N1 findings (tfsec-AVD-AWS-0162, zap-10036-2) carry decisions DEC-032/DEC-040.",
       "evidence": [
         {
           "kind": "test",
@@ -3746,7 +3750,7 @@
     {
       "frr_id": "VER-EVA-EFP",
       "status": "Implemented",
-      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: 13 false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version'); triage.rego:262 record_status rejects a false positive that names a control (it must be 'mitigated') and lapses at review_by; live report: 30 findings with final_disposition false-positive, each with a decision_id.",
+      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: 14 in-force false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version', DEC-193 CodeQL on the SRP sign-in); policies/triage.rego record_status() rejects a false positive that names a control (it must be 'mitigated') and lapses it at review_by; every VDR finding whose final disposition is false-positive carries its decision_id.",
       "evidence": [
         {
           "kind": "test",

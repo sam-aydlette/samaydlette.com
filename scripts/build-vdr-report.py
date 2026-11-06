@@ -2526,11 +2526,11 @@ def main():
     findings.extend(ingest_grype(args.grype))
     findings.extend(_codeql.ingest_codeql(args.codeql))
 
-    # DAST: ingest the committed monthly ZAP report. Bootstrapping is allowed —
-    # a MISSING report only warns (DAST coverage absent until the first scan is
-    # committed), so the pipeline stays green before the operator's first scan.
-    # Once a report IS present, it is enforced: an undated or stale one fails the
-    # build closed (a skipped/forgotten scan must not read as zero findings).
+    # DAST: ingest the ZAP baseline report from the latest successful zap-dast.yml
+    # run (daily and after every deploy; scripts/fetch-detection-feeds.sh). A
+    # missing report is governed by gate mode detection.zap.missing; a present
+    # one is enforced: an undated or stale one fails the build closed (a skipped
+    # scan must not read as zero findings).
     if args.zap:
         if not Path(args.zap).exists():
             err = Path(f"{args.zap}.error")
