@@ -73,3 +73,12 @@ def test_the_drafting_history_is_not_screened():
         "source": {"reworded": {"before": "the operator reviews the logs"}},
     }
     assert manual_commitments(record) == []
+
+
+def test_an_accepted_mfa_finding_publishes_no_planned_purchase():
+    """DEC-150 accepts virtual TOTP; DEC-025 must not still plan a hardware key,
+    or the OCR's planned changes (build-ocr.py planned_changes) publish it."""
+    rows = {r["id"]: r for r in _in_force(REPO / "data" / "decisions.json", "decisions")}
+    assert "DEC-150" in rows
+    assert not rows["DEC-025"].get("remediation_plan")
+    assert not rows["DEC-025"].get("planned_completion")

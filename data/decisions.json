@@ -705,10 +705,14 @@
       "decided_on": "2026-09-30",
       "review_by": "2027-09-30",
       "original_detection_date": "2026-06-22",
-      "remediation_plan": "Enroll a hardware security key (FIDO2/WebAuthn) as the MFA device for the root account and the operator IAM user, satisfying the phishing-resistant objective (IA-2(8)).",
-      "planned_completion": "2026-10-30",
       "point_of_contact": "Sam Aydlette (operator)",
       "source": {
+        "plan_withdrawn": {
+          "on": "2026-11-06",
+          "by": "DEC-150 (phishing-resistant MFA accepted as not bought)",
+          "remediation_plan": "Enroll a hardware security key (FIDO2/WebAuthn) as the MFA device for the root account and the operator IAM user, satisfying the phishing-resistant objective (IA-2(8)).",
+          "planned_completion": "2026-10-30"
+        },
         "detector": "Prowler",
         "identifier": "root-account-hardware-mfa-enabled; iam_user_hardware_mfa_enabled",
         "original_risk_rating": "moderate",
@@ -723,7 +727,7 @@
       "title": "Operator IAM group holds broad IAM administration privileges",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "The operators IAM group (the sole human-principal group) carries IAM administration privileges (it manages users, groups, and policies). Surfaced by Checkov CKV2_AWS_56 against infrastructure/bootstrap/main.tf. At this system's Moderate categorization a single principal holding IAM admin is a real least-privilege/separation-of-duties weakness (AC-5/AC-6), accepted on the operating model rather than the categorization: the system is a single-operator PoC with no second human to separate duties against, so IAM administration cannot be delegated to a distinct role. Compensating controls: the operator authenticates with MFA (see POAM-025), all IAM changes flow through version-controlled Terraform reviewed in GitHub, and CloudTrail records every IAM action.",
+      "justification": "The operators IAM group (the sole human-principal group) carries IAM administration privileges (it manages users, groups, and policies). Surfaced by Checkov CKV2_AWS_56 against infrastructure/bootstrap/main.tf. At this system's Moderate categorization a single principal holding IAM admin is a real least-privilege/separation-of-duties weakness (AC-5/AC-6), accepted on the operating model rather than the categorization: the system is a single-operator PoC with no second human to separate duties against, so IAM administration cannot be delegated to a distinct role. Compensating controls: the operator authenticates with MFA (see DEC-025), all IAM changes flow through version-controlled Terraform reviewed in GitHub, and CloudTrail records every IAM action.",
       "controls": [
         "ac-5",
         "ac-6",

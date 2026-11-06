@@ -32,7 +32,7 @@ By operating this system, the operator commits to the following:
 - The operator's GitHub session is the only authenticated path to push to `main`. Branch protection plus the OPA gate plus the SCN-Type validator constitute the technical enforcement.
 
 **Change management.**
-- The default workflow is direct push to `main`. Pull requests are used only when collaboration or staged review is desired (rare).
+- Changes reach `main` through pull requests. Branch protection requires the four gate checks for everyone, administrators included, so a commit that has not passed them through a pull request is refused (see the [CM policy](policies/cm-policy.md) and the Secure Configuration Guide setting `github.main-required-checks`).
 - Every change carries an explicit SCN evaluation (`SCN-CSO-EVA`): an `SCN-Type:` line, an `SCN-Rationale:` line and, where a notification is needed, an `SCN-Record:` line, in the commit message or PR description; there is no default, and the required `scn-tag` check fails a change without them (see the [CM policy](policies/cm-policy.md)). `SCN-Type: emergency` is reserved for emergency changes per `SCN-CSO-EMG`; see [`docs/incident-response.md`](incident-response.md) for the retroactive-documentation obligations that follow.
 - The operator does not bypass the OPA gate, the schema validators, the VDR aggregator, or the SCN tag validator with `--no-verify`-style overrides.
 

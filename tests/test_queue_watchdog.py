@@ -65,7 +65,7 @@ def test_notify_fires_on_every_job_that_can_stop_a_deploy_on_main():
     jobs = yaml.safe_load(WORKFLOW.read_text())["jobs"]
     notify = jobs["notify"]
     dependent = {k for k, j in jobs.items() if j.get("needs") and k != "notify"}
-    for need in {"compliance-check", "simulated-assessor", "deploy", "package-maintainer", "incident-publisher",
+    for need in {"test", "security-scan", "compliance-check", "simulated-assessor", "deploy", "package-maintainer", "incident-publisher",
                  "post-deploy-assessor", "post-deploy-binding"} | dependent:
         assert need in notify["needs"], need
         assert f"needs.{need}.result == 'failure'" in notify["if"], need

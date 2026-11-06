@@ -170,6 +170,8 @@ AMENDED_SINCE_MIGRATION = {
     # no authentication endpoints (the Silk Reeling API behind the distribution
     # has a JWT authorizer), and DEC-009 pointed to the retired POAM-016.
     ("POAM-007", "justification"), ("POAM-009", "justification"),
+    # DEC-026 cited the retired POAM-025 for the operator's MFA; it now cites DEC-025.
+    ("POAM-026", "justification"),
 }
 
 
