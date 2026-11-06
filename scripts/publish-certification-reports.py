@@ -108,7 +108,7 @@ def build(log, previous, now, out):
                         "simulated": True, "notIssuedByFedRAMP": True})
     return {"schema": INDEX_SCHEMA, "generated_at": now.isoformat(),
             "fedRampId": _offering.fedramp_id(), "certificationPackageOverviewUri": fs.CPO_URI,
-            "certificationStatus": "not certified (proof of concept)",
+            "certificationStatus": _offering.CERTIFICATION_STATUS,
             "simulated": {"counterparty": "fedramp", "how": SIMULATION},
             "rule": "CDS-CSO-FRC: FedRAMP Certification Reports are included unmodified and made available within "
                     "2 weeks of receipt.",

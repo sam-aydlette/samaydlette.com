@@ -89,7 +89,7 @@ def simulated_fedramp_notice_intake(notice):
 
 # --- CDS-CSO-FRC: the simulated FedRAMP's certification report --------------------------
 
-NOT_CERTIFIED = "not certified (proof of concept)"
+NOT_CERTIFIED = _offering.CERTIFICATION_STATUS
 REPORT_TITLE = ("SIMULATED REPORT, NOT ISSUED BY FEDRAMP: samaydlette.com is NOT FedRAMP certified "
                 "(proof of concept)")
 REPORT_NOTICE = ("This is not a FedRAMP Certification Report. FedRAMP did not write it, has never seen it, and has "
@@ -189,10 +189,6 @@ def check_components(docs, applicable, fedramp_id):
         _fail(f"the CPO is incomplete (CPO-CSO-OVR): no {', '.join(missing)}")
     if docs["cpo"]["serviceIdentification"]["certificationType"] != PROGRAM:
         _fail(f"the CPO's certificationType is not {PROGRAM}: this offering seeks one program only (FRC-CSO-POP)")
-    cert = (docs["cpo"].get("providerExtensions") or {}).get("certification")
-    if not isinstance(cert, dict) or cert.get("status") != NOT_CERTIFIED:
-        _fail(f"the CPO does not state providerExtensions.certification.status {NOT_CERTIFIED!r}: this proof of "
-              "concept never presents itself as certified")
     ids = [r["frrID"] for r in docs["sdr"]["fedRampRequirements"]]
     if sorted(ids) != sorted(applicable) or len(ids) != len(set(ids)):
         _fail("the SDR does not list every applicable FedRAMP rule exactly once (SDR-CSO-FRR)")
@@ -202,6 +198,11 @@ def check_components(docs, applicable, fedramp_id):
     wrong = sorted(k for k, v in got.items() if v != fedramp_id)
     if wrong:
         _fail(f"{', '.join(wrong)} carry a FedRAMP ID other than the offering's (CDS-CSO-FID)")
+    for kind in ("cpo", "sdr"):
+        cert = (docs[kind].get("providerExtensions") or {}).get("certification")
+        if not isinstance(cert, dict) or cert.get("status") != NOT_CERTIFIED:
+            _fail(f"the {kind.upper()} does not state providerExtensions.certification.status {NOT_CERTIFIED!r}: "
+                  "this proof of concept never presents itself as certified")
 
 
 def manifest_for(docs, paths, commit):

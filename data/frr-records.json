@@ -861,7 +861,7 @@
     {
       "frr_id": "CDS-CSO-FRC",
       "status": "Implemented",
-      "implementation": "FedRAMP is simulated, and the system is not certified. The simulated FedRAMP issues a stand-in certification report only in response to a simulated package submission (scripts/submit-package.py): for the first submission, then after any adaptive or transformative Significant Change Notification no earlier report covered, and once a year; an ordinary deploy issues none. Each report is logged verbatim, with the date received and its sha256, in its submission's entry of the append-only /.well-known/package-submission-log.json. On every deploy scripts/publish-certification-reports.py publishes every logged report byte-identical under /.well-known/fedramp-certification-reports/ (an edited report fails the deploy), keeps each report's first publication date from the previously published index, and fails the deploy if a report would be first published more than 2 weeks after receipt. The previous log and index are fetched fail-closed: anything but a 404 fails the deploy rather than restarting either history. Every report's title and first line say it is a simulated report NOT ISSUED BY FEDRAMP and that the system is not certified, and one that does not is never published; the CPO states providerExtensions.certification.status 'not certified (proof of concept)'.",
+      "implementation": "FedRAMP is simulated, and the system is not certified. The simulated FedRAMP issues a stand-in certification report only in response to a simulated package submission (scripts/submit-package.py): for the first submission, then after any adaptive or transformative Significant Change Notification no earlier report covered, and once a year; an ordinary deploy issues none. Each report is logged verbatim, with the date received and its sha256, in its submission's entry of the append-only /.well-known/package-submission-log.json. On every deploy scripts/publish-certification-reports.py publishes every logged report byte-identical under /.well-known/fedramp-certification-reports/ (an edited report fails the deploy), keeps each report's first publication date from the previously published index, and fails the deploy if a report would be first published more than 2 weeks after receipt. The previous log and index are fetched fail-closed: anything but a 404 fails the deploy rather than restarting either history. Every report's title and first line say it is a simulated report NOT ISSUED BY FEDRAMP and that the system is not certified, and one that does not is never published; the CPO and the SDR both state providerExtensions.certification.status 'not certified (proof of concept)', from one source (scripts/_offering.py), and a package without it is never submitted.",
       "evidence": [
         {
           "kind": "test",
@@ -894,6 +894,14 @@
         {
           "kind": "test",
           "ref": "tests/test_certification_cycle.py::test_the_cpo_json_says_the_system_is_not_certified"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_the_sdr_json_says_the_system_is_not_certified_like_the_cpo"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_known_bad_a_cpo_or_sdr_without_the_not_certified_status_is_never_submitted"
         },
         {
           "kind": "test",

@@ -479,9 +479,11 @@ def test_known_bad_a_modified_or_unlabelled_report_is_never_published(tmp_path, 
         frc.build(_json(BAD / fixture), {}, NOW, tmp_path)
 
 
-def test_a_cpo_without_the_not_certified_status_is_never_submitted():
-    docs, paths = _pkg(cpo="cpo-without-not-certified-status.json")
-    with pytest.raises(SystemExit, match="not certified"):
+@pytest.mark.parametrize("over,needle", [({"cpo": "cpo-without-not-certified-status.json"}, "the CPO does not state"),
+                                         ({"sdr": "sdr-without-not-certified-status.json"}, "the SDR does not state")])
+def test_known_bad_a_cpo_or_sdr_without_the_not_certified_status_is_never_submitted(over, needle):
+    docs, paths = _pkg(**over)
+    with pytest.raises(SystemExit, match=needle):
         submit.build(docs, paths, {}, NOW, "abc", PKG_RULES, PKG_ID)
 
 

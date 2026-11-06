@@ -47,6 +47,19 @@ def fedramp_id(path=OFFERING_PATH):
     return load(path)["fedramp_id"]
 
 
+# The certification this offering seeks, and the fact that it does not hold it.
+# The one place the CPO, the SDR, the simulated certification report and its
+# index read it from, so the published wording cannot drift: this proof of
+# concept is not certified, and every published statement of the program says so.
+CERTIFICATION_PROGRAM = "FedRAMP 20x, Program path, Class C"
+CERTIFICATION_STATUS = "not certified (proof of concept)"
+
+
+def certification():
+    """providerExtensions.certification, as the CPO and the SDR publish it."""
+    return {"program": CERTIFICATION_PROGRAM, "status": CERTIFICATION_STATUS}
+
+
 FEDRAMP_SCHEMA_BASES = ("https://fedramp.gov/schemas/", "https://www.fedramp.gov/schemas/")
 
 

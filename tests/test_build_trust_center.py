@@ -417,6 +417,13 @@ def test_the_trust_center_carries_the_offerings_fedramp_id():
     assert build()["fedRampId"] == _offering.fedramp_id()
 
 
+def test_the_trust_center_says_not_certified_like_the_cpo_and_sdr():
+    assert build()["certification"] == {"program": "FedRAMP 20x, Program path, Class C",
+                                        "status": "not certified (proof of concept)"}
+    js = (REPO / "website" / "assets" / "js" / "trust.js").read_text()
+    assert "doc.certification?.status" in js and "'not certified (proof of concept)'" in js
+
+
 # --- the Rev5 Moderate view (moved from the retired scripts/inject-figures.py) ------
 # The figures come from the control projection (scripts/_controls.py) over the
 # committed fixture inventory, so they run everywhere; the deploy computes the

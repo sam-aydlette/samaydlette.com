@@ -50,7 +50,6 @@ import _tpr  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 BOUNDARY = REPO / "docs" / "boundary" / "boundary-classification.json"
-NOT_CERTIFIED = "not certified (proof of concept)"
 BASE = "https://samaydlette.com/.well-known/"
 LEVELS = ("low", "moderate", "high")
 
@@ -279,7 +278,7 @@ def provider_extensions(off, prof, signal, dates, groups, assessment):
         "fedRampId": off["fedramp_id"],
         # Sought, never held: this proof of concept is not certified, and says so
         # in the JSON as well as the prose (submit-package.py refuses a CPO without it).
-        "certification": {"program": "FedRAMP 20x, Program path, Class C", "status": NOT_CERTIFIED},
+        "certification": _offering.certification(),
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "fips_199": prof.get("fips_199"),

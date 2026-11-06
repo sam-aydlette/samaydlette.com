@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import _controls  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _frr  # noqa: E402
+import _offering  # noqa: E402
 import _rules  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("build_sdr", REPO / "scripts" / "build-sdr.py")
@@ -63,6 +64,13 @@ def doc():
 
 def test_it_validates_against_fedramps_schema(doc):
     assert fs.validate(doc, "sdr") == []
+
+
+def test_the_sdr_json_says_the_system_is_not_certified_like_the_cpo(doc):
+    cert = doc["providerExtensions"]["certification"]
+    assert cert == {"program": "FedRAMP 20x, Program path, Class C", "status": "not certified (proof of concept)"}
+    assert cert == _offering.certification()  # one source for the SDR and the CPO
+    assert "not certified (proof of concept)" in sdr.render_markdown(doc)
 
 
 def test_every_applicable_rule_is_listed_once(doc):

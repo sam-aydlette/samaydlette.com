@@ -52,6 +52,10 @@
   ],
   "providerExtensions": {
     "fedRampId": "Example Provider (EXD)",
-    "contentSha256": "6ada229987020103f85b4b3a991a34aed52ed919d01a6c3f0ac1fd40c2093e6e"
+    "contentSha256": "6ada229987020103f85b4b3a991a34aed52ed919d01a6c3f0ac1fd40c2093e6e",
+    "certification": {
+      "program": "FedRAMP 20x, Program path, Class C",
+      "status": "not certified (proof of concept)"
+    }
   }
 }

@@ -734,7 +734,8 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
         "securityControls": controls,
         "providerExtensions": {
             "fedRampId": fedramp_id or _offering.fedramp_id(),
-            "certification": "FedRAMP 20x, Program path, Class C",
+            # Sought, never held (scripts/_offering.py, the CPO's same field).
+            "certification": _offering.certification(),
             "class": prof.get("fedramp_class"),
             "impact_level": prof.get("impact_level"),
             "ksi_signal_id": signal.get("signal_id"),
@@ -883,8 +884,8 @@ def render_markdown(doc):
     m, pe = doc["metadata"], doc["providerExtensions"]
     s = pe["summary"]
     out = ["# Security Decision Record", "",
-           f"_{pe['certification']}. Every applicable FedRAMP rule, every Key Security Indicator, and every "
-           "NIST 800-53 Rev5 control in the Moderate baseline, with how 20x evidence meets it._", "",
+           f"_{pe['certification']['program']} (sought; status: {pe['certification']['status']}). Every "
+           "applicable FedRAMP rule, every Key Security Indicator, and every NIST 800-53 Rev5 control in the Moderate baseline, with how 20x evidence meets it._", "",
            f"- **FedRAMP ID:** {pe.get('fedRampId')} (simulated: no FedRAMP ID has been assigned)",
            f"- **Version:** {m['version']} | **Last updated:** {m['lastUpdated']}",
            f"- **Source:** {m['updateSource']}",
