@@ -1618,7 +1618,7 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "justification": "Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+      "justification": "Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. No person reviews logs for this assessment: it rests only on these automated sources, and every build records the basis and the time for each finding.",
       "controls": [
         "ra-5",
         "si-4",
@@ -1630,7 +1630,13 @@
         "resources": []
       },
       "source": {
-        "drafted_by": "AI-drafted (Claude)"
+        "drafted_by": "AI-drafted (Claude)",
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (operator's direction, 2026-11-06)",
+          "before": "For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+          "after": "No person reviews logs for this assessment: it rests only on these automated sources, and every build records the basis and the time for each finding."
+        }
       },
       "confirmed_on": "2026-11-06"
     },

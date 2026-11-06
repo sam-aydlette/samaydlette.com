@@ -3525,7 +3525,7 @@
     {
       "frr_id": "VDR-CSO-RES",
       "status": "Implemented",
-      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. The operator's log review for open IRV+LEV findings runs under incident response (DEC-181).",
+      "implementation": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. No person reviews logs for this assessment (DEC-181).",
       "evidence": [
         {
           "kind": "test",
