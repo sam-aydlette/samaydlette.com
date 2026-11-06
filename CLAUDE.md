@@ -13,6 +13,25 @@ Hold two facts at once — they shape every decision:
   - **Three workflows write production evidence unattended:** `evidence-nightly.yml` (the VDR), `package-maintenance.yml` (the CPO, SDR and OCR, and the quarterly issues) and `incident-reports.yml` (the incident reports), each with its own narrowly scoped role and no required reviewer. See the trade recorded under *Security & compliance rules*.
 - **It is also a proof of concept for a scaled version** — a reference architecture for what agency- or enterprise-grade automated compliance ("evidence reciprocity") would look like across many systems. Favor designs that generalize and stay legible; treat the single-account, single-site specifics as stand-ins for a multi-system deployment. **Be honest about the gap:** this repo has **no federal data and no agency sponsor**. It demonstrates the mechanism; it is **not** an authorized system. Never imply otherwise in code, docs, or generated artifacts.
 
+## Proof-of-concept latitude
+This system shows that policy as code can automate CR26. It is not certified.
+Procedure may flex. Claims may not.
+
+- Implemented: a real mechanism ran on real inputs, and evidence exists.
+- Simulated: a real mechanism ran on a labeled stand-in input.
+- Not Demonstrated: not built; say why.
+- Not Applicable: the rule does not apply; say why.
+
+Before using a stand-in, show that a bad input changes the result, and that a
+real input could replace it without changing the logic. If you can't, mark the
+record Not Demonstrated.
+
+You may propose a stand-in or scope cut. You may not approve one. Record each
+with what is real, what is simulated, and who approved it.
+
+Never choose a status because a gate requires it. If the honest status blocks
+the build, stop and tell me.
+
 ## Codebase map
 
 Confirm against the working tree on first run; correct this section if reality differs.
