@@ -1,0 +1,121 @@
+{
+  "$comment": "Each case changes one method of the committed infrastructure/schemas/ksi-methods.json and must fail scripts/_ksi_methods.py validation for the stated reason. Applied by tests/test_ksi_methods.py.",
+  "cases": [
+    {
+      "case": "a method without a measure",
+      "method": "grype",
+      "set": {
+        "measure": ""
+      },
+      "expect": "grype: measure must be a non-empty string"
+    },
+    {
+      "case": "a KSI not in the catalog",
+      "method": "grype",
+      "set": {
+        "ksis": [
+          "KSI-XXX-YYY"
+        ]
+      },
+      "expect": "grype: KSI-XXX-YYY not in the KSI catalog"
+    },
+    {
+      "case": "a KSI listed twice for one method",
+      "method": "grype",
+      "set": {
+        "ksis": [
+          "KSI-SCR-MON",
+          "KSI-SCR-MON"
+        ]
+      },
+      "expect": "grype: ksis must be a non-empty list without repeats"
+    },
+    {
+      "case": "a method with no KSI",
+      "method": "grype",
+      "set": {
+        "ksis": []
+      },
+      "expect": "grype: ksis must be a non-empty list without repeats"
+    },
+    {
+      "case": "the same mechanism listed twice",
+      "duplicate": "grype",
+      "expect": "duplicate method grype"
+    },
+    {
+      "case": "an artifact that is not published",
+      "method": "reconcile",
+      "set": {
+        "verifier": {
+          "kind": "published",
+          "artifact": ".well-known/nope.json",
+          "check": "reconcile"
+        }
+      },
+      "expect": "reconcile: .well-known/nope.json is not a freshness-governed published artifact"
+    },
+    {
+      "case": "a check that does not exist",
+      "method": "reconcile",
+      "set": {
+        "verifier": {
+          "kind": "published",
+          "artifact": ".well-known/reconcile-report.json",
+          "check": "vibes"
+        }
+      },
+      "expect": "reconcile: check 'vibes' is not one of"
+    },
+    {
+      "case": "a feed the VDR does not record",
+      "method": "grype",
+      "set": {
+        "verifier": {
+          "kind": "vdr-feed",
+          "feeds": [
+            "snyk"
+          ]
+        }
+      },
+      "expect": "grype: a vdr-feed verifier is"
+    },
+    {
+      "case": "an unknown verifier kind",
+      "method": "grype",
+      "set": {
+        "verifier": {
+          "kind": "trust-me"
+        }
+      },
+      "expect": "grype: verifier kind 'trust-me' is not one of"
+    },
+    {
+      "case": "an input that is neither real nor stand-in",
+      "method": "grype",
+      "set": {
+        "input": "mostly-real"
+      },
+      "expect": "grype: input must be one of"
+    },
+    {
+      "case": "an extra field",
+      "method": "grype",
+      "set": {
+        "weight": 2
+      },
+      "expect": "grype: fields must be exactly"
+    },
+    {
+      "case": "a simple verifier with arguments",
+      "method": "plan-gate",
+      "set": {
+        "verifier": {
+          "kind": "plan-gate",
+          "count": 2
+        }
+      },
+      "expect": "plan-gate: a plan-gate verifier takes no other field"
+    }
+  ]
+}

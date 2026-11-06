@@ -1,0 +1,250 @@
+{
+  "$comment": "Published method records for scripts/_ksi_methods.verify_published, checked at 2026-11-05T12:00Z: each 'good' record counts; each 'bad' record must not count, for the stated reason. Applied by tests/test_ksi_methods.py.",
+  "now": "2026-11-05T12:00:00+00:00",
+  "good": [
+    {
+      "case": "a passing security-settings export",
+      "method": "security-settings",
+      "doc": {
+        "schema": "security-settings/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "settings": [
+          {
+            "id": "mfa",
+            "result": "ok"
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "case": "a reconcile report with invariant (a) held",
+      "method": "reconcile",
+      "doc": {
+        "schema": "reconcile-report/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "result": "pass",
+        "invariants": [
+          {
+            "id": "a",
+            "status": "held"
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "case": "passing conformance results",
+      "method": "conformance",
+      "doc": {
+        "schema": "conformance-results/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "tests": [
+          {
+            "id": "t1",
+            "result": "passed"
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "case": "a labelled, passing inbox simulation",
+      "method": "inbox-simulation",
+      "doc": {
+        "report_type": "fedramp-inbox-simulation",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "simulation": true,
+        "cases": [
+          {
+            "id": "c1"
+          }
+        ],
+        "result": "pass"
+      },
+      "expect": null
+    },
+    {
+      "case": "an availability measurement",
+      "method": "availability",
+      "doc": {
+        "feed_type": "availability",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "measured_at": "2026-11-05T06:00:00+00:00",
+        "daily": [
+          {
+            "date": "2026-11-04",
+            "up": 1.0
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "case": "an audit-log review that caught the planted intruder",
+      "method": "audit-log-review",
+      "doc": {
+        "schema": "audit-log-review/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "result": "pass",
+        "exercise": {
+          "caught": true
+        }
+      },
+      "expect": null
+    }
+  ],
+  "bad": [
+    {
+      "case": "a setting that deviates",
+      "method": "security-settings",
+      "doc": {
+        "schema": "security-settings/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "settings": [
+          {
+            "id": "mfa",
+            "result": "deviation"
+          }
+        ]
+      },
+      "expect": "1 setting(s) deviate or were not read"
+    },
+    {
+      "case": "a stale security-settings export",
+      "method": "security-settings",
+      "doc": {
+        "schema": "security-settings/1",
+        "emitted_at": "2026-09-01T00:00:00+00:00",
+        "settings": [
+          {
+            "id": "mfa",
+            "result": "ok"
+          }
+        ]
+      },
+      "expect": "security-settings.json is outside its 720-hour window"
+    },
+    {
+      "case": "a record with no timestamp",
+      "method": "security-settings",
+      "doc": {
+        "schema": "security-settings/1",
+        "settings": [
+          {
+            "id": "mfa",
+            "result": "ok"
+          }
+        ]
+      },
+      "expect": "carries no timestamp"
+    },
+    {
+      "case": "invariant (a) deferred",
+      "method": "reconcile",
+      "doc": {
+        "schema": "reconcile-report/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "result": "pass",
+        "invariants": [
+          {
+            "id": "a",
+            "status": "deferred"
+          }
+        ]
+      },
+      "expect": "invariant (a) was not checked against live state"
+    },
+    {
+      "case": "a failing reconcile report",
+      "method": "reconcile",
+      "doc": {
+        "schema": "reconcile-report/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "result": "fail",
+        "invariants": [
+          {
+            "id": "a",
+            "status": "held"
+          }
+        ]
+      },
+      "expect": "the record is not a passing reconcile-report/1"
+    },
+    {
+      "case": "a failed conformance test",
+      "method": "conformance",
+      "doc": {
+        "schema": "conformance-results/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "tests": [
+          {
+            "id": "t1",
+            "result": "failed"
+          }
+        ]
+      },
+      "expect": "1 conformance test(s) failed"
+    },
+    {
+      "case": "an unlabelled inbox run",
+      "method": "inbox-simulation",
+      "doc": {
+        "report_type": "fedramp-inbox-simulation",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "simulation": false,
+        "cases": [
+          {
+            "id": "c1"
+          }
+        ],
+        "result": "pass"
+      },
+      "expect": "not a labelled inbox simulation"
+    },
+    {
+      "case": "an inbox simulation that did not pass",
+      "method": "inbox-simulation",
+      "doc": {
+        "report_type": "fedramp-inbox-simulation",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "simulation": true,
+        "cases": [
+          {
+            "id": "c1"
+          }
+        ],
+        "result": "fail"
+      },
+      "expect": "the simulation did not pass"
+    },
+    {
+      "case": "no availability measurement",
+      "method": "availability",
+      "doc": {
+        "feed_type": "availability",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "daily": [
+          {
+            "date": "2026-11-04",
+            "up": 1.0
+          }
+        ]
+      },
+      "expect": "carries no availability measurement"
+    },
+    {
+      "case": "an audit-log review that missed the intruder",
+      "method": "audit-log-review",
+      "doc": {
+        "schema": "audit-log-review/1",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "result": "pass",
+        "exercise": {
+          "caught": false
+        }
+      },
+      "expect": "the planted simulated intruder was not caught"
+    }
+  ]
+}

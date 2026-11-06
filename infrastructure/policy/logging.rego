@@ -35,6 +35,7 @@ alarm_actionable(r) if {
 #   severity: MEDIUM
 #   nist_controls: [au-11]
 #   ksi_ids: [KSI-MLA-OSM]
+#   resource_types: [aws_cloudwatch_log_group]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudwatch_log_group"
@@ -61,6 +62,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [au-9]
 #   ksi_ids: [KSI-MLA-OSM]
+#   resource_types: [aws_cloudwatch_log_group]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudwatch_log_group"
@@ -83,7 +85,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [au-12]
-#   ksi_ids: [KSI-MLA-LET]
+#   ksi_ids: [KSI-MLA-LET, KSI-CMT-LMC]
+#   resource_types: [aws_cloudtrail]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudtrail"
@@ -105,6 +108,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [si-7]
 #   ksi_ids: [KSI-SVC-VRI]
+#   resource_types: [aws_cloudtrail]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudtrail"
@@ -127,6 +131,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [si-4]
 #   ksi_ids: [KSI-MLA-RVL]
+#   resource_types: [aws_cloudwatch_metric_alarm]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudwatch_metric_alarm"
@@ -149,7 +154,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: MEDIUM
 #   nist_controls: [ca-7]
-#   ksi_ids: [KSI-MLA-EVC]
+#   ksi_ids: [KSI-MLA-EVC, KSI-CNA-EIS]
+#   resource_types: [aws_cloudwatch_event_rule]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudwatch_event_rule"

@@ -35,8 +35,10 @@ def _signal():
     return s
 
 
-def _build(prev=None, now=NOW, records=None, rules_by_ksi=None):
+def _build(prev=None, now=NOW, records=None, rules_by_ksi=None, validations=None):
     sig = _signal()
+    if validations is not None:
+        sig["validations"] = validations
     return sdr.build(CATALOG, sig, records or _frr.load(), _rules.applicable_provider_rules(),
                      _controls.project(sig, CATALOG), sdr.moderate_ids(), rules_by_ksi or {}, [], "none supplied",
                      [], {"fedramp_class": "C", "impact_level": "Moderate"}, prev or {}, {}, now,
@@ -58,7 +60,8 @@ def test_the_sdr_carries_the_offerings_fedramp_id(doc):
 def test_todays_point_carries_every_ksi(doc):
     m = doc["providerExtensions"]["metrics"]
     ksis = m["current"]["ksis"]
-    assert set(ksis) == {k["ksiId"] for k in doc["keySecurityIndicators"]}
+    assert set(ksis) == {k["ksiId"] for k in doc["keySecurityIndicators"]
+                         if k["providerExtensions"]["status"] != "Not Applicable"}
     assert all(set(v) == {"s", "v", "f", "m", "r"} for v in ksis.values())
     assert set(m["ksi_summaries"]) == set(ksis)
     one = next(iter(m["ksi_summaries"].values()))
@@ -77,11 +80,23 @@ def test_per_ksi_history_is_carried_forward_and_summarized_over_30_days_and_a_ye
 
 
 def test_a_summary_counts_the_days_a_ksi_was_not_implemented():
-    hist = [{"date": f"2026-10-{d:02d}", "ksis": {"KSI-X": {"s": "N" if d < 3 else "I", "v": 1, "f": int(d < 3),
-                                                          "m": 1, "r": 0}}} for d in range(1, 6)]
+    """Days recorded with FedRAMP's codes (N, P) and the four statuses' codes
+    (D, S, I) are counted; N and P days count as not demonstrated."""
+    codes = {1: "N", 2: "P", 3: "D", 4: "S", 5: "I", 6: "I"}
+    hist = [{"date": f"2026-10-{d:02d}", "ksis": {"KSI-X": {"s": c, "v": 1, "f": int(d < 3), "m": 1, "r": 0}}}
+            for d, c in codes.items()]
     s = sdr.ksi_summaries(hist)["KSI-X"]["summary_1y"]
-    assert s == {"days": 5, "daysImplemented": 3, "daysNotImplemented": 2, "maxFailingValidations": 1,
-                 "minAutomatedMethods": 1, "daysRuntimeValidated": 0, "current": "Implemented"}
+    assert s == {"days": 6, "daysImplemented": 2, "daysSimulated": 1, "daysNotDemonstrated": 3,
+                 "maxFailingValidations": 1, "minAutomatedMethods": 1, "daysRuntimeValidated": 0,
+                 "current": "Implemented"}
+
+
+def test_a_not_applicable_ksi_carries_no_daily_point():
+    ksis = [{"ksiId": "KSI-A", "providerExtensions": {"status": "Not Applicable"}},
+            {"ksiId": "KSI-B", "providerExtensions": {"status": "Simulated", "validations": 0,
+                                                       "failingValidations": 0, "automatedMethods": 2,
+                                                       "runtimeRules": 0}}]
+    assert sdr.ksi_point(ksis) == {"KSI-B": {"s": "S", "v": 0, "f": 0, "m": 2, "r": 0}}
 
 
 def test_days_before_per_ksi_data_existed_are_not_counted(doc):
@@ -94,8 +109,10 @@ def test_days_before_per_ksi_data_existed_are_not_counted(doc):
 # --- SDR-CSX-KSI ---------------------------------------------------------------------
 
 def test_each_ksi_states_its_own_measures_cycle_and_validation():
-    rules = {"KSI-CMT-LMC": [{"id": "deny_x", "title": "Deny X", "file": "network.rego"}]}
-    d = _build(rules_by_ksi=rules)
+    rules = {"KSI-CMT-LMC": [{"id": "deny_x", "title": "Deny X", "file": "network.rego", "resource_types": ["*"],
+                              "runtime_only": False}]}
+    d = _build(rules_by_ksi=rules, validations=[{"validation_id": "v-1", "component_refs": ["aws::function::app"],
+                                                  "result": "pass"}])
     k = next(x for x in d["keySecurityIndicators"] if x["ksiId"] == "KSI-CMT-LMC")
     text = " ".join(k["ksiImplementation"] + k["ksiValidation"])
     for want in ("network.rego#deny_x", "Cycle:", "Verification that the measures demonstrate KSI-CMT-LMC",
@@ -138,14 +155,16 @@ def test_artifact_evidence_states_its_cycle():
 def test_a_simulated_record_is_flagged_and_counted():
     recs = copy.deepcopy(_frr.load())
     target = next(r for r in recs["records"] if r["status"] == "Implemented")
+    target["status"] = "Simulated"
     target["simulated"] = {"counterparty": "fedramp", "how": "a function in this repository"}
     d = _build(records=recs)
     req = next(r for r in d["fedRampRequirements"] if r["frrID"] == target["frr_id"])
     assert req["providerExtensions"]["simulated"] == target["simulated"]
+    assert "frrImplementationStatus" not in req
     s = d["providerExtensions"]["summary"]["simulatedCounterparties"]
     base = sum(1 for r in _frr.load()["records"] if r.get("simulated"))
     assert s["records"] == base + (0 if _frr_has_sim(target["frr_id"]) else 1)
-    assert "simulated fedramp" in sdr.render_markdown(d)
+    assert f"| `{target['frr_id']}` | Simulated (fedramp stand-in) |" in sdr.render_markdown(d)
 
 
 def _frr_has_sim(rid):

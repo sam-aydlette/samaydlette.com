@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile essay-check preview require-tools require-artifacts
+        reconcile essay-check preview require-tools require-artifacts check-claims
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -122,11 +122,13 @@ check-full: check require-artifacts
 	@$(MAKE) --no-print-directory reconcile
 	@echo "✅ check-full: PASS"
 
-# The completeness gate the deploy runs before anything is applied: every
-# applicable FedRAMP rule Implemented or Not Applicable (scripts/_frr.py).
-# Not part of `check`: work toward it lands on branches that are not yet complete.
-check-complete:
-	python3 scripts/_frr.py --complete
+# The claim gate the deploy runs before anything is applied: every FedRAMP rule
+# record's status is supported by its fields, and every stand-in and scope cut
+# (Simulated, Not Demonstrated, Not Applicable, and the KSI scope cuts) is
+# approved by the operator (scripts/_frr.py). Not part of `check`: a proposed
+# status waits for the operator's approval on its branch.
+check-claims:
+	python3 scripts/_frr.py --claims
 
 require-artifacts:
 	@missing=""; \

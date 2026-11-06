@@ -1,33 +1,403 @@
 {
-  "$comment": "Each case changes the committed data/frr-records.json in one way that must fail scripts/_frr.py for the stated reason. Applied by tests/test_frr_records.py.",
+  "$comment": "Each case changes the committed data/frr-records.json in one way that must fail scripts/_frr.py's structural validation (load, make check) for the stated reason. Applied by tests/test_frr_records.py. The claim check's own cases are in claims-known-bad.json.",
   "cases": [
-    {"case": "missing record", "drop": "AFC-CSO-INB", "expect": "no record for 1 applicable rule(s): AFC-CSO-INB"},
-    {"case": "extra record (Rev5 agency path)", "add": {"frr_id": "FRC-APS-ATO", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["sam"]}, "expect": "FRC-APS-ATO is not a rule that applies"},
-    {"case": "duplicate record", "add": {"frr_id": "VDR-TFR-PVR", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W7"]}, "expect": "duplicate record for VDR-TFR-PVR"},
-    {"case": "implemented without evidence", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "An inbox exists.", "evidence": []}, "expect": "AFC-CSO-INB: Implemented needs evidence that resolves"},
-    {"case": "test that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "test", "ref": "tests/test_frr_records.py::test_the_inbox_receives_mail"}]}, "expect": "names no test function"},
-    {"case": "test file that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "test", "ref": "tests/test_inbox.py::test_x"}]}, "expect": "tests/test_inbox.py does not exist"},
-    {"case": "workflow step that does not exist", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "step", "ref": "deploy-with-opa.yml#Check the FedRAMP Security Inbox"}]}, "expect": "no step named"},
-    {"case": "artifact not published", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "artifact", "ref": ".well-known/fedramp-inbox.json"}]}, "expect": "is not a freshness-governed published artifact"},
-    {"case": "decision not in force", "replace": {"frr_id": "AFC-CSO-INB", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-999"}]}, "expect": "is not an in-force decision record"},
-    {"case": "unresolved evidence on a partial record", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-999"}], "gap": "x", "closes_with": ["W9"]}, "expect": "does not resolve"},
-    {"case": "implemented with a gap", "replace": {"frr_id": "VDR-CSO-MSP", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-039"}], "gap": "x"}, "expect": "an Implemented record has no gap"},
-    {"case": "partial without a gap", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "closes_with": ["W9"]}, "expect": "AFC-CSO-INB: gap must be a non-empty string"},
-    {"case": "partial with nothing closing it", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "gap": "x"}, "expect": "closes_with must be a non-empty list"},
-    {"case": "unknown workstream", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W11"]}, "expect": "closes_with must be a non-empty list"},
-    {"case": "Not Applicable on a rule FedRAMP scopes in", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Applicable", "implementation": "x", "not_applicable": "No mail is expected."}, "expect": "AFC-CSO-INB: cannot be Not Applicable"},
-    {"case": "Not Applicable without a reason", "replace": {"frr_id": "MKT-CSO-PML", "status": "Not Applicable", "implementation": "x"}, "expect": "MKT-CSO-PML: not_applicable must be a non-empty string"},
-    {"case": "Not Applicable with a gap", "replace": {"frr_id": "MKT-CSO-PML", "status": "Not Applicable", "implementation": "x", "not_applicable": "x", "gap": "x", "closes_with": ["sam"]}, "expect": "a Not Applicable record has no gap"},
-    {"case": "a reason for not applying on an applicable record", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "not_applicable": "x"}, "expect": "not_applicable is for Not Applicable records only"},
-    {"case": "optional is no longer a closer", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["optional"]}, "expect": "closes_with must be a non-empty list"},
-    {"case": "unknown status", "replace": {"frr_id": "AFC-CSO-INB", "status": "Met", "implementation": "x"}, "expect": "status 'Met' is not one of"},
-    {"case": "unknown field", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "met": true}, "expect": "unknown field(s) ['met']"},
-    {"case": "account ID in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "Bucket arn:aws:s3:us-east-1:111122223333:x", "gap": "x", "closes_with": ["W9"]}, "expect": "implementation carries an AWS account ID"},
-    {"case": "MAY rule without a rationale", "replace": {"frr_id": "VDR-CSO-SIR", "status": "Not Applicable", "implementation": "x", "not_applicable": "x"}, "expect": "VDR-CSO-SIR: may_rationale must be a non-empty string"},
-    {"case": "rationale on a MUST rule", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "may_rationale": "x"}, "expect": "may_rationale is for MAY rules only"},
-    {"case": "personal email in published text", "replace": {"frr_id": "AFC-CSO-INB", "status": "Not Implemented", "implementation": "x", "gap": "Mail goes to someone@example.com today.", "closes_with": ["W9"]}, "expect": "gap names an email address outside"},
-    {"case": "simulated on a partial record", "replace": {"frr_id": "AFC-CSO-INB", "status": "Partially Implemented", "implementation": "x", "gap": "x", "closes_with": ["W9"], "simulated": {"counterparty": "mail", "how": "x"}}, "expect": "simulated is for Implemented records only"},
-    {"case": "simulated with an unknown counterparty", "replace": {"frr_id": "VDR-CSO-MSP", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}], "simulated": {"counterparty": "the-moon", "how": "x"}}, "expect": "simulated must be {counterparty: one of"},
-    {"case": "simulated without deploy-time evidence", "replace": {"frr_id": "VDR-CSO-MSP", "status": "Implemented", "implementation": "x", "evidence": [{"kind": "decision", "ref": "DEC-039"}], "simulated": {"counterparty": "assessor", "how": "x"}}, "expect": "a simulated counterparty needs deploy-time evidence"}
+    {
+      "case": "missing record",
+      "drop": "AFC-CSO-INB",
+      "expect": "no record for 1 applicable rule(s): AFC-CSO-INB"
+    },
+    {
+      "case": "extra record (Rev5 agency path)",
+      "add": {
+        "frr_id": "FRC-APS-ATO",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_demonstrated": "x"
+      },
+      "expect": "FRC-APS-ATO is not a rule that applies"
+    },
+    {
+      "case": "duplicate record",
+      "add": {
+        "frr_id": "VDR-TFR-PVR",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_demonstrated": "x"
+      },
+      "expect": "duplicate record for VDR-TFR-PVR"
+    },
+    {
+      "case": "implemented without evidence",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "An inbox exists.",
+        "evidence": []
+      },
+      "expect": "AFC-CSO-INB: Implemented needs evidence that resolves"
+    },
+    {
+      "case": "test that does not exist",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "test",
+            "ref": "tests/test_frr_records.py::test_the_inbox_receives_mail"
+          }
+        ]
+      },
+      "expect": "names no test function"
+    },
+    {
+      "case": "test file that does not exist",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "test",
+            "ref": "tests/test_inbox.py::test_x"
+          }
+        ]
+      },
+      "expect": "tests/test_inbox.py does not exist"
+    },
+    {
+      "case": "workflow step that does not exist",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Check the FedRAMP Security Inbox"
+          }
+        ]
+      },
+      "expect": "no step named"
+    },
+    {
+      "case": "artifact not published",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "artifact",
+            "ref": ".well-known/fedramp-inbox.json"
+          }
+        ]
+      },
+      "expect": "is not a freshness-governed published artifact"
+    },
+    {
+      "case": "decision not in force",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "decision",
+            "ref": "DEC-999"
+          }
+        ]
+      },
+      "expect": "is not an in-force decision record"
+    },
+    {
+      "case": "unresolved evidence on a not-demonstrated record",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "decision",
+            "ref": "DEC-999"
+          }
+        ],
+        "not_demonstrated": "x"
+      },
+      "expect": "does not resolve"
+    },
+    {
+      "case": "Not Applicable without a reason",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x"
+      },
+      "expect": "MKT-CSO-PML: not_applicable must be a non-empty string"
+    },
+    {
+      "case": "a reason for not applying on an applicable record",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_applicable": "x",
+        "not_demonstrated": "x"
+      },
+      "expect": "not_applicable is for Not Applicable records only"
+    },
+    {
+      "case": "unknown status",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Met",
+        "implementation": "x"
+      },
+      "expect": "status 'Met' is not one of"
+    },
+    {
+      "case": "unknown field",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "met": true,
+        "not_demonstrated": "x"
+      },
+      "expect": "unknown field(s) ['met']"
+    },
+    {
+      "case": "account ID in published text",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "Bucket arn:aws:s3:us-east-1:111122223333:x",
+        "not_demonstrated": "x"
+      },
+      "expect": "implementation carries an AWS account ID"
+    },
+    {
+      "case": "MAY rule without a rationale",
+      "replace": {
+        "frr_id": "VDR-CSO-SIR",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "not_applicable": "x"
+      },
+      "expect": "VDR-CSO-SIR: may_rationale must be a non-empty string"
+    },
+    {
+      "case": "rationale on a MUST rule",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "may_rationale": "x",
+        "not_demonstrated": "x"
+      },
+      "expect": "may_rationale is for MAY rules only"
+    },
+    {
+      "case": "personal email in published text",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_demonstrated": "Mail goes to someone@example.com today."
+      },
+      "expect": "not_demonstrated names an email address outside"
+    },
+    {
+      "case": "simulated on a not-demonstrated record",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "simulated": {
+          "counterparty": "mail",
+          "how": "x"
+        },
+        "not_demonstrated": "x"
+      },
+      "expect": "simulated is for Simulated records only"
+    },
+    {
+      "case": "simulated with an unknown counterparty",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "the-moon",
+          "how": "x"
+        }
+      },
+      "expect": "simulated must be {counterparty: one of"
+    },
+    {
+      "case": "simulated without deploy-time evidence",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "decision",
+            "ref": "DEC-039"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "x"
+        }
+      },
+      "expect": "a simulated counterparty needs deploy-time evidence"
+    },
+    {
+      "case": "Not Demonstrated without a reason",
+      "replace": {
+        "frr_id": "AFC-CSO-INB",
+        "status": "Not Demonstrated",
+        "implementation": "x"
+      },
+      "expect": "AFC-CSO-INB: not_demonstrated must be a non-empty string"
+    },
+    {
+      "case": "a reason for not demonstrating on an implemented record",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "decision",
+            "ref": "DEC-039"
+          }
+        ],
+        "not_demonstrated": "x"
+      },
+      "expect": "not_demonstrated is for Not Demonstrated records only"
+    },
+    {
+      "case": "Simulated without evidence",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": []
+      },
+      "expect": "VDR-CSO-MSP: Simulated needs evidence that resolves"
+    },
+    {
+      "case": "stand_in_proof on an implemented record",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "x",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        }
+      },
+      "expect": "stand_in_proof is for Simulated records only"
+    },
+    {
+      "case": "stand_in_proof of the wrong shape",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "x"
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up"
+        }
+      },
+      "expect": "stand_in_proof must be {bad_input"
+    },
+    {
+      "case": "approval on an implemented record",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "approval is for Simulated, Not Demonstrated, Not Applicable records only"
+    },
+    {
+      "case": "approval by anyone but the operator",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "not_applicable": "x",
+        "approval": {
+          "by": "Claude",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "approval.by must be the operator"
+    },
+    {
+      "case": "a signoff without a date",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "not_applicable": "x",
+        "proposal": {
+          "by": "Claude",
+          "on": "soon"
+        }
+      },
+      "expect": "MKT-CSO-PML proposal.on must be a date"
+    },
+    {
+      "case": "a signoff of the wrong shape",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "not_applicable": "x",
+        "proposal": {
+          "by": "Claude"
+        }
+      },
+      "expect": "MKT-CSO-PML proposal must be {by, on}"
+    }
   ]
 }

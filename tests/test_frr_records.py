@@ -140,13 +140,14 @@ def test_known_bad_fixture_covers_every_check():
     """A new invariant in _frr.validate needs a known-bad case here."""
     expects = " ".join(c["expect"] for c in KNOWN_BAD)
     for fragment in ("no record for", "is not a rule that applies", "duplicate record",
-                     "Implemented needs evidence", "names no test function", "does not exist",
-                     "no step named", "freshness-governed", "in-force decision", "has no gap",
-                     "gap must be", "closes_with must be", "cannot be Not Applicable", "is not one of",
-                     "not_applicable must be", "a Not Applicable record has no gap", "for Not Applicable records only",
-                     "unknown field", "AWS account ID", "email address outside",
-                     "may_rationale must be", "for MAY rules only", "simulated is for Implemented records only",
-                     "simulated must be {counterparty", "needs deploy-time evidence"):
+                     "Implemented needs evidence", "Simulated needs evidence", "names no test function",
+                     "does not exist", "no step named", "freshness-governed", "in-force decision", "is not one of",
+                     "not_applicable must be", "for Not Applicable records only", "not_demonstrated must be",
+                     "for Not Demonstrated records only", "unknown field", "AWS account ID", "email address outside",
+                     "may_rationale must be", "for MAY rules only", "simulated is for Simulated records only",
+                     "simulated must be {counterparty", "needs deploy-time evidence",
+                     "stand_in_proof is for Simulated records only", "stand_in_proof must be {bad_input",
+                     "approval is for", "approval.by must be the operator", "must be a date", "must be {by, on}"):
         assert fragment in expects, fragment
 
 
@@ -203,21 +204,21 @@ def test_every_may_rule_says_why(applicable):
         assert ("may_rationale" in r) is (applicable[r["frr_id"]]["force"] == "MAY"), r["frr_id"]
 
 
-def test_not_applicable_only_where_fedramp_scopes_it_out(applicable):
-    for r in _committed()["records"]:
-        if r["status"] == "Not Applicable":
-            rule = applicable[r["frr_id"]]
-            assert rule["force"] == "MAY" or (rule["family"], rule["subset"]) in _frr.CONDITIONAL_SUBSETS, r["frr_id"]
+def test_not_applicable_is_no_longer_limited_to_conditional_subsets(applicable, resolve):
+    """The operator approves each scope cut (CLAUDE.md, proof-of-concept
+    latitude), so a reasoned Not Applicable on a MUST rule loads; it then
+    waits on the claim check for his approval."""
+    doc = _doc_with("AFC-CSO-INB", status="Not Applicable", implementation="x", not_applicable="No mail is expected.",
+                    proposal={"by": "Claude (AI agent), for the operator's review", "on": "2026-11-06"})
+    _frr.validate(doc, applicable, resolve)
+    assert ("AFC-CSO-INB", "Not Applicable not approved by the operator (Sam Aydlette)") in _frr.claims(doc, resolve)
 
 
-def test_conditional_subsets_say_so_in_the_corpus():
-    """The scoping that makes a subset conditional is FedRAMP's text, not ours."""
-    rules, _ = _rules.load_rules()
-    for (fam, subset), phrase in _frr.CONDITIONAL_SUBSETS.items():
-        assert phrase in rules["FRR"][fam]["info"]["subsets"][subset]["description"]
+# --- the claim check (the deploy gate) ----------------------------------------------
 
+CLAIMS_BAD = json.loads((REPO / "tests" / "fixtures" / "frr" / "claims-known-bad.json").read_text())["cases"]
+OPERATOR_SIGNOFF = {"by": _frr.OPERATOR, "on": "2026-11-06"}  # test data, not the operator's decision
 
-# --- the completeness gate ---------------------------------------------------------
 
 def _doc_with(rid, **fields):
     doc = copy.deepcopy(_committed())
@@ -228,42 +229,123 @@ def _doc_with(rid, **fields):
     return doc
 
 
-def _complete_doc():
-    """The committed records with every open one made Implemented on a test that exists."""
+def _supported_doc():
+    """The committed records with every claim made supportable in test data:
+    each Simulated record says what is real and what stands in and cites a
+    stand-in proof on a test that exists, and every record that needs the
+    operator's approval carries one. The committed records carry none."""
+    test = "tests/test_frr_records.py::test_summary_counts_add_up"
     doc = copy.deepcopy(_committed())
     for r in doc["records"]:
-        if r["status"] not in _frr.COMPLETE_STATUSES:
-            for k in ("gap", "closes_with"):
-                r.pop(k, None)
-            r["status"] = "Implemented"
-            r["evidence"] = [{"kind": "test", "ref": "tests/test_frr_records.py::test_summary_counts_add_up"}]
+        if r["status"] == "Simulated":
+            r["simulated"] = {"real": "x", "stand_in": "x", **r["simulated"]}
+            r["stand_in_proof"] = {"bad_input": test, "replaceable": {"statement": "x", "test": test}}
+        if r["status"] in _frr.NEEDS_APPROVAL:
+            r["approval"] = dict(OPERATOR_SIGNOFF)
     return doc
 
 
-@pytest.mark.parametrize("status", ["Partially Implemented", "Not Implemented"])
-def test_any_open_record_keeps_the_deploy_from_proceeding(status, tmp_path, applicable, resolve):
-    doc = _complete_doc()
-    rec = next(r for r in doc["records"] if r["frr_id"] == "AFC-CSO-INB")
-    rec.update({"status": status, "gap": "x", "closes_with": ["W9"]})
-    rec.pop("simulated", None)
-    _frr.validate(doc, applicable, resolve)          # honest, so it passes the honesty rule...
-    assert _frr.incomplete(doc) == [("AFC-CSO-INB", status)]
-    p = tmp_path / "frr.json"
-    p.write_text(json.dumps(doc))
-    assert _frr.main(["--records", str(p), "--complete"]) == 1   # ...and still stops the deploy
-
-
-def test_a_complete_record_set_lets_the_deploy_proceed(tmp_path, applicable, resolve):
-    doc = _complete_doc()
+def _claim_problems(doc, applicable, resolve):
     _frr.validate(doc, applicable, resolve)
-    assert _frr.incomplete(doc) == []
+    return _frr.claims(doc, resolve)
+
+
+def test_a_supported_record_set_has_no_unsupported_claim(applicable, resolve):
+    assert _claim_problems(_supported_doc(), applicable, resolve) == []
+
+
+@pytest.mark.parametrize("case", CLAIMS_BAD, ids=[c["case"] for c in CLAIMS_BAD])
+def test_known_bad_claims_fail(case, applicable, resolve):
+    doc = _supported_doc()
+    rid = case["replace"]["frr_id"]
+    doc["records"] = [case["replace"] if r["frr_id"] == rid else r for r in doc["records"]]
+    if case["stage"] == "load":
+        with pytest.raises(SystemExit) as exc:
+            _frr.validate(doc, applicable, resolve)
+        assert case["expect"] in str(exc.value)
+    else:
+        problems = _claim_problems(doc, applicable, resolve)
+        assert any(f"{r}: {why}".startswith(case["expect"]) for r, why in problems), problems
+        assert {r for r, _ in problems} == {rid}
+
+
+def test_claims_known_bad_fixture_covers_every_check():
+    """A new reason in _frr.claims needs a known-bad case."""
+    expects = " ".join(c["expect"] for c in CLAIMS_BAD)
+    for fragment in ("Implemented with a simulated block", "Simulated without stand_in_proof",
+                     "stand_in_proof bad_input test", "stand_in_proof replaceable test",
+                     "Simulated not approved", "Simulated without a proposal", "Simulated without saying",
+                     "Simulated without a simulated block", "not_applicable must be", "Not Applicable not approved",
+                     "replaceable: statement must be a non-empty string",
+                     "Not Demonstrated but cites evidence", "Not Demonstrated not approved"):
+        assert fragment in expects, fragment
+
+
+def _write(tmp_path, doc):
     p = tmp_path / "frr.json"
     p.write_text(json.dumps(doc))
-    assert _frr.main(["--records", str(p), "--complete"]) == 0
+    return p
+
+
+def test_a_replaceability_statement_needs_no_test(applicable, resolve):
+    """How a real input would replace the stand-in is a required statement;
+    a test that shows it is cited where one exists, and is not required."""
+    doc = _supported_doc()
+    rec = next(r for r in doc["records"] if r["frr_id"] == "AFC-CSO-INB")
+    rec["stand_in_proof"]["replaceable"] = {"statement": "Real mail would arrive through SES receipt; the "
+                                                         "simulation step would be removed."}
+    assert _claim_problems(doc, applicable, resolve) == []
+
+
+def test_an_unsupported_claim_keeps_the_deploy_from_proceeding(tmp_path, applicable, resolve):
+    doc = _supported_doc()
+    rec = next(r for r in doc["records"] if r["frr_id"] == "AFC-CSO-INB")
+    rec.pop("approval", None)
+    assert rec["status"] == "Simulated"
+    assert _claim_problems(doc, applicable, resolve) == [
+        ("AFC-CSO-INB", "Simulated not approved by the operator (Sam Aydlette)")]
+    assert _frr.main(["--records", str(_write(tmp_path, doc)), "--claims"]) == 1
+
+
+def test_an_honest_status_never_stops_the_deploy(tmp_path, applicable, resolve):
+    """Not Demonstrated, stated and approved, passes: the gate checks claims,
+    it never forces a status."""
+    doc = _supported_doc()
+    rec = next(r for r in doc["records"] if r["frr_id"] == "AFC-CSO-INB")
+    rec.clear()
+    rec.update({"frr_id": "AFC-CSO-INB", "status": "Not Demonstrated", "implementation": "x",
+                "not_demonstrated": "Not built.", "proposal": dict(OPERATOR_SIGNOFF),
+                "approval": dict(OPERATOR_SIGNOFF)})
+    assert _claim_problems(doc, applicable, resolve) == []
+    assert _frr.main(["--records", str(_write(tmp_path, doc)), "--claims"]) == 0
+
+
+def test_without_claims_the_cli_only_checks_shape(tmp_path):
+    """make check loads the register; only the deploy runs --claims."""
+    assert _frr.main(["--records", str(RECORDS)]) == 0
+
+
+def test_the_committed_records_wait_on_the_operator(resolve):
+    """Every migrated stand-in and scope cut is proposed and unapproved, so
+    the committed register fails the claim check until the operator decides."""
+    doc = _committed()
+    waiting = [r for r in doc["records"] if r["status"] in _frr.NEEDS_APPROVAL]
+    assert waiting and all(r.get("proposal") for r in waiting)
+    assert not any(r.get("approval") for r in waiting)
+    assert {rid for rid, _ in _frr.claims(doc, resolve)} == {r["frr_id"] for r in waiting}
+    assert _frr.main(["--records", str(RECORDS), "--claims"]) == 1
+
+
+def test_make_check_does_not_run_the_claim_check():
+    mk = (REPO / "Makefile").read_text()
+    check = re.search(r"^check:.*\n(?:\t.*\n)*", mk, re.M).group(0)
+    assert "@$(MAKE) --no-print-directory test\n" in check
+    assert "claims" not in check and "_frr.py" not in check
+    assert re.search(r"^check-claims:.*\n\t.*scripts/_frr\.py --claims", mk, re.M)
 
 
 def test_the_summary_counts_simulated_counterparties(applicable, resolve):
-    doc = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+    doc = _doc_with("VDR-CSO-MSP", status="Simulated", implementation="x",
                     evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
                     simulated={"counterparty": "assessor", "how": "A plainly fictional assessor."})
     _frr.validate(doc, applicable, resolve)
@@ -273,12 +355,12 @@ def test_the_summary_counts_simulated_counterparties(applicable, resolve):
 
 
 def test_the_gate_runs_before_anything_is_applied():
-    """The completeness gate is in the job the deploy job needs, so a gap
-    stops the run before terraform apply or any publish."""
+    """The claim check is in the job the deploy job needs, so an unsupported
+    claim stops the run before terraform apply or any publish."""
     import yaml
     wf = yaml.safe_load((REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text())
-    steps = [s.get("run", "") for s in wf["jobs"]["test"]["steps"]]
-    assert any("scripts/_frr.py --complete" in r for r in steps)
+    steps = {s.get("name"): s.get("run", "") for s in wf["jobs"]["test"]["steps"]}
+    assert "scripts/_frr.py --claims" in steps["FedRAMP rule claims supported by evidence"]
     assert "test" in wf["jobs"]["deploy"]["needs"]
     assert not any("terraform apply" in s.get("run", "") or "aws s3" in s.get("run", "")
                    for s in wf["jobs"]["test"]["steps"])
@@ -290,11 +372,11 @@ def test_personnel_is_a_simulated_counterparty_with_every_rule_of_the_field(appl
     assert "personnel" in _frr.SIMULATED_COUNTERPARTIES
     schema = json.loads((REPO / "infrastructure" / "schemas" / "frr-records.schema.json").read_text())
     assert "personnel" in json.dumps(schema)
-    ok = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+    ok = _doc_with("VDR-CSO-MSP", status="Simulated", implementation="x",
                    evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
                    simulated={"counterparty": "personnel", "how": "A plainly simulated trainee."})
     _frr.validate(ok, applicable, resolve)
-    no_deploy_evidence = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+    no_deploy_evidence = _doc_with("VDR-CSO-MSP", status="Simulated", implementation="x",
                                    evidence=[{"kind": "test", "ref": "tests/test_frr_records.py::test_summary_counts_add_up"}],
                                    simulated={"counterparty": "personnel", "how": "A plainly simulated trainee."})
     with pytest.raises(SystemExit, match="needs deploy-time evidence"):

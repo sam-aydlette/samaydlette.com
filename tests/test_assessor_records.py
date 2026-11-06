@@ -158,7 +158,9 @@ def test_sdr_markdown_states_no_assessor_record():
            "providerExtensions": {"certification": {"program": "c", "status": "s"}, "ksi_signal_id": "s",
                                   "rules": {"version": "v", "commit": "0" * 40},
                                   "summary": {"fedRampRequirements": {}, "keySecurityIndicators": {},
-                                              "securityControlsModerate": {}, "securityControlsBeyondModerate": {}},
+                                              "securityControlsModerate": {}, "securityControlsBeyondModerate": {},
+                                              "statusProjection": "p", "fedRampRequirementsAwaitingApproval": 0,
+                                              "keySecurityIndicatorsAwaitingApproval": 0},
                                   "assessorRecords": {"status": "no assessor record", "records": []},
                                   "assessorCommentResponses": {}}}
     assert "No assessor record" in sdr_mod.render_markdown(sdr)

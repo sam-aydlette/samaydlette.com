@@ -135,23 +135,132 @@ def test_a_control_is_no_stronger_than_what_backs_it(ir, ksis, ksi_st, frrs, frr
     assert sdr.control_basis(ir, ksis, ksi_st, frrs, frr_st, POLICIES)[0] == want
 
 
-@pytest.mark.parametrize("k,want", [
-    ({"status": "pass", "method": "policy-validation", "evidence": {"validation_ids": ["v"]}}, "Implemented"),
-    ({"status": "pass", "method": "policy-validation", "evidence": {"validation_ids": []}}, "Partially Implemented"),
-    ({"status": "pass", "method": "inventory-attestation", "evidence": {}}, "Partially Implemented"),
-    ({"status": "pass", "method": "documentation", "evidence": {}}, "Partially Implemented"),
-    ({"status": "fail", "method": "policy-validation", "evidence": {"validation_ids": ["v"]}}, "Not Implemented"),
+PASS = {"status": "pass"}
+
+
+@pytest.mark.parametrize("k,real,total,want", [
+    (PASS, 2, 2, "Implemented"),
+    (PASS, 3, 3, "Implemented"),
+    (PASS, 1, 2, "Simulated"),        # two only with a stand-in input
+    (PASS, 0, 2, "Simulated"),
+    (PASS, 1, 1, "Not Demonstrated"),
+    (PASS, 0, 0, "Not Demonstrated"),
+    ({"status": "fail"}, 2, 2, "Not Demonstrated"),
 ])
-def test_a_ksi_is_implemented_only_when_its_measures_are_checked(k, want):
-    assert sdr.ksi_status(k) == want
+def test_a_ksi_is_implemented_only_when_its_measures_are_checked(k, real, total, want):
+    assert sdr.ksi_status(k, real, total) == want
+
+
+LAMBDA = "aws_lambda_function"
+
+
+def _typed_signal():
+    """The clean signal with the function's Terraform type and one plan
+    validation of it."""
+    s = _signal()
+    for c in s["components"]:
+        if c["component_id"] == "aws::function::app":
+            c.setdefault("attributes", {})["tf_type"] = LAMBDA
+    s["validations"] = [{"validation_id": "v-1", "component_refs": ["aws::function::app"], "result": "pass"}]
+    return s
+
+
+def _rule(types, runtime_only=False, rid="r"):
+    return {"id": rid, "title": "t", "file": "x.rego", "resource_types": types, "runtime_only": runtime_only}
+
+
+def _ksi(d, kid):
+    return next(k for k in d["keySecurityIndicators"] if k["ksiId"] == kid)
+
+
+RUNTIME = [{"validation_id": "r-1", "component_refs": ["aws::function::app"], "result": "pass"}]
 
 
 def test_runtime_revalidation_counts_as_a_second_automated_method():
-    rt = [{"validation_id": "r-1", "component_refs": ["aws::function::app"], "result": "pass"}]
-    d = _build(runtime=rt)
-    assert {k["providerExtensions"]["automatedMethods"] for k in d["keySecurityIndicators"]} == {2}
-    d = _build()
-    assert {k["providerExtensions"]["automatedMethods"] for k in d["keySecurityIndicators"]} == {1}
+    """One annotated rule, a matching resource in both the plan and the
+    runtime validations: 2 methods (plan and runtime read different inputs
+    through different code paths). In the plan only: 1."""
+    rules = {"KSI-CNA-RNT": [_rule([LAMBDA], rid="apigw_unthrottled")]}
+    k = _ksi(_build(signal=_typed_signal(), runtime=RUNTIME, rules_by_ksi=rules), "KSI-CNA-RNT")
+    assert k["providerExtensions"]["automatedMethods"] == 2
+    assert k["providerExtensions"]["status"] == "Implemented" == k["ksiImplementationStatus"]
+    text = " ".join(k["ksiValidation"])
+    assert "at plan (Terraform plan): `x#apigw_unthrottled`" in text
+    assert "at runtime (live read): `x#apigw_unthrottled`" in text
+    k = _ksi(_build(signal=_typed_signal(), rules_by_ksi=rules), "KSI-CNA-RNT")
+    assert k["providerExtensions"]["automatedMethods"] == 1
+    assert k["providerExtensions"]["status"] == "Not Demonstrated"
+    assert k["ksiImplementationStatus"] == "Not Implemented"
+
+
+def test_known_bad_a_family_level_validation_counts_nothing():
+    """A KSI whose signal lists validations (family-level linking) but none
+    of whose rules evaluated a resource of its types counts 0, not 2."""
+    s = _typed_signal()
+    assert _ksi(_build(signal=s, runtime=RUNTIME), "KSI-CNA-RNT")["providerExtensions"]["automatedMethods"] == 0
+    k = _ksi(_build(signal=s, runtime=RUNTIME, rules_by_ksi={"KSI-CNA-RNT": [_rule(["aws_s3_bucket"])]}),
+             "KSI-CNA-RNT")
+    assert k["providerExtensions"]["automatedMethods"] == 0
+    assert "Verification: none automated" in " ".join(k["ksiValidation"])
+    reasons = {m["key"]: m["reason"] for m in k["providerExtensions"]["methods"]}
+    assert reasons["plan"] == "no resource of its rules' types is in this plan"
+
+
+def test_known_bad_a_runtime_only_rule_earns_no_plan_credit():
+    rules = {"KSI-CNA-RNT": [_rule([LAMBDA], runtime_only=True)]}
+    k = _ksi(_build(signal=_typed_signal(), runtime=RUNTIME, rules_by_ksi=rules), "KSI-CNA-RNT")
+    assert {m["key"]: m["counted"] for m in k["providerExtensions"]["methods"]} == {"plan": False, "runtime": True}
+
+
+def test_a_wildcard_rule_counts_when_any_resource_was_evaluated():
+    rules = {"KSI-CNA-RNT": [_rule(["*"])]}
+    assert _ksi(_build(signal=_typed_signal(), runtime=RUNTIME, rules_by_ksi=rules),
+                "KSI-CNA-RNT")["providerExtensions"]["automatedMethods"] == 2
+    bare = _signal()
+    bare["validations"] = []
+    assert _ksi(_build(signal=bare, rules_by_ksi=rules), "KSI-CNA-RNT")["providerExtensions"]["automatedMethods"] == 0
+
+
+def test_the_projection_leaves_out_the_official_status_fedramp_has_no_value_for(doc):
+    """Simulated and Not Applicable carry no official status; Not
+    Demonstrated is published as Not Implemented; the real status is in
+    providerExtensions; and the document still validates."""
+    seen = set()
+    for r in doc["fedRampRequirements"]:
+        st = r["providerExtensions"]["status"]
+        seen.add(st)
+        assert r.get("frrImplementationStatus") == sdr.OFFICIAL_STATUS.get(st), r["frrID"]
+    for k in doc["keySecurityIndicators"]:
+        st = k["providerExtensions"]["status"]
+        seen.add(st)
+        assert k.get("ksiImplementationStatus") == sdr.OFFICIAL_STATUS.get(st), k["ksiId"]
+    assert seen == set(sdr.STATUSES)
+    assert sdr.OFFICIAL_STATUS == {"Implemented": "Implemented", "Not Demonstrated": "Not Implemented"}
+    assert fs.validate(doc, "sdr") == []
+
+
+def test_a_simulated_record_publishes_what_is_real_and_who_approved():
+    records = _frr.load()
+    rec = next(r for r in records["records"] if r["frr_id"] == "AFC-CSO-INB")
+    rec["simulated"] = {"real": "The inbox.", "stand_in": "The sender.", **rec["simulated"]}
+    rec["stand_in_proof"] = {"bad_input": "tests/test_sdr.py::test_it_validates_against_fedramps_schema",
+                             "replaceable": {"statement": "Real mail enters the same way.",
+                                             "test": "tests/test_sdr.py::test_it_validates_against_fedramps_schema"}}
+    rec["approval"] = {"by": "Sam Aydlette", "on": "2026-11-06"}       # test data only
+    r = next(x for x in _build(records=records)["fedRampRequirements"] if x["frrID"] == "AFC-CSO-INB")
+    assert "frrImplementationStatus" not in r
+    ext = r["providerExtensions"]
+    assert ext["status"] == "Simulated"
+    assert ext["simulated"]["real"] == "The inbox." and ext["simulated"]["stand_in"] == "The sender."
+    assert ext["standInProof"]["bad_input"].endswith("test_it_validates_against_fedramps_schema")
+    assert ext["approval"] == {"by": "Sam Aydlette", "on": "2026-11-06"}
+
+
+def test_the_summary_counts_all_four_statuses(doc):
+    s = doc["providerExtensions"]["summary"]
+    assert set(s["fedRampRequirements"]) == set(sdr.STATUSES) == set(s["keySecurityIndicators"])
+    assert sum(s["fedRampRequirements"].values()) == len(doc["fedRampRequirements"])
+    assert sum(s["keySecurityIndicators"].values()) == len(doc["keySecurityIndicators"])
 
 
 # --- known-bad: each fails closed for its own reason --------------------------------

@@ -38,7 +38,8 @@ meets_tls_minimum(version) if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [sc-8, sc-8.1]
-#   ksi_ids: [KSI-SVC-SIN, KSI-CNA-ULN]
+#   ksi_ids: [KSI-SVC-SIN, KSI-CNA-ULN, KSI-SVC-VCM]
+#   resource_types: [aws_cloudfront_distribution]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudfront_distribution"
@@ -59,7 +60,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: MEDIUM
 #   nist_controls: [sc-8, sc-13]
-#   ksi_ids: [KSI-SVC-SIN]
+#   ksi_ids: [KSI-SVC-SIN, KSI-SVC-VCM]
+#   resource_types: [aws_cloudfront_distribution]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_cloudfront_distribution"

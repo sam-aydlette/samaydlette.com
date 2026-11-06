@@ -149,13 +149,14 @@ def _guide(**art):
     chk = {"url": f"{SITE}/.well-known/security-decision-record.json",
            "bundle_url": f"{SITE}/.well-known/security-decision-record.bundle", "identities": ["deploy"],
            "timestamp": {"source": "json", "field": "emitted_at"}, "max_age_hours": 720, **art}
-    return {"site": SITE, "fedRampId": "Example Provider (EXD)",
+    return {"site": SITE, "fedRampId": "Example Provider (EXD)", "operator": "Sam Aydlette",
             "identities": {"deploy": "D", "nightly": "N", "assessor": "A", "oidc_issuer": "I"},
             "rules": [{"rule_id": "SDR-CSO-FRR", "force": "MUST", "status": "Implemented", "evidence": [
                 {"kind": "test", "ref": "tests/t.py::test_a", "check": {"pytest": "tests/t.py::test_a"}},
                 {"kind": "artifact", "ref": ".well-known/security-decision-record.json", "check": {"artifact": chk}}]},
                 {"rule_id": "CDS-CSO-RPS", "force": "MAY", "status": "Not Applicable",
-                 "not_applicable": "not exercised", "evidence": []}],
+                 "not_applicable": "not exercised", "evidence": [],
+                 "approval": {"by": "Sam Aydlette", "on": "2026-11-06"}}],
             "ksis": [{"ksi_id": "KSI-CED-RAT"}]}
 
 
@@ -213,11 +214,62 @@ def test_unpublished_or_stale_artifacts_are_observations_not_failures(kw, needle
     assert rules[0][1] == "observation" and needle in rules[0][3][0]
 
 
-def test_status_short_of_complete_fails():
+PROOF = {"bad_input": {"ref": "tests/t.py::test_a", "check": {"pytest": "tests/t.py::test_a"}},
+         "replaceable": {"statement": "A real input enters the same mechanism."}}
+
+
+def _simulated(g, **over):
+    r = {"rule_id": "SDR-CSO-FRR", "force": "MUST", "status": "Simulated", "evidence": g["rules"][0]["evidence"],
+         "simulated": {"counterparty": "assessor", "how": "x", "real": "x", "stand_in": "x"},
+         "stand_in_proof": PROOF, "approval": {"by": "Sam Aydlette", "on": "2026-11-06"}, **over}
+    g["rules"][0] = {k: v for k, v in r.items() if v is not None}
+    return g
+
+
+def test_an_unknown_status_fails():
     g = _guide()
     g["rules"][0]["status"] = "Partially Implemented"
     rules, _ = _run(g)
     assert rules[0][1] == "fail"
+
+
+def test_a_supported_simulated_record_passes():
+    rules, _ = _run(_simulated(_guide()))
+    assert rules[0][1] == "pass"
+
+
+@pytest.mark.parametrize("over,why", [
+    ({"approval": None}, "not approved by the operator"),
+    ({"approval": {"by": "Claude", "on": "2026-11-06"}}, "not approved by the operator"),
+    ({"stand_in_proof": None}, "without a bad-input test"),
+    ({"stand_in_proof": {"bad_input": PROOF["bad_input"], "replaceable": {"statement": ""}}},
+     "how a real input would replace"),
+    ({"simulated": {"counterparty": "assessor", "how": "x"}}, "what is real and what is the stand-in"),
+])
+def test_known_bad_an_unsupported_simulated_claim_fails(over, why):
+    rules, _ = _run(_simulated(_guide(), **over))
+    assert rules[0][1] == "fail"
+    assert any(why in line for line in rules[0][2]), rules[0][2]
+
+
+def test_known_bad_implemented_with_a_stand_in_fails():
+    g = _guide()
+    g["rules"][0]["simulated"] = {"counterparty": "assessor", "how": "x"}
+    rules, _ = _run(g)
+    assert rules[0][1] == "fail"
+
+
+def test_known_bad_a_stand_in_proof_failing_on_the_rerun_fails():
+    rules, _ = _run(_simulated(_guide()), tests_result="failed")
+    assert rules[0][1] == "fail"
+    assert "stand-in proof (bad_input) tests/t.py::test_a failed (re-run by the assessor)" in rules[0][2]
+
+
+def test_known_bad_an_unapproved_scope_cut_fails():
+    g = _guide()
+    del g["rules"][1]["approval"]
+    rules, _ = _run(g)
+    assert rules[1][1] == "fail"
 
 
 def test_main_exits_non_zero_on_any_failure(tmp_path, monkeypatch):

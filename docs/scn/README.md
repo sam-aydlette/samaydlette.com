@@ -59,4 +59,4 @@ deploy that introduced it, after their deadlines, and the index says so.
 | [SCN-2026-004](SCN-2026-004-evidence-alerting.md) | Adaptive | Evidence SLA watchdog and operator email alerting (backfilled record) | Implemented + post-impl. verified 2026-09-25 |
 | [SCN-2026-005](SCN-2026-005-ci-identity-split.md) | Adaptive | CI identity split: read-only plan role; deploy role trusts only the prod environment | Implemented and verified 2026-09-28 |
 | [SCN-2026-006](SCN-2026-006-remove-anthropic-interconnection.md) | Adaptive | Remove the Anthropic API interconnection; LLM feedback customer-configurable, off | Implemented (2026-10-27) |
-| [SCN-2026-007](SCN-2026-007-fedramp-20x-rule-completeness.md) | Adaptive | FedRAMP 20x rule records and completeness gate; unattended publisher roles, edge access logging, DAST scanner user | Implemented on the first deploy that publishes it (`on-deploy`) |
+| [SCN-2026-007](SCN-2026-007-fedramp-20x-rule-completeness.md) | Adaptive | FedRAMP 20x rule records, four honest statuses and the claim gate; unattended publisher roles, edge access logging, DAST scanner user | Implemented on the first deploy that publishes it (`on-deploy`) |
