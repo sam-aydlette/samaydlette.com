@@ -30,6 +30,8 @@ def test_a_well_formed_fixture_passes():
     ("type-not-named", "custom.resource_types ['aws_kms_key'] are not named in the rule's file"),
     ("wildcard-mixed", 'custom.resource_types: "*" stands alone'),
     ("runtime-only-not-bool", "custom.runtime_only must be true or false"),
+    ("credit-unknown", 'custom.credit must be "applies_to"'),
+    ("credit-not-exported", "exports no applies_to entry for fixture_rule"),
 ])
 def test_known_bad_annotations_fail_each_for_its_reason(name, why, capsys):
     assert cpa.main(["--policy-dir", str(FIX / name)]) == 1

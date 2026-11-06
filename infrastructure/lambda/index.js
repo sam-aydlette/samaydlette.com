@@ -407,6 +407,8 @@ async function evaluateResource(policy, resourceInput) {
     return {
         compliant: report.compliant !== false,
         violations: Array.isArray(report.violations) ? report.violations : [],
+        // Rules whose condition applied (custom.credit: applies_to).
+        applies: Array.isArray(report.applies) ? report.applies.filter((a) => typeof a === 'string') : [],
     };
 }
 

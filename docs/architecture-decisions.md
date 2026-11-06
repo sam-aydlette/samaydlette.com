@@ -76,7 +76,7 @@ The emitter's failures are covered by the evidence watchdog and the runtime sign
 
 Who may read log data is an allowlist in the policy configuration (`infrastructure/policy/config/data.json`, `gate.log_access.readers`). Each entry names one reader, the actions and the log resources it may read, the basis for it, and who decided it. The OPA rule `log_read_grant_unexpected` (`infrastructure/policy/iam.rego`) fails the deploy gate when an IAM policy (inline or customer-managed) or the policy of a log bucket (the access-log and CloudTrail buckets) grants a read of log content outside an entry: objects in a log bucket, CloudWatch Logs events and queries, or the CloudTrail event history. A broader grant to a listed reader still fails. The rule runs over the per-deploy stack's plan and over the trust root's plan on every deploy, and the runtime emitter re-applies it daily to the live inline policies. Its known-bad case, Curious Carl (simulated), an intern handed log reads "just to look around", must be stopped on every test run (`tests/fixtures/plans/log-read-grant-curious-carl.json`).
 
-Two readers are listed. Both are proposals awaiting the operator's confirmation:
+Two readers are listed, both decided by the operator on 2026-11-06:
 
 - the deploy role reads the CloudFront access records under the access-log bucket's CloudFront prefixes, to build the aggregate access summary (CDS-TRC-ACL);
 - the nightly evidence role reads the CloudTrail event history for the automated audit-log review (DEC-195).

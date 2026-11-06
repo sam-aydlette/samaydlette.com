@@ -93,7 +93,8 @@
             "arn:aws:s3:::samaydlette-com-logs/AWSLogs/*/CloudFront/*"
           ],
           "basis": "CDS-TRC-ACL: the deploy summarizes the CloudFront access records into /.well-known/access-summary.json (scripts/build-access-summary.py; infrastructure/bootstrap/trust-access-logs.tf)",
-          "decided_by": "Sam Aydlette (proposed, AI-drafted; not yet confirmed)"
+          "decided_by": "Sam Aydlette",
+          "decided_on": "2026-11-06"
         },
         {
           "reader": "role:github-actions-evidence-nightly-oidc",
@@ -104,7 +105,8 @@
             "*"
           ],
           "basis": "DEC-195: the automated audit-log review reads the CloudTrail event history (scripts/audit-log-review.py; infrastructure/bootstrap/evidence-nightly.tf)",
-          "decided_by": "Sam Aydlette (proposed, AI-drafted; not yet confirmed)"
+          "decided_by": "Sam Aydlette",
+          "decided_on": "2026-11-06"
         }
       ]
     }

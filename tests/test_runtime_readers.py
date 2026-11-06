@@ -252,3 +252,36 @@ const comps = JSON.parse(require('fs').readFileSync(0));
     process.stdout.write(JSON.stringify(out));
 })();
 """
+
+
+@requires_node
+@requires_opa1
+def test_live_github_federated_roles_carry_the_applies_marker(tmp_path):
+    """At runtime the compiled policy reports where the OIDC trust rule applied
+    (custom.credit: applies_to): the federated deploy role, not the Lambda role."""
+    inputs = [i for i in run("compliant")["inputs"] if i["type"] == "aws_iam_role"]
+    data = tmp_path / "inputs.json"
+    data.write_text(json.dumps({"fx": {"inputs": inputs}}))
+    query = ("[[x.name, a] | some x in data.fx.inputs; "
+             'a := data.terraform.compliance.compliance_report.applies with input as {"resource": x}]')
+    out = subprocess.run(["opa", "eval", "-d", str(POLICY), "-d", str(data), "--format", "json", query],
+                         capture_output=True, text=True, check=True)
+    got = dict(json.loads(out.stdout)["result"][0]["expressions"][0]["value"])
+    assert got["deploy"] == ["iam_oidc_trust_unscoped"] and got["lambda_opa"] == []
+
+
+@requires_node
+def test_validations_fold_the_applies_marker(tmp_path):
+    script = (
+        "const {validateComponents} = require(process.argv[1]);"
+        "const comps = [{component_id: 'r', type: 'iam_role', attributes: {id: 'x', tf_name: 'x'}}];"
+        "const iam = {getRole: async () => ({AssumeRolePolicyDocument: '{}'}),"
+        " listAttachedRolePolicies: async () => [], listRolePolicies: async () => []};"
+        "validateComponents({aws: {iam}, components: comps, tags: new Map()}, comps,"
+        " async () => ({compliant: true, violations: [], applies: ['b', 'a']}), 'p', 'v', () => 'id')"
+        ".then((v) => console.log(JSON.stringify(v)));"
+    )
+    out = subprocess.run(["node", "-e", script, str(REPO / "infrastructure" / "lambda" / "describers.js")],
+                         capture_output=True, text=True, check=True)
+    vals = json.loads(out.stdout)
+    assert vals and all(v["applies"] == ["a", "b"] for v in vals)

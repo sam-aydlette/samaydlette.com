@@ -197,3 +197,83 @@ def test_bucket_policy_is_plan_credit_only():
     runtime = sdr.evaluated_types(vals, sdr.component_types(comps))
     rule = {"resource_types": ["aws_s3_bucket_policy"]}
     assert sdr.rule_methods([rule], plan, runtime) == ([rule], [])
+
+
+# --- credit only where the condition applied (custom.credit: applies_to; KSI-IAM-SNU) ---
+import shutil  # noqa: E402
+import subprocess  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+def _opa1():
+    opa = shutil.which("opa")
+    return bool(opa) and "Rego Version: v1" in subprocess.run([opa, "version"], capture_output=True, text=True).stdout
+
+
+_TAGS = {"Environment": "prod", "CostCenter": "c", "DataClassification": "Internal", "Owner": "o",
+         "DataSensitivity": "internal", "MissionCriticality": "moderate", "InternetReachable": "false",
+         "Archetype": "security-tooling", "AgencyScope": "single", "OwnerRole": "platform-operator"}
+
+
+def _role(name, trust):
+    doc = json.dumps({"Version": "2012-10-17", "Statement": [trust]})
+    return {"address": f"aws_iam_role.{name}", "mode": "managed", "type": "aws_iam_role", "name": name,
+            "change": {"actions": ["create"], "before": None, "after_unknown": {},
+                       "after": {"name": name, "assume_role_policy": doc, "tags": _TAGS, "tags_all": _TAGS}}}
+
+
+_LAMBDA_TRUST = {"Effect": "Allow", "Action": "sts:AssumeRole", "Principal": {"Service": "lambda.amazonaws.com"}}
+_GITHUB_TRUST = {
+    "Effect": "Allow", "Action": "sts:AssumeRoleWithWebIdentity",
+    "Principal": {"Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"},
+    "Condition": {"StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                                   "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:ref:refs/heads/main"}},
+}
+
+
+def _snu_plan_credit(tmp_path, roles):
+    plan = tmp_path / "plan.json"
+    plan.write_text(json.dumps({"format_version": "1.2", "resource_changes": [_role(n, t) for n, t in roles]}))
+    out = subprocess.run(["opa", "eval", "--strict-builtin-errors", "-d", str(POLICY), "-i", str(plan),
+                          "data.terraform.compliance.resource_reports"], capture_output=True, text=True, check=True)
+    results = json.loads(out.stdout)["result"][0]["expressions"][0]["value"]
+    assert all(r["compliant"] for r in results)
+    components = [comp(f"role::{n}", "iam_role", n, f"aws_iam_role.{n}") for n, _ in roles]
+    for c in components:
+        c["attributes"]["tf_type"] = "aws_iam_role"
+    vals = ksi.build_validations({"results": results}, components)
+    sdr = _sdr()
+    rules = sdr.policy_rules()["KSI-IAM-SNU"]
+    plan_types = sdr.evaluated_types(vals, sdr.component_types(components, sdr.PLAN_SUB_TYPES))
+    credited, _ = sdr.rule_methods(rules, plan_types, set(), sdr.applied_rules(vals), set())
+    return credited
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_non_federated_roles_give_iam_snu_no_plan_credit(tmp_path):
+    """A role without GitHub federation passes the OIDC trust rule vacuously."""
+    assert _snu_plan_credit(tmp_path, [("lambda_opa", _LAMBDA_TRUST)]) == []
+
+
+@pytest.mark.skipif(not _opa1(), reason="requires the pinned OPA >= 1.x on PATH")
+def test_a_federated_role_gives_iam_snu_one_plan_credit(tmp_path):
+    got = _snu_plan_credit(tmp_path, [("lambda_opa", _LAMBDA_TRUST), ("deploy", _GITHUB_TRUST)])
+    assert [r["id"] for r in got] == ["iam_oidc_trust_unscoped"]
+
+
+def test_applies_rides_on_the_validation():
+    components = [comp("role::deploy", "iam_role", "deploy", "aws_iam_role.deploy")]
+    r = result("aws_iam_role", "deploy", "aws_iam_role.deploy")
+    r["applies"] = ["iam_oidc_trust_unscoped"]
+    got = ksi.build_validations({"results": [r, result("aws_iam_role", "deploy", "aws_iam_role.deploy")]}, components)
+    assert got[0]["applies"] == ["iam_oidc_trust_unscoped"] and "applies" not in got[1]
+
+
+def test_type_credited_rules_are_unchanged():
+    sdr = _sdr()
+    rule = {"id": "x", "resource_types": ["aws_iam_role"]}
+    assert sdr.rule_methods([rule], {"aws_iam_role"}, {"aws_iam_role"}) == ([rule], [rule])
+    gated = dict(rule, credit="applies_to")
+    assert sdr.rule_methods([gated], {"aws_iam_role"}, {"aws_iam_role"}) == ([], [])
+    assert sdr.rule_methods([gated], {"aws_iam_role"}, {"aws_iam_role"}, {"x"}, {"x"}) == ([gated], [gated])

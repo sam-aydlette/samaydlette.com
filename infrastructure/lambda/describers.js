@@ -470,18 +470,24 @@ async function validateComponents(ctx, components, evaluate, policyId, policyVer
         for (const unit of units) {
             let compliant = true;
             const violations = [];
+            const applies = new Set();
             for (const input of unit.inputs) {
                 const result = await evaluate(input);
                 if (!result.compliant) compliant = false;
                 violations.push(...result.violations);
+                for (const a of result.applies || []) applies.add(a);
             }
-            validations.push({
+            const validation = {
                 validation_id: nextId(),
                 policy: { id: policyId, version: policyVersion },
                 result: compliant && violations.length === 0 ? 'pass' : 'fail',
                 component_refs: unit.refs,
                 violations,
-            });
+            };
+            // The rules whose condition applied (custom.credit: applies_to): the
+            // SDR credits such a rule's runtime method only where it applied.
+            if (applies.size > 0) validation.applies = [...applies].sort();
+            validations.push(validation);
         }
     }
     return validations;

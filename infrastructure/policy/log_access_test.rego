@@ -137,14 +137,14 @@ test_empty_allowlist_fires_on_the_nightly_trail_read if {
 		with data.config.gate.log_access.readers as []
 }
 
-# Every allowlist entry is scoped and carries its basis and an unconfirmed
-# decision marker: the operator has not confirmed it.
-test_every_allowlist_entry_is_scoped_and_unconfirmed if {
+# Every allowlist entry is scoped and carries its basis and the operator's decision.
+test_every_allowlist_entry_is_scoped_and_decided if {
 	every e in data.config.gate.log_access.readers {
 		count(e.actions) > 0
 		count(e.resources) > 0
 		count(e.basis) > 0
-		contains(e.decided_by, "not yet confirmed")
+		e.decided_by == "Sam Aydlette"
+		time.parse_rfc3339_ns(sprintf("%sT00:00:00Z", [e.decided_on])) > 0
 	}
 }
 

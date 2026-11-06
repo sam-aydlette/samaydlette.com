@@ -1722,6 +1722,7 @@ def build_validations(validations_doc, components):
     validations = []
     skipped = 0
     for idx, result in enumerate(validations_doc.get("results") or []):
+        applies = sorted({a for a in (result.get("applies") or []) if isinstance(a, str)})
         kind = result.get("kind")
         compliant = result.get("compliant")
         violations = result.get("violations") or []
@@ -1784,7 +1785,7 @@ def build_validations(validations_doc, components):
         # `compliant` was computed upstream. This makes the signal fail-safe
         # against an OPA/terraform-plan.sh mismatch rather than masking it.
         result = "pass" if (compliant and not violations) else "fail"
-        validations.append({
+        validation = {
             "validation_id": f"v-{idx:04d}",
             "policy": {
                 "id": "terraform.compliance",
@@ -1793,7 +1794,12 @@ def build_validations(validations_doc, components):
             "result": result,
             "component_refs": refs,
             "violations": violations,
-        })
+        }
+        # The rules whose condition applied to this resource (custom.credit:
+        # applies_to): the SDR credits such a rule only where it applied.
+        if applies:
+            validation["applies"] = applies
+        validations.append(validation)
 
     if skipped:
         print(f"info: skipped {skipped} OPA results that did not map to schema component types", file=sys.stderr)
