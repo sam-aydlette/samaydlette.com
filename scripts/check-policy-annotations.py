@@ -14,7 +14,15 @@ annotation drifts from the catalog:
      orphan control claims) — rules tracing to another framework entirely
      (e.g. Section 508) declare `framework:` and leave both lists empty;
   4. every rule-scoped annotation on a `violations` rule must carry the
-     required custom fields (id, category, severity).
+     required custom fields (id, category, severity);
+  5. every such rule states the Terraform resource types it evaluates in
+     `custom.resource_types` (FRC-CSX-VVK: a rule counts as a method for a KSI
+     only when it evaluated a resource of one of these types): a list of type
+     names, each of which the rule's own file (or the policy's config data,
+     config/*.json, which the rule reads) names as a string, or ["*"] for a
+     rule that evaluates every resource, or [] for one that evaluates none (the
+     gate's own input checks); `custom.runtime_only`, when present, is a
+     boolean.
 
 Usage: python3 scripts/check-policy-annotations.py [--policy-dir DIR]
 Requires `opa` on PATH (the pinned version from the workflow).
@@ -69,13 +77,35 @@ def load_rule_annotations(policy_dir):
     return rules
 
 
-def main():
+def resource_type_errors(custom, file_text):
+    """Why a rule's resource_types / runtime_only annotation is malformed ([] if not)."""
+    errs = []
+    rts = custom.get("resource_types")
+    if not isinstance(rts, list) or not all(isinstance(t, str) and t for t in rts):
+        return ["custom.resource_types must be a list of Terraform resource types ([] when the rule evaluates "
+                "no resource, [\"*\"] when it evaluates every one)"]
+    if "*" in rts and rts != ["*"]:
+        errs.append('custom.resource_types: "*" stands alone')
+    elif len(set(rts)) != len(rts):
+        errs.append("custom.resource_types lists a type twice")
+    else:
+        unnamed = [t for t in rts if t != "*" and f'"{t}"' not in file_text]
+        if unnamed:
+            errs.append(f"custom.resource_types {unnamed} are not named in the rule's file or the policy's config "
+                        "data, so the rule cannot be evaluating them")
+    if "runtime_only" in custom and not isinstance(custom["runtime_only"], bool):
+        errs.append("custom.runtime_only must be true or false")
+    return errs
+
+
+def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     controls_by_ksi = load_catalog_controls()
     rules = load_rule_annotations(args.policy_dir)
+    config_text = "".join(f.read_text() for f in sorted(Path(args.policy_dir).glob("config/*.json")))
 
     if not rules:
         print("ERROR: no annotated violations rules found — the policy tree "
@@ -90,6 +120,10 @@ def main():
         for field in REQUIRED_CUSTOM_FIELDS:
             if not custom.get(field):
                 errors.append(f"{where}: missing required custom field '{field}'")
+
+        src = Path(rule["file"])
+        text = (src.read_text() if src.is_file() else "") + config_text
+        errors += [f"{where}: {e}" for e in resource_type_errors(custom, text)]
 
         ksi_ids = custom.get("ksi_ids")
         nist_controls = custom.get("nist_controls")

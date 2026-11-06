@@ -218,28 +218,12 @@ def now_utc(value=None):
 
 
 # --- the SDR's automated methods (FRC-CSX-VVK) ------------------------------------------
-# Which KSI each scheduled mechanism verifies and validates, and how its
-# published record is judged current. scripts/build-sdr.py counts a method only
-# when its signed record (signature verified there) passes the test below.
+# How a scheduled mechanism's published record is judged current and passing.
+# Which KSIs each mechanism verifies is in infrastructure/schemas/ksi-methods.json
+# (scripts/_ksi_methods.py), which calls method_status for the published records
+# of the audit-log review and the recovery exercise after checking their
+# signatures.
 
-KSI_METHODS = {
-    "audit-log-review": ("KSI-MLA-RVL", "KSI-CMT-RVP"),
-    "security-review": ("KSI-PIY-RIS", "KSI-PIY-RES", "KSI-SVC-EIS", "KSI-INR-RPI"),
-    "recovery-exercise": ("KSI-RPL-TRC",),
-}
-METHOD_FILES = {"audit-log-review": "vdr-audit-log-review.json", "security-review": "security-reviews.json",
-                "recovery-exercise": "vdr-recovery-exercises.json"}
-METHOD_TITLES = {
-    "audit-log-review": "Audit-log review, every night (scripts/audit-log-review.py): CloudTrail write events and "
-                        "GitHub changes to main, workflows, rulesets and environments, with a planted simulated "
-                        "intruder that must be caught on every run",
-    "security-review": "Annual Security Review (scripts/hold-security-review.py): every policy and procedure "
-                       "checked, new component types named in the threat model, findings, decisions, incidents "
-                       "and recurring cost reviewed, signed off by a simulated reviewer",
-    "recovery-exercise": "Monthly recovery exercise (scripts/hold-recovery-exercise.py): the live site rebuilt "
-                         "from the deployed commit and compared byte for byte, versioning and point-in-time "
-                         "recovery re-read, and an annual simulated tabletop",
-}
 AUDIT_LOG_MAX_AGE_HOURS = 26
 
 

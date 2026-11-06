@@ -24,6 +24,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
 import _frr  # noqa: E402
+import _ksi_applicability  # noqa: E402
 import _offering  # noqa: E402
 import _rules  # noqa: E402
 import _signers  # noqa: E402
@@ -87,7 +88,9 @@ def reproduce(ev, fresh):
     raise SystemExit(f"::error::assessor guide: unknown evidence kind {kind!r}")
 
 
-def build(records, applicable, catalog, fresh, now, commit=None):
+def build(records, applicable, catalog, fresh, now, commit=None, not_applicable=()):
+    """`not_applicable` is the KSIs recorded as not applying, which the
+    inventory carries no result for (data/ksi-applicability.json)."""
     rules = []
     for r in records["records"]:
         rid = r["frr_id"]
@@ -98,19 +101,32 @@ def build(records, applicable, catalog, fresh, now, commit=None):
         entry = {"rule_id": rid, "name": applicable[rid]["name"], "force": applicable[rid]["force"],
                  "statement": applicable[rid]["statement"], "status": r["status"],
                  "explanation": r["implementation"], "evidence": evidence}
-        for k in ("not_applicable", "may_rationale", "simulated"):
+        for k in ("not_applicable", "not_demonstrated", "may_rationale", "simulated", "proposal", "approval"):
             if k in r:
                 entry[k] = r[k]
+        if "stand_in_proof" in r:
+            proof = r["stand_in_proof"]
+            entry["stand_in_proof"] = {
+                "bad_input": {"ref": proof["bad_input"], "how_to_reproduce": f"python3 -m pytest '{proof['bad_input']}'",
+                              "check": {"pytest": proof["bad_input"]}},
+                "replaceable": {"statement": proof["replaceable"]["statement"]}}
+            if proof["replaceable"].get("test"):
+                t = proof["replaceable"]["test"]
+                entry["stand_in_proof"]["replaceable"].update(
+                    {"ref": t, "how_to_reproduce": f"python3 -m pytest '{t}'", "check": {"pytest": t}})
         rules.append(entry)
     ksis = [{"ksi_id": i["id"], "name": i.get("name", ""),
              "how_to_reproduce": (f"curl -fsSL {SITE}/.well-known/ksi-signal.json | jq '.ksis[] | "
                                   f"select(.id == \"{i['id']}\")' after verifying ksi-signal.bundle against the "
                                   "deploy identity; the SDR's keySecurityIndicators entry gives its measures"),
              "check": {"ksi_in_signal": i["id"]}}
-            for f in catalog["KSI"].values() for i in f["indicators"]]
+            for f in catalog["KSI"].values() for i in f["indicators"] if i["id"] not in not_applicable]
     return {"schema": SCHEMA, "fedRampId": _offering.fedramp_id(), "generated_at": now.isoformat(), "commit": commit, "site": SITE,
             "repository": REPO_URL, "how_to_use": HOW_TO_USE, "sampling": SAMPLING,
             "identities": {**IDENTITIES, "oidc_issuer": ISSUER},
+            # Who approves a stand-in or scope cut (Simulated, Not Demonstrated and
+            # Not Applicable records): the operator, and nobody else.
+            "operator": _frr.OPERATOR,
             "summary": {"rules": len(rules), "ksis": len(ksis),
                         "evidence_items": sum(len(r["evidence"]) for r in rules)},
             "rules": rules, "ksis": sorted(ksis, key=lambda k: k["ksi_id"])}
@@ -133,8 +149,21 @@ def render_markdown(g):
         for k, label in (("not_applicable", "Not applicable"), ("may_rationale", "Use of this permission")):
             if k in r:
                 out += [f"{label}: {r[k]}", ""]
+        if "not_demonstrated" in r:
+            out += [f"Not demonstrated: {r['not_demonstrated']}", ""]
         if "simulated" in r:
             out += [f"Simulated counterparty ({r['simulated']['counterparty']}): {r['simulated']['how']}", ""]
+            for k, label in (("real", "What is real"), ("stand_in", "What is simulated")):
+                if r["simulated"].get(k):
+                    out += [f"{label}: {r['simulated'][k]}", ""]
+        if "stand_in_proof" in r:
+            sp = r["stand_in_proof"]
+            rp = sp["replaceable"]
+            out += [f"Stand-in proof: `{sp['bad_input']['how_to_reproduce']}`; replaceable: {rp['statement']}"
+                    + (f" `{rp['how_to_reproduce']}`" if rp.get("how_to_reproduce") else ""), ""]
+        if r["status"] in _frr.NEEDS_APPROVAL:
+            out += [("Approved by " + f"{r['approval']['by']} on {r['approval']['on']}." if r.get("approval") else
+                     f"Not approved by the operator ({g['operator']})."), ""]
         for ev in r["evidence"]:
             out.append(f"- {ev['kind']} `{ev['ref']}`: `{ev['how_to_reproduce']}`")
         if r["evidence"]:
@@ -156,8 +185,9 @@ def main(argv=None):
     a = ap.parse_args(argv)
     records = _frr.load(a.records)
     fresh = {x["path"]: x for x in _freshness.load_freshness_config(a.freshness)["artifacts"]}
+    na = _ksi_applicability.not_applicable(_ksi_applicability.load(catalog=a.catalog))
     guide = build(records, _rules.applicable_provider_rules(), json.loads(Path(a.catalog).read_text()), fresh,
-                  datetime.now(timezone.utc), a.commit)
+                  datetime.now(timezone.utc), a.commit, na)
     Path(a.output).write_text(json.dumps(guide, indent=2) + "\n")
     if a.md_output:
         Path(a.md_output).write_text(render_markdown(guide) + "\n")

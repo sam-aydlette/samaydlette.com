@@ -1,0 +1,373 @@
+{
+  "$comment": "Each case replaces one record in a record set whose every claim is supported (tests/test_frr_records.py _supported_doc) and must fail the deploy's claim check (scripts/_frr.py --claims) for the stated reason: at load (stage 'load', the shape every status needs) or in the claim check itself (stage 'claims'). The approvals here are test data, not the operator's decisions.",
+  "cases": [
+    {
+      "case": "Implemented with a simulated block",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Implemented",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        }
+      },
+      "expect": "VDR-CSO-MSP: Implemented with a simulated block"
+    },
+    {
+      "case": "Simulated without stand_in_proof",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Simulated without stand_in_proof"
+    },
+    {
+      "case": "a bad_input test that does not exist",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_a_bad_assessor_changes_nothing",
+          "replaceable": {
+            "statement": "A real assessor's verdict enters through the same function.",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: stand_in_proof bad_input test 'tests/test_frr_records.py::test_a_bad_assessor_changes_nothing' does not resolve"
+    },
+    {
+      "case": "a replaceable test given that does not resolve",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "x",
+            "test": "tests/test_nope.py::test_x"
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: stand_in_proof replaceable test 'tests/test_nope.py::test_x' does not resolve"
+    },
+    {
+      "case": "an empty replaceability statement",
+      "stage": "load",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "   "
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP stand_in_proof.replaceable: statement must be a non-empty string"
+    },
+    {
+      "case": "Simulated without approval",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "A real assessor's verdict enters through the same function.",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Simulated not approved by the operator (Sam Aydlette)"
+    },
+    {
+      "case": "Simulated without a proposal",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "A plainly fictional assessor.",
+          "real": "The assessor's checks.",
+          "stand_in": "The assessor."
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "A real assessor's verdict enters through the same function.",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Simulated without a proposal"
+    },
+    {
+      "case": "Simulated without saying what is real",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "simulated": {
+          "counterparty": "assessor",
+          "how": "x",
+          "stand_in": "x"
+        },
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "A real assessor's verdict enters through the same function.",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Simulated without saying real"
+    },
+    {
+      "case": "Simulated without a simulated block",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Simulated",
+        "implementation": "x",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "stand_in_proof": {
+          "bad_input": "tests/test_frr_records.py::test_summary_counts_add_up",
+          "replaceable": {
+            "statement": "A real assessor's verdict enters through the same function.",
+            "test": "tests/test_frr_records.py::test_summary_counts_add_up"
+          }
+        },
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Simulated without a simulated block"
+    },
+    {
+      "case": "Not Applicable without a reason",
+      "stage": "load",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "MKT-CSO-PML: not_applicable must be a non-empty string"
+    },
+    {
+      "case": "Not Applicable not approved",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "MKT-CSO-PML",
+        "status": "Not Applicable",
+        "implementation": "x",
+        "not_applicable": "x",
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "MKT-CSO-PML: Not Applicable not approved by the operator (Sam Aydlette)"
+    },
+    {
+      "case": "Not Demonstrated that claims evidence",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_demonstrated": "Not built.",
+        "evidence": [
+          {
+            "kind": "step",
+            "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+          }
+        ],
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        },
+        "approval": {
+          "by": "Sam Aydlette",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Not Demonstrated but cites evidence"
+    },
+    {
+      "case": "Not Demonstrated not approved",
+      "stage": "claims",
+      "replace": {
+        "frr_id": "VDR-CSO-MSP",
+        "status": "Not Demonstrated",
+        "implementation": "x",
+        "not_demonstrated": "Not built.",
+        "proposal": {
+          "by": "Claude (AI agent), for the operator's review",
+          "on": "2026-11-06"
+        }
+      },
+      "expect": "VDR-CSO-MSP: Not Demonstrated not approved by the operator (Sam Aydlette)"
+    }
+  ]
+}

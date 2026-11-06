@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/schemas/ksi-applicability.schema.json",
+  "title": "KSI applicability (scope cuts)",
+  "description": "Key Security Indicators that do not apply to this system. scripts/_ksi_applicability.py enforces this shape and what a schema cannot: every listed KSI is in the catalog, and the operator's approval is required by the claim check (scripts/_frr.py --claims).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "ksis"],
+  "$defs": {
+    "signoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by", "on"],
+      "properties": {
+        "by": {"type": "string", "minLength": 1},
+        "on": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+      }
+    }
+  },
+  "properties": {
+    "$schema": {"type": "string"},
+    "$comment": {"type": "string"},
+    "schema": {"const": "ksi-applicability/1"},
+    "ksis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ksi_id", "status", "not_applicable", "proposal"],
+        "properties": {
+          "ksi_id": {"type": "string", "pattern": "^KSI-[A-Z]{3}-[A-Z]{3}$"},
+          "status": {"const": "Not Applicable"},
+          "not_applicable": {"type": "string", "minLength": 1},
+          "proposal": {"$ref": "#/$defs/signoff"},
+          "approval": {"allOf": [{"$ref": "#/$defs/signoff"}, {"properties": {"by": {"const": "Sam Aydlette"}}}]}
+        }
+      }
+    }
+  }
+}

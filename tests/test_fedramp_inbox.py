@@ -390,7 +390,9 @@ def test_every_afc_record_is_implemented_and_discloses_the_simulation():
     assert sorted(afc) == sorted(SIMULATED_RULES + ["AFC-CSO-NOC"])
     for rid in afc:
         r = recs[rid]
-        assert r["status"] == "Implemented" and "gap" not in r and "closes_with" not in r, rid
+        # Every AFC record carries a simulated block, so each is Simulated (a
+        # real mechanism on a labelled stand-in input), awaiting approval.
+        assert r["status"] == "Simulated" and "simulated" in r, rid
         text = r["implementation"]
         assert text.startswith("SIMULATED FOR THIS PROOF OF CONCEPT"), rid
         assert "no mail is received or sent" in text and "https://www.linkedin.com/in/sa2/" in text, rid

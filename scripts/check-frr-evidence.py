@@ -9,7 +9,8 @@ when every one of its cases ran and passed.
 
 It writes the result per record (frr-evidence.json), which the deploy signs and
 publishes beside the Security Decision Record, so a reader can see that each
-Implemented record's tests passed in the build that published it.
+record's tests, and each Simulated record's stand-in proof tests, passed in the
+build that published it.
 
     python3 scripts/check-frr-evidence.py --junit pytest-results.xml --output frr-evidence.json
 """
@@ -81,7 +82,11 @@ def evaluate(records, outcomes):
     """(per-record results, list of failures)."""
     per, failures = {}, []
     for r in records["records"]:
-        tests = {e["ref"]: test_result(e["ref"], outcomes) for e in r.get("evidence", []) if e["kind"] == "test"}
+        refs = [e["ref"] for e in r.get("evidence", []) if e["kind"] == "test"]
+        proof = r.get("stand_in_proof")
+        if proof:  # a Simulated record's stand-in proof is cited like evidence
+            refs += [proof["bad_input"]] + ([proof["replaceable"]["test"]] if proof["replaceable"].get("test") else [])
+        tests = {ref: test_result(ref, outcomes) for ref in refs}
         for ref, res in tests.items():
             if res != "passed":
                 failures.append(f"{r['frr_id']}: cited test {ref} {res}")

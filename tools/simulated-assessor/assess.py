@@ -23,9 +23,12 @@ What it does, twice on every deploy:
 Each run:
 
   verification  for each FedRAMP rule in the provider's assessor guide, checks
-                the status is Implemented or Not Applicable and re-runs or
-                re-reads every piece of evidence the guide names: runs every
-                cited test itself (one pytest run), finds every cited workflow
+                that the record's fields support the status it claims
+                (Implemented, Simulated, Not Demonstrated or Not Applicable;
+                a stand-in or scope cut approved by the operator the guide
+                names) and re-runs or re-reads every piece of evidence the
+                guide names: runs every cited test and every stand-in proof
+                test itself (one pytest run), finds every cited workflow
                 step, and looks every cited decision up in the register;
   validation    fetches every cited published artifact from the live site,
                 verifies its Sigstore signature against the publishing
@@ -40,9 +43,10 @@ which the provider pins (infrastructure/keys/assessor-identity.json). It
 imports nothing from the provider's scripts/.
 
 Exit status is non-zero, and the deploy does not proceed, when any cited test
-fails or does not run, a cited step or decision is missing, a status is short
-of Implemented or Not Applicable, or a published artifact's signature does not
-verify. Before the deploy, an artifact not yet published (first published by
+fails or does not run, a cited step or decision is missing, a record claims a
+status its fields do not support, or a published artifact's signature does not
+verify. An honestly stated status (Simulated, Not Demonstrated, Not Applicable,
+approved) is never a failure: the assessor checks claims, not completeness. Before the deploy, an artifact not yet published (first published by
 the deploy under assessment) or past its window is an observation, recorded but
 not fatal: the deploy is what refreshes it. After the deploy, an unpublished
 artifact is still an observation (some are first published on a schedule), and
@@ -74,7 +78,45 @@ DISCLAIMER = (
     "assessment. It exists to show the assessor port working end to end. Our rates are very competitive: free.")
 STEP_LINE = re.compile(r"^\s*-\s+name:\s*(.+?)\s*$")
 ISSUER = "https://token.actions.githubusercontent.com"
-COMPLETE = ("Implemented", "Not Applicable")
+STATUSES = ("Implemented", "Simulated", "Not Demonstrated", "Not Applicable")
+NEEDS_APPROVAL = ("Simulated", "Not Demonstrated", "Not Applicable")
+
+
+def claim_problems(r, operator):
+    """What a rule entry of the guide claims that its fields do not support.
+    The assessor's own reading of the provider's status rules: it imports
+    nothing from the provider's scripts/."""
+    out, status = [], r["status"]
+    if status not in STATUSES:
+        return [f"status {status!r} is not one of {list(STATUSES)}"]
+    if status == "Implemented":
+        if not r["evidence"]:
+            out.append("Implemented with no evidence")
+        if "simulated" in r:
+            out.append("Implemented, yet it relies on a simulated stand-in")
+    if status == "Simulated":
+        sim = r.get("simulated") or {}
+        if not (sim.get("real") and sim.get("stand_in")):
+            out.append("Simulated without saying what is real and what is the stand-in")
+        proof = r.get("stand_in_proof") or {}
+        if not (proof.get("bad_input") or {}).get("check", {}).get("pytest"):
+            out.append("Simulated without a bad-input test (a bad stand-in must change the result)")
+        if not (proof.get("replaceable") or {}).get("statement"):
+            out.append("Simulated without saying how a real input would replace the stand-in")
+        if not r["evidence"]:
+            out.append("Simulated with no evidence")
+    if status == "Not Demonstrated":
+        if not r.get("not_demonstrated"):
+            out.append("Not Demonstrated without saying why")
+        if r["evidence"]:
+            out.append("Not Demonstrated, yet it cites evidence")
+    if status == "Not Applicable" and not r.get("not_applicable"):
+        out.append("Not Applicable without a reason")
+    if status in NEEDS_APPROVAL:
+        appr = r.get("approval") or {}
+        if appr.get("by") != operator or not appr.get("on"):
+            out.append(f"{status} not approved by the operator ({operator})")
+    return out
 PHASES = ("pre-deploy", "post-deploy")
 
 
@@ -236,6 +278,8 @@ class Assessor:
     def assess(self):
         rules = self.guide["rules"]
         test_refs = {ev["check"]["pytest"] for r in rules for ev in r["evidence"] if "pytest" in ev["check"]}
+        test_refs |= {p["check"]["pytest"] for r in rules for p in (r.get("stand_in_proof") or {}).values()
+                      if "check" in p}
         test_res = self.tests(test_refs, self.repo)
         results = []
         for r in rules:
@@ -246,12 +290,21 @@ class Assessor:
                 order = {"pass": 0, "observation": 1, "fail": 2}
                 outcome = o if order[o] > order[outcome] else outcome
 
-            if r["status"] not in COMPLETE:
-                ver.append(f"status is {r['status']}, short of Implemented or Not Applicable")
+            for problem in claim_problems(r, self.guide.get("operator")):
+                ver.append(f"claim not supported: {problem}")
                 worst("fail")
-            elif r["status"] == "Not Applicable":
+            if r["status"] == "Not Applicable":
                 ver.append(f"Not Applicable ({r['force']}): {r.get('not_applicable', 'no reason given')}")
-                if not r.get("not_applicable"):
+            if r["status"] == "Not Demonstrated":
+                ver.append(f"Not Demonstrated: {r.get('not_demonstrated', 'no reason given')}")
+            if r.get("approval"):
+                ver.append(f"{r['status']}, approved by {r['approval']['by']} on {r['approval']['on']}")
+            for label, proof in (r.get("stand_in_proof") or {}).items():
+                if "check" not in proof:
+                    continue  # a replaceability statement without a test
+                res = test_res.get(proof["check"]["pytest"], "not run")
+                ver.append(f"stand-in proof ({label}) {proof['check']['pytest']} {res} (re-run by the assessor)")
+                if res != "passed":
                     worst("fail")
             for ev in r["evidence"]:
                 chk = ev["check"]
@@ -274,9 +327,6 @@ class Assessor:
                     o, note = self.artifact(chk["artifact"])
                     val.append(note)
                     worst(o)
-            if r["status"] == "Implemented" and not r["evidence"]:
-                ver.append("Implemented with no evidence")
-                worst("fail")
             if "simulated" in r:
                 ver.append(f"relies on a simulated counterparty ({r['simulated']['counterparty']})")
             results.append((r["rule_id"], outcome, ver, val))

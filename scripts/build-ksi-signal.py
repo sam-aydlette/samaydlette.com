@@ -39,6 +39,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import sha256_file  # noqa: E402
+import _ksi_applicability  # noqa: E402
 import _offering  # noqa: E402
 import _redact  # noqa: E402
 
@@ -1844,10 +1845,12 @@ KSI_FAMILY_EVIDENCE_TYPES = {
 }
 
 
-def build_ksi_statuses(catalog, components, validations):
+def build_ksi_statuses(catalog, components, validations, not_applicable=()):
     """Emit a per-KSI status block for every in-scope (Moderate) indicator in
     the catalog, so a consumer can trace each KSI the SDR records to a live
-    pass/fail backed by the validations and components that evidence it.
+    pass/fail backed by the validations and components that evidence it. A KSI
+    recorded as not applying (data/ksi-applicability.json, `not_applicable`) is
+    left out the same way as one outside the Moderate baseline.
 
     Status is derived consistently from the catalog's KSI→family domain: a KSI
     is `fail` if any terraform.compliance validation over a component in its
@@ -1864,6 +1867,8 @@ def build_ksi_statuses(catalog, components, validations):
         for ind in family.get("indicators", []) or []:
             if not (ind.get("impact") or {}).get("moderate"):
                 continue  # out of scope for a Moderate system
+            if ind["id"] in not_applicable:
+                continue  # does not apply to this system (data/ksi-applicability.json)
             if evidence_types is None:
                 comp_refs = list(all_ids)
             else:
@@ -2066,7 +2071,8 @@ def main():
     ksis = []
     if catalog_path.exists():
         catalog = json.loads(catalog_path.read_text())
-        ksis = build_ksi_statuses(catalog, components, validations)
+        na = _ksi_applicability.not_applicable(_ksi_applicability.load(catalog=catalog_path))
+        ksis = build_ksi_statuses(catalog, components, validations, na)
     else:
         print(f"warning: {catalog_path} not found; emitting empty ksis[]", file=sys.stderr)
 

@@ -1,11 +1,11 @@
 {
   "schema": "frr-records/1",
   "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Validated by scripts/_frr.py; see infrastructure/schemas/frr-records.schema.json.",
-  "basis": "Drafted 2026-11-05 from a rule-by-rule assessment of the repository and the live site, corrected for the changes since (account IDs redacted, published claims fixed, CR26 vulnerability reports published). AI-drafted; for the operator's review. Each record states the state after a successful deploy of the commit that contains it: what that deploy does counts as done, and a prerequisite it depends on must make the deploy fail when missing, so the record is accurate when published.",
+  "basis": "Drafted 2026-11-05 from a rule-by-rule assessment of the repository and the live site, corrected for the changes since (account IDs redacted, published claims fixed, CR26 vulnerability reports published). AI-drafted; for the operator's review. Each record states the state after a successful deploy of the commit that contains it: what that deploy does counts as done, and a prerequisite it depends on must make the deploy fail when missing, so the record is accurate when published. Migrated 2026-11-06 to the four statuses (Implemented, Simulated, Not Demonstrated, Not Applicable) mechanically: a record that relied on a simulated counterparty became Simulated, every Simulated and Not Applicable record carries a proposal and awaits the operator's approval, and FRC-CSX-VVK takes the status the strict per-KSI method count supports.",
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The acknowledgement logic (scripts/_fsi.py, build_ack and receive) acknowledges each FedRAMP message once, even when it is redelivered, with headers inbound content cannot inject, and never to auto-replies, bulk mail, bounces, mail without a From address, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged). In the simulation each acknowledgement is built and checked for header safety, then filed nowhere. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -36,11 +36,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-CRA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; the receipt day counts and holidays are not skipped, both erring earlier), replaced at triage by the timeframe the message states; the register reports an item past its deadline until it is closed (scripts/_fsi.py, deadlines, triage, close, overdue). In the simulation the Emergency Test received on a Friday is due 3:00 p.m. ET the following Monday, is reported once that passes, and stops being reported when closed. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -67,11 +71,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-EMR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Every FedRAMP message, Emergency-designated ones included, produces a page to the senior security official (the accountable official named in the CPO, the operator) naming the designation and the sender's domain (scripts/_fsi.py, receive and page_subject); an Emergency from an address other than FedRAMP's designated Emergency senders (AFC-FRP-UFS) is flagged, not demoted. In the simulation the page is recorded, not delivered: the operator's phone stays blissfully quiet. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -94,11 +102,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-IMA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Important-designated messages open a register item that cannot be triaged without recording the timeframe the message states; the register reports it while untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed (scripts/_fsi.py, triage and overdue). The simulation checks each of these. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -121,11 +133,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-INB",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published FedRAMP Security Inbox contact (data/cds/offering.json, fedramp_security_inbox.contact, published in the CPO's certification_data) says, plainly, that the inbox does not exist and to hit the operator up on LinkedIn. The logic a real inbox would run receives, classifies, registers, acknowledges and pages. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -148,11 +164,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-NOC",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and the published contact points to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history; each change is a history entry dated by since. scripts/check-fsi-notice.py, in the unit-test job on every pull request and push, fails a changed contact without a new dated history entry, a hand-recorded notice, or a rewritten history against the merge base. On every deploy, scripts/submit-package.py files a change notice with the simulated FedRAMP for every change not yet filed (an entry in changeNotices of the signed /.well-known/package-submission-log.json, with the simulated FedRAMP's receipt; nothing is sent), carries earlier notices over unchanged, and fails the deploy unless every notice is filed within one business day of the deploy that first published the changed contact. A change takes effect when it is published, so the clock runs from that deploy (recorded in the log's inboxContact and on each notice as publishedOn and publishedIn): the deploy that first publishes a new contact files its notice the same day, a change merged but not yet deployed cannot go stale, and a failed deploy, which publishes nothing, cannot make the next one late. A notice filed later than one business day after the publishing deploy still fails. The contact was established 2026-11-05 with no earlier contact to change from, so no notice has been filed yet. Procedure: docs/runbooks/fedramp-security-inbox.md.",
       "evidence": [
         {
@@ -195,11 +215,15 @@
       "simulated": {
         "counterparty": "fedramp",
         "how": "No FedRAMP counterpart exists. A change notice is filed with FedRAMP (simulated): simulated_fedramp_notice_intake() in scripts/submit-package.py, a function that never touches the network, returns the receipt, and the only trace is the entry in the signed submission log. No real FedRAMP is notified (DEC-194)."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-RCV",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Nothing in the inbox logic asks anything of FedRAMP or drops FedRAMP mail: every FedRAMP message is registered and paged whatever its verdicts (the simulation fails the deploy otherwise), a failed acknowledgement is recorded, reported overdue and sent once on retry, and overdue items are reported by the register (scripts/_fsi.py, receive and overdue). Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -226,11 +250,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "AFC-CSO-TFG",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Classification (scripts/_fsi.py, classify): a message whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov is FedRAMP, whatever its spam verdict or SPF/DKIM/DMARC result; look-alike domains and display-name spoofs are not; failed authentication is recorded so the operator can confirm the sender, never used to filter. The simulation includes a forged @gsa.gov message (still FedRAMP), a FedRAMP envelope sender behind an unreadable From (still FedRAMP), a look-alike domain and a display-name spoof (neither is FedRAMP). Automated validation of the configuration is the deploy-time simulation itself. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "evidence": [
         {
@@ -257,11 +285,15 @@
       "simulated": {
         "counterparty": "mail",
         "how": "The mail system and FedRAMP's messages are simulated: synthetic messages run through the real inbox logic on every deploy, outbound acknowledgements and pages are recorded, never sent, and the published contact is 'Hit me up on LinkedIn'."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CCM-OCR-AFS",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Each OCR carries an anonymized, desensitized summary of the questions and answers on the previous issued report (providerExtensions.feedback.summaryOfPreviousReport), built by the same function (scripts/_quarterly_review.py, qa_summary) that writes it into that report's Quarterly Review, once the review date has passed; before then it says the summary appears once the review is held. Submissions carry no party, name or agency into the summary, and the summary passes the OCR's sensitivity screen.",
       "evidence": [
         {
@@ -296,6 +328,10 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real feedback is solicited (DEC-194). Each quarter simulated agencies, the simulated FedRAMP and the simulated assessor submit scripted questions through the intake in scripts/_quarterly_review.py; they are answered by rule and published anonymized."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -327,7 +363,7 @@
     },
     {
       "frr_id": "CCM-OCR-FBM",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Each OCR names its asynchronous feedback intake (providerExtensions.feedback.channel): a submission names the report's issue date and a question, is validated (it must be about that report and from a party marked simulated), screened, and answered by rule, and the Q&A is published with that report's Quarterly Review. No form or channel is offered to real parties (DEC-194).",
       "evidence": [
         {
@@ -358,6 +394,10 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real feedback is solicited (DEC-194). Each quarter simulated agencies, the simulated FedRAMP and the simulated assessor submit scripted questions through the intake in scripts/_quarterly_review.py; they are answered by rule and published anonymized."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -451,7 +491,7 @@
     },
     {
       "frr_id": "CCM-QTR-ACT",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Each Quarterly Review's agenda (scripts/_quarterly_review.py, agenda) is filled from the issued report: its changes, transformative changes and incidents, plus standing agency-relevant items (KSI results and trend, accepted vulnerabilities and trend, the next quarter's planned changes) and the intake's questions. The OCR publishes the standing agenda and the review publishes the filled one.",
       "evidence": [
         {
@@ -482,11 +522,15 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CCM-QTR-MTG",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "A Quarterly Review is held 5 business days after each OCR issue: package-maintenance.yml, which runs daily and after every deploy, holds it on its date with simulated attendees (scripts/hold-quarterly-review.py), reading the frozen report whose sha256 the verified issue index records, and publishes /.well-known/quarterly-review-<date>.json and .md (signed, never rewritten) and the index quarterly-reviews.json. The maintainer (called by every deploy) and the evidence nightly fail when a review date has passed with no review published (scripts/check-quarterly-review.py). The schedule is the published calendar file and appears in the OCR and CPO.",
       "evidence": [
         {
@@ -529,11 +573,15 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CCM-QTR-NID",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Everything a Quarterly Review shows is generated: the agenda from the issued report (which passed the OCR's sensitivity screen), the scripted transcript and the screened Q&A. The whole review document passes the same sensitivity screen (scripts/_sensitivity.py) before it is written, and the build fails on a hit.",
       "evidence": [
         {
@@ -560,6 +608,10 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -583,7 +635,7 @@
     },
     {
       "frr_id": "CCM-QTR-REG",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event carries the meeting information and links the report and the review as published once held. The simulated attendees take their meeting information from it; it invites no real party and says so (DEC-194).",
       "evidence": [
         {
@@ -606,11 +658,15 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CCM-QTR-RTP",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "The attendee policy is enforced in code (scripts/_quarterly_review.py, check_roster): simulated agencies, the simulated FedRAMP and the simulated assessor attend by default; any other attendee needs its specific relevance recorded, and every attendee must be marked simulated, or the review is not held.",
       "evidence": [
         {
@@ -633,11 +689,15 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CCM-QTR-RTR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Each Quarterly Review is transcribed (a scripted transcript) and supplied to every attendee, all simulated, as a log entry: the review records the sha256 of the full transcript and the attendees it is supplied to. Nothing is sent to anyone (DEC-194).",
       "evidence": [
         {
@@ -660,6 +720,10 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -699,7 +763,7 @@
     },
     {
       "frr_id": "CCM-QTR-SRR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Exercised: each review's transcript is published with every agency comment, question and name removed (scripts/_quarterly_review.py, public_transcript and public_roster), after the sensitivity screen.",
       "evidence": [
         {
@@ -723,6 +787,10 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "No real party attends (DEC-194). On each review date package-maintenance.yml holds the review with a simulated roster (Department of Hypothetical Affairs (simulated), Bureau of Made-Up Statistics (simulated), FedRAMP (simulated), Totally Real Assessment Services, LLC (simulated)), hosted by the workflow itself, and publishes the result; nothing is sent to anyone."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -872,7 +940,7 @@
     },
     {
       "frr_id": "CDS-CSO-FRC",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "FedRAMP is simulated, and the system is not certified. The simulated FedRAMP issues a stand-in certification report only in response to a simulated package submission (scripts/submit-package.py): for the first submission, then after any adaptive or transformative Significant Change Notification no earlier report covered, and once a year; an ordinary deploy issues none. Each report is logged verbatim, with the date received and its sha256, in its submission's entry of the append-only /.well-known/package-submission-log.json. On every deploy scripts/publish-certification-reports.py publishes every logged report byte-identical under /.well-known/fedramp-certification-reports/ (an edited report fails the deploy), keeps each report's first publication date from the previously published index, and fails the deploy if a report would be first published more than 2 weeks after receipt. The previous log and index are fetched fail-closed: anything but a 404 fails the deploy rather than restarting either history. Every report's title and first line say it is a simulated report NOT ISSUED BY FEDRAMP and that the system is not certified, and one that does not is never published; the CPO and the SDR both state providerExtensions.certification.status 'not certified (proof of concept)', from one source (scripts/_offering.py), and a package without it is never submitted.",
       "evidence": [
         {
@@ -943,6 +1011,10 @@
       "simulated": {
         "counterparty": "fedramp",
         "how": "No FedRAMP counterpart exists. A Python function in scripts/submit-package.py stands in for FedRAMP and writes each report in response to a simulated package submission; every report says in its title and first line that it is NOT ISSUED BY FEDRAMP and that the system is not certified. Nothing is sent to or received from FedRAMP (DEC-194)."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1017,11 +1089,15 @@
       "implementation": "Permissive (MAY). Checked: no per-service materials are supplied; nothing in the rule requires them.",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence."
+      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "CDS-CSO-PUB",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "The CPO (JSON and Markdown, public under /.well-known/) publishes every listed item that applies: the FedRAMP ID (FedRAMP's fallback, flagged simulated), service and deployment model, business categories, a UEI (simulated, flagged sam-gov: no SAM.gov registration), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its security category, the secure configuration guidance link, the documentation overview, the trust center landing page (https://samaydlette.com/trust/index.html) with access instructions, the next OCR date from the fixed calendar, and the current independent assessment service: none FedRAMP Recognized, stated as such, with the simulated assessor named. It is rebuilt on every deploy and daily by the package maintainer.",
       "evidence": [
         {
@@ -1056,6 +1132,10 @@
       "simulated": {
         "counterparty": "sam-gov",
         "how": "No SAM.gov registration exists, so the UEI is a plainly fake placeholder from data/cds/offering.json, flagged under providerExtensions.simulated in the published CPO. Nothing is registered or sent; every other item is real."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1153,7 +1233,7 @@
     },
     {
       "frr_id": "CDS-TRC-AAI",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "data/agency-access.json is the append-only register of agency access requests, grants, denials and withdrawals, naming agencies and systems, never people (a record with an email address fails). scripts/agency-access.py derives the inventory and the full history from it; every deploy validates it and fails on an overdue denial notice or on any entry not marked simulated for an agency named '(simulated)' (DEC-194). It is empty. The inventory and history are exercised on every deploy over the simulated scenario, whose inventory request from the simulated FedRAMP is answered in the published log (procedure: docs/procedures/agency-access.md, DEC-165).",
       "evidence": [
         {
@@ -1188,11 +1268,15 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CDS-TRC-ACL",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. The lookup of a party's own records, by the times and paths it gives (no requester identity is logged), is built into scripts/build-access-summary.py and exercised on every deploy against a simulated requester: it must find exactly the known answer in fixed synthetic records or the deploy fails, and the count it finds in the real records is logged in the summary (ownRecordsExercise). Nothing is delivered and no real request is answered (DEC-160, DEC-194); the trust page's privacy notice says so.",
       "evidence": [
         {
@@ -1235,6 +1319,10 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "The requester is simulated ('A. Reader (simulated)'); its request runs through the real lookup on every deploy and the result is a log entry in access-summary.json. No real request is answered (DEC-194)."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1305,7 +1393,7 @@
     },
     {
       "frr_id": "CDS-TRC-SSM",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Parties provision their own access directly: all data is public, so a user or service needs no account or key (the trust manifest documents how to fetch and verify). Requests and withdrawals are processed without a person: scripts/agency-access.py decides each request by fixed rules and records it; the trust page's Access section says so (docs/procedures/agency-access.md, DEC-165). No real agency request is taken (DEC-194).",
       "evidence": [
         {
@@ -1336,6 +1424,10 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1371,7 +1463,7 @@
     },
     {
       "frr_id": "CDS-UTC-AAD",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "When a request is denied (by rule), the automated notifier writes a notice to the simulated FedRAMP as a log entry, and the clock requires it within 5 business days of the denial (docs/procedures/agency-access.md, DEC-165). scripts/agency-access.py computes each deadline (weekends and US federal holidays skipped) and every deploy fails when a notice is late or overdue. The clock and the notifier, with a simulated outage, are exercised on every deploy.",
       "evidence": [
         {
@@ -1406,11 +1498,15 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "CDS-UTC-AGA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Agencies get the whole package without asking, since it is public. Access requests are decided by fixed rules in scripts/agency-access.py (granted unless they ask for write access, delivery other than HTTPS, data beyond the public package, or come from an agency that cannot be verified); the trust page's Access section says what is provided and links the procedure (DEC-165) and the sharing standard that explains how sharing is decided (DEC-166). No real agency request is taken (DEC-194).",
       "evidence": [
         {
@@ -1441,6 +1537,10 @@
       "simulated": {
         "counterparty": "agency",
         "how": "No real agency request is taken (DEC-194). Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others): code rules decide each request, the automated notifier writes each denial notice to the simulated FedRAMP after a simulated delay or outage, and the deploy fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports every outcome expected, including a late and an overdue notice. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1537,7 +1637,7 @@
     },
     {
       "frr_id": "CPO-CSO-OSA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "The CPO (certification-package-overview.json and .md) carries the assessor's overall summary (IVV-IAS-OSA) under providerExtensions.independentAssessment.overallSummary, quoted verbatim from the signed assessment set: rule and KSI pass, observation and fail counts, failures, areas of dispute and observations. scripts/build-cpo.py requires the set, verifies it (scripts/_assessor.load_assessment) and fails without a summary; the daily package maintainer rebuilds the CPO from the same published set. The schema's `assessor` object is left out because the simulated assessor has no FedRAMP assessor ID, and none is invented.",
       "evidence": [
         {
@@ -1576,6 +1676,10 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "The overall summary is written on every deploy by Totally Real Assessment Services, LLC (simulated), a reusable workflow in this repository (simulated-assessor.yml) that signs its set keylessly under its own pinned workflow identity. build-cpo.py quotes the summary record only after the set's signature verifies against that identity and every record's hash matches, and refuses to build without it. It is not a FedRAMP Recognized assessment service and the CPO says so; only the assessor is simulated."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1645,35 +1749,55 @@
       "status": "Not Applicable",
       "implementation": "Checked: no application form completed or drafted in the repo.",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-APP-FCP",
       "status": "Not Applicable",
       "implementation": "The package is rebuilt on every deploy (deploy-with-opa.yml steps 'Build Security Decision Record (SDR — 20x SSP replacement)' and 'Build Certification Package Overview (CPO)') and daily by the package maintainer (package-maintenance.yml), and the runtime emitter re-validates the deployed system daily (the trust center's runtime check).",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-APP-FIA",
       "status": "Not Applicable",
       "implementation": "No FedRAMP Recognized assessor has assessed this system. Every deploy is assessed by the simulated assessor, whose overall summary the CPO carries in providerExtensions.independentAssessment (flagged simulated) and whose records the SDR quotes in providerExtensions.assessorRecords; neither is a FedRAMP initial assessment.",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-APP-MLF",
       "status": "Not Applicable",
       "implementation": "Not listed in the FedRAMP Marketplace, and no listing is sought (docs/cr26-applicability.md, MKT).",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-APP-NTP",
       "status": "Not Applicable",
       "implementation": "No application exists, and the CPO names the operator as the accountable official, the person who would apply.",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is."
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-APP-USA",
@@ -1681,20 +1805,24 @@
       "implementation": "Permissive (MAY). Checked: no initial assessment exists, so there is nothing stale to freshen.",
       "evidence": [],
       "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
-      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen."
+      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "FRC-CSO-FCP",
       "status": "Implemented",
-      "implementation": "The target profile is identified: FedRAMP 20x, Program path, Class C, Moderate (data/system-profile.json; the CPO's certificationType and providerExtensions). Every applicable rule has a record in data/frr-records.json, and the deploy's completeness gate stops every deploy unless each record is Implemented or Not Applicable, so a deployed system applies all relevant FedRAMP practices.",
+      "implementation": "The target profile is identified: FedRAMP 20x, Program path, Class C, Moderate (data/system-profile.json; the CPO's certificationType and providerExtensions). Every applicable rule has a record in data/frr-records.json with one of four statuses (Implemented, Simulated, Not Demonstrated, Not Applicable), and the deploy's claim gate stops every deploy unless each record's fields support its status and the operator has approved every stand-in and scope cut, so a deployed system publishes which relevant FedRAMP practices it applies, on what inputs, and which it does not.",
       "evidence": [
         {
           "kind": "step",
-          "ref": "deploy-with-opa.yml#FedRAMP rules complete (no gaps)"
+          "ref": "deploy-with-opa.yml#FedRAMP rule claims supported by evidence"
         },
         {
           "kind": "test",
-          "ref": "tests/test_frr_records.py::test_any_open_record_keeps_the_deploy_from_proceeding"
+          "ref": "tests/test_frr_records.py::test_an_unsupported_claim_keeps_the_deploy_from_proceeding"
         },
         {
           "kind": "test",
@@ -1794,7 +1922,7 @@
     },
     {
       "frr_id": "FRC-CSO-PKG",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "scripts/submit-package.py checks the package on every deploy: the CPO (complete per CPO-CSO-OVR, including the trust center, secure configuration guidance, third-party resources and assessor summary), the SDR with every applicable rule exactly once, and the OCR, each valid against FedRAMP's schema, one FedRAMP ID across them and certificationType 20x. It then supplies the package to a simulated FedRAMP intake and appends a signed entry to /.well-known/package-submission-log.json for each content change. Nothing is sent.",
       "evidence": [
         {
@@ -1817,6 +1945,10 @@
       "simulated": {
         "counterparty": "fedramp",
         "how": "FedRAMP is simulated: the package goes to simulated_fedramp_intake() in scripts/submit-package.py, a function that never touches the network and returns an obviously fake receipt. The only trace is the signed, published submission log; any unexpected outcome fails the deploy."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1871,81 +2003,12 @@
     },
     {
       "frr_id": "FRC-CSX-VVK",
-      "status": "Implemented",
-      "implementation": "The Security Decision Record counts, per KSI, the automated methods that verify and validate it (scripts/build-sdr.py; providerExtensions.automatedMethods): (1) the OPA plan gate on every deploy (rules annotated with ksi_ids in infrastructure/policy/*.rego, covering IAM, identity, keys, logging, network, compute, API and packages); (2) the daily signed runtime re-validation of the same Rego against live configuration for every machine component type (ksi-signal-runtime.json), credited to a KSI when its component refs intersect and only when the signal verifies and is fresh; (3) for a KSI whose components include npm or PyPI packages, dependency vulnerability scanning: the VDR report built from this inventory's Syft SBOM and Grype scans, counted only when it is bound to this inventory's signal_id, its Sigstore signature verifies, it is inside its 24-hour freshness window and every Grype scan passed the detection gate; (4) and (5) for KSI-CED-RAT, the two training checks of scripts/_training.py: the training packet is generated from the system's own data (every decision of the last 12 months, every incident and exercise, the rule and KSI counts and a fixed core) and completed by a simulated trainee whenever it changes; (4) checks that the latest completed packet covers everything the current data requires, and (5) that the current packet was completed by its due date with a score of at least 0.8 and a steady score trend. The history is carried forward in the SDR (providerExtensions.training). On the 2026-11-05 plan and a local run of the runtime readers, (1) and (2) give 43 of the 46 KSIs two methods; dependency scanning brings KSI-SCR-MIT and KSI-SCR-MON to two, and the training checks bring KSI-CED-RAT to two. No KSI relies on an accepted shortfall. The SDR publishes the count on each KSI. After apply and before it builds anything it publishes, the deploy stages its signed inventory and invokes the runtime emitter synchronously; the emitter re-validates the deployed system against that inventory and writes its signed signal beside it, and the deploy reads it back. The deploy's SDR build counts the runtime method only for that signal (it must have re-validated this commit) and fails the deploy, before anything is published, when any KSI has fewer than two automated methods and no in-force accepted decision record names it. The package maintainer, which runs after every deploy and daily, applies the same requirement to the SDR it rebuilds.",
-      "evidence": [
-        {
-          "kind": "test",
-          "ref": "tests/test_validation_mapping.py::test_every_plan_validated_type_has_a_rule"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_runtime_readers.py::test_every_drift_is_caught_by_the_gate_rule"
-        },
-        {
-          "kind": "step",
-          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
-        },
-        {
-          "kind": "artifact",
-          "ref": ".well-known/ksi-signal-runtime.json"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_dependency_scanning_counts_only_for_ksis_with_package_components"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_known_bad_vdrs_do_not_count_each_for_its_reason"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the_vdr_signature"
-        },
-        {
-          "kind": "step",
-          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
-        },
-        {
-          "kind": "artifact",
-          "ref": ".well-known/security-decision-record.json"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_the_deploy_invokes_the_emitter_after_apply_and_requires_two_methods_before_publishing"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_the_runtime_signal_counts_only_for_this_commits_inventory"
-        },
-        {
-          "kind": "step",
-          "ref": "deploy-with-opa.yml#Re-validate the deployed system against this inventory (runtime emitter, FRC-CSX-VVK)"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_with_the_committed_register_every_ksi_has_two_methods_and_none_is_accepted_short"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_sdr_vvk.py::test_known_bad_without_the_training_methods_ksi_ced_rat_is_a_shortfall"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_training.py::test_known_bad_a_packet_missing_a_new_decision_fails_currency"
-        },
-        {
-          "kind": "test",
-          "ref": "tests/test_training.py::test_known_bad_a_late_or_failing_completion_fails_completion"
-        }
-      ],
-      "simulated": {
-        "counterparty": "personnel",
-        "how": "The trainee is simulated ('Pat Placeholder (simulated)', DEC-194): it takes the generated quiz on every SDR build where the packet changed, in the deploy and the package maintainer, and misses every ninth question on purpose. No person is enrolled."
+      "status": "Not Demonstrated",
+      "implementation": "The Security Decision Record counts, per KSI, the automated methods that genuinely test that KSI's measures (scripts/build-sdr.py and scripts/_ksi_methods.py; providerExtensions.methods on each KSI). An OPA rule annotated with the KSI counts at plan time when it evaluated a resource of one of its resource_types in the deploy's plan, and at runtime when it did so against live configuration in the signed runtime re-validation of the deployed commit. Every other mechanism counts only if infrastructure/schemas/ksi-methods.json lists it for the KSI and its verifier passes: a signature by its publisher, its freshness window and a pass result. The inventory's family-level links never count. Each build's SDR lists on this rule the KSIs short of two (providerExtensions.computed), and the deploy stops before publishing if this record claims Implemented while any applicable KSI is short. KSI-SVC-RUD does not apply (data/ksi-applicability.json) and is not counted.",
+      "not_demonstrated": "Not every applicable KSI has two automated methods that test its measures. In the offline count of 2026-11-06 over the 2026-11-05 plan, with every listed mechanism's record verifying, 30 of the 45 applicable KSIs have two or more and 15 are short: KSI-CED-RAT, KSI-CMT-RVP, KSI-IAM-SUS, KSI-INR-AAR, KSI-INR-RIR, KSI-INR-RPI, KSI-MLA-ALA, KSI-PIY-RES, KSI-PIY-RIS, KSI-PIY-RSD, KSI-PIY-RVD, KSI-RPL-ARP, KSI-RPL-RRO, KSI-RPL-TRC and KSI-SVC-VCM. Seven more reach two only when a published record of theirs verifies: KSI-CMT-RMV, KSI-CMT-VTD, KSI-CNA-IBP, KSI-CNA-OFA, KSI-MLA-RVL, KSI-SVC-ACM and KSI-SVC-PRR. No mechanism is built to close the gap (operator's decision of 2026-11-06); the SDR publishes each build's own count.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -1977,7 +2040,7 @@
     },
     {
       "frr_id": "IEC-CSO-AIR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main), assumes the publisher's role from the deploy job before the SDR is built (scripts/check-incident-role.py, step 'Incident report publisher role can be assumed'), so a deploy whose publisher role does not work stops before anything is published, and after the deploy job runs this workflow on its own role (job incident-publisher). Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
@@ -2032,6 +2095,10 @@
       "simulated": {
         "counterparty": "incident-recipient",
         "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -2097,7 +2164,7 @@
     },
     {
       "frr_id": "IEC-CSO-FIR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
@@ -2128,11 +2195,15 @@
       "simulated": {
         "counterparty": "incident-recipient",
         "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "IEC-CSO-IIR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
@@ -2171,11 +2242,15 @@
       "simulated": {
         "counterparty": "incident-recipient",
         "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "IEC-CSO-OIR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "evidence": [
         {
@@ -2206,6 +2281,10 @@
       "simulated": {
         "counterparty": "incident-recipient",
         "how": "FedRAMP and the affected agencies are simulated recipients: each report is read back, hash- and schema-checked and recorded as delivered in /.well-known/incident-deliveries.json on every deploy and every unattended publish; nothing is sent."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -2229,7 +2308,7 @@
     },
     {
       "frr_id": "IVV-CSO-FIA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Every deploy is independently verified and validated, across all applicable rules and KSIs, twice by the simulated assessor workflow; the cadence is far more frequent than once a year. Before the deploy (a gate): it verifies the repository at the commit being deployed and validates the published state that commit replaces, and its signed set names that commit and the KSI signal it validated. The deploy reads the live KSI signal itself (signature verified against the deploy identity), scripts/_assessor.load_assessment refuses a set covering any other commit or signal, the deploy does not proceed on any failed check, and the SDR states which commit and signal the assessment covered (providerExtensions.assessmentCoverage). After the deploy has published, and the unattended package and incident publishers have run, the same assessor assesses the just-published state, which must carry the deployed commit; its set must verify against the pinned assessor identity and cover this commit and the KSI signal this deploy published. A failure there fails the run and raises the deployment-failure issue; what was published is not withdrawn. The pre-deploy set (simulated-assessment.json) is published and its per-rule results are carried in the SDR; the post-deploy set is kept with the run. The assessor is simulated: no FedRAMP Recognized assessment service is engaged (operator's decision of 2026-11-05).",
       "evidence": [
         {
@@ -2296,11 +2375,15 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "IVV-CSO-ICP",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "The assessment results are published unmodified: the signed pre-deploy set itself (simulated-assessment.json with its cosign bundle), and in the SDR, where scripts/_assessor.py admits the set only if its keyless signature verifies against the pinned assessor identity, every record's hash matches, and the set covers the commit being deployed and the published KSI signal the deploy itself read; it carries each record verbatim, and verify_output fails the build if the SDR's copy differs in any byte. The SDR states which commit and signal the carried results covered (providerExtensions.assessmentCoverage).",
       "evidence": [
         {
@@ -2343,6 +2426,10 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -2351,11 +2438,15 @@
       "implementation": "The only assessor is the simulated one (Totally Real Assessment Services, LLC (simulated)), which reports results and offers no advice; no FedRAMP Recognized assessor is engaged.",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept."
+      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "IVV-CSO-SEE",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Every rule record in the SDR states, for each piece of evidence, how it validates the measure and on what cycle (a test on every pull request and deploy, a workflow step each run, a published artifact on its freshness cadence with the watchdog's alarm window, or a decision record with its review date); every KSI states its deploy-time validations and failures and its daily runtime re-validation. The SDR is signed and published, so an assessor reads it without a request.",
       "evidence": [
         {
@@ -2378,11 +2469,15 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "No FedRAMP Recognized assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it without a request; the simulated assessor (Totally Real Assessment Services, LLC (simulated), simulated-assessor.yml) reads it from there on every deploy."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
       "frr_id": "IVV-CSO-SEI",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Every rule record in the SDR names the test, workflow step, published artifact or decision record that verifies its implementation, and every KSI names its measures (the OPA rules annotated to it, by file and rule), the components they cover, how the annotations and the automation are verified, or why there is no measure and the risk. The SDR is signed and published with verification instructions (docs/verification.md, scripts/verify-published.sh).",
       "evidence": [
         {
@@ -2405,6 +2500,10 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "No FedRAMP Recognized assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it without a request; the simulated assessor (Totally Real Assessment Services, LLC (simulated), simulated-assessor.yml) reads it from there on every deploy."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -2440,11 +2539,15 @@
       "implementation": "No sampling in use.",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample."
+      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "IVV-CSX-AIA",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "The simulated assessor checks every Key Security Indicator in the catalog alongside every rule, twice on every deploy: it fetches the published KSI signal, verifies its signature against the deploy identity, and fails a KSI the signal does not report passing (before the deploy, one missing from the signal is an observation). Before the deploy the signal is the published one the deploy replaces; its signal_id is bound into the signed set, the deploy refuses a set naming any other, and the SDR states it. After publish the check runs again on the just-published signal, which must carry the deployed commit and be the signal this deploy published; a failure fails the run and raises the deployment-failure issue. The pre-deploy result per KSI is carried verbatim in the SDR.",
       "evidence": [
         {
@@ -2483,6 +2586,10 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -2576,7 +2683,11 @@
       "implementation": "Permissive (MAY). Checked: the package supplies no supplement; CPO package_contents lists only in-scope artifacts.",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources."
+      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "MAS-CSO-TPR",
@@ -2618,14 +2729,22 @@
       "status": "Not Applicable",
       "implementation": "The CDS-CSO-PUB data a listing would need exists (see CDS-CSO-PUB); no listing is requested.",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought."
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "MKT-CSO-PML",
       "status": "Not Applicable",
       "implementation": "Checked: no listing request has been sent (docs/cr26-applicability.md records MKT as Not Applicable).",
       "evidence": [],
-      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought."
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "SCG-CSO-AUP",
@@ -3195,7 +3314,7 @@
     },
     {
       "frr_id": "SDR-CSO-FRR",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap. Each rule's independent verification and validation (frrAssessment) is the simulated assessor's signed pre-deploy result for it, carried verbatim. The SDR states which commit and published KSI signal that assessment covered (providerExtensions.assessmentCoverage): the commit the SDR was built from, and the published state that commit replaced; a set covering anything else is refused. The post-deploy assessment of the just-published state runs after publish and fails the run on any failure. The human-readable form is the SDR's .md summary and its complete .view.md.",
       "evidence": [
         {
@@ -3242,6 +3361,10 @@
       "simulated": {
         "counterparty": "assessor",
         "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs twice on every deploy: before the SDR is built (the commit being deployed and the published state it replaces) and after publish (the just-published state, which must carry the deployed commit). Each run follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins; each signed set names the commit and KSI signal it covered. The run fails if the assessor finds a failure, if its signature does not verify against that identity, if a record was altered, or if the set covers any other commit or signal. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {
@@ -3587,7 +3710,11 @@
       "implementation": "Checked: no sampling is used. Grype scans every SBOM'd dependency tree, Checkov/tfsec scan all Terraform, and the runtime emitter validates every machine component individually, one validation per component, across the 20 machine types in infrastructure/schemas/runtime-vv-config.json (VDR-TFR-MVX).",
       "evidence": [],
       "not_applicable": "A MAY permission that is not exercised; see the rationale.",
-      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain."
+      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain.",
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
+      }
     },
     {
       "frr_id": "VDR-TFR-KEV",
@@ -4114,7 +4241,7 @@
     },
     {
       "frr_id": "VER-RPT-NID",
-      "status": "Implemented",
+      "status": "Simulated",
       "implementation": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. The path by which a necessary party would receive the withheld detail is exercised on every VDR build against a simulated requester (vdr-report.json withheld_detail_exercise): it logs, per withheld finding, the field names and a sha256 of the detail, never the detail, and a canned simulated finding keeps the path running when nothing is withheld. No real party receives anything (DEC-194). All published artifacts also pass the account-ID redaction gate.",
       "evidence": [
         {
@@ -4153,6 +4280,10 @@
       "simulated": {
         "counterparty": "personnel",
         "how": "The necessary party is simulated ('Necessary Party, Esq. (simulated)'); its request for the withheld detail runs on every VDR build and is answered with a log entry only (DEC-194)."
+      },
+      "proposal": {
+        "by": "Claude (AI agent), for the operator's review",
+        "on": "2026-11-06"
       }
     },
     {

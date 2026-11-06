@@ -1,46 +1,64 @@
 """The FedRAMP rule records: data/frr-records.json (SDR-CSO-FRR).
 
 One record per FedRAMP rule that applies to this system's certification (20x,
-Program path, Class C), saying whether the rule is implemented, how, what shows
-it, and, when it isn't, what is missing and which piece of work closes it. The
-Security Decision Record publishes these records; nothing else may say a rule
-is met.
+Program path, Class C), saying which of four statuses the rule has, how, what
+shows it, and who proposed and approved any stand-in or scope cut. The Security
+Decision Record publishes these records; nothing else may say a rule is met.
+
+The four statuses (the operator's proof-of-concept latitude, CLAUDE.md):
+
+  Implemented       a real mechanism ran on real inputs, and evidence exists;
+  Simulated         a real mechanism ran on a labelled stand-in input;
+  Not Demonstrated  not built, or nothing runs; the record says why;
+  Not Applicable    the rule does not apply; the record says why.
 
 The register is only allowed to claim what the repository can show:
 
 - The applicable rule set comes from the pinned corpus (_rules.applicable_provider_rules).
   A missing or extra record fails, so a re-pinned corpus that adds a rule
   cannot be published past.
-- "Implemented" needs at least one piece of evidence, and every piece of
-  evidence on any record must resolve:
+- Every piece of evidence on any record must resolve:
     test      tests/<file>.py::<test>[::<method>]  a test function that exists
     step      <workflow>.yml#<step name>          a step in .github/workflows/
     artifact  .well-known/<name>                  a published, freshness-governed artifact
     decision  DEC-NNN                             an in-force decision record
-- "Not Applicable" states why (not_applicable) and is allowed only where
-  FedRAMP's own scoping makes the rule conditional on something the provider
-  is not doing (a subset in CONDITIONAL_SUBSETS, such as seeking a Marketplace
-  listing) or the rule is a MAY permission not exercised.
-- Anything else short of implemented states its gap and what closes it: a
-  workstream (W2..W10) or "sam" (an act only the operator can perform, such as
-  a registration or engaging an assessor).
 - Every MAY rule says why it was or wasn't exercised (may_rationale); no
   other rule carries one.
 - No record text may carry an AWS account ID, or an email address outside the
   system's domain and FedRAMP's (the SDR is published).
-- A record that relies on a simulated outside party (an assessor, FedRAMP, an
-  agency, an incident recipient, the mail system, SAM.gov, or the personnel a
-  people-run process needs: review attendees, a trainee) says so in
-  `simulated` {counterparty, how}. Only an Implemented record may, and it must
-  cite deploy-time evidence (a workflow step or a published artifact): the
-  mechanism is real and exercised on every deploy; only the party is not.
 
-The deploy gate (`--complete`, operator's decision of 2026-11-05): the deploy
-proceeds only when every record is Implemented or Not Applicable. Each record
-describes the state after a successful deploy of the commit that contains it.
+Loading (`load`, every consumer and `make check`) holds the register to its
+shape. The claim check (`--claims`, the deploy gate "FedRAMP rule claims
+supported by evidence", and `claims()`) holds each record to what its status
+claims, and fails on any record whose fields do not support it:
 
-Fails closed, stdlib only (the deploy job installs no jsonschema); the JSON
-schema beside it documents the same shape and is checked in tests.
+  Implemented       resolving evidence, and no `simulated` block (a stand-in
+                    input makes the record Simulated);
+  Simulated         `simulated` {counterparty, how, real, stand_in}: what is
+                    real and what stands in (an outside party, the people,
+                    or infrastructure deliberately not built); `stand_in_proof`
+                    {bad_input: a test that feeds a bad stand-in and asserts a
+                    different outcome; replaceable: {statement: how a real
+                    input would replace the stand-in and what would have to
+                    change, test: one that shows it, where one exists}}, each
+                    cited test resolving; and deploy-time evidence (a workflow
+                    step or a published artifact). A guard that refuses real
+                    agencies or FedRAMP (DEC-194) is policy, not logic;
+  Not Demonstrated  `not_demonstrated` (why: not built, or nothing runs), and
+                    no evidence claimed;
+  Not Applicable    `not_applicable` (why).
+
+Simulated, Not Demonstrated and Not Applicable records also carry `proposal`
+{by, on} and `approval` {by, on}. The approver is the operator: an agent may
+propose a stand-in or a scope cut and never approve one, so `approval.by` is
+the operator's name and is written only on his word. The claim check never
+fails on an honestly stated status; it fails only on a claim its fields do not
+support, which includes a stand-in or scope cut nobody approved.
+
+Each record describes the state after a successful deploy of the commit that
+contains it. Fails closed, stdlib only (the deploy job installs no
+jsonschema); the JSON schema beside it documents the same shape and is
+checked in tests.
 """
 
 import ast
@@ -63,15 +81,11 @@ SCHEMA_PATH = REPO / "infrastructure" / "schemas" / "frr-records.schema.json"
 WORKFLOWS = REPO / ".github" / "workflows"
 TESTS = REPO / "tests"
 
-STATUSES = ("Implemented", "Partially Implemented", "Not Implemented", "Not Applicable")
-# Subsets FedRAMP scopes to a provider act, in the subset description: the rules
-# apply once the provider takes that step, and not before.
-CONDITIONAL_SUBSETS = {
-    ("MKT", "CSO"): "providers seeking a listing in the FedRAMP Marketplace",
-    ("FRC", "APP"): "providers who have met all other relevant rules and are ready to apply",
-}
-WORKSTREAMS = tuple(f"W{n}" for n in range(2, 11))
-CLOSERS = (*WORKSTREAMS, "sam")
+STATUSES = ("Implemented", "Simulated", "Not Demonstrated", "Not Applicable")
+# The statuses that rest on a stand-in or a scope cut: proposed by anyone,
+# approved only by the operator.
+NEEDS_APPROVAL = ("Simulated", "Not Demonstrated", "Not Applicable")
+OPERATOR = "Sam Aydlette"
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
 # Outside parties this proof of concept stands in for (DEC-194: no engagement):
 # the mechanism is real and runs on every deploy or on its schedule; the party
@@ -79,13 +93,19 @@ EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
 # Review attendees, a trainee), so that no process waits on a person.
 SIMULATED_COUNTERPARTIES = ("assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov", "personnel")
 SIMULATED_KEYS = {"counterparty", "how"}
-# What the completeness gate accepts: the deploy proceeds only when every
-# applicable rule is one of these.
-COMPLETE_STATUSES = ("Implemented", "Not Applicable")
+# What a Simulated record must say beyond the counterparty: what is real and
+# what is the stand-in (checked by the claim check).
+SIMULATED_CLAIM_KEYS = {"real", "stand_in"}
+STAND_IN_PROOF_KEYS = {"bad_input", "replaceable"}
+# replaceable: how a real input would replace the stand-in and what would have
+# to change (required), with a test that shows it where one exists (optional).
+REPLACEABLE_KEYS = {"statement", "test"}
+SIGNOFF_KEYS = {"by", "on"}
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 TOP_KEYS = {"$comment", "schema", "basis", "records"}
-RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "gap", "closes_with", "may_rationale",
-               "not_applicable", "simulated"}
+RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "may_rationale", "not_applicable",
+               "not_demonstrated", "simulated", "stand_in_proof", "proposal", "approval"}
 EVIDENCE_KEYS = {"kind", "ref"}
 
 TEST_RE = re.compile(r"^(tests/[A-Za-z0-9_/]+\.py)::([A-Za-z_][A-Za-z0-9_]*)(?:::([A-Za-z_][A-Za-z0-9_]*))?(?:\[[^\]]*\])?$")
@@ -192,6 +212,25 @@ def _text(rec, key, rid, required=True):
     return v
 
 
+def _signoff_shape(v, where):
+    if not isinstance(v, dict) or set(v) != SIGNOFF_KEYS:
+        _fail(f"{where} must be {{by, on}}")
+    _text(v, "by", where)
+    if not isinstance(v.get("on"), str) or not DATE_RE.match(v["on"]):
+        _fail(f"{where}.on must be a date (YYYY-MM-DD)")
+
+
+def _stand_in_proof_shape(v, rid):
+    if not isinstance(v, dict) or set(v) != STAND_IN_PROOF_KEYS \
+            or not isinstance(v.get("bad_input"), str) or not v["bad_input"] \
+            or not isinstance(v.get("replaceable"), dict) or "statement" not in v["replaceable"] \
+            or set(v["replaceable"]) - REPLACEABLE_KEYS \
+            or ("test" in v["replaceable"]
+                and (not isinstance(v["replaceable"]["test"], str) or not v["replaceable"]["test"])):
+        _fail(f"{rid}: stand_in_proof must be {{bad_input: <test>, replaceable: {{statement, test (optional)}}}}")
+    _text(v["replaceable"], "statement", f"{rid} stand_in_proof.replaceable")
+
+
 def validate(doc, applicable, resolve, where="data/frr-records.json"):
     """Structural and honesty checks. `applicable` is {rule ID: rule} from the
     corpus; `resolve` maps evidence to None or a failure reason."""
@@ -235,37 +274,42 @@ def validate(doc, applicable, resolve, where="data/frr-records.json"):
                 _fail(f"{rid}: {ev['kind']} evidence {ev['ref']!r} does not resolve: {why}")
         if "simulated" in rec:
             sim = rec["simulated"]
-            if not isinstance(sim, dict) or set(sim) != SIMULATED_KEYS \
+            if not isinstance(sim, dict) or not SIMULATED_KEYS <= set(sim) \
+                    or set(sim) - SIMULATED_KEYS - SIMULATED_CLAIM_KEYS \
                     or sim.get("counterparty") not in SIMULATED_COUNTERPARTIES:
-                _fail(f"{rid}: simulated must be {{counterparty: one of {list(SIMULATED_COUNTERPARTIES)}, how}}")
-            _text(sim, "how", f"{rid} simulated")
-            if status != "Implemented":
-                _fail(f"{rid}: simulated is for Implemented records only")
+                _fail(f"{rid}: simulated must be {{counterparty: one of {list(SIMULATED_COUNTERPARTIES)}, how, "
+                      f"real, stand_in}}")
+            for k in ("how", *sorted(SIMULATED_CLAIM_KEYS)):
+                _text(sim, k, f"{rid} simulated", required=k == "how")
+            if status not in ("Implemented", "Simulated"):
+                _fail(f"{rid}: simulated is for Simulated records only")
             if not any(ev["kind"] in ("step", "artifact") for ev in evidence):
                 _fail(f"{rid}: a simulated counterparty needs deploy-time evidence (a workflow step or a "
                       f"published artifact): the simulation runs on every deploy")
-        closes = rec.get("closes_with")
-        if status == "Implemented":
-            if not evidence:
-                _fail(f"{rid}: Implemented needs evidence that resolves")
-            if rec.get("gap") is not None or closes is not None:
-                _fail(f"{rid}: an Implemented record has no gap and nothing closing it")
-            continue
-        if status == "Not Applicable":
-            rule = applicable[rid]
-            if rule["force"] != "MAY" and (rule["family"], rule.get("subset")) not in CONDITIONAL_SUBSETS:
-                _fail(f"{rid}: cannot be Not Applicable: FedRAMP scopes it to every 20x Class C provider "
-                      f"(force {rule['force']})")
-            _text(rec, "not_applicable", rid)
-            if rec.get("gap") is not None or closes is not None:
-                _fail(f"{rid}: a Not Applicable record has no gap and nothing closing it")
-            continue
-        if "not_applicable" in rec:
+        if "stand_in_proof" in rec:
+            if status != "Simulated":
+                _fail(f"{rid}: stand_in_proof is for Simulated records only")
+            _stand_in_proof_shape(rec["stand_in_proof"], rid)
+        for k in ("proposal", "approval"):
+            if k in rec:
+                if status not in NEEDS_APPROVAL:
+                    _fail(f"{rid}: {k} is for {', '.join(NEEDS_APPROVAL)} records only")
+                _signoff_shape(rec[k], f"{rid} {k}")
+        if rec.get("approval") and rec["approval"].get("by") != OPERATOR:
+            _fail(f"{rid}: approval.by must be the operator ({OPERATOR}); anyone may propose, only the operator "
+                  "approves")
+        if "not_applicable" in rec and status != "Not Applicable":
             _fail(f"{rid}: not_applicable is for Not Applicable records only")
-        _text(rec, "gap", rid)
-        if not isinstance(closes, list) or not closes or len(set(closes)) != len(closes) \
-                or any(c not in CLOSERS for c in closes):
-            _fail(f"{rid}: closes_with must be a non-empty list drawn from {list(CLOSERS)}")
+        if "not_demonstrated" in rec and status != "Not Demonstrated":
+            _fail(f"{rid}: not_demonstrated is for Not Demonstrated records only")
+        if status == "Implemented" and not evidence:
+            _fail(f"{rid}: Implemented needs evidence that resolves")
+        if status == "Simulated" and not evidence:
+            _fail(f"{rid}: Simulated needs evidence that resolves")
+        if status == "Not Applicable":
+            _text(rec, "not_applicable", rid)
+        if status == "Not Demonstrated":
+            _text(rec, "not_demonstrated", rid)
     missing = sorted(set(applicable) - seen)
     if missing:
         _fail(f"no record for {len(missing)} applicable rule(s): {', '.join(missing)}")
@@ -284,10 +328,46 @@ def load(path=None, rules_dir=None, repo=REPO, freshness_path=None, decisions_pa
     return validate(doc, applicable, resolver(repo, freshness_path, decisions_path), str(p))
 
 
-def incomplete(doc):
-    """The records that keep the deploy from proceeding: every rule must be
-    Implemented or Not Applicable (operator's decision of 2026-11-05)."""
-    return [(r["frr_id"], r["status"]) for r in doc["records"] if r["status"] not in COMPLETE_STATUSES]
+def claims(doc, resolve):
+    """[(rule ID, why)] for every record whose fields do not support the status
+    it claims (the deploy gate). An honest status never appears here; an
+    unsupported claim, including a stand-in or a scope cut the operator has not
+    approved, always does."""
+    out = []
+    for r in doc["records"]:
+        rid, status = r["frr_id"], r["status"]
+        evidence = r.get("evidence") or []
+        if status == "Implemented" and "simulated" in r:
+            out.append((rid, "Implemented with a simulated block: a mechanism run on a stand-in input is "
+                             "Simulated, not Implemented"))
+        if status == "Simulated":
+            missing = sorted(SIMULATED_CLAIM_KEYS - set(r.get("simulated") or {}))
+            if "simulated" not in r:
+                out.append((rid, "Simulated without a simulated block saying what stands in"))
+            elif missing:
+                out.append((rid, f"Simulated without saying {' and '.join(missing)} (what is real and what is "
+                                 "the stand-in)"))
+            proof = r.get("stand_in_proof")
+            if not proof:
+                out.append((rid, "Simulated without stand_in_proof (a test that a bad stand-in changes the "
+                                 "result, and a statement of how a real input would replace the stand-in)"))
+            else:
+                refs = [("bad_input", proof["bad_input"])]
+                if proof["replaceable"].get("test"):
+                    refs.append(("replaceable", proof["replaceable"]["test"]))
+                for label, ref in refs:
+                    why = resolve({"kind": "test", "ref": ref})
+                    if why:
+                        out.append((rid, f"stand_in_proof {label} test {ref!r} does not resolve: {why}"))
+        if status == "Not Demonstrated" and evidence:
+            out.append((rid, "Not Demonstrated but cites evidence: a record that claims evidence is not "
+                             "'not built'"))
+        if status in NEEDS_APPROVAL:
+            if not r.get("proposal"):
+                out.append((rid, f"{status} without a proposal (who proposed it, when)"))
+            if not r.get("approval"):
+                out.append((rid, f"{status} not approved by the operator ({OPERATOR})"))
+    return out
 
 
 def summary(doc, applicable):
@@ -299,8 +379,10 @@ def summary(doc, applicable):
         f = applicable[r["frr_id"]]["force"]
         by_force.setdefault(f, Counter())[r["status"]] += 1
     simulated = Counter(r["simulated"]["counterparty"] for r in doc["records"] if "simulated" in r)
+    unapproved = sum(1 for r in doc["records"] if r["status"] in NEEDS_APPROVAL and not r.get("approval"))
     return {"rules": len(doc["records"]),
             "by_status": {s: by_status.get(s, 0) for s in STATUSES},
+            "awaiting_approval": unapproved,
             "simulated": {c: simulated[c] for c in sorted(simulated)},
             "by_force": {f: {s: c.get(s, 0) for s in STATUSES} for f, c in sorted(by_force.items())}}
 
@@ -309,20 +391,23 @@ def main(argv=None):
     import argparse
     ap = argparse.ArgumentParser(description="Validate data/frr-records.json against the pinned FedRAMP rules.")
     ap.add_argument("--records", default=str(DEFAULT_PATH))
-    ap.add_argument("--complete", action="store_true",
-                    help="also fail unless every record is Implemented or Not Applicable (the deploy gate)")
+    ap.add_argument("--ksi-applicability", default=None,
+                    help="the KSI scope cuts (default data/ksi-applicability.json), held to the same approval rule")
+    ap.add_argument("--claims", action="store_true",
+                    help="also fail on any record whose fields do not support its status (the deploy gate)")
     args = ap.parse_args(argv)
     doc = load(args.records)
     print(json.dumps(summary(doc, _rules.applicable_provider_rules()), indent=2))
-    if args.complete:
-        open_ = incomplete(doc)
-        if open_:
-            for rid, status in open_:
-                print(f"::error::{rid} is {status}: every applicable rule must be Implemented or Not Applicable")
-            print(f"{len(open_)} of {len(doc['records'])} rule(s) not complete; the deploy does not proceed.",
-                  file=sys.stderr)
+    if args.claims:
+        import _ksi_applicability  # imports this module; loaded here to keep the import one-way
+        bad = claims(doc, resolver()) + _ksi_applicability.claims(_ksi_applicability.load(args.ksi_applicability))
+        if bad:
+            for rid, why in bad:
+                print(f"::error::{rid}: {why}")
+            print(f"{len({rid for rid, _ in bad})} of {len(doc['records'])} record(s) claim more than their fields "
+                  "support; the deploy does not proceed.", file=sys.stderr)
             return 1
-        print("Every applicable rule is Implemented or Not Applicable.")
+        print("Every record's status is supported by its fields.")
     return 0
 
 

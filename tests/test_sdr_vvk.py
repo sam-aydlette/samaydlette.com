@@ -1,9 +1,12 @@
-"""FRC-CSX-VVK: the automated methods the SDR counts per KSI. Beyond the plan
-gate and the runtime re-validation: dependency vulnerability scanning for a KSI
-with npm or PyPI package components (only when the bound VDR verifies and is
-fresh), and for KSI-CED-RAT the two training checks (scripts/_training.py).
-A KSI short of two methods without an in-force accepted decision fails the
-build when --require-two-methods is given (the package maintainer)."""
+"""FRC-CSX-VVK: the automated methods the SDR counts per KSI, strictly (a
+method counts only when it tests that KSI's measures), and the claim check
+that replaces the old two-method gate: the deploy fails only when the
+FRC-CSX-VVK record claims more than the computed counts support.
+
+Methods: an annotated OPA rule at plan and at runtime (two methods, see
+test_sdr.py), and the mechanisms of infrastructure/schemas/ksi-methods.json,
+each counted only when its verifier passes (scripts/_ksi_methods.py)."""
+import copy
 import importlib.util
 import json
 import sys
@@ -17,7 +20,9 @@ sys.path.insert(0, str(REPO / "scripts"))
 import _controls  # noqa: E402
 import _decisions  # noqa: E402
 import _frr  # noqa: E402
+import _ksi_methods  # noqa: E402
 import _rules  # noqa: E402
+import _signers  # noqa: E402
 
 spec = importlib.util.spec_from_file_location("build_sdr_vvk", REPO / "scripts" / "build-sdr.py")
 sdr = importlib.util.module_from_spec(spec)
@@ -27,7 +32,8 @@ FIX = REPO / "tests" / "fixtures" / "vvk"
 CATALOG = json.loads((REPO / "infrastructure" / "schemas" / "ksi-catalog.json").read_text())
 NOW = datetime(2026, 11, 5, 12, tzinfo=timezone.utc)
 SIGNED = (True, None)
-PKG = "pkg:npm/left-pad@1.3.0"
+METHODS = _ksi_methods.load()
+ALL_KSIS = sorted(i["id"] for f in CATALOG["KSI"].values() for i in f["indicators"])
 
 
 def _vdr(name="vdr-good.json"):
@@ -35,53 +41,58 @@ def _vdr(name="vdr-good.json"):
 
 
 def _signal():
-    """Every KSI validated against the plan over a function; the SCR KSIs over
-    an npm package only (no runtime reaches a package); KSI-CED-RAT over
-    nothing, evidenced by documentation."""
-    comps = [{"component_id": "aws::function::app", "type": "function"},
-             {"component_id": PKG, "type": "npm_package"}]
-    ksis = []
-    for f in CATALOG["KSI"].values():
-        for i in f["indicators"]:
-            refs = {"KSI-SCR-MIT": [PKG], "KSI-SCR-MON": [PKG], "KSI-CED-RAT": []}.get(i["id"],
-                                                                                    ["aws::function::app"])
-            doc = i["id"] == "KSI-CED-RAT"
-            ksis.append({"id": i["id"], "status": "pass", "method": "documentation" if doc else "policy-validation",
-                         "evidence": {"validation_ids": [] if doc else ["v-1"], "failed_validation_ids": [],
-                                      "component_refs": refs}})
+    comps = [{"component_id": "aws::function::app", "type": "function"}]
+    ksis = [{"id": k, "status": "pass", "method": "policy-validation",
+             "evidence": {"validation_ids": ["v-1"], "failed_validation_ids": [],
+                          "component_refs": ["aws::function::app"]}} for k in ALL_KSIS]
     return {"signal_id": "sig-1", "components": comps, "ksis": ksis}
 
 
-RUNTIME = [{"validation_id": "r-1", "component_refs": ["aws::function::app"], "result": "pass"}]
-
-
-def _build(dep_scan, training, accepted):
+def _build(results=None, methods_doc=None, records=None, accepted=None, not_applicable=None):
     sig = _signal()
-    return sdr.build(CATALOG, sig, _frr.load(), _rules.applicable_provider_rules(), _controls.project(sig, CATALOG),
-                     sdr.moderate_ids(), {}, RUNTIME, None, [], {"fedramp_class": "C", "impact_level": "Moderate"},
-                     {}, {}, NOW, {"ac": "https://example.invalid/ac.md"},
-                     dep_scan=dep_scan, training=training, accepted=accepted)
+    return sdr.build(CATALOG, sig, records or _frr.load(), _rules.applicable_provider_rules(),
+                     _controls.project(sig, CATALOG), sdr.moderate_ids(), {}, [], "none supplied", [],
+                     {"fedramp_class": "C", "impact_level": "Moderate"}, {}, {}, NOW,
+                     {"ac": "https://example.invalid/ac.md"}, methods_doc=methods_doc or METHODS,
+                     results=results, accepted=accepted, not_applicable=not_applicable)
 
 
-def _methods(doc):
-    return {k["ksiId"]: k["providerExtensions"]["automatedMethods"] for k in doc["keySecurityIndicators"]}
+def _ext(doc):
+    return {k["ksiId"]: k["providerExtensions"] for k in doc["keySecurityIndicators"]}
 
 
-# --- dependency scanning ------------------------------------------------------------------
+def _all_pass(methods_doc=METHODS):
+    return {m["key"]: SIGNED for m in methods_doc["methods"]}
 
-def test_a_bound_signed_fresh_vdr_with_passing_grype_scans_counts():
-    assert sdr.dependency_scan(_vdr(), _signal(), NOW, SIGNED, 24) == (True, None)
+
+def _table(*methods):
+    return {"schema": "ksi-methods/1", "version": "t", "description": "t", "rationale": "t",
+            "methods": [{"key": k, "mechanism": k, "measure": "m", "ksis": ks, "input": inp,
+                         "verifier": {"kind": "plan-gate"}} for k, ks, inp in methods]}
+
+
+# --- the VDR behind a detection-feed method -------------------------------------------------
+
+def test_a_bound_signed_fresh_vdr_is_usable():
+    assert sdr.vdr_usable(_vdr(), _signal(), NOW, SIGNED, 24) == (True, None)
 
 
 @pytest.mark.parametrize("fixture,signature,reason", [
     ("vdr-unbound.json", SIGNED, "not bound to this inventory"),
     ("vdr-stale.json", SIGNED, "not within its 24-hour window"),
-    ("vdr-grype-failed.json", SIGNED, "a Grype dependency scan failed the detection gate"),
-    ("vdr-no-grype.json", SIGNED, "lists no Grype dependency scan"),
     ("vdr-good.json", (False, "the VDR signature does not verify against the allowed identities"), "does not verify"),
 ])
-def test_known_bad_vdrs_do_not_count_each_for_its_reason(fixture, signature, reason):
-    ok, why = sdr.dependency_scan(_vdr(fixture), _signal(), NOW, signature, 24)
+def test_known_bad_vdrs_are_not_usable_each_for_its_reason(fixture, signature, reason):
+    ok, why = sdr.vdr_usable(_vdr(fixture), _signal(), NOW, signature, 24)
+    assert not ok and reason in why
+
+
+@pytest.mark.parametrize("fixture,reason", [
+    ("vdr-grype-failed.json", "the grype feed failed the detection gate"),
+    ("vdr-no-grype.json", "lists no grype feed"),
+])
+def test_known_bad_detection_feeds_do_not_count(fixture, reason):
+    ok, why = _ksi_methods.verify_vdr_feeds(_ksi_methods.by_key(METHODS)["grype"], SIGNED, _vdr(fixture))
     assert not ok and reason in why
 
 
@@ -99,15 +110,91 @@ def test_the_vdr_signature_is_checked_against_the_allowed_identities(tmp_path):
     assert sdr.vdr_signature(tmp_path / "v.json", None, ["id-a"])[0] is False
 
 
-def test_dependency_scanning_counts_only_for_ksis_with_package_components():
-    with_scan = _methods(_build(SIGNED, sdr.NO_TRAINING, {}))
-    without = _methods(_build((False, "unsigned"), sdr.NO_TRAINING, {}))
-    assert with_scan["KSI-SCR-MIT"] == with_scan["KSI-SCR-MON"] == 2
-    assert without["KSI-SCR-MIT"] == without["KSI-SCR-MON"] == 1
-    assert with_scan["KSI-SVC-VRI"] == without["KSI-SVC-VRI"] == 2  # no package component: plan + runtime
+def test_the_plan_gate_run_counts_only_from_a_signed_signal_whose_validations_pass():
+    sig = {"validations": [{"validation_id": "v", "result": "pass"}]}
+    assert sdr.plan_gate_run(sig, SIGNED) == (True, None)
+    assert sdr.plan_gate_run(sig, (False, "unsigned"))[1] == "unsigned"
+    assert sdr.plan_gate_run({"validations": []}, SIGNED)[1] == "the KSI signal carries no plan validations"
+    assert sdr.plan_gate_run({"validations": [{"result": "fail"}]}, SIGNED)[1] == "a plan validation failed"
 
 
-# --- training (KSI-CED-RAT): two automated methods, a simulated trainee --------------------
+# --- counting ---------------------------------------------------------------------------------
+
+def test_each_counted_method_adds_one_for_exactly_its_ksis():
+    """With no rule annotated, a KSI's count is the number of table methods
+    naming it whose verifier passed; nothing else counts."""
+    m = {k: v["automatedMethods"] for k, v in _ext(_build(_all_pass())).items() if v["status"] != "Not Applicable"}
+    want = {k: 0 for k in m}
+    for meth in METHODS["methods"]:
+        for k in meth["ksis"]:
+            if k in want:
+                want[k] += 1
+    assert m == want
+    assert m["KSI-SCR-MON"] == 2 and m["KSI-SVC-EIS"] == 2 and m["KSI-CNA-IBP"] == 2
+
+
+def test_known_bad_a_method_that_did_not_verify_counts_nothing_and_says_why():
+    res = {**_all_pass(), "reconcile": (False, "invariant (a) was not checked against live state")}
+    x = _ext(_build(res))["KSI-SVC-ACM"]
+    assert x["automatedMethods"] == 1
+    assert {m["key"]: m["reason"] for m in x["methods"]}["reconcile"] == \
+        "invariant (a) was not checked against live state"
+    assert _ext(_build({}))["KSI-SVC-ACM"]["automatedMethods"] == 0  # not evaluated: not counted
+
+
+def test_a_mechanism_counts_once_per_ksi():
+    """Recovery-rebuild publishes many exercises; it is one method."""
+    assert sum(1 for m in METHODS["methods"] if "KSI-RPL-TRC" in m["ksis"]) == 1
+    assert _ext(_build(_all_pass()))["KSI-RPL-TRC"]["automatedMethods"] == 1
+
+
+def test_a_ksi_reaching_two_only_with_a_stand_in_is_simulated():
+    t = _table(("a", ["KSI-INR-RIR"], "stand-in"), ("b", ["KSI-INR-RIR"], "real"),
+               ("c", ["KSI-INR-AAR"], "real"), ("d", ["KSI-INR-AAR"], "real"))
+    x = _ext(_build({"a": SIGNED, "b": SIGNED, "c": SIGNED, "d": SIGNED}, methods_doc=t))
+    assert (x["KSI-INR-RIR"]["status"], x["KSI-INR-RIR"]["realInputMethods"]) == ("Simulated", 1)
+    assert x["KSI-INR-AAR"]["status"] == "Implemented"
+    assert x["KSI-INR-RPI"]["status"] == "Not Demonstrated"
+
+
+def test_the_committed_training_is_one_stand_in_method():
+    t = sdr.training_result(_training())
+    assert t == (True, None)
+    x = _ext(_build({**_all_pass(), "training": t}))["KSI-CED-RAT"]
+    assert x["automatedMethods"] == 1 and x["realInputMethods"] == 0 and x["status"] == "Not Demonstrated"
+    assert sdr.training_result(sdr.NO_TRAINING) == (False, "training currency: not evaluated in this build")
+
+
+# --- published records: signed by their publisher --------------------------------------------
+
+def test_published_records_are_checked_against_their_own_publisher(tmp_path):
+    seen = {}
+
+    def verifier(path, bundle, ids):
+        seen[Path(path).name] = ids
+        return False
+    recs = {}
+    for key, name in _ksi_methods.published_keys(METHODS).items():
+        p = tmp_path / key / name
+        p.parent.mkdir()
+        p.write_text("{}")
+        (p.parent / (name[:-5] + ".bundle")).write_text("{}")
+        recs[key] = (p, p.parent / (name[:-5] + ".bundle"))
+    res = sdr.published_methods(METHODS, recs, NOW, sdr._freshness.load_freshness_config(), verifier)
+    assert all(not ok and "does not verify against its publisher" in why for ok, why in res.values())
+    assert seen["vdr-audit-log-review.json"] == [_signers.IDENTITIES["nightly"]]
+    assert seen["security-settings.json"] == [_signers.IDENTITIES["deploy"]]
+    assert sdr.published_methods(METHODS, {}, NOW, sdr._freshness.load_freshness_config()) == {
+        k: sdr.NOT_EVALUATED for k in _ksi_methods.published_keys(METHODS)}
+
+
+def test_the_method_record_argument_is_validated():
+    assert sdr._method_record_args(["reconcile=d/reconcile-report.json"], METHODS) == {
+        "reconcile": ("d/reconcile-report.json", "d/reconcile-report.bundle")}
+    for bad in ("nonsense=x.json", "reconcile=x.txt", "plan-gate=x.json"):
+        with pytest.raises(SystemExit):
+            sdr._method_record_args([bad], METHODS)
+
 
 INCIDENTS = json.loads((REPO / "data" / "incidents.json").read_text())
 
@@ -124,33 +211,72 @@ def test_the_committed_data_gives_ksi_ced_rat_two_training_methods():
     assert t["summary"]["simulated"] is True and "(simulated)" in t["summary"]["trainee"]
 
 
-# --- shortfalls -----------------------------------------------------------------------------
+# --- the FRC-CSX-VVK claim -------------------------------------------------------------------
 
-def test_with_the_committed_register_every_ksi_has_two_methods_and_none_is_accepted_short():
-    reg = _decisions.load()
-    accepted = sdr.vvk_acceptances(reg, NOW)
-    assert accepted == {}
-    doc = _build(SIGNED, _training(reg), accepted)
-    m = _methods(doc)
-    assert m["KSI-CED-RAT"] == 2 and all(v >= 2 for v in m.values())
+def _records_with_vvk(status, **fields):
+    recs = copy.deepcopy(_frr.load())
+    for r in recs["records"]:
+        if r["frr_id"] == sdr.VVK:
+            r.clear()
+            r.update({"frr_id": sdr.VVK, "status": status, "implementation": "x", **fields})
+    return recs
+
+
+IMPLEMENTED_VVK = {"evidence": [{"kind": "test", "ref": "tests/test_sdr_vvk.py::test_each_counted_method_adds_one_for_exactly_its_ksis"}]}
+
+
+def test_the_committed_vvk_record_states_not_demonstrated_and_passes_the_claim_check():
+    recs = _frr.load()
+    rec = next(r for r in recs["records"] if r["frr_id"] == sdr.VVK)
+    assert rec["status"] == "Not Demonstrated" and not rec.get("evidence") and not rec.get("approval")
+    doc = _build(_all_pass())
+    assert sdr.vvk_shortfalls(doc)
+    assert sdr.vvk_claim(doc, recs) == []
+
+
+def test_known_bad_vvk_implemented_while_a_ksi_is_short_fails():
+    doc = _build(_all_pass())
+    why = sdr.vvk_claim(doc, _records_with_vvk("Implemented", **IMPLEMENTED_VVK))
+    assert len(why) == 1 and "is recorded Implemented but" in why[0] and "KSI-IAM-SUS" in why[0]
+
+
+def test_vvk_implemented_is_supported_when_every_ksi_has_two():
+    t = _table(("a", ALL_KSIS, "real"), ("b", ALL_KSIS, "real"))
+    doc = _build({"a": SIGNED, "b": SIGNED}, methods_doc=t)
     assert sdr.vvk_shortfalls(doc) == []
-    rat = next(k for k in doc["keySecurityIndicators"] if k["ksiId"] == "KSI-CED-RAT")
-    assert "fewerMethodsAccepted" not in rat["providerExtensions"]
-    assert any(line.startswith("Training currency check: ") for line in rat["ksiValidation"])
-    assert any(line.startswith("Training completion and effectiveness check: ") for line in rat["ksiValidation"])
-    assert doc["providerExtensions"]["training"]["methods"]["currency"]["ok"] is True
+    assert sdr.vvk_claim(doc, _records_with_vvk("Implemented", **IMPLEMENTED_VVK)) == []
 
 
-def test_known_bad_without_the_training_methods_ksi_ced_rat_is_a_shortfall():
-    doc = _build(SIGNED, sdr.NO_TRAINING, {})
-    short = sdr.vvk_shortfalls(doc)
-    assert len(short) == 1 and short[0].startswith("KSI-CED-RAT: 0 automated method(s)")
+def test_known_bad_vvk_simulated_or_not_applicable_fails():
+    doc = _build(_all_pass())
+    sim = _records_with_vvk("Simulated", evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
+                            simulated={"counterparty": "assessor", "how": "x"})
+    assert "its status follows the counts" in sdr.vvk_claim(doc, sim)[0]
+    na = _records_with_vvk("Not Applicable", not_applicable="x")
+    assert "its status follows the counts" in sdr.vvk_claim(doc, na)[0]
 
 
-def test_an_unsigned_vdr_leaves_the_supply_chain_ksis_short():
-    reg = _decisions.load()
-    doc = _build((False, "unsigned"), _training(reg), sdr.vvk_acceptances(reg, NOW))
-    assert sorted(s.split(":")[0] for s in sdr.vvk_shortfalls(doc)) == ["KSI-SCR-MIT", "KSI-SCR-MON"]
+def test_an_accepted_ksi_decision_exempts_a_short_ksi():
+    doc = _build(_all_pass(), accepted={k: "DEC-001" for k in ALL_KSIS})
+    assert sdr.vvk_shortfalls(doc) == []
+    assert sdr.vvk_acceptances(_decisions.load(), NOW) == {}
+
+
+def test_a_not_applicable_ksi_is_not_short():
+    na = {"KSI-SVC-RUD": {"ksi_id": "KSI-SVC-RUD", "status": "Not Applicable", "not_applicable": "x",
+                          "proposal": {"by": "x", "on": "2026-11-06"}}}
+    sig_short = [s.split(":")[0] for s in sdr.vvk_shortfalls(_build(_all_pass(), not_applicable=na))]
+    assert "KSI-SVC-RUD" not in sig_short
+
+
+def test_the_sdr_publishes_the_computed_count_on_the_vvk_entry():
+    doc = _build(_all_pass())
+    req = next(r for r in doc["fedRampRequirements"] if r["frrID"] == sdr.VVK)
+    line, ext = sdr.vvk_computed(doc)
+    assert line in req["frrValidation"]
+    assert line.startswith("Computed in this build: ") and "short of 2: " in line
+    assert req["providerExtensions"]["computed"] == ext
+    assert req["frrImplementationStatus"] == "Not Implemented"
 
 
 def test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the_vdr_signature():
@@ -166,7 +292,7 @@ def test_the_package_maintainer_requires_two_methods_and_the_deploy_supplies_the
     assert "needs: [deploy]" in deploy_jobs.split("\n\n", 1)[0] or "needs: [deploy]" in deploy_jobs[:400]
 
 
-# --- the deploy holds it: staged runtime run, then two methods required ---------------------
+# --- the deploy holds it: staged runtime run, then the VVK claim checked ----------------------
 
 THIS = "a" * 40
 
@@ -178,11 +304,7 @@ def test_the_runtime_signal_counts_only_for_this_commits_inventory():
     assert sdr.runtime_bound(FIX / "missing.json", THIS) == "the runtime signal is unreadable"
 
 
-def test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing(tmp_path):
-    """The deploy's invocation: --require-two-methods with --runtime-commit. A
-    runtime signal from the previously published inventory counts for
-    nothing, so KSIs are short and the build stops before the SDR exists."""
-    out = tmp_path / "sdr.json"
+def _main_args(tmp_path, out, records=None):
     sig = tmp_path / "ksi-signal.json"
     sig.write_text(json.dumps(_signal()))
     args = ["--catalog", str(REPO / "infrastructure" / "schemas" / "ksi-catalog.json"),
@@ -190,9 +312,32 @@ def test_known_bad_the_deploys_sdr_step_fails_on_a_shortfall_and_writes_nothing(
             "--runtime-signal", str(FIX / "runtime-previous-commit.json"),
             "--vdr", str(FIX / "vdr-good.json"), "--profile", str(REPO / "data" / "system-profile.json"),
             "--output", str(out), "--md-output", "", "--runtime-commit", THIS, "--require-two-methods"]
-    with pytest.raises(SystemExit, match="short of 2 automated methods; nothing written"):
-        sdr.main(args)
+    if records:
+        p = tmp_path / "frr.json"
+        p.write_text(json.dumps(records))
+        args += ["--frr-records", str(p)]
+    return args
+
+
+def test_known_bad_the_deploys_sdr_step_fails_on_an_overclaiming_vvk_and_writes_nothing(tmp_path):
+    """The deploy's invocation: --require-two-methods with --runtime-commit. A
+    runtime signal from the previously published inventory counts for
+    nothing, KSIs are short, and a VVK record claiming Implemented stops the
+    build before the SDR exists."""
+    out = tmp_path / "sdr.json"
+    with pytest.raises(SystemExit, match="claims more than the per-KSI method counts support; nothing written"):
+        sdr.main(_main_args(tmp_path, out, _records_with_vvk("Implemented", **IMPLEMENTED_VVK)))
     assert not out.exists()
+
+
+def test_the_deploys_sdr_step_publishes_an_honest_vvk_with_short_ksis(tmp_path):
+    """The same build with the committed record (Not Demonstrated): the
+    shortfall is stated, not a reason to stop."""
+    out = tmp_path / "sdr.json"
+    assert sdr.main(_main_args(tmp_path, out)) == 0
+    doc = json.loads(out.read_text())
+    req = next(r for r in doc["fedRampRequirements"] if r["frrID"] == sdr.VVK)
+    assert req["providerExtensions"]["computed"]["short"]
 
 
 def _step(text, name):
@@ -246,85 +391,3 @@ def test_the_emitter_may_write_only_the_staged_runtime_signal():
     assert "if (!staged) await publishPublicKey" in js
 
 
-# --- the scheduled reviews (scripts/_scheduled_review.py): one more method each ----------
-
-SCHEDULED_KSIS = {"KSI-MLA-RVL", "KSI-CMT-RVP", "KSI-PIY-RIS", "KSI-PIY-RES", "KSI-SVC-EIS", "KSI-INR-RPI",
-                  "KSI-RPL-TRC"}
-
-
-def _build_with(scheduled):
-    sig = _signal()
-    return sdr.build(CATALOG, sig, _frr.load(), _rules.applicable_provider_rules(), _controls.project(sig, CATALOG),
-                     sdr.moderate_ids(), {}, RUNTIME, None, [], {"fedramp_class": "C", "impact_level": "Moderate"},
-                     {}, {}, NOW, {"ac": "https://example.invalid/ac.md"},
-                     dep_scan=SIGNED, training=sdr.NO_TRAINING, accepted={}, scheduled=scheduled)
-
-
-def test_the_method_table_names_each_scheduled_ksi_once_and_keeps_training():
-    assert sdr.KSI_METHODS["KSI-CED-RAT"] == ["training-currency", "training-completion"]
-    assert {k for k, ms in sdr.KSI_METHODS.items() if set(ms) & set(sdr._sched.KSI_METHODS)} == SCHEDULED_KSIS
-    assert all(len(sdr.KSI_METHODS[k]) == 1 for k in SCHEDULED_KSIS)
-
-
-def test_each_scheduled_ksi_gains_one_method_when_its_record_passes():
-    before = _methods(_build_with(None))
-    after = _methods(_build_with({k: (True, None) for k in sdr._sched.KSI_METHODS}))
-    assert {k for k in after if after[k] != before[k]} == SCHEDULED_KSIS
-    assert all(after[k] == before[k] + 1 for k in SCHEDULED_KSIS)
-
-
-def test_known_bad_a_failing_record_is_not_counted_and_says_why():
-    doc = _build_with({"audit-log-review": (False, "the planted simulated intruder was not caught")})
-    k = next(k for k in doc["keySecurityIndicators"] if k["ksiId"] == "KSI-MLA-RVL")
-    assert k["providerExtensions"]["automatedMethods"] == 2
-    assert any("not counted for this build: the planted simulated intruder was not caught" in v
-               for v in k["ksiValidation"])
-
-
-def _records(tmp_path, doc):
-    out = {}
-    for key, name in sdr._sched.METHOD_FILES.items():
-        p = tmp_path / name
-        p.write_text(json.dumps(doc(key)))
-        (tmp_path / (name[:-5] + ".bundle")).write_text("{}")
-        out[key] = (p, tmp_path / (name[:-5] + ".bundle"))
-    return out
-
-
-def _passing(key):
-    if key == "audit-log-review":
-        return {"schema": "audit-log-review/1", "generated_at": NOW.isoformat(), "result": "pass",
-                "exercise": {"caught": True}}
-    return {"schema": "scheduled-reviews/1", "review": key,
-            "reviews": [{"dueDate": "2026-11-0" + ("1" if key == "recovery-exercise" else "5"), "sha256": "0" * 64,
-                         "result": "pass"}]}
-
-
-def test_scheduled_records_count_only_when_signed_by_their_publisher(tmp_path):
-    seen = {}
-
-    def verifier(path, bundle, ids):
-        seen[Path(path).name] = ids
-        return True
-    res = sdr.scheduled_methods(_records(tmp_path, _passing), NOW, verifier)
-    assert res == {k: (True, None) for k in sdr._sched.KSI_METHODS}
-    nightly = "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main"
-    maint = ("https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml"
-             "@refs/heads/main")
-    assert seen == {"vdr-audit-log-review.json": [nightly], "vdr-recovery-exercises.json": [nightly],
-                    "security-reviews.json": [maint]}
-
-
-def test_known_bad_an_unsigned_or_missing_record_is_not_counted(tmp_path):
-    res = sdr.scheduled_methods(_records(tmp_path, _passing), NOW, lambda *_a: False)
-    assert all(not ok and "does not verify" in why for ok, why in res.values())
-    assert sdr.scheduled_methods({}, NOW) == {k: sdr.NOT_EVALUATED for k in sdr._sched.KSI_METHODS}
-    gone = {"audit-log-review": (tmp_path / "nope.json", tmp_path / "nope.bundle")}
-    assert "not published" in sdr.scheduled_methods(gone, NOW, lambda *_a: True)["audit-log-review"][1]
-
-
-def test_the_scheduled_record_argument_is_validated():
-    assert sdr._scheduled_args(["security-review=d/security-reviews.json"]) == {
-        "security-review": ("d/security-reviews.json", "d/security-reviews.bundle")}
-    with pytest.raises(SystemExit):
-        sdr._scheduled_args(["nonsense=x.json"])

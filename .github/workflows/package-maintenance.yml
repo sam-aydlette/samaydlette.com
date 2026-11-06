@@ -140,9 +140,12 @@ jobs:
         fi
         # Verified in-band by build-sdr.py against the committed runtime key.
         fetch ksi-signal-runtime.json || rm -f ksi-signal-runtime.json
-        # The scheduled reviews' records, verified in-band by build-sdr.py against
-        # their publishers (scripts/_signers.py); one not published yet is not counted.
-        for a in vdr-audit-log-review vdr-recovery-exercises security-reviews; do
+        # The scheduled reviews' records and the KSI methods' published records
+        # (infrastructure/schemas/ksi-methods.json), verified in-band by
+        # build-sdr.py against their publishers (scripts/_signers.py); one not
+        # published yet is not counted.
+        for a in vdr-audit-log-review vdr-recovery-exercises security-reviews security-settings reconcile-report \
+                 conformance-results fedramp-inbox-simulation; do
           if ! { fetch "$a.json" && fetch "$a.bundle"; }; then rm -f "$a.json" "$a.bundle"; fi
         done
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
@@ -187,9 +190,10 @@ jobs:
           fi
           ASSESSMENT="$ASSESSMENT --assessment-commit $SIGNAL_COMMIT --assessment-signal-id $ASSESSED"
         fi
-        # FRC-CSX-VVK: the VDR's signature (verified above) for the dependency-scan
-        # method, and a KSI short of two automated methods without an accepted
-        # decision fails the run. Older deployed builders take neither.
+        # FRC-CSX-VVK: the VDR's signature (verified above) for its detection-feed
+        # methods, and the claim check on the FRC-CSX-VVK record (an Implemented
+        # claim with a KSI short of two methods fails the run). Older deployed
+        # builders take neither.
         VVK=""
         if grep -q -- '--require-two-methods' ../scripts/build-sdr.py; then
           VVK="--vdr-bundle vdr-report.bundle --vdr-identity $ID_DEPLOY --vdr-identity $ID_NIGHTLY --require-two-methods"
@@ -210,7 +214,22 @@ jobs:
             fi
           done
         fi
-        cp "$W/ksi-signal.json" "$W/vdr-report.json" "$W/vdr-report.bundle" .
+        # The strict per-KSI count (FRC-CSX-VVK): each KSI method's published
+        # record, and the KSI signal's own signature for the plan-gate run. An
+        # older deployed builder takes neither.
+        if grep -q -- '--method-record' ../scripts/build-sdr.py; then
+          for k in audit-log-review:vdr-audit-log-review recovery-rebuild:vdr-recovery-exercises \
+                   recovery-backup-read:vdr-recovery-exercises security-settings:security-settings \
+                   reconcile:reconcile-report conformance:conformance-results \
+                   inbox-simulation:fedramp-inbox-simulation availability:availability; do
+            f="${k#*:}"
+            if [ -f "$W/$f.json" ] && [ -f "$W/$f.bundle" ]; then
+              VVK="$VVK --method-record ${k%%:*}=$W/$f.json"
+            fi
+          done
+          VVK="$VVK --ksi-signal-bundle ksi-signal.bundle"
+        fi
+        cp "$W/ksi-signal.json" "$W/ksi-signal.bundle" "$W/vdr-report.json" "$W/vdr-report.bundle" .
         [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \

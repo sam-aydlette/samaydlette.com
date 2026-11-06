@@ -1,0 +1,202 @@
+{
+  "$comment": "Each case is a ksi-applicability/1 entry list that must fail scripts/_ksi_applicability.py validation for the stated reason; claims-cases must load and fail the claim check. Applied by tests/test_ksi_applicability.py. Approvals here are test data, not the operator's decisions.",
+  "cases": [
+    {
+      "case": "not a KSI in the catalog",
+      "entries": [
+        {
+          "ksi_id": "KSI-XXX-YYY",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "KSI-XXX-YYY is not a KSI in the catalog"
+    },
+    {
+      "case": "duplicate entry",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        },
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "duplicate entry for KSI-SVC-RUD"
+    },
+    {
+      "case": "a status other than Not Applicable",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Implemented",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "status must be Not Applicable"
+    },
+    {
+      "case": "no reason",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "KSI-SVC-RUD: not_applicable must be a non-empty string"
+    },
+    {
+      "case": "no proposal",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "KSI-SVC-RUD: proposal must be {by, on}"
+    },
+    {
+      "case": "approval by anyone but the operator",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Claude",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "approval.by must be the operator"
+    },
+    {
+      "case": "approval without a date",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "today"
+          }
+        }
+      ],
+      "expect": "KSI-SVC-RUD approval.on must be a date"
+    },
+    {
+      "case": "unknown field",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "met": true
+        }
+      ],
+      "expect": "unknown field(s) ['met']"
+    },
+    {
+      "case": "account ID in the reason",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "Bucket arn:aws:s3:us-east-1:111122223333:x",
+          "proposal": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          },
+          "approval": {
+            "by": "Sam Aydlette",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "not_applicable carries an AWS account ID"
+    }
+  ],
+  "claims_cases": [
+    {
+      "case": "a scope cut not approved",
+      "entries": [
+        {
+          "ksi_id": "KSI-SVC-RUD",
+          "status": "Not Applicable",
+          "not_applicable": "No customer data.",
+          "proposal": {
+            "by": "Claude (AI agent), for the operator's review",
+            "on": "2026-11-06"
+          }
+        }
+      ],
+      "expect": "Not Applicable not approved by the operator (Sam Aydlette)"
+    }
+  ]
+}
