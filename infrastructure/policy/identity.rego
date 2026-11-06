@@ -24,6 +24,7 @@ pools contains r if {
 #   severity: HIGH
 #   nist_controls: [ia-2.1, ia-2.2]
 #   ksi_ids: [KSI-IAM-APM]
+#   resource_types: [aws_cognito_user_pool]
 violations contains violation if {
 	some r in pools
 	gate.attribute_read_ok(r, "mfa_configuration")
@@ -45,6 +46,7 @@ violations contains violation if {
 #   severity: MEDIUM
 #   nist_controls: [ia-5.1]
 #   ksi_ids: [KSI-IAM-APM]
+#   resource_types: [aws_cognito_user_pool]
 violations contains violation if {
 	some r in pools
 	gate.attribute_read_ok(r, "password_policy")
@@ -68,7 +70,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: MEDIUM
 #   nist_controls: [ac-2]
-#   ksi_ids: [KSI-IAM-JIT]
+#   ksi_ids: [KSI-IAM-JIT, KSI-IAM-AAM]
+#   resource_types: [aws_cognito_user_pool]
 violations contains violation if {
 	some r in pools
 	gate.attribute_read_ok(r, "admin_create_user_config")

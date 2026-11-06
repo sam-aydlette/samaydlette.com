@@ -27,6 +27,7 @@ import data.policy.gate
 #   severity: MEDIUM
 #   nist_controls: [cp-9, cp-10]
 #   ksi_ids: [KSI-RPL-ABO]
+#   resource_types: [aws_s3_bucket]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"
@@ -49,6 +50,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [sc-28, sc-28.1]
 #   ksi_ids: [KSI-SVC-SIN]
+#   resource_types: [aws_s3_bucket]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"
@@ -73,7 +75,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [sc-7, sc-7.7]
-#   ksi_ids: [KSI-CNA-ULN]
+#   ksi_ids: [KSI-CNA-ULN, KSI-CNA-MAT, KSI-CNA-RNT]
+#   resource_types: [aws_s3_bucket]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_s3_bucket"

@@ -38,6 +38,7 @@ public_function_url(r) if {
 #   severity: MEDIUM
 #   nist_controls: [au-12]
 #   ksi_ids: [KSI-MLA-LET]
+#   resource_types: [aws_apigatewayv2_stage]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_apigatewayv2_stage"
@@ -59,7 +60,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: MEDIUM
 #   nist_controls: [sc-5]
-#   ksi_ids: [KSI-CNA-RVP]
+#   ksi_ids: [KSI-CNA-RVP, KSI-CNA-RNT]
+#   resource_types: [aws_apigatewayv2_stage]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_apigatewayv2_stage"
@@ -82,7 +84,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [ac-3]
-#   ksi_ids: [KSI-IAM-ELP]
+#   ksi_ids: [KSI-IAM-ELP, KSI-CNA-MAT]
+#   resource_types: [aws_apigatewayv2_route]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_apigatewayv2_route"
@@ -105,7 +108,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [sc-7]
-#   ksi_ids: [KSI-CNA-ULN]
+#   ksi_ids: [KSI-CNA-ULN, KSI-CNA-DFP, KSI-CNA-MAT, KSI-CNA-RNT]
+#   resource_types: [aws_lambda_function, aws_lambda_function_url]
 violations contains violation if {
 	some r in gate.resources
 	public_function_url(r)

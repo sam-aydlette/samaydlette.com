@@ -28,6 +28,7 @@ import data.policy.gate
 #   severity: MEDIUM
 #   nist_controls: [sc-12]
 #   ksi_ids: [KSI-SVC-ASM]
+#   resource_types: [aws_kms_key]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_kms_key"
@@ -51,6 +52,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [sc-12]
 #   ksi_ids: [KSI-SVC-ASM]
+#   resource_types: [aws_kms_key]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_kms_key"
@@ -72,6 +74,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [sc-8, sc-23]
 #   ksi_ids: [KSI-SVC-SIN]
+#   resource_types: [aws_acm_certificate]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_acm_certificate"
@@ -97,7 +100,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: HIGH
 #   nist_controls: [sc-8, sc-23]
-#   ksi_ids: [KSI-SVC-SIN]
+#   ksi_ids: [KSI-SVC-SIN, KSI-SVC-ASM]
+#   resource_types: [aws_acm_certificate]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_acm_certificate"
@@ -123,7 +127,8 @@ violations contains violation if {
 #   category: infrastructure
 #   severity: MEDIUM
 #   nist_controls: [sc-20, sc-21]
-#   ksi_ids: [KSI-SVC-SIN]
+#   ksi_ids: [KSI-SVC-SIN, KSI-SVC-VCM]
+#   resource_types: [aws_route53_zone]
 violations contains violation if {
 	some r in gate.resources
 	r.type == "aws_route53_zone"
