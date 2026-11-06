@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/schemas/recovery-objectives.schema.json",
+  "title": "Recovery objectives (KSI-RPL-RRO)",
+  "description": "The recovery time and recovery point objectives, governed like the freshness windows: who decided them, when, and when they are next reviewed. scripts/_recovery_objectives.py enforces this shape and that the RPO is no longer than the RTO.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "description", "rto", "rpo", "source", "decided_by", "decided_on", "review_by", "rationale"],
+  "$defs": {
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hours", "stated"],
+      "properties": {
+        "hours": {"type": "integer", "minimum": 1},
+        "stated": {"type": "string", "minLength": 1, "description": "The objective as docs/recovery-plan.md words it."}
+      }
+    }
+  },
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema": {"const": "recovery-objectives/1"},
+    "version": {"type": "string", "minLength": 1},
+    "description": {"type": "string", "minLength": 1},
+    "rto": {"$ref": "#/$defs/objective"},
+    "rpo": {"$ref": "#/$defs/objective"},
+    "source": {"const": "docs/recovery-plan.md"},
+    "decided_by": {"type": "string", "minLength": 1},
+    "decided_on": {"type": "string", "format": "date"},
+    "review_by": {"type": "string", "format": "date"},
+    "rationale": {"type": "string", "minLength": 1}
+  }
+}

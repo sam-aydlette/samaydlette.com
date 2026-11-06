@@ -353,6 +353,18 @@
       "note": "Index of the monthly phishing drills (KSI-CED-RAT), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
     },
     {
+      "path": ".well-known/vdr-drill-chaos-gremlins.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-drill-chaos-gremlins.bundle",
+      "note": "Index of the monthly Chaos Gremlin restore drills (KSI-RPL-TRC, KSI-RPL-RRO; DEC-195), rewritten on every evidence nightly run (scripts/hold-chaos-gremlin.py), its only writer. Each drill (vdr-drill-chaos-gremlin-<date>.*) is immutable and listed with its sha256, so it carries no window; the nightly and the deploy fail from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
       "path": ".well-known/security-reviews.json",
       "cadence": "nightly",
       "max_age_hours": 336,

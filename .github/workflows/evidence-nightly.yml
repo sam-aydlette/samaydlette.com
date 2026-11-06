@@ -538,12 +538,39 @@ jobs:
     # recover), so the VDR built next carries it as a process finding. Needs
     # cloudtrail:LookupEvents (infrastructure/bootstrap/evidence-nightly.tf); an
     # AccessDenied stops the run with that instruction.
+    # KSI-IAM-SUS: the quarantine responder's own role (infrastructure/bootstrap/
+    # quarantine-responder.tf), written to a named profile only: the nightly
+    # role's environment credentials stay in place for every other step, and
+    # only the audit-log review uses the profile, which it deletes when done.
+    # The role may attach and detach only AWS's deny-all policy, never on itself
+    # or the CI/CD trust root. Missing (variable unset, bootstrap not applied),
+    # the review still runs and publishes; its drill fails and the run fails at
+    # "Scheduled reviews held and not overdue".
+    - name: Quarantine responder credentials (profile only)
+      id: responder
+      continue-on-error: true
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+      timeout-minutes: 6
+      with:
+        role-to-assume: ${{ vars.AWS_QUARANTINE_RESPONDER_ROLE_ARN }}
+        role-session-name: audit-log-quarantine-responder
+        role-duration-seconds: 900
+        aws-region: ${{ env.AWS_REGION }}
+        aws-profile: quarantine-responder
+        retry-max-attempts: 5
+
     - name: Audit-log review (KSI-MLA-RVL)
       working-directory: infrastructure
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        RESPONDER: ${{ steps.responder.outcome }}
       run: |
         set -euo pipefail
+        # The responder's profile lives only as long as this step.
+        trap 'rm -f "${HOME:?}/.aws/credentials" "${HOME:?}/.aws/config"' EXIT
+        responder=()
+        [ "$RESPONDER" = "success" ] && responder=(--responder-profile quarantine-responder)
+        [ "$RESPONDER" = "success" ] || echo "::warning::quarantine responder credentials unavailable; the drill will fail"
         prev=()
         code=$(curl -s -o previous-audit-log-review.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/vdr-audit-log-review.json")
         if [ "$code" = "200" ]; then
@@ -555,7 +582,7 @@ jobs:
         elif [ "$code" != "404" ] && [ "$code" != "403" ]; then
           echo "::error::vdr-audit-log-review.json answered HTTP $code"; exit 1
         fi
-        python3 ../scripts/audit-log-review.py --out vdr-audit-log-review.json "${prev[@]}"
+        python3 ../scripts/audit-log-review.py --out vdr-audit-log-review.json "${prev[@]}" "${responder[@]}"
         cosign sign-blob --yes --new-bundle-format --bundle vdr-audit-log-review.bundle vdr-audit-log-review.json
 
     - name: Collect failed pipeline runs (VDR-CSO-FAV)
@@ -802,6 +829,42 @@ jobs:
         done < drills-new.txt
         exit "${rc:-0}"
 
+    # KSI-RPL-TRC, KSI-RPL-RRO (DEC-195): on the first of each month the Chaos
+    # Gremlin (simulated) damages deployed objects copied into the versioned
+    # scratch bucket (infrastructure/bootstrap/recovery-drill.tf) and they are
+    # restored from versions, timed and compared with the deployed commit and
+    # data/recovery-objectives.json. Same shape as the recovery exercise: a
+    # failed drill is not frozen, the index is still written, and the run fails
+    # at "Scheduled reviews held and not overdue". Production is only read.
+    - name: Hold the Chaos Gremlin restore drill when due (KSI-RPL-TRC)
+      id: gremlin
+      continue-on-error: true
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        : > gremlin-new.txt
+        prev=()
+        code=$(curl -s -o previous-gremlin-drills.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/vdr-drill-chaos-gremlins.json")
+        if [ "$code" = "200" ]; then
+          curl -sfL --retry 3 -o previous-gremlin-drills.bundle "${SITE_ORIGIN}/.well-known/vdr-drill-chaos-gremlins.bundle"
+          cosign verify-blob --bundle previous-gremlin-drills.bundle --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/evidence-nightly.yml@refs/heads/main" \
+            previous-gremlin-drills.json
+          prev=(--previous-index previous-gremlin-drills.json)
+        elif [ "$code" != "404" ] && [ "$code" != "403" ]; then
+          echo "::error::vdr-drill-chaos-gremlins.json answered HTTP $code"; exit 1
+        fi
+        python3 ../scripts/hold-chaos-gremlin.py --commit "$SIGNAL_COMMIT" "${prev[@]}" --out . \
+          --new-files gremlin-new.txt || rc=$?
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-drill-chaos-gremlins.bundle vdr-drill-chaos-gremlins.json
+        while read -r f; do
+          [[ "$f" =~ ^vdr-drill-chaos-gremlin-[0-9]{4}-[0-9]{2}-[0-9]{2}\.json$ ]] || { echo "::error::unexpected file $f"; exit 1; }
+          python3 ../scripts/check-fedramp-id.py "$f"
+          python3 ../scripts/check-published-redaction.py "$f" "${f%.json}.view.md"
+          cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
+        done < gremlin-new.txt
+        exit "${rc:-0}"
+
     # VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER: the month-to-date activity report,
     # in human-readable form, listing every kind of detection and response
     # activity ("none this period" when nothing happened). The previous published
@@ -904,6 +967,7 @@ jobs:
         vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
         vdr-drill-board-meetings.json vdr-drill-cfo-reviews.json vdr-drill-tabletops.json
         vdr-drill-disclosures.json vdr-drill-phishing.json
+        vdr-drill-chaos-gremlins.json
 
     # CDS-CSO-FID: every report this run republishes carries the offering's
     # FedRAMP ID (the same gate the deploy runs over its REPORTS list).
@@ -915,6 +979,7 @@ jobs:
         vdr-non-machine-vv.json vdr-monthly.json vdr-audit-log-review.json vdr-recovery-exercises.json
         vdr-drill-board-meetings.json vdr-drill-cfo-reviews.json vdr-drill-tabletops.json
         vdr-drill-disclosures.json vdr-drill-phishing.json
+        vdr-drill-chaos-gremlins.json
 
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
@@ -934,6 +999,7 @@ jobs:
         vdr-drill-tabletops.json vdr-drill-tabletops.view.md
         vdr-drill-disclosures.json vdr-drill-disclosures.view.md
         vdr-drill-phishing.json vdr-drill-phishing.view.md
+        vdr-drill-chaos-gremlins.json vdr-drill-chaos-gremlins.view.md
 
     - name: Publish VDR + trend to /.well-known/
       id: publish
@@ -980,7 +1046,7 @@ jobs:
         put vdr-audit-log-review.view.md "text/markdown; charset=utf-8"
         put vdr-audit-log-review.bundle "application/json"
         put vdr-audit-log-review.json "application/json"
-        # A held recovery exercise is frozen: never put over a served copy. Its
+        # A held recovery exercise or Gremlin drill is frozen: never put over a served copy. Its
         # files were gated and signed in the step that held it.
         while read -r f; do
           code=$(curl -s -o /dev/null -w '%{http_code}' "${SITE_ORIGIN}/.well-known/$f")
@@ -990,7 +1056,7 @@ jobs:
           put "${f%.json}.view.md" "text/markdown; charset=utf-8"
           put "${f%.json}.bundle" "application/json"
           put "$f" "application/json"
-        done < <(cat recovery-new.txt drills-new.txt 2>/dev/null || true)
+        done < <(cat recovery-new.txt drills-new.txt gremlin-new.txt 2>/dev/null || true)
         put vdr-recovery-exercises.view.md "text/markdown; charset=utf-8"
         put vdr-recovery-exercises.bundle "application/json"
         put vdr-recovery-exercises.json "application/json"
@@ -1010,6 +1076,9 @@ jobs:
         put vdr-drill-phishing.view.md "text/markdown; charset=utf-8"
         put vdr-drill-phishing.bundle "application/json"
         put vdr-drill-phishing.json "application/json"
+        put vdr-drill-chaos-gremlins.view.md "text/markdown; charset=utf-8"
+        put vdr-drill-chaos-gremlins.bundle "application/json"
+        put vdr-drill-chaos-gremlins.json "application/json"
 
     # Scoped to exactly the paths this workflow wrote. The deploy path
     # invalidates `/*`; that is a whole-site operation and is not this
@@ -1084,6 +1153,7 @@ jobs:
       env:
         RECOVERY: ${{ steps.recovery.outcome }}
         DRILLS: ${{ steps.drills.outcome }}
+        GREMLIN: ${{ steps.gremlin.outcome }}
       run: |
         set -euo pipefail
         if ! git cat-file -e "${SIGNAL_COMMIT}:scripts/check-scheduled-review.py" 2>/dev/null; then
@@ -1096,11 +1166,17 @@ jobs:
             python3 scripts/check-scheduled-review.py --review "$key" --index "infrastructure/$index.json"
           done < <(python3 scripts/hold-drill.py --list)
         fi
+        [ "$GREMLIN" != "failure" ] || { echo "::error::the Chaos Gremlin restore drill failed (see its step)"; exit 1; }
         python3 scripts/audit-log-review.py --enforce infrastructure/vdr-audit-log-review.json
         if [ -f infrastructure/vdr-recovery-exercises.json ]; then
           python3 scripts/check-scheduled-review.py --review recovery-exercise --index infrastructure/vdr-recovery-exercises.json
         else
           python3 scripts/check-scheduled-review.py --review recovery-exercise --no-index
+        fi
+        if [ -f infrastructure/vdr-drill-chaos-gremlins.json ]; then
+          python3 scripts/check-scheduled-review.py --review chaos-gremlin --index infrastructure/vdr-drill-chaos-gremlins.json
+        else
+          python3 scripts/check-scheduled-review.py --review chaos-gremlin --no-index
         fi
         code=$(curl -s -o sr-index.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/security-reviews.json")
         case "$code" in

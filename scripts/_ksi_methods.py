@@ -40,6 +40,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
 import _frr  # noqa: E402
+import _recovery_objectives  # noqa: E402
 import _scheduled_review as _sched  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -166,6 +167,28 @@ def _check_security_txt(doc, now):
     return True, None
 
 
+def _check_availability_rto(doc, now):
+    """Every availability incident in the measurement, an ongoing one measured to
+    now, lasted no longer than the recovery time objective
+    (data/recovery-objectives.json)."""
+    ok, why = _check_availability(doc, now)
+    if not ok:
+        return ok, why
+    incidents = doc.get("incidents")
+    if not isinstance(incidents, list):
+        return False, "the record carries no incident list"
+    rto = _recovery_objectives.rto_hours()
+    for i in incidents:
+        start = _ts(i.get("start")) if isinstance(i, dict) else None
+        end = (_ts(i["end"]) if i.get("end") else now) if start is not None else None
+        if start is None or end is None or end < start:
+            return False, "an availability incident carries no readable start and end"
+        if (end - start).total_seconds() > rto * 3600:
+            return False, (f"an availability incident of {i.get('service', 'a service')} lasted longer than the "
+                           f"recovery time objective ({rto} hours)")
+    return True, None
+
+
 CHECKS = {"audit-log-review": _check_audit_log, "recovery-exercise": _check_recovery,
           "reconcile": _check_reconcile, "security-settings": _check_security_settings,
           "conformance": _check_conformance, "inbox-simulation": _check_inbox,
@@ -174,7 +197,8 @@ CHECKS = {"audit-log-review": _check_audit_log, "recovery-exercise": _check_reco
           "cfo-review": _scheduled("cfo-review"), "tabletop": _scheduled("tabletop"),
           "disclosure-drill": _scheduled("disclosure-drill"), "phishing-drill": _scheduled("phishing-drill"),
           "incident-lessons": _incident_log("lessons_learned"), "incident-patterns": _incident_log("patterns"),
-          "security-txt": _check_security_txt}
+          "security-txt": _check_security_txt, "quarantine-drill": _scheduled("quarantine-drill"),
+          "chaos-gremlin": _scheduled("chaos-gremlin"), "availability-rto": _check_availability_rto}
 
 
 # --- the table ------------------------------------------------------------------------------

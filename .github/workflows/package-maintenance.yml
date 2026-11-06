@@ -147,7 +147,7 @@ jobs:
         for a in vdr-audit-log-review vdr-recovery-exercises security-reviews security-settings reconcile-report \
                  conformance-results fedramp-inbox-simulation scn-evaluations incident-reports \
                  vdr-drill-board-meetings vdr-drill-cfo-reviews vdr-drill-tabletops vdr-drill-disclosures \
-                 vdr-drill-phishing; do
+                 vdr-drill-phishing vdr-drill-chaos-gremlins; do
           if ! { fetch "$a.json" && fetch "$a.bundle"; }; then rm -f "$a.json" "$a.bundle"; fi
         done
         SIGNAL_COMMIT=$(jq -r '.provenance.source.commit' ksi-signal.json)
@@ -228,7 +228,9 @@ jobs:
                    board-meeting:vdr-drill-board-meetings cfo-review:vdr-drill-cfo-reviews \
                    groundhog-day:incident-reports incident-lessons:incident-reports tabletop:vdr-drill-tabletops \
                    disclosure-drill:vdr-drill-disclosures security-txt:security-settings \
-                   phishing-drill:vdr-drill-phishing; do
+                   phishing-drill:vdr-drill-phishing \
+                   quarantine-drill:vdr-audit-log-review chaos-gremlin:vdr-drill-chaos-gremlins \
+                   availability-rto:availability; do
             f="${k#*:}"
             if [ -f "$W/$f.json" ] && [ -f "$W/$f.bundle" ]; then
               VVK="$VVK --method-record ${k%%:*}=$W/$f.json"
@@ -546,6 +548,16 @@ jobs:
             esac
           done < <(python3 scripts/hold-drill.py --list)
         fi
+        code=$(curl -s -o gd-index.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/vdr-drill-chaos-gremlins.json")
+        case "$code" in
+          200)
+            curl -sfL --retry 3 -o gd-index.bundle "${SITE_ORIGIN}/.well-known/vdr-drill-chaos-gremlins.bundle"
+            cosign verify-blob --bundle gd-index.bundle --certificate-identity "$ID_NIGHTLY" \
+              --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" gd-index.json
+            python3 scripts/check-scheduled-review.py --review chaos-gremlin --index gd-index.json ;;
+          403|404) echo "::notice::no Chaos Gremlin drill published yet; the evidence nightly holds the first and fails while one is overdue" ;;
+          *) echo "::error::vdr-drill-chaos-gremlins.json answered HTTP $code"; exit 1 ;;
+        esac
   alert:
     name: Alert on package maintenance
     runs-on: ubuntu-latest

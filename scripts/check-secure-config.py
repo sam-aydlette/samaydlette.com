@@ -48,7 +48,9 @@ ROLES = {"role-trust-deploy": "github-actions-deploy-oidc",
          "role-trust-plan": "github-actions-plan-oidc",
          "role-trust-nightly": "github-actions-evidence-nightly-oidc",
          "role-trust-maintenance": "github-actions-package-maintenance-oidc",
-         "role-trust-incident": "github-actions-incident-reports-oidc"}
+         "role-trust-incident": "github-actions-incident-reports-oidc",
+         "role-trust-responder": "github-actions-quarantine-responder-oidc",
+         "role-trust-quarantine-target": "samaydlette-com-quarantine-target"}
 # The unattended roles' write scope: {check id: (role, inline policy name)}. The
 # value compared is the object keys each may put (the bucket part of the S3 ARN
 # removed), so a grant the deploy's publishers need but bootstrap does not yet
@@ -58,6 +60,13 @@ ROLE_SCOPES = {"role-scope-maintenance": ("github-actions-package-maintenance-oi
 # inline policy name)}. The nightly's audit-log review needs cloudtrail:LookupEvents;
 # a deploy whose bootstrap lacks it stops before the SDR is built.
 ROLE_READS = {"role-reads-nightly": ("github-actions-evidence-nightly-oidc", "evidence-nightly-audit-log-review")}
+# The quarantine responder's one policy: the actions it allows and the only
+# managed policy its attach and detach may name (iam:PolicyARN), compared whole.
+ROLE_RESPONDER = {"role-actions-responder": ("github-actions-quarantine-responder-oidc", "quarantine-responder")}
+# The nightly's recovery-drill grant: "<action> <bucket>[/<key pattern>]" for
+# every S3 grant in it, so a grant on any other bucket is a deviation. S3 ARNs
+# carry no account, so the value is publishable.
+ROLE_S3_GRANTS = {"role-scope-nightly-drill": ("github-actions-evidence-nightly-oidc", "evidence-nightly-recovery-drill")}
 SUB_KEY = "token.actions.githubusercontent.com:sub"
 READ_ONLY_MANAGED = {"ReadOnlyAccess", "SecurityAudit", "ViewOnlyAccess"}
 READ_VERBS = ("Get", "List", "Describe", "Search", "BatchGet", "Lookup", "View")
@@ -221,6 +230,12 @@ def read_aws(call, pool_id, now=None):
     for check, (role, name) in ROLE_READS.items():
         out[check] = _guard(lambda role=role, name=name: _allowed_actions(call(
             ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
+    for check, (role, name) in ROLE_RESPONDER.items():
+        out[check] = _guard(lambda role=role, name=name: _responder_scope(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
+    for check, (role, name) in ROLE_S3_GRANTS.items():
+        out[check] = _guard(lambda role=role, name=name: _s3_grants(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
 
     def cognito():
         if not pool_id:
@@ -295,6 +310,53 @@ def _allowed_actions(raw):
         if st.get("Effect") == "Allow":
             acts = st.get("Action", [])
             out |= set([acts] if isinstance(acts, str) else acts)
+    return sorted(out)
+
+
+def _statements(doc):
+    sts = doc.get("Statement", [])
+    return [sts] if isinstance(sts, dict) else sts
+
+
+def _list(v):
+    return [v] if isinstance(v, str) else list(v or [])
+
+
+ATTACH_ACTIONS = {"iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy"}
+
+
+def _responder_scope(raw):
+    """{allow, attach_only, trust_root_denied}: the actions allowed; the managed
+    policy ARNs every attach/detach grant is conditioned to (an unconditioned
+    grant reads as ["*"]); and how many trust-root roles the explicit Deny names
+    (a count: role names are not published)."""
+    doc = _policy_doc(raw)
+    allow, only, denied = set(), set(), set()
+    for st in _statements(doc):
+        acts = set(_list(st.get("Action", [])))
+        if st.get("Effect") == "Allow":
+            allow |= acts
+            if acts & ATTACH_ACTIONS:
+                arns = set()
+                for test, block in (st.get("Condition") or {}).items():
+                    if test in ("ArnEquals", "StringEquals"):
+                        arns |= set(_list(block.get("iam:PolicyARN", [])))
+                only |= arns or {"*"}
+        elif st.get("Effect") == "Deny" and ATTACH_ACTIONS <= acts:
+            denied |= {r.rsplit("/", 1)[-1] for r in _list(st.get("Resource", [])) if ":role/" in r and "*" not in r}
+    return {"allow": sorted(allow), "attach_only": sorted(only), "trust_root_denied": len(denied)}
+
+
+def _s3_grants(raw):
+    """Sorted "<action> <bucket>[/<key>]" for every Allow in an S3-only policy."""
+    out = set()
+    for st in _statements(_policy_doc(raw)):
+        if st.get("Effect") != "Allow":
+            continue
+        for r in _list(st.get("Resource", [])):
+            if not r.startswith("arn:aws:s3:::"):
+                raise ValueError("a grant in the recovery-drill policy is not on an S3 resource")
+            out |= {f"{a} {r[len('arn:aws:s3:::'):]}" for a in _list(st.get("Action", []))}
     return sorted(out)
 
 

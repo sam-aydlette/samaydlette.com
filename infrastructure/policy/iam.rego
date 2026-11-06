@@ -302,6 +302,64 @@ violations contains violation if {
 	)
 }
 
+# --- managed-policy attachment (the quarantine responder) ----------------------
+
+# METADATA
+# title: Managed-policy attachment limited to deny-all
+# description: >-
+#   A policy that allows attaching or detaching managed policies must condition
+#   each such grant on iam:PolicyARN naming only the configured deny-all
+#   policy; otherwise its holder can attach AdministratorAccess to any principal.
+# custom:
+#   id: iam_attach_unconstrained
+#   category: infrastructure
+#   severity: HIGH
+#   nist_controls: [ac-6]
+#   ksi_ids: [KSI-IAM-ELP]
+#   resource_types: [aws_iam_group, aws_iam_group_policy, aws_iam_policy, aws_iam_role_policy]
+violations contains violation if {
+	some r in gate.resources
+	some s in allows(r)
+	grants_attach(s)
+	not grants_everything(s)
+	not attach_conditioned(s)
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		"IAM policy allows attaching or detaching managed policies without an iam:PolicyARN condition limited to deny-all",
+	)
+}
+
+# METADATA
+# title: Managed-policy attachment never on the CI/CD trust root
+# description: >-
+#   A policy that allows attaching managed policies (the quarantine responder)
+#   must explicitly deny that on every CI/CD trust-root role, itself included,
+#   so it can never switch off the pipeline that verifies the system. (An
+#   Allow of everything is reported by iam_admin_wildcard instead.)
+# custom:
+#   id: iam_attach_trust_root_unprotected
+#   category: infrastructure
+#   severity: HIGH
+#   nist_controls: [ac-6]
+#   ksi_ids: [KSI-IAM-ELP]
+#   resource_types: [aws_iam_group, aws_iam_group_policy, aws_iam_policy, aws_iam_role_policy]
+violations contains violation if {
+	some r in gate.resources
+	some s in allows(r)
+	grants_attach(s)
+	not grants_everything(s)
+	some role in data.config.gate.iam.trust_root_roles
+	not denied_attach_on(r, role)
+	violation := gate.make_violation(
+		rego.metadata.rule().custom,
+		r.name,
+		gate.address_of(r),
+		sprintf("IAM policy allows attaching managed policies but does not deny it on trust-root role %s", [role]),
+	)
+}
+
 # --- OIDC provider ------------------------------------------------------------
 
 # METADATA
@@ -326,4 +384,45 @@ violations contains violation if {
 		gate.address_of(r),
 		"OIDC provider client ID list is not exactly the STS audience",
 	)
+}
+
+# --- managed-policy attachment helpers (the quarantine responder rules above) ---
+
+# Attaching or detaching a managed policy on a principal. Allowed without an
+# iam:PolicyARN condition it is a privilege escalation (attach
+# AdministratorAccess); the quarantine responder holds it conditioned to AWS's
+# deny-all policy only (infrastructure/bootstrap/quarantine-responder.tf).
+attach_actions := {
+	"iam:AttachRolePolicy", "iam:DetachRolePolicy",
+	"iam:AttachUserPolicy", "iam:DetachUserPolicy",
+	"iam:AttachGroupPolicy", "iam:DetachGroupPolicy",
+}
+
+grants_attach(s) if {
+	some a in actions(s)
+	a in attach_actions
+}
+
+grants_attach(s) if {
+	some a in actions(s)
+	a in {"*", "iam:*", "iam:Attach*", "iam:Detach*"}
+}
+
+attach_conditioned(s) if {
+	arns := condition_values(s, "iam:PolicyARN")
+	count(arns) > 0
+	every a in arns {
+		a in {p | some p in data.config.gate.iam.attachable_policies}
+	}
+}
+
+denied_attach_on(r, role) if {
+	some raw in documents(r)
+	some s in statements(parsed(raw))
+	s.Effect == "Deny"
+	every a in attach_actions - {"iam:AttachGroupPolicy", "iam:DetachGroupPolicy"} {
+		a in actions(s)
+	}
+	some res in resources_of(s)
+	endswith(res, sprintf(":role/%s", [role]))
 }

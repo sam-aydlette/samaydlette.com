@@ -180,3 +180,56 @@ test_oidc_extra_audience_fails if {
 	values := {"client_id_list": ["sts.amazonaws.com", "my-app"]}
 	"oidc_audience_unexpected" in ids(iam.violations) with input as _res("aws_iam_openid_connect_provider", values)
 }
+
+# --- managed-policy attachment (the quarantine responder) ---
+
+_attach := ["iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy"]
+
+_trust_root_deny := {
+	"Effect": "Deny", "Action": _attach,
+	"Resource": [sprintf("arn:aws:iam::123456789012:role/%s", [n]) | some n in data.config.gate.iam.trust_root_roles],
+}
+
+_quarantine_allow := {
+	"Effect": "Allow", "Action": _attach,
+	"Resource": ["arn:aws:iam::123456789012:role/*", "arn:aws:iam::123456789012:user/*"],
+	"Condition": {"ArnEquals": {"iam:PolicyARN": "arn:aws:iam::aws:policy/AWSDenyAll"}},
+}
+
+_responder(statements) := _res("aws_iam_role_policy", {"policy": _doc(statements)})
+
+test_the_responder_policy_passes if {
+	count(iam.violations) == 0 with input as _responder([_quarantine_allow, _trust_root_deny])
+}
+
+test_known_bad_unconditioned_attach_fails if {
+	stmt := object.remove(_quarantine_allow, ["Condition"])
+	"iam_attach_unconstrained" in ids(iam.violations) with input as _responder([stmt, _trust_root_deny])
+}
+
+test_known_bad_attach_conditioned_to_admin_fails if {
+	stmt := object.union(_quarantine_allow, {"Condition": {"ArnEquals": {"iam:PolicyARN": [
+		"arn:aws:iam::aws:policy/AWSDenyAll",
+		"arn:aws:iam::aws:policy/AdministratorAccess",
+	]}}})
+	"iam_attach_unconstrained" in ids(iam.violations) with input as _responder([stmt, _trust_root_deny])
+}
+
+test_known_bad_attach_wildcard_action_fails if {
+	stmt := {"Effect": "Allow", "Action": "iam:Attach*", "Resource": "arn:aws:iam::123456789012:role/*"}
+	"iam_attach_unconstrained" in ids(iam.violations) with input as _responder([stmt, _trust_root_deny])
+}
+
+test_known_bad_responder_without_trust_root_deny_fails if {
+	"iam_attach_trust_root_unprotected" in ids(iam.violations) with input as _responder([_quarantine_allow])
+}
+
+test_known_bad_deny_missing_one_trust_root_role_fails if {
+	partial := object.union(_trust_root_deny, {"Resource": ["arn:aws:iam::123456789012:role/github-actions-deploy-oidc"]})
+	"iam_attach_trust_root_unprotected" in ids(iam.violations) with input as _responder([_quarantine_allow, partial])
+}
+
+test_a_policy_without_attach_needs_no_trust_root_deny if {
+	stmt := {"Effect": "Allow", "Action": ["iam:ListAttachedRolePolicies"], "Resource": "arn:aws:iam::123456789012:role/*"}
+	count(iam.violations) == 0 with input as _responder([stmt])
+}

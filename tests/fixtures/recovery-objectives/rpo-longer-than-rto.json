@@ -1,0 +1,19 @@
+{
+  "$schema": "../infrastructure/schemas/recovery-objectives.schema.json",
+  "schema": "recovery-objectives/1",
+  "version": "2026-11-06.1",
+  "description": "The system's recovery objectives (KSI-RPL-RRO; CP-2(3), CP-10) as data, so the machines that test recovery compare against the same numbers the recovery plan states. Read by scripts/_recovery_objectives.py, which fails closed on a missing or malformed file; tests/test_recovery_objectives.py holds docs/recovery-plan.md to the same values. The monthly Chaos Gremlin drill (scripts/hold-chaos-gremlin.py) compares its measured restore time and restore-point age with them, and the SDR's availability-rto method compares every availability incident's duration with the recovery time objective.",
+  "rto": {
+    "hours": 504,
+    "stated": "21 days"
+  },
+  "rpo": {
+    "hours": 600,
+    "stated": "25 days"
+  },
+  "source": "docs/recovery-plan.md",
+  "decided_by": "Operator (as stated in docs/recovery-plan.md)",
+  "decided_on": "2026-05-06",
+  "review_by": "2027-05-06",
+  "rationale": "Copied from docs/recovery-plan.md, which states them: an RTO of 21 days because the site is a personal publication whose readers can wait three weeks, and an RPO of 24 hours because the content is in git and the bucket is versioned, both far finer than a day. AI-drafted into this file on 2026-11-06 for the operator's review; the decided_on date is the recovery plan's first recorded recovery test, the earliest date the plan is known to have stated them."
+}

@@ -47,10 +47,12 @@ def test_the_table_lists_only_the_reviewed_mechanisms():
         "inbox-simulation", "training", "availability",
         # the drills plan (2026-11-06, night)
         "scn-evaluations", "security-review", "board-meeting", "cfo-review", "groundhog-day", "incident-lessons",
-        "tabletop", "disclosure-drill", "security-txt", "phishing-drill"}
+        "tabletop", "disclosure-drill", "security-txt", "phishing-drill",
+        # the live drills (PR C3 of the same plan)
+        "quarantine-drill", "chaos-gremlin", "availability-rto"}
     stand_in = {m["key"] for m in km.load()["methods"] if m["input"] == "stand-in"}
     assert stand_in == {"inbox-simulation", "training", "security-review", "board-meeting", "groundhog-day",
-                        "incident-lessons", "tabletop", "disclosure-drill", "phishing-drill"}
+                        "incident-lessons", "tabletop", "disclosure-drill", "phishing-drill", "quarantine-drill"}
     assert all(m.get("stand_in_proof") for m in km.load()["methods"] if m["input"] == "stand-in")
 
 

@@ -34,8 +34,13 @@ The reviews:
                       Disaster tabletop, the disclosure drill and the phishing drill. Each
                       feeds a planted bad case through the same check on every run, which
                       must be caught, or the drill fails.
+  chaos-gremlin       monthly, evidence-nightly.yml (scripts/hold-chaos-gremlin.py),
+                      published as vdr-drill-chaos-gremlin-<date>.json and
+                      vdr-drill-chaos-gremlins.json: deployed objects damaged by the
+                      Chaos Gremlin in a scratch bucket and restored from versions.
 The audit-log review runs on every nightly instead (scripts/audit-log-review.py,
-vdr-audit-log-review.json); its window is its freshness entry.
+vdr-audit-log-review.json), with the quarantine responder's drill; its window is
+its freshness entry.
 """
 
 import hashlib
@@ -108,6 +113,8 @@ REVIEWS = {
                                "vdr-drill-disclosure-", "vdr-drill-disclosures.json", "nightly"),
     "phishing-drill": Review("phishing-drill", "Phishing drill", "monthly", date(2026, 11, 1),
                              "vdr-drill-phishing-", "vdr-drill-phishing.json", "nightly"),
+    "chaos-gremlin": Review("chaos-gremlin", "Chaos Gremlin restore drill", "monthly", date(2026, 12, 1),
+                            "vdr-drill-chaos-gremlin-", "vdr-drill-chaos-gremlins.json", "nightly"),
 }
 DRILLS = ("board-meeting", "cfo-review", "tabletop", "disclosure-drill", "phishing-drill")
 STEP_MONTHS = {"monthly": 1, "quarterly": 3}
@@ -282,6 +289,17 @@ def method_status(key, doc, now):
             return False, "the planted simulated intruder was not caught"
         if doc.get("result") != "pass":
             return False, "the last review did not pass"
+        return True, None
+    if key == "quarantine-drill":
+        ok, why = method_status("audit-log-review", doc, now)
+        if not ok:
+            return ok, why
+        q = doc.get("quarantine") or {}
+        drill = q.get("drill") or {}
+        if drill.get("result") != "pass" or not drill.get("checks"):
+            return False, "the last quarantine drill did not pass"
+        if q.get("responsesResult") != "pass":
+            return False, "a reportable event was not answered by the quarantine responder"
         return True, None
     rv = review(key)
     try:

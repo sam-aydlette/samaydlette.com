@@ -5,6 +5,8 @@ This document satisfies KSI-RPL-ARP and KSI-RPL-TRC, given the recovery objectiv
 - **Recovery Time Objective (RTO):** 21 days. The world will be fine without my opinions for three weeks.
 - **Recovery Point Objective (RPO):** 24 hours. Backups are the frequent git commits and S3 object versioning, both of which exceed this granularity by orders of magnitude.
 
+The same two objectives are governed as data in [`data/recovery-objectives.json`](../data/recovery-objectives.json) (schema `infrastructure/schemas/recovery-objectives.schema.json`), which the Chaos Gremlin restore drill and the availability check below measure against. _AI-drafted (2026-11-06); for the operator's review._
+
 ## Scope
 
 In-scope loss scenarios:
@@ -77,6 +79,21 @@ Recovery is exercised by machine every month (DEC-195: nobody runs it by hand). 
 - **Tabletop (each November):** every in-scope loss scenario above is walked through with a simulated incident commander, Bea Kupp (simulated), and a simulated scenario injector, Dee Saster (simulated) (DEC-194); a scenario without a stated recovery, or a plan without its Recovery procedure section, fails the tabletop.
 
 A failing exercise fails the nightly and is not published; it is held again on the next run once fixed. `scripts/check-scheduled-review.py` fails the nightly from the day after a due date with no exercise published.
+
+### The Chaos Gremlin restore drill (KSI-RPL-TRC, KSI-RPL-RRO)
+
+_AI-drafted (2026-11-06); for the operator's review._
+
+The recovery exercise proves the source of a restore matches production without writing to it. The Chaos Gremlin drill proves a restore actually works, monthly (first due 2026-12-01), in `evidence-nightly.yml` (`scripts/hold-chaos-gremlin.py`), with no person in the loop:
+
+1. A sample of deployed site objects is copied into a scratch bucket (`infrastructure/bootstrap/recovery-drill.tf`: versioned, public access blocked, encrypted, every version expired after 7 days). Production is only read.
+2. The Chaos Gremlin (simulated) deletes some of them and overwrites others with gremlin graffiti.
+3. Each damaged object is restored from its last version before the damage, read back and compared (sha256) with the file the deployed commit builds.
+4. The restore is timed against the RTO and the restore point's age against the RPO (`data/recovery-objectives.json`); a planted forged restore (the graffiti presented as restored) must be caught.
+
+Each drill is published signed as `/.well-known/vdr-drill-chaos-gremlin-<date>.json`, indexed in `/.well-known/vdr-drill-chaos-gremlins.json`. A failing drill fails the nightly; `scripts/check-scheduled-review.py` fails it from the day after a due date with no drill published.
+
+Separately, every availability incident in the independent 30-day measurement (`/.well-known/availability.json`) is compared with the RTO on every SDR build (method `availability-rto` in `infrastructure/schemas/ksi-methods.json`): an outage, ongoing ones measured to now, longer than 21 days fails it.
 
 ## History: recovery tests recorded by hand
 

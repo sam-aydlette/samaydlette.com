@@ -48,6 +48,7 @@ REPORTS = (
     # The drills' indexes (scripts/hold-drill.py), checked by the evidence nightly.
     "vdr-drill-board-meetings.json", "vdr-drill-cfo-reviews.json", "vdr-drill-tabletops.json",
     "vdr-drill-disclosures.json", "vdr-drill-phishing.json",
+    "vdr-drill-chaos-gremlins.json",
     # The canonical inventory (the runtime emitter copies the ID from it).
     "ksi-signal.json",
     # Certification cycle: the FedRAMP Certification Reports index and

@@ -481,7 +481,10 @@ resource "aws_iam_role_policy" "lambda_opa" {
           # The Terraform state bucket belongs to the bootstrap stack, so it is
           # named by convention rather than referenced. Configuration metadata
           # only: the Lambda can never read the state itself.
-          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate"
+          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-tfstate",
+          # The Chaos Gremlin drill's scratch bucket (bootstrap/recovery-drill.tf),
+          # likewise by convention and configuration metadata only.
+          "arn:aws:s3:::${replace(var.domain_name, ".", "-")}-recovery-drill"
         ]
       },
       {

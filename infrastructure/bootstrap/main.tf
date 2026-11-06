@@ -53,6 +53,8 @@ locals {
     state_lock = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "platform-foundation" }
     # The CloudFront distribution: the public edge serving the site and the app.
     public_edge = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "true", Archetype = "public-edge" }
+    # The recovery-drill scratch bucket: short-lived copies of public site content.
+    recovery_drill = { DataClassification = "Public", DataSensitivity = "public", MissionCriticality = "moderate", InternetReachable = "false", Archetype = "internal-tooling" }
   }
 }
 

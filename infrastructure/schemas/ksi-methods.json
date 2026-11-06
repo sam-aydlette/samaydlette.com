@@ -1,15 +1,15 @@
 {
   "$schema": "./ksi-methods.schema.json",
   "schema": "ksi-methods/1",
-  "version": "2026-11-06.2",
+  "version": "2026-11-06.3",
   "description": "The mechanisms, other than the OPA rules themselves, that count as an automated method for a Key Security Indicator (FRC-CSX-VVK), each with what it tests and how scripts/build-sdr.py verifies its result before counting it. An OPA rule counts for a KSI through its own annotations (custom.ksi_ids and custom.resource_types), never through this table. A mechanism counts once per KSI however many records it publishes. Read by scripts/_ksi_methods.py, which fails closed on a missing or malformed file.",
-  "rationale": "The mechanisms are those the 2026-11-06 strict review judged to genuinely test a KSI's measures (the plan the operator approved on 2026-11-06 names them: the audit-log review; the recovery exercise's rebuild-and-compare and its versioning and point-in-time-recovery read; Grype and Dependabot as separate detectors; runtime divergence; reconcile (a); Checkov/tfsec and the live security settings; the plan-gate run and the conformance results; the inbox simulation; training, as one mechanism; CodeQL and ZAP with their clocks; and availability.json). Which KSIs each covers follows the same review's per-KSI table. No mechanism was added to reach a count. AI-drafted; the measure sentences and KSI lists are for the operator's review. input is 'stand-in' where the mechanism runs on a labelled stand-in (synthetic messages, a simulated trainee): it still counts as a method, and a KSI that reaches two methods only with it is Simulated, not Implemented. 2026-11-06 (night), by the operator's choice of the drills plan (not to satisfy a gate): the significant-change evaluation log, the Annual Security Review, the Board of Sam, the CFO's budget review, the incident pattern review, the after-action lessons check, the Choose-Your-Own-Disaster tabletop, the disclosure drill, the security.txt check and the phishing drill, and the recovery rebuild for KSI-RPL-ARP. Every stand-in method states its stand_in_proof. AI-drafted, for the operator's review.",
+  "rationale": "The mechanisms are those the 2026-11-06 strict review judged to genuinely test a KSI's measures (the plan the operator approved on 2026-11-06 names them: the audit-log review; the recovery exercise's rebuild-and-compare and its versioning and point-in-time-recovery read; Grype and Dependabot as separate detectors; runtime divergence; reconcile (a); Checkov/tfsec and the live security settings; the plan-gate run and the conformance results; the inbox simulation; training, as one mechanism; CodeQL and ZAP with their clocks; and availability.json). Which KSIs each covers follows the same review's per-KSI table. No mechanism was added to reach a count. AI-drafted; the measure sentences and KSI lists are for the operator's review. input is 'stand-in' where the mechanism runs on a labelled stand-in (synthetic messages, a simulated trainee): it still counts as a method, and a KSI that reaches two methods only with it is Simulated, not Implemented. 2026-11-06 (night), by the operator's choice of the drills plan (not to satisfy a gate): the significant-change evaluation log, the Annual Security Review, the Board of Sam, the CFO's budget review, the incident pattern review, the after-action lessons check, the Choose-Your-Own-Disaster tabletop, the disclosure drill, the security.txt check and the phishing drill, and the recovery rebuild for KSI-RPL-ARP. Every stand-in method states its stand_in_proof. AI-drafted, for the operator's review. Version 2026-11-06.3 adds three live drills the operator chose on 2026-11-06 (the quarantine responder's nightly drill, the monthly Chaos Gremlin restore drill and availability incidents measured against the recovery time objective), each run on schedule, and adds KSI-IAM-SUS to the audit-log review, whose reportable findings now start the responder. AI-drafted, for the operator's review.",
   "methods": [
     {
       "key": "audit-log-review",
       "mechanism": "Nightly audit-log review (scripts/audit-log-review.py)",
-      "measure": "Every CloudTrail write event and every GitHub change to main, workflows, rulesets and environments since the previous review is judged by rule, and a planted simulated intruder must be caught on every run.",
-      "ksis": ["KSI-CMT-RMV", "KSI-CMT-RVP", "KSI-MLA-RVL", "KSI-SVC-PRR"],
+      "measure": "Every CloudTrail write event and every GitHub change to main, workflows, rulesets and environments since the previous review is judged by rule, a planted simulated intruder must be caught on every run, and a write evaluated reportable that names an IAM user or role starts the quarantine responder against it.",
+      "ksis": ["KSI-CMT-RMV", "KSI-CMT-RVP", "KSI-IAM-SUS", "KSI-MLA-RVL", "KSI-SVC-PRR"],
       "input": "real",
       "verifier": {"kind": "published", "artifact": ".well-known/vdr-audit-log-review.json", "check": "audit-log-review"}
     },
@@ -221,6 +221,31 @@
       "input": "stand-in",
       "verifier": {"kind": "published", "artifact": ".well-known/vdr-drill-phishing.json", "check": "phishing-drill"},
       "stand_in_proof": {"bad_input": "tests/test_drills.py::test_known_bad_a_click_fails_and_assigns_the_remedial_lesson", "replaceable": {"statement": "A real recipient's report or click (from a mail client's report button or the link's landing page) would replace respond(); detect() and grade() would not change. Nothing is sent today."}}
+    },
+    {
+      "key": "quarantine-drill",
+      "mechanism": "Nightly quarantine responder drill (scripts/_quarantine.py, run by scripts/audit-log-review.py)",
+      "measure": "A planted reportable event (Mallory McHypothetical (simulated), signed in from the Moon at 3 a.m. as a permissionless stand-in role) is caught by the audit-log rules, the responder attaches AWS's deny-all policy to the role it names, reads the deny back, removes it and reads the removal back, a planted request to quarantine a trust-root role is refused with no IAM call, and every real reportable event of the night was answered.",
+      "ksis": ["KSI-IAM-SUS"],
+      "input": "stand-in",
+      "verifier": {"kind": "published", "artifact": ".well-known/vdr-audit-log-review.json", "check": "quarantine-drill"},
+      "stand_in_proof": {"bad_input": "tests/test_quarantine_responder.py::test_known_bad_a_planted_event_naming_another_principal_is_never_quarantined", "replaceable": {"statement": "A real reportable finding that names an IAM user or role goes through the same quarantine() the drill calls, from respond(), on every nightly run; only the planted event and its stand-in role are simulated.", "test": "tests/test_quarantine_responder.py::test_a_role_named_by_a_reportable_event_is_quarantined_read_back_and_paged"}}
+    },
+    {
+      "key": "chaos-gremlin",
+      "mechanism": "Monthly Chaos Gremlin restore drill (scripts/hold-chaos-gremlin.py)",
+      "measure": "Deployed site objects copied into a versioned scratch bucket are deleted and overwritten by the Chaos Gremlin (simulated), restored from their prior versions and read back identical to the deployed commit (sha256), with the measured restore time and restore-point age inside the recovery objectives of data/recovery-objectives.json and a planted forged restore caught.",
+      "ksis": ["KSI-RPL-RRO", "KSI-RPL-TRC"],
+      "input": "real",
+      "verifier": {"kind": "published", "artifact": ".well-known/vdr-drill-chaos-gremlins.json", "check": "chaos-gremlin"}
+    },
+    {
+      "key": "availability-rto",
+      "mechanism": "Availability incidents measured against the recovery time objective (availability.json and data/recovery-objectives.json)",
+      "measure": "Every availability incident in the independent 30-day measurement, an ongoing one measured to now, lasted no longer than the recovery time objective.",
+      "ksis": ["KSI-RPL-RRO"],
+      "input": "real",
+      "verifier": {"kind": "published", "artifact": ".well-known/availability.json", "check": "availability-rto"}
     }
   ]
 }

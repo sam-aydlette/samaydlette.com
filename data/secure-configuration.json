@@ -2,7 +2,7 @@
   "schema": "secure-configuration/1",
   "$comment": "The Secure Configuration Guide's single source (SCG-CSO-RSC, SCG-ENH-MRG). scripts/build-scg.py publishes it as /.well-known/secure-configuration-guide.json and .md; scripts/check-secure-config.py compares the live settings with `recommended` on every deploy (SCG-ENH-CMP/EXP). Changing a recommended default needs a new version and a changelog entry carrying the new defaults_sha256 (SCG-ENH-VRH); the builder and tests/test_secure_configuration.py fail otherwise. AI-drafted 2026-11-05 from the repository and read-only reads of the live account; for the operator's review.",
   "title": "Secure Configuration Guide: samaydlette.com",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "obtain_and_use": [
     "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
     "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
@@ -376,6 +376,60 @@
       "check": "role-reads-nightly"
     },
     {
+      "id": "ci-roles.nightly-recovery-drill-scope",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The evidence nightly role may put, read, read versions of and delete objects in the recovery-drill scratch bucket, and list its versions, and nothing else in that policy",
+      "recommended": [
+        "s3:DeleteObject samaydlette-com-recovery-drill/*",
+        "s3:GetObject samaydlette-com-recovery-drill/*",
+        "s3:GetObjectVersion samaydlette-com-recovery-drill/*",
+        "s3:ListBucketVersions samaydlette-com-recovery-drill",
+        "s3:PutObject samaydlette-com-recovery-drill/*"
+      ],
+      "implication": "The monthly Chaos Gremlin drill (scripts/hold-chaos-gremlin.py, KSI-RPL-TRC) can damage and restore copies of public pages in a scratch bucket that expires everything after seven days; it cannot write or delete in the production bucket, and cannot delete an object version.",
+      "read": "aws iam get-role-policy (evidence-nightly-recovery-drill; each allowed action with its S3 resource, which carries no account)",
+      "change": "infrastructure/bootstrap/recovery-drill.tf, aws_iam_role_policy.evidence_nightly_recovery_drill; operator-applied",
+      "check": "role-scope-nightly-drill"
+    },
+    {
+      "id": "ci-roles.responder-trust",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The quarantine responder role trusts only this repository's evidence-nightly environment",
+      "recommended": ["repo:sam-aydlette/samaydlette.com:environment:evidence-nightly"],
+      "implication": "Only the unattended nightly, which runs from main, can start the responder; no pull request or other workflow can.",
+      "read": "aws iam get-role (AssumeRolePolicyDocument)",
+      "change": "infrastructure/bootstrap/quarantine-responder.tf; operator-applied",
+      "check": "role-trust-responder"
+    },
+    {
+      "id": "ci-roles.responder-scope",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The quarantine responder may attach and detach only AWS's deny-all policy on roles and users, read attachments back and page the operator, and is denied on itself and the five CI roles",
+      "recommended": {
+        "allow": ["iam:AttachRolePolicy", "iam:AttachUserPolicy", "iam:DetachRolePolicy", "iam:DetachUserPolicy", "iam:ListAttachedRolePolicies", "iam:ListAttachedUserPolicies", "kms:Decrypt", "kms:GenerateDataKey", "sns:Publish"],
+        "attach_only": ["arn:aws:iam::aws:policy/AWSDenyAll"],
+        "trust_root_denied": 6
+      },
+      "implication": "A principal named by a reportable audit-log finding is quarantined with no person in the loop (KSI-IAM-SUS), but the responder can never grant a permission, never write a policy document, and never switch off the CI/CD trust root.",
+      "read": "aws iam get-role-policy (quarantine-responder; allowed actions, the iam:PolicyARN condition, and a count of the roles its Deny names)",
+      "change": "infrastructure/bootstrap/quarantine-responder.tf, aws_iam_role_policy.quarantine_responder; operator-applied",
+      "check": "role-actions-responder"
+    },
+    {
+      "id": "ci-roles.quarantine-target-trust",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The quarantine drill's stand-in role trusts no GitHub workflow",
+      "recommended": [],
+      "implication": "The role the responder quarantines every night has no permissions and cannot be assumed by any workflow; its only trusted principal is the responder, which holds no sts:AssumeRole.",
+      "read": "aws iam get-role (AssumeRolePolicyDocument; GitHub OIDC subjects)",
+      "change": "infrastructure/bootstrap/quarantine-responder.tf, aws_iam_role.quarantine_target; operator-applied",
+      "check": "role-trust-quarantine-target"
+    },
+    {
       "id": "cognito-admin.sign-in-policy",
       "account": "cognito-admin",
       "operable_by": "ci-roles (Terraform) and aws-operator-user",
@@ -427,6 +481,16 @@
       "Added the evidence nightly role's audit-log read: cloudtrail:LookupEvents, for the automated audit-log review (DEC-195), compared on every deploy like the maintainer's scope."
     ],
     "defaults_sha256": "ca8968b522af43b3736f1444d0f93de75f434a9277b4f20d150aabec2717be57"
+  },
+  {
+    "version": "2.5.0",
+    "date": "2026-11-06",
+    "changes": [
+      "Added the quarantine responder (KSI-IAM-SUS): its trust (the evidence-nightly environment only) and its scope (attach and detach AWS's deny-all policy only, never on itself or the five CI roles), compared on every deploy.",
+      "Added the quarantine drill's stand-in role, which no GitHub workflow can assume.",
+      "Added the evidence nightly role's recovery-drill grant: object put, read, version read and delete, and version listing, in the scratch bucket only, for the monthly Chaos Gremlin drill (KSI-RPL-TRC)."
+    ],
+    "defaults_sha256": "02b55f67c361fa480ff3ff1897f2b00861598319d7a0ff194baa178193bcfb3b"
   }
   ]
 }
