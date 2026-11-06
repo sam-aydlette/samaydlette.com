@@ -121,7 +121,7 @@
         {
           "reference": "NIST SP 800-53B",
           "reference_url": "https://csrc.nist.gov/pubs/sp/800/53/b/upd1/final",
-          "description": "Section 2.5 states \"As the number of controls in [SP 800-53] grows in response to an increasingly sophisticated threat space, it is important for organizations to have the ability to describe key capabilities needed to protect organizational missions and business functions, and to subsequently select controls that\u2014if properly designed, developed, and implemented\u2014produce such capabilities. The use of capabilities simplifies how the protection problem is viewed conceptually. Using the construct of a capability provides a method of grouping controls that are employed for a common purpose or to achieve a common objective.\" This section later states \"Ultimately, authorization decisions (i.e., risk acceptance decisions) are made based on the degree to which the desired capabilities have been effectively achieved.\""
+          "description": "Section 2.5 states \"As the number of controls in [SP 800-53] grows in response to an increasingly sophisticated threat space, it is important for organizations to have the ability to describe key capabilities needed to protect organizational missions and business functions, and to subsequently select controls that—if properly designed, developed, and implemented—produce such capabilities. The use of capabilities simplifies how the protection problem is viewed conceptually. Using the construct of a capability provides a method of grouping controls that are employed for a common purpose or to achieve a common objective.\" This section later states \"Ultimately, authorization decisions (i.e., risk acceptance decisions) are made based on the degree to which the desired capabilities have been effectively achieved.\""
         },
         {
           "reference": "NIST SP 800-53A",
@@ -129,9 +129,9 @@
           "description": "Section 3.5 states \"When organizations employ the concept of capabilities, automated and manual assessments account for all security and privacy controls that comprise the security and privacy capabilities. Assessors are aware of how the controls work together to provide such capabilities.\""
         },
         {
-          "reference": "FedRAMP Authorization Act (44 USC \u00a7 3609 (a) (1))",
+          "reference": "FedRAMP Authorization Act (44 USC § 3609 (a) (1))",
           "reference_url": "https://fedramp.gov/docs/authority/law/#a-roles-and-responsibilities",
-          "description": "requires that the Administrator of the General Services Administration shall \"in consultation with the [DHS] Secretary, develop, coordinate, and implement a process to support agency review, reuse, and standardization, where appropriate, of security assessments of cloud computing products and services...\" 44 USC \u00a7 3609 (c) (2) further states that \"the [GSA] Administrator shall establish a means for the automation of security assessments and reviews.\"",
+          "description": "requires that the Administrator of the General Services Administration shall \"in consultation with the [DHS] Secretary, develop, coordinate, and implement a process to support agency review, reuse, and standardization, where appropriate, of security assessments of cloud computing products and services...\" 44 USC § 3609 (c) (2) further states that \"the [GSA] Administrator shall establish a means for the automation of security assessments and reviews.\"",
           "delegation": "These responsibilities are delegated to the FedRAMP Director",
           "delegation_url": "https://www.gsa.gov/directives-library/gsa-delegations-of-authority-fedramp"
         }
@@ -160,18 +160,6 @@
           },
           "controls": [
             {
-              "control_id": "cp-3",
-              "title": "Contingency Training"
-            },
-            {
-              "control_id": "ir-2",
-              "title": "Incident Response Training"
-            },
-            {
-              "control_id": "ps-6",
-              "title": "Access Agreements"
-            },
-            {
               "control_id": "at-2",
               "title": "Literacy Training and Awareness"
             },
@@ -184,6 +172,10 @@
               "title": "Social Engineering and Mining"
             },
             {
+              "control_id": "at-3",
+              "title": "Role-based Training"
+            },
+            {
               "control_id": "at-3.5",
               "title": "Processing Personally Identifiable Information"
             },
@@ -192,12 +184,52 @@
               "title": "Training Records"
             },
             {
+              "control_id": "cm-11",
+              "title": "User-installed Software"
+            },
+            {
+              "control_id": "cp-3",
+              "title": "Contingency Training"
+            },
+            {
+              "control_id": "cp-3.1",
+              "title": "Simulated Events"
+            },
+            {
+              "control_id": "ir-2",
+              "title": "Incident Response Training"
+            },
+            {
+              "control_id": "ir-2.1",
+              "title": "Simulated Events"
+            },
+            {
+              "control_id": "ir-2.2",
+              "title": "Automated Training Environments"
+            },
+            {
               "control_id": "ir-2.3",
               "title": "Breach"
             },
             {
-              "control_id": "at-3",
-              "title": "Role-based Training"
+              "control_id": "ir-9.2",
+              "title": "Training"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
+              "control_id": "pl-4",
+              "title": "Rules of Behavior"
+            },
+            {
+              "control_id": "pl-4.1",
+              "title": "Social Media and External Site/Application Usage Restrictions"
+            },
+            {
+              "control_id": "ps-6",
+              "title": "Access Agreements"
             },
             {
               "control_id": "sr-11.1",
@@ -225,12 +257,24 @@
               "title": "Event Logging"
             },
             {
+              "control_id": "ca-7.4",
+              "title": "Risk Monitoring"
+            },
+            {
               "control_id": "cm-3",
               "title": "Configuration Change Control"
             },
             {
+              "control_id": "cm-3.1",
+              "title": "Automated Documentation, Notification, and Prohibition of Changes"
+            },
+            {
               "control_id": "cm-3.2",
               "title": "Testing, Validation, and Documentation of Changes"
+            },
+            {
+              "control_id": "cm-3.6",
+              "title": "Cryptography Management"
             },
             {
               "control_id": "cm-4.2",
@@ -243,10 +287,6 @@
             {
               "control_id": "cm-8.3",
               "title": "Automated Unauthorized Component Detection"
-            },
-            {
-              "control_id": "ma-2",
-              "title": "Controlled Maintenance"
             }
           ]
         },
@@ -346,6 +386,14 @@
               "title": "Verification of Controls"
             },
             {
+              "control_id": "cm-6.2",
+              "title": "Respond to Unauthorized Changes"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
               "control_id": "si-2",
               "title": "Flaw Remediation"
             }
@@ -371,6 +419,18 @@
               "title": "Baseline Configuration"
             },
             {
+              "control_id": "cm-8.4",
+              "title": "Accountability Information"
+            },
+            {
+              "control_id": "cp-10.4",
+              "title": "Restore Within Time Period"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
               "control_id": "si-3",
               "title": "Malicious Code Protection"
             }
@@ -390,8 +450,48 @@
               "title": "Independent Assessors"
             },
             {
-              "control_id": "ca-7.1",
-              "title": "Independent Assessment"
+              "control_id": "cm-11",
+              "title": "User-installed Software"
+            },
+            {
+              "control_id": "cm-6.2",
+              "title": "Respond to Unauthorized Changes"
+            },
+            {
+              "control_id": "cp-10.4",
+              "title": "Restore Within Time Period"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
+              "control_id": "sc-24",
+              "title": "Fail in Known State"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
+            },
+            {
+              "control_id": "si-4.22",
+              "title": "Unauthorized Network Services"
+            },
+            {
+              "control_id": "si-7",
+              "title": "Software, Firmware, and Information Integrity"
+            },
+            {
+              "control_id": "si-7.1",
+              "title": "Integrity Checks"
+            },
+            {
+              "control_id": "si-7.5",
+              "title": "Automated Response to Integrity Violations"
+            },
+            {
+              "control_id": "si-7.7",
+              "title": "Integration of Detection and Response"
             }
           ]
         },
@@ -415,6 +515,10 @@
             {
               "control_id": "pl-10",
               "title": "Baseline Selection"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
             }
           ]
         },
@@ -448,6 +552,14 @@
               "title": "Internal System Connections"
             },
             {
+              "control_id": "sc-10",
+              "title": "Network Disconnect"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
+            },
+            {
               "control_id": "sc-7.3",
               "title": "Access Points"
             },
@@ -457,7 +569,7 @@
             },
             {
               "control_id": "sc-7.5",
-              "title": "Deny by Default \u2014 Allow by Exception"
+              "title": "Deny by Default — Allow by Exception"
             },
             {
               "control_id": "sc-7.8",
@@ -466,10 +578,6 @@
             {
               "control_id": "sc-8",
               "title": "Transmission Confidentiality and Integrity"
-            },
-            {
-              "control_id": "sc-10",
-              "title": "Network Disconnect"
             },
             {
               "control_id": "si-10",
@@ -493,7 +601,16 @@
             "low": true,
             "moderate": true
           },
-          "controls": []
+          "controls": [
+            {
+              "control_id": "cp-2.5",
+              "title": "Continue Mission and Business Functions"
+            },
+            {
+              "control_id": "sc-12.1",
+              "title": "Availability"
+            }
+          ]
         },
         {
           "id": "KSI-CNA-RNT",
@@ -517,8 +634,40 @@
               "title": "Periodic Review"
             },
             {
+              "control_id": "sc-7.10",
+              "title": "Prevent Exfiltration"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
+            },
+            {
+              "control_id": "sc-7.20",
+              "title": "Dynamic Isolation and Segregation"
+            },
+            {
+              "control_id": "sc-7.21",
+              "title": "Isolation of System Components"
+            },
+            {
               "control_id": "sc-7.5",
-              "title": "Deny by Default \u2014 Allow by Exception"
+              "title": "Deny by Default — Allow by Exception"
+            },
+            {
+              "control_id": "si-10",
+              "title": "Information Input Validation"
+            },
+            {
+              "control_id": "si-4.11",
+              "title": "Analyze Communications Traffic Anomalies"
+            },
+            {
+              "control_id": "si-4.18",
+              "title": "Analyze Traffic and Covert Exfiltration"
+            },
+            {
+              "control_id": "si-4.4",
+              "title": "Inbound and Outbound Communications Traffic"
             },
             {
               "control_id": "si-8",
@@ -536,8 +685,16 @@
           },
           "controls": [
             {
+              "control_id": "ir-4.2",
+              "title": "Dynamic Reconfiguration"
+            },
+            {
               "control_id": "sc-5",
               "title": "Denial-of-service Protection"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
             },
             {
               "control_id": "si-8",
@@ -567,8 +724,20 @@
               "title": "Managed Access Control Points"
             },
             {
+              "control_id": "ac-4.21",
+              "title": "Physical or Logical Separation of Information Flows"
+            },
+            {
               "control_id": "ca-9",
               "title": "Internal System Connections"
+            },
+            {
+              "control_id": "cm-11",
+              "title": "User-installed Software"
+            },
+            {
+              "control_id": "sc-10",
+              "title": "Network Disconnect"
             },
             {
               "control_id": "sc-4",
@@ -579,16 +748,20 @@
               "title": "Boundary Protection"
             },
             {
+              "control_id": "sc-7.20",
+              "title": "Dynamic Isolation and Segregation"
+            },
+            {
+              "control_id": "sc-7.21",
+              "title": "Isolation of System Components"
+            },
+            {
               "control_id": "sc-7.7",
               "title": "Split Tunneling for Remote Devices"
             },
             {
               "control_id": "sc-8",
               "title": "Transmission Confidentiality and Integrity"
-            },
-            {
-              "control_id": "sc-10",
-              "title": "Network Disconnect"
             }
           ]
         }
@@ -608,6 +781,10 @@
           },
           "controls": [
             {
+              "control_id": "ac-2.13",
+              "title": "Disable Accounts for High-risk Individuals"
+            },
+            {
               "control_id": "ac-2.2",
               "title": "Automated Temporary and Emergency Account Management"
             },
@@ -616,16 +793,8 @@
               "title": "Disable Accounts"
             },
             {
-              "control_id": "ac-2.13",
-              "title": "Disable Accounts for High-risk Individuals"
-            },
-            {
               "control_id": "ac-6.7",
               "title": "Review of User Privileges"
-            },
-            {
-              "control_id": "ia-4.4",
-              "title": "Identify User Status"
             },
             {
               "control_id": "ia-12",
@@ -642,6 +811,14 @@
             {
               "control_id": "ia-12.5",
               "title": "Address Confirmation"
+            },
+            {
+              "control_id": "ia-4.4",
+              "title": "Identify User Status"
+            },
+            {
+              "control_id": "ia-8.4",
+              "title": "Use of Defined Profiles"
             }
           ]
         },
@@ -655,28 +832,12 @@
           },
           "controls": [
             {
-              "control_id": "ac-3",
-              "title": "Access Enforcement"
-            },
-            {
-              "control_id": "ia-5.1",
-              "title": "Password-based Authentication"
-            },
-            {
-              "control_id": "ia-5.2",
-              "title": "Public Key-based Authentication"
-            },
-            {
-              "control_id": "ia-5.6",
-              "title": "Protection of Authenticators"
-            },
-            {
-              "control_id": "ia-6",
-              "title": "Authentication Feedback"
-            },
-            {
               "control_id": "ac-2",
               "title": "Account Management"
+            },
+            {
+              "control_id": "ac-3",
+              "title": "Access Enforcement"
             },
             {
               "control_id": "ia-2",
@@ -691,16 +852,48 @@
               "title": "Multi-factor Authentication to Non-privileged Accounts"
             },
             {
+              "control_id": "ia-2.6",
+              "title": "Access to Accounts —separate Device"
+            },
+            {
               "control_id": "ia-2.8",
-              "title": "Access to Accounts \u2014 Replay Resistant"
+              "title": "Access to Accounts — Replay Resistant"
             },
             {
               "control_id": "ia-5",
               "title": "Authenticator Management"
             },
             {
+              "control_id": "ia-5.1",
+              "title": "Password-based Authentication"
+            },
+            {
+              "control_id": "ia-5.2",
+              "title": "Public Key-based Authentication"
+            },
+            {
+              "control_id": "ia-5.6",
+              "title": "Protection of Authenticators"
+            },
+            {
+              "control_id": "ia-5.8",
+              "title": "Multiple System Accounts"
+            },
+            {
+              "control_id": "ia-6",
+              "title": "Authentication Feedback"
+            },
+            {
               "control_id": "ia-8",
               "title": "Identification and Authentication (Non-organizational Users)"
+            },
+            {
+              "control_id": "ia-8.2",
+              "title": "Acceptance of External Authenticators"
+            },
+            {
+              "control_id": "ia-8.4",
+              "title": "Use of Defined Profiles"
             },
             {
               "control_id": "sc-23",
@@ -717,26 +910,6 @@
             "moderate": true
           },
           "controls": [
-            {
-              "control_id": "ac-2.5",
-              "title": "Inactivity Logout"
-            },
-            {
-              "control_id": "ac-2.6",
-              "title": "Dynamic Privilege Management"
-            },
-            {
-              "control_id": "ac-3",
-              "title": "Access Enforcement"
-            },
-            {
-              "control_id": "ac-4",
-              "title": "Information Flow Enforcement"
-            },
-            {
-              "control_id": "ac-6",
-              "title": "Least Privilege"
-            },
             {
               "control_id": "ac-12",
               "title": "Session Termination"
@@ -762,6 +935,30 @@
               "title": "Managed Access Control Points"
             },
             {
+              "control_id": "ac-18.4",
+              "title": "Restrict Configurations by Users"
+            },
+            {
+              "control_id": "ac-2.11",
+              "title": "Usage Conditions"
+            },
+            {
+              "control_id": "ac-2.5",
+              "title": "Inactivity Logout"
+            },
+            {
+              "control_id": "ac-2.6",
+              "title": "Dynamic Privilege Management"
+            },
+            {
+              "control_id": "ac-2.7",
+              "title": "Privileged User Accounts"
+            },
+            {
+              "control_id": "ac-2.9",
+              "title": "Restrictions on Use of Shared and Group Accounts"
+            },
+            {
               "control_id": "ac-20",
               "title": "Use of External Systems"
             },
@@ -770,12 +967,60 @@
               "title": "Limits on Authorized Use"
             },
             {
+              "control_id": "ac-21",
+              "title": "Information Sharing"
+            },
+            {
+              "control_id": "ac-3",
+              "title": "Access Enforcement"
+            },
+            {
+              "control_id": "ac-4",
+              "title": "Information Flow Enforcement"
+            },
+            {
+              "control_id": "ac-6",
+              "title": "Least Privilege"
+            },
+            {
+              "control_id": "ac-6.3",
+              "title": "Network Access to Privileged Commands"
+            },
+            {
+              "control_id": "ac-6.8",
+              "title": "Privilege Levels for Code Execution"
+            },
+            {
+              "control_id": "au-12.3",
+              "title": "Changes by Authorized Individuals"
+            },
+            {
+              "control_id": "au-6.7",
+              "title": "Permitted Actions"
+            },
+            {
               "control_id": "cm-2.7",
               "title": "Configure Systems and Components for High-risk Areas"
             },
             {
+              "control_id": "cm-5.1",
+              "title": "Automated Access Enforcement and Audit Records"
+            },
+            {
+              "control_id": "cm-5.5",
+              "title": "Privilege Limitation for Production and Operation"
+            },
+            {
+              "control_id": "cm-7.2",
+              "title": "Prevent Program Execution"
+            },
+            {
               "control_id": "cm-9",
               "title": "Configuration Management Plan"
+            },
+            {
+              "control_id": "ia-11",
+              "title": "Re-authentication"
             },
             {
               "control_id": "ia-2",
@@ -802,8 +1047,12 @@
               "title": "Protection of Authenticators"
             },
             {
-              "control_id": "ia-11",
-              "title": "Re-authentication"
+              "control_id": "ir-4.6",
+              "title": "Insider Threats"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
             },
             {
               "control_id": "ps-2",
@@ -826,8 +1075,12 @@
               "title": "Access Agreements"
             },
             {
-              "control_id": "sc-4",
-              "title": "Information in Shared System Resources"
+              "control_id": "ra-5.5",
+              "title": "Privileged Access"
+            },
+            {
+              "control_id": "sc-2",
+              "title": "Separation of System and User Functionality"
             },
             {
               "control_id": "sc-20",
@@ -846,12 +1099,24 @@
               "title": "Session Authenticity"
             },
             {
+              "control_id": "sc-3",
+              "title": "Security Function Isolation"
+            },
+            {
               "control_id": "sc-39",
               "title": "Process Isolation"
             },
             {
+              "control_id": "sc-4",
+              "title": "Information in Shared System Resources"
+            },
+            {
               "control_id": "si-3",
               "title": "Malicious Code Protection"
+            },
+            {
+              "control_id": "si-4.19",
+              "title": "Risk for Individuals"
             }
           ]
         },
@@ -865,12 +1130,24 @@
           },
           "controls": [
             {
+              "control_id": "ac-17",
+              "title": "Remote Access"
+            },
+            {
+              "control_id": "ac-17.4",
+              "title": "Privileged Commands and Access"
+            },
+            {
               "control_id": "ac-2",
               "title": "Account Management"
             },
             {
               "control_id": "ac-2.1",
               "title": "Automated System Account Management"
+            },
+            {
+              "control_id": "ac-2.11",
+              "title": "Usage Conditions"
             },
             {
               "control_id": "ac-2.2",
@@ -887,6 +1164,18 @@
             {
               "control_id": "ac-2.6",
               "title": "Dynamic Privilege Management"
+            },
+            {
+              "control_id": "ac-2.7",
+              "title": "Privileged User Accounts"
+            },
+            {
+              "control_id": "ac-20.1",
+              "title": "Limits on Authorized Use"
+            },
+            {
+              "control_id": "ac-21",
+              "title": "Information Sharing"
             },
             {
               "control_id": "ac-3",
@@ -909,8 +1198,16 @@
               "title": "Authorize Access to Security Functions"
             },
             {
+              "control_id": "ac-6.10",
+              "title": "Prohibit Non-privileged Users from Executing Privileged Functions"
+            },
+            {
               "control_id": "ac-6.2",
               "title": "Non-privileged Access for Nonsecurity Functions"
+            },
+            {
+              "control_id": "ac-6.3",
+              "title": "Network Access to Privileged Commands"
             },
             {
               "control_id": "ac-6.5",
@@ -921,32 +1218,44 @@
               "title": "Review of User Privileges"
             },
             {
-              "control_id": "ac-6.9",
-              "title": "Log Use of Privileged Functions"
+              "control_id": "ac-6.8",
+              "title": "Privilege Levels for Code Execution"
             },
             {
-              "control_id": "ac-6.10",
-              "title": "Prohibit Non-privileged Users from Executing Privileged Functions"
+              "control_id": "ac-6.9",
+              "title": "Log Use of Privileged Functions"
             },
             {
               "control_id": "ac-7",
               "title": "Unsuccessful Logon Attempts"
             },
             {
-              "control_id": "ac-20.1",
-              "title": "Limits on Authorized Use"
+              "control_id": "au-10",
+              "title": "Non-repudiation"
             },
             {
-              "control_id": "ac-17",
-              "title": "Remote Access"
+              "control_id": "au-12.3",
+              "title": "Changes by Authorized Individuals"
             },
             {
               "control_id": "au-9.4",
               "title": "Access by Subset of Privileged Users"
             },
             {
+              "control_id": "ca-3.6",
+              "title": "Transfer Authorizations"
+            },
+            {
               "control_id": "cm-5",
               "title": "Access Restrictions for Change"
+            },
+            {
+              "control_id": "cm-5.1",
+              "title": "Automated Access Enforcement and Audit Records"
+            },
+            {
+              "control_id": "cm-5.5",
+              "title": "Privilege Limitation for Production and Operation"
             },
             {
               "control_id": "cm-7",
@@ -958,7 +1267,7 @@
             },
             {
               "control_id": "cm-7.5",
-              "title": "Authorized Software \u2014 Allow-by-exception"
+              "title": "Authorized Software — Allow-by-exception"
             },
             {
               "control_id": "cm-9",
@@ -975,6 +1284,10 @@
             {
               "control_id": "ia-7",
               "title": "Cryptographic Module Authentication"
+            },
+            {
+              "control_id": "ir-4.6",
+              "title": "Insider Threats"
             },
             {
               "control_id": "ps-2",
@@ -1013,6 +1326,10 @@
               "title": "Session Authenticity"
             },
             {
+              "control_id": "sc-3",
+              "title": "Security Function Isolation"
+            },
+            {
               "control_id": "sc-39",
               "title": "Process Isolation"
             }
@@ -1036,12 +1353,24 @@
               "title": "Automated Temporary and Emergency Account Management"
             },
             {
+              "control_id": "ac-2.9",
+              "title": "Restrictions on Use of Shared and Group Accounts"
+            },
+            {
               "control_id": "ac-4",
               "title": "Information Flow Enforcement"
             },
             {
               "control_id": "ac-6.5",
               "title": "Privileged Accounts"
+            },
+            {
+              "control_id": "au-10",
+              "title": "Non-repudiation"
+            },
+            {
+              "control_id": "ia-2.5",
+              "title": "Individual Authentication with Group Authentication"
             },
             {
               "control_id": "ia-3",
@@ -1075,16 +1404,44 @@
               "title": "Automated System Account Management"
             },
             {
-              "control_id": "ac-2.3",
-              "title": "Disable Accounts"
+              "control_id": "ac-2.11",
+              "title": "Usage Conditions"
+            },
+            {
+              "control_id": "ac-2.12",
+              "title": "Account Monitoring for Atypical Usage"
             },
             {
               "control_id": "ac-2.13",
               "title": "Disable Accounts for High-risk Individuals"
             },
             {
+              "control_id": "ac-2.3",
+              "title": "Disable Accounts"
+            },
+            {
               "control_id": "ac-7",
               "title": "Unsuccessful Logon Attempts"
+            },
+            {
+              "control_id": "au-6.5",
+              "title": "Integrated Analysis of Audit Records"
+            },
+            {
+              "control_id": "cm-5.1",
+              "title": "Automated Access Enforcement and Audit Records"
+            },
+            {
+              "control_id": "cm-6.2",
+              "title": "Respond to Unauthorized Changes"
+            },
+            {
+              "control_id": "ir-4.2",
+              "title": "Dynamic Reconfiguration"
+            },
+            {
+              "control_id": "ir-4.6",
+              "title": "Insider Threats"
             },
             {
               "control_id": "ps-4",
@@ -1093,6 +1450,30 @@
             {
               "control_id": "ps-8",
               "title": "Personnel Sanctions"
+            },
+            {
+              "control_id": "si-4",
+              "title": "System Monitoring"
+            },
+            {
+              "control_id": "si-4.1",
+              "title": "System-wide Intrusion Detection System"
+            },
+            {
+              "control_id": "si-4.19",
+              "title": "Risk for Individuals"
+            },
+            {
+              "control_id": "si-4.20",
+              "title": "Privileged Users"
+            },
+            {
+              "control_id": "si-4.22",
+              "title": "Unauthorized Network Services"
+            },
+            {
+              "control_id": "si-4.4",
+              "title": "Inbound and Outbound Communications Traffic"
             }
           ]
         }
@@ -1124,8 +1505,16 @@
               "title": "Automated Incident Handling Processes"
             },
             {
+              "control_id": "ir-5.1",
+              "title": "Automated Tracking, Data Collection, and Analysis"
+            },
+            {
               "control_id": "ir-8",
               "title": "Incident Response Plan"
+            },
+            {
+              "control_id": "ir-9.3",
+              "title": "Post-spill Operations"
             }
           ]
         },
@@ -1145,6 +1534,10 @@
             {
               "control_id": "ir-4.1",
               "title": "Automated Incident Handling Processes"
+            },
+            {
+              "control_id": "ir-4.11",
+              "title": "Integrated Incident Response Team"
             },
             {
               "control_id": "ir-6",
@@ -1175,6 +1568,10 @@
               "title": "Breaches"
             },
             {
+              "control_id": "ir-9.3",
+              "title": "Post-spill Operations"
+            },
+            {
               "control_id": "si-4.5",
               "title": "System-generated Alerts"
             }
@@ -1202,12 +1599,28 @@
               "title": "Automated Incident Handling Processes"
             },
             {
+              "control_id": "ir-4.11",
+              "title": "Integrated Incident Response Team"
+            },
+            {
+              "control_id": "ir-4.4",
+              "title": "Information Correlation"
+            },
+            {
               "control_id": "ir-5",
               "title": "Incident Monitoring"
             },
             {
+              "control_id": "ir-5.1",
+              "title": "Automated Tracking, Data Collection, and Analysis"
+            },
+            {
               "control_id": "ir-8",
               "title": "Incident Response Plan"
+            },
+            {
+              "control_id": "ra-5.8",
+              "title": "Review Historic Audit Logs"
             }
           ]
         }
@@ -1227,6 +1640,14 @@
           },
           "controls": [
             {
+              "control_id": "au-12.3",
+              "title": "Changes by Authorized Individuals"
+            },
+            {
+              "control_id": "au-6.7",
+              "title": "Permitted Actions"
+            },
+            {
               "control_id": "si-11",
               "title": "Error Handling"
             }
@@ -1242,6 +1663,10 @@
           },
           "controls": [
             {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
               "control_id": "ca-7",
               "title": "Continuous Monitoring"
             },
@@ -1252,6 +1677,14 @@
             {
               "control_id": "cm-6",
               "title": "Configuration Settings"
+            },
+            {
+              "control_id": "cm-6.1",
+              "title": "Automated Management, Application, and Verification"
+            },
+            {
+              "control_id": "ra-3",
+              "title": "Risk Assessment"
             },
             {
               "control_id": "si-7.7",
@@ -1269,32 +1702,56 @@
           },
           "controls": [
             {
-              "control_id": "ac-2.4",
-              "title": "Automated Audit Actions"
-            },
-            {
-              "control_id": "ac-6.9",
-              "title": "Log Use of Privileged Functions"
-            },
-            {
               "control_id": "ac-17.1",
               "title": "Monitoring and Control"
+            },
+            {
+              "control_id": "ac-2.4",
+              "title": "Automated Audit Actions"
             },
             {
               "control_id": "ac-20.1",
               "title": "Limits on Authorized Use"
             },
             {
+              "control_id": "ac-6.9",
+              "title": "Log Use of Privileged Functions"
+            },
+            {
+              "control_id": "au-10",
+              "title": "Non-repudiation"
+            },
+            {
+              "control_id": "au-12",
+              "title": "Audit Record Generation"
+            },
+            {
               "control_id": "au-2",
               "title": "Event Logging"
+            },
+            {
+              "control_id": "au-7",
+              "title": "Audit Record Reduction and Report Generation"
             },
             {
               "control_id": "au-7.1",
               "title": "Automatic Processing"
             },
             {
-              "control_id": "au-12",
-              "title": "Audit Record Generation"
+              "control_id": "cm-5.1",
+              "title": "Automated Access Enforcement and Audit Records"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
+              "control_id": "si-4.19",
+              "title": "Risk for Individuals"
+            },
+            {
+              "control_id": "si-4.20",
+              "title": "Privileged Users"
             },
             {
               "control_id": "si-4.4",
@@ -1328,6 +1785,14 @@
               "title": "Limits on Authorized Use"
             },
             {
+              "control_id": "au-11",
+              "title": "Audit Record Retention"
+            },
+            {
+              "control_id": "au-12.1",
+              "title": "System-wide and Time-correlated Audit Trail"
+            },
+            {
               "control_id": "au-2",
               "title": "Event Logging"
             },
@@ -1348,12 +1813,24 @@
               "title": "Response to Audit Logging Process Failures"
             },
             {
+              "control_id": "au-5.1",
+              "title": "Storage Capacity Warning"
+            },
+            {
               "control_id": "au-6.1",
               "title": "Automated Process Integration"
             },
             {
               "control_id": "au-6.3",
               "title": "Correlate Audit Record Repositories"
+            },
+            {
+              "control_id": "au-6.4",
+              "title": "Central Review and Analysis"
+            },
+            {
+              "control_id": "au-6.5",
+              "title": "Integrated Analysis of Audit Records"
             },
             {
               "control_id": "au-7",
@@ -1372,12 +1849,12 @@
               "title": "Protection of Audit Information"
             },
             {
-              "control_id": "au-11",
-              "title": "Audit Record Retention"
-            },
-            {
               "control_id": "ir-4.1",
               "title": "Automated Incident Handling Processes"
+            },
+            {
+              "control_id": "si-4.16",
+              "title": "Correlate Monitoring Information"
             },
             {
               "control_id": "si-4.2",
@@ -1386,10 +1863,6 @@
             {
               "control_id": "si-4.4",
               "title": "Inbound and Outbound Communications Traffic"
-            },
-            {
-              "control_id": "si-7.7",
-              "title": "Integration of Detection and Response"
             }
           ]
         },
@@ -1423,8 +1896,20 @@
               "title": "Automated Process Integration"
             },
             {
+              "control_id": "au-7",
+              "title": "Audit Record Reduction and Report Generation"
+            },
+            {
+              "control_id": "ra-5.8",
+              "title": "Review Historic Audit Logs"
+            },
+            {
               "control_id": "si-4",
               "title": "System Monitoring"
+            },
+            {
+              "control_id": "si-4.19",
+              "title": "Risk for Individuals"
             },
             {
               "control_id": "si-4.4",
@@ -1448,12 +1933,20 @@
           },
           "controls": [
             {
+              "control_id": "cm-12",
+              "title": "Information Location"
+            },
+            {
+              "control_id": "cm-12.1",
+              "title": "Automated Tools to Support Information Location"
+            },
+            {
               "control_id": "cm-2.2",
               "title": "Automation Support for Accuracy and Currency"
             },
             {
               "control_id": "cm-7.5",
-              "title": "Authorized Software \u2014 Allow-by-exception"
+              "title": "Authorized Software — Allow-by-exception"
             },
             {
               "control_id": "cm-8",
@@ -1464,12 +1957,12 @@
               "title": "Updates During Installation and Removal"
             },
             {
-              "control_id": "cm-12",
-              "title": "Information Location"
+              "control_id": "cm-8.2",
+              "title": "Automated Maintenance"
             },
             {
-              "control_id": "cm-12.1",
-              "title": "Automated Tools to Support Information Location"
+              "control_id": "cm-8.4",
+              "title": "Accountability Information"
             },
             {
               "control_id": "cp-2.8",
@@ -1505,6 +1998,10 @@
               "title": "Control Assessments"
             },
             {
+              "control_id": "ca-2.2",
+              "title": "Specialized Assessments"
+            },
+            {
               "control_id": "cp-2.1",
               "title": "Coordinate with Related Plans"
             },
@@ -1515,6 +2012,10 @@
             {
               "control_id": "ir-3.2",
               "title": "Coordination with Related Plans"
+            },
+            {
+              "control_id": "ir-4.11",
+              "title": "Integrated Incident Response Team"
             },
             {
               "control_id": "pm-3",
@@ -1556,12 +2057,20 @@
               "title": "Security and Privacy Representatives"
             },
             {
+              "control_id": "ia-5.7",
+              "title": "No Embedded Unencrypted Static Authenticators"
+            },
+            {
               "control_id": "pl-8",
               "title": "Security and Privacy Architectures"
             },
             {
               "control_id": "pm-7",
               "title": "Enterprise Architecture"
+            },
+            {
+              "control_id": "ra-9",
+              "title": "Criticality Analysis"
             },
             {
               "control_id": "sa-3",
@@ -1572,12 +2081,12 @@
               "title": "Security and Privacy Engineering Principles"
             },
             {
-              "control_id": "sc-4",
-              "title": "Information in Shared System Resources"
-            },
-            {
               "control_id": "sc-18",
               "title": "Mobile Code"
+            },
+            {
+              "control_id": "sc-4",
+              "title": "Information in Shared System Resources"
             },
             {
               "control_id": "si-10",
@@ -1642,10 +2151,6 @@
             {
               "control_id": "cp-10.2",
               "title": "Transaction Recovery"
-            },
-            {
-              "control_id": "si-12",
-              "title": "Information Management and Retention"
             }
           ]
         },
@@ -1753,6 +2258,10 @@
           },
           "controls": [
             {
+              "control_id": "cp-10",
+              "title": "System Recovery and Reconstitution"
+            },
+            {
               "control_id": "cp-2.1",
               "title": "Coordinate with Related Plans"
             },
@@ -1781,16 +2290,20 @@
               "title": "Testing for Reliability and Integrity"
             },
             {
-              "control_id": "cp-10",
-              "title": "System Recovery and Reconstitution"
-            },
-            {
               "control_id": "ir-3",
               "title": "Incident Response Testing"
             },
             {
               "control_id": "ir-3.2",
               "title": "Coordination with Related Plans"
+            },
+            {
+              "control_id": "ir-9.3",
+              "title": "Post-spill Operations"
+            },
+            {
+              "control_id": "sc-12.1",
+              "title": "Availability"
             }
           ]
         }
@@ -1803,23 +2316,31 @@
         {
           "id": "KSI-SCR-MIT",
           "name": "Mitigating Supply Chain Risk",
-          "statement": "Persistently identify, review, and mitigate potential supply chain risks.",
+          "statement": "Potential supply chain risks are persistently identified, reviewed, and mitigated.",
           "impact": {
             "low": true,
             "moderate": true
           },
           "controls": [
             {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
               "control_id": "ac-20",
               "title": "Use of External Systems"
             },
             {
-              "control_id": "ra-3.1",
-              "title": "Supply Chain Risk Assessment"
+              "control_id": "ca-7.4",
+              "title": "Risk Monitoring"
             },
             {
-              "control_id": "sa-9",
-              "title": "External System Services"
+              "control_id": "ra-3",
+              "title": "Risk Assessment"
+            },
+            {
+              "control_id": "ra-3.1",
+              "title": "Supply Chain Risk Assessment"
             },
             {
               "control_id": "sa-10",
@@ -1830,16 +2351,92 @@
               "title": "Developer Testing and Evaluation"
             },
             {
+              "control_id": "sa-11.1",
+              "title": "Static Code Analysis"
+            },
+            {
+              "control_id": "sa-11.2",
+              "title": "Threat Modeling and Vulnerability Analyses"
+            },
+            {
+              "control_id": "sa-15",
+              "title": "Development Process, Standards, and Tools"
+            },
+            {
               "control_id": "sa-15.3",
               "title": "Criticality Analysis"
+            },
+            {
+              "control_id": "sa-16",
+              "title": "Developer-provided Training"
+            },
+            {
+              "control_id": "sa-17",
+              "title": "Developer Security and Privacy Architecture and Design"
+            },
+            {
+              "control_id": "sa-21",
+              "title": "Developer Screening"
             },
             {
               "control_id": "sa-22",
               "title": "Unsupported System Components"
             },
             {
+              "control_id": "sa-4",
+              "title": "Acquisition Process"
+            },
+            {
+              "control_id": "sa-4.1",
+              "title": "Functional Properties of Controls"
+            },
+            {
+              "control_id": "sa-4.2",
+              "title": "Design and Implementation Information for Controls"
+            },
+            {
+              "control_id": "sa-4.5",
+              "title": "System, Component, and Service Configurations"
+            },
+            {
+              "control_id": "sa-4.9",
+              "title": "Functions, Ports, Protocols, and Services in Use"
+            },
+            {
+              "control_id": "sa-9",
+              "title": "External System Services"
+            },
+            {
+              "control_id": "sa-9.1",
+              "title": "Risk Assessments and Organizational Approvals"
+            },
+            {
+              "control_id": "sa-9.2",
+              "title": "Identification of Functions, Ports, Protocols, and Services"
+            },
+            {
+              "control_id": "sa-9.5",
+              "title": "Processing, Storage, and Service Location"
+            },
+            {
+              "control_id": "sc-18",
+              "title": "Mobile Code"
+            },
+            {
               "control_id": "si-7.1",
               "title": "Integrity Checks"
+            },
+            {
+              "control_id": "si-7.15",
+              "title": "Code Authentication"
+            },
+            {
+              "control_id": "sr-2",
+              "title": "Supply Chain Risk Management Plan"
+            },
+            {
+              "control_id": "sr-3",
+              "title": "Supply Chain Controls and Processes"
             },
             {
               "control_id": "sr-5",
@@ -1848,14 +2445,6 @@
             {
               "control_id": "sr-6",
               "title": "Supplier Assessments and Reviews"
-            },
-            {
-              "control_id": "ca-7.4",
-              "title": "Risk Monitoring"
-            },
-            {
-              "control_id": "sc-18",
-              "title": "Mobile Code"
             }
           ]
         },
@@ -1869,8 +2458,16 @@
           },
           "controls": [
             {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
               "control_id": "ac-20",
               "title": "Use of External Systems"
+            },
+            {
+              "control_id": "ca-2.3",
+              "title": "Leveraging Results from External Organizations"
             },
             {
               "control_id": "ca-3",
@@ -1885,6 +2482,10 @@
               "title": "External Personnel Security"
             },
             {
+              "control_id": "ra-3",
+              "title": "Risk Assessment"
+            },
+            {
               "control_id": "ra-5",
               "title": "Vulnerability Monitoring and Scanning"
             },
@@ -1895,6 +2496,10 @@
             {
               "control_id": "si-5",
               "title": "Security Alerts, Advisories, and Directives"
+            },
+            {
+              "control_id": "sr-3",
+              "title": "Supply Chain Controls and Processes"
             },
             {
               "control_id": "sr-5",
@@ -1930,6 +2535,10 @@
               "title": "Automated Audit Actions"
             },
             {
+              "control_id": "ac-6.8",
+              "title": "Privilege Levels for Code Execution"
+            },
+            {
               "control_id": "cm-2",
               "title": "Baseline Configuration"
             },
@@ -1950,16 +2559,28 @@
               "title": "Periodic Review"
             },
             {
-              "control_id": "pl-9",
-              "title": "Central Management"
-            },
-            {
               "control_id": "pl-10",
               "title": "Baseline Selection"
             },
             {
+              "control_id": "pl-9",
+              "title": "Central Management"
+            },
+            {
               "control_id": "sa-5",
               "title": "System Documentation"
+            },
+            {
+              "control_id": "sc-45",
+              "title": "System Time Synchronization"
+            },
+            {
+              "control_id": "sc-45.1",
+              "title": "Synchronization with Authoritative Time Source"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
             },
             {
               "control_id": "si-5",
@@ -1997,6 +2618,10 @@
               "title": "Cryptographic Key Establishment and Management"
             },
             {
+              "control_id": "sc-12.1",
+              "title": "Availability"
+            },
+            {
               "control_id": "sc-17",
               "title": "Public Key Infrastructure Certificates"
             }
@@ -2012,28 +2637,40 @@
           },
           "controls": [
             {
-              "control_id": "cm-7.1",
-              "title": "Periodic Review"
+              "control_id": "ca-7.4",
+              "title": "Risk Monitoring"
             },
             {
               "control_id": "cm-12.1",
               "title": "Automated Tools to Support Information Location"
             },
             {
-              "control_id": "ma-2",
-              "title": "Controlled Maintenance"
+              "control_id": "cm-5.5",
+              "title": "Privilege Limitation for Production and Operation"
+            },
+            {
+              "control_id": "cm-7.1",
+              "title": "Periodic Review"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
             },
             {
               "control_id": "pl-8",
               "title": "Security and Privacy Architectures"
             },
             {
-              "control_id": "sc-7",
-              "title": "Boundary Protection"
+              "control_id": "ra-3",
+              "title": "Risk Assessment"
             },
             {
               "control_id": "sc-39",
               "title": "Process Isolation"
+            },
+            {
+              "control_id": "sc-7",
+              "title": "Boundary Protection"
             },
             {
               "control_id": "si-2.2",
@@ -2059,8 +2696,24 @@
           },
           "controls": [
             {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
+            },
+            {
+              "control_id": "sc-12.1",
+              "title": "Availability"
+            },
+            {
               "control_id": "sc-4",
               "title": "Information in Shared System Resources"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
             }
           ]
         },
@@ -2074,12 +2727,24 @@
           },
           "controls": [
             {
+              "control_id": "ir-9",
+              "title": "Information Spillage Response"
+            },
+            {
               "control_id": "si-12.3",
               "title": "Information Disposal"
             },
             {
               "control_id": "si-18.4",
               "title": "Individual Requests"
+            },
+            {
+              "control_id": "si-8",
+              "title": "Spam Protection"
+            },
+            {
+              "control_id": "si-8.2",
+              "title": "Automatic Updates"
             }
           ]
         },
@@ -2093,24 +2758,32 @@
           },
           "controls": [
             {
-              "control_id": "ac-1",
-              "title": "Policy and Procedures"
+              "control_id": "ac-11",
+              "title": "Device Lock"
+            },
+            {
+              "control_id": "ac-11.1",
+              "title": "Pattern-hiding Displays"
             },
             {
               "control_id": "ac-17.2",
               "title": "Protection of Confidentiality and Integrity Using Encryption"
             },
             {
+              "control_id": "ac-19.5",
+              "title": "Full Device or Container-based Encryption"
+            },
+            {
+              "control_id": "ac-21",
+              "title": "Information Sharing"
+            },
+            {
               "control_id": "cp-9.8",
               "title": "Cryptographic Protection"
             },
             {
-              "control_id": "sc-8",
-              "title": "Transmission Confidentiality and Integrity"
-            },
-            {
-              "control_id": "sc-8.1",
-              "title": "Cryptographic Protection"
+              "control_id": "ir-9.4",
+              "title": "Exposure to Unauthorized Personnel"
             },
             {
               "control_id": "sc-13",
@@ -2139,6 +2812,26 @@
             {
               "control_id": "sc-28.1",
               "title": "Cryptographic Protection"
+            },
+            {
+              "control_id": "sc-4",
+              "title": "Information in Shared System Resources"
+            },
+            {
+              "control_id": "sc-7.18",
+              "title": "Fail Secure"
+            },
+            {
+              "control_id": "sc-8",
+              "title": "Transmission Confidentiality and Integrity"
+            },
+            {
+              "control_id": "sc-8.1",
+              "title": "Cryptographic Protection"
+            },
+            {
+              "control_id": "si-4.18",
+              "title": "Analyze Traffic and Covert Exfiltration"
             }
           ]
         },
@@ -2152,8 +2845,28 @@
           },
           "controls": [
             {
+              "control_id": "ac-10",
+              "title": "Concurrent Session Control"
+            },
+            {
+              "control_id": "ac-17.4",
+              "title": "Privileged Commands and Access"
+            },
+            {
+              "control_id": "ac-18",
+              "title": "Wireless Access"
+            },
+            {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
               "control_id": "sc-23",
               "title": "Session Authenticity"
+            },
+            {
+              "control_id": "si-4.22",
+              "title": "Unauthorized Network Services"
             },
             {
               "control_id": "si-7.1",
@@ -2170,6 +2883,26 @@
             "moderate": true
           },
           "controls": [
+            {
+              "control_id": "ac-17.4",
+              "title": "Privileged Commands and Access"
+            },
+            {
+              "control_id": "ac-18",
+              "title": "Wireless Access"
+            },
+            {
+              "control_id": "ac-19",
+              "title": "Access Control for Mobile Devices"
+            },
+            {
+              "control_id": "au-9.3",
+              "title": "Cryptographic Protection"
+            },
+            {
+              "control_id": "cm-14",
+              "title": "Signed Components"
+            },
             {
               "control_id": "cm-2.2",
               "title": "Automation Support for Accuracy and Currency"
@@ -2195,8 +2928,16 @@
               "title": "Integrity Checks"
             },
             {
+              "control_id": "si-7.15",
+              "title": "Code Authentication"
+            },
+            {
               "control_id": "sr-10",
               "title": "Inspection of Systems or Components"
+            },
+            {
+              "control_id": "sr-11",
+              "title": "Component Authenticity"
             }
           ]
         }

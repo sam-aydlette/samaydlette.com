@@ -369,12 +369,20 @@ def check_c_suppressions(checkov_skips, register, vdr):
 # ----------------------------------------------------------------------------
 # (d) impact level identical; nothing asserts Low
 # ----------------------------------------------------------------------------
+def sdr_fields(sdr):
+    """Where a CR26 report (the SDR, the CPO) keeps its site-specific fields:
+    under providerExtensions since it follows FedRAMP's schema (the top level is
+    FedRAMP's). A report in the older shape keeps them at the top level."""
+    pe = sdr.get("providerExtensions")
+    return pe if isinstance(pe, dict) else sdr
+
+
 def extract_impacts(signal, sdr, cpo, vdr, dashboard_html):
     impacts = {}
     impacts["signal"] = normalize_impact(
         signal.get("categorization", {}).get("impact_level"))
-    impacts["sdr"] = normalize_impact(sdr.get("impact_level"))
-    impacts["cpo"] = normalize_impact(cpo.get("impact_level"))
+    impacts["sdr"] = normalize_impact(sdr_fields(sdr).get("impact_level"))
+    impacts["cpo"] = normalize_impact(sdr_fields(cpo).get("impact_level"))
     impacts["vdr"] = normalize_impact(vdr.get("impact_level") or
                                       ("class " + vdr.get("class", "")).strip())
     # dashboard (the trust center page, website/trust/index.html): its static
@@ -406,7 +414,7 @@ def check_e_binding(signal, sdr, cpo, vdr):
     sid = signal.get("signal_id")
     if not sid:
         return ["(e) signal has no signal_id"]
-    for art, doc in (("vdr", vdr), ("sdr", sdr), ("cpo", cpo)):
+    for art, doc in (("vdr", vdr), ("sdr", sdr_fields(sdr)), ("cpo", sdr_fields(cpo))):
         got = doc.get("ksi_signal_id")
         if got != sid:
             violations.append(f"(e) {art} signal_id {got!r} != inventory signal_id {sid!r}")

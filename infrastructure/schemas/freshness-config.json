@@ -149,24 +149,14 @@
     {
       "path": ".well-known/ongoing-certification-report.json",
       "cadence": "deploy",
-      "max_age_hours": 720,
+      "max_age_hours": 336,
       "timestamp": {
         "source": "json",
-        "field": "emitted_at"
+        "field": "metadata.lastUpdated"
       },
       "signed": true,
-      "signature": ".well-known/ongoing-certification-report.bundle"
-    },
-    {
-      "path": ".well-known/certification-overview-package.json",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "emitted_at"
-      },
-      "signed": true,
-      "signature": ".well-known/certification-overview-package.bundle"
+      "signature": ".well-known/ongoing-certification-report.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
     },
     {
       "path": ".well-known/availability.json",
@@ -190,15 +180,27 @@
       "signature": ".well-known/policy-index.bundle"
     },
     {
-      "path": ".well-known/security-decision-record.json",
+      "path": ".well-known/minimum-assessment-scope.json",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
         "source": "json",
-        "field": "metadata.last_updated"
+        "field": "generated_at"
       },
       "signed": true,
-      "signature": ".well-known/security-decision-record.bundle"
+      "signature": ".well-known/minimum-assessment-scope.bundle"
+    },
+    {
+      "path": ".well-known/security-decision-record.json",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.lastUpdated"
+      },
+      "signed": true,
+      "signature": ".well-known/security-decision-record.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
     },
     {
       "path": ".well-known/security-decision-record.json.intoto.jsonl",
@@ -212,13 +214,82 @@
     {
       "path": ".well-known/certification-package-overview.json",
       "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.lastUpdated"
+      },
+      "signed": true,
+      "signature": ".well-known/certification-package-overview.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
+    },
+    {
+      "path": ".well-known/ocr-issues.json",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ocr-issues.bundle",
+      "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD), rewritten daily by package-maintenance.yml. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
+    },
+    {
+      "path": ".well-known/quarterly-review.ics",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": false,
+      "note": "Quarterly Review calendar file (CCM-QTR-REG), from the CCM calendar; written by the deploy and daily by package-maintenance.yml. Not signed: the same dates are in the signed CPO and OCR."
+    },
+    {
+      "path": ".well-known/fedramp-certification-reports.json",
+      "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
         "source": "json",
-        "field": "metadata.last_updated"
+        "field": "generated_at"
       },
       "signed": true,
-      "signature": ".well-known/certification-package-overview.bundle"
+      "signature": ".well-known/fedramp-certification-reports.bundle",
+      "note": "Index of FedRAMP Certification Reports published unmodified (CDS-CSO-FRC). FedRAMP is simulated: the one report is a stand-in."
+    },
+    {
+      "path": ".well-known/package-submission-log.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/package-submission-log.bundle",
+      "note": "Log of the simulated submission of the certification package to FedRAMP on each deploy (FRC-CSO-PKG). Nothing is sent."
+    },
+    {
+      "path": ".well-known/secure-configuration-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/secure-configuration-guide.bundle"
+    },
+    {
+      "path": ".well-known/security-settings.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/security-settings.bundle"
     },
     {
       "path": ".well-known/boundary-map.json",
@@ -276,6 +347,78 @@
       "signed": true,
       "signature": ".well-known/conformance-results.bundle",
       "note": "The conformance suite's results for the method profile (REQ-GOV-2), run, signed and published by the deploy."
+    },
+    {
+      "path": ".well-known/access-summary.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/access-summary.bundle",
+      "note": "Monthly aggregate counts of access to the certification data (CDS-TRC-ACL), rebuilt from the CloudFront access records on every deploy."
+    },
+    {
+      "path": ".well-known/assessor-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/assessor-guide.bundle",
+      "note": "How to verify and validate each FedRAMP rule and KSI, generated from the rule records on every deploy (IVV-CSO-STE, IVV-CSO-DUS); the simulated assessor runs its checks."
+    },
+    {
+      "path": ".well-known/simulated-assessment.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "issued_at"
+      },
+      "signed": true,
+      "signature": ".well-known/simulated-assessment.bundle",
+      "note": "The simulated assessor's signed result set (not a FedRAMP Recognized assessment), produced on every deploy and signed by the simulated-assessor.yml workflow identity, not the deploy's."
+    },
+    {
+      "path": ".well-known/frr-evidence.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/frr-evidence.bundle",
+      "note": "Per rule record, whether each test it cites passed in the build that published it (FRC-CSX-VVR)."
+    },
+    {
+      "path": ".well-known/agency-access-exercise.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/agency-access-exercise.bundle",
+      "note": "The agency access procedure run on every deploy against fictional agencies, including the 5-business-day denial clock (CDS-TRC-AAI, CDS-UTC-AAD)."
+    },
+    {
+      "path": ".well-known/trust-manifest.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/trust-manifest.bundle",
+      "note": "The signed index of all certification data with media types, signatures and human-readable forms (CDS-TRC-PAC)."
     }
   ]
 }

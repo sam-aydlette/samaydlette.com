@@ -45,6 +45,10 @@ IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/depl
 # a person with a key. Everything else — the canonical inventory, the SDR —
 # still verifies against the deploy identity alone.
 NIGHTLY_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
+# The certification package (SDR, CPO, OCR) has a second publisher for the same
+# reason: package-maintenance.yml rebuilds it daily at the deployed commit, so
+# it stays inside CPO-CSX-CPM's two-week window without a reviewed deploy.
+MAINT_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main'
 ISSUER='https://token.actions.githubusercontent.com'
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -92,6 +96,7 @@ for f in ksi-signal.json ksi-signal.bundle \
          security-decision-record.json security-decision-record.bundle \
          security-decision-record.json.intoto.jsonl \
          certification-package-overview.json certification-package-overview.bundle \
+         ongoing-certification-report.json ongoing-certification-report.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
          vdr-detail-report.json vdr-detail-report.bundle \
          vdr-accepted-vulnerabilities.json vdr-accepted-vulnerabilities.bundle \
@@ -115,7 +120,7 @@ else
 fi
 
 if verify_attestation_any_identity "$work/security-decision-record.json.intoto.jsonl" \
-     "$work/security-decision-record.json" "$IDENTITY"; then
+     "$work/security-decision-record.json" "$IDENTITY" "$MAINT_IDENTITY"; then
   ok "security-decision-record.json attestation signed by the pinned workflow on main"
 else
   bad "security-decision-record.json attestation signature"
@@ -123,13 +128,18 @@ fi
 
 # The CR26 record (SDR, CPO) and the trust center's own data: the generated
 # boundary map, the gate's report and the trust center itself.
-for art in security-decision-record certification-package-overview boundary-map reconcile-report trust-center; do
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY"; then
+for art in security-decision-record certification-package-overview boundary-map reconcile-report trust-center ongoing-certification-report; do
+  ids="$IDENTITY"
+  case "$art" in
+    security-decision-record|certification-package-overview|ongoing-certification-report) ids="$IDENTITY $MAINT_IDENTITY" ;;
+  esac
+  # shellcheck disable=SC2086  # a word list by design
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $ids; then
     ok "$art.json signed by the pinned workflow on main"
   else
     bad "$art.json signature"
   fi
-  if [ "$(jq -r .ksi_signal_id "$work/$art.json")" = "$(jq -r .signal_id "$work/ksi-signal.json")" ]; then
+  if [ "$(jq -r '.ksi_signal_id // .providerExtensions.ksi_signal_id' "$work/$art.json")" = "$(jq -r .signal_id "$work/ksi-signal.json")" ]; then
     ok "$art.json is bound to the published inventory"
   else
     bad "$art.json names a different inventory than ksi-signal.json"

@@ -1155,6 +1155,352 @@
       "source": {
         "detector": "OWASP ZAP baseline scan"
       }
+    },
+    {
+      "id": "DEC-100",
+      "title": "FedRAMP ID and UEI are simulated; the FedRAMP ID is FedRAMP's fallback, stamped on every FedRAMP report",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator has not submitted this offering to FedRAMP and is not registering on SAM.gov. The FedRAMP ID published everywhere is the fallback FedRAMP's CPO schema prescribes until an ID is assigned (the provider name and acronym), suffixed PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID so nobody mistakes it for a real one; the UEI is a placeholder no SAM.gov lookup will find. Both are flagged simulated in the CPO. The one value, in data/cds/offering.json, is carried by every report published in a FedRAMP schema (providerExtensions.fedRampId) and by the issue index, logs and snapshot manifests; scripts/check-fedramp-id.py fails the deploy otherwise.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CDS-CSO-FID",
+          "CDS-CSO-PUB"
+        ]
+      }
+    },
+    {
+      "id": "DEC-101",
+      "title": "Ongoing Certification Reports and Quarterly Review content are published in full",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator determines that publishing each Ongoing Certification Report, and the content prepared for each Quarterly Review (its agenda, published in the report), will not likely have an adverse effect on the offering: the system holds no federal customer or agency data, the reports summarize what the public evidence already shows, and each report passes the automated sensitivity screen (scripts/_sensitivity.py: account IDs, outside email addresses, IP addresses, access keys, tokens, name handles) before it is written. The operator reviews anything the screen cannot judge before the report is issued. Each report cites this record.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-OCR-RPS",
+          "CCM-OCR-LSI",
+          "CCM-QTR-SCR"
+        ]
+      }
+    },
+    {
+      "id": "DEC-102",
+      "title": "The operator answers Ongoing Certification Report feedback and publishes an anonymized summary in the next report",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "Questions and feedback on each issued report arrive through its GitHub issue form (linked from the report, prefilled with the report's date) or, for anything sensitive, the security contact in /.well-known/security.txt. The operator answers each, and before the next issue writes an anonymized, desensitized summary of the questions and answers in data/ocr-feedback.json (no names, agencies or identifying detail); the next report publishes it, and the build screens it and fails on an identifier.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-OCR-AFS",
+          "CCM-OCR-FBM"
+        ]
+      }
+    },
+    {
+      "id": "DEC-103",
+      "title": "The operator hosts a synchronous Quarterly Review after every Ongoing Certification Report",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator hosts a Quarterly Review by video call on the date the CCM calendar sets (5 business days after each report's issue), open to all necessary parties who register, and holds it even if nobody registers. It reviews the parts of the latest report most relevant to agencies and covers the standing agenda items the report publishes: KSI results and trend, vulnerability trend, and the plan for the next quarter.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-QTR-MTG",
+          "CCM-QTR-ACT"
+        ]
+      }
+    },
+    {
+      "id": "DEC-104",
+      "title": "The operator records or transcribes each Quarterly Review and shares it",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator records or transcribes each Quarterly Review and supplies the recording or transcript to the parties who registered. A transcript published beyond them has every agency comment, question and name removed first, and is published only after the same no-adverse-effect check as the report (DEC-101).",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-QTR-RTR",
+          "CCM-QTR-SRR"
+        ]
+      }
+    },
+    {
+      "id": "DEC-105",
+      "title": "Quarterly Review attendees: agencies, FedRAMP and the assessor; other third parties only with specific relevance",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator invites agencies and FedRAMP to Quarterly Reviews, and the assessor by default. No other third party is invited unless it has specific relevance to the review, recorded with the invitation. The registration form states this policy.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-QTR-RTP"
+        ]
+      }
+    },
+    {
+      "id": "DEC-106",
+      "title": "Quarterly Review content is screened for sensitive information before each review",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "Before each Quarterly Review the operator checks the content to be shown against the same screen as the report (no account IDs, internal addresses, credentials, unpublished vulnerability detail beyond the public reports, or identifying information about agencies or people) and removes anything that would likely have an adverse effect on the offering if disclosed. The generated agenda is screened automatically with the report.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "CCM-QTR-NID"
+        ]
+      }
+    },
+    {
+      "id": "DEC-107",
+      "title": "This offering seeks FedRAMP 20x certification only",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator seeks, if anything, FedRAMP 20x Program Certification (Class C) for this offering and will not seek FedRAMP Rev5 Program Certification for it. Every report states certificationType 20x; the Rev5 control view in the Security Decision Record explains how the 20x evidence meets the Rev5 objectives and is not a second certification claim. tests/test_certification_cycle.py fails if a published label names the Rev5 program as the certification sought.",
+      "controls": [],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "source": {
+        "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
+        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "rules": [
+          "FRC-CSO-POP"
+        ]
+      }
+    },
+    {
+      "id": "DEC-150",
+      "title": "Root and operator MFA stays virtual TOTP: phishing-resistant MFA is accepted as not bought",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "Extends DEC-025. The AWS root user and the operator IAM user keep virtual authenticator-app (TOTP) MFA; a FIDO2 security key or passkey (IA-2(8), the Secure Configuration Guide's recommended default) is not being bought for this proof of concept. Residual risk: a TOTP code can be relayed by a real-time phishing site. Why it is accepted: both principals have MFA (IA-2(1)/(2) met); the root user has no access keys and is used only for root-only tasks; the operator user has no console password, so a phished TOTP code alone opens no console session; every production change goes through the reviewed, approval-gated deploy, not either principal; CloudTrail records both. The deploy checks both principals' MFA on every run (scripts/check-secure-config.py) and publishes the deviation against this record. AI-drafted for the operator to confirm.",
+      "controls": [
+        "ia-2.1",
+        "ia-2.2",
+        "ia-2.8",
+        "cm-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-account::root",
+          "aws-iam-group::operators"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-151",
+      "title": "The operator keeps two-factor authentication on the GitHub owner account and issues no classic personal access tokens",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator keeps two-factor authentication enabled on the GitHub account that owns the repository, issues no classic personal access tokens from it, and reviews its sign-in methods, tokens, SSH keys and authorized applications each quarter. GitHub exposes these settings only to the account itself, so the deploy's token cannot read them; this record is the operator's attestation, cited by the Secure Configuration Guide setting github.owner-2fa. AI-drafted for the operator to confirm.",
+      "controls": [
+        "ia-2.1",
+        "ia-5",
+        "cm-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "github-owner"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-152",
+      "title": "Service paths with no published CMVP module validation are accepted",
+      "disposition": "accepted",
+      "status": "in-force",
+      "justification": "AWS publishes CMVP certificates for module families (AWS-LC, the KMS HSM) but names no validated module for these paths this system uses: CloudFront viewer TLS, API Gateway HTTP API TLS, the Cognito Hosted UI, S3 SSE-S3, SQS SSE-SQS, the DynamoDB AWS-owned key, CloudTrail digest signing, the IAM OIDC provider, and the Silk Reeling Lambda's outbound TLS from the Python runtime. For the viewer-facing paths AWS offers no validated option (no FIPS endpoint for a distribution's viewer TLS, an HTTP API's execute-api endpoint, or the Hosted UI). The stores on SSE-S3, SSE-SQS and the AWS-owned key hold no customer data (site content, logs, audit trail, Terraform state and lock, failed compliance events); moving them to customer-managed KMS keys would add per-request KMS cost for no customer-data benefit. Every store of app data that supports a customer-managed key uses one, on the KMS HSM (CMVP #4884). The system holds no federal customer data. Listed per service in the Secure Configuration Guide's module list (CMU-CSO-CMD). AI-drafted for the operator to confirm.",
+      "controls": [
+        "sc-13",
+        "sc-8.1",
+        "sc-28.1"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution",
+          "aws-apigatewayv2-api::silk_reeling",
+          "aws-cognito-user-pool::silk_reeling",
+          "aws-s3-bucket",
+          "aws-sqs-queue::compliance_dlq",
+          "aws-dynamodb-table::tflock",
+          "aws-cloudtrail::management",
+          "aws-iam-oidc-provider::github",
+          "aws-lambda-function::silk_reeling"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-160",
+      "title": "Trust-center access records: what is logged, and a party's own records on request",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "AI-drafted for the operator to confirm. Access to the certification data is logged by CloudFront standard logging with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf); raw records expire after 90 days and only monthly aggregate counts for /.well-known/ and /trust/ are published, kept 13 months (scripts/build-access-summary.py). Because no requester identity is logged, the operator provides a party, on request to the security contact, the published summaries and any records matching the times and paths the party identifies, within 10 business days. Agencies are identified only by what they state in their own access request, never inferred from network data. This trades per-party attribution (CDS-TRC-ACL's SHOULD) for privacy, at the operator's direction of 2026-11-05.",
+      "controls": [
+        "au-2",
+        "au-3",
+        "au-11",
+        "pt-2"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": [
+          "aws-cloudfront-distribution"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "point_of_contact": "Sam Aydlette (operator)"
+    },
+    {
+      "id": "DEC-165",
+      "title": "Agency access to the certification package: decided by the operator, denials notified to FedRAMP within 5 business days, inventory supplied on request",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator decides every agency access request and records it in data/agency-access.json (agencies and systems, never people); notifies FedRAMP of every denial within 5 business days; and supplies the access inventory and its history to FedRAMP on request (docs/procedures/agency-access.md). The package itself is public, so access needs no provisioning. The deploy fails when a denial notice is late or overdue, and exercises the procedure with fictional agencies on every run. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ac-21",
+        "ca-6"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-166",
+      "title": "Public sharing of the certification package: disclosure standard and determination of no likely adverse effect",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Reviewed annually and when a new kind of artifact is published. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ac-22"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
+    },
+    {
+      "id": "DEC-167",
+      "title": "Verification and validation use full populations, never representative samples",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "The operator does not use representative samples in verification or validation: every check runs over its full population (every inventoried component, every live in-boundary resource, every SBOM, every rule record and every test it cites), and the simulated assessor re-checks every rule and KSI. The assessor guide states this (IVV-CSO-DUS). Any future use of sampling would be documented there and this record revised. AI-drafted 2026-11-05 for the operator to confirm.",
+      "controls": [
+        "ca-2",
+        "ca-7"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05"
     }
   ]
 }

@@ -85,237 +85,533 @@
     },
     {
       "frr_id": "CCM-OCR-AFS",
-      "status": "Not Implemented",
-      "implementation": "No summary section in build-ocr.py or the live OCR; declared N/A (build-ocr.py:106-110).",
-      "evidence": [],
-      "gap": "No anonymized/desensitized summary of feedback, questions and answers, and no stated delivery method. To close: Add a 'feedback summary' section to the OCR (and an addendum file) built from the FBM channel, with a redaction step for names/agency identifiers; when nothing was received, state 'no feedback received on OCR <id>'.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each OCR carries an anonymized, desensitized summary of the feedback and questions on the previous issued report, with the operator's answers (providerExtensions.feedback.summaryOfPreviousReport, from data/ocr-feedback.json), or says none were received; the OCR's sensitivity screen rejects names, handles and addresses (DEC-102).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_feedback_summary_covers_the_previous_issue"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_feedback_summary_with_more_items_than_received_fails"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-102"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-AVL",
-      "status": "Partially Implemented",
-      "implementation": "Live https://samaydlette.com/.well-known/ongoing-certification-report.json + .md (fetched 2026-11-05), built by scripts/build-ocr.py in deploy-with-opa.yml step 'Build Ongoing Certification Report' (line ~1555); all eight summary sections present (build-ocr.py:91-105).",
-      "evidence": [],
-      "gap": "The OCR is rebuilt on every deploy rather than issued quarterly: there is no frozen, dated, signed issue per period, and no index of past issues.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "On each calendar issue date the maintainer issues the OCR covering the period since the previous issue: frozen ocr-issue-<date>.json and .md, signed, never rewritten, listed with its sha256 in /.well-known/ocr-issues.json. The rolling OCR between issues carries all eight summaries, the incidents from the incident register (or an attestation of none), and the review schedule.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_first_run_on_an_issue_date_freezes_the_report_and_snapshots_the_package"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_issued_report_is_carried_over_and_never_rebuilt"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_reportable_incidents_come_from_the_register_and_exercises_say_so"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-FBM",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:106-110 and the live OCR state the feedback channel is 'N/A absent a consuming agency'; no feedback link in the OCR, CPO or trust center; security.txt contact is the only channel and is not tied to the OCR.",
-      "evidence": [],
-      "gap": "No asynchronous feedback/question mechanism for each OCR, and no documented way to access it (artifact missing). To close: Stand up a per-report asynchronous channel (e.g. a GitHub Discussions category or issue form per OCR issue, with a private alternative address for agencies), link it from each OCR, the CPO and the trust center.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each OCR links its own asynchronous feedback channel, a GitHub issue form (.github/ISSUE_TEMPLATE/ocr-feedback.yml) prefilled with the report's date, with the security contact for anything sensitive; the CPO and the issue index link it too (DEC-102).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-102"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-LSI",
-      "status": "Partially Implemented",
-      "implementation": "The OCR carries SCN summaries, decision titles and the accepted findings already public in the VDR, and passes the publication redaction gate (no AWS account ID) on every deploy.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. No documented sensitivity determination per issue and no screen beyond account IDs (ARNs, IPs, email addresses, secret-like strings). SCN text is copied verbatim.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Before the OCR is written, every string in it passes a sensitivity screen (account IDs, email addresses outside the system's and FedRAMP's domains, IP addresses, AWS keys, tokens and private keys, @handles); a hit fails the build. The publication redaction gate checks it again before publishing. The public-release determination is DEC-101.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_sensitivity_screen_catches_each_kind"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_ocr_carrying_a_personal_address_is_never_built"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Ongoing Certification Report (CCM)"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-NRD",
-      "status": "Partially Implemented",
-      "implementation": "Live OCR json/md carry next_ongoing_certification_report_date 2027-02-04 (build-ocr.py:88).",
-      "evidence": [],
-      "gap": "The date is now+91 days recomputed on every deploy, so it is a moving value, not a committed target; it is published only inside the OCR, not with the other public Certification Data (CPO/trust center). To close: Derive the next date from the fixed cycle (last issued OCR + cycle), keep it stable between issues, and publish it in the CPO and trust-center.json as well.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The next OCR date comes from the fixed CCM calendar (infrastructure/schemas/ccm-calendar.json), stays the same between issues, and is published in the OCR, the CPO (serviceProperties.nextOngoingCertificationReportDate) and the issue index.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_next_dates_hold_steady_between_issues_and_move_on_the_issue_date"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_publishes_the_fixed_cycle_dates"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-OCR-RPS",
-      "status": "Partially Implemented",
-      "implementation": "OCR is public at /.well-known/ (fetched).",
-      "evidence": [],
-      "gap": "Permissive rule, exercised; but no recorded determination that public release will not adversely affect the offering. To close: Record the public-release determination (who, when, basis) in each OCR issue or in the CPO.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: each OCR is published in full and records the public-release determination (providerExtensions.publicRelease, DEC-101) after passing the sensitivity screen.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ],
-      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full; each issue will record the no-adverse-effect determination."
+      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101)."
     },
     {
       "frr_id": "CCM-OCR-SOR",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:34,54-55,88: rolling window recomputed per deploy.",
-      "evidence": [],
-      "gap": "No regular 3-month cycle and no chosen phase within the quarter. To close: Pick fixed issue dates (e.g. mid-quarter: 15 Feb/May/Aug/Nov), encode them in config, and have the build issue the OCR only on those dates.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The OCR is issued on a regular 3-month cycle of fixed dates set in the CCM calendar, each a business day placed away from the beginning, middle and end of its quarter (late in the second month); the calendar is validated on every build and must keep two dates ahead.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_committed_calendar_is_valid"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-ACT",
-      "status": "Not Implemented",
-      "implementation": "No reviews held.",
-      "evidence": [],
-      "gap": "No additional agency-relevant information supplied in reviews. To close: Add a standing agenda item (e.g. upcoming roadmap, KSI trend, VDR trend) to the review template.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each Quarterly Review covers a standing agenda of agency-relevant items beyond the report (KSI trend, VDR trend, planned changes, upcoming roadmap), published with the OCR (DEC-103).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-103"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-MTG",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:106-110 / live OCR declare the Quarterly Review N/A; no meeting record, agenda or schedule anywhere in the repo.",
-      "evidence": [],
-      "gap": "No synchronous Quarterly Review has been scheduled or held. To close: Schedule a recurring quarterly review (video call) 3-10 business days after each OCR issue, prepare an agenda from the OCR, hold it even if no agency attends, and keep minutes; publish the schedule.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The operator hosts a synchronous Quarterly Review by video call 5 business days after each OCR issue, open to all necessary parties who register, held even if nobody registers (DEC-103). The schedule is the published calendar file and appears in the OCR and CPO.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-103"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_is_five_business_days_after_issue_skipping_thanksgiving"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-NID",
-      "status": "Partially Implemented",
-      "implementation": "No Quarterly Review has been held, so nothing has been disclosed; no content-review procedure exists.",
-      "evidence": [],
-      "gap": "No pre-meeting sensitivity review procedure for review content. To close: Add a review checklist (same screen as OCR-LSI) for slides/agenda before each review.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Content for each Quarterly Review is the agenda published in the OCR, which passes the sensitivity screen, and the operator screens anything else shown against the same list before the review (DEC-106).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-106"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_sensitivity_screen_catches_each_kind"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-NRD",
-      "status": "Partially Implemented",
-      "implementation": "Live OCR next_quarterly_review_date 2027-02-04 (build-ocr.py:89).",
-      "evidence": [],
-      "gap": "Same moving now+91 value as the OCR date (so the review date equals the report date, contradicting QTR-SAR); not published with the CPO/trust center; no review actually scheduled for that date. To close: Derive the review date from the OCR issue date + 3-10 business days, keep it stable, publish it in CPO and trust center, and tie it to the .ics.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The next Quarterly Review date is the latest issue's review date from the CCM calendar (issue + 5 business days, holiday-aware), stable between issues, published in the OCR, the CPO and the calendar file.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_next_dates_hold_steady_between_issues_and_move_on_the_issue_date"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-REG",
-      "status": "Not Implemented",
-      "implementation": "No registration link or .ics anywhere in website/ or the published artifacts.",
-      "evidence": [],
-      "gap": "No registration URL or calendar file (artifact missing). To close: Generate an .ics per review from the cycle config and publish it (e.g. /.well-known/quarterly-review.ics) plus a registration form link; reference it from the OCR and CPO.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event and the OCR and CPO link the registration form (.github/ISSUE_TEMPLATE/quarterly-review-registration.yml).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_calendar_file_is_rfc5545"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-RTP",
-      "status": "Partially Implemented",
-      "implementation": "No reviews held, so no third parties invited; no attendance policy exists.",
-      "evidence": [],
-      "gap": "No documented invitation policy limiting third parties. To close: Document an attendee policy (agencies and FedRAMP; third parties only with stated relevance) in the review procedure.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Invitations go to agencies, FedRAMP and the assessor; other third parties only with specific relevance, recorded with the invitation; the registration form states the policy (DEC-105).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-105"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-RTR",
-      "status": "Not Implemented",
-      "implementation": "No reviews held; no recording/transcript procedure.",
-      "evidence": [],
-      "gap": "No recording or transcript supplied to necessary parties. To close: Record or transcribe each review and distribute through the FBM channel; keep them with the OCR issue.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "The operator records or transcribes each Quarterly Review and supplies it to the parties who registered (DEC-104).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-104"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-SAR",
-      "status": "Not Implemented",
-      "implementation": "build-ocr.py:88-89 set the review date equal to the report date (0 business days after).",
-      "evidence": [],
-      "gap": "Review not scheduled 3-10 business days after the OCR release. To close: Compute the review date as OCR issue + N business days with 3<=N<=10 (holiday-aware) and assert it in a test.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Each review is scheduled 5 business days after its OCR issue, counting only weekdays that are not federal holidays; the calendar rejects an offset outside 3 to 10 business days.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_review_is_five_business_days_after_issue_skipping_thanksgiving"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/quarterly-review.ics"
+        }
       ]
     },
     {
       "frr_id": "CCM-QTR-SCR",
-      "status": "Not Implemented",
-      "implementation": "No review content exists.",
-      "evidence": [],
-      "gap": "No quarterly review has been held yet, so there is no content to publish.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: the content prepared for each review (its agenda and the report it reviews) is published with the OCR after the no-adverse-effect determination (DEC-101).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-101"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
       ],
-      "may_rationale": "Will be exercised: content prepared for each quarterly review will be published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check."
+      "may_rationale": "Exercised: content prepared for each quarterly review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101)."
     },
     {
       "frr_id": "CCM-QTR-SRR",
-      "status": "Not Implemented",
-      "implementation": "No recordings exist.",
-      "evidence": [],
-      "gap": "No quarterly review has been held yet, so there is no recording to publish.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "Exercised: a recording or transcript published beyond registered parties has all agency comments, questions and names removed first and passes the same no-adverse-effect check (DEC-104).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-104"
+        }
       ],
-      "may_rationale": "Will be exercised: each review's recording or transcript will be published after all agency comments, questions and names are removed, so the review is as open as the rest of the package."
+      "may_rationale": "Exercised: each review's recording or transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package (DEC-104)."
     },
     {
       "frr_id": "CDS-CSO-AVR",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/availability.json + availability.md, scripts/build-availability.py (appends one point per deploy, L47-53; WINDOW_DAYS=45 L27).",
-      "evidence": [],
-      "gap": "Not an availability measurement: a point is written only when a deploy succeeds ('A deploy that produces this feed is, by definition, a successful one', L10-11), so an outage can never be recorded and there are no incidents field/records. Days without deploys are simply missing (27 points spanning 2026-08-06..11-05; ~10 in the last 30 days). Trim keeps the last 45 points, not 45 days, so history older than the window persists. Core services are not probed (Silk Reeling API/Cognito not checked at all). Served from the same CloudFront/S3 as the offering, so it is unavailable when the offering is (self-stated residual). To close: Run an external synthetic monitor on independent infrastructure (different provider/region/account and DNS name, e.g. a status subdomain on separate hosting) that probes the site, /.well-known/, and the Silk Reeling API/Cognito every few minutes; record incidents (start, end, affected service, cause); publish JSON + HTML status page from that independent host with 30+ days of continuous history.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "An availability monitor on GitHub Actions, independent of AWS (.github/workflows/availability-probe.yml, scripts/availability-probe.py), probes the website, the trust center, the certification data under /.well-known/, the Silk Reeling application and its Cognito sign-in every 15 minutes, keeps 35 days of history, and derives availability incidents (two or more consecutive failed probes of a service: start, end, failing check). It publishes JSON and a human-readable page to the repository's availability-status branch, served by GitHub, so the status stays readable when the offering is down; an ongoing incident fails the run, which notifies the operator. The deploy fails when that feed is missing or more than 2 hours old, and republishes it signed as /.well-known/availability.json with a Markdown twin (scripts/build-availability.py), which no longer records deploys as availability. History begins at the monitor's first run.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Probe the core services"
+        },
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Publish the status feed to the availability-status branch"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_consecutive_failures_make_an_incident_and_a_single_one_is_transient"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_the_known_bad_stale_feed_fails_the_deploy_guard"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_the_monitor_runs_outside_aws_on_a_schedule_and_pushes_only_its_branch"
+        }
       ]
     },
     {
       "frr_id": "CDS-CSO-CBF",
-      "status": "Partially Implemented",
-      "implementation": "Each builder renders JSON and Markdown from the same in-memory dict in one run (build-cds-overview.py, build-cpo.py, build-availability.py, build-policy-index.py:109-119, build-sdr.py render_markdown L278, build-ocr.py); trust page renders from trust-center.json.",
-      "evidence": [],
-      "gap": "Human-readable twins are lossy, so the formats are not consistent in content: policy-index.md drops summary and version (build-policy-index.py:112-118); security-decision-record.md shows only KSI id/controls/explanation, not verification/validation or the 333 rev5 control statements. No test or reconcile invariant checks JSON/MD parity. Human-readable policies themselves (docs/policies/*.md) are not cross-checked against the SDR/control statements (ac-policy.md:3 says 'no end-user authentication' while the Cognito user pool exists). To close: Render every JSON field into the human view (or generate the MD from a schema-driven template), and add a parity test/reconcile invariant that parses each .md back and compares against the JSON.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "Every JSON and CSV artifact the deploy publishes under /.well-known/ (the freshness-config list) gets a complete human-readable view, <name>.view.md, giving every value under its JSON Pointer path (scripts/build-human-views.py). The build then parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published; the nightly does the same for the VDR files it republishes. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_known_bad_a_view_that_differs_from_its_json_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_a_json_the_view_cannot_represent_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_views_cover_every_deploy_published_json_in_the_governed_list"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_nightly_rebuilds_the_views_of_what_it_republishes"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Rebuild the human-readable views (format parity)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-manifest.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Partially Implemented",
-      "implementation": "offering.json:3 fedramp_id flows into certification-overview-package.json and certification-package-overview.json (build-cpo.py:80).",
-      "evidence": [],
-      "gap": "No FedRAMP ID is assigned. Even once assigned, the wiring would not put it in 'all certification data': build-ocr.py:83 hardcodes its own placeholder string; the SDR, VDR reports, availability feed, policy index, SCN records and ksi-signal carry no FedRAMP ID field. To close: Make offering.json the single source of fedramp_id and stamp it into every generated artifact (OCR, SDR, VDR/VDT/AVI, SCN, availability, policy index, trust-center.json); add a reconcile invariant that every published artifact carries the same FedRAMP ID.",
+      "implementation": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). The CPO (serviceIdentification.fedRampPackageId and providerExtensions.fedRampId), the SDR and the OCR carry it, as do the issue index, the snapshot manifests, the FedRAMP Certification Reports index and the package submission log. The deploy gate scripts/check-fedramp-id.py fails the deploy when a report in its REPORTS list lacks it or carries another. The trust-center, scope and assessor files also carry it at top level (trust-center.json, trust-manifest.json, availability.json, policy-index.json, assessor-guide.json, simulated-assessment.json, agency-access-exercise.json, frr-evidence.json, and the independent availability feed as the deploy reads it), and are in REPORTS; a file named to the gate without a top-level fedRampId fails.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_gate_fails_a_report_with_another_fedramp_id"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_the_sdr_carries_the_offerings_fedramp_id"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-100"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_fedramp_id_trust.py::test_known_bad_a_site_file_without_a_fedramp_id_fails"
+        }
+      ],
+      "gap": "The rule covers all certification data, reports and notifications. The VDR family (VDR, VDT, AVI, history), the KSI signal, SCN records and incident notifications carry no FedRAMP ID yet. To close: each builder stamps _offering.fedramp_id() and adds its file to REPORTS in scripts/check-fedramp-id.py (one line each).",
       "closes_with": [
-        "W3",
-        "sam"
+        "W2",
+        "W5",
+        "W6",
+        "W8"
       ]
     },
     {
       "frr_id": "CDS-CSO-FRC",
-      "status": "Not Implemented",
-      "implementation": "No slot or process for FedRAMP Certification Reports: build-cpo.py PACKAGE_CONTENTS (L30-40) has no entry; no docs/ procedure.",
-      "evidence": [],
-      "gap": "No FedRAMP Certification Report has been received, and there is no mechanism to publish one unmodified within 2 weeks. To close: Add a package slot (store received report verbatim under data/, publish byte-identical with its hash, signed) and a runbook with a 2-week clock tracked as a decision/deadline item.",
-      "closes_with": [
-        "W4",
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "FedRAMP Certification Reports received are stored verbatim under data/fedramp-certification-reports/ with the sha256 and date of receipt in register.json. Each deploy checks every report against its sha256 (an edited report fails the deploy), publishes it byte-identical under /.well-known/fedramp-certification-reports/, and writes a signed index recording when it was first published and whether that was within 2 weeks of receipt.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_committed_reports_are_published_byte_identical"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_modified_or_unregistered_report_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP Certification Reports published unmodified (simulated FedRAMP)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Publish FedRAMP Certification Reports byte-identical"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/fedramp-certification-reports.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "fedramp",
+        "how": "No FedRAMP counterpart exists. The one report is a plainly fake stand-in the operator wrote, flagged simulated in the register and the index."
+      }
     },
     {
       "frr_id": "CDS-CSO-HAD",
-      "status": "Not Implemented",
-      "implementation": "No snapshot mechanism: every artifact (including ongoing-certification-report.json) is overwritten in place each deploy; S3 versioning exists on the website bucket but versions are not exposed and are subject to lifecycle expiry (infrastructure/main.tf:148-200).",
-      "evidence": [],
-      "gap": "No snapshot of the certification data aligned to each OCR, and no retention for the duration of certification, and no access explanation. To close: At each OCR date, freeze the full package into an immutable, dated path (e.g. /.well-known/snapshots/2027-02-04/ with a manifest + signatures; S3 Object Lock), list snapshots in the trust center, and document access.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "On each OCR issue date the maintainer snapshots the certification data as published (with signatures) to /.well-known/snapshots/<date>/ and writes a signed manifest of sha256s, listed in /.well-known/ocr-issues.json with an explanation of access; an issue fails if the core files are missing. The publishing role cannot delete, issued files are never overwritten, and the website sync excludes /.well-known/, so snapshots stay for the duration of certification.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_first_run_on_an_issue_date_freezes_the_report_and_snapshots_the_package"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_no_issue_without_the_certification_data_to_snapshot"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_tampered_issue_index_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ocr-issues.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-CSO-IRP",
-      "status": "Partially Implemented",
-      "implementation": "policy-index.json and .md under /.well-known/ (scripts/build-policy-index.py): 28 policies with summary, owner, related practices, file, last update and version. Since W1 each policy's date and version (git:<commit>) come from its own last commit in full history; a shallow checkout is refused.",
-      "evidence": [],
-      "gap": "'Related FedRAMP Practices' are mostly Rev5 control families, not FedRAMP rules or KSIs. Procedures (runbooks, verification, deploy notes, architecture decisions) are not indexed. The policies themselves are served only from the repository, with no access explanation in the certification data, and the .md omits summary and version.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "policy-index.json and policy-index.md under /.well-known/ (scripts/build-policy-index.py) list every policy (docs/policies) and procedure (docs/procedures, docs/runbooks, the verification and deploy procedures) with its name, file and URL, summary, word count, version (git:<commit>) and date of last update from its own last commit (a shallow checkout is refused), and related FedRAMP practices as concrete rule and KSI IDs from the pinned corpus and KSI catalog (a mapping that matches nothing fails the build). The documents themselves are published beside the index under /.well-known/policies/, and the index states how to access them.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_every_entry_has_the_seven_fields_and_a_url"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_procedures_are_indexed_beside_policies"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_related_practices_are_real_rule_and_ksi_ids"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_a_practice_prefix_that_matches_nothing_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_the_markdown_carries_every_field_of_every_entry"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_policy_index.py::test_the_deploy_publishes_the_documents"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/policy-index.json"
+        }
       ]
     },
     {
@@ -328,206 +624,583 @@
     },
     {
       "frr_id": "CDS-CSO-PUB",
-      "status": "Partially Implemented",
-      "implementation": "certification-overview-package.json and .md under /.well-known/ (scripts/build-cds-overview.py from data/cds/offering.json): service and deployment model, business category, sales and security contacts, product website, description, service list, documentation and trust-center URLs. The logo is a real PNG at /assets/images/brand/logo.png and /trust/ serves its index (W1).",
-      "evidence": [],
-      "gap": "No UEI (no SAM.gov registration) and no FedRAMP ID (none exists; the provider name and acronym stand in, CDS-CSO-FID). The next-OCR date is now+91 days on every deploy, so it recedes and never arrives (W4 fixes the calendar). The secure configuration guide is not served from the site (W10). The documentation overview and the trust-center link are one field. Current assessment service: none. To close: Register in SAM.gov for a UEI; issue the OCR on a fixed calendar; serve the secure configuration guide from the site; split the documentation overview from the trust-center link.",
-      "closes_with": [
-        "W4",
-        "W10",
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "The CPO (JSON and Markdown, public under /.well-known/) publishes every listed item that applies: the FedRAMP ID (FedRAMP's fallback, flagged simulated), service and deployment model, business categories, a UEI (simulated, flagged sam-gov: no SAM.gov registration), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its security category, the secure configuration guidance link, the documentation overview, the trust center landing page (https://samaydlette.com/trust/index.html) with access instructions, the next OCR date from the fixed calendar, and the current independent assessment service: none FedRAMP Recognized, stated as such, with the simulated assessor named. It is rebuilt on every deploy and daily by the package maintainer.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_publishes_the_fixed_cycle_dates"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_fedramp_id_and_uei_are_the_offerings_and_flagged_simulated"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_trust_center_entry_is_the_landing_page_with_access_instructions"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_secure_configuration_guidance_links_the_published_guide"
+        }
+      ],
+      "simulated": {
+        "counterparty": "sam-gov",
+        "how": "No SAM.gov registration exists, so the UEI is a plainly fake placeholder from data/cds/offering.json, flagged under providerExtensions.simulated in the published CPO. Nothing is registered or sent; every other item is real."
+      }
     },
     {
       "frr_id": "CDS-CSO-RIS",
-      "status": "Partially Implemented",
-      "implementation": "Every artifact the deploy publishes passes a publication redaction gate (scripts/check-published-redaction.py, W0) that fails on an AWS account ID; account IDs in ARNs are replaced with ACCOUNT before publication. The trust center and boundary map also refuse ARNs and email addresses.",
-      "evidence": [],
-      "gap": "No written disclosure standard says what is public and what is need-to-know; IAM role and policy detail, the API endpoint ID and the CloudFront domain are published without a recorded determination. On sufficiency, the package lacks an independent assessment and the rule records are not yet in the SDR.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "Sufficiency: the package carries the SDR with every applicable rule and KSI and the simulated assessor's independent results, the CPO, the boundary map, inventory, vulnerability reports and the policies, indexed in the signed trust manifest. Sensitivity: the information sharing and disclosure standard (docs/procedures/information-sharing.md, DEC-166) says what is never published (account IDs, secrets, personal email addresses, IAM user names, raw logs, requester identities), what is published on purpose and why that is not likely to enable an attacker. The publication redaction gate fails the deploy on an AWS account ID in anything published, including the views and the policy documents.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-166"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_published_redaction.py::test_gate_fails_the_known_bad_fixture_without_printing_the_number"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Publication redaction gate (no AWS account ID)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-manifest.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-CSO-RPS",
-      "status": "Partially Implemented",
-      "implementation": "All data is shared publicly; COP trust_center_status says so (certification-overview-package.json), trust page intro explains the self-attested context.",
-      "evidence": [],
-      "gap": "The artifact requires an explanation of if/how information is shared and the provider's determination that public sharing will not likely have an adverse effect. There is a statement of public sharing but no documented adverse-effect determination, and the redaction practice is inconsistent (see CDS-CSO-RIS). To close: Publish a short sharing statement: what is public, to whom else data goes, and the recorded determination (decision record in data/decisions.json with decided_by/on and review date) that it is not adverse.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "The whole package is public. The information sharing and disclosure standard (docs/procedures/information-sharing.md, published under /.well-known/policies/) explains what is shared, with whom (everyone, by HTTPS GET), and records the operator's determination (DEC-166) that public sharing will not likely have an adverse effect on the offering. The trust page links it.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-166"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/policy-index.json"
+        }
       ],
-      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is recorded with the sharing statement."
+      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is DEC-166, published with the sharing statement."
     },
     {
       "frr_id": "CDS-CSO-SVC",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/certification-overview-package.json services[] (2 entries) + .md table; source data/cds/offering.json services.",
-      "evidence": [],
-      "gap": "List exists and names the two services, but security category is a uniform label ('FIPS-199 Moderate (FedRAMP 20x Class C)') rather than each service's own category (the system categorization is C low / I moderate / A low; component C values range not-applicable..moderate). It does not say what is NOT included (e.g. the optional LLM feedback is mentioned, but third-party-hosted podcast audio, the MediaPipe CDN/model hosts, newsletter/feed are not classified in or out). No separate human-readable page on the trust center. To close: Give each service its own C/I/A category derived from the inventory components it contains, add an explicit 'not included' list, and render the list on the trust page.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The CPO lists each service (certifiedServices) with its own FIPS 199 category, high-water mark and rationale, and the boundary groups it is made of (providerExtensions.services), plus an explicit list of what is not included (providerExtensions.notIncluded); its Markdown rendering shows the same table. The builder fails when a service's category exceeds the system's or names a boundary group that is not in the boundary classification.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_each_service_has_its_own_category_and_the_list_says_what_is_not_included"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_service_list_fails"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-CSO-UTC",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/trust/index.html (renders https://samaydlette.com/.well-known/trust-center.json) + signed artifacts under /.well-known/.",
-      "evidence": [],
-      "gap": "A trust center exists, but it is not FedRAMP-compatible: it does not meet CDS-TRC-AAI (no agency access inventory), CDS-TRC-ACL (no viewer-level access logging or summaries), CDS-TRC-PAC (no documented programmatic index of all data), and it is not the 'complete and definitive source' (FRD-TRC): policies live on GitHub, COP/availability/policy-index/OCR are not listed on the trust page. To close: Close the CDS-TRC-* gaps below and make the trust center list and serve every piece of certification data (including policies) from one place.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "The trust center is https://samaydlette.com/trust/index.html with the certification data under /.well-known/. It is the single definitive source: the signed trust manifest (trust-manifest.json, generated from the governed artifact list on every deploy) lists every artifact with URL, media type, cadence, signature and signer and its human-readable forms, plus every policy and procedure, served from the same site. It meets the trust-center rules recorded here: agency access inventory (CDS-TRC-AAI), access logging with summaries (CDS-TRC-ACL), human-readable and machine-readable formats (CDS-TRC-HMR), documented programmatic access (CDS-TRC-PAC), self-service access (CDS-TRC-SSM) and uptime reported from outside AWS (CDS-TRC-USH).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_manifest_lists_every_governed_artifact_with_its_signature"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-manifest.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-center.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-TRC-AAI",
-      "status": "Not Implemented",
-      "implementation": "Access is anonymous public GET; no identity, registration or access inventory exists anywhere in scripts/ or infrastructure/.",
-      "evidence": [],
-      "gap": "No inventory or history of federal agency users or systems with access; no way to give one to FedRAMP; no explanation artifact. To close: Add an access tier for agencies (e.g. Cognito or OIDC federation with agency IdPs / API keys per agency system) for the full package; record every grant/revoke in an append-only register (who, agency, when, by whom) and document how FedRAMP requests it. An empty inventory with the mechanism live would satisfy the rule today.",
-      "closes_with": [
-        "W8"
-      ]
+      "status": "Implemented",
+      "implementation": "data/agency-access.json is the append-only register of agency access requests, grants, denials and withdrawals, naming agencies and systems, never people (a record with an email address fails). scripts/agency-access.py derives the current inventory and the full history from it; every deploy validates it and fails on an overdue FedRAMP denial notice. The package is public, so the register holds only agencies that asked to be on record; it is empty today. FedRAMP requests the inventory through the agency access form or the security contact, and receives `agency-access.py inventory` output (procedure: docs/procedures/agency-access.md, DEC-165).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_inventory_and_history_follow_grants_and_withdrawals"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_known_bad_the_register_never_names_a_person"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_the_committed_register_is_valid_and_has_nothing_overdue"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Agency access register check and simulated-agency exercise"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/agency-access-exercise.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-165"
+        }
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      }
     },
     {
       "frr_id": "CDS-TRC-ACL",
-      "status": "Partially Implemented",
-      "implementation": "S3 server access logging on the website bucket (infrastructure/logging.tf:114) to a log bucket retained 400 days (logging.tf:59).",
-      "evidence": [],
-      "gap": "S3 server access logs only see origin fetches; CloudFront edge hits are not logged (no logging_config on the distribution, bootstrap/cloudfront.tf:233-311), so most access to certification data is invisible. No access summaries are produced or stored; no explanation of how parties obtain their log information. To close: Enable CloudFront standard (or real-time) logging for /.well-known/ and /trust/, build a scheduled job that writes monthly access summaries (per artifact, per requester/agency once authenticated) retained >= 6 months, and document how a party requests its records.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. A party can ask for the summaries and for the records of its own requests, identified by the times and paths it gives, since no requester identity is logged (DEC-160); the trust page's privacy notice says so.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check edge access logging and build the access summary"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/access-summary.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_the_known_bad_fixture_fails_for_identifying_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_only_trust_paths_are_counted_and_nothing_identifying_survives"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_a_month_younger_than_six_is_never_dropped"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_edge_access_logging.py::test_raw_edge_records_expire_after_90_days"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-160"
+        }
       ]
     },
     {
       "frr_id": "CDS-TRC-HMR",
-      "status": "Partially Implemented",
-      "implementation": "JSON + .md twins for COP, CPO, SDR, OCR, availability, policy index, VDR (https://samaydlette.com/.well-known/*.md return 200, text/markdown); trust page renders trust-center.json and boundary-map.json.",
-      "evidence": [],
-      "gap": "ksi-signal.json, iiw.csv and boundary-map.json have no full human-readable twin; SDR .md omits most of the record; the .md files are not linked from the trust page; policies are not viewable/downloadable from the trust center. To close: Generate complete human views for every artifact and link both formats for each from one trust-center index.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "Every JSON and CSV artifact the deploy publishes has a complete human-readable view (.view.md, checked to reproduce the JSON), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_a_view_reproduces_its_json_exactly"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_manifest_names_only_human_views_that_exist"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_views_cover_every_deploy_published_json_in_the_governed_list"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-manifest.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-TRC-PAC",
-      "status": "Partially Implemented",
-      "implementation": "All data is plain HTTPS GET under /.well-known/ (fetched live); the trust page 'Verify' section shows curl + cosign usage; docs/ksi-signal.md documents the signal schema.",
-      "evidence": [],
-      "gap": "No signed machine-readable manifest lists every certification artifact with URL, media type, schema and signature, and no programmatic-access documentation exists to cite. Human-readable policies are served only from the repository.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "The signed trust manifest (/.well-known/trust-manifest.json and .md) is the documented programmatic index of all certification data: each artifact's URL, media type, cadence, schema, signature bundle and signing identity, its human-readable forms, every policy and procedure (Markdown under /.well-known/policies/), and how to fetch and verify (HTTPS GET with read-only CORS; cosign verify-blob against the named identity). The assessor guide gives the command for each piece of evidence.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_manifest_lists_every_governed_artifact_with_its_signature"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_manifest_names_only_human_views_that_exist"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-manifest.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/assessor-guide.json"
+        }
       ]
     },
     {
       "frr_id": "CDS-TRC-SSM",
-      "status": "Not Implemented",
-      "implementation": "Checked: no account, API-key, or access-management features exist (public anonymous access only).",
-      "evidence": [],
-      "gap": "No features for parties to provision or manage their own users' and services' access, and no documentation URL. To close: With the agency access tier from CDS-TRC-AAI, let an agency administrator self-register and manage its own users/service credentials (Cognito groups or API keys scoped per agency), and document it. If staying fully public, document that anonymous access requires no provisioning (weaker).",
-      "closes_with": [
-        "W8"
-      ]
+      "status": "Implemented",
+      "implementation": "Parties provision their own access directly: all data is public, so a user or service needs no account or key (the trust manifest documents how to fetch and verify). An agency that wants to be on record files the agency access issue form (.github/ISSUE_TEMPLATE/agency-access.yml) itself, and withdraws or asks for the inventory the same way; the trust page's Request access section says how (docs/procedures/agency-access.md, DEC-165).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_inventory_and_history_follow_grants_and_withdrawals"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Agency access register check and simulated-agency exercise"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/agency-access-exercise.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-165"
+        }
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      }
     },
     {
       "frr_id": "CDS-TRC-USH",
-      "status": "Partially Implemented",
-      "implementation": "The trust center is a static public site on CloudFront; /trust/ and every directory URL serve their index through a CloudFront Function (W1), and /.well-known/*.json are served directly.",
-      "evidence": [],
-      "gap": "Availability of the trust center is not measured independently (CDS-CSO-AVR), there is a single origin with no failover (DEC-009), and the page's content needs JavaScript.",
-      "closes_with": [
-        "W8"
+      "status": "Implemented",
+      "implementation": "The certification data is static, signed files under /.well-known/ served from the CloudFront edge (cached, with AWS Shield Standard), readable as plain JSON and Markdown without JavaScript and, since the deploy checks it, with CORS for programs on any origin. Interruptions are measured from outside AWS every 15 minutes, and an ongoing one fails the monitor's run, which notifies the operator (CDS-CSO-AVR); the status itself is served by GitHub, so it stays available during an outage. The single origin without failover is an accepted risk (DEC-009).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "availability-probe.yml#Alert on an ongoing availability incident"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_availability_probe.py::test_an_ongoing_incident_fails_the_monitor_run_after_publishing"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-009"
+        }
       ]
     },
     {
       "frr_id": "CDS-UTC-AAD",
-      "status": "Not Implemented",
-      "implementation": "Checked: no access-request process, denial path or FedRAMP-notification procedure in docs/policies, docs/runbooks or data/decisions.json.",
-      "evidence": [],
-      "gap": "No procedure to notify FedRAMP within 5 business days of denying an agency access request, and no tracking of the clock. To close: Write the access-request/denial procedure (who decides, record as a decision kind, auto-compute the 5-business-day deadline, notify FedRAMP via its published channel) and add it to the policy index.",
-      "closes_with": [
-        "W8"
-      ]
+      "status": "Implemented",
+      "implementation": "The agency access procedure (docs/procedures/agency-access.md, DEC-165) requires the operator to notify FedRAMP within 5 business days of denying an agency access request and to record the notice date in the register. scripts/agency-access.py computes each deadline (weekends and US federal holidays skipped) and every deploy fails when a denial's notice is overdue. Since everything is public, a denial would be rare; the clock is exercised on every deploy with simulated denials.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_business_days_skip_weekends_and_federal_holidays"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_known_bad_an_unnotified_denial_past_five_business_days_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_the_exercise_observes_every_expected_outcome_on_any_day"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Agency access register check and simulated-agency exercise"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/agency-access-exercise.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-165"
+        }
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      }
     },
     {
       "frr_id": "CDS-UTC-AGA",
-      "status": "Partially Implemented",
-      "implementation": "Everything is public, so any agency can obtain the package without asking.",
-      "evidence": [],
-      "gap": "Neither artifact exists: no URL/explanation of how to request the package (beyond the public data) and no explanation of how the provider decides whether to share. To close: Add a 'Request access' section to the trust page (contact, what is provided, turnaround) and a sharing-decision policy entry.",
-      "closes_with": [
-        "W8"
-      ]
+      "status": "Implemented",
+      "implementation": "Agencies get the whole package without asking, since it is public. The trust page's Request access section says what is provided, how to ask to be on record (the agency access form, or privately via security.txt) and the turnaround, and links the procedure (DEC-165) and the sharing standard that explains how sharing is decided (DEC-166).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_trust_data.py::test_the_trust_page_indexes_the_data_and_says_how_to_get_access"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_agency_access.py::test_the_exercise_writes_a_log_that_says_it_is_simulated"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Agency access register check and simulated-agency exercise"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/agency-access-exercise.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-165"
+        }
+      ],
+      "simulated": {
+        "counterparty": "agency",
+        "how": "No agency has asked. Every deploy runs the access procedure against plainly fictional agencies (data/agency-access-exercise.json: 'Department of Hypothetical Affairs (simulated)' and others), with grants, a withdrawal, an inventory request from FedRAMP and denials whose FedRAMP notices are on time, late and overdue, and fails unless the 5-business-day clock (weekends and US federal holidays skipped) reports each outcome expected. Nothing is sent to anyone; the log is published as agency-access-exercise.json."
+      }
     },
     {
       "frr_id": "CMU-CSO-CAT",
-      "status": "Not Implemented",
-      "implementation": "Checked infrastructure/cognito.tf, silk-reeling.tf and bootstrap/cloudfront.tf: tenant-facing defaults use standard endpoints; no list of default modules exists.",
-      "evidence": [],
-      "gap": "No configuration that defaults agency tenants (Silk Reeling users/tenants) to validated modules, and no list of default modules with validation status. To close: Define the agency-tenant default (FIPS endpoints, TLS policy on CloudFront/API Gateway, KMS CMKs) in Terraform, and publish the generated list of default modules with CMVP status.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The app's tenants (Silk Reeling users) get validated cryptography by default where AWS offers it, set in Terraform: the app's Lambda environment and every app log group are encrypted with a customer-managed key on the AWS KMS HSM (CMVP #4884) with rotation on, and viewer and origin TLS are fixed at TLS 1.2 or later. AWS offers no validated-module option for a distribution's viewer TLS, an HTTP API's endpoint or the Cognito Hosted UI (DEC-152). The published module list marks each service's agency-tenant default.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_agency_tenant_defaults_use_the_validated_kms_hsm_in_terraform"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-152"
+        }
       ]
     },
     {
       "frr_id": "CMU-CSO-CMD",
-      "status": "Partially Implemented",
-      "implementation": "certification-package-overview.json cryptographic_modules (4 entries, from offering.json); research/authorization-boundary.html#fips (L86-91); boundary-map.json fips_modules.",
-      "evidence": [],
-      "gap": "Not per service and not complete: Silk Reeling's Cognito, API Gateway TLS, Lambda runtime TLS, DynamoDB/SQS/SNS encryption, Secrets Manager, CloudTrail log-file validation, Route 53 DNSSEC signing are not listed. Validation status is imprecise: 'FIPS-validated cipher suites' for CloudFront TLS is not a CMVP status (no module name/cert number); S3 SSE-S3 has no validation status; no CMVP certificate numbers anywhere. Stale: lists an 'app secret' CMK (removed by SCN-2026-006) and omits the silk_reeling CMK (silk-reeling.tf:50). To close: Build the module list from the inventory per service: for each AWS service used, cite the module (e.g. AWS-LC FIPS, KMS HSM) with CMVP certificate number and whether it is validated or an update stream, from AWS's published FIPS documentation; generate it, don't hand-maintain it, and fail the build when a new crypto-using service appears unmapped.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide publishes the cryptographic module used by each service (CloudFront and API Gateway TLS, Cognito, KMS, Lambda, CloudWatch Logs, SNS, Secrets Manager, S3, SQS, DynamoDB, CloudTrail, Route 53 DNSSEC, the IAM OIDC provider, Sigstore signing), with the CMVP certificate and its status where AWS publishes one (the AWS KMS HSM, FIPS 140-3 Level 3, certificate #4884, read from NIST's CMVP page) and says plainly where AWS publishes none. The list is generated each deploy from data/crypto-modules.json joined with the inventory; the build fails when the inventory holds a component type with no module mapping.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_an_unmapped_component_type_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_validated_module_cites_its_cmvp_certificate_page"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_inventory_type_the_builder_knows_is_mapped"
+        }
       ]
     },
     {
       "frr_id": "CMU-CSO-UVM",
-      "status": "Partially Implemented",
-      "implementation": "Customer-managed keys use AWS KMS (FIPS 140-3 HSM): infrastructure/main.tf:532,605,648; silk-reeling.tf:50,207.",
-      "evidence": [],
-      "gap": "Validated modules are not shown for the paths that would protect customer data in transit: CloudFront, API Gateway and Cognito are reached via standard (non-FIPS) endpoints with no evidence their TLS module is validated; buckets use SSE-S3 rather than SSE-KMS; Sigstore signing is non-validated (not customer data, but documented). To close: Confirm and document each customer-data path's module validation from AWS FIPS docs; use FIPS endpoints where offered (cognito-idp-fips, API Gateway via FIPS endpoint, KMS-fips), move data-bearing stores to SSE-KMS, and record any remaining non-validated path as a decision.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Where a validated module is available for data the app holds, it is used: the app's Lambda environment and log groups, the alert topic and the signing keys are protected by customer-managed keys on the AWS KMS HSM (CMVP #4884, FIPS 140-3 Level 3). The paths where AWS publishes no CMVP module (viewer TLS on CloudFront, the HTTP API, the Cognito Hosted UI; SSE-S3, SSE-SQS and AWS-owned keys on stores that hold no customer data; the Lambda runtime's outbound TLS) are listed per service and accepted by decision (DEC-152). The system holds no federal customer data.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-152"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_paths_without_a_published_validation_are_covered_by_a_decision"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_agency_tenant_defaults_use_the_validated_kms_hsm_in_terraform"
+        }
       ]
     },
     {
       "frr_id": "CPO-CSO-MTD",
-      "status": "Partially Implemented",
-      "implementation": "certification-package-overview.json accountable_official (name, title, email) and metadata.last_updated / source_of_update (build-cpo.py:66-72).",
-      "evidence": [],
-      "gap": "Version is the constant 'live (regenerated each deploy)' (build-cpo.py:69), which identifies nothing; fields are not in the schema's names. To close: Use a real version (e.g. semver bumped on content change, or commit SHA + signal_id) and map to the schema's metadata fields.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The CPO carries metadata.accountableOfficial (name, title, contact), metadata.version (semver: unchanged content keeps its version, changed content bumps it, judged by a sha256 of the content), metadata.lastUpdated and metadata.updateSource.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_version_is_semver_and_bumps_only_on_change"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
       "frr_id": "CPO-CSO-OSA",
-      "status": "Not Implemented",
-      "implementation": "certification-package-overview.json independent_assessment.status = 'N/A ... no FedRAMP Recognized independent assessment service engaged' (build-cpo.py:97-102).",
-      "evidence": [],
-      "gap": "No independent assessment, so no assessor-supplied overall summary. To close: Engage a FedRAMP Recognized assessment service, receive its IVV-IAS-OSA summary (signed assessor record, as _assessor.py already supports), and embed it unmodified in the CPO.",
-      "closes_with": [
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "The CPO (certification-package-overview.json and .md) carries the assessor's overall summary (IVV-IAS-OSA) under providerExtensions.independentAssessment.overallSummary, quoted verbatim from the signed assessment set: rule and KSI pass, observation and fail counts, failures, areas of dispute and observations. scripts/build-cpo.py requires the set, verifies it (scripts/_assessor.load_assessment) and fails without a summary; the daily package maintainer rebuilds the CPO from the same published set. The schema's `assessor` object is left out because the simulated assessor has no FedRAMP assessor ID, and none is invented.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_overall_summary_is_the_assessors_record_verbatim"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_known_bad_an_assessment_without_a_summary_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_cpo_refuses_to_build_without_the_assessment"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_deploy_and_the_maintainer_give_the_cpo_the_assessment"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "The overall summary is written on every deploy by Totally Real Assessment Services, LLC (simulated), a reusable workflow in this repository (simulated-assessor.yml) that signs its set keylessly under its own pinned workflow identity. build-cpo.py quotes the summary record only after the set's signature verifies against that identity and every record's hash matches, and refuses to build without it. It is not a FedRAMP Recognized assessment service and the CPO says so; only the assessor is simulated."
+      }
     },
     {
       "frr_id": "CPO-CSO-OVR",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/certification-package-overview.json + .md (scripts/build-cpo.py).",
-      "evidence": [],
-      "gap": "Does not validate against FedRAMP's CPO schema (vendored infrastructure/schemas/fedramp-2026-06-24/...certification-package-overview...: running scripts/_fedramp_schema.validate on the live file: wrong $schema, missing serviceIdentification, serviceProperties, contactInformation) even though its 'schema' field names it. Of the required content: CDS-CSO-PUB is only linked (and partial); IRP only linked; MAS-CSO-IIR is a count and a link; MAS-CSO-FLO and MAS-CSO-TPR are absent (only named in a 'reference' string); CMU-CSO-CMD is partial; IVV-CSO-ICP is 'N/A'. To close: Rebuild the CPO in FedRAMP's schema shape (serviceIdentification, serviceProperties, contactInformation, assessor, certifiedServices, thirdPartyInformationResources), validate it with write_validated() like the VDR reports, and include or reference the MAS flow/TPR data and the assessor's IVV material.",
-      "closes_with": [
-        "W3",
-        "sam"
+      "status": "Implemented",
+      "implementation": "scripts/build-cpo.py writes the CPO in FedRAMP's 2026-06-24 schema through write_validated, with JSON and Markdown from the same data, carrying what each listed rule requires: metadata (CPO-CSO-MTD); the public information (CDS-CSO-PUB) including the trust center and secure configuration guidance; each service and its security category (CDS-CSO-SVC); the policy and procedure index (CDS-CSO-IRP), the KSI signal inventory and the Minimum Assessment Scope (MAS-CSO-IIR, MAS-CSO-FLO) as repositories; thirdPartyInformationResources (MAS-CSO-TPR); the cryptographic modules (CMU-CSO-CMD); and the assessment results with the assessor's overall summary (IVV-CSO-ICP, CPO-CSO-OSA). The simulated package submission refuses a CPO missing the trust center, secure configuration guidance, third-party resources or assessor summary.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_the_cpo_with_group_5_fields_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_third_party_resources_are_the_decided_records"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
       "frr_id": "CPO-CSX-CPM",
-      "status": "Partially Implemented",
-      "implementation": "The package (CPO, SDR, OCR, CDS artifacts) is rebuilt and published on every deploy to main; the VDR family is rebuilt twice daily.",
-      "evidence": [],
-      "gap": "Nothing guarantees a rebuild at least every 2 weeks: with no push to main for 14 days, the CPO, SDR and OCR go stale, and no freshness window covers them at that cadence.",
-      "closes_with": [
-        "W4"
+      "status": "Implemented",
+      "implementation": "package-maintenance.yml runs daily, unattended, in its own environment: it fetches the published package and its inputs, verifies their signatures (fail closed), rebuilds the SDR, OCR and CPO at the deployed commit, signs and publishes them with a role that may write only those objects, and checks the edge serves them. Every deploy also runs it. The deploy's preflight fails if the role variable or environment is missing. The SDR, CPO and OCR have 14-day freshness windows (metadata.lastUpdated), alarmed by the evidence watchdog.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Package maintainer preflight"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_maintainer_runs_daily_and_the_package_windows_are_two_weeks_at_most"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_maintainer_preflight_fails_when_not_in_place"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
       ]
     },
     {
@@ -575,85 +1248,209 @@
     },
     {
       "frr_id": "FRC-CSO-FCP",
-      "status": "Partially Implemented",
-      "implementation": "Target stated: Class C, Moderate, 20x (system-profile categorization in ksi-signal.json; CPO class/impact). Conformance self-report: trust-center.json profile summary 18 implemented / 16 partial / 38 not yet.",
-      "evidence": [],
-      "gap": "The profile is identified, but 'apply all relevant FedRAMP Practices' is not met: most applicable rules are partially implemented or not implemented (see these records), and docs/cr26-applicability.md still records some families as not applicable.",
-      "closes_with": [
-        "W3",
-        "W10"
+      "status": "Implemented",
+      "implementation": "The target profile is identified: FedRAMP 20x, Program path, Class C, Moderate (data/system-profile.json; the CPO's certificationType and providerExtensions). Every applicable rule has a record in data/frr-records.json, and the deploy's completeness gate stops every deploy unless each record is Implemented or Not Applicable, so a deployed system applies all relevant FedRAMP practices.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP rules complete (no gaps)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_records.py::test_any_open_record_keeps_the_deploy_from_proceeding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_records.py::test_the_gate_runs_before_anything_is_applied"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSO-JSN",
-      "status": "Partially Implemented",
-      "implementation": "The VDT, AVI and VDR history are written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas and published (C3a, #496). The CPO, SDR and OCR are JSON but in their own field names.",
-      "evidence": [],
-      "gap": "Live CPO, SDR and OCR do not validate against the vendored FedRAMP schemas (validate(): cpo 4 errors, sdr 6, ocr 11 — wrong $schema, missing required top-level objects), and their builders do not call write_validated. No CORS: a GET with Origin: https://example.org returns no Access-Control-Allow-Origin, so browser apps on other domains cannot read the JSON. To close: Port build-cpo.py, build-sdr.py and build-ocr.py to the FedRAMP schemas and write them via write_validated(); add a CloudFront response-headers policy for /.well-known/* with Access-Control-Allow-Origin: * (GET/HEAD/OPTIONS) and add a live check of the headers in verify-published.sh.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. SCN and incident JSON are not yet emitted; their builders must use write_validated when they are (SCN-CSO-HRM).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_rolling_ocr_validates_and_carries_the_cycle"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_it_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_known_bad_fixture_fails_for_missing_cors"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_well_known_behaviour_sends_read_only_cors_and_nosniff"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_wellknown_headers.py::test_the_deploy_checks_the_headers_before_the_sdr"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff)"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSO-MRA",
-      "status": "Partially Implemented",
-      "implementation": "Reconciliation gate (scripts/reconcile.py; live reconcile-report.json: 10 invariants held) blocks publishing inconsistent artifacts; signed provenance; AI-drafted third-party records are held at 'not recorded' until decided (data/third-party-components.json _note).",
-      "evidence": [],
-      "gap": "The reconciliation gate checks the inventory but not the package's claims: the CPO, SDR and OCR do not validate against their schemas, and no check covers URL liveness, the CMK list against the inventory, a fixed OCR calendar, or one FedRAMP ID across artifacts. W1 corrected the logo, policy dates, AC policy and CMK list, each with a test.",
-      "closes_with": [
-        "W3",
-        "W8"
+      "status": "Implemented",
+      "implementation": "The operator keeps the package accurate with gates that fail the deploy: schema validation of the CPO, SDR and OCR; the reconciliation gate (one impact level and one inventory binding across the CPO, SDR, VDR and signal); one FedRAMP ID across the reports (check-fedramp-id.py); the package submission's completeness check (every applicable rule exactly once, one program); the FedRAMP Certification Reports' recorded sha256s; and a test that every link the CPO and OCR give resolves to something this repository publishes. The CCM calendar is validated on every build. Third-party-supplied records stay 'not recorded' until the operator decides them.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_every_link_in_the_cpo_and_ocr_resolves"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_bad_calendar_fails_closed"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSO-PKG",
-      "status": "Not Implemented",
-      "implementation": "Package components exist publicly (CPO, SDR, OCR under /.well-known/), but nothing has been supplied to FedRAMP.",
-      "evidence": [],
-      "gap": "No package supplied to FedRAMP; the components that exist are incomplete (CPO/SDR/OCR fail FedRAMP schemas; SDR lacks FRR records and independent V&V). To close: Complete CPO/SDR/OCR per their rules and schemas, then submit through the FedRAMP application (FRC-APP-*).",
-      "closes_with": [
-        "W3",
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "scripts/submit-package.py checks the package on every deploy: the CPO (complete per CPO-CSO-OVR, including the trust center, secure configuration guidance, third-party resources and assessor summary), the SDR with every applicable rule exactly once, and the OCR, each valid against FedRAMP's schema, one FedRAMP ID across them and certificationType 20x. It then supplies the package to a simulated FedRAMP intake and appends a signed entry to /.well-known/package-submission-log.json for each content change. Nothing is sent.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_a_complete_package_is_logged_once_per_content_change"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/package-submission-log.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "fedramp",
+        "how": "FedRAMP is simulated: the package goes to simulated_fedramp_intake() in scripts/submit-package.py, a function that never touches the network and returns an obviously fake receipt. The only trace is the signed, published submission log; any unexpected outcome fails the deploy."
+      }
     },
     {
       "frr_id": "FRC-CSO-POP",
-      "status": "Partially Implemented",
-      "implementation": "Checked: no application for either program exists (no FedRAMP ID, no Marketplace listing, no application in repo/docs); docs/cr26-applicability.md targets 20x Class C.",
-      "evidence": [],
-      "gap": "Met at assessment, but no test, workflow step, published artifact or decision record shows it. Labels mix programs (CPO/SDR impact_level_canonical 'Moderate (FedRAMP Rev 5; 20x Class C)'; SDR carries rev5_controls), which could read as seeking both. To close: When applying, apply for 20x only and state certificationType '20x Class C' alone in the CPO.",
-      "closes_with": [
-        "sam"
+      "status": "Implemented",
+      "implementation": "The offering seeks FedRAMP 20x Program Certification only (DEC-107). The CPO states certificationType 20x; the package submission refuses any other; no label in the CPO or OCR names Rev5 as a program (the SDR's Rev5 view is the Moderate control baseline the 20x evidence maps onto).",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-107"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_the_cpo_seeks_20x_only"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_no_cpo_or_ocr_label_names_rev5_as_a_program"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_certification_cycle.py::test_an_incomplete_or_inconsistent_package_is_not_submitted"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSX-MAS",
-      "status": "Partially Implemented",
-      "implementation": "The KSI signal applies the KSIs to the inventoried components (ksi-signal.json), derived from Terraform state.",
-      "evidence": [],
-      "gap": "The inventory misses external services the site loads from (cdn.jsdelivr.net, storage.googleapis.com) and some flows, and human-process KSIs are not applied per component; MAS-CSO-IIR and MAS-CSO-FLO carry the detail.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every KSI is applied to the whole Minimum Assessment Scope. The inventory now includes the external services the app and the VDR depend on (MAS-CSO-IIR), and each KSI's evidence domain names the component types it covers. KSIs with a per-component domain apply to every component of those types; inventory and documentation KSIs (PIY, CED) apply over the whole set. scripts/build-mas.py publishes the application per KSI and per component type in .well-known/minimum-assessment-scope.json, and fails the deploy when a component type is in no KSI's per-component domain and has no stated whole-set reason (static pages and the state lock table carry one).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_ksi_applies_and_every_component_type_is_covered"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_component_type_in_no_ksi_domain_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_audit_trail_is_in_the_logging_ksi_domain"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        }
       ]
     },
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Partially Implemented",
-      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration for object stores and the distribution daily (ksi-signal-runtime.json).",
+      "implementation": "Terraform plans are checked against the OPA policies on every deploy, and the runtime Lambda re-evaluates the same Rego against live configuration daily. The SDR counts the automated methods in place for each KSI (plan gate, plus runtime only when the signed runtime signal verifies and is fresh).",
       "evidence": [],
-      "gap": "Class C requires at least two automated methods for each KSI. The runtime check covers only some component types, and no record counts the automated methods per KSI to show two exist for each.",
+      "gap": "On the latest inputs 34 KSIs have two automated methods, 3 have one, and 9 have none (KSI-CED-RAT, KSI-IAM-AAM, KSI-IAM-APM, KSI-IAM-ELP, KSI-IAM-JIT, KSI-IAM-SNU, KSI-IAM-SUS, KSI-SCR-MIT, KSI-SCR-MON). To close: a second automated method for the 3, and two for the 9.",
       "closes_with": [
         "W7"
       ]
     },
     {
       "frr_id": "FRC-CSX-VVR",
-      "status": "Partially Implemented",
-      "implementation": "scripts/_frr.py checks the rule records automatically on every build: the set matches the pinned corpus, and every piece of evidence cited resolves to a test, workflow step, published artifact or decision.",
-      "evidence": [],
-      "gap": "Resolution shows the evidence exists, not that it passed for the rule: the records are not yet tied to test results (conformance-results.json) or published in the SDR.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "scripts/_frr.py validates the rule records on every build (set matches the pinned corpus, every cited piece of evidence resolves). In addition the unit-test job runs pytest with JUnit output and scripts/check-frr-evidence.py fails the deploy unless every test cited as evidence for a rule passed (a skipped or missing cited test is not a pass), and publishes the result per record (frr-evidence.json). The simulated assessor then re-runs the cited tests and re-checks every step, decision and artifact independently.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_evidence.py::test_known_bad_a_failing_cited_test_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_evidence.py::test_a_skipped_or_missing_cited_test_is_not_a_pass"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_frr_evidence.py::test_the_unit_test_job_runs_the_check_on_its_own_results"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP rule evidence passed (cited tests)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/frr-evidence.json"
+        }
       ]
     },
     {
@@ -728,33 +1525,108 @@
     },
     {
       "frr_id": "IVV-CSO-DUS",
-      "status": "Partially Implemented",
-      "implementation": "Searched docs/ and scripts/ for sampling: no use of representative samples documented anywhere.",
-      "evidence": [],
-      "gap": "Conditional rule; nothing states whether verification/validation uses full populations or samples (e.g. runtime emitter coverage), so an assessor cannot confirm it is not triggered. To close: Add a statement to the SDR/verification.md that checks run over the full inventory (with counts from the KSI signal), or document any sampling method if used.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "No representative samples are used: every check runs over its full population, and the assessor guide states this with what each population is (the sampling section). The operator's decision DEC-167 records it, and requires the guide and this record to change before any sampling is introduced.",
+      "evidence": [
+        {
+          "kind": "decision",
+          "ref": "DEC-167"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_assessor_guide.py::test_the_guide_states_that_no_samples_are_used"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/assessor-guide.json"
+        }
       ]
     },
     {
       "frr_id": "IVV-CSO-FIA",
-      "status": "Not Implemented",
-      "implementation": "Live certification-package-overview.json independent_assessment: 'N/A — no FedRAMP Recognized independent assessment service engaged'; SDR assessor_records.status 'no assessor record'; data/assessor-records/README.md: none engaged.",
-      "evidence": [],
-      "gap": "No annual independent verification and validation of all applicable rules by a FedRAMP Recognized assessor or FedRAMP. To close: Engage a FedRAMP Recognized independent assessment service; pin its key (infrastructure/keys/assessor-identity.json) and ingest its signed records; schedule the persistent annual cycle. Provider prerequisite: SDR records for every applicable FRR (today only 46 KSI records), see SEI/SEE.",
-      "closes_with": [
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "Every deploy is independently verified and validated, across all applicable rules and KSIs, by the simulated assessor workflow before the SDR is built; the deploy fails on any failed check, so the cadence is far more frequent than once a year. Its signed set (simulated-assessment.json) is published and its per-rule results are carried in the SDR. The assessor is simulated: no FedRAMP Recognized assessment service is engaged (operator's decision of 2026-11-05).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_a_sound_package_passes_every_rule_and_ksi"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_every_rule_and_ksi_gets_its_independent_result_and_t74_holds"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_main_exits_non_zero_on_any_failure"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_simulation_is_labelled_and_claims_no_fedramp_recognition"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_deploy_needs_the_assessor_and_builds_the_sdr_from_its_set"
+        },
+        {
+          "kind": "step",
+          "ref": "simulated-assessor.yml#Assess every rule and KSI (verification and validation)"
+        },
+        {
+          "kind": "step",
+          "ref": "simulated-assessor.yml#Sign the assessment (keyless, the assessor's own identity)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Download the simulated assessment"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      }
     },
     {
       "frr_id": "IVV-CSO-ICP",
-      "status": "Partially Implemented",
-      "implementation": "scripts/_assessor.py: signed-record intake (ECDSA P-256 verify against pinned identity, verbatim carry, verify_output() at line 153 fails the build if output differs); build-sdr.py:36,201 wires it in; SDR assessor_records = 'no assessor record'.",
-      "evidence": [],
-      "gap": "No independent-assessment results exist to include; CPO independent_assessment is N/A text. To close: When an assessment occurs, ingest its signed results through the existing port and list the assessment report in CPO package_contents unaltered.",
-      "closes_with": [
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "The assessment results are published unmodified: the signed set itself (simulated-assessment.json with its cosign bundle), and in the SDR, where scripts/_assessor.py admits the set only if its keyless signature verifies against the pinned assessor identity and every record's hash matches, carries each record verbatim, and verify_output fails the build if the SDR's copy differs in any byte.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_set_round_trips_through_the_provider_port"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_known_bad_tampered_record_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_set_whose_signature_does_not_verify_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_every_rule_and_ksi_gets_its_independent_result_and_t74_holds"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      }
     },
     {
       "frr_id": "IVV-CSO-RAA",
@@ -766,34 +1638,83 @@
     },
     {
       "frr_id": "IVV-CSO-SEE",
-      "status": "Partially Implemented",
-      "implementation": "SDR 'validation' field present on 46 KSI records; runtime drift check (scripts/check-runtime-divergence.py, deploy-with-opa.yml:1139) and evidence-nightly.yml produce live effectiveness signals.",
-      "evidence": [],
-      "gap": "'validation' is one identical sentence for all 46 KSIs; no per-rule effectiveness results; FRR rules absent from the SDR; nothing supplied to an assessor. To close: Emit per-rule validation results (runtime check outcomes, test runs, drill records with dates) into the SDR for every applicable rule.",
-      "closes_with": [
-        "W3",
-        "W10"
-      ]
+      "status": "Implemented",
+      "implementation": "Every rule record in the SDR states, for each piece of evidence, how it validates the measure and on what cycle (a test on every pull request and deploy, a workflow step each run, a published artifact on its freshness cadence with the watchdog's alarm window, or a decision record with its review date); every KSI states its deploy-time validations and failures and its daily runtime re-validation. The SDR is signed and published, so an assessor reads it without a request.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_rule_states_how_each_piece_of_evidence_verifies_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_artifact_evidence_states_its_cycle"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+      }
     },
     {
       "frr_id": "IVV-CSO-SEI",
-      "status": "Partially Implemented",
-      "implementation": "Live security-decision-record.json: 46 rule_records (KSI only) each with a 'verification' field; 333 rev5_controls with mechanisms; scripts/verify-published.sh + docs/verification.md let a third party verify signatures/provenance.",
-      "evidence": [],
-      "gap": "The 'verification' text is the same boilerplate sentence for all 46 KSIs (1 distinct value), so it is not per-measure implementation evidence; the SDR has no records for FRR rules (CCM, SCN, SCG, AFC, IVV, VDR, etc.), so 'all applicable FedRAMP rules' have no implementation evidence; nothing has been supplied to an assessor. To close: Generate per-rule verification entries (KSIs and every applicable FRR) that cite the specific check/artifact and result (e.g. OPA rule id + pass/fail, file + line, live check output), and package them for assessor delivery.",
-      "closes_with": [
-        "W3",
-        "W10"
-      ]
+      "status": "Implemented",
+      "implementation": "Every rule record in the SDR names the test, workflow step, published artifact or decision record that verifies its implementation, and every KSI names its measures (the OPA rules annotated to it, by file and rule), the components they cover, how the annotations and the automation are verified, or why there is no measure and the risk. The SDR is signed and published with verification instructions (docs/verification.md, scripts/verify-published.sh).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_rule_states_how_each_piece_of_evidence_verifies_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_ksi_states_its_own_measures_cycle_and_validation"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "No assessor is engaged. The evidence is supplied by publishing the signed SDR at /.well-known/, where any assessor reads it; group 5 wires the simulated assessor that reads it from there."
+      }
     },
     {
       "frr_id": "IVV-CSO-STE",
-      "status": "Partially Implemented",
-      "implementation": "docs/verification.md and scripts/verify-published.sh (reproducible signature/provenance/schema checks from the public internet); SDR rev5_controls mechanisms text.",
-      "evidence": [],
-      "gap": "No assessor-oriented technical walkthrough per rule/KSI (how each check works, how to run it, expected output), and no assessor to supply it to. To close: Write an assessor guide mapping each rule to its mechanism, command to reproduce, and evidence location; offer a demonstration session.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The assessor guide (assessor-guide.json and .md, built on every deploy from the rule records) gives, for every applicable rule and KSI, the rule text, the provider's explanation, and for each piece of evidence a command that reproduces it plus the same check in machine form (pytest node, workflow step, artifact URL with its signature bundle, signing identity and maximum age, or decision ID). The simulated assessor runs exactly these checks. Demonstrations are offered through the security contact.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_assessor_guide.py::test_every_rule_and_ksi_is_in_the_guide_with_a_reproducible_check"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_assessor_guide.py::test_signed_artifacts_name_the_identity_that_signed_them"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_assessor_guide.py::test_the_deploy_builds_the_guide_and_the_assessor_follows_it"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the assessor guide"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/assessor-guide.json"
+        }
       ]
     },
     {
@@ -806,42 +1727,118 @@
     },
     {
       "frr_id": "IVV-CSX-AIA",
-      "status": "Not Implemented",
-      "implementation": "No FedRAMP independent assessment has taken place. The package is built so an assessor can verify each KSI.",
-      "evidence": [],
-      "gap": "Engaging an assessor is the operator's decision; until then no annual independent assessment covers the KSIs (operator's decision of 2026-11-05: assessor-ready, none engaged).",
-      "closes_with": [
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "The simulated assessor checks every Key Security Indicator in the catalog on every deploy, alongside every rule: it fetches the published KSI signal, verifies its signature against the deploy identity, and fails a KSI the signal does not report passing (one missing from the signal is an observation). Its signed result per KSI is carried verbatim in the SDR.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_every_rule_and_ksi_gets_its_independent_result_and_t74_holds"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_a_sound_package_passes_every_rule_and_ksi"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_a_ksi_the_signal_does_not_report_passing_is_a_failure"
+        },
+        {
+          "kind": "step",
+          "ref": "simulated-assessor.yml#Assess every rule and KSI (verification and validation)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      }
     },
     {
       "frr_id": "MAS-CSO-FLO",
-      "status": "Partially Implemented",
-      "implementation": "https://samaydlette.com/.well-known/boundary-map.json: 11 flows with protocol/auth/encryption/data, 137 edges derived from Terraform, per-node classification; flows declared in docs/boundary/boundary-classification.json and resolved against the inventory (unmatched endpoints check = 0); code scripts/build-boundary-graph.py; human view on /trust/ and authorization-boundary page.",
-      "evidence": [],
-      "gap": "Flows are not complete for ALL resources: missing user→Cognito Hosted UI authentication, browser→jsDelivr / storage.googleapis.com, Lambda/app→DynamoDB/SQS, CloudTrail/S3/CloudFront→log bucket, operator→AWS console (Duo/root MFA), nightly→GitHub Advisory DB / CISA KEV / detection feeds. Security categories are per component (classification) but flows carry no category. To close: Add the missing flows to the classification, and add a check that every inventoried external service and every data store appears in at least one flow; derive per-flow security category from its endpoints.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The boundary classification's data-flow table (docs/boundary/boundary-classification.json) covers every external service and every data store or log in the inventory, including sign-in to the Cognito Hosted UI, the browser loads from jsDelivr and Google Cloud Storage, log delivery to the access-log and CloudTrail buckets and the log groups, the dead-letter queue, operator administration with MFA, Terraform state and lock, and the vulnerability feeds. scripts/build-mas.py resolves each flow against this build's inventory, gives each the high-water mark of its endpoints' FIPS 199 security categories, and fails the deploy when a flow names a component the inventory lacks or an external service or data store is in no flow. Published in .well-known/minimum-assessment-scope.json (flows with categories, protocol, authentication, encryption and data) and drawn on the boundary map.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_flow_gaps_fail"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_external_service_and_data_store_in_the_inventory_is_in_a_flow"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_flow_category_is_the_high_water_mark_of_its_endpoints"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/boundary-map.json"
+        }
       ]
     },
     {
       "frr_id": "MAS-CSO-IIR",
-      "status": "Partially Implemented",
-      "implementation": "Machine-readable: https://samaydlette.com/.well-known/ksi-signal.json components[] (214, from Terraform state + SBOMs) and iiw.csv; human-readable derivation: docs/ksi-signal.md and research/authorization-boundary.html; code: scripts/build-ksi-signal.py; reconcile invariant (a) 'every live in-boundary resource is in the inventory' held.",
-      "evidence": [],
-      "gap": "Incomplete: the Silk Reeling SPA loads MediaPipe code from cdn.jsdelivr.net and models from storage.googleapis.com and talks to Cognito Hosted UI (bootstrap/cloudfront.tf:185-186, 378-380); jsDelivr and Google Cloud Storage are not inventoried as information resources although they run code next to the camera feed. The npm package is listed, the delivery services are not. (Repo publicity for the 'code' artifact not verified from here.) To close: Derive external services from the CSP/connect-src allowlists and runtime egress as well as Terraform, so every origin the app loads code or data from becomes an inventoried component; or self-host MediaPipe assets and models.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy publishes the set of information resources that make up the offering: the canonical inventory (.well-known/ksi-signal.json, derived from Terraform state, the SBOMs, the site's HTML and the declared external services; reconcile invariant (a) holds every live in-boundary resource to it) and its summary in .well-known/minimum-assessment-scope.json with a human-readable twin and the derivation. The external services include every origin the Silk Reeling app loads code or data from in the user's browser (jsDelivr for the MediaPipe runtime, Google Cloud Storage for the pose model) and every vulnerability feed the VDR reads (GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database). scripts/build-mas.py parses the Content Security Policies the edge serves (infrastructure/bootstrap/cloudfront.tf) and fails the deploy, before the SDR is built, when an allowed off-origin host is neither an inventoried component nor out of scope with a stated reason; the podcast audio hosts (media only, no code or data from this system) are out of scope with that reason.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_unplaced_csp_host_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_unresolvable_csp_source_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_the_app_origins_are_inventoried_external_services"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal.json"
+        }
       ]
     },
     {
       "frr_id": "MAS-CSO-MDI",
-      "status": "Not Implemented",
-      "implementation": "Checked: no metadata inventory; CPO says 'MAS-CSO-MDI N/A (no federal customer data)'.",
-      "evidence": [],
-      "gap": "No machine-readable output, explanation or code covering metadata the offering collects: Cognito user records (email, MFA), CloudFront/S3/API Gateway/Lambda logs (IP addresses, user agents), CloudTrail, DynamoDB items, SNS subscriptions. To close: Classify each data store/log as metadata in the inventory (type, contents, retention, location), emit a metadata section from build-ksi-signal.py, and document the derivation.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The metadata the offering collects is in scope and inventoried: every data store and log in the inventory (buckets, log groups, the CloudTrail trail, the state lock table, the dead-letter queue, the Cognito user pool, the alert topic) and the request metadata third parties see when the app loads code or models (jsDelivr, Google Cloud Storage) has an entry stating what it holds, which personal data (for example IP addresses, user agents, the app users' email addresses), its retention and its location. scripts/build-mas.py joins data/minimum-assessment-scope.json with this build's inventory and fails the deploy when a data store or log has no entry; a test holds each stated retention equal to the Terraform. Published, with the explanation of its derivation, in .well-known/minimum-assessment-scope.json and its Markdown twin.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_data_store_without_metadata_fails"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_metadata_retention_matches_the_terraform"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        }
       ]
     },
     {
@@ -854,12 +1851,37 @@
     },
     {
       "frr_id": "MAS-CSO-TPR",
-      "status": "Partially Implemented",
-      "implementation": "ksi-signal.json external_service components (7) carry purpose, cia_impact, verification_mechanism, baseline_configuration; data/third-party-components.json holds responsibility split records; build-ksi-signal.py:1322-1345.",
-      "evidence": [],
-      "gap": "All 7 third-party records are undecided (decided_by/decided_on null), so the published upstream_offering/responsibility_split read 'not recorded'. No explicit justification-for-use, mitigation-measures or compensating-controls fields per resource. jsDelivr and Google Cloud Storage (MediaPipe) are missing entirely. Not included in the CPO (schema thirdPartyInformationResources). To close: Add the four required fields (usage/configuration, justification, mitigations, compensating controls) to the record schema, have the operator decide all records, add the MediaPipe hosts, and emit them into the CPO's thirdPartyInformationResources.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Each of the 11 third-party information resources (Sigstore Fulcio and Rekor, GitHub repository and Actions, GitHub OIDC, the operator's MFA authenticator, the GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database, jsDelivr, Google Cloud Storage) has a decided record in data/third-party-components.json with its general usage and configuration, justification for use, mitigation measures and compensating controls. The inventory builder fails when a decided record lacks any of the four, and scripts/build-mas.py fails the deploy when an inventoried external service has no decided record. Machine-readable output: the external_service components in .well-known/ksi-signal.json and the third-party section of .well-known/minimum-assessment-scope.json; the human-readable derivation is in its Markdown twin; the code is scripts/build-ksi-signal.py and scripts/build-mas.py. The CPO lists each, none FedRAMP certified, in thirdPartyInformationResources.nonCertified (scripts/_tpr.py).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_decided_third_party_record_without_the_four_fields_fails_the_inventory"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_every_third_party_resource_is_decided_with_the_four_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_published_inventory_carries_the_four_fields"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_mas.py::test_cpo_helper_matches_the_cpo_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the Minimum Assessment Scope"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/minimum-assessment-scope.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_cpo_trust_fields.py::test_third_party_resources_are_the_decided_records"
+        }
       ]
     },
     {
@@ -878,92 +1900,189 @@
     },
     {
       "frr_id": "SCG-CSO-AUP",
-      "status": "Partially Implemented",
-      "implementation": "Live policy-index.json (listed in CPO package_contents) has an entry 'Secure Configuration Guide' with file 'docs/policies/secure-configuration-guide.md' (repo-relative path, no URL).",
-      "evidence": [],
-      "gap": "The certification package lists no secure configuration guide, and the guide is not served from the site; the OCR's reference to it points nowhere on samaydlette.com.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The certification package explains how to obtain and use the Secure Configuration Guide: the guide itself opens with obtain, use and change instructions (where it is, that it is public and signed, how to compare a system's values with it, and that the operator's own comparison is published at /.well-known/security-settings.json), and the policy index lists it with its URL. Every deploy builds it from data/secure-configuration.json (scripts/build-scg.py) and publishes it signed at https://samaydlette.com/.well-known/secure-configuration-guide.json and .md.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_committed_guide_is_released_and_builds"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-PUB",
-      "status": "Partially Implemented",
-      "implementation": "A secure configuration guide exists in the repository only.",
-      "evidence": [],
-      "gap": "The guide is not published on the site in human-readable or machine-readable form, and its content predates the current inventory.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide is public, with no account or request: human-readable at https://samaydlette.com/.well-known/secure-configuration-guide.md and machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json, signed with the deploy's keyless identity, rebuilt and republished on every deploy.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-RSC",
-      "status": "Partially Implemented",
-      "implementation": "docs/policies/secure-configuration-guide.md (94 lines): sections 1 (AWS root, l.7-17) and 2 (GitHub owner, l.19-40) give access/config/operation/decommission instructions.",
-      "evidence": [],
-      "gap": "Required item 1 is inaccurate: root 'MFA enforced via Duo' (l.11) vs DEC-025 (virtual TOTP on root and operator IAM user); l.29-36 prescribe 90-day rotation of a deployer IAM user access key although CI uses OIDC roles (deploy-with-opa.yml:328,639; DEC-001 closed/remediated); section 3 (l.49-62) still describes the retired Basic Auth credential, 'no authorizer' and 'access logging deferred', contradicting SCN-2026-002. Required item 2 is missing: l.67-76 declare it N/A by misreading it as customer settings; root-only and owner-only security settings (root MFA, account password policy, account-level S3 BPA, account closure; branch protection, Actions permissions, environment reviewers) are not explained with their implications. Recommended item 3 missing: privileged accounts (operator IAM user saydlette-dev, deploy/plan/evidence-nightly roles, Cognito user-pool admin) not covered. Artifacts: no samaydlette.com URL for the human-readable guide and no machine-readable version. To close: Rewrite the guide from the current inventory: correct MFA/credential facts, delete the access-key and Basic Auth material, add a root-only/owner-only settings table with security implications, add a privileged-accounts section, and generate both an HTML page on samaydlette.com and a JSON form from one source each deploy (with a test that fails when the guide names a retired mechanism).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide (one source, data/secure-configuration.json; published at https://samaydlette.com/.well-known/secure-configuration-guide.md and .json) names each top-level administrative account (the AWS root user, the GitHub repository owner) and privileged account (the operator IAM user, the three CI roles, user-pool administration), says how each is named, and gives secure access, configuration, operation and decommissioning instructions for each. For every security setting it states who can operate it (root-only and owner-only settings marked), the recommended value and its security implication. It states the system as it is (virtual TOTP MFA on root and the operator user, an accepted finding, DEC-150); the build fails if the guide names a retired mechanism (the old shared app credential, a deployer access key, Duo-enforced root MFA).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_committed_guide_is_released_and_builds"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_guide_naming_a_retired_mechanism_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_policy_page_names_no_retired_mechanism"
+        }
       ]
     },
     {
       "frr_id": "SCG-CSO-SDF",
-      "status": "Partially Implemented",
-      "implementation": "Terraform-provisioned accounts ship hardened: infrastructure/cognito.tf:17 allow_admin_create_user_only, :21 mfa_configuration ON, :27 minimum_length 14; IAM roles least-privilege via Terraform.",
-      "evidence": [],
-      "gap": "The top-level administrative accounts (AWS root, GitHub owner) and the operator IAM user are not provisioned from code, and their MFA is virtual TOTP rather than the phishing-resistant default the system itself treats as the target (DEC-025, past due 2026-10-30); no explanation of how to access the defaults (artifact). To close: Move root/operator to phishing-resistant MFA (hardware key/passkey) and close DEC-025; record initial-provisioning defaults for the non-Terraform accounts in the guide and check them.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Privileged accounts created by code start in their recommended state: the CI roles' trust policies (infrastructure/bootstrap) and the Silk Reeling user pool (MFA required, admin-created users only, 14-character passwords; infrastructure/cognito.tf). The accounts not created by code (the AWS root user, the GitHub owner, the operator IAM user) are read on every deploy and compared with the guide's defaults (scripts/check-secure-config.py); the deploy fails on any deviation no decision covers. The one deviation is the MFA type on root and the operator user: virtual TOTP rather than the phishing-resistant default, an accepted finding (DEC-150, extending DEC-025), published against that record in /.well-known/security-settings.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-150"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_mfa_deviation_is_the_accepted_finding"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_matching_account_passes_with_mfa_as_the_accepted_deviation"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-API",
-      "status": "Partially Implemented",
-      "implementation": "Guide l.83 points to AWS and GitHub APIs as the upstream APIs.",
-      "evidence": [],
-      "gap": "Only a generic pointer; no explanation of which API calls view/adjust which security settings in this system. To close: Document, per setting in the SCG, the AWS/GitHub API or CLI call to read and change it (and that changes go via Terraform/PR).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every setting in the Secure Configuration Guide names the API or CLI call that reads it and the one that changes it (AWS IAM, S3 Control, Cognito and STS APIs; GitHub's REST API), and the deploy uses those read calls itself to compare the live settings. Changes go through Terraform or the repository settings in reviewed pull requests.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_every_setting_says_how_to_read_and_change_it"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-CMP",
-      "status": "Partially Implemented",
-      "implementation": "scripts/check-manual-settings.py (deploy-with-opa.yml:1664) compares live GitHub environment reviewers / required checks to expected values and publishes to trust-center.json (github_settings 'ok'); scripts/check-runtime-divergence.py compares live AWS config to deploy-time signal.",
-      "evidence": [],
-      "gap": "No comparison for AWS root settings (MFA type, root access keys absent, password policy) or the operator IAM user; the comparison is against deploy-time state, not against the guide's recommended defaults; GitHub owner settings beyond branch checks 'need admin access and are not observed'. To close: Add checks for root/operator settings (IAM credential report: root MFA, no root keys, MFA type; account password policy; account S3 BPA) and GitHub owner settings, comparing to the machine-readable SCG defaults; publish results.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy reads the current settings of the top-level administrative and privileged accounts (root MFA and access keys, MFA type, account password policy, account-level S3 Block Public Access, other IAM users' permissions, the operator user's MFA, console password and access-key age, the CI roles' trust subjects, the user-pool sign-in policy, and the GitHub environment and branch settings) and compares each with the guide's recommended default (scripts/check-secure-config.py). A deviation no in-force decision covers, or a setting that cannot be read, fails the deploy before the SDR is built. The GitHub owner's own two-factor setting, which no API exposes to the deploy, is the operator's attestation (DEC-151). The comparison is published at /.well-known/security-settings.json and .md.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_known_bad_account_fails_the_deploy"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_an_unreadable_setting_fails_the_deploy"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-151"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-EXP",
-      "status": "Partially Implemented",
-      "implementation": "Guide l.81 offers 'all configuration is in Terraform code'; trust-center.json publishes manual-settings results.",
-      "evidence": [],
-      "gap": "Terraform source is not an export of current security settings; root and GitHub-owner settings are not exported at all; no machine-readable export of current values. To close: Publish a signed JSON export of current security settings for top-level admin and privileged accounts (from the CMP checks) each nightly.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "Every deploy exports the current security settings of the top-level administrative and privileged accounts as signed JSON at /.well-known/security-settings.json (with a Markdown view): each setting's current value, recommended value and result. Values only: no account ID, ARN, IAM user or role name.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-settings.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_the_export_carries_no_user_name_or_account_id"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-MRG",
-      "status": "Not Implemented",
-      "implementation": "None: no machine-readable secure configuration guidance exists.",
-      "evidence": [],
-      "gap": "No machine-readable SCG that tools can compare against current settings. To close: Emit the recommended defaults as JSON (setting id, account, recommended value, implication, check id) and use it as the CMP comparison input.",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The Secure Configuration Guide is machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json: per setting, an ID, the account, who can operate it, the recommended value (literal or bound), the implication, the read and change calls and the check ID. The deploy's own comparison consumes it.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Compare live security settings with the secure configuration guide"
+        }
       ]
     },
     {
       "frr_id": "SCG-ENH-VRH",
-      "status": "Partially Implemented",
-      "implementation": "Git history of docs/policies/secure-configuration-guide.md.",
-      "evidence": [],
-      "gap": "No version number or release history of the recommended defaults; git history mixes editorial and default changes, and the guide's stale content shows changes to defaults were not released into it. To close: Add a version and a changelog of default changes to the machine-readable SCG; bump on each default change (enforced by a test when the defaults JSON changes).",
-      "closes_with": [
-        "W10"
+      "status": "Implemented",
+      "implementation": "The recommended defaults carry a version and a release history (the guide's release_history). Each release records a digest of the defaults it fixes; the build fails when a default changes without a new version and a changelog entry carrying the new digest.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/secure-configuration-guide.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_default_changed_without_a_release_fails_the_build"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_secure_configuration.py::test_a_release_with_a_new_digest_is_accepted"
+        }
       ]
     },
     {
@@ -1131,43 +2250,126 @@
     },
     {
       "frr_id": "SDR-CSO-FRR",
-      "status": "Partially Implemented",
-      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata), each with status, implementation, evidence, gap and the work that closes it; scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve.",
-      "evidence": [],
-      "gap": "The published SDR does not yet carry these records in fedRampRequirements (next W3 PR), and the independent verification and validation halves stay empty until an assessor is engaged (operator's decision of 2026-11-05). To close: Publish the records in the SDR's fedRampRequirements with rule-specific verification and validation drawn from the evidence each cites; flip each record as its workstream lands.",
-      "closes_with": [
-        "W3",
-        "sam"
-      ]
+      "status": "Implemented",
+      "implementation": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap. Each rule's independent verification and validation (frrAssessment) is the simulated assessor's signed result for it, carried verbatim; the human-readable form is the SDR's .md summary and its complete .view.md.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_every_applicable_rule_is_listed_once"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_an_invalid_record_set_never_reaches_the_sdr"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_simulated_assessor.py::test_the_deploy_needs_the_assessor_and_builds_the_sdr_from_its_set"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Download the simulated assessment"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/simulated-assessment.json"
+        }
+      ],
+      "simulated": {
+        "counterparty": "assessor",
+        "how": "Totally Real Assessment Services, LLC (simulated) is a reusable GitHub Actions workflow in this repository (simulated-assessor.yml) that runs on every deploy, before the SDR is built: it follows the provider's assessor guide, re-runs every cited test, checks every workflow step and decision, fetches and cosign-verifies every published artifact, and signs its results keylessly under its own workflow identity, which infrastructure/keys/assessor-identity.json pins. The deploy fails if it finds a failure, if its signature does not verify against that identity, or if a record was altered. It is not a FedRAMP Recognized assessment service and its set says so (fedramp_recognized: false); only the assessor is simulated, the mechanism is real."
+      }
     },
     {
       "frr_id": "SDR-CSO-MTD",
-      "status": "Partially Implemented",
-      "implementation": "security-decision-record.json metadata: last_updated (timestamp), source_of_update (build-sdr.py).",
-      "evidence": [],
-      "gap": "Version is the constant 'live (regenerated each deploy)', not an identifier; field names do not match the schema (version/lastUpdated/updateSource). To close: Emit a real version (semver bumped on content change, or commit SHA) and the schema's field names.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The SDR carries metadata.version, metadata.lastUpdated and metadata.updateSource in FedRAMP's schema. The version is semver: unchanged content keeps the previous version and a content change bumps it, judged by a sha256 of the content excluding metadata.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_version_starts_at_1_0_0_after_the_unversioned_record"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_unchanged_content_keeps_its_version_and_a_change_bumps_it"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_it_validates_against_fedramps_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
       "frr_id": "SDR-CSX-KMT",
-      "status": "Not Implemented",
-      "implementation": "KSI results are published per run (ksi-signal-runtime.json) and VDR counts as a daily trend (vdr-trend.json).",
-      "evidence": [],
-      "gap": "The SDR carries no historical metrics per KSI: no 30-day summary and no summary up to a year. No per-KSI history is kept to build them from.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "The SDR's daily metric data carries, for every KSI, its status, deploy-time validations and failures, automated methods and whether the runtime signal re-validated it, carried forward from the published SDR for up to a year; per KSI it summarizes the past 30 days and up to the past year. The unattended maintainer rebuilds the SDR daily, so there is a point for every day, not only deploy days.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_todays_point_carries_every_ksi"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_per_ksi_history_is_carried_forward_and_summarized_over_30_days_and_a_year"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_a_summary_counts_the_days_a_ksi_was_not_implemented"
+        },
+        {
+          "kind": "step",
+          "ref": "package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {
       "frr_id": "SDR-CSX-KSI",
-      "status": "Partially Implemented",
-      "implementation": "security-decision-record.json under /.well-known/ carries a record per KSI with an explanation and artifacts, built from the KSI signal's checks.",
-      "evidence": [],
-      "gap": "Verification and validation are the same boilerplate for every KSI (build-sdr.py), not per-KSI statements of the measures, their cycle, and how their automation was verified and validated.",
-      "closes_with": [
-        "W3"
+      "status": "Implemented",
+      "implementation": "Each KSI in the SDR has its own statement, built from its own measures and results: the measures (OPA rules annotated to it) and their objective, or the reason there are none and the risk to customers; their cycle (every deploy against the plan, daily at runtime where re-validated); verification that the measures demonstrate the KSI (the annotation check) and that the automation is accurate (the rules' own tests with a coverage floor and the CLI/Wasm parity test), or that the reason for no measure is not accepted; and validation that they are in place (this deploy's validations and failures, the runtime re-validation).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_each_ksi_states_its_own_measures_cycle_and_validation"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_a_ksi_without_a_measure_says_why_and_the_risk"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_ksi_metrics.py::test_no_two_ksis_share_the_same_statement"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr.py::test_every_ksi_is_listed_with_tests_and_evidence"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
       ]
     },
     {

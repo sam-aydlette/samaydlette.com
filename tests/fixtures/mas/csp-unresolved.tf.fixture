@@ -1,0 +1,11 @@
+# Known-bad: a CSP source names a local that is not defined, so its host cannot
+# be known; the check must fail rather than skip it.
+resource "aws_cloudfront_response_headers_policy" "bad" {
+  security_headers_config {
+    content_security_policy {
+      content_security_policy = join("; ", [
+        "connect-src 'self' https://${local.not_defined_anywhere}",
+      ])
+    }
+  }
+}

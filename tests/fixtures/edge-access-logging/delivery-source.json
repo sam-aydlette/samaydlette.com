@@ -1,0 +1,2 @@
+{"deliverySource": {"name": "samaydlette-com-edge-access", "logType": "ACCESS_LOGS", "service": "cloudfront",
+  "resourceArns": ["arn:aws:cloudfront::ACCOUNT:distribution/EXAMPLE"]}}

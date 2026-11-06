@@ -1,0 +1,8 @@
+{
+  "schema": "frr-records/1",
+  "$comment": "Known bad: evidence of a kind the assessor guide cannot tell an assessor how to reproduce.",
+  "records": [
+    {"frr_id": "CDS-CSO-CBF", "status": "Implemented", "implementation": "x",
+     "evidence": [{"kind": "vibes", "ref": "trust me"}]}
+  ]
+}

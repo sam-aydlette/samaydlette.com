@@ -54,7 +54,7 @@ def clean_set():
              "resource_type": "AWS::S3::Bucket", "native_id": ARN_BUCKET},
         ],
     }
-    sdr = {"record_type": "security-decision-record", "impact_level": "Moderate", "ksi_signal_id": SIGNAL_ID}
+    sdr = {"$schema": "x", "providerExtensions": {"impact_level": "Moderate", "ksi_signal_id": SIGNAL_ID}}
     cpo = {"package_type": "certification-package-overview", "impact_level": "Moderate",
            "ksi_signal_id": SIGNAL_ID}
     vdr = {"impact_level": "Moderate", "class": "C", "ksi_signal_id": SIGNAL_ID,
@@ -152,10 +152,23 @@ def test_c_risk_accepted_needs_vdr_decision_id():
     assert any("no non-null decision_id" in x for x in v)
 
 
+def _fields(s, art):
+    """The dict an artifact keeps its impact level and signal binding in."""
+    return rc.sdr_fields(s[art]) if art == "sdr" else s[art]
+
+
+def test_d_reads_the_sdr_provider_extensions_not_its_top_level():
+    s = clean_set()
+    s["sdr"]["impact_level"] = "Moderate"
+    s["sdr"]["providerExtensions"]["impact_level"] = "Low"
+    v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
+    assert v == ["(d) sdr impact level is 'low', expected 'moderate'"]
+
+
 @pytest.mark.parametrize("art", ["sdr", "cpo"])
 def test_d_impact_catches_a_low_sdr_or_cpo(art):
     s = clean_set()
-    s[art]["impact_level"] = "Low"
+    _fields(s, art)["impact_level"] = "Low"
     v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
     assert v == [f"(d) {art} impact level is 'low', expected 'moderate'"]
 
@@ -163,7 +176,7 @@ def test_d_impact_catches_a_low_sdr_or_cpo(art):
 @pytest.mark.parametrize("art", ["sdr", "cpo"])
 def test_d_impact_catches_an_sdr_or_cpo_with_no_impact_level(art):
     s = clean_set()
-    del s[art]["impact_level"]
+    del _fields(s, art)["impact_level"]
     v = rc.check_d_impact(s["signal"], s["sdr"], s["cpo"], s["vdr"], s["dashboard_html"])
     assert v == [f"(d) {art} carries no extractable impact level"]
 
@@ -184,7 +197,7 @@ def test_d_impact_catches_low_dashboard():
 @pytest.mark.parametrize("art", ["vdr", "sdr", "cpo"])
 def test_e_binding_catches_mismatched_signal_id(art):
     s = clean_set()
-    s[art]["ksi_signal_id"] = "99999999-9999-4999-8999-999999999999"
+    _fields(s, art)["ksi_signal_id"] = "99999999-9999-4999-8999-999999999999"
     v = rc.check_e_binding(s["signal"], s["sdr"], s["cpo"], s["vdr"])
     assert v == [f"(e) {art} signal_id '99999999-9999-4999-8999-999999999999' != inventory signal_id '{SIGNAL_ID}'"]
 

@@ -44,7 +44,8 @@ def test_the_site_sends_coep_credentialless():
 def test_every_response_headers_policy_sends_coep():
     # Not only the static site: the Silk Reeling app has its own policy, and
     # ZAP's five-instance cap hid it the first time (90004-2 on /silk-reeling/).
-    assert POLICY_RE.findall(TF.read_text()) == ["website", "silk_reeling"]
+    # The /.well-known/ policy adds read-only CORS for the certification data.
+    assert POLICY_RE.findall(TF.read_text()) == ["website", "silk_reeling", "well_known"]
     assert policies_without_coep(TF) == []
 
 

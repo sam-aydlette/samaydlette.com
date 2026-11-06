@@ -47,13 +47,14 @@ def test_figures_reproduce_published_numbers():
     # hub split: hand-written + family-default = total
     assert int(f["hub_handwritten"]) + int(f["hub_generated"]) == int(f["hub_total"])
     assert f["hub_handwritten"] == "116"
-    assert f["hub_total"] == "333"
+    assert f["hub_total"] == "382"
     # FedRAMP Moderate stack sums to the total
     assert int(f["moderate_implemented"]) + int(f["moderate_inherited"]) + int(f["moderate_na"]) == int(f["hub_total"])
     # coverage is measured against the published baseline, not the hub total
     assert f["moderate_baseline"] == "323"
     assert f["moderate_coverage"] == "323/323"
-    assert f["moderate_beyond"] == "10"
+    # controls FedRAMP's KSI mappings reach beyond Moderate (2026-10-13 revision)
+    assert f["moderate_beyond"] == "59"
     assert int(f["moderate_baseline"]) + int(f["moderate_beyond"]) == int(f["hub_total"])
     # spokes
     assert f["govramp_coverage"] == "339/339"
@@ -126,7 +127,7 @@ def test_altered_projection_count_flows_to_html(monkeypatch):
     # hand-written count is unchanged (component def untouched), so generated grows
     assert f["hub_generated"] == str(baseline + 1 - int(f["hub_handwritten"]))
     assert f["moderate_coverage"] == "323/323"
-    assert f["moderate_beyond"] == "11"
+    assert f["moderate_beyond"] == "60"
 
     # and that new value actually lands in the marked HTML
     marked = '<span data-figure="hub_total">331</span>'

@@ -1,0 +1,11 @@
+{
+  "title": "FedRAMP Certification Report (SIMULATED: this did not come from FedRAMP)",
+  "simulated": true,
+  "issuer": "Nobody with any authority. This proof of concept has no FedRAMP counterpart, so this file stands in for the Certification Report FedRAMP would send, to exercise the path that publishes such a report unmodified within two weeks of receipt (CDS-CSO-FRC).",
+  "cloudServiceOffering": "samaydlette.com (SAMCOM)",
+  "fedRampId": "Sam Aydlette (SAMCOM): PROOF-OF-CONCEPT-NOT-A-REAL-FEDRAMP-ID",
+  "received": "2026-11-05",
+  "determination": "None. No certification decision has been made, and none will be: nothing was ever submitted to FedRAMP.",
+  "findings": [],
+  "noteToAgencies": "If you came here hoping for a FedRAMP certification, sorry: this one is pretend. Hit me up on LinkedIn: https://www.linkedin.com/in/sa2/"
+}
