@@ -1,99 +1,117 @@
 # CLAUDE.md
 
-Guidance for working in this repository. Keep it accurate: when this file and the working tree disagree, the working tree wins — fix the code or fix this file.
+Rules that apply to every task in this repository. Procedures live in two project skills (`.claude/skills/`). Load the one that matches the task, or both when a change crosses them:
+
+- **`site-content`**: anything a visitor reads. Articles, research pages, section pages, nav and footer, CSS/JS, `feed.xml`, `sitemap.xml`.
+- **`compliance-pipeline`**: generators and gates (`scripts/`), registers (`data/`), Terraform, OPA and Lambdas (`infrastructure/`), workflows, the Trust Center, and anything published under `/.well-known/`.
+
+When this file, a skill and the working tree disagree, the working tree wins. Fix the code or fix the file, in the same PR. Facts belong here; procedures belong in a skill.
 
 ## What this repository is
 
-samaydlette.com is a static personal website on AWS **and** a working continuous-compliance pipeline: every deploy derives a set of signed, machine-readable compliance artifacts (a KSI signal, a VDR, and the CR26 Security Decision Record and Certification Package Overview) from **one canonical inventory** and publishes them under `/.well-known/`.
+Two things in one repo:
 
-Hold two facts at once — they shape every decision:
+1. **A personal site** (essays, books, projects): static HTML on AWS.
+2. **A working continuous-compliance pipeline.** Every deploy derives signed, machine-readable compliance artifacts (the KSI signal, the VDR, the CR26 SDR and CPO, the boundary map, the trust-center data) from **one canonical inventory** and publishes them under `/.well-known/`.
 
-- **It is a real, functioning production system.** Real AWS infrastructure, real CI/CD, real cryptographic signing. Changes must keep it deployable and keep the compliance gate green. Treat `main` as production.
-  - **Merging to `main` no longer deploys on its own:** the `deploy` job is bound to the `prod` GitHub Environment, which requires a human reviewer, so every deploy halts before `terraform apply` until someone approves it in the Actions UI. `deploy-with-opa.yml` has **no `schedule:` trigger** — a scheduled deploy could only ever queue at that gate, which is what let twelve days of stale evidence pass unnoticed. Every path to `terraform apply` is now human-initiated *and* human-approved.
-  - **One thing does run unattended: `evidence-nightly.yml`.** See the trade recorded under *Security & compliance rules*.
-- **It is also a proof of concept for a scaled version** — a reference architecture for what agency- or enterprise-grade automated compliance ("evidence reciprocity") would look like across many systems. Favor designs that generalize and stay legible; treat the single-account, single-site specifics as stand-ins for a multi-system deployment. **Be honest about the gap:** this repo has **no federal data and no agency sponsor**. It demonstrates the mechanism; it is **not** an authorized system. Never imply otherwise in code, docs, or generated artifacts.
+It is a real production system (`main` is production) and a proof of concept for a scaled, multi-system version. Favor designs that generalize and stay legible. It has **no federal data and no agency sponsor**: it demonstrates the mechanism and is **not** an authorized system. Never imply otherwise in code, docs, pages or generated artifacts.
 
-## Codebase map
+## How much to do on your own
 
-Confirm against the working tree on first run; correct this section if reality differs.
+The two recurring failures here are **overbuilding** and **mistakes that ship inside large changes**. These rules trade a little speed for fewer of both.
 
-- `infrastructure/` — Terraform (`main.tf`), OPA policy packages (`policy/`), JSON schemas (`schemas/ksi-signal.schema.json`, `schemas/ksi-catalog.json`), runtime Lambda (`lambda/index.js`).
-- `scripts/` — the artifact **generators**: `build-ksi-signal.py` (the canonical inventory), the VDR builder, and the CR26 record builders (`build-sdr.py`, `build-cpo.py`, and `build-cr26-vdr.py`, which turns the VDR report into FedRAMP's VDT, AVI and history reports). CR26 reports are validated against FedRAMP's 2026-06-24 JSON schemas, vendored verbatim with their sha256s in `infrastructure/schemas/fedramp-2026-06-24/`, by `scripts/_fedramp_schema.py` before they are written; a report that does not validate is never written. Never edit a vendored schema; the loader refuses any file whose hash differs from `SOURCES.json`. The per-control view (status, origination, statement per NIST 800-53 control) is the control projection in `scripts/_controls.py`, computed in memory from the inventory and the KSI catalog; the OSCAL SSP that used to carry it was retired under CR26 (2026-11-05) and the SDR's `rev5_controls` publishes it. Every human decision about a finding is a record in `data/decisions.json` (the decision register, which replaced the POA&M under CR26), read through `scripts/_decisions.py` by the VDR builder, the vulnerability gate, reconciliation and the trust center; every in-force record carries `decided_by`, `decided_on` and an annual `review_by`, which the loader and `tests/test_decision_records.py` enforce. These are the source of truth for everything published. `scripts/_common.py` holds the helpers they share (`classify` — the inheritance rule four artifacts must agree on — plus `sha256_file`, `prop`, `load_hub`, `sid`); it is imported via an `__file__`-relative `sys.path.insert` so every script stays standalone-runnable from any cwd. **`scripts/staged/` is not wired into anything** — parked generators, see its README; never assume a script there runs.
-- `website/` — static site content. `website/.well-known/` is where the **published** artifacts are served from (KSI signal + bundle, SDR, CPO, VDR + trend, IIW CSV, runtime signal, signing pubkey, schema), but in git it tracks only `security.txt` and `vdr-trend.json`: everything else there is gitignored build output that the deploy signs and uploads (the website sync excludes `.well-known/*`).
-- `docs/` — `policies/`, `runbooks/`, `scn/`, and `assessment/` (e.g. `ground-truth.md`).
-- `website/research/` — plain static pages: `authorization-boundary.html` (scope; **read it first for the "why"**) and the long-form essay `staying-in-the-loop.html` (threshold dynamics, titled "Staying in the Loop"). The essay's filename is **not** referenced by `build-ksi-signal.py`, which discovers pages with `rglob("*.html")`; the hardcoded path lives in `tools/essay/paths.py`, so renaming means updating that. `/research/tuning-the-eigenvalue.html` and `/research/the-plumbing.html` are redirect stubs (the latter to the dashboard; the "Automated Security Compliance" paper is retired).
-- `tools/essay/` — **local-only** structural checks for the long-form pages, run from the repo root (`make essay-check`, never in CI — the pipeline proves compliance, not article content): `integrity.py` (HTML balance, duplicate ids, footnote ref/backlink parity, broken anchors), `refcheck.py` (bibliography ↔ citation parity), `renumber.py` (footnote renumbering). `paths.py` is the one place they name a file. The prose tooling that used to live here (`prose_stats.py`, `ed.py`, `cut.py`) is **deleted**; do not reintroduce it unless asked.
-- `website/trust/index.html` + `website/assets/js/trust.js` — the Trust Center, written from an Authorizing Official's seat. It is a presentational shell over `/.well-known/trust-center.json` and `boundary-map.json`; **the JSON under `/.well-known/` is the source of truth, not the HTML.** It re-checks the runtime signal and the nightly beacon live against the published freshness windows. The site adheres to FedRAMP 20x Class C Certification requirements; it never claims to be certified or authorized. `/viewer.html` is a redirect stub.
-- `scripts/build-boundary-graph.py` + `docs/boundary/boundary-classification.json` — the boundary map, **generated on every deploy** from the canonical inventory and Terraform state and published signed at `/.well-known/boundary-map.json`. The classification is the operator-owned meaning (zones, groups, declared nodes, the data-flow table); reconciliation invariant (l) fails the deploy on an unclassified component, so a new resource is classified in the same change that adds it. Never hand-draw the boundary.
-- `tools/boundary-map/corroborate.py` (local only) — independent corroboration of the map by RAMPART on TAP, which collects the account from the AWS APIs. The operator runs it and commits `docs/boundary/corroboration.json`; the deploy signs and publishes it as `/.well-known/boundary-corroboration.json`, and the trust center reports its result and age (30-day window). Resources only TAP sees go to the decision queue.
-- `scripts/build-trust-center.py` — the trust center's data (`/.well-known/trust-center.json`, signed): the "is this picture true?" checks, the queue of decisions that need a person, the policy catalog, the escalation rate and the decision log, all derived from this build's artifacts and the registers. Built after the reconciliation gate; fails closed if its inputs are bound to another inventory. A register field that is not recorded (who decided, when, review date) is published as a gap, never filled in.
-- `.github/workflows/deploy-with-opa.yml`, `infrastructure/Makefile`, `.checkov.yaml` — the pipeline, entry points, and IaC scan config.
-- `.github/workflows/evidence-nightly.yml` — the unattended VDR refresh, **twice a day**, plus once after every successful deploy to `main` (`workflow_run`, so a deploy that fixes a failing nightly also clears its beacon): re-scan (Syft + Grype against a fresh vulnerability DB), rebuild the VDR + trend, run the same vulnerability and reconciliation gates, republish six objects under `.well-known/vdr-*` (report, bundle, markdown, trend, trend bundle, provenance attestation), and on every run, pass or fail, write a status beacon (`.well-known/vdr-status.json`, outcomes only, unsigned). No `terraform apply`, no website sync. Its alerting is the `alert` job (a GitHub issue), not the deploy workflow's `notify`.
-- `infrastructure/watchdog.tf` + `infrastructure/watchdog/` — the **evidence SLA watchdog**: an hourly Lambda reads every artifact listed in the governed freshness config from the bucket (AWS APIs only, no internet egress), publishes the VDR's and runtime signal's ages, the nightly's result and a count of artifacts past their window as CloudWatch metrics, and four alarms email the operator via a CMK-encrypted SNS topic. This is the page; the GitHub issue is the paper trail. The email subscription is created out of band so no address enters Terraform state. Runbook: `docs/runbooks/evidence-sla-alarm.md`.
+### 1. Size the task before touching anything
 
-AWS: account is referenced in the published KSI signal; `us-east-2` for the site/app/Lambda/S3/CloudWatch/API Gateway/Secrets Manager, `us-east-1` for ACM/CloudFront and the DNSSEC/CloudFront KMS keys. Confirm before acting.
+- **Small: go straight to a PR, no plan needed.**
+  - A procedure a skill marks *(small task)*, or
+  - a change to at most 3 files, none of them protected, that does exactly what was asked.
+- **Everything else: post a plan and wait for an explicit OK.** If unsure, it is not small.
+- **A question gets an answer, not a change.** Don't edit files unless asked to.
 
-## The core invariant — do not break this
+**Protected paths** (a change touching any of these is never small): `scripts/`, `data/`, `infrastructure/`, `policies/`, `.github/`, `Makefile`, `website/.well-known/`, `website/trust/`, `website/assets/js/trust.js`, `docs/boundary/`, `CLAUDE.md`, `.claude/`.
 
-The system rests on one idea: **the canonical inventory is the single source of truth; every other artifact is derived from it and reconciled against live reality.**
+### 2. The plan (15 lines or fewer)
 
-- **NEVER hand-edit generated artifacts** (`/.well-known/*.json`, the SSP, the KSI signal, the VDR). Change the **generator** in `scripts/` and regenerate.
-- All artifacts must build from one inventory `signal_id`/hash and carry it. A decision about a finding goes in `data/decisions.json` and nowhere else; reference it by its `DEC-NNN` ID.
-- A **reconciliation gate** runs in CI before publish and **fails closed**. **NEVER disable, weaken, or bypass it (or the OPA gate) to make a build pass.** Fix the underlying issue or raise it.
-- **Site content is inventoried content.** `build_html_components()` in `scripts/build-ksi-signal.py` hashes **every** `*.html` under `website/` into the canonical inventory as an `html_artifact`. So editing a page changes its sha256 in the KSI signal, the SSP, and the VDR, and *adding* a page adds a component. Both are fine and both are generator-driven: run the pipeline, never hand-add the entry. A content-only change is still a pipeline change.
-- **Publish freshness:** a green pipeline must publish *this run's* artifacts. The served `/.well-known/*` must carry the current commit and a fresh `emitted_at`; a stale serve is a bug, not a cache quirk. This has bitten before — verify the post-deploy round-trip.
+- **Goal:** one sentence, in the requester's terms.
+- **Files:** each file you will change or add, with a reason.
+- **Out of scope:** what you noticed but will *not* do.
+- **Verify:** the commands you will run and what passing looks like.
+- **Production or irreversible steps** (`terraform apply`, bootstrap, DNS, deleting published evidence): name each one, or it is not approved.
 
-## How to work
+Once the plan is approved, work inside it without asking.
 
-- **Work autonomously — don't ask for routine permission.** Default to acting, not asking. Editing files, running builds/tests, applying additive infra after a `plan` review, and opening PRs do not need a check-in — make the call, note it in the PR, and keep moving. **Pause for only two things: a genuine security concern, or a genuine architecture decision** — an irreversible or hard-to-reverse fork with lasting consequences (a data model, a trust boundary, a vendor or region choice). Everything reversible verifies its way forward (confirm the new path before removing the old one) rather than stopping to ask. The cost-ceiling flag and the DS-record handoff below are the only other interrupts.
-- **Ground truth first, verified independently.** Do not treat any artifact, the pipeline's own output, or Terraform state as proof of what is deployed. Confirm **live cloud state** via the `aws` CLI (credentials are configured locally) or Steampipe, and paste the API output into the PR. A check that only re-reads the build does not count.
-- **Build / verify:** **`make check` is the gate.** Exit 0 means shippable, non-zero means not — read the exit code, not the output. It is hermetic (no AWS, no network, no Terraform state, no generated artifacts), so it runs in any clone. One-time setup: `make dev-setup` (creates `.venv` from `requirements-dev.txt`, which pins exactly what CI installs). Measured on a clean tree, **~4s total**: `lint` (ruff, scripts/+tests/) ~0.04s, `typecheck` (mypy, scripts/) ~0.1s, `test` (pytest tests/) ~3.0s, `test-policies` (opa fmt + coverage floor + policy tests) ~0.25s. First non-zero wins.
-  - `make check-full` adds the **reconciliation gate** (`reconcile`). It consumes generated artifacts (`ksi-signal.json`, `vdr-report.json`, the SDR and CPO) built from `terraform output -json`, so it needs AWS and cannot run in a fresh clone; it fails loudly rather than skipping when the artifacts are absent. CI enforces them on every deploy.
-  - `test-policies` needs `opa` on PATH at the version pinned in `.github/workflows/deploy-with-opa.yml` (`OPA_VERSION`). An older `opa` cannot parse these Rego v1 policies — and it also silently *skips* ~15 policy tests instead of failing, so a stale binary makes the suite quietly shrink. Check `opa version` if the policy suite looks suspiciously green.
-  - ⚠️ **`make pipeline` is not a verification step.** It is `dev-setup validate plan apply-infra`, and `apply-infra` runs `terraform apply` against production infrastructure. Never run it to "check" anything.
-  - **There is no local publish path, by design.** `make pipeline` and `make apply-infra` change infrastructure and publish *nothing*: artifact generation, signing, the reconciliation gate, and the publish to `/.well-known/` all live in `.github/workflows/deploy-with-opa.yml`, behind the `prod` environment approval. `make deploy` is a stub that refuses and says so — local publishing once bypassed the gate and put a partial, unsigned artifact set over the live evidence.
-  - Still required around infra changes: `make plan` before any apply, `make reconcile` (add `RECONCILE_FLAGS=--live`), `make verify-published` to check the live evidence from outside, and `checkov` per `.checkov.yaml`. Keep a unit test per gate invariant and the committed broken fixture that must fail the gate.
-- **Site prose and AI assistance.** The operator sometimes uses AI to brainstorm and draft content, and every article and the essay carries a disclaimer saying so. Claude may help brainstorm and draft site content when asked. The opinions are the operator's: draft toward their stated position, never supply one, and leave final wording to them. Keep AI-drafted text to what was requested, and call it out in the PR so the operator can rework it in their own voice. The disclaimer is part of that honesty: keep its wording identical across pages, and give every new article and long-form page the disclaimer.
-- **Plan before large changes.** Use plan mode for anything touching the generators, the gate, or `infrastructure/`.
-- **Apply policy:** additive, reversible changes can be applied after a `terraform plan` review in the PR. For cutovers/deletions, verify the new path works and keep the old one until then; the only step that requires a human is publishing the DNSSEC **DS record** at the registrar.
-- **Keep the bootstrap stack synced with `main`.** `infrastructure/bootstrap/` (the IAM trust layer, CloudFront, DNSSEC, and the remote-state backend) is **operator-applied by hand, not by CI** (its state is remote, under `bootstrap/terraform.tfstate` in the state bucket; every build plans it read-only and reports pending changes in the trust center, but CI never applies it) — so its working-tree config drifts from `main` easily, and a `terraform apply` from a stale tree silently **reverts changes already merged via PR**. This has bitten us (a merged `tag:GetResources` grant would be undone by an apply from an out-of-date tree). Rules: (1) whenever a commit touches `infrastructure/bootstrap/`, bring the local tree to `origin/main` for that directory (`git checkout main -- infrastructure/bootstrap/`) so it never lags what's merged; (2) **before any `terraform apply` in `infrastructure/bootstrap/`, sync it to `origin/main` first** and require the `terraform plan` to show *only* your intended change — if it shows unrelated adds/removes, the tree is stale, so stop and sync rather than apply. Never apply bootstrap from a divergent branch. (3) **Don't apply bootstrap while a deploy run is in flight.** The run plans the trust root in its compliance-check job, *before* the `prod` approval gate, and reads bootstrap state again in the deploy job after it; an apply in between publishes a trust center whose "pending trust-root changes" predate the apply (it happened 2026-10-05). Apply first and then start the deploy, or let the run finish and redeploy. If a merged bootstrap change can't be applied through a synced tree, prefer a surgical, IaC-matching apply (e.g. the exact `aws iam put-role-policy` the merged config specifies) over applying the whole stale stack.
-- **Cost ceiling:** no recurring cost above ~$2/month without flagging it.
-- Keep a running `TASKS.md` for multi-step work so progress survives context limits.
+### 3. Scope tripwire: stop and check in when
 
-## Parallel work (multiple agents / worktrees)
+- you need to touch a file that is not in the plan, or the diff is outgrowing it;
+- you are about to add something the request did not ask for: a file, script, function, flag, config value, dependency, workflow, abstraction or tool;
+- a gate or test fails and the fix would change the gate, the test or its fixture rather than the code under test;
+- the request can't be done as stated, or the plan turns out to be wrong. Report it; don't improvise a different solution;
+- you face a production or irreversible step the approved plan does not name, anything that widens IAM, recurring cost above ~$2/month, a genuine security concern, or an architecture decision (data model, trust boundary, vendor, region).
 
-Speed comes from parallelizing *independent* work, not from putting more agents on the same files.
+When you stop, send one message: what you found, the options, your recommendation, and the exact action or identifier you need from the operator.
 
-- **One worktree per task.** Give each concurrent agent its own `git worktree` + branch + directory so they never share a working tree. Don't run two agents in the same checkout.
-- **Parallelize the leaves, serialize the trunk.** Independent tasks that don't share a generator, the canonical inventory, or the same artifact can run concurrently (e.g. OIDC vs logging vs docs). Anything that touches the **keystone** — the inventory builder or the reconciliation gate — or the same register or generated artifact (`data/decisions.json`, a `/.well-known/*` file) must be serialized; concurrent edits there will collide and thrash the gate.
-- **Let the gate arbitrate.** The fail-closed reconciliation gate is what makes concurrency safe: if two branches produce inconsistent artifacts, CI catches it at merge instead of shipping drift. Never weaken the gate to resolve a conflict — rebase and regenerate.
-- **Subagents for investigation.** Fan out read-only research/inspection to subagents (separate context windows); keep artifact-mutating work to a single owner per artifact.
-- Realistic parallelism here is modest — a handful of genuinely independent tasks. Prefer worktree-per-independent-task over deep orchestration.
+### 4. Don't overbuild
 
-## Security & compliance rules
+- Make the smallest change that fully meets the request.
+- Before adding anything, search for something that already does it. Prefer editing to adding, and deleting to adding.
+- No "while I'm here" changes. List them under **Follow-ups noticed** in the PR instead.
+- Don't build tooling to help with a task unless asked. The prose tooling, the parked generators in `scripts/staged/` and the planning backlog were all built and later removed.
+- One PR per logical change. If the work needs several PRs, say so in the plan.
 
-- **Impact level is FIPS-199 Moderate / FedRAMP 20x Class C, authoritative everywhere.** No "system is Low" text anywhere. Re-rate; never downgrade-by-relabel.
-- **Least privilege always.** Never broaden IAM to make something work — scope down or ask.
-- **Published reporting must be under 24 hours old, and something now enforces it.** Every freshness window is a governed value in `infrastructure/schemas/freshness-config.json` (one entry per artifact published under `/.well-known/`, schema-validated, with who decided it and a review date). The trust center, the watchdog (Lambda and alarm thresholds) and `scripts/check-evidence-freshness.py` all read it and fail closed without it; never put a window back as a literal. A new published artifact needs an entry, or `tests/test_freshness_config.py` fails. `scripts/check-evidence-freshness.py` fetches `/.well-known/vdr-report.json` over the public URL and fails if its `emitted_at` is outside the window (`--all <site>` checks every listed artifact). Note what the reconciliation gate does *not* do: `check_f_freshness` in `scripts/reconcile.py` only asserts that the staged signal carries the current commit and has an `emitted_at` at all. It has no staleness threshold and never looks at the live edge — which is why twelve days of rot passed with every gate green. Don't mistake one for the other.
-- **The unattended-write trade — read this before touching `evidence-nightly.yml`.** That workflow runs nightly with **no required reviewer**, because published evidence has to stay fresh while nobody is awake. It is a genuine unattended production write and it is named as one. What makes it acceptable is its size: it replaces an unattended `terraform apply` over the whole stack with an unattended `PutObject` under a single S3 key prefix. Its dedicated OIDC role (`infrastructure/bootstrap/evidence-nightly.tf`) can write **only** `.well-known/vdr-*`, invalidate CloudFront, and make the read-only calls the reconciliation gate's `--live` sweep needs. It cannot apply Terraform, sync the website, delete an object, or write anywhere else. **The correct response to "the nightly needs one more permission" is to ask whether that work belongs on the unattended path at all — not to widen the role.** The `prod` environment and its reviewer requirement are separate and must stay as they are.
-- **The nightly refreshes the VDR only, and binds to the *published* inventory.** It fetches `/.well-known/ksi-signal.json`, verifies its Sigstore bundle against the deploy workflow's pinned identity, and uses that `signal_id` to satisfy reconciliation invariant (e) without rebuilding the inventory. It fetches the published SDR and CPO and verifies their signatures **as gate inputs only** — never re-signed, never re-published. A changed inventory means changed infrastructure and belongs on the reviewed deploy path. A newly disclosed CVE **cannot** auto-publish: invariants (g) and (h) require a human-authored POA&M entry, so the nightly fails until someone dispositions it. That is the gate working; the `alert` job is what makes the failure visible. The live reconciliation (`--live`) runs even when the vulnerability gate has failed, and the alert names which gate stopped the run, so a failing vulnerability gate can no longer hide a skipped drift check. Publishing still requires both gates to pass.
-- **NEVER hardcode account IDs, ARNs, or secrets** in committed code/Terraform — use variables and data sources. Reading the account ID for verification is fine; committing it is not. Never commit credentials.
-- **NEVER assert any service's FedRAMP authorization status without verifying it from a current source.**
-- **Don't fabricate compliance.** If a control can't be met, document the residual honestly with a Moderate-level rationale. Dismissed scanner findings must be classified as **false positive** (with justification) or **risk-accepted** — never silently dropped.
-- **WAF is intentionally declined.** SC-7/SC-5 are met via managed interfaces (CloudFront + API Gateway) + AWS Shield Standard + throttling, with a WAF's incremental layer-7 filtering documented as the residual. Don't re-add it as a "fix."
-- **Narrative must match config.** Every at-rest-encryption (and similar) claim in the docs must match the deployed configuration; they must not drift.
+### 5. Don't ship mistakes
+
+- Read the files you will change, and their tests, before editing. Trust the working tree over this file, a skill, or memory.
+- Verify by exit code, not by reading output. **`make check` is the gate for every change**: hermetic, ~4s, one-time `make dev-setup`. Skills add task-specific checks.
+- Before opening a PR, read your own diff as a reviewer would. Anything not in the plan comes out or becomes a check-in.
+- When a change alters what the deploy publishes, verify the published result, not the working tree. Six fix PRs followed the CR26 merges on 2026-11-05.
+- For multi-step work, keep a running `TASKS.md` (gitignored) so progress survives context limits.
+
+## Invariants: never break these
+
+- **One canonical inventory is the source of truth.** Every published artifact derives from it, carries its `signal_id`, and is reconciled against live reality.
+- **Never hand-edit generated artifacts** (anything under `/.well-known/`; the generated block of `website/feed.xml`). Change the generator and regenerate.
+- **Never disable, weaken or bypass the reconciliation gate, the OPA gate or any other gate** to make a build pass. Fix the cause or raise it.
+- **Site content is inventoried content.** Every `*.html` under `website/` is hashed into the inventory, so editing or adding a page is a pipeline change. The pipeline handles it; never hand-add an inventory entry.
+- **A decision about a finding lives only in `data/decisions.json`**, referenced by its `DEC-NNN` ID.
+- **Deploys are human-approved.** Merging to `main` does not deploy: the `deploy` job waits for a reviewer on the `prod` environment. The one unattended production write is `evidence-nightly.yml`; never widen its role (the trade-off is spelled out in `compliance-pipeline`).
+- **There is no local publish path.** `make -C infrastructure deploy` refuses by design. `make -C infrastructure pipeline` runs `terraform apply` against production: never run it to "check" anything.
+- **Impact level is FIPS-199 Moderate / FedRAMP 20x Class C** everywhere. Never relabel it down.
+- **Least privilege.** Never broaden IAM to make something work.
+- **Never commit account IDs, ARNs, secrets or credentials.** Use variables and data sources.
+- **Claims must be true.** Narrative in docs, pages and the trust center must match deployed config. Never assert any service's FedRAMP status without a current source. Never fabricate compliance: a control that isn't met is documented as a residual, and a dismissed scanner finding is a false positive (with justification) or risk-accepted, never silently dropped.
+- **The opinions on the site are the operator's.** Claude may draft; it never supplies a position (see `site-content`).
 
 ## Pull requests
 
-- **Run CodeGuard on every PR.** Before opening a PR, invoke the CodeGuard security skill (`/codeguard`; underlying Agent Skill `software-security`, from Project CodeGuard) against the diff. Address its findings or record why a finding doesn't apply, and note in the PR that CodeGuard ran. CodeGuard is also useful during planning/generation, not only at review.
-- One PR per logical change; the title references the relevant finding / POAM IDs.
-- PR body has four parts: **Changed** (what + why), **Verified** (the live API/Steampipe output, not just the build), **Residual / needs human**, **Couldn't verify**.
-- **PR/commit text is public — keep it clean and impersonal.** This repo is public, so every PR title, PR body, and commit message is world-readable. Never paste the chat conversation, a turn-by-turn debugging narrative, or our back-and-forth reasoning. Never include sensitive or account-specific identifiers — KMS key IDs, full ARNs, account IDs, role/secret names, raw IAM policy internals, or verbatim error dumps that carry them. Describe *what changed and why* in outcome terms; reference resources by their Terraform address or role in the system, not by live ID. Verification should state the outcome ("the deploy role's permissions are in place"), not paste the live values you inspected.
-- **Don't bury what you need from a human.** If the PR can't fully fix the issue without a human action (a permission you lack, a registrar step, a console-only operation), don't file it as a vague "needs human" line and move on — ask the operator directly and now, with the specific action and identifier they need. The PR itself should be the complete fix for everything you *can* do.
-- Open PRs for review; do not merge your own unless told to.
+- Before opening a PR, run CodeGuard (`/codeguard`, Agent Skill `software-security`) on the diff. Address its findings or record why one doesn't apply, and note in the PR that it ran.
+- One PR per logical change. The title references the relevant finding or `DEC-NNN` IDs, if any.
+- Body: **Changed** (what and why) · **Verified** (what you ran and the outcome) · **Residual / needs human** · **Couldn't verify** · **Follow-ups noticed**.
+- **The repo is public.** Titles, bodies and commit messages are world-readable. No chat transcript or debugging narrative. No account IDs, ARNs, key IDs, role or secret names, raw IAM policy text, or error dumps that carry them. Refer to resources by Terraform address or role, and state verification outcomes, not live values.
+- If something needs a human (a permission, a registrar step, a console-only action), ask the operator directly and now, with the exact action and identifier. Don't leave it as a vague line in the PR.
+- Open PRs for review. Don't merge your own unless told to.
 
-## Where to find context
+## Repo map
 
-- **Why it's built this way:** `website/research/authorization-boundary.html` and the Trust Center (`website/trust/`).
-- **Current compliance posture:** `data/decisions.json` (the decision register) and the published `/.well-known/` artifacts.
-- **Assessment + remediation plan:** `docs/assessment/ground-truth.md`, plus the standing remediation prompt / SAR when provided alongside a task.
+Confirm against the working tree, and fix this table when it is wrong.
+
+| Path | What it is | Skill |
+|---|---|---|
+| `website/pages/`, `website/research/`, `website/index.html` | Articles, section pages, long-form research pages and redirect stubs | site-content |
+| `website/assets/` | CSS, JS modules, images, fonts, vendored libraries | site-content |
+| `website/feed.xml`, `website/sitemap.xml` | Feed (generated from `pages/articles.html`) and sitemap (hand-maintained) | site-content |
+| `website/trust/`, `website/assets/js/trust.js` | Trust Center: a shell over `/.well-known/trust-center.json` | compliance-pipeline |
+| `website/.well-known/` | Published artifacts. Git tracks only `security.txt` and `vdr-trend.json`; the rest is gitignored build output | compliance-pipeline |
+| `scripts/` | Artifact generators and gates. `scripts/staged/` is parked and not wired in | compliance-pipeline |
+| `data/` | Registers: `decisions.json`, mappings, profiles, third-party components | compliance-pipeline |
+| `infrastructure/` | Terraform, OPA policies, schemas, Lambdas. `bootstrap/` is operator-applied | compliance-pipeline |
+| `.github/workflows/` | `deploy-with-opa.yml` (gated deploy), `evidence-nightly.yml` (unattended VDR refresh), ZAP, SCN tagging | compliance-pipeline |
+| `docs/` | Policies, runbooks, SCNs, boundary classification, `architecture-decisions.md` | compliance-pipeline |
+| `tools/essay/`, `tools/preview/`, `tools/a11y/` | Long-form checks, local preview server, accessibility scanner | site-content |
+| `tests/` | pytest suite run by `make check` | either |
+
+## Where to find the "why"
+
+- `website/research/authorization-boundary.html` and the Trust Center: why the system is built this way.
+- `docs/architecture-decisions.md`: settled decisions. Don't relitigate one unless asked.
+- `data/decisions.json` and the published `/.well-known/` artifacts: current compliance posture.
+- A remediation prompt or SAR, when one is provided with a task.
