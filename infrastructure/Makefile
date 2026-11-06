@@ -185,7 +185,7 @@ gate:
 	@echo "✅ Inventory gate passed"
 
 # Python unit/integration tests (inventory gate, provenance, PURLs, control params,
-# CMMC mapping, figure injection). Runnable in PR CI without AWS state.
+# trust-center figures). Runnable in PR CI without AWS state.
 python-test:
 	@echo "Running Python test suite..."
 	cd .. && python3 -m pytest tests/ -q

@@ -281,3 +281,20 @@ def test_the_gate_runs_before_anything_is_applied():
     assert "test" in wf["jobs"]["deploy"]["needs"]
     assert not any("terraform apply" in s.get("run", "") or "aws s3" in s.get("run", "")
                    for s in wf["jobs"]["test"]["steps"])
+
+
+def test_personnel_is_a_simulated_counterparty_with_every_rule_of_the_field(applicable, resolve):
+    """No process waits on a person (DEC-194): `personnel` stands in for review
+    attendees and a trainee, and keeps every rule of the simulated field."""
+    assert "personnel" in _frr.SIMULATED_COUNTERPARTIES
+    schema = json.loads((REPO / "infrastructure" / "schemas" / "frr-records.schema.json").read_text())
+    assert "personnel" in json.dumps(schema)
+    ok = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+                   evidence=[{"kind": "step", "ref": "deploy-with-opa.yml#Run OPA Compliance Check"}],
+                   simulated={"counterparty": "personnel", "how": "A plainly simulated trainee."})
+    _frr.validate(ok, applicable, resolve)
+    no_deploy_evidence = _doc_with("VDR-CSO-MSP", status="Implemented", implementation="x",
+                                   evidence=[{"kind": "test", "ref": "tests/test_frr_records.py::test_summary_counts_add_up"}],
+                                   simulated={"counterparty": "personnel", "how": "A plainly simulated trainee."})
+    with pytest.raises(SystemExit, match="needs deploy-time evidence"):
+        _frr.validate(no_deploy_evidence, applicable, resolve)

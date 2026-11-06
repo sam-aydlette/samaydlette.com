@@ -1,5 +1,5 @@
 {
   "schema": "agency-access/1",
-  "_note": "The register of agency access requests, decisions and withdrawals for the certification package (CDS-TRC-AAI, CDS-UTC-AAD); procedure in docs/procedures/agency-access.md, read by scripts/agency-access.py, which the deploy runs and which fails on a denial not notified to FedRAMP within 5 business days. Records name agencies and systems, never people. No federal agency has filed a request: the list is empty, and the mechanism is exercised on every deploy with plainly fictional agencies (data/agency-access-exercise.json).",
+  "_note": "The register of agency access requests, decisions and withdrawals (CDS-TRC-AAI, CDS-UTC-AAD); procedure in docs/procedures/agency-access.md, read by scripts/agency-access.py, which the deploy runs. No engagement (DEC-194): no real agency or FedRAMP request is taken, so the list is empty, and validation fails the deploy on any entry that is not `simulated: true` for an agency named '... (simulated)'. Records name agencies and systems, never people. The mechanism is exercised on every deploy with plainly fictional agencies (data/agency-access-exercise.json).",
   "requests": []
 }

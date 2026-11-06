@@ -11,6 +11,16 @@ The VDR builder, the vulnerability gate, reconciliation and the trust center all
 read it through this module, so they cannot disagree about what a decision
 covers. Records carried over from the POA&M keep their old ID in `former_id`.
 
+One marking format for who wrote a record and when the operator confirmed it:
+`source.drafted_by` names a drafter other than the operator (e.g. AI-drafted),
+and `confirmed_on` is the date the operator confirmed the decision. A record
+without `confirmed_on` cannot be in force, and no title or justification may
+carry its own drafting or confirmation note ("AI-drafted", "not yet
+confirmed", "for the operator to confirm"): that lives in the two fields only.
+A decision replaced by something else (automation, a newer record) is closed
+as `superseded`, with `closed_on` and `replaced_by` saying what replaces it;
+only a `remediated` record counts as a remediated finding.
+
 Fails closed: a missing or invalid register stops the build. A register that
 silently read as empty would turn every handled finding into an open one, or
 worse, a check that resolves to no decision into a passing one.
@@ -35,14 +45,19 @@ PLAN_KEYS = {"date", "target_pain"}
 # risk-accepted / false-positive; vulnerabilities use the triage vocabulary.
 IN_FORCE = ("false-positive", "risk-accepted", "accepted", "operational-requirement", "mitigated",
             "vendor-dependency", "under-investigation", "remediate")
-CLOSED = ("remediated",)
+CLOSED = ("remediated", "superseded")
 DECISION_FIELDS = ("decided_by", "decided_on", "review_by")
+# Drafting and confirmation are fields (source.drafted_by, confirmed_on), never
+# prose: a note in the text is how five marking formats crept in.
+MARKING_RE = re.compile(r"(?i)\bAI[- ]drafted\b|not yet confirmed|for (the operator|sam aydlette)'?s? (to confirm|confirmation)"
+                        r"|confirm at review|\bproposed;")
 # The fields infrastructure/schemas/decisions.schema.json allows. An unknown
 # field is refused: a misspelt review_by would otherwise read as absent.
 TOP_KEYS = {"$comment", "_note", "schema", "decisions"}
 RECORD_KEYS = {"id", "former_id", "title", "status", "disposition", "justification", *DECISION_FIELDS,
                "closed_on", "original_detection_date", "planned_completion", "planned_reduction", "automatable", "remediation_plan",
-               "vendor_dependency", "point_of_contact", "controls", "applies_to", "vuln_fields", "source"}
+               "vendor_dependency", "point_of_contact", "controls", "applies_to", "vuln_fields", "source",
+               "confirmed_on", "replaced_by"}
 APPLIES_KEYS = {"check_ids", "vuln_ids", "resources"}
 
 
@@ -77,6 +92,12 @@ def validate(doc, where="data/decisions.json"):
         for k in ("title", "justification"):
             if not isinstance(r.get(k), str) or not r[k].strip():
                 _fail(f"{rid}: {k} must be a non-empty string")
+            if MARKING_RE.search(r[k]):
+                _fail(f"{rid}: {k} carries a drafting or confirmation note; use source.drafted_by and confirmed_on")
+        src = r.get("source")
+        if src is not None and (not isinstance(src, dict) or ("drafted_by" in src and not (
+                isinstance(src["drafted_by"], str) and src["drafted_by"].strip()))):
+            _fail(f"{rid}: source must be an object, and source.drafted_by a non-empty string")
         status, disp = r.get("status"), r.get("disposition")
         if status == "in-force":
             if disp not in IN_FORCE:
@@ -87,12 +108,26 @@ def validate(doc, where="data/decisions.json"):
             for k in ("decided_on", "review_by"):
                 if not DATE_RE.match(r[k]):
                     _fail(f"{rid}: {k} must be an ISO date")
+            # The operator's confirmation: an unconfirmed draft confers nothing.
+            conf = r.get("confirmed_on")
+            if not (isinstance(conf, str) and DATE_RE.match(conf)):
+                _fail(f"{rid}: an in-force decision needs confirmed_on (the date the operator confirmed it); "
+                      "an unconfirmed draft cannot be in force")
+            if conf < r["decided_on"]:
+                _fail(f"{rid}: confirmed_on {conf} is before decided_on {r['decided_on']}")
+            if r.get("replaced_by") is not None:
+                _fail(f"{rid}: replaced_by is for superseded records only")
         elif status == "closed":
             if disp not in CLOSED:
                 _fail(f"{rid}: a closed record's disposition must be one of {list(CLOSED)}")
-            for k in ("closed_on", "decided_on", "review_by"):
+            for k in ("closed_on", "decided_on", "review_by", "confirmed_on"):
                 if k in r and not (isinstance(r[k], str) and DATE_RE.match(r[k])):
                     _fail(f"{rid}: {k} must be an ISO date")
+            if disp == "superseded":
+                if "closed_on" not in r or not (isinstance(r.get("replaced_by"), str) and r["replaced_by"].strip()):
+                    _fail(f"{rid}: a superseded record needs closed_on and replaced_by (what replaces it)")
+            elif r.get("replaced_by") is not None:
+                _fail(f"{rid}: replaced_by is for superseded records only")
         else:
             _fail(f"{rid}: status must be in-force or closed")
         plan = r.get("planned_reduction")
@@ -146,6 +181,12 @@ def records(reg):
 
 def in_force(reg):
     return [r for r in reg["decisions"] if r["status"] == "in-force"]
+
+
+def remediated(reg):
+    """Closed records that settled a finding. A superseded record replaced a
+    decision; it remediated nothing."""
+    return [r for r in reg["decisions"] if r["status"] == "closed" and r["disposition"] == "remediated"]
 
 
 def by_any_id(reg):

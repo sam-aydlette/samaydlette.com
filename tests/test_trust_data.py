@@ -151,9 +151,11 @@ def test_the_trust_page_indexes_the_data_and_says_how_to_get_access():
     for href in ('/.well-known/trust-manifest.json', '/.well-known/trust-manifest.md',
                  '/.well-known/assessor-guide.md', '/.well-known/simulated-assessment.json',
                  '/.well-known/policies/agency-access.md', '/.well-known/policies/information-sharing.md',
-                 '/.well-known/access-summary.json', 'issues/new?template=agency-access.yml'):
+                 '/.well-known/access-summary.json', '/.well-known/agency-access-exercise.md'):
         assert f'href="{href}"' in section or href in section, href
-    assert (REPO / ".github" / "ISSUE_TEMPLATE" / "agency-access.yml").is_file()
+    # no engagement (DEC-194): no intake form, and the statement is on the page
+    assert "issues/new" not in page and not (REPO / ".github" / "ISSUE_TEMPLATE" / "agency-access.yml").exists()
+    assert "No engagement (DEC-194)" in section
     # the simulated assessor never passes for a real one
     assert "(simulated)" in section and "not a FedRAMP assessment" in section
     # the privacy notice states what is not logged and how long raw records live

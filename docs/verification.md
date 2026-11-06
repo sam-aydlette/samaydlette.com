@@ -68,7 +68,7 @@ and sign them with their own identities:
 |---|---|
 | `vdr-*` (the VDR, its attestation, trend ledger and CR26 vulnerability reports) | `evidence-nightly.yml`, twice a day, to stay inside the 24-hour freshness policy |
 | `security-decision-record*`, `certification-package-overview*`, `ongoing-certification-report*` | `package-maintenance.yml`, daily, to keep the package inside its two-week window |
-| `ocr-issue*`, `snapshot-*` (the quarterly issue index, issued reports, snapshot indexes) | `package-maintenance.yml` only |
+| `ocr-issue*`, `snapshot-*`, `quarterly-reviews*`, `quarterly-review-*` (the quarterly issue index, issued reports, snapshot indexes, Quarterly Reviews) | `package-maintenance.yml` only |
 | `incident-*` (the incident log, delivery log and reports) | `incident-reports.yml`, twice a day and whenever the incident register changes |
 | `simulated-assessment.*` | `simulated-assessor.yml` only (the deploy relays it unchanged) |
 

@@ -2,33 +2,91 @@
 
 Providers MUST verify and validate the status of non-machine-based information
 resources at least once every 3 months. data/non-machine-resources.json lists
-them (policies, procedures, plans, the operator role, records and registers);
-each entry's last_verified names the decision record in which the operator
-attests that verification. People do the verifying; this module checks that
-the attestation exists, is in force and is no older than the register's
-max_age_days, that every listed file still exists, and that no policy or
-runbook was added without an entry.
+them (policies, procedures, plans, the operator role, records and registers).
+Nobody verifies them by hand: every resource gets machine checks, run on every
+deploy (enforced) and every night (published), so the verification is never
+more than a day old:
 
+  exists       the file is there;
+  paths        every repository path it cites (a relative Markdown link, or a
+               `scripts/...`, `data/...`, `docs/...`, `infrastructure/...`,
+               `tests/...`, `website/...` or `.github/...` path in backticks)
+               resolves, relative to the document or to the repository root;
+  decisions    every DEC ID it cites is in the decision register;
+  retired      it names no retired mechanism (RETIRED: the POA&M, the SSP, the
+               CDS overview, Basic Auth, Duo-enforced MFA, "no SCN-Type label is
+               required", long-lived deploy keys), except on a line that says the
+               thing is retired, replaced or no longer used;
+  counts       a stated count tagged `<!-- nmv-count NAME=N -->` equals what the
+               code says (COUNTERS), and the tagged line states N;
+  register     a register is loaded by its own validator (the decision register)
+               or parsed as JSON.
+
+The status (/.well-known/vdr-non-machine-vv.json) is the quarterly V&V record:
+when every check passes, verifiedAt is the time of the run; when any fails,
+verifiedAt is the epoch, so the published freshness window is red at once.
 Fails closed: a missing or malformed register is an error, never an empty list.
 """
 
 import json
 import re
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 DEFAULT_PATH = REPO / "data" / "non-machine-resources.json"
 TOP_KEYS = {"$schema", "$comment", "schema", "max_age_days", "resources"}
-ENTRY_KEYS = {"id", "path", "kind", "title", "owner", "verifies", "last_verified"}
+ENTRY_KEYS = {"id", "path", "kind", "title", "owner", "verifies"}
 KINDS = {"policy", "procedure", "plan", "role", "record", "register"}
 ID_RE = re.compile(r"^NMR-[A-Z0-9-]+$")
-DEC_RE = re.compile(r"^DEC-\d{3}$")
-DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 # The rule's "at least once every 3 months": the longest three calendar months.
 RULE_MAX_DAYS = 92
+EPOCH = "1970-01-01T00:00:00+00:00"
 # Directories whose every Markdown file is a non-machine resource that must be listed.
-MUST_LIST: tuple[tuple[str, set[str]], ...] = (("docs/policies", {"README.md"}), ("docs/runbooks", set()))
+MUST_LIST: tuple[tuple[str, set[str]], ...] = (("docs/policies", {"README.md"}), ("docs/runbooks", set()),
+                                              ("docs/procedures", set()))
+
+# Retired mechanisms. A line that says the thing is retired or replaced may name it.
+RETIRED = {
+    "POA&M": re.compile(r"\bPOA&(?:amp;)?M\b|\bPOAM-\d+|\bplan of action and milestones\b", re.I),
+    "SSP": re.compile(r"\bSSP\b|\bSystem Security Plan\b"),
+    "CDS overview": re.compile(r"\bCDS overview\b", re.I),
+    "Basic Auth": re.compile(r"\bBasic Auth(?:entication)?\b", re.I),
+    "Duo-enforced MFA": re.compile(r"\b(?:via|through|by|with) Duo\b(?! Mobile)|\bDuo (?:root )?MFA\b", re.I),
+    "no SCN-Type label": re.compile(r"no SCN-Type label is required", re.I),
+    "long-lived deploy keys": re.compile(r"(?<!no )(?<!never )(?<!without )long-lived (?:deploy|deployment|AWS|access) "
+                                         r"(?:access )?keys?", re.I),
+}
+RETIRED_OK = re.compile(r"\b(?:retired|replaced|replaces|formerly|superseded|no longer|backfilled|"
+                        r"instead of|was removed|removed in)\b", re.I)
+DEC_RE = re.compile(r"\bDEC-\d{3}\b")
+LINK_RE = re.compile(r"\]\(([^)\s]+)\)")
+CODE_PATH_RE = re.compile(r"`((?:scripts|data|docs|infrastructure|tests|\.github|website)/[^`\s]+)`")
+COUNT_TAG_RE = re.compile(r"<!--\s*nmv-count\s+([a-z0-9-]+)=(\d+)\s*-->")
+NUMBER_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+                "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
+
+
+def _watchdog_alarms(repo):
+    tf = (repo / "infrastructure" / "watchdog.tf").read_text(encoding="utf-8")
+    block = tf[tf.index("watchdog_alarms = {"):]
+    depth = 0
+    for i, ch in enumerate(block):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                block = block[:i]
+                break
+    return len(re.findall(r'^\s{4}"[a-z0-9-]+"\s*=\s*\{', block, re.M))
+
+
+def _policies(repo):
+    return len(list((repo / "docs" / "policies").glob("*-policy.md")))
+
+
+COUNTERS = {"watchdog-alarms": _watchdog_alarms, "family-policies": _policies}
 
 
 def _fail(msg):
@@ -36,8 +94,8 @@ def _fail(msg):
 
 
 def validate(doc, where="data/non-machine-resources.json"):
-    if not isinstance(doc, dict) or doc.get("schema") != "non-machine-resources/1":
-        _fail(f"{where} is not a non-machine-resources/1 document")
+    if not isinstance(doc, dict) or doc.get("schema") != "non-machine-resources/2":
+        _fail(f"{where} is not a non-machine-resources/2 document")
     if set(doc) - TOP_KEYS:
         _fail(f"{where}: unknown field(s) {sorted(set(doc) - TOP_KEYS)}")
     m = doc.get("max_age_days")
@@ -59,10 +117,6 @@ def validate(doc, where="data/non-machine-resources.json"):
         for k in ("path", "title", "owner", "verifies"):
             if not isinstance(e[k], str) or not e[k].strip():
                 _fail(f"{rid}: {k} must be a non-empty string")
-        lv = e["last_verified"]
-        if (not isinstance(lv, dict) or set(lv) != {"on", "decision"}
-                or not DATE_RE.match(str(lv.get("on"))) or not DEC_RE.match(str(lv.get("decision")))):
-            _fail(f"{rid}: last_verified must be {{on: YYYY-MM-DD, decision: DEC-NNN}}")
     return doc
 
 
@@ -77,59 +131,107 @@ def load(path=None):
     return validate(doc, str(p))
 
 
-def problems(doc, decisions, today, repo=REPO):
-    """Every reason the register does not show a current verification, as
-    strings; empty when every resource was verified within max_age_days under
-    an in-force decision. `decisions` is a loaded decisions/1 register."""
-    recs = {r["id"]: r for r in decisions["decisions"]}
+def _resolves(ref, doc_path, repo):
+    ref = ref.split("#", 1)[0].rstrip("/.,;:")
+    if not ref or re.search(r"[<>*{}$]|YYYY|NNN", ref):
+        return True    # a pattern or placeholder, not a path
+    return any((base / ref).exists() for base in (doc_path.parent, repo))
+
+
+def text_problems(rid, text, doc_path, repo, decision_ids):
+    """Every machine-check failure for one Markdown resource."""
     out = []
-    limit = doc["max_age_days"]
+    for n, line in enumerate(text.splitlines(), 1):
+        refs = [r for r in LINK_RE.findall(line) if not re.match(r"[a-z]+:|#|/", r)]
+        refs += CODE_PATH_RE.findall(line)
+        for ref in refs:
+            if not _resolves(ref, doc_path, repo):
+                out.append(f"{rid}: line {n} cites {ref}, which does not exist")
+        for dec in DEC_RE.findall(line):
+            if dec not in decision_ids:
+                out.append(f"{rid}: line {n} cites {dec}, which is not in the decision register")
+        if not RETIRED_OK.search(line):
+            for term, rx in RETIRED.items():
+                if rx.search(line):
+                    out.append(f"{rid}: line {n} names a retired mechanism ({term})")
+        for name, stated in COUNT_TAG_RE.findall(line):
+            fn = COUNTERS.get(name)
+            if fn is None:
+                out.append(f"{rid}: line {n} tags an unknown count {name!r}")
+                continue
+            actual, n_stated = fn(repo), int(stated)
+            words = {stated} | ({NUMBER_WORDS[n_stated]} if n_stated < len(NUMBER_WORDS) else set())
+            visible = COUNT_TAG_RE.sub("", line).lower()
+            if actual != n_stated:
+                out.append(f"{rid}: line {n} states {name} = {n_stated}; the code has {actual}")
+            elif not any(re.search(rf"\b{w}\b", visible) for w in words):
+                out.append(f"{rid}: line {n} tags {name} = {n_stated} but does not state it")
+    return out
+
+
+def register_problems(rid, path):
+    """A register is checked by its own validator, or parsed as JSON."""
+    try:
+        if path.name == "decisions.json":
+            import _decisions   # noqa: PLC0415 (only the decision register needs it)
+            _decisions.load(path)
+        else:
+            json.loads(path.read_text(encoding="utf-8"))
+    except SystemExit as exc:
+        return [f"{rid}: {path.name} does not validate ({str(exc)[:160]})"]
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return [f"{rid}: {path.name} is not valid JSON ({type(exc).__name__})"]
+    return []
+
+
+def problems(doc, decisions, repo=REPO):
+    """Every reason a resource does not pass its machine checks, as strings;
+    empty when all pass. `decisions` is a loaded decisions/1 register."""
+    ids = {r["id"] for r in decisions["decisions"]}
+    out = []
     listed = {e["path"] for e in doc["resources"]}
     for e in doc["resources"]:
-        rid, lv = e["id"], e["last_verified"]
-        if not (repo / e["path"]).is_file():
+        rid, p = e["id"], repo / e["path"]
+        if not p.is_file():
             out.append(f"{rid}: {e['path']} does not exist")
-        on = date.fromisoformat(lv["on"])
-        if on > today:
-            out.append(f"{rid}: last verified {lv['on']}, after today")
-        elif (today - on).days > limit:
-            out.append(f"{rid}: last verified {lv['on']}, {(today - on).days} days ago (more than {limit})")
-        d = recs.get(lv["decision"])
-        if d is None:
-            out.append(f"{rid}: {lv['decision']} is not in the decision register")
-        elif d.get("status") != "in-force":
-            out.append(f"{rid}: {lv['decision']} is not in force")
-        elif d.get("review_by", "") < today.isoformat():
-            out.append(f"{rid}: {lv['decision']} lapsed on {d['review_by']}")
-        elif d.get("decided_on") != lv["on"]:
-            out.append(f"{rid}: verified {lv['on']} but {lv['decision']} was decided {d.get('decided_on')}")
+            continue
+        if e["kind"] == "register":
+            out += register_problems(rid, p)
+        else:
+            out += text_problems(rid, p.read_text(encoding="utf-8"), p, repo, ids)
     for folder, skip in MUST_LIST:
         for p in sorted((repo / folder).glob("*.md")):
             rel = f"{folder}/{p.name}"
             if p.name not in skip and rel not in listed:
                 out.append(f"{rel} has no entry in the register")
-    return out
+    return list(dict.fromkeys(out))
 
 
-def status(doc, decisions, today, now=None):
-    """The published status (/.well-known/vdr-non-machine-vv.json). verifiedAt is
-    the OLDEST verification, so the freshness window lapses with the first
-    resource that falls out of date."""
+def status(doc, decisions, now=None, repo=REPO):
+    """The published status (/.well-known/vdr-non-machine-vv.json), the
+    quarterly V&V record: verifiedAt is this run when every check passes, else
+    the epoch."""
     now = now or datetime.now(timezone.utc)
-    probs = problems(doc, decisions, today)
-    oldest = min(date.fromisoformat(e["last_verified"]["on"]) for e in doc["resources"])
+    probs = problems(doc, decisions, repo)
+    ok = not probs
+    verified = now.isoformat() if ok else EPOCH
     return {
-        "schema": "non-machine-vv/1",
+        "schema": "non-machine-vv/2",
         "rule": "VDR-TFR-NMV",
         "generatedAt": now.isoformat(),
-        "verifiedAt": datetime.combine(oldest, time(0, tzinfo=timezone.utc)).isoformat(),
-        "nextDueBy": (oldest + timedelta(days=doc["max_age_days"])).isoformat(),
+        "verifiedAt": verified,
+        "nextDueBy": (now.date() + timedelta(days=doc["max_age_days"])).isoformat() if ok else now.date().isoformat(),
         "maxAgeDays": doc["max_age_days"],
-        "status": "ok" if not probs else "lapsed",
+        "method": "Machine checks on every deploy and every night (scripts/_nonmachine.py): the file exists, every "
+                  "path and DEC ID it cites resolves, it names no retired mechanism, every tagged count matches "
+                  "the code, and a register validates. No person verifies anything by hand.",
+        "checks": ["exists", "paths", "decisions", "retired", "counts", "register"],
+        "status": "ok" if ok else "lapsed",
         "problems": probs,
         "source": "data/non-machine-resources.json",
         "resources": [{"id": e["id"], "kind": e["kind"], "title": e["title"], "path": e["path"],
                        "owner": e["owner"], "verifies": e["verifies"],
-                       "lastVerified": e["last_verified"]["on"], "decision": e["last_verified"]["decision"]}
+                       "lastVerified": verified[:10] if ok else None,
+                       "result": "fail" if any(p.startswith(e["id"] + ":") for p in probs) else "pass"}
                       for e in doc["resources"]],
     }

@@ -8,8 +8,9 @@ it. Several workflows write the same files:
   * the evidence nightly (evidence-nightly.yml) rewrites the VDR family
     (`vdr-*`) twice a day;
   * the package maintainer (package-maintenance.yml) rewrites the SDR, CPO and
-    OCR daily, and alone writes the quarterly issue index, issued reports and
-    snapshot indexes (`ocr-issue*`, `snapshot-*`);
+    OCR daily, and alone writes the quarterly issue index, issued reports,
+    snapshot indexes and Quarterly Reviews (`ocr-issue*`, `snapshot-*`,
+    `quarterly-reviews*`, `quarterly-review-*`);
   * the incident publisher (incident-reports.yml) rewrites the incident log,
     the delivery log and every report (`incident-*`);
   * the simulated assessor (simulated-assessor.yml) signs its own assessment;
@@ -40,7 +41,7 @@ _RULES = (
     (("vdr-",), ("deploy", "nightly")),
     (("security-decision-record", "certification-package-overview", "ongoing-certification-report"),
      ("deploy", "maintenance")),
-    (("ocr-issue", "snapshot-"), ("maintenance",)),
+    (("ocr-issue", "snapshot-", "quarterly-reviews", "quarterly-review-"), ("maintenance",)),
     (("incident-",), ("deploy", "incident")),
 )
 

@@ -42,7 +42,6 @@ website/.well-known/iiw.csv
 infrastructure/iiw.csv
 infrastructure/oscal-ssp.json
 infrastructure/ksi-signal.json
-infrastructure/cmmc-out.json
 # CR26 certification-data artifacts (built in CI from the canonical inventory, signed
 # and published to /.well-known/; never committed — same policy as the OSCAL artifacts above)
 infrastructure/ongoing-certification-report.json

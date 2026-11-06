@@ -681,10 +681,10 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "$a.bundle" "$a.json"
         done
 
-    # VDR-TFR-NMV: the non-machine V&V status, published with the VDR. Not
-    # enforced here (a lapsed quarterly review must not stop the nightly
-    # evidence); the deploy enforces it, and the published verifiedAt has a
-    # 92-day freshness window, so the watchdog alarms when it lapses.
+    # VDR-TFR-NMV: the machine checks of every non-machine resource, published
+    # with the VDR. Not enforced here (a stale document must not stop the
+    # nightly evidence); the deploy enforces it, and a failing check publishes
+    # verifiedAt at the epoch, so the watchdog alarms at once.
     - name: Non-machine verification and validation status (VDR-TFR-NMV)
       working-directory: infrastructure
       run: |
@@ -880,6 +880,33 @@ jobs:
           --url "${SITE_ORIGIN}/.well-known/vdr-report.json" \
           --expect-sha256 "${BUILT_SHA}" \
           --retries 12 --retry-delay 20
+
+    # CCM-QTR-MTG: a Quarterly Review date passed with no review published
+    # (package-maintenance.yml holds them, with simulated attendees) fails the
+    # nightly. A missing index is checked as empty: any passed date then fails.
+    - name: No Quarterly Review overdue
+      run: |
+        set -euo pipefail
+        code=$(curl -s -o qr-index.json -w '%{http_code}' "${SITE_ORIGIN}/.well-known/quarterly-reviews.json")
+        case "$code" in
+          200)
+            # Only the maintainer's signature counts: a forged index cannot hide a missed review.
+            curl -sfL --retry 3 -o qr-index.bundle "${SITE_ORIGIN}/.well-known/quarterly-reviews.bundle"
+            cosign verify-blob --bundle qr-index.bundle --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" \
+              --certificate-identity "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main" \
+              qr-index.json
+            python3 scripts/check-quarterly-review.py --index qr-index.json ;;
+          403|404) python3 scripts/check-quarterly-review.py --no-index ;;
+          *) echo "::error::quarterly-reviews.json answered HTTP $code"; exit 1 ;;
+        esac
+
+    # SCG-ENH-CMP: the repository settings the workflow token can read, compared
+    # with the secure configuration guide's recommended values (DEC-151).
+    - name: Compare repository settings with the secure configuration guide (SCG-ENH-CMP)
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        DEPENDABOT_TOKEN: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
+      run: python3 scripts/check-secure-config.py --account github-owner --output "$RUNNER_TEMP/repo-settings.json" --md-output "$RUNNER_TEMP/repo-settings.md"
 
     # -------------------------------------------------------------------------
     # STATUS BEACON — written on every run, pass or fail

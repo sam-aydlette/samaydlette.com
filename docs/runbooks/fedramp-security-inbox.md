@@ -60,7 +60,7 @@ Edit `data/fsi-simulation/messages.json`, including the `expected` block, and ru
 
 ## Changing the published contact (AFC-CSO-NOC)
 
-1. Notify FedRAMP through the "[CSP] Notification of Changes" form on help.fedramp.gov. For this simulated system, that step is itself hypothetical.
+1. Record the notice to the simulated FedRAMP (a real provider would use the "[CSP] Notification of Changes" form on help.fedramp.gov). Nothing is sent to anyone (DEC-194).
 2. In `data/cds/offering.json`, append a `history` entry with the new contact, `since`, and `fedramp_notified: {"on": "YYYY-MM-DD", "channel": "..."}`.
 3. Change `contact`.
 

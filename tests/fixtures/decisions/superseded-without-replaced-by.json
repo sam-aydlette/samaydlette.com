@@ -1,0 +1,25 @@
+{
+  "_note": "Known-bad: a superseded record that does not say what replaces it.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "closed",
+      "disposition": "superseded",
+      "justification": "fixture",
+      "decided_on": "2026-01-01",
+      "confirmed_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "closed_on": "2026-11-06"
+    }
+  ]
+}

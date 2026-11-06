@@ -114,6 +114,100 @@ def check_github() -> dict[str, Any]:
     return evaluate_github(environments, [p.get("name", "") for p in policies.get("branch_policies", [])], branch)
 
 
+# --- repository settings the workflow token can read (SCG-ENH-CMP) --------------------
+# Compared on every deploy and every night with the guide's recommended values by
+# scripts/check-secure-config.py. Settings no token the pipeline holds can read
+# (the owner's two-factor setting and tokens; the repository's admin-only
+# security and Actions settings) are not guessed: DEC-151 states the owner's.
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def workflow_permissions(root: str = REPO_ROOT) -> dict[str, Any]:
+    """Every workflow's top-level token permissions, from the files. A workflow
+    that declares them never falls back to the repository's default, so the
+    repository-level Actions setting governs nothing here."""
+    wf_dir = os.path.join(root, ".github", "workflows")
+    undeclared, write_all, writes = [], [], {}
+    for name in sorted(os.listdir(wf_dir)):
+        if not name.endswith((".yml", ".yaml")):
+            continue
+        with open(os.path.join(wf_dir, name)) as fh:
+            lines = fh.read().splitlines()
+        block, inside = [], False
+        for line in lines:
+            if line.startswith("permissions:"):
+                inside = True
+                block.append(line.split(":", 1)[1].split("#")[0].strip())
+                continue
+            if inside:
+                if line and not line[0].isspace() and not line.startswith("#"):
+                    break
+                block.append(line.split("#")[0].strip())
+        if not inside:
+            undeclared.append(name)
+            continue
+        text = " ".join(b for b in block if b)
+        if "write-all" in text:
+            write_all.append(name)
+        granted = sorted(b.split(":")[0].strip() for b in block if b.endswith(": write"))
+        if granted:
+            writes[name] = granted
+    return {"undeclared": undeclared, "write_all": write_all, "top_level_write": writes}
+
+
+def dependabot_updates(root: str = REPO_ROOT) -> list[str]:
+    """ecosystem:directory for every Dependabot version-update entry."""
+    out, eco = [], None
+    with open(os.path.join(root, ".github", "dependabot.yml")) as fh:
+        for line in fh:
+            s = line.strip()
+            if s.startswith("- package-ecosystem:"):
+                eco = s.split(":", 1)[1].strip().strip("\"'")
+            elif s.startswith("directory:") and eco:
+                out.append(f"{eco}:{s.split(':', 1)[1].strip().strip(chr(34) + chr(39))}")
+                eco = None
+    return sorted(out)
+
+
+def check_repository() -> dict[str, Any]:
+    """Facts for the repository settings, or {check: error text} where a read failed."""
+    facts: dict[str, Any] = {}
+    errors: dict[str, str] = {}
+    api = f"https://api.github.com/repos/{REPO_SLUG}"
+    headers = {"Accept": "application/vnd.github+json"}
+    if os.environ.get("GITHUB_TOKEN"):
+        headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+    try:
+        rulesets = _get_json(f"{api}/rulesets", headers)
+        facts["github-rulesets"] = {"rulesets": len(rulesets),
+                                    "with_bypass": sum(1 for r in rulesets if r.get("bypass_actors"))}
+    except Exception as exc:  # noqa: BLE001 (not observed, reported as such)
+        errors["github-rulesets"] = f"rulesets could not be read ({type(exc).__name__})"
+    # Dependabot alerts are readable only with the token the detection feeds use;
+    # a read that succeeds means they are enabled (GitHub answers 403 when off).
+    token = os.environ.get("DEPENDABOT_TOKEN")
+    if token:
+        try:
+            _get_json(f"{api}/dependabot/alerts?per_page=1&state=open",
+                      {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}"})
+            facts["github-dependabot-alerts"] = True
+        except Exception as exc:  # noqa: BLE001
+            code = getattr(exc, "code", None)
+            if code == 403:
+                facts["github-dependabot-alerts"] = False
+            else:
+                errors["github-dependabot-alerts"] = f"Dependabot alerts could not be read ({type(exc).__name__})"
+    else:
+        errors["github-dependabot-alerts"] = "no token that can read Dependabot alerts in this run"
+    try:
+        facts["github-workflow-permissions"] = workflow_permissions()
+        facts["github-dependabot-updates"] = dependabot_updates()
+    except OSError as exc:
+        errors["github-workflow-permissions"] = errors["github-dependabot-updates"] = type(exc).__name__
+    return {"facts": facts, "errors": errors}
+
+
 # ---------------------------------------------------------------------------
 
 def evaluate_dnssec(answers: dict[str, dict[str, Any]]) -> dict[str, Any]:

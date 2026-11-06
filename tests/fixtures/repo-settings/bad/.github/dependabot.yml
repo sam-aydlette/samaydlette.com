@@ -1,0 +1,7 @@
+# Known-bad (SCG-ENH-CMP): Dependabot no longer watches the Lambda's npm packages.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

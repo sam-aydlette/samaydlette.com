@@ -38,6 +38,10 @@ KNOWN_BAD = [
     ("planned-reduction-malformed.json", "planned_reduction must be {date: YYYY-MM-DD, target_pain: N0-N5}"),
     ("planned-reduction-closed.json", "only an in-force record plans a reduction"),
     ("automatable-no-evidence.json", "'no' needs its evidence"),
+    ("unconfirmed.json", "an in-force decision needs confirmed_on"),
+    ("marking-in-text.json", "justification carries a drafting or confirmation note"),
+    ("superseded-without-replaced-by.json", "a superseded record needs closed_on and replaced_by"),
+    ("confirmed-before-decided.json", "confirmed_on 2025-12-31 is before decided_on 2026-01-01"),
 ]
 
 
@@ -63,7 +67,11 @@ def test_each_known_bad_register_fails_closed_for_its_reason(fixture, reason):
     assert reason in str(exc.value)
 
 
-@pytest.mark.parametrize("fixture", [f for f, _ in KNOWN_BAD if f != "duplicate-claim.json"])
+# The JSON schema cannot express a cross-record claim, a text screen or a date order.
+LOADER_ONLY = {"duplicate-claim.json", "marking-in-text.json", "confirmed-before-decided.json"}
+
+
+@pytest.mark.parametrize("fixture", [f for f, _ in KNOWN_BAD if f not in LOADER_ONLY])
 def test_the_schema_refuses_the_same_registers(fixture):
     # Uniqueness across records is the loader's alone; a schema cannot say it.
     jsonschema = pytest.importorskip("jsonschema")
@@ -251,3 +259,22 @@ def test_the_deploy_deletes_the_published_poam_and_fails_if_it_is_still_served()
     # Only a 404 counts as gone; any other error fails the round-trip.
     assert "'(404)'" in check["run"] and "could not confirm" in check["run"]
     assert steps.index(publish) < steps.index(check)
+
+
+def test_every_in_force_record_is_confirmed_and_carries_no_drafting_note():
+    """One marking format (source.drafted_by plus confirmed_on): a record the
+    operator has not confirmed cannot be in force."""
+    for r in _decisions.in_force(_decisions.load()):
+        assert r.get("confirmed_on") and r["confirmed_on"] >= r["decided_on"], r["id"]
+        assert not _decisions.MARKING_RE.search(r["title"] + " " + r["justification"]), r["id"]
+    recs = _decisions.records(_decisions.load())
+    assert all(recs[f"DEC-{n:03d}"]["confirmed_on"] == recs[f"DEC-{n:03d}"]["decided_on"]
+               for n in range(3, 41) if recs.get(f"DEC-{n:03d}", {}).get("status") == "in-force")
+
+
+def test_the_closed_procedural_records_are_superseded_not_remediated():
+    recs = _decisions.records(_decisions.load())
+    for rid in ("DEC-102", "DEC-103", "DEC-104", "DEC-105", "DEC-106", "DEC-190", "DEC-191", "DEC-192"):
+        assert recs[rid]["status"] == "closed" and recs[rid]["disposition"] == "superseded", rid
+        assert recs[rid]["replaced_by"].strip(), rid
+    assert recs["DEC-194"]["status"] == "in-force" and recs["DEC-194"]["confirmed_on"] == "2026-11-06"

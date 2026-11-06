@@ -166,3 +166,26 @@ def test_the_deploy_reads_only_this_sites_delivery():
         "aws_cloudwatch_log_delivery.edge_access.arn",
         "aws_cloudwatch_log_delivery_source.edge_access.arn",
         "aws_cloudwatch_log_delivery_destination.edge_access.arn"}
+
+
+# --- own-records lookup (DEC-160), exercised against a simulated requester -----------
+
+def test_the_own_records_lookup_finds_exactly_the_stated_window():
+    found = summ.own_records(summ.EXERCISE["synthetic_records"], summ.EXERCISE["window"])
+    assert len(found) == summ.EXERCISE["expected_matches"] == 2
+    assert all(set(r) <= set(summ.SUPPLIED_FIELDS) for r in found)
+    assert not set(summ.SUPPLIED_FIELDS) & set(chk.IDENTIFYING) and set(summ.SUPPLIED_FIELDS) <= set(chk.ALLOWED_FIELDS)
+
+
+def test_every_build_exercises_the_lookup_and_delivers_nothing():
+    doc = summ.build({}, [], datetime(2026, 11, 6, tzinfo=timezone.utc))
+    ex = doc["ownRecordsExercise"]
+    assert ex["simulated"] is True and "(simulated)" in ex["requester"]
+    assert ex["syntheticCheck"]["result"] == "pass" and ex["deliveredTo"].startswith("nobody")
+    assert "DEC-194" in doc["party_records"] and "no deadline" in doc["party_records"]
+
+
+def test_known_bad_a_lookup_that_misses_fails_the_build(monkeypatch):
+    monkeypatch.setitem(summ.EXERCISE, "expected_matches", 3)
+    with pytest.raises(SystemExit, match="own-records lookup found 2 synthetic record"):
+        summ.build({}, [], datetime(2026, 11, 6, tzinfo=timezone.utc))

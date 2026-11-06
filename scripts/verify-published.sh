@@ -68,7 +68,7 @@ signers_for() {
     vdr-*) echo "$IDENTITY $NIGHTLY_IDENTITY" ;;
     security-decision-record*|certification-package-overview*|ongoing-certification-report*)
       echo "$IDENTITY $MAINT_IDENTITY" ;;
-    ocr-issue*|snapshot-*) echo "$MAINT_IDENTITY" ;;
+    ocr-issue*|snapshot-*|quarterly-reviews*|quarterly-review-*) echo "$MAINT_IDENTITY" ;;
     incident-*) echo "$IDENTITY $INCIDENT_IDENTITY" ;;
     *) echo "$IDENTITY" ;;
   esac

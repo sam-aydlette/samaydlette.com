@@ -9,7 +9,7 @@
       "disposition": "risk-accepted",
       "justification": "Single origin; failover would need a second region.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [
@@ -26,7 +26,7 @@
       "disposition": "operational-requirement",
       "justification": "The public bucket must serve the site; public read is the product.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [
@@ -43,7 +43,7 @@
       "disposition": "false-positive",
       "justification": "The rule matches article prose, not code.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [
@@ -60,7 +60,7 @@
       "disposition": "risk-accepted",
       "justification": "Cost trade-off; Shield Standard is the baseline.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [
@@ -77,7 +77,7 @@
       "disposition": "mitigated",
       "justification": "The vulnerable path is unreachable behind the authorizer.",
       "decided_by": "Fixture",
-      "decided_on": "2026-01-01",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
       "review_by": "2027-01-01",
       "applies_to": {
         "check_ids": [],

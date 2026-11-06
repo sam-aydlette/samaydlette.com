@@ -57,6 +57,7 @@ import _freshness  # noqa: E402
 import _frr  # noqa: E402
 import _offering  # noqa: E402
 import _rules  # noqa: E402
+import _training  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 MODERATE_PROFILE = REPO / "data" / "profiles" / "FedRAMP_rev5_MODERATE-baseline_profile.json"
@@ -143,14 +144,15 @@ def runtime_bound(path, commit):
 #    PyPI packages: the VDR built from this inventory's Syft SBOM and Grype scans,
 #    bound to this inventory, its signature verified, inside its freshness window,
 #    with every Grype scan passing the detection gate;
-# 4. for KSI-CED-RAT only, the check that the operator's training attestation
-#    is in force and under 12 months old.
+# 4 and 5. for KSI-CED-RAT only, the two training checks of scripts/_training.py:
+#    the latest completed packet covers what the system's data requires
+#    (currency), and the current packet was completed by its due date with a
+#    passing score and a steady score trend (completion and effectiveness). The
+#    trainee is simulated (counterparty `personnel`, DEC-194).
 # A KSI with fewer than two is a shortfall unless an in-force `accepted`
 # decision record names it (resource "ksi::<KSI ID>").
 PACKAGE_TYPES = ("npm_package", "pypi_package")
 TRAINING_KSI = "KSI-CED-RAT"
-TRAINING_ATTESTATION = "DEC-192"
-ATTESTATION_MAX_DAYS = 365
 REQUIRED_METHODS = 2
 VDR_PATH = ".well-known/vdr-report.json"
 COSIGN_ISSUER = "https://token.actions.githubusercontent.com"
@@ -209,25 +211,24 @@ def dependency_scan(vdr, signal, now, signature, max_age_hours):
     return True, None
 
 
-def _days_since(day, now):
-    try:
-        return (now.date() - datetime.fromisoformat(str(day)).date()).days
-    except ValueError:
-        return None
+def training_methods(prev, reg, incidents, n_rules, n_ksis, now):
+    """{"currency": (ok, reason), "completion": (ok, reason), "summary": {...}}
+    for KSI-CED-RAT, the history carried forward from the previous SDR."""
+    previous = (prev.get("providerExtensions") or {}).get("training") if isinstance(prev, dict) else None
+    cur, comp, summ = _training.evaluate(previous if isinstance(previous, dict) else None, reg, incidents,
+                                         n_rules, n_ksis, now)
+    return {"currency": cur, "completion": comp, "summary": summ}
 
 
-def training_attestation(reg, now):
-    """(True, None) when the operator's training attestation decision record is
-    in force, not past its review date and decided under 12 months ago."""
-    rec = _decisions.records(reg).get(TRAINING_ATTESTATION) if reg else None
-    if rec is None:
-        return False, f"no training attestation ({TRAINING_ATTESTATION}) in the decision register"
-    if rec.get("status") != "in-force" or str(rec.get("review_by", "")) < now.date().isoformat():
-        return False, f"{TRAINING_ATTESTATION} is not in force"
-    age = _days_since(rec.get("decided_on"), now)
-    if age is None or not 0 <= age < ATTESTATION_MAX_DAYS:
-        return False, f"{TRAINING_ATTESTATION} was not decided within the last {ATTESTATION_MAX_DAYS} days"
-    return True, None
+INCIDENTS_PATH = Path(__file__).resolve().parent.parent / "data" / "incidents.json"
+
+
+def _ksi_count(catalog):
+    return sum(len(f["indicators"]) for f in catalog["KSI"].values())
+
+
+NO_TRAINING = {"currency": (False, "not evaluated in this build"),
+               "completion": (False, "not evaluated in this build"), "summary": None}
 
 
 def vvk_acceptances(reg, now):
@@ -394,8 +395,7 @@ def ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok
 
 
 def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_by_rule,
-               dep_scan=(False, "not evaluated in this build"), training=(False, "not evaluated in this build"),
-               accepted=None):
+               dep_scan=(False, "not evaluated in this build"), training=None, accepted=None):
     statements = {i["id"]: i for f in catalog["KSI"].values() for i in f["indicators"]}
     sig = {k["id"]: k for k in signal.get("ksis", [])}
     missing = sorted(set(statements) - set(sig))
@@ -415,8 +415,9 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         plan_ok = bool(ev.get("validation_ids"))
         pkgs = sorted(c for c in comps if types.get(c) in PACKAGE_TYPES)
         dep_ok = bool(pkgs) and dep_scan[0]
-        train_ok = kid == TRAINING_KSI and training[0]
-        methods = int(plan_ok) + int(bool(rt)) + int(dep_ok) + int(train_ok)
+        training = training or NO_TRAINING
+        train = [training[m] for m in ("currency", "completion")] if kid == TRAINING_KSI else []
+        methods = int(plan_ok) + int(bool(rt)) + int(dep_ok) + sum(int(ok) for ok, _ in train)
         rules = rules_by_ksi.get(kid, [])
         nval, nfail = len(ev.get("validation_ids") or []), len(ev.get("failed_validation_ids") or [])
         impl, val = ksi_text(kid, cat, k, rules, comps, rt, runtime_reason, nval, nfail, plan_ok)
@@ -428,9 +429,15 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         elif pkgs:
             val.append(f"Dependency vulnerability scanning not counted for this build: {dep_scan[1]}.")
         if kid == TRAINING_KSI:
-            val.append(f"Training attestation check: the operator's training attestation ({TRAINING_ATTESTATION}) "
-                       f"is in force and under 12 months old" if train_ok else
-                       f"Training attestation check not counted for this build: {training[1]}.")
+            cur, comp = train
+            val.append("Training currency check: the latest completed training packet covers every decision of "
+                       "the last 12 months, every incident and exercise, and the current rule and KSI counts "
+                       "(providerExtensions.training)." if cur[0] else
+                       f"Training currency check not counted for this build: {cur[1]}.")
+            val.append("Training completion and effectiveness check: the current packet was completed by its due "
+                       f"date with a score of at least {_training.PASS}, and the score trend holds; the trainee "
+                       "is simulated (DEC-194)." if comp[0] else
+                       f"Training completion and effectiveness check not counted for this build: {comp[1]}.")
         val.append(f"Automated methods in place: {methods} (FRC-CSX-VVK requires {REQUIRED_METHODS} for Class C).")
         if methods < REQUIRED_METHODS and kid in accepted:
             val.append(f"Fewer than {REQUIRED_METHODS} automated methods is an accepted finding: {accepted[kid]}.")
@@ -674,14 +681,14 @@ def simulated_summary(reqs):
             by[sim["counterparty"]] = by.get(sim["counterparty"], 0) + 1
     return {"records": sum(by.values()), "of": len(reqs), "byCounterparty": dict(sorted(by.items())),
             "statement": f"{sum(by.values())} of {len(reqs)} rule records rely on a simulated counterparty "
-                         "(an assessor, FedRAMP, an agency, an incident recipient, the mail system or SAM.gov): "
+                         "(an assessor, FedRAMP, an agency, an incident recipient, personnel, the mail system or "
+                         "SAM.gov): "
                          "the mechanism is real and runs on every deploy; only the outside party is simulated."}
 
 
 def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, runtime, runtime_reason,
           assessor_records, prof, prev, vdr, now, policies, evidence_ctx=None, fedramp_id=None,
-          dep_scan=(False, "not evaluated in this build"), training=(False, "not evaluated in this build"),
-          accepted=None):
+          dep_scan=(False, "not evaluated in this build"), training=None, accepted=None):
     ids = [r["frr_id"] for r in records["records"]] + sorted(
         i["id"] for f in catalog["KSI"].values() for i in f["indicators"])
     pseudo = [{"rule_id": i, "assessor_comment_responses": []} for i in ids]
@@ -720,6 +727,7 @@ def build(catalog, signal, records, applicable, irs, moderate, rules_by_ksi, run
                         "securityControlsBeyondModerate": _tally(beyond, "status")},
             "assessorRecords": block,
             "assessorCommentResponses": by_rule,
+            **({"training": training["summary"]} if training and training.get("summary") else {}),
             "metrics": build_metrics(counts, vdr, signal, previous_history(prev), now, ksi_point(ksis)),
         },
     }
@@ -750,11 +758,13 @@ def main(argv=None):
     ap.add_argument("--assessment-bundle", default=None)
     # FRC-CSX-VVK: the VDR's Sigstore bundle and the identities allowed to sign
     # it (dependency scanning counts only when it verifies), the decision
-    # register (the training attestation and accepted shortfalls), and whether
+    # register (taught in the training packet; accepted shortfalls), the incident
+    # register (taught in the training packet), and whether
     # a KSI short of two methods without an accepted decision fails the build.
     ap.add_argument("--vdr-bundle", default=None)
     ap.add_argument("--vdr-identity", action="append", default=[])
     ap.add_argument("--decisions", default=None)
+    ap.add_argument("--incidents", default=str(INCIDENTS_PATH))
     ap.add_argument("--freshness", default=None)
     ap.add_argument("--require-two-methods", action="store_true")
     # The commit whose inventory the runtime signal must have re-validated (the
@@ -791,7 +801,9 @@ def main(argv=None):
     dep_scan = dependency_scan(vdr, signal, now, vdr_signature(a.vdr, a.vdr_bundle, a.vdr_identity), window)
     doc = build(catalog, signal, records, applicable, irs, moderate_ids(), policy_rules(), runtime, reason,
                 assessor_records, prof, prev, vdr, now, policy_documents(), evidence_context(),
-                dep_scan=dep_scan, training=training_attestation(reg, now), accepted=vvk_acceptances(reg, now))
+                dep_scan=dep_scan, accepted=vvk_acceptances(reg, now),
+                training=training_methods(prev, reg, json.loads(Path(a.incidents).read_text()),
+                                          len(records["records"]), _ksi_count(catalog), now))
     _assessor.verify_output(doc, assessor_records)  # T74
     short = vvk_shortfalls(doc)
     for msg in short:

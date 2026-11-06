@@ -8227,7 +8227,7 @@
     "public_disclosure": {
      "level": "summary",
      "policy": "DEC-182",
-     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; no party receives it (DEC-194)"
     },
     "rating_history": [
      {
@@ -8901,7 +8901,7 @@
     "public_disclosure": {
      "level": "summary",
      "policy": "DEC-182",
-     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+     "reason": "open, IRV, LEV and N3: detail withheld from public artifacts until remediated or dispositioned; no party receives it (DEC-194)"
     },
     "rating_history": [
      {
@@ -9649,7 +9649,7 @@
     "public_disclosure": {
      "level": "summary",
      "policy": "DEC-182",
-     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; no party receives it (DEC-194)"
     },
     "rating_history": [
      {
@@ -9787,7 +9787,7 @@
     "public_disclosure": {
      "level": "summary",
      "policy": "DEC-182",
-     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; no party receives it (DEC-194)"
     },
     "rating_history": [
      {
@@ -9925,7 +9925,7 @@
     "public_disclosure": {
      "level": "summary",
      "policy": "DEC-182",
-     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; available to necessary parties from the provider"
+     "reason": "open, IRV, LEV and N5: detail withheld from public artifacts until remediated or dispositioned; no party receives it (DEC-194)"
     },
     "rating_history": [
      {
@@ -11359,6 +11359,42 @@
    ],
    "unresolved_components": 6
   },
-  "system_id": "urn:samaydlette:website-prod"
+  "system_id": "urn:samaydlette:website-prod",
+  "withheld_detail_exercise": {
+   "asks": "The withheld detail of every finding the public report summarizes, please. In triplicate.",
+   "cannedFinding": false,
+   "decision": "DEC-182",
+   "deliveredTo": "nobody: the requester is simulated; this log entry records what would be supplied (field names and a sha256 of the detail), never the detail",
+   "engagement": "Simulated (DEC-194): no real FedRAMP, agency or person took part, and nothing was sent to anyone.",
+   "findings": [
+    {
+     "detailSha256": "6463ea700d739ed284f679ba7d38d4255b5392bf93aef8420f31915e95b3ff4f",
+     "tracking_id": "n5-block",
+     "withheldFields": []
+    },
+    {
+     "detailSha256": "6463ea700d739ed284f679ba7d38d4255b5392bf93aef8420f31915e95b3ff4f",
+     "tracking_id": "likely-overdue-short",
+     "withheldFields": []
+    },
+    {
+     "detailSha256": "6463ea700d739ed284f679ba7d38d4255b5392bf93aef8420f31915e95b3ff4f",
+     "tracking_id": "ovr-lapsed",
+     "withheldFields": []
+    },
+    {
+     "detailSha256": "6463ea700d739ed284f679ba7d38d4255b5392bf93aef8420f31915e95b3ff4f",
+     "tracking_id": "ovr-excluded",
+     "withheldFields": []
+    },
+    {
+     "detailSha256": "6463ea700d739ed284f679ba7d38d4255b5392bf93aef8420f31915e95b3ff4f",
+     "tracking_id": "ovr-kev",
+     "withheldFields": []
+    }
+   ],
+   "requester": "Necessary Party, Esq. (simulated)",
+   "simulated": true
+  }
  }
 }

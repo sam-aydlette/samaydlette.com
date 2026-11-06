@@ -1,0 +1,327 @@
+{
+  "$schema": "./gate-modes.schema.json",
+  "version": "2026-11-06.1",
+  "description": "Known-bad: the committed register with vdr.kev not confirmed by the operator (no confirmed_on). A gate mode the operator has not confirmed cannot be in force; the build stops.",
+  "method_reference": "website/research/vulnerability-evidence.html#gates",
+  "checks": [
+    {
+      "check": "vdr.kev",
+      "gate": "G1",
+      "mode": "block",
+      "method_default": "block",
+      "reason": "Stricter than the method. G1 blocks every known-exploited finding, dispositioned or not, from the first evaluation; the method blocks only once the KEV due date has passed or when a new resource would deploy with one.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04"
+    },
+    {
+      "check": "vdr.top-impact-lev-irv",
+      "gate": "G2",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "vdr.past-deadline",
+      "gate": "G3",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "vuln-gate.unhandled",
+      "gate": "G3",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "runtime-divergence.diverged",
+      "gate": "G4",
+      "mode": "block",
+      "method_default": "block",
+      "reason": "A deploy may proceed past a fresh divergence only with --allow-divergence and a stated reason, which the deploy log records (break-glass for a deploy that is itself the fix).",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.a",
+      "gate": "G4",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.b",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.c",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.d",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.h",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.i",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.j",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.e",
+      "gate": "G6",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.f",
+      "gate": "G6",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.l",
+      "gate": "G6",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "reconcile.m",
+      "gate": "G5",
+      "mode": "block",
+      "method_default": "block",
+      "reason": "An open incident naming a finding the VDR does not carry blocks, like every other cross-artifact invariant.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "confirmed_on": "2026-11-06",
+      "drafted_by": "AI-drafted (Claude), with the incident register"
+    },
+    {
+      "check": "reconcile.i.unreadable",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "reason": "Was a rollout-time warning while the roles lacked tag:GetResources. Both roles now read tags (the deploy and the nightly both report invariant i checked), so a denied read is a detection failure and blocks.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "runtime-divergence.observer-fault",
+      "gate": "G7",
+      "mode": "detect-and-recover",
+      "method_default": "block",
+      "reason": "The runtime evaluator could not reach a verdict: its signal is unreadable, stale, undated, degraded or has no divergence block. Blocking deploys on it would also block the deploy that repairs the evaluator. The fault is published in the runtime signal and queued by the trust center (runtime_unassessed, runtime_stale) with its opening time.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-05-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.zap.missing",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.zap.stale",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.kev",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.epss",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.grype",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.dependabot",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.previous-vdr",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.checkov",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.tfsec",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-04",
+      "review_by": "2027-11-04",
+      "confirmed_on": "2026-11-04"
+    },
+    {
+      "check": "detection.codeql",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "confirmed_on": "2026-11-05"
+    },
+    {
+      "check": "detection.zap-api",
+      "gate": "G7",
+      "mode": "block",
+      "method_default": "block",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-11-05",
+      "confirmed_on": "2026-11-05"
+    },
+    {
+      "check": "vdr.coverage",
+      "gate": "G7",
+      "mode": "detect-and-recover",
+      "method_default": "block",
+      "reason": "An inventory component with no detection technique in the last month (VDR-TFR-PCD) is a gap in detection, not a vulnerability in what is deployed; blocking would also block the deploy that adds the detection. The gap becomes a process finding (VDR-CSO-FAV) with a clock and a deadline, published in the VDR until coverage returns.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-05-05",
+      "confirmed_on": "2026-11-06",
+      "drafted_by": "AI-drafted (Claude)"
+    },
+    {
+      "check": "vdr.unresolved-component",
+      "gate": "G7",
+      "mode": "detect-and-recover",
+      "method_default": "block",
+      "reason": "A finding that resolves to no inventory component is rated at the fail-safe (internet-reachable, most sensitive) until it is resolved (VER-EVA-EIR); blocking would also block the inventory change that resolves it. The unresolved evaluation becomes a process finding (VDR-CSO-FAV) with a clock and a deadline until every finding resolves.",
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-05",
+      "review_by": "2027-05-05",
+      "confirmed_on": "2026-11-06",
+      "drafted_by": "AI-drafted (Claude)"
+    }
+  ]
+}

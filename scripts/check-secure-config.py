@@ -289,6 +289,19 @@ def read_github(github):
             "github-main-checks": {"required": f["main_required_checks"], "enforced_for": f["main_checks_enforced_for"]}}
 
 
+REPOSITORY_CHECKS = ("github-rulesets", "github-dependabot-alerts", "github-workflow-permissions",
+                     "github-dependabot-updates")
+
+
+def read_repository(repo):
+    """{check id: value or ReadError} from check-manual-settings' repository read."""
+    out = {k: ReadError(v) for k, v in (repo.get("errors") or {}).items()}
+    for k, v in (repo.get("facts") or {}).items():
+        out[k] = {"undeclared": v["undeclared"], "write_all": v["write_all"]} \
+            if k == "github-workflow-permissions" else v
+    return {k: out.get(k, ReadError("not read")) for k in REPOSITORY_CHECKS}
+
+
 def _manual_settings():
     spec = importlib.util.spec_from_file_location("manual_settings", REPO / "scripts" / "check-manual-settings.py")
     m = importlib.util.module_from_spec(spec)
@@ -340,17 +353,23 @@ def main(argv=None):
     ap.add_argument("--cognito-pool-id", default="")
     ap.add_argument("--github-settings", default=None,
                     help="a check-manual-settings.py output to take the GitHub facts from (default: read GitHub now)")
+    ap.add_argument("--account", action="append", default=None,
+                    help="compare only the settings of this account (repeatable); the nightly compares github-owner")
     ap.add_argument("--output", default="security-settings.json")
     ap.add_argument("--md-output", default="security-settings.md")
     a = ap.parse_args(argv)
     src = json.loads(Path(a.source).read_text())
+    if a.account:
+        src = {**src, "settings": [s for s in src["settings"] if s["account"] in a.account]}
     in_force = {r["id"] for r in _decisions.in_force(_decisions.load(a.decisions))}
     if a.github_settings:
         checks = json.loads(Path(a.github_settings).read_text())["checks"]
         github = next((c for c in checks if c["id"] == "github_settings"), {"status": "not_observed"})
     else:
         github = _manual_settings().check_github()
-    current = {**read_aws(aws, a.cognito_pool_id), **read_github(github)}
+    aws_needed = any(not s["account"].startswith("github") for s in src["settings"])
+    current = {**(read_aws(aws, a.cognito_pool_id) if aws_needed else {}), **read_github(github),
+               **read_repository(_manual_settings().check_repository())}
     doc = _offering.stamp_fedramp_id(build(src, compare(src, current, in_force), datetime.now(timezone.utc)))
     Path(a.output).write_text(json.dumps(doc, indent=2) + "\n")
     Path(a.md_output).write_text(render_markdown(doc) + "\n")

@@ -3,11 +3,15 @@
 the five-business-day denial clock (CDS-TRC-AAI, CDS-TRC-SSM, CDS-UTC-AAD,
 CDS-UTC-AGA).
 
-The package is public, so access needs no provisioning; an agency that wants
-to be on record (for notices, or to request anything not published) files a
-request, and may withdraw it the same way (docs/procedures/agency-access.md).
-Every request and decision is a record in data/agency-access.json, the
-register. From it this computes:
+No engagement (DEC-194): no real agency or FedRAMP is served, notified or
+answered. Every requester is simulated, and the register
+(data/agency-access.json) may hold only entries marked `simulated: true` for
+an agency whose name ends "(simulated)"; anything else fails the deploy. The
+package is public, so access needs no provisioning. Nobody decides a request
+by hand: `decide()` applies fixed rules (RULES) to what the request asks for,
+and `notify()` is the automated notifier, which writes each denial notice to
+the simulated FedRAMP as a log entry (docs/procedures/agency-access.md). From
+the requests this computes:
 
   inventory      the agencies and systems with access on record today;
   history        every request, decision and withdrawal, in date order;
@@ -15,12 +19,13 @@ register. From it this computes:
                  (US federal holidays excluded); each notice is on time,
                  pending (inside the window), late, or overdue.
 
-`validate` fails the deploy on an invalid record, a late notice, or an overdue
-one. `inventory` prints what goes to FedRAMP on request. `exercise` runs the
-same code over data/agency-access-exercise.json, a scenario of plainly
-fictional agencies dated relative to today, and fails unless every outcome is
-the expected one, including the late and overdue cases it must catch. Nothing
-is ever sent to FedRAMP or anyone: a notice is a log entry.
+`validate` fails the deploy on an invalid or non-simulated record, a late
+notice, or an overdue one. `inventory` prints the inventory and history.
+`exercise` runs the rules and the notifier over
+data/agency-access-exercise.json, a scenario of plainly fictional agencies
+dated relative to today (with a simulated notifier outage), and fails unless
+every outcome is the expected one, including the late and overdue cases it
+must catch. Nothing is ever sent to FedRAMP or anyone: a notice is a log entry.
 """
 
 import argparse
@@ -31,6 +36,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _engagement  # noqa: E402
 import _offering  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -42,7 +48,21 @@ DECISIONS = ("granted", "denied")
 ID_RE = re.compile(r"^AAR-[A-Z0-9]{2,8}$")
 EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
 RECORD_KEYS = {"id", "agency", "system", "kind", "channel", "received_on", "decision", "decided_on", "decided_by",
-               "reason", "fedramp_notified_on", "withdraws"}
+               "reason", "rule", "fedramp_notified_on", "withdraws", "simulated", "asks"}
+SIMULATED_SUFFIX = "(simulated)"
+DECIDER = "scripts/agency-access.py rules (automated)"
+# The rules, in order; the first that matches what a request asks for denies it.
+# A request no rule denies is granted: the package is public and read-only.
+RULES = [
+    ("R1-write", re.compile(r"\b(?:write|edit|modify|delete|admin)\b", re.I),
+     "The package is read-only for everyone; write access does not exist to grant."),
+    ("R2-channel", re.compile(r"\b(?:fax|carrier pigeon|floppy|cd-rom|in person)\b", re.I),
+     "The package is delivered over HTTPS only."),
+    ("R3-nonpublic", re.compile(r"\b(?:non-public|unpublished|private|customer data|raw logs?)\b", re.I),
+     "The system holds nothing beyond the public package to give."),
+    ("R4-unverifiable", re.compile(r"\bunverifiable\b|\bdoes not exist\b", re.I),
+     "The requesting agency could not be verified."),
+]
 
 
 def _fail(msg):
@@ -109,6 +129,10 @@ def validate(doc, where):
         for k in ("agency", "channel"):
             if not isinstance(r.get(k), str) or not r[k].strip():
                 _fail(f"{rid}: {k} must be a non-empty string")
+        # No engagement (DEC-194): every entry is a simulated agency.
+        if r.get("simulated") is not True or not r["agency"].rstrip().endswith(SIMULATED_SUFFIX):
+            _fail(f"{rid}: every entry must be `simulated: true` for an agency named '... {SIMULATED_SUFFIX}'; "
+                  f"no real agency request is taken ({_engagement.DECISION})")
         # The register records agencies and systems, never people.
         if any(isinstance(v, str) and EMAIL_RE.search(v) for v in r.values()):
             _fail(f"{rid}: carries an email address; the register names agencies and systems, not people")
@@ -167,6 +191,7 @@ def process(doc, today):
             notices.append({"request": r["id"], "agency": r["agency"], "denied_on": r["decided_on"],
                             "reason": r["reason"], "deadline": deadline.isoformat(), "notified_on": sent,
                             "state": state,
+                            "rule": r.get("rule"),
                             "to": "FedRAMP (simulated recipient: nothing is sent; this entry is the notice)"})
     history.sort(key=lambda h: (h["date"], h["request"]))
     problems = [f"{n['request']}: FedRAMP denial notice {n['state']} (deadline {n['deadline']})"
@@ -186,15 +211,44 @@ def load(path):
 
 # --- the exercise ---------------------------------------------------------------------------------
 
+def decide(request):
+    """(decision, rule, reason) for an access request, by RULES; nobody decides by hand."""
+    asks = f"{request.get('asks') or ''} {request.get('channel') or ''} {request.get('agency') or ''}"
+    for rule, pattern, reason in RULES:
+        if pattern.search(asks):
+            return "denied", rule, reason
+    return "granted", "R0-public", None
+
+
+def notify(denied_on, delay, today):
+    """The automated notifier: the date its log entry to the simulated FedRAMP is
+    written, or None while it has not run (a simulated outage, or not yet due).
+    `delay` is the business days the notifier's queue holds the notice; None is
+    an outage that has not ended."""
+    if delay is None:
+        return None
+    sent = add_business_days(denied_on, delay)
+    return sent.isoformat() if sent <= today else None
+
+
 def materialize(scenario, today):
-    """Turn the scenario's business-day offsets (relative to today) into dates."""
+    """Turn the scenario's business-day offsets (relative to today) into dates,
+    decide each access request by the rules on the day it arrives, and run the
+    notifier (with the scenario's simulated delays and outage) over the denials."""
     out = []
     for r in scenario["requests"]:
         r = dict(r)
-        for k in ("received_on", "decided_on", "fedramp_notified_on"):
-            off = r.pop(f"{k}_offset", None)
-            if off is not None:
-                r[k] = add_business_days(today, off).isoformat()
+        r["simulated"] = True
+        r["received_on"] = add_business_days(today, r.pop("received_on_offset")).isoformat()
+        delay = r.pop("notifier_delay_business_days", 0)
+        if r["kind"] == "access":
+            r["decision"], r["rule"], reason = decide(r)
+            r["decided_on"], r["decided_by"] = r["received_on"], DECIDER
+            if reason:
+                r["reason"] = reason
+                sent = notify(date.fromisoformat(r["decided_on"]), delay, today)
+                if sent:
+                    r["fedramp_notified_on"] = sent
         out.append(r)
     return {"schema": "agency-access/1", "requests": out}
 
@@ -259,9 +313,13 @@ def main(argv=None):
         print(f"::error::agency access exercise: {m}")
     if mismatches:
         _fail("the exercise did not produce the expected outcomes")
+    _engagement.require_none(scenario, "the agency access exercise scenario")
     log = {"log_type": "agency-access-exercise", "fedRampId": _offering.fedramp_id(), "simulated": True, "counterparty": "agency",
            "generated_at": datetime.now(timezone.utc).isoformat(), "as_of": today.isoformat(),
+           "engagement": _engagement.STATEMENT,
            "disclaimer": scenario["disclaimer"], "procedure": "docs/procedures/agency-access.md",
+           "rules": [{"rule": "R0-public", "decision": "granted", "reason": "Everything is public and read-only."}]
+           + [{"rule": n, "decision": "denied", "reason": why} for n, _, why in RULES],
            "notice_window_business_days": NOTICE_DAYS,
            "outcome": "every expected outcome observed", "expected": scenario["expected"],
            "requests": doc["requests"], **{k: result[k] for k in ("inventory", "history", "denial_notices")}}
@@ -273,7 +331,7 @@ def main(argv=None):
 
 
 def render_markdown(log):
-    out = ["# Agency access exercise (simulated)", "", f"_{log['disclaimer']}_", "",
+    out = ["# Agency access exercise (simulated)", "", f"> {log['engagement']}", "", f"_{log['disclaimer']}_", "",
            f"- **As of:** {log['as_of']} | **Generated:** {log['generated_at']}",
            f"- **Procedure:** `{log['procedure']}` | **Denial notice window:** "
            f"{log['notice_window_business_days']} business days", f"- **Outcome:** {log['outcome']}", "",
@@ -281,10 +339,12 @@ def render_markdown(log):
     out += [f"| {k} | {v} |" for k, v in sorted(log["expected"].items())]
     out += ["", "## Inventory on record", "", "| Request | Agency | System | Since |", "|---|---|---|---|"]
     out += [f"| {i['request']} | {i['agency']} | {i.get('system') or '—'} | {i['since']} |" for i in log["inventory"]]
+    out += ["", "## Decision rules (automated)", "", "| Rule | Decision | Reason |", "|---|---|---|"]
+    out += [f"| {r['rule']} | {r['decision']} | {r['reason']} |" for r in log["rules"]]
     out += ["", "## Denial notices to FedRAMP (simulated; nothing is sent)", "",
-            "| Request | Agency | Denied | Deadline | Notified | State |", "|---|---|---|---|---|---|"]
-    out += [f"| {n['request']} | {n['agency']} | {n['denied_on']} | {n['deadline']} | {n['notified_on'] or '—'} | "
-            f"{n['state']} |" for n in log["denial_notices"]]
+            "| Request | Agency | Rule | Denied | Deadline | Notified | State |", "|---|---|---|---|---|---|---|"]
+    out += [f"| {n['request']} | {n['agency']} | {n.get('rule') or '—'} | {n['denied_on']} | {n['deadline']} | "
+            f"{n['notified_on'] or '—'} | {n['state']} |" for n in log["denial_notices"]]
     out += ["", "## History", "", "| Date | Request | Event | Agency |", "|---|---|---|---|"]
     out += [f"| {h['date']} | {h['request']} | {h['event']} | {h['agency']} |" for h in log["history"]]
     out += ["", "## Requests", "", "```json", json.dumps(log["requests"], indent=2), "```",

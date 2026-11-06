@@ -1,0 +1,13 @@
+# Known-bad (DEC-194): one line per wording the phrase screen must catch. Each
+# offers to invite, register, notify, serve or answer a real agency or FedRAMP.
+We invite agencies to the Quarterly Review.
+An agency can register for the review through the form.
+An agency that wants to be on record files the issue form.
+Notify FedRAMP within 5 business days.
+The inventory is supplied to FedRAMP on request.
+Use the registration form linked from the calendar.
+Registered parties receive the recording.
+The join link is in the invitation.
+The answer comes within 10 business days.
+The transcript goes to the parties who registered.
+File https://github.com/sam-aydlette/samaydlette.com/issues/new?template=agency-access.yml

@@ -1,0 +1,24 @@
+{
+  "_note": "Known-bad: confirmed before it was decided.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "risk-accepted",
+      "justification": "fixture",
+      "decided_on": "2026-01-01",
+      "confirmed_on": "2025-12-31",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [
+          "CKV_AWS_68"
+        ],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette"
+    }
+  ]
+}
