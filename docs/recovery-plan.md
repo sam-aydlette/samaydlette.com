@@ -61,7 +61,7 @@ The full procedure is bounded by AWS resource creation latency (CloudFront takes
 
 - **Source code:** Distributed across every git clone in existence. RPO is "the time since the last fetch on any clone," which in practice is minutes.
 - **Site content:** Source-controlled and additionally backed up in the S3 bucket itself, which has versioning enabled. Any object can be rolled back to a prior version within S3's standard retention.
-- **Infrastructure config:** Terraform configuration is in the repo. State for managed resources (Lambda, IAM role, EventBridge rule) is in `infrastructure/terraform.tfstate`; for a hard recovery into a new account it can be reconstructed via `terraform import` against the recreated resources.
+- **Infrastructure config:** Terraform configuration is in the repo. State for managed resources (Lambda, IAM role, EventBridge rule) is in the S3 backend (`infrastructure/backend.tf`: bucket samaydlette-com-tfstate, object key "infrastructure/terraform.tfstate"); for a hard recovery into a new account it can be reconstructed via `terraform import` against the recreated resources.
 - **Build artifacts (KSI signals, bundles):** Reproducible from any commit on `main` by re-running the pipeline. No backup required because they are deterministically regenerable.
 
 The 24-hour RPO is comfortably met. Any change committed to `main` reaches the bucket within the time of one CI run (~5 minutes). The data loss window in the worst case is "whatever is in flight in an open editor at the moment of catastrophe," which is upper-bounded by the operator's typing speed, not by any backup cadence.

@@ -1,6 +1,11 @@
 # Security policy for samaydlette.com
 # RFC 9116 — https://www.rfc-editor.org/rfc/rfc9116
 # Satisfies KSI-PIY-03 (vulnerability disclosure program).
+#
+# The contact is for vulnerability reports only. No engagement (DEC-194): this
+# system is a proof of concept, and the operator does not engage FedRAMP or any
+# federal agency about it; every FedRAMP, agency and assessor counterparty in
+# its package is simulated.
 
 Contact: https://www.linkedin.com/in/sa2/
 Expires: 2027-05-06T00:00:00.000Z

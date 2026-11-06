@@ -43,6 +43,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _assessor  # noqa: E402
 import _ccm  # noqa: E402
+import _engagement  # noqa: E402
 import _fedramp_schema as fs  # noqa: E402
 import _offering  # noqa: E402
 import _tpr  # noqa: E402
@@ -152,8 +153,7 @@ def trust_center():
             "authenticationRequired": False,
             "accessRequestInstructions": "No access request is needed: everything is public. Fetch any artifact "
                                          "with an HTTPS GET; the trust manifest lists each one with its signature "
-                                         "and signer. An agency that wants to be on record files the agency access "
-                                         "form linked from the trust center (Request access)."}
+                                         "and signer. " + _engagement.SHORT}
 
 
 def secure_configuration_guidance():
@@ -282,6 +282,7 @@ def provider_extensions(off, prof, signal, dates, groups, assessment):
         "fips_199": prof.get("fips_199"),
         "ksi_signal_id": signal.get("signal_id"),
         "simulated": simulated(off),
+        "engagement": _engagement.STATEMENT,
         "services": services_detail(off, prof, groups),
         "notIncluded": off.get("not_included", []),
         "continuousMonitoring": dates,
@@ -312,6 +313,7 @@ def build(off, prof, signal, cal, prev, now, groups, assessment):
         "metadata": {"accountableOfficial": {"name": ao["name"], "title": ao["title"], "contact": ao["contact"]}},
         "providerExtensions": provider_extensions(off, prof, signal, dates, groups, assessment),
     }
+    _engagement.require_none(doc, "the CPO")
     return _offering.stamp_version(doc, prev, now, "Automated: scripts/build-cpo.py, from data/cds/offering.json, "
                                    "the system profile, the CCM calendar and the KSI signal")
 
@@ -372,7 +374,7 @@ def render_markdown(c):
     ccm = pe["continuousMonitoring"]
     out = ["# Certification Package Overview", "",
            f"_{pe['certification']}. With the Security Decision Record, the CR26 replacement for the System "
-           "Security Plan._", "",
+           "Security Plan._", "", f"> {pe['engagement']}", "",
            f"- **Provider:** {si['providerName']} | **Service:** {si['serviceName']} ({si['serviceAcronym']})",
            f"- **FedRAMP ID:** {si['fedRampPackageId']} (simulated: no FedRAMP ID has been assigned)",
            f"- **UEI:** {si['ueiNumber']} (simulated: no SAM.gov registration)",
@@ -396,7 +398,7 @@ def render_markdown(c):
             f"- **Next Quarterly Review:** {ccm['nextQuarterlyReviewDate']} "
             f"({ccm['reviewBusinessDaysAfterIssue']} business days after the report)",
             f"- **Review calendar:** {ccm['quarterlyReviewCalendar']} | "
-            f"**Registration:** {ccm['quarterlyReviewRegistration']}",
+            f"**Reviews held (simulated attendees, DEC-194):** {ccm['quarterlyReviews']}",
             f"- **Issued reports and snapshots:** {ccm['ongoingCertificationReportIssues']}",
             f"- **Issue dates:** {', '.join(ccm['issueDates'])}", "",
             "## Services (CDS-CSO-SVC)", "",

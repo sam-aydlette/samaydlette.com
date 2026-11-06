@@ -1,0 +1,9 @@
+# Known-bad (SCG-ENH-CMP): a workflow that declares no top-level permissions,
+# so its token falls back to the repository default.
+name: no permissions
+on: workflow_dispatch
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo hi

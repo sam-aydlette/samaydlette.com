@@ -1,7 +1,7 @@
 """FRC-CSX-VVK: the automated methods the SDR counts per KSI. Beyond the plan
 gate and the runtime re-validation: dependency vulnerability scanning for a KSI
 with npm or PyPI package components (only when the bound VDR verifies and is
-fresh), and for KSI-CED-RAT the check of the operator's training attestation.
+fresh), and for KSI-CED-RAT the two training checks (scripts/_training.py).
 A KSI short of two methods without an in-force accepted decision fails the
 build when --require-two-methods is given (the package maintainer)."""
 import importlib.util
@@ -100,60 +100,56 @@ def test_the_vdr_signature_is_checked_against_the_allowed_identities(tmp_path):
 
 
 def test_dependency_scanning_counts_only_for_ksis_with_package_components():
-    with_scan = _methods(_build(SIGNED, (False, "x"), {}))
-    without = _methods(_build((False, "unsigned"), (False, "x"), {}))
+    with_scan = _methods(_build(SIGNED, sdr.NO_TRAINING, {}))
+    without = _methods(_build((False, "unsigned"), sdr.NO_TRAINING, {}))
     assert with_scan["KSI-SCR-MIT"] == with_scan["KSI-SCR-MON"] == 2
     assert without["KSI-SCR-MIT"] == without["KSI-SCR-MON"] == 1
     assert with_scan["KSI-SVC-VRI"] == without["KSI-SVC-VRI"] == 2  # no package component: plan + runtime
 
 
-# --- the training attestation (KSI-CED-RAT) ---------------------------------------------
+# --- training (KSI-CED-RAT): two automated methods, a simulated trainee --------------------
 
-def test_the_committed_training_attestation_counts():
-    assert sdr.training_attestation(_decisions.load(), NOW) == (True, None)
-
-
-@pytest.mark.parametrize("fixture,reason", [
-    ("decisions-training-too-old.json", "not decided within the last 365 days"),
-    ("decisions-no-acceptance.json", "no training attestation (DEC-192)"),
-])
-def test_known_bad_training_attestations_do_not_count(fixture, reason):
-    ok, why = sdr.training_attestation(_decisions.load(FIX / fixture), NOW)
-    assert not ok and reason in why
+INCIDENTS = json.loads((REPO / "data" / "incidents.json").read_text())
 
 
-def test_a_lapsed_training_attestation_does_not_count():
-    reg = _decisions.load()
-    assert sdr.training_attestation(reg, datetime(2027, 11, 6, tzinfo=timezone.utc))[0] is False
+def _training(reg=None, prev=None, now=NOW):
+    reg = reg or _decisions.load()
+    return sdr.training_methods(prev or {}, reg, INCIDENTS, len(_frr.load()["records"]),
+                                sdr._ksi_count(CATALOG), now)
+
+
+def test_the_committed_data_gives_ksi_ced_rat_two_training_methods():
+    t = _training()
+    assert t["currency"] == (True, None) and t["completion"] == (True, None)
+    assert t["summary"]["simulated"] is True and "(simulated)" in t["summary"]["trainee"]
 
 
 # --- shortfalls -----------------------------------------------------------------------------
 
-def test_with_the_committed_register_every_ksi_has_two_methods_or_an_accepted_finding():
+def test_with_the_committed_register_every_ksi_has_two_methods_and_none_is_accepted_short():
     reg = _decisions.load()
     accepted = sdr.vvk_acceptances(reg, NOW)
-    assert accepted == {"KSI-CED-RAT": "DEC-191"}
-    doc = _build(SIGNED, sdr.training_attestation(reg, NOW), accepted)
+    assert accepted == {}
+    doc = _build(SIGNED, _training(reg), accepted)
     m = _methods(doc)
-    assert m["KSI-CED-RAT"] == 1 and all(v >= 2 for k, v in m.items() if k != "KSI-CED-RAT")
+    assert m["KSI-CED-RAT"] == 2 and all(v >= 2 for v in m.values())
     assert sdr.vvk_shortfalls(doc) == []
     rat = next(k for k in doc["keySecurityIndicators"] if k["ksiId"] == "KSI-CED-RAT")
-    assert rat["providerExtensions"]["fewerMethodsAccepted"] == "DEC-191"
-    assert any("accepted finding: DEC-191" in line for line in rat["ksiValidation"])
-    assert any("Training attestation check: the operator's training attestation (DEC-192)" in line
-               for line in rat["ksiValidation"])
+    assert "fewerMethodsAccepted" not in rat["providerExtensions"]
+    assert any(line.startswith("Training currency check: ") for line in rat["ksiValidation"])
+    assert any(line.startswith("Training completion and effectiveness check: ") for line in rat["ksiValidation"])
+    assert doc["providerExtensions"]["training"]["methods"]["currency"]["ok"] is True
 
 
-def test_known_bad_without_the_acceptance_ksi_ced_rat_is_a_shortfall():
-    reg = _decisions.load(FIX / "decisions-no-acceptance.json")
-    doc = _build(SIGNED, sdr.training_attestation(reg, NOW), sdr.vvk_acceptances(reg, NOW))
+def test_known_bad_without_the_training_methods_ksi_ced_rat_is_a_shortfall():
+    doc = _build(SIGNED, sdr.NO_TRAINING, {})
     short = sdr.vvk_shortfalls(doc)
     assert len(short) == 1 and short[0].startswith("KSI-CED-RAT: 0 automated method(s)")
 
 
 def test_an_unsigned_vdr_leaves_the_supply_chain_ksis_short():
     reg = _decisions.load()
-    doc = _build((False, "unsigned"), sdr.training_attestation(reg, NOW), sdr.vvk_acceptances(reg, NOW))
+    doc = _build((False, "unsigned"), _training(reg), sdr.vvk_acceptances(reg, NOW))
     assert sorted(s.split(":")[0] for s in sdr.vvk_shortfalls(doc)) == ["KSI-SCR-MIT", "KSI-SCR-MON"]
 
 

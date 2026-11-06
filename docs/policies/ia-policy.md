@@ -2,8 +2,8 @@
 
 Three authentication chains exist:
 
-1. **Operator → GitHub:** username + password + MFA via Duo. All pushes to `main` require this chain plus passing branch protection checks.
-2. **GitHub Actions → AWS:** long-lived AWS access keys stored as GitHub Actions encrypted secrets. Migration to GitHub OIDC role assumption is tracked as POAM-001 (now DEC-001) in [`data/decisions.json`](../../data/decisions.json). Until that migration completes, the deployer principal is the largest standing-privilege surface in the system. As an active compensating control while POAM-001 remains open, the AWS access key is rotated every 90 days per the procedure in the [Secure Configuration Guide](secure-configuration-guide.md); rotation events are logged in [`security-review.md`](../security-review.md).
+1. **Operator → GitHub:** username + password + two-factor authentication (virtual TOTP from an authenticator app), which GitHub enforces on the owner account (DEC-151). All pushes to `main` require this chain plus passing branch protection checks.
+2. **GitHub Actions → AWS:** GitHub OIDC role assumption. Each workflow assumes its own role (deploy, plan, nightly, package maintenance, incident reports) with short-lived credentials; no AWS access key exists for CI. The deployer access key this replaced was deleted (DEC-001, remediated, in [`data/decisions.json`](../../data/decisions.json)).
 3. **Lambda → AWS:** AWS IAM execution role with no human-assumable trust policy. The role's only invoker is the EventBridge scheduled rule.
 
 Sigstore keyless signing uses GitHub Actions OIDC for ephemeral identity proof; no signing keys are stored anywhere. Fulcio issues a short-lived X.509 certificate per workflow run, the signature is recorded in Rekor, and verification is anchored in the public transparency log.

@@ -444,7 +444,8 @@ def activity_summary(vdr, mrh, register, frm, to):
                for d in register.get("decisions", []) if within(_day(d.get("decided_on")))]
     closed = [{"decisionId": d["id"], "on": d["closed_on"], "disposition": d["disposition"]}
               for d in register.get("decisions", [])
-              if d.get("status") == "closed" and within(_day(d.get("closed_on")))]
+              if d.get("status") == "closed" and d.get("disposition") == "remediated"
+              and within(_day(d.get("closed_on")))]
     remediated = {g["providerTrackingId"] for g in gone if g["finalDisposition"] == "Remediated"} | \
                  {c["decisionId"] for c in closed}
     meth = vdr.get("methodology") or {}
@@ -584,7 +585,9 @@ def _disposition_from_evidence(rec, vdr, register, last_reported):
     keys = _keys(rec)
     did = ext.get("decisionId")
     for d in (register or {}).get("decisions", []):
-        if d.get("status") == "closed" and (d["id"] == did or keys & _decision_claims(d)):
+        # Only a remediated record settles a finding; a superseded one replaced a decision.
+        if d.get("status") == "closed" and d.get("disposition") == "remediated" \
+                and (d["id"] == did or keys & _decision_claims(d)):
             return ("Remediated", "remediated",
                     f"{d['id']} closed as remediated on {d.get('closed_on', 'a date not recorded')}")
     check = ext.get("scannerCheck")
@@ -694,7 +697,8 @@ def build_history(active, accepted, previous, now, vdr=None, register=None):
     claimed = set().union(*(_keys(r) for r in carried))
     backfilled = []
     for d in (register or {}).get("decisions", []):
-        if d.get("status") != "closed" or d["id"] in linked or _decision_claims(d) & claimed:
+        if d.get("status") != "closed" or d.get("disposition") != "remediated" or d["id"] in linked \
+                or _decision_claims(d) & claimed:
             continue
         closed_on = _maybe_dt(d.get("closed_on"))
         if closed_on and closed_on < cutoff:

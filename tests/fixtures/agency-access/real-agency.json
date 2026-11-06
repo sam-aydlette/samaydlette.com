@@ -1,0 +1,7 @@
+{
+  "schema": "agency-access/1",
+  "_note": "Known-bad (DEC-194): an entry not marked simulated, for an agency whose name does not end '(simulated)'. No real agency request is taken; validation must fail.",
+  "requests": [
+    {"id": "AAR-B03", "agency": "Bureau of Known-Bad Fixtures", "kind": "access", "channel": "simulated request", "received_on": "2026-11-02"}
+  ]
+}

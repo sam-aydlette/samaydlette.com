@@ -1,5 +1,0 @@
-{
-  "$comment": "The anonymized summary of feedback and questions on each issued Ongoing Certification Report (CCM-OCR-AFS). Questions arrive through the per-report GitHub issue form (.github/ISSUE_TEMPLATE/ocr-feedback.yml) or the security contact; the operator writes one entry per issued report, removing names, agencies and anything identifying, and the next report publishes it (scripts/build-ocr.py, which also screens it with scripts/_sensitivity.py and fails closed on a name handle, email address or other identifier). Shape: {ocr: issue date, received: count, summarized_by, summarized_on, items: [{question, answer}]}. A report with no entry states that no feedback was received on it.",
-  "schema": "ocr-feedback/1",
-  "summaries": []
-}

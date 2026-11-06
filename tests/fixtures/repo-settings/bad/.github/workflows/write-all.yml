@@ -1,0 +1,9 @@
+# Known-bad (SCG-ENH-CMP): a workflow whose token may write everything.
+name: write all
+on: workflow_dispatch
+permissions: write-all
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+    - run: echo hi

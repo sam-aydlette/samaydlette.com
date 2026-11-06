@@ -166,7 +166,7 @@ def test_the_inbox_simulation_carries_it(tmp_path):
 
 def test_the_non_machine_status_carries_it(tmp_path):
     out = tmp_path / "nmv.json"
-    subprocess.run([sys.executable, str(REPO / "scripts" / "check-non-machine-vv.py"), "--today", "2026-11-05",
+    subprocess.run([sys.executable, str(REPO / "scripts" / "check-non-machine-vv.py"),
                     "--out", str(out)], check=True, capture_output=True)
     assert json.loads(out.read_text())["fedRampId"] == FID
 

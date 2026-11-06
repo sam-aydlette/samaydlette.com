@@ -23,6 +23,7 @@ changes them publishes the deviation. Grouping is fed to the policy, which
 evaluates a group at its most exposed member.
 """
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -206,9 +207,43 @@ def disclosure(row):
             and n >= _WITHHOLD_FROM and not row.get("fully_mitigated")):
         return {"level": "summary", "policy": DISCLOSURE_POLICY,
                 "reason": f"open, IRV, LEV and {pain}: detail withheld from public artifacts until remediated or "
-                          "dispositioned; available to necessary parties from the provider"}
+                          "dispositioned; no party receives it (DEC-194)"}
     return {"level": "full", "policy": DISCLOSURE_POLICY,
             "reason": "not an open IRV+LEV finding at N3 or above: disclosing it will not likely lead to exploitation"}
+
+
+# The withheld-detail request path (DEC-182), exercised on every VDR build
+# against a simulated requester: it finds what a party would receive for each
+# withheld finding and logs that, never the detail. With nothing withheld, a
+# canned simulated finding goes through disclosure() so the path still runs.
+WITHHELD_REQUESTER = "Necessary Party, Esq. (simulated)"
+SIM_FINDING = {"tracking_id": "SIM-0001", "final_disposition": "open", "internet_reachable": True,
+               "likely_exploitable": True, "pain": "N4", "description": "A simulated finding (not real).",
+               "locations": ["simulated://nowhere"], "fix_versions": ["9.9.9"], "supplementary_info": "none"}
+
+
+def withheld_detail_exercise(rows):
+    """The log entry for one exercise of the withheld-detail request path."""
+    withheld = [r for r in rows if (r.get("public_disclosure") or disclosure(r))["level"] == "summary"]
+    canned = not withheld
+    if canned:
+        withheld = [SIM_FINDING]
+        if disclosure(SIM_FINDING)["level"] != "summary":
+            raise SystemExit("::error::withheld-detail exercise: the simulated finding was not withheld (fail-closed)")
+    entries = []
+    for r in withheld:
+        detail = {k: r.get(k) for k in WITHHELD_FIELDS}
+        entries.append({"tracking_id": r.get("tracking_id"),
+                        "withheldFields": [k for k in WITHHELD_FIELDS if r.get(k) not in (None, "", [])],
+                        "detailSha256": hashlib.sha256(
+                            json.dumps(detail, sort_keys=True, default=str).encode()).hexdigest()})
+    return {"simulated": True, "requester": WITHHELD_REQUESTER, "decision": DISCLOSURE_POLICY,
+            "engagement": "Simulated (DEC-194): no real FedRAMP, agency or person took part, and nothing was "
+                          "sent to anyone.",
+            "asks": "The withheld detail of every finding the public report summarizes, please. In triplicate.",
+            "cannedFinding": canned, "findings": entries,
+            "deliveredTo": "nobody: the requester is simulated; this log entry records what would be supplied "
+                           "(field names and a sha256 of the detail), never the detail"}
 
 
 def redact(row):

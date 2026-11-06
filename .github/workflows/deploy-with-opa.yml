@@ -1692,10 +1692,10 @@ jobs:
           cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
         done
     # VDR-TFR-NMV: every non-machine resource (policies, procedures, plans, the
-    # operator role, records, registers) verified and validated within 92 days,
-    # each under an in-force decision record (data/non-machine-resources.json).
-    # The deploy stops otherwise, before anything is published; the status is
-    # published with the VDR, and its freshness window lapses with it.
+    # operator role, records, registers) passes its machine checks
+    # (scripts/_nonmachine.py: paths and DEC IDs resolve, no retired mechanism,
+    # tagged counts match the code). The deploy stops otherwise, before anything
+    # is published; the status is published with the VDR.
     - name: Non-machine verification and validation (VDR-TFR-NMV)
       working-directory: infrastructure
       run: |
@@ -1889,6 +1889,7 @@ jobs:
       working-directory: infrastructure
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DEPENDABOT_TOKEN: ${{ secrets.DEPENDABOT_ALERTS_TOKEN }}
       run: |
         set -euo pipefail
         pool=$(terraform output -raw cognito_user_pool_id)

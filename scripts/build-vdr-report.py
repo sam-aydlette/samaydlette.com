@@ -2364,6 +2364,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
     # every finding; then each finding's public form follows its disclosure
     # determination (VER-RPT-NID).
     groups = _evaluation.attach_groups(report_findings, len(inv.get("classes") or {}))
+    withheld_exercise = _evaluation.withheld_detail_exercise(report_findings)   # DEC-182, before redaction
     report_findings = [_evaluation.redact(r) for r in report_findings]
     cve_findings = consolidate_by_cve(report_findings, risk_accepted_records)
     summary["unique_cves"] = len(cve_findings)
@@ -2385,6 +2386,7 @@ def build_report(findings, suppressions, kev_cves, ledger, index=None, config=No
         "groups": groups,
         "cve_findings": cve_findings,
         "risk_accepted": risk_accepted_records,
+        "withheld_detail_exercise": withheld_exercise,
         "rules_reference": {
             "evaluation": "FedRAMP 20x VER-EVA-* (PAIN, IRV, LEV)",
             "timeframes": ("FedRAMP 20x VDR-TFR-PVR Class C remediation; "

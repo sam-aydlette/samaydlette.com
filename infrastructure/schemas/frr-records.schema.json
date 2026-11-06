@@ -41,7 +41,7 @@
             "required": ["counterparty", "how"],
             "description": "The outside party this proof of concept simulates; Implemented records only, with deploy-time evidence.",
             "properties": {
-              "counterparty": {"enum": ["assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov"]},
+              "counterparty": {"enum": ["assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov", "personnel"]},
               "how": {"type": "string", "minLength": 1}
             }
           },

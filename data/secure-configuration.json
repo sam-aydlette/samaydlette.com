@@ -2,7 +2,7 @@
   "schema": "secure-configuration/1",
   "$comment": "The Secure Configuration Guide's single source (SCG-CSO-RSC, SCG-ENH-MRG). scripts/build-scg.py publishes it as /.well-known/secure-configuration-guide.json and .md; scripts/check-secure-config.py compares the live settings with `recommended` on every deploy (SCG-ENH-CMP/EXP). Changing a recommended default needs a new version and a changelog entry carrying the new defaults_sha256 (SCG-ENH-VRH); the builder and tests/test_secure_configuration.py fail otherwise. AI-drafted 2026-11-05 from the repository and read-only reads of the live account; for the operator's review.",
   "title": "Secure Configuration Guide: samaydlette.com",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "obtain_and_use": [
     "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
     "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
@@ -170,10 +170,54 @@
       "setting": "Two-factor authentication on the owner account, no classic personal access tokens",
       "recommended": true,
       "implication": "The owner account can change every setting above and the workflows that hold AWS trust.",
-      "read": "Not readable by the deploy's token (GitHub exposes a user's 2FA and tokens only to that user); the operator attests it (DEC-151).",
+      "read": "Not readable by any token the pipeline holds (GitHub exposes a user's two-factor setting and tokens only to that user). Stated once by the operator as a configuration fact (DEC-151); nothing recurs.",
       "change": "github.com Settings, Password and authentication; Developer settings, Personal access tokens.",
       "check": "attested",
       "attested_by": "DEC-151"
+    },
+    {
+      "id": "github.workflow-token-permissions",
+      "account": "github-owner",
+      "operable_by": "github-owner only",
+      "setting": "Every workflow declares its token permissions; none grants write-all",
+      "recommended": {"undeclared": [], "write_all": []},
+      "implication": "A workflow that declares its permissions never falls back to the repository's default token permissions, so the repository-level Actions setting (readable only by an administrator) governs nothing; write-all would give every step every write.",
+      "read": "The top-level permissions block of each file in .github/workflows/ (the repository the run checked out)",
+      "change": "Edit the workflow's permissions block, through a reviewed pull request",
+      "check": "github-workflow-permissions"
+    },
+    {
+      "id": "github.rulesets",
+      "account": "github-owner",
+      "operable_by": "github-owner only",
+      "setting": "No repository ruleset lets anyone bypass it",
+      "recommended": {"with_bypass": 0},
+      "implication": "A ruleset with bypass actors would let those actors skip the protections it adds; main's required checks are branch protection, compared above.",
+      "read": "GET /repos/{owner}/{repo}/rulesets",
+      "change": "Repository Settings, Rules, Rulesets",
+      "check": "github-rulesets"
+    },
+    {
+      "id": "github.dependabot-alerts",
+      "account": "github-owner",
+      "operable_by": "github-owner only",
+      "setting": "Dependabot alerts are enabled",
+      "recommended": true,
+      "implication": "Dependabot alerts are one of the detection feeds the vulnerability report reads; off, a known-vulnerable dependency raises no alert.",
+      "read": "GET /repos/{owner}/{repo}/dependabot/alerts with the token the detection feeds use (403 means disabled)",
+      "change": "Repository Settings, Code security, Dependabot alerts",
+      "check": "github-dependabot-alerts"
+    },
+    {
+      "id": "github.dependabot-updates",
+      "account": "github-owner",
+      "operable_by": "github-owner only",
+      "setting": "Dependabot version updates cover the Lambda's and the accessibility tool's npm packages, the GitHub Actions and the main Terraform stack",
+      "recommended": ["github-actions:/", "npm:/infrastructure/lambda", "npm:/tools/a11y", "terraform:/infrastructure"],
+      "implication": "These are the dependency manifests in this repository that reach production or the pipeline; an entry removed stops update pull requests for it (docs/supply-chain.md).",
+      "read": ".github/dependabot.yml (the repository the run checked out)",
+      "change": "Edit .github/dependabot.yml, through a reviewed pull request",
+      "check": "github-dependabot-updates"
     },
     {
       "id": "aws-operator-user.mfa-enabled",
@@ -278,6 +322,7 @@
         "Added the account-level settings, the operator user, the CI roles and the user-pool administration, each with the call that reads and changes it."
       ],
       "defaults_sha256": "a21ebfa28dc9e0b8b12a2f0029e163d782d92848c422b85702bec6de65352727"
-    }
+    },
+    {"version": "2.1.0", "date": "2026-11-06", "changes": ["Added the repository settings the pipeline can read and now compares on every deploy and every night: workflow token permissions, rulesets, Dependabot alerts and Dependabot version updates.", "The owner's two-factor setting is stated once as a configuration fact (DEC-151, amended); no recurring review."], "defaults_sha256": "375b980783ca802f16b31bba794c5f42e56169ec0eb76b993053a6687ebec3c3"}
   ]
 }

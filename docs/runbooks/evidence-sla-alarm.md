@@ -12,7 +12,7 @@ The evidence SLA watchdog (`infrastructure/watchdog.tf`) emails the operator thr
 
 The windows are governed values in `infrastructure/schemas/freshness-config.json`; the thresholds above are read from it. Change a window there, through review, never in the alarm.
 
-Any alarm also fires if the watchdog stops publishing metrics, because missing data counts as a breach. If all five fire together, check the watchdog itself first (a missing or invalid freshness config stops it before it publishes anything).
+Any alarm also fires if the watchdog stops publishing metrics, because missing data counts as a breach. If all five <!-- nmv-count watchdog-alarms=5 --> fire together, check the watchdog itself first (a missing or invalid freshness config stops it before it publishes anything).
 
 ## `nightly-failed`
 
@@ -39,7 +39,9 @@ The published incident log (`/.well-known/incident-reports.json`, `obligations_d
 
 The watchdog's log line for the run lists the stale artifacts under `stale`. To see the same from outside, run `python3 scripts/check-evidence-freshness.py --all https://samaydlette.com`.
 
-- **Deploy-cadence artifacts** (KSI signal, SSP, POA&M, trust center, boundary map, CDS artifacts): no deploy has run inside the window. Start and approve a deploy.
+- **Deploy-cadence artifacts** (KSI signal, trust center, boundary map, CDS artifacts): no deploy has run inside the window. Start and approve a deploy.
+- **Package artifacts** (Security Decision Record, Certification Package Overview, Ongoing Certification Report and its issue index, Quarterly Review index): `package-maintenance.yml` rewrites them daily. Follow its alert issue, fix the cause, and re-run the workflow (it can be started by hand); no deploy is needed unless the fix is a code change.
+- **`vdr-non-machine-vv.json`:** a machine check of a policy, procedure or register failed, so `verifiedAt` is the epoch. The nightly's "Non-machine verification and validation status" step names the resource and line; fix the document and push.
 - **`boundary-corroboration.json`:** re-run `tools/boundary-map/corroborate.py`, commit the result, and deploy.
 - **Nightly artifacts** (`vdr-*`): follow `nightly-failed` / `vdr-age` above.
 

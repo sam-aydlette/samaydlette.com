@@ -31,7 +31,7 @@ Five mechanisms operate concurrently:
 These artifacts are published continuously at `/.well-known/`:
 
 - `ksi-signal.json` — the FedRAMP 20x KSI signal (Sigstore-signed); per-deploy emission
-- `ksi-signal-runtime.json` — the daily runtime revalidation, signed with an asymmetric KMS key (ECC NIST P-256); the signature is carried in `provenance.attestation` and verifiable against `runtime-signing-pubkey.pem` (POAM-002)
+- `ksi-signal-runtime.json` — the daily runtime revalidation, signed with an asymmetric KMS key (ECC NIST P-256); the signature is carried in `provenance.attestation` and verifiable against `runtime-signing-pubkey.pem` (DEC-002, remediated)
 - `runtime-signing-pubkey.pem` — the public key for verifying the runtime signal's signature
 - `security-decision-record.json` — the CR26 Security Decision Record (per-KSI and per-Rev5-control records; replaces the SSP), Sigstore-signed with an in-toto attestation; per-deploy emission
 - `certification-package-overview.json` — the CR26 Certification Package Overview, Sigstore-signed; per-deploy emission
@@ -41,7 +41,7 @@ These artifacts are published continuously at `/.well-known/`:
 
 All artifacts carry FedRAMP-namespaced provenance (deploy chain identity, system-id, ownership block). The deploy-time signal is signed via Sigstore keyless with verification anchored in the public Rekor transparency log; an external consumer can verify integrity via `cosign verify-blob` without trusting this site.
 
-**Quarterly Ongoing Certification Report.** CR26 CCM is a quarterly cycle, not a stream. `ongoing-certification-report.json` (CCM-OCR-AVL) is regenerated on every deploy from the system's own artifacts and carries the eight required summaries — changes to certification data (from the SCN register), planned changes (open POA&M items), accepted vulnerabilities (from the VDR), transformative changes, updated recommendations, agencies using the product (none), a FedRAMP-Reportable-Incident attestation (none — no federal data), and lessons learned (none) — plus the next-report and next-review target dates. The five monitoring mechanisms above feed it; per-deploy emission keeps it current and overshoots the 3-month floor.
+**Quarterly Ongoing Certification Report.** CR26 CCM is a quarterly cycle, not a stream. `ongoing-certification-report.json` (CCM-OCR-AVL) is regenerated on every deploy from the system's own artifacts and carries the eight required summaries — changes to certification data (from the SCN register), planned changes (from the decision register and the SCN register), accepted vulnerabilities (from the VDR), transformative changes, updated recommendations, agencies using the product (none), a FedRAMP-Reportable-Incident attestation (none — no federal data), and lessons learned (none) — plus the next-report and next-review target dates. The five monitoring mechanisms above feed it; per-deploy emission keeps it current and overshoots the 3-month floor.
 
 This implements the **publication half** of FedRAMP 20x Collaborative Continuous Monitoring (CCM): every monitoring artifact is publicly retrievable and signature-verifiable, and the quarterly Ongoing Certification Report is produced as a distinct deliverable, so any reviewer can fetch and verify the current posture without trusting this site. The relationship-dependent rules — the synchronous Quarterly Review (CCM-QTR-MTG), the feedback channel (CCM-OCR-FBM), and the anonymized feedback summary (CCM-OCR-AFS) — are N/A absent a consuming agency, as the scope note below explains.
 

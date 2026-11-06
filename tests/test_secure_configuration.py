@@ -189,9 +189,18 @@ def _github():
     return next(c for c in json.loads((FIX / "github-good.json").read_text())["checks"] if c["id"] == "github_settings")
 
 
+def _repository():
+    """The repository settings as the committed files and a clean API read give them."""
+    ms = chk._manual_settings()
+    return chk.read_repository({"facts": {
+        "github-rulesets": {"rulesets": 0, "with_bypass": 0}, "github-dependabot-alerts": True,
+        "github-workflow-permissions": ms.workflow_permissions(), "github-dependabot-updates": ms.dependabot_updates()}})
+
+
 def _compare(aws_fixture, github=None):
     src = json.loads(SOURCE.read_text())
-    current = {**chk.read_aws(_fake(aws_fixture), "pool-1", now=NOW), **chk.read_github(github or _github())}
+    current = {**chk.read_aws(_fake(aws_fixture), "pool-1", now=NOW), **chk.read_github(github or _github()),
+               **_repository()}
     return chk.build(src, chk.compare(src, current, _in_force()), NOW)
 
 
@@ -224,8 +233,8 @@ def test_an_unreadable_setting_fails_the_deploy():
             raise chk.AwsError(r["error"])
         return r
     src = json.loads(SOURCE.read_text())
-    doc = chk.build(src, chk.compare(src, {**chk.read_aws(call, "pool-1", now=NOW), **chk.read_github(_github())},
-                                     _in_force()), NOW)
+    doc = chk.build(src, chk.compare(src, {**chk.read_aws(call, "pool-1", now=NOW), **chk.read_github(_github()),
+                                           **_repository()}, _in_force()), NOW)
     assert [r["id"] for r in chk.failures(doc)] == ["aws-account.s3-block-public-access"]
 
 

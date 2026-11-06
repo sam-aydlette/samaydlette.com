@@ -223,25 +223,67 @@ jobs:
           --vdr vdr-report.json --ksi-signal ksi-signal.json
         cat out/issued.txt
 
+    # CCM-QTR-MTG/RTR/SRR, CCM-OCR-FBM/AFS: on each review date, the Quarterly
+    # Review is held with simulated attendees (DEC-194: the operator engages no
+    # real party) and published, never rewritten; the index is republished on
+    # every run. Its frozen report must match the sha256 the issue index records.
+    - name: Hold the Quarterly Review when due (simulated attendees)
+      working-directory: infrastructure
+      run: |
+        set -euo pipefail
+        W=../work
+        : > out/reviews.txt
+        # A deployed commit from before automated reviews has no generator; it
+        # is maintained as it was deployed (the deploy of a later commit runs it).
+        [ -f ../scripts/hold-quarterly-review.py ] || { echo "::notice::the deployed commit predates automated Quarterly Reviews"; exit 0; }
+        fetch() { curl -sfL --retry 3 --retry-delay 5 -o "$W/$1" "${SITE_ORIGIN}/.well-known/$1"; }
+        prev=""
+        code=$(curl -s -o /dev/null -w '%{http_code}' "${SITE_ORIGIN}/.well-known/quarterly-reviews.json")
+        if [ "$code" = "404" ] || [ "$code" = "403" ]; then
+          echo "No published review index yet; starting one."
+        elif [ "$code" = "200" ]; then
+          fetch quarterly-reviews.json; fetch quarterly-reviews.bundle
+          cosign verify-blob --bundle "$W/quarterly-reviews.bundle" --certificate-identity "$ID_MAINTENANCE" \
+            --certificate-oidc-issuer "${COSIGN_OIDC_ISSUER}" "$W/quarterly-reviews.json"
+          prev="--previous-index $W/quarterly-reviews.json"
+        else
+          echo "::error::quarterly-reviews.json answered HTTP $code: refusing to rebuild the index without it"; exit 1
+        fi
+        # The frozen reports a due review reads; checked against the verified
+        # issue index's sha256 by the script.
+        for d in $(jq -r '.issues[].issueDate' out/ocr-issues.json); do
+          [[ "$d" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "::error::malformed issue date in the issue index"; exit 1; }
+          [ -f "out/ocr-issue-$d.json" ] || fetch "ocr-issue-$d.json" || true
+        done
+        # shellcheck disable=SC2086
+        python3 ../scripts/hold-quarterly-review.py --ocr-index out/ocr-issues.json \
+          --issues-dir out --issues-dir "$W" $prev --out out --new-files out/reviews.txt
+        cat out/reviews.txt >> out/issued.txt
+
     - name: Gates (FedRAMP ID, redaction)
       working-directory: infrastructure/out
       run: |
         set -euo pipefail
         python3 ../../scripts/check-fedramp-id.py security-decision-record.json \
           certification-package-overview.json ongoing-certification-report.json ocr-issues.json \
-          $(grep -E '^(ocr-issue-.*\.json|snapshot-.*\.json)$' issued.txt || true)
+          $( [ -f quarterly-reviews.json ] && echo quarterly-reviews.json ) \
+          $(grep -E '^(ocr-issue-.*\.json|snapshot-.*\.json|quarterly-review-.*\.json)$' issued.txt || true)
         # shellcheck disable=SC2046
         python3 ../../scripts/check-published-redaction.py security-decision-record.json security-decision-record.md \
           certification-package-overview.json certification-package-overview.md \
           ongoing-certification-report.json ongoing-certification-report.md ocr-issues.json quarterly-review.ics \
-          $(grep -E '^(ocr-issue-|snapshot-)' issued.txt || true)
+          $( [ -f quarterly-reviews.json ] && echo quarterly-reviews.json ) \
+          $(grep -E '^(ocr-issue-|snapshot-|quarterly-review-)' issued.txt || true)
 
     - name: Sign the issue index and new issues; attest the SDR
       working-directory: infrastructure/out
       run: |
         set -euo pipefail
         cosign sign-blob --yes --new-bundle-format --bundle ocr-issues.bundle ocr-issues.json
-        for f in $(grep -E '^(ocr-issue-.*|snapshot-.*)\.json$' issued.txt || true); do
+        if [ -f quarterly-reviews.json ]; then
+          cosign sign-blob --yes --new-bundle-format --bundle quarterly-reviews.bundle quarterly-reviews.json
+        fi
+        for f in $(grep -E '^(ocr-issue-.*|snapshot-.*|quarterly-review-.*)\.json$' issued.txt || true); do
           cosign sign-blob --yes --new-bundle-format --bundle "${f%.json}.bundle" "$f"
           echo "${f%.json}.bundle" >> issued.txt
         done
@@ -301,6 +343,10 @@ jobs:
         put quarterly-review.ics "text/calendar; charset=utf-8"
         put ocr-issues.bundle application/json
         put ocr-issues.json application/json
+        if [ -f quarterly-reviews.json ]; then
+          put quarterly-reviews.bundle application/json
+          put quarterly-reviews.json application/json
+        fi
 
     - name: Invalidate CloudFront cache (package paths only)
       env:
@@ -310,16 +356,27 @@ jobs:
         aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" \
           --paths "/.well-known/security-decision-record*" "/.well-known/certification-package-overview*" \
                   "/.well-known/ongoing-certification-report*" "/.well-known/ocr-issue*" \
-                  "/.well-known/quarterly-review.ics" --query 'Invalidation.Id' --output text
+                  "/.well-known/quarterly-review*" --query 'Invalidation.Id' --output text
 
     - name: Assert the edge serves the rebuilt package
       run: |
         set -euo pipefail
-        for a in security-decision-record certification-package-overview ongoing-certification-report ocr-issues; do
+        for a in security-decision-record certification-package-overview ongoing-certification-report ocr-issues \
+                 quarterly-reviews; do
+          [ -f "infrastructure/out/$a.json" ] || continue
           python3 scripts/check-evidence-freshness.py --url "${SITE_ORIGIN}/.well-known/$a.json" \
             --expect-sha256 "$(sha256sum "infrastructure/out/$a.json" | awk '{print $1}')" \
             --retries 12 --retry-delay 20
         done
+
+    # CCM-QTR-MTG: the index the edge now serves (asserted byte-identical above)
+    # must list a review for every review date already passed. This run is
+    # called by every deploy and runs daily, so a missed review fails both.
+    - name: No Quarterly Review overdue (published index)
+      run: |
+        set -euo pipefail
+        [ -f scripts/check-quarterly-review.py ] || { echo "::notice::the deployed commit predates automated Quarterly Reviews"; exit 0; }
+        python3 scripts/check-quarterly-review.py --index infrastructure/out/quarterly-reviews.json
 
   alert:
     name: Alert on package maintenance

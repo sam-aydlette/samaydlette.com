@@ -95,7 +95,8 @@
         "identifier": "CKV_AWS_144",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-06-15"
     },
     {
       "id": "DEC-004",
@@ -125,7 +126,8 @@
         "identifier": "CKV_AWS_23",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-06-15"
     },
     {
       "id": "DEC-005",
@@ -208,7 +210,8 @@
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
       },
-      "original_detection_date": "2025-06-14"
+      "original_detection_date": "2025-06-14",
+      "confirmed_on": "2026-05-08"
     },
     {
       "id": "DEC-008",
@@ -238,7 +241,8 @@
         "identifier": "CKV_AWS_174; CKV2_AWS_47",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-06-15"
     },
     {
       "id": "DEC-009",
@@ -270,7 +274,8 @@
         "original_risk_rating": "low",
         "risk_adjustment": false
       },
-      "original_detection_date": "2025-06-14"
+      "original_detection_date": "2025-06-14",
+      "confirmed_on": "2026-05-08"
     },
     {
       "id": "DEC-010",
@@ -302,7 +307,8 @@
         "original_risk_rating": "low",
         "risk_adjustment": false
       },
-      "original_detection_date": "2025-06-14"
+      "original_detection_date": "2025-06-14",
+      "confirmed_on": "2026-05-08"
     },
     {
       "id": "DEC-011",
@@ -357,7 +363,8 @@
         "identifier": "CKV_AWS_115",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-06-18"
     },
     {
       "id": "DEC-013",
@@ -411,7 +418,8 @@
         "identifier": "CKV_AWS_50",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-06-15"
     },
     {
       "id": "DEC-015",
@@ -442,7 +450,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "confirmed_on": "2026-06-18"
     },
     {
       "id": "DEC-017",
@@ -705,7 +714,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "confirmed_on": "2026-09-30"
     },
     {
       "id": "DEC-026",
@@ -738,7 +748,8 @@
         "original_risk_rating": "moderate",
         "adjusted_risk_rating": "low",
         "risk_adjustment": true
-      }
+      },
+      "confirmed_on": "2026-06-29"
     },
     {
       "id": "DEC-027",
@@ -771,7 +782,8 @@
         "detector": "Checkov",
         "identifier": "CKV_AWS_355; CKV_AWS_287; CKV_AWS_356",
         "original_risk_rating": "low"
-      }
+      },
+      "confirmed_on": "2026-06-29"
     },
     {
       "id": "DEC-028",
@@ -801,7 +813,8 @@
         "detector": "Checkov; tfsec; Prowler",
         "identifier": "CKV_AWS_18; AVD-AWS-0089; s3_bucket_server_access_logging_enabled",
         "original_risk_rating": "low"
-      }
+      },
+      "confirmed_on": "2026-06-29"
     },
     {
       "id": "DEC-029",
@@ -834,7 +847,8 @@
         "detector": "Checkov; tfsec; Prowler",
         "identifier": "CKV_AWS_145; CKV_AWS_119; AVD-AWS-0132; s3_bucket_default_encryption",
         "original_risk_rating": "low"
-      }
+      },
+      "confirmed_on": "2026-06-29"
     },
     {
       "id": "DEC-030",
@@ -863,7 +877,8 @@
         "detector": "Checkov",
         "identifier": "CKV_AWS_374",
         "original_risk_rating": "low"
-      }
+      },
+      "confirmed_on": "2026-06-29"
     },
     {
       "id": "DEC-031",
@@ -921,7 +936,8 @@
         "identifier": "CKV2_AWS_10, CKV_AWS_252, AVD-AWS-0162",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-07-09"
     },
     {
       "id": "DEC-033",
@@ -947,7 +963,8 @@
         "identifier": "WCAG2AA.Principle1.Guideline1_4.1_4_3.G18.Fail",
         "original_risk_rating": "low",
         "risk_adjustment": false
-      }
+      },
+      "confirmed_on": "2026-07-11"
     },
     {
       "id": "DEC-034",
@@ -1132,7 +1149,8 @@
       "original_detection_date": "2026-10-26",
       "source": {
         "detector": "OWASP ZAP baseline scan"
-      }
+      },
+      "confirmed_on": "2026-11-04"
     },
     {
       "id": "DEC-040",
@@ -1159,7 +1177,8 @@
       "original_detection_date": "2026-10-26",
       "source": {
         "detector": "OWASP ZAP baseline scan"
-      }
+      },
+      "confirmed_on": "2026-11-04"
     },
     {
       "id": "DEC-100",
@@ -1178,19 +1197,20 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CDS-CSO-FID",
           "CDS-CSO-PUB"
         ]
-      }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-101",
       "title": "Ongoing Certification Reports and Quarterly Review content are published in full",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator determines that publishing each Ongoing Certification Report, and the content prepared for each Quarterly Review (its agenda, published in the report), will not likely have an adverse effect on the offering: the system holds no federal customer or agency data, the reports summarize what the public evidence already shows, and each report passes the automated sensitivity screen (scripts/_sensitivity.py: account IDs, outside email addresses, IP addresses, access keys, tokens, name handles) before it is written. The operator reviews anything the screen cannot judge before the report is issued. Each report cites this record.",
+      "justification": "The operator determines that publishing each Ongoing Certification Report, and the content prepared for each Quarterly Review (its agenda, published in the report), will not likely have an adverse effect on the offering: the system holds no federal customer or agency data, the reports summarize what the public evidence already shows, and each report passes the automated sensitivity screen (scripts/_sensitivity.py: account IDs, outside email addresses, IP addresses, access keys, tokens, name handles) before it is written. Nothing waits on a person: a report the screen rejects is not written, and the build fails. Each report cites this record.",
       "controls": [],
       "applies_to": {
         "check_ids": [],
@@ -1202,19 +1222,26 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-OCR-RPS",
           "CCM-OCR-LSI",
           "CCM-QTR-SCR"
-        ]
-      }
+        ],
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "no recurring manual work (DEC-194)",
+          "before": "The operator reviews anything the screen cannot judge before the report is issued.",
+          "after": "Nothing waits on a person: a report the screen rejects is not written, and the build fails."
+        }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-102",
       "title": "The operator answers Ongoing Certification Report feedback and publishes an anonymized summary in the next report",
-      "disposition": "operational-requirement",
-      "status": "in-force",
+      "disposition": "superseded",
+      "status": "closed",
       "justification": "Questions and feedback on each issued report arrive through its GitHub issue form (linked from the report, prefilled with the report's date) or, for anything sensitive, the security contact in /.well-known/security.txt. The operator answers each, and before the next issue writes an anonymized, desensitized summary of the questions and answers in data/ocr-feedback.json (no names, agencies or identifying detail); the next report publishes it, and the build screens it and fails on an identifier.",
       "controls": [],
       "applies_to": {
@@ -1227,18 +1254,20 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-OCR-AFS",
           "CCM-OCR-FBM"
         ]
-      }
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "The feedback intake and anonymized summary, automated: scripts/_quarterly_review.py (intake, qa_summary), exercised each quarter by simulated parties; the summary appears in the next OCR (scripts/build-ocr.py)."
     },
     {
       "id": "DEC-103",
       "title": "The operator hosts a synchronous Quarterly Review after every Ongoing Certification Report",
-      "disposition": "operational-requirement",
-      "status": "in-force",
+      "disposition": "superseded",
+      "status": "closed",
       "justification": "The operator hosts a Quarterly Review by video call on the date the CCM calendar sets (5 business days after each report's issue), open to all necessary parties who register, and holds it even if nobody registers. It reviews the parts of the latest report most relevant to agencies and covers the standing agenda items the report publishes: KSI results and trend, vulnerability trend, and the plan for the next quarter.",
       "controls": [],
       "applies_to": {
@@ -1251,18 +1280,20 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-QTR-MTG",
           "CCM-QTR-ACT"
         ]
-      }
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "The Quarterly Review, held on its date with simulated attendees by package-maintenance.yml (step 'Hold the Quarterly Review when due (simulated attendees)'); the deploy and the nightly fail when a review date passes with none published (scripts/check-quarterly-review.py)."
     },
     {
       "id": "DEC-104",
       "title": "The operator records or transcribes each Quarterly Review and shares it",
-      "disposition": "operational-requirement",
-      "status": "in-force",
+      "disposition": "superseded",
+      "status": "closed",
       "justification": "The operator records or transcribes each Quarterly Review and supplies the recording or transcript to the parties who registered. A transcript published beyond them has every agency comment, question and name removed first, and is published only after the same no-adverse-effect check as the report (DEC-101).",
       "controls": [],
       "applies_to": {
@@ -1275,18 +1306,20 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-QTR-RTR",
           "CCM-QTR-SRR"
         ]
-      }
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "The review's scripted transcript: the full one supplied to the simulated attendees as a log entry, the published one with every agency line removed (scripts/_quarterly_review.py)."
     },
     {
       "id": "DEC-105",
       "title": "Quarterly Review attendees: agencies, FedRAMP and the assessor; other third parties only with specific relevance",
-      "disposition": "operational-requirement",
-      "status": "in-force",
+      "disposition": "superseded",
+      "status": "closed",
       "justification": "The operator invites agencies and FedRAMP to Quarterly Reviews, and the assessor by default. No other third party is invited unless it has specific relevance to the review, recorded with the invitation. The registration form states this policy.",
       "controls": [],
       "applies_to": {
@@ -1299,17 +1332,19 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-QTR-RTP"
         ]
-      }
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "The attendee policy in code (scripts/_quarterly_review.py check_roster): simulated agencies, the simulated FedRAMP and the simulated assessor; any other party only with its relevance recorded; nobody real (DEC-194)."
     },
     {
       "id": "DEC-106",
       "title": "Quarterly Review content is screened for sensitive information before each review",
-      "disposition": "operational-requirement",
-      "status": "in-force",
+      "disposition": "superseded",
+      "status": "closed",
       "justification": "Before each Quarterly Review the operator checks the content to be shown against the same screen as the report (no account IDs, internal addresses, credentials, unpublished vulnerability detail beyond the public reports, or identifying information about agencies or people) and removes anything that would likely have an adverse effect on the offering if disclosed. The generated agenda is screened automatically with the report.",
       "controls": [],
       "applies_to": {
@@ -1322,11 +1357,13 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "CCM-QTR-NID"
         ]
-      }
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "The sensitivity screen run on all of each review's content before it is written (scripts/_quarterly_review.py build, scripts/_sensitivity.py)."
     },
     {
       "id": "DEC-107",
@@ -1345,18 +1382,19 @@
       "review_by": "2027-11-05",
       "source": {
         "detector": "FedRAMP 20x Class C rule records (data/frr-records.json)",
-        "drafted_by": "AI-drafted (Claude) for the operator to confirm",
+        "drafted_by": "AI-drafted (Claude)",
         "rules": [
           "FRC-CSO-POP"
         ]
-      }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-150",
       "title": "Root and operator MFA stays virtual TOTP: phishing-resistant MFA is accepted as not bought",
       "disposition": "accepted",
       "status": "in-force",
-      "justification": "Extends DEC-025. The AWS root user and the operator IAM user keep virtual authenticator-app (TOTP) MFA; a FIDO2 security key or passkey (IA-2(8), the Secure Configuration Guide's recommended default) is not being bought for this proof of concept. Residual risk: a TOTP code can be relayed by a real-time phishing site. Why it is accepted: both principals have MFA (IA-2(1)/(2) met); the root user has no access keys and is used only for root-only tasks; the operator user has no console password, so a phished TOTP code alone opens no console session; every production change goes through the reviewed, approval-gated deploy, not either principal; CloudTrail records both. The deploy checks both principals' MFA on every run (scripts/check-secure-config.py) and publishes the deviation against this record. AI-drafted for the operator to confirm.",
+      "justification": "Extends DEC-025. The AWS root user and the operator IAM user keep virtual authenticator-app (TOTP) MFA; a FIDO2 security key or passkey (IA-2(8), the Secure Configuration Guide's recommended default) is not being bought for this proof of concept. Residual risk: a TOTP code can be relayed by a real-time phishing site. Why it is accepted: both principals have MFA (IA-2(1)/(2) met); the root user has no access keys and is used only for root-only tasks; the operator user has no console password, so a phished TOTP code alone opens no console session; every production change goes through the reviewed, approval-gated deploy, not either principal; CloudTrail records both. The deploy checks both principals' MFA on every run (scripts/check-secure-config.py) and publishes the deviation against this record.",
       "controls": [
         "ia-2.1",
         "ia-2.2",
@@ -1373,14 +1411,18 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-151",
-      "title": "The operator keeps two-factor authentication on the GitHub owner account and issues no classic personal access tokens",
+      "title": "Two-factor authentication on the GitHub owner account and no classic personal access tokens: a configuration fact, stated once",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator keeps two-factor authentication enabled on the GitHub account that owns the repository, issues no classic personal access tokens from it, and reviews its sign-in methods, tokens, SSH keys and authorized applications each quarter. GitHub exposes these settings only to the account itself, so the deploy's token cannot read them; this record is the operator's attestation, cited by the Secure Configuration Guide setting github.owner-2fa. AI-drafted for the operator to confirm.",
+      "justification": "The GitHub account that owns the repository has two-factor authentication enabled and issues no classic personal access tokens. GitHub exposes these settings only to the account itself, so no token the pipeline holds can read them; this record states them once as a configuration fact, cited by the Secure Configuration Guide setting github.owner-2fa. There is no recurring review. Every repository setting the pipeline can read (environments, branch protection, rulesets, workflow token permissions, Dependabot) is compared with the guide on every deploy and every night (scripts/check-secure-config.py).",
       "controls": [
         "ia-2.1",
         "ia-5",
@@ -1395,14 +1437,22 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)",
+        "amended": {
+          "on": "2026-11-06",
+          "change": "The quarterly review of sign-in methods, tokens, SSH keys and authorized applications is removed: replaced by the nightly comparison of the readable repository settings."
+        }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-152",
       "title": "Service paths with no published CMVP module validation are accepted",
       "disposition": "accepted",
       "status": "in-force",
-      "justification": "AWS publishes CMVP certificates for module families (AWS-LC, the KMS HSM) but names no validated module for these paths this system uses: CloudFront viewer TLS, API Gateway HTTP API TLS, the Cognito Hosted UI, S3 SSE-S3, SQS SSE-SQS, the DynamoDB AWS-owned key, CloudTrail digest signing, the IAM OIDC provider, and the Silk Reeling Lambda's outbound TLS from the Python runtime. For the viewer-facing paths AWS offers no validated option (no FIPS endpoint for a distribution's viewer TLS, an HTTP API's execute-api endpoint, or the Hosted UI). The stores on SSE-S3, SSE-SQS and the AWS-owned key hold no customer data (site content, logs, audit trail, Terraform state and lock, failed compliance events); moving them to customer-managed KMS keys would add per-request KMS cost for no customer-data benefit. Every store of app data that supports a customer-managed key uses one, on the KMS HSM (CMVP #4884). The system holds no federal customer data. Listed per service in the Secure Configuration Guide's module list (CMU-CSO-CMD). AI-drafted for the operator to confirm.",
+      "justification": "AWS publishes CMVP certificates for module families (AWS-LC, the KMS HSM) but names no validated module for these paths this system uses: CloudFront viewer TLS, API Gateway HTTP API TLS, the Cognito Hosted UI, S3 SSE-S3, SQS SSE-SQS, the DynamoDB AWS-owned key, CloudTrail digest signing, the IAM OIDC provider, and the Silk Reeling Lambda's outbound TLS from the Python runtime. For the viewer-facing paths AWS offers no validated option (no FIPS endpoint for a distribution's viewer TLS, an HTTP API's execute-api endpoint, or the Hosted UI). The stores on SSE-S3, SSE-SQS and the AWS-owned key hold no customer data (site content, logs, audit trail, Terraform state and lock, failed compliance events); moving them to customer-managed KMS keys would add per-request KMS cost for no customer-data benefit. Every store of app data that supports a customer-managed key uses one, on the KMS HSM (CMVP #4884). The system holds no federal customer data. Listed per service in the Secure Configuration Guide's module list (CMU-CSO-CMD).",
       "controls": [
         "sc-13",
         "sc-8.1",
@@ -1425,14 +1475,18 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-160",
-      "title": "Trust-center access records: what is logged, and a party's own records on request",
+      "title": "Trust-center access records: what is logged, and the lookup of a party's own records",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "AI-drafted for the operator to confirm. Access to the certification data is logged by CloudFront standard logging with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf); raw records expire after 90 days and only monthly aggregate counts for /.well-known/ and /trust/ are published, kept 13 months (scripts/build-access-summary.py). Because no requester identity is logged, the operator provides a party, on request to the security contact, the published summaries and any records matching the times and paths the party identifies, within 10 business days. Agencies are identified only by what they state in their own access request, never inferred from network data. This trades per-party attribution (CDS-TRC-ACL's SHOULD) for privacy, at the operator's direction of 2026-11-05.",
+      "justification": "Access to the certification data is logged by CloudFront standard logging with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf); raw records expire after 90 days and only monthly aggregate counts for /.well-known/ and /trust/ are published, kept 13 months (scripts/build-access-summary.py). Because no requester identity is logged, a party's own records can be found only by the times and paths it gives: scripts/build-access-summary.py does that lookup, and every deploy exercises it against a simulated requester and publishes the outcome with the summaries. There is no commitment to any real party and no deadline: no FedRAMP or agency request is answered (DEC-194). Anyone who really, really wants their records can contact the operator through the security contact in /.well-known/security.txt, and he may consider it at his discretion. No agency is identified, and nothing is inferred from network data. This trades per-party attribution (CDS-TRC-ACL's SHOULD) for privacy, at the operator's direction of 2026-11-05.",
       "controls": [
         "au-2",
         "au-3",
@@ -1449,14 +1503,26 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "point_of_contact": "Sam Aydlette (operator)"
+      "point_of_contact": "Sam Aydlette (operator)",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)",
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "DEC-194 (no engagement), after confirmation",
+          "before": "Because no requester identity is logged, the operator provides a party, on request to the security contact, the published summaries and any records matching the times and paths the party identifies, within 10 business days.",
+          "after": "Because no requester identity is logged, a party's own records can be found only by the times and paths it gives: scripts/build-access-summary.py does that lookup, and every deploy exercises it against a simulated requester and publishes the outcome with the summaries. There is no commitment to any real party and no deadline: no FedRAMP or agency request is answered (DEC-194). Anyone who really, really wants their records can contact the operator through the security contact in /.well-known/security.txt, and he may consider it at his discretion.",
+          "title_before": "Trust-center access records: what is logged, and a party's own records on request",
+          "title_after": "Trust-center access records: what is logged, and the lookup of a party's own records"
+        }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-165",
-      "title": "Agency access to the certification package: decided by the operator, denials notified to FedRAMP within 5 business days, inventory supplied on request",
+      "title": "Agency access to the certification package: decided by code rules over simulated requests; denial notices to the simulated FedRAMP, logged only",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator decides every agency access request and records it in data/agency-access.json (agencies and systems, never people); notifies FedRAMP of every denial within 5 business days; and supplies the access inventory and its history to FedRAMP on request (docs/procedures/agency-access.md). The package itself is public, so access needs no provisioning. The deploy fails when a denial notice is late or overdue, and exercises the procedure with fictional agencies on every run. AI-drafted 2026-11-05 for the operator to confirm.",
+      "justification": "The package is public, so no agency needs access granted. The access procedure (docs/procedures/agency-access.md) is built as code and exercised on every deploy against simulated agencies only: scripts/agency-access.py decides each simulated request by fixed rules (read access to a public package is granted; anything else, or a party that cannot be shown to exist, is denied with its reason), keeps the inventory and its history, writes each denial notice to the simulated FedRAMP as a log entry within 5 business days, and answers the simulated FedRAMP's inventory request. The deploy fails when a notice is late or overdue, and when data/agency-access.json holds any entry not marked simulated. The operator engages no real agency or FedRAMP about access (DEC-194): nothing is sent to anyone.",
       "controls": [
         "ac-21",
         "ca-6"
@@ -1468,14 +1534,18 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-166",
       "title": "Public sharing of the certification package: disclosure standard and determination of no likely adverse effect",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Reviewed annually and when a new kind of artifact is published. AI-drafted 2026-11-05 for the operator to confirm.",
+      "justification": "The operator has determined that publishing the whole certification package is not likely to have an adverse effect on the offering, because it carries no account IDs, secrets, credentials, personal email addresses, IAM user names, run IDs, raw logs or access-request contacts (each refused by a build gate), and the detail published on purpose (role names and policy summaries, the API and CloudFront hostnames, configurations and findings) grants no access on its own (docs/procedures/information-sharing.md). Reviewed annually and when a new kind of artifact is published.",
       "controls": [
         "ac-22"
       ],
@@ -1486,14 +1556,18 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-167",
       "title": "Verification and validation use full populations, never representative samples",
       "disposition": "operational-requirement",
       "status": "in-force",
-      "justification": "The operator does not use representative samples in verification or validation: every check runs over its full population (every inventoried component, every live in-boundary resource, every SBOM, every rule record and every test it cites), and the simulated assessor re-checks every rule and KSI. The assessor guide states this (IVV-CSO-DUS). Any future use of sampling would be documented there and this record revised. AI-drafted 2026-11-05 for the operator to confirm.",
+      "justification": "The operator does not use representative samples in verification or validation: every check runs over its full population (every inventoried component, every live in-boundary resource, every SBOM, every rule record and every test it cites), and the simulated assessor re-checks every rule and KSI. The assessor guide states this (IVV-CSO-DUS). Any future use of sampling would be documented there and this record revised.",
       "controls": [
         "ca-2",
         "ca-7"
@@ -1505,7 +1579,11 @@
       },
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
-      "review_by": "2027-11-05"
+      "review_by": "2027-11-05",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-180",
@@ -1515,7 +1593,7 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "justification": "AI-drafted for the operator's confirmation. Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
+      "justification": "Configuration checks (Checkov, tfsec) carry no CVE and no published vector, so without a decided vector their likely exploitability rests on Figure 7's last step (no score: LEV) and their impact on the scanner's severity, with no system context (VER-EVA-ELX, VER-EVA-EPA). Each vector in check-vectors.json that names this decision is adopted: it states what exploiting the misconfiguration needs and what it reaches in this system, with its rationale, and the VDR applies it to every finding of that check, so PAIN comes from the CVSS-Environmental derivation with the component's classification and LEV from Figure 7 (floor, no direct impact). A check without an adopted vector keeps the defaults. Reviewed with the register; a changed check or a new resource type is re-decided.",
       "controls": [
         "ra-3",
         "ra-5"
@@ -1526,7 +1604,11 @@
         "resources": [
           "infrastructure/schemas/check-vectors.json"
         ]
-      }
+      },
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-181",
@@ -1536,7 +1618,7 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "justification": "AI-drafted for the operator's confirmation. Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
+      "justification": "Each VDR build records, per finding, whether exploitation has been observed: active when the source reports it, when the vulnerability is observed exploited, or when an incident record (data/incidents.json, once present) names the finding or its CVE; otherwise none observed, with that basis and the time assessed. Exploitation elsewhere is read from CISA KEV and the exploit-prediction score (known threats), which the triage policy already treats as likely exploitable. For each open internet-reachable, likely exploitable finding, the operator reviews the edge, API and CloudTrail logs for indicators tied to the advisory as part of incident response (docs/incident-response.md) and records any indication as an incident, which makes the finding's exploitation active in the next build.",
       "controls": [
         "ra-5",
         "si-4",
@@ -1546,7 +1628,11 @@
         "check_ids": [],
         "vuln_ids": [],
         "resources": []
-      }
+      },
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-182",
@@ -1556,7 +1642,7 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "justification": "AI-drafted for the operator's confirmation. The provider discloses its vulnerability reports publicly (VER-RPT-RPD) and determines per finding that doing so will not likely lead to exploitation, recorded as public_disclosure on each finding. An open finding that is internet-reachable, likely exploitable and rated N3 or above is published in summary until it is remediated, fully mitigated or dispositioned: tracking ID, ratings, reachability, exploitability, dates, deadline and status stay public, so any party can make a risk-based decision; the description, observed locations, fixed versions and supplementary detail are withheld from the public artifacts (VDR report, detail report, accepted-vulnerability report and their renderings). Every other finding is disclosed in full: a dispositioned or lower-rated finding, or configuration already readable in the public source repository, gives an attacker nothing it would not otherwise have. Necessary parties (FedRAMP, agency customers) receive the withheld detail from the provider on request through the security contact in /.well-known/security.txt.",
+      "justification": "The provider discloses its vulnerability reports publicly (VER-RPT-RPD) and determines per finding that doing so will not likely lead to exploitation, recorded as public_disclosure on each finding. An open finding that is internet-reachable, likely exploitable and rated N3 or above is published in summary until it is remediated, fully mitigated or dispositioned: tracking ID, ratings, reachability, exploitability, dates, deadline and status stay public, so any party can make a risk-based decision; the description, observed locations, fixed versions and supplementary detail are withheld from the public artifacts (VDR report, detail report, accepted-vulnerability report and their renderings). Every other finding is disclosed in full: a dispositioned or lower-rated finding, or configuration already readable in the public source repository, gives an attacker nothing it would not otherwise have. The path that supplies the withheld detail to a necessary party is built and exercised on every VDR build against a simulated requester, which receives a log entry of what would be supplied and never the detail itself. There is no commitment to any real party and no deadline: no FedRAMP or agency request is answered (DEC-194). Anyone who really, really wants the detail can contact the operator through the security contact in /.well-known/security.txt, and he may consider it at his discretion.",
       "controls": [
         "ra-5",
         "si-5",
@@ -1566,14 +1652,24 @@
         "check_ids": [],
         "vuln_ids": [],
         "resources": []
-      }
+      },
+      "source": {
+        "drafted_by": "AI-drafted (Claude)",
+        "reworded": {
+          "on": "2026-11-06",
+          "for": "DEC-194 (no engagement), after confirmation",
+          "before": "Necessary parties (FedRAMP, agency customers) receive the withheld detail from the provider on request through the security contact in /.well-known/security.txt.",
+          "after": "The path that supplies the withheld detail to a necessary party is built and exercised on every VDR build against a simulated requester, which receives a log entry of what would be supplied and never the detail itself. There is no commitment to any real party and no deadline: no FedRAMP or agency request is answered (DEC-194). Anyone who really, really wants the detail can contact the operator through the security contact in /.well-known/security.txt, and he may consider it at his discretion."
+        }
+      },
+      "confirmed_on": "2026-11-06"
     },
     {
       "id": "DEC-190",
       "title": "Quarterly verification and validation of non-machine resources, 2026-Q4 (VDR-TFR-NMV)",
-      "disposition": "operational-requirement",
-      "status": "in-force",
-      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that on 2026-11-05 he verified and validated each non-machine resource listed in data/non-machine-resources.json against current practice, as each entry's 'verifies' states: the family policies, the runbooks, the incident response and recovery procedures, the continuous monitoring plan, the rules of behavior, the operator role and training record, the supply chain and significant change procedures, the privacy threshold analysis, this decision register and the governance domain registry. This replaces the overdue 2026-Q2 review (2026-05-08, next due 2026-08-08) in docs/security-review.md. Anything found out of date is recorded as its own decision or fixed in the resource. scripts/check-non-machine-vv.py fails the deploy when any entry is older than 92 days; the next verification is due by 2027-02-05 and is recorded as a new decision record.",
+      "disposition": "superseded",
+      "status": "closed",
+      "justification": "The operator attests that on 2026-11-05 he verified and validated each non-machine resource listed in data/non-machine-resources.json against current practice, as each entry's 'verifies' states: the family policies, the runbooks, the incident response and recovery procedures, the continuous monitoring plan, the rules of behavior, the operator role and training record, the supply chain and significant change procedures, the privacy threshold analysis, this decision register and the governance domain registry. This replaces the overdue 2026-Q2 review (2026-05-08, next due 2026-08-08) in docs/security-review.md. Anything found out of date is recorded as its own decision or fixed in the resource. scripts/check-non-machine-vv.py fails the deploy when any entry is older than 92 days; the next verification is due by 2027-02-05 and is recorded as a new decision record.",
       "controls": [
         "ca-7",
         "pl-2",
@@ -1591,15 +1687,18 @@
       "review_by": "2027-11-05",
       "point_of_contact": "Sam Aydlette (operator)",
       "source": {
-        "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)"
-      }
+        "detector": "Quarterly non-machine verification and validation (VDR-TFR-NMV)",
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "closed_on": "2026-11-06",
+      "replaced_by": "Machine verification of every non-machine resource on every deploy and every night (scripts/_nonmachine.py): paths and decision IDs resolve, no retired terms, tagged counts match the code."
     },
     {
       "id": "DEC-191",
       "title": "KSI-CED-RAT has one automated method, not two: the second is accepted as not built (FRC-CSX-VVK)",
-      "disposition": "accepted",
-      "status": "in-force",
-      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. Extends the pattern of DEC-150. FRC-CSX-VVK asks Class C providers for at least two automated methods to verify and validate each KSI. KSI-CED-RAT (reviewing all training) has one: on every SDR build, scripts/build-sdr.py checks that the operator's training attestation (DEC-192) exists, is in force and was decided under 12 months ago. A second automated method is not built. Training here is a people-run process for a sole operator: no machine-based resource carries it, so there is nothing for the plan gate or the runtime re-validation to evaluate, and an automated check of training effectiveness (a learning-management system with tracked completions and assessments) would be a purchase and a third-party interconnection out of proportion to a one-person proof of concept. Residual risk: a lapse in training, or training that stops being effective, is caught only by the annual attestation and the quarterly non-machine review (DEC-190), not by a machine check. Why it is accepted: the system has one operator, who holds every role; the attestation's age is checked automatically and the build counts the KSI at one method, publishing this acceptance beside the count; the SDR states the shortfall plainly. Every other KSI has at least two automated methods, and the SDR build fails the package maintenance run when any KSI is short without an accepted record like this one.",
+      "disposition": "superseded",
+      "status": "closed",
+      "justification": "Extends the pattern of DEC-150. FRC-CSX-VVK asks Class C providers for at least two automated methods to verify and validate each KSI. KSI-CED-RAT (reviewing all training) has one: on every SDR build, scripts/build-sdr.py checks that the operator's training attestation (DEC-192) exists, is in force and was decided under 12 months ago. A second automated method is not built. Training here is a people-run process for a sole operator: no machine-based resource carries it, so there is nothing for the plan gate or the runtime re-validation to evaluate, and an automated check of training effectiveness (a learning-management system with tracked completions and assessments) would be a purchase and a third-party interconnection out of proportion to a one-person proof of concept. Residual risk: a lapse in training, or training that stops being effective, is caught only by the annual attestation and the quarterly non-machine review (DEC-190), not by a machine check. Why it is accepted: the system has one operator, who holds every role; the attestation's age is checked automatically and the build counts the KSI at one method, publishing this acceptance beside the count; the SDR states the shortfall plainly. Every other KSI has at least two automated methods, and the SDR build fails the package maintenance run when any KSI is short without an accepted record like this one.",
       "controls": [
         "at-2",
         "at-3",
@@ -1615,14 +1714,19 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "point_of_contact": "Sam Aydlette (operator)"
+      "point_of_contact": "Sam Aydlette (operator)",
+      "closed_on": "2026-11-06",
+      "replaced_by": "Two automated methods for KSI-CED-RAT in the Security Decision Record (scripts/build-sdr.py): the training packet is current against the system's data, and the simulated trainee completed it with a passing, effective score before its due date (scripts/_training.py).",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      }
     },
     {
       "id": "DEC-192",
       "title": "The operator completes and reviews his security training each year (KSI-CED-RAT attestation)",
-      "disposition": "operational-requirement",
-      "status": "in-force",
-      "justification": "AI-drafted for Sam Aydlette's confirmation; not yet confirmed. The operator attests that he completes the training docs/training-log.md requires (general security, the privileged roles he holds, secure software delivery, and incident response and recovery), reviews whether it is effective at least once a year, and records each review as a dated entry in docs/training-log.md. This record is the attestation the Security Decision Record checks automatically for KSI-CED-RAT: it must be in force and decided under 12 months ago, so it is renewed with a new record each year. The quarterly non-machine verification (DEC-190, data/non-machine-resources.json NMR-REC-TRAINING) checks the training log itself.",
+      "disposition": "superseded",
+      "status": "closed",
+      "justification": "The operator attests that he completes the training docs/training-log.md requires (general security, the privileged roles he holds, secure software delivery, and incident response and recovery), reviews whether it is effective at least once a year, and records each review as a dated entry in docs/training-log.md. This record is the attestation the Security Decision Record checks automatically for KSI-CED-RAT: it must be in force and decided under 12 months ago, so it is renewed with a new record each year. The quarterly non-machine verification (DEC-190, data/non-machine-resources.json NMR-REC-TRAINING) checks the training log itself.",
       "controls": [
         "at-2",
         "at-3",
@@ -1638,14 +1742,19 @@
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
-      "point_of_contact": "Sam Aydlette (operator)"
+      "point_of_contact": "Sam Aydlette (operator)",
+      "closed_on": "2026-11-06",
+      "replaced_by": "The annual training packet generated from the system's own data and completed by a simulated trainee (scripts/_training.py), checked by two automated methods in the Security Decision Record.",
+      "source": {
+        "drafted_by": "AI-drafted (Claude)"
+      }
     },
     {
       "id": "DEC-193",
       "title": "CodeQL py/weak-sensitive-data-hashing on the DAST scanner's Cognito SRP sign-in",
       "disposition": "false-positive",
       "status": "in-force",
-      "justification": "False positive. scripts/dast-cognito-token.py signs the DAST scanner user in to Cognito with SRP-6a, whose protocol fixes SHA-256 for the password-derived value x = H(salt | H(pool | user | ':' | password)). The hash is the protocol's computation, sent as a proof to Cognito; it is never stored, and a slow password hash would make Cognito reject the sign-in. Password storage is Cognito's. Decided by the operator 2026-11-06; wording AI-drafted.",
+      "justification": "False positive. scripts/dast-cognito-token.py signs the DAST scanner user in to Cognito with SRP-6a, whose protocol fixes SHA-256 for the password-derived value x = H(salt | H(pool | user | ':' | password)). The hash is the protocol's computation, sent as a proof to Cognito; it is never stored, and a slow password hash would make Cognito reject the sign-in. Password storage is Cognito's.",
       "controls": [
         "ra-5",
         "sa-11.1"
@@ -1664,7 +1773,35 @@
       "review_by": "2027-11-06",
       "original_detection_date": "2026-11-06",
       "source": {
-        "detector": "CodeQL (GitHub code scanning)"
+        "detector": "CodeQL (GitHub code scanning)",
+        "drafted_by": "AI-drafted (Claude)"
+      },
+      "confirmed_on": "2026-11-06"
+    },
+    {
+      "id": "DEC-194",
+      "title": "No engagement: the operator does not engage FedRAMP or any federal agency about this system",
+      "disposition": "operational-requirement",
+      "status": "in-force",
+      "justification": "This system is a proof of concept. The operator does not engage FedRAMP or any federal agency about it, and makes them no submission, notice, invitation, access grant, meeting or commitment of any kind. Every counterparty a FedRAMP process names is simulated, and labelled as simulated wherever it is published: the assessor (Totally Real Assessment Services, LLC), FedRAMP itself (package submission, certification reports, denial and inbox notices), agencies (access requests, Quarterly Review attendance, feedback), incident-report recipients, the mail system, SAM.gov, and the people a people-run process needs (review attendees, a trainee). The mechanisms are real and run on every deploy or on their schedule; only the parties are not, and nothing is sent to anyone: a delivery is a published log entry. No public form or text invites anyone to file, register, attend or request anything, and nothing filed with or about this system will be acted on as a FedRAMP or agency matter. Anyone who really, really wants something can say hello through the security contact in /.well-known/security.txt (LinkedIn); the operator may consider it at his discretion, with no obligation and no deadline. What the simulations publish (exercise logs, Quarterly Review transcripts, training records, the anonymized feedback) holds no agency information because no agency takes part, and passes the same sensitivity screen as the reports before it is written. This record also states the operator's decision of 2026-11-05 to simulate the assessor and the incident-report recipients.",
+      "controls": [
+        "ca-2",
+        "ca-6",
+        "ir-6",
+        "pm-15"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [],
+        "resources": []
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-06",
+      "review_by": "2027-11-06",
+      "confirmed_on": "2026-11-06",
+      "source": {
+        "detector": "Operator direction, 2026-11-06",
+        "drafted_by": "AI-drafted (Claude)"
       }
     }
   ]
