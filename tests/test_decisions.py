@@ -145,7 +145,9 @@ def test_every_poam_item_landed_in_the_register_with_its_decision():
         assert r["id"] == "DEC-" + i["id"].split("-")[1], i["id"]
         assert r["disposition"] == POAM_TO_DISPOSITION[i["category"]], i["id"]
         assert r["status"] == ("closed" if i["category"] == "closed" else "in-force"), i["id"]
-        assert r["title"] == i["title"] and r["justification"] == _published_text(i["description"]), i["id"]
+        assert r["title"] == i["title"], i["id"]
+        if (i["id"], "justification") not in AMENDED_SINCE_MIGRATION:
+            assert r["justification"] == _published_text(i["description"]), i["id"]
         for k in ("decided_by", "decided_on", "review_by", "original_detection_date"):
             if (i["id"], k) not in AMENDED_SINCE_MIGRATION:
                 assert r.get(k) == i.get(k), (i["id"], k)
@@ -164,6 +166,10 @@ AMENDED_SINCE_MIGRATION = {
     # DEC-010 named "aws-lambda::compliance-monitor", which no inventory
     # component carries; the CKV_AWS_117 skip is global, so it covers every Lambda.
     ("POAM-010", "resources"),
+    # Wording corrected 2026-11-06, decisions unchanged: DEC-007 said the site had
+    # no authentication endpoints (the Silk Reeling API behind the distribution
+    # has a JWT authorizer), and DEC-009 pointed to the retired POAM-016.
+    ("POAM-007", "justification"), ("POAM-009", "justification"),
 }
 
 
@@ -172,6 +178,12 @@ def test_the_post_migration_amendments_are_the_stated_ones():
     assert all(recs[d]["original_detection_date"] == "2025-06-14" for d in ("DEC-007", "DEC-009", "DEC-010"))
     assert recs["DEC-010"]["applies_to"]["resources"] == [
         "aws::function::opa_compliance", "aws::function::evidence_watchdog", "aws::function::silk_reeling"]
+    items = {i["id"]: i for i in json.loads((MIG / "poam-items-2026-11-04.json").read_text())["items"]}
+    for dec, poam in (("DEC-007", "POAM-007"), ("DEC-009", "POAM-009")):
+        old, new = items[poam]["description"], recs[dec]["justification"]
+        assert new.startswith(old.split(".")[0] + ".") and "Text corrected 2026-11-06" in new, dec
+    assert "no auth endpoints" not in recs["DEC-007"]["justification"]
+    assert "POAM-016" not in recs["DEC-009"]["justification"]
 
 
 def test_the_check_maps_are_the_ones_the_poam_held():

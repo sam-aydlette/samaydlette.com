@@ -262,12 +262,14 @@ def scn_document(row, previous_notices, today):
 
 
 def build_index(rows, previous_index, now, commit, out_dir):
-    prev = {s["scnId"]: s.get("notices", []) for s in (previous_index or {}).get("notifications", [])}
+    prev_docs = {s["scnId"]: s for s in (previous_index or {}).get("notifications", [])}
     scn_dir = Path(out_dir) / "scn"
     scn_dir.mkdir(parents=True, exist_ok=True)
     docs = []
     for row in rows:
-        doc = _offering.stamp_fedramp_id(scn_document(row, prev.get(row["scn_id"]), now.date()))
+        prev = prev_docs.get(row["scn_id"], {})
+        row = _scn.resolve_on_deploy(row, prev, now.date())
+        doc = _offering.stamp_fedramp_id(scn_document(row, prev.get("notices", []), now.date()))
         path = scn_dir / f"{row['scn_id']}.json"
         _fedramp_schema.write_validated(doc, "scn", path)
         docs.append(json.loads(path.read_text()))

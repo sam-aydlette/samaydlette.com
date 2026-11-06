@@ -1502,8 +1502,8 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
     These services aren't in Terraform state (they're upstream public services
     or operator-account scaffolding); they're declared here so the canonical
     inventory matches the Authorization Boundary Diagram. Identifiers are the
-    public service URLs where applicable; for Duo specifically the identifier
-    is opaque (no tenant ID exposed).
+    public service URLs where applicable; for the operator's TOTP authenticator
+    the identifier is opaque (it has no tenant).
     """
     services = [
         {
@@ -1545,10 +1545,13 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
         {
             "id": "ext::duo-mfa",
             "native_id": "duo:operator-mfa",
-            "name": "Duo (operator MFA)",
-            "purpose": "Multi-factor authentication for AWS root and the GitHub account",
+            "name": "Duo Mobile (operator TOTP authenticator)",
+            "purpose": "Authenticator app that generates the virtual TOTP codes used as the second factor on the AWS "
+                       "root user, the operator IAM user and the GitHub account (DEC-025, DEC-150). AWS and GitHub "
+                       "enforce the MFA; the app only generates codes",
             "cia_impact": "privileged-account authentication",
-            "verification": "Operator-side configuration; tenant identifier intentionally not published in this inventory.",
+            "verification": "The deploy reads the root user's and the operator user's MFA on every run "
+                            "(scripts/check-secure-config.py); the app holds no tenant identifier to publish.",
             "fedramp_status": "external; no separate FedRAMP authorization",
         },
         {

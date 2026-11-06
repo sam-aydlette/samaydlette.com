@@ -22,7 +22,8 @@
 const crypto = require('crypto');
 const { canonicalize } = require('./canonical');
 
-// Daily runs plus one per deploy: comfortably more than a year.
+// Daily published runs: comfortably more than a year. A deploy's staged run is
+// written to its staging key and never becomes the published signal's history.
 const RUN_HISTORY_LIMIT = 400;
 
 function isInputViolation(v) {
