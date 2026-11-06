@@ -414,10 +414,10 @@ def _entry(kind, record, merged):
 def test_an_adaptive_change_with_no_record_is_overdue_after_ten_business_days():
     _, rows = _scn.read_register()
     index = {"notifications": [{"scnId": r["scn_id"], "notices": [{"stage": "after-finish"}]} for r in rows]}
-    log = [_entry("adaptive", "SCN-2026-007", "2026-11-02")]
+    log = [_entry("adaptive", "SCN-2026-098", "2026-11-02")]
     assert _scn.overdue(rows, index, log, date(2026, 11, 17)) == []   # due 2026-11-17 (Veterans Day)
     late = _scn.overdue(rows, index, log, date(2026, 11, 18))
-    assert len(late) == 1 and "SCN-2026-007" in late[0] and "not in the register" in late[0]
+    assert len(late) == 1 and "SCN-2026-098" in late[0] and "not in the register" in late[0]
 
 
 def test_an_emergency_change_owes_its_record_within_five_business_days():
@@ -462,7 +462,7 @@ def test_the_deadline_cli(tmp_path):
     _, rows = _scn.read_register()
     index = {"notifications": [{"scnId": r["scn_id"], "notices": [{"stage": "after-finish"}]} for r in rows]}
     (tmp_path / "i.json").write_text(json.dumps(index))
-    (tmp_path / "l.json").write_text(json.dumps({"entries": [_entry("adaptive", "SCN-2026-007", "2026-11-02")]}))
+    (tmp_path / "l.json").write_text(json.dumps({"entries": [_entry("adaptive", "SCN-2026-098", "2026-11-02")]}))
     args = ["--index-file", str(tmp_path / "i.json"), "--log-file", str(tmp_path / "l.json")]
     assert deadlines.main([*args, "--today", "2026-11-17"]) == 0
     assert deadlines.main([*args, "--today", "2026-11-18"]) == 1
