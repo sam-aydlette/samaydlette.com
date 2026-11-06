@@ -2710,25 +2710,6 @@ jobs:
           tfsec-results.json
         retention-days: 5
 
-  # ===========================================================================
-  # JOB 4: ALERT WHEN THINGS BREAK
-  # ===========================================================================
-  # Sends notifications and creates tickets when deployment fails
-  # ===========================================================================
-  # This job used to report SUCCESS while the deploy underneath it failed, and it
-  # did so twelve nights running. Two defects, both fixed here:
-  #
-  # 1. The issue-creating step was gated on `github.event_name == 'push'`. On a
-  #    scheduled run the step was SKIPPED — and a job whose only step is skipped
-  #    concludes `success`. So the run summary showed a green "Notify on Failure"
-  #    next to a red deploy, and no issue was ever filed. The event gate is gone;
-  #    a failed deploy alerts however it was triggered.
-  #
-  # 2. Even when it did fire, it opened a brand-new issue every time. The
-  #    repository accumulated 15+ identical open "Deployment Failed" issues,
-  #    which is functionally the same as no alert: nothing distinguishes the one
-  #    that matters. It now reuses a single issue, reopening and commenting, and
-  #    assigns it to the repository owner so it reaches a person.
   # CPO-CSX-CPM: after every successful deploy, the unattended package
   # maintainer runs once, so a green deploy proves it verifies the just-published
   # package, rebuilds it at the deployed commit and publishes with its own role.
@@ -2761,6 +2742,25 @@ jobs:
     secrets:
       CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
+  # ===========================================================================
+  # JOB 4: ALERT WHEN THINGS BREAK
+  # ===========================================================================
+  # Sends notifications and creates tickets when deployment fails
+  # ===========================================================================
+  # This job used to report SUCCESS while the deploy underneath it failed, and it
+  # did so twelve nights running. Two defects, both fixed here:
+  #
+  # 1. The issue-creating step was gated on `github.event_name == 'push'`. On a
+  #    scheduled run the step was SKIPPED — and a job whose only step is skipped
+  #    concludes `success`. So the run summary showed a green "Notify on Failure"
+  #    next to a red deploy, and no issue was ever filed. The event gate is gone;
+  #    a failed deploy alerts however it was triggered.
+  #
+  # 2. Even when it did fire, it opened a brand-new issue every time. The
+  #    repository accumulated 15+ identical open "Deployment Failed" issues,
+  #    which is functionally the same as no alert: nothing distinguishes the one
+  #    that matters. It now reuses a single issue, reopening and commenting, and
+  #    assigns it to the repository owner so it reaches a person.
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest

@@ -281,7 +281,7 @@
       },
       "signed": true,
       "signature": ".well-known/ocr-issues.bundle",
-      "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD), rewritten daily by package-maintenance.yml. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
+      "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD). Only package-maintenance.yml writes it; cadence 'deploy' because every deploy runs the maintainer (job package-maintainer), which also runs daily. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
     },
     {
       "path": ".well-known/quarterly-review.ics",

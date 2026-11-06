@@ -22,8 +22,8 @@
 #
 #   serviceProperties.trustCenter / .secureConfigurationGuidance, the
 #   thirdPartyInformationResources and the assessor's overall summary under
-#   providerExtensions.independentAssessment: one small function each (group 5:
-#   CDS-CSO-PUB/UTC, SCG-CSO-AUP, MAS-CSO-TPR, CPO-CSO-OSA).
+#   providerExtensions.independentAssessment: one small function each
+#   (CDS-CSO-PUB/UTC, SCG-CSO-AUP, MAS-CSO-TPR, CPO-CSO-OSA).
 #
 # Simulated values are flagged under providerExtensions.simulated, naming the
 # outside party they stand in for. Each top-level section is one small function,
@@ -137,7 +137,7 @@ def repositories():
              "authenticationRequired": False} for f, types, desc in PACKAGE]
 
 
-# --- group 5's fields: one small function each ---------------------------------------
+# --- trust center, scope and assessor fields: one small function each ---------------
 
 TRUST_CENTER = "https://samaydlette.com/trust/index.html"
 

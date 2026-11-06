@@ -51,7 +51,7 @@
   },
   "flows": [
     {"id": "A", "label": "Operator → GitHub repository and Actions", "path": [{"declared": "operator"}, {"component": "ext::github-repo"}],
-     "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "Password + Duo TOTP MFA (privileged)", "encryption": "In transit: TLS", "data": "Source code, IaC configuration, content"},
+     "protocol": "HTTPS 443 (TLS 1.2+)", "auth": "Password + virtual TOTP MFA (privileged)", "encryption": "In transit: TLS", "data": "Source code, IaC configuration, content"},
     {"id": "B", "label": "GitHub Actions → AWS APIs (deploy role)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::deploy"}],
      "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS role; no static keys (privileged)", "encryption": "In transit: TLS", "data": "Terraform plan and apply, AWS API calls"},
     {"id": "C", "label": "Deploy → S3 (site and /.well-known/)", "path": [{"component": "aws::iam_role::deploy"}, {"component": "aws::object_store::website"}],

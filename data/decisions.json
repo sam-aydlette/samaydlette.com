@@ -184,7 +184,7 @@
       "title": "CloudFront WAF not attached",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "Cost trade-off (~$120/year). Static personal site has no forms, no auth endpoints, no expensive backend; AWS Shield Standard is the baseline DDoS protection at zero marginal cost.",
+      "justification": "Cost trade-off (~$120/year). The distribution serves the static site from a private S3 origin, and under /silk-reeling/* the Silk Reeling app on API Gateway: its /api routes require a Cognito-issued token, checked by the API Gateway JWT authorizer and again in the Lambda, and the stage throttles requests (20 per second, burst 10); users sign in through the Cognito Hosted UI, which is not behind this distribution. There are no other forms or server-side code behind it. AWS Shield Standard is the baseline DDoS protection at zero marginal cost; the incremental layer-7 filtering a WAF would add is the accepted residual. (Text corrected 2026-11-06: it used to say the site had no authentication endpoints, which stopped being true when the app was added; the decision itself is unchanged.)",
       "controls": [
         "sc-7",
         "si-4"
@@ -246,7 +246,7 @@
       "title": "CloudFront origin failover not configured",
       "disposition": "risk-accepted",
       "status": "in-force",
-      "justification": "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage (see POAM-016).",
+      "justification": "Single S3 origin. No secondary origin to fail over to; multi-origin would require multi-region storage, which is not built: cross-region replication is not configured (DEC-003). (Text corrected 2026-11-06: it used to point to a POA&M item retired with the POA&M; the decision itself is unchanged.)",
       "controls": [
         "cp-2",
         "cp-7"

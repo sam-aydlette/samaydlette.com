@@ -5,6 +5,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -281,3 +282,33 @@ def test_the_gate_runs_before_anything_is_applied():
     assert "test" in wf["jobs"]["deploy"]["needs"]
     assert not any("terraform apply" in s.get("run", "") or "aws s3" in s.get("run", "")
                    for s in wf["jobs"]["test"]["steps"])
+
+
+# --- no line-number pointers ---------------------------------------------------------
+# A line number goes stale with the next edit to the file it names, and the SDR
+# publishes the record text. Records name the function, step or resource.
+LINE_POINTER_RES = (
+    re.compile(r"[\w./-]+\.(?:py|ya?ml|tf|rego|js|json|md|csv|sh|html):\d+"),
+    re.compile(r"(?<![\w-])~?L\d{2,}(?:-\d+)?\b"),
+)
+
+
+def _line_pointers(records):
+    found = []
+    for r in records:
+        for k, v in r.items():
+            texts = [v] if isinstance(v, str) else [json.dumps(v, ensure_ascii=False)] if k == "simulated" else []
+            for t in texts:
+                found += [(r["frr_id"], k, m.group(0)) for rx in LINE_POINTER_RES for m in rx.finditer(t)]
+    return found
+
+
+def test_no_record_cites_a_line_number():
+    assert _line_pointers(_committed()["records"]) == []
+
+
+def test_known_bad_a_line_number_pointer_is_found():
+    bad = json.loads((REPO / "tests" / "fixtures" / "frr" / "line-pointer.json").read_text())["records"]
+    assert [(rid, p) for rid, _, p in _line_pointers(bad)] == [
+        ("VDR-CSO-ADT", "infrastructure/main.tf:809"), ("FRC-APP-FCP", "~L1558-1600"),
+        ("VER-EVA-EFP", "triage.rego:262")]

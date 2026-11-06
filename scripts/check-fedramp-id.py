@@ -31,7 +31,7 @@ REPORTS = (
     "certification-package-overview.json",
     "security-decision-record.json",
     "ongoing-certification-report.json",
-    # Vulnerability detection and response (group 4): the VDR report and its
+    # Vulnerability detection and response: the VDR report and its
     # trend ledger at top level; FedRAMP's VDT, AVI and history reports under
     # providerExtensions; the monthly activity report and non-machine V&V status.
     "vdr-report.json",
@@ -43,11 +43,11 @@ REPORTS = (
     "vdr-non-machine-vv.json",
     # The canonical inventory (the runtime emitter copies the ID from it).
     "ksi-signal.json",
-    # Certification cycle (group 2): the FedRAMP Certification Reports index and
+    # Certification cycle: the FedRAMP Certification Reports index and
     # the simulated package submission log.
     "fedramp-certification-reports.json",
     "package-submission-log.json",
-    # Notifications (group 3): the SCN index (each notification also under its
+    # Notifications: the SCN index (each notification also under its
     # providerExtensions), the evaluation log, the incident log, every
     # Initial/Ongoing/Final report (FedRAMP's incident schema), the simulated
     # deliveries and the simulated FedRAMP Security Inbox run.
@@ -57,7 +57,7 @@ REPORTS = (
     "incident-deliveries.json",
     "incident-INC-*.json",
     "fedramp-inbox-simulation.json",
-    # Trust center, scope and assessor (group 5): site files, top-level fedRampId.
+    # Trust center, scope and assessor: site files, top-level fedRampId.
     "trust-center.json",
     "trust-manifest.json",
     "availability.json",

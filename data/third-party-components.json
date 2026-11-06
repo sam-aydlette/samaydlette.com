@@ -89,20 +89,20 @@
     "ext::duo-mfa": {
       "provider": "Cisco Systems, Inc. (Duo)",
       "website": "https://duo.com/",
-      "upstream_offering": "Duo Mobile authenticator app (inferred; see drafted_by)",
+      "upstream_offering": "Duo Mobile authenticator app",
       "upstream_component_id": null,
       "responsibility_split": {
-        "upstream_runs": "The authenticator app that generates the time-based one-time codes (inferred).",
+        "upstream_runs": "The authenticator app that generates the time-based one-time codes.",
         "provider_configures": "Enrollment of the TOTP device as the MFA factor on the AWS root account, the operator IAM user and the GitHub account."
       },
-      "usage_and_configuration": "Generates the TOTP codes the operator enters as the second factor for the AWS root account, the operator IAM user and the GitHub account (inferred from DEC-025, which records virtual TOTP MFA on root and the operator user, and from the inventory's description of this service).",
+      "usage_and_configuration": "Generates the TOTP codes the operator enters as the second factor for the AWS root account, the operator IAM user and the GitHub account. AWS records both principals' MFA as virtual (TOTP) devices (DEC-025, DEC-150), which the deploy checks on every run; Duo does not enforce anything.",
       "justification": "A second factor on every top-level administrative and privileged account, as IA-2(1) and IA-2(2) require.",
       "mitigations": "TOTP seeds stay on the operator's device; no tenant identifier is published. MFA is enabled on every privileged human account. No federal customer data is in this offering; the resource never receives app-user data.",
       "compensating_controls": "The weaker-than-phishing-resistant factor is a recorded decision (DEC-025); CloudTrail records every console sign-in and privileged API call.",
       "evidence": [
         "scripts/build-ksi-signal.py (ext::duo-mfa: tenant identifier intentionally not published)"
       ],
-      "drafted_by": "Claude (AI-drafted), 2026-11-05. INFERRED: the repository does not show the Duo edition or whether Duo is used only as a TOTP generator; the operator must confirm or correct every field.",
+      "drafted_by": "Claude (AI-drafted), 2026-11-05; decided by the operator 2026-11-05. The repository records virtual TOTP MFA on the root user and the operator user (DEC-025, DEC-150); that Duo Mobile is the app generating the codes is the operator's statement (docs/rules-of-behavior.md, docs/policies/ia-policy.md).",
       "decided_by": "Sam Aydlette",
       "decided_on": "2026-11-05"
     },
