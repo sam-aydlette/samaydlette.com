@@ -1,0 +1,35 @@
+{
+ "$comment": "Known-bad: the package maintenance role's publish policy as it stood before the readable views were added (no .view.md keys). Merged over aws-good.json; ci-roles.maintenance-publish-scope must be a deviation, so the deploy stops before the SDR is built.",
+ "responses": {
+  "iam get-role-policy --role-name github-actions-package-maintenance-oidc --policy-name package-maintenance-publish": {
+   "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+     {
+      "Sid": "PublishCertificationPackageOnly",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": [
+       "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json",
+       "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.bundle",
+       "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.md",
+       "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json.intoto.jsonl",
+       "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.json",
+       "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.bundle",
+       "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.md",
+       "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.json",
+       "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.bundle",
+       "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.md",
+       "arn:aws:s3:::samaydlette.com/.well-known/quarterly-review.ics",
+       "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.json",
+       "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.bundle",
+       "arn:aws:s3:::samaydlette.com/.well-known/ocr-issue-*",
+       "arn:aws:s3:::samaydlette.com/.well-known/snapshot-*",
+       "arn:aws:s3:::samaydlette.com/.well-known/snapshots/*"
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

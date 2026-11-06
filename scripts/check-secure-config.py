@@ -35,7 +35,14 @@ OPERATOR_GROUP = "operators"
 # The CI roles' names, as infrastructure/bootstrap names them (read, never published).
 ROLES = {"role-trust-deploy": "github-actions-deploy-oidc",
          "role-trust-plan": "github-actions-plan-oidc",
-         "role-trust-nightly": "github-actions-evidence-nightly-oidc"}
+         "role-trust-nightly": "github-actions-evidence-nightly-oidc",
+         "role-trust-maintenance": "github-actions-package-maintenance-oidc",
+         "role-trust-incident": "github-actions-incident-reports-oidc"}
+# The unattended roles' write scope: {check id: (role, inline policy name)}. The
+# value compared is the object keys each may put (the bucket part of the S3 ARN
+# removed), so a grant the deploy's publishers need but bootstrap does not yet
+# hold is a deviation, and the deploy stops before the SDR is built.
+ROLE_SCOPES = {"role-scope-maintenance": ("github-actions-package-maintenance-oidc", "package-maintenance-publish")}
 SUB_KEY = "token.actions.githubusercontent.com:sub"
 READ_ONLY_MANAGED = {"ReadOnlyAccess", "SecurityAudit", "ViewOnlyAccess"}
 READ_VERBS = ("Get", "List", "Describe", "Search", "BatchGet", "Lookup", "View")
@@ -192,6 +199,9 @@ def read_aws(call, pool_id, now=None):
 
     for check, role in ROLES.items():
         out[check] = _guard(lambda role=role: _trust_subjects(call(["iam", "get-role", "--role-name", role])["Role"]))
+    for check, (role, name) in ROLE_SCOPES.items():
+        out[check] = _guard(lambda role=role, name=name: _put_keys(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
 
     def cognito():
         if not pool_id:
@@ -237,6 +247,24 @@ def _access_keys(call, user, now=None):
     keys = [k for k in call(["iam", "list-access-keys", "--user-name", user])["AccessKeyMetadata"] if k["Status"] == "Active"]
     ages = [(now - datetime.fromisoformat(k["CreateDate"].replace("Z", "+00:00"))).days for k in keys]
     return {"active": len(keys), "oldest_age_days": max(ages) if ages else 0}
+
+
+def _put_keys(raw):
+    """The object keys an inline policy allows s3:PutObject on, without the bucket
+    (an S3 object ARN is arn:aws:s3:::<bucket>/<key>; it carries no account)."""
+    doc = _policy_doc(raw)
+    keys = []
+    sts = doc.get("Statement", [])
+    for st in [sts] if isinstance(sts, dict) else sts:
+        actions = st.get("Action", [])
+        if st.get("Effect") != "Allow" or "s3:PutObject" not in ([actions] if isinstance(actions, str) else actions):
+            continue
+        res = st.get("Resource", [])
+        for r in [res] if isinstance(res, str) else res:
+            if not r.startswith("arn:aws:s3:::") or "/" not in r:
+                raise ValueError("a PutObject resource is not an S3 object ARN")
+            keys.append(r.split("/", 1)[1])
+    return sorted(keys)
 
 
 def _trust_subjects(role):

@@ -54,7 +54,19 @@ data "aws_iam_policy_document" "deploy_config_reads" {
       aws_iam_role.deploy.arn,
       aws_iam_role.plan.arn,
       aws_iam_role.evidence_nightly.arn,
+      aws_iam_role.package_maintenance.arn,
+      aws_iam_role.incident_reports.arn,
     ]
+  }
+  # The package maintainer's write scope (ci-roles.maintenance-publish-scope):
+  # its one publish policy, read to confirm it covers every object the workflow
+  # puts. Until this and that scope are applied, the comparison fails the deploy
+  # before the SDR is built.
+  statement {
+    sid       = "MaintainerScopeRead"
+    effect    = "Allow"
+    actions   = ["iam:GetRolePolicy"]
+    resources = [aws_iam_role.package_maintenance.arn]
   }
 }
 

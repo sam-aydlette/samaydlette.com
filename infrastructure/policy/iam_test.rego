@@ -86,6 +86,17 @@ test_group_admin_attachment_fails if {
 	"iam_admin_policy_attached" in ids(iam.violations) with input as _res("aws_iam_group", values)
 }
 
+test_attachment_resource_admin_policy_fails if {
+	values := {"attached_policy_arns": ["arn:aws:iam::aws:policy/AdministratorAccess"]}
+	"iam_admin_policy_attached" in ids(iam.violations) with input as _res("aws_iam_group_policy_attachment", values)
+	"iam_admin_policy_attached" in ids(iam.violations) with input as _res("aws_iam_role_policy_attachment", values)
+}
+
+test_attachment_resource_read_only_policy_passes if {
+	values := {"attached_policy_arns": ["arn:aws:iam::aws:policy/ReadOnlyAccess"]}
+	count(iam.violations) == 0 with input as _res("aws_iam_role_policy_attachment", values)
+}
+
 test_group_read_only_attachment_passes if {
 	values := {"attached_policy_arns": ["arn:aws:iam::aws:policy/ReadOnlyAccess"], "inline_policies": []}
 	count(iam.violations) == 0 with input as _res("aws_iam_group", values)

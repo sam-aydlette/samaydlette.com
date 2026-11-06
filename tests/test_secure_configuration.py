@@ -281,3 +281,76 @@ def test_the_deploy_role_has_the_reads_the_comparison_makes():
         assert f'"{action}"' in tf, action
     assert not re.search(r'"iam:(Put|Create|Delete|Update|Attach|Detach|Add|Remove)', tf)
     assert "role   = aws_iam_role.deploy.id" in tf
+
+
+# --- the unattended publishers' roles -------------------------------------------------
+
+def test_every_ci_role_in_bootstrap_has_its_trust_compared():
+    """Each OIDC role bootstrap creates is read and compared, the two unattended
+    publishers' roles included, and the deploy role may read each one."""
+    roles = set()
+    for tf in (REPO / "infrastructure" / "bootstrap").glob("*.tf"):
+        roles |= set(re.findall(r'resource "aws_iam_role" "\w+" \{\s*name\s*=\s*"([\w-]+)"', tf.read_text()))
+    assert roles and roles == set(chk.ROLES.values())
+    reads = (REPO / "infrastructure" / "bootstrap" / "deploy-config-reads.tf").read_text()
+    for res in ("deploy", "plan", "evidence_nightly", "package_maintenance", "incident_reports"):
+        assert f"aws_iam_role.{res}.arn" in reads, res
+    src = json.loads(SOURCE.read_text())
+    assert set(chk.ROLES) | set(chk.ROLE_SCOPES) <= {s["check"] for s in src["settings"]}
+
+
+def test_the_maintainer_scope_recommended_is_the_bootstrap_key_list():
+    tf = (REPO / "infrastructure" / "bootstrap" / "package-maintenance.tf").read_text()
+    keys = re.findall(r'"([^"]+)"', re.search(r"package_maintenance_keys = \[(.*?)\]", tf, re.S).group(1))
+    src = json.loads(SOURCE.read_text())
+    scope = next(s for s in src["settings"] if s["check"] == "role-scope-maintenance")
+    assert sorted(scope["recommended"]) == sorted(keys)
+    assert any(k.endswith(".view.md") for k in keys)
+    reads = (REPO / "infrastructure" / "bootstrap" / "deploy-config-reads.tf").read_text()
+    assert '"iam:GetRolePolicy"' in reads
+
+
+def test_known_bad_a_maintainer_role_without_the_view_keys_fails_the_deploy():
+    responses = json.loads((FIX / "aws-good.json").read_text())["responses"]
+    responses.update(json.loads((FIX / "aws-maintainer-scope-no-views.json").read_text())["responses"])
+
+    def call(args):
+        r = responses.get(" ".join(args))
+        if r is None:
+            raise chk.AwsError("AccessDenied")
+        if "error" in r:
+            raise chk.AwsError(r["error"])
+        return r
+    src = json.loads(SOURCE.read_text())
+    doc = chk.build(src, chk.compare(src, {**chk.read_aws(call, "pool-1", now=NOW), **chk.read_github(_github())},
+                                     _in_force()), NOW)
+    assert {r["id"]: r["result"] for r in chk.failures(doc)} == {"ci-roles.maintenance-publish-scope": "deviation"}
+
+
+def test_the_new_roles_unapplied_fail_the_deploy():
+    """Before the bootstrap read grant is applied the reads are denied; the
+    comparison then fails the deploy rather than publishing a partial result."""
+    responses = json.loads((FIX / "aws-good.json").read_text())["responses"]
+    for k in [k for k in responses if "package-maintenance" in k or "incident-reports" in k]:
+        del responses[k]
+
+    def call(args):
+        r = responses.get(" ".join(args))
+        if r is None:
+            raise chk.AwsError("AccessDenied")
+        if "error" in r:
+            raise chk.AwsError(r["error"])
+        return r
+    src = json.loads(SOURCE.read_text())
+    doc = chk.build(src, chk.compare(src, {**chk.read_aws(call, "pool-1", now=NOW), **chk.read_github(_github())},
+                                     _in_force()), NOW)
+    assert {r["id"]: r["result"] for r in chk.failures(doc)} == {
+        "ci-roles.maintenance-trust": "not-read", "ci-roles.incident-trust": "not-read",
+        "ci-roles.maintenance-publish-scope": "not-read"}
+
+
+def test_the_published_scope_carries_no_arn():
+    by = {r["id"]: r for r in _compare("aws-good.json")["settings"]}
+    cur = by["ci-roles.maintenance-publish-scope"]["current"]
+    assert cur and all(k.startswith(".well-known/") for k in cur)
+    assert "arn:" not in json.dumps(cur)

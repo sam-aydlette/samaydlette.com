@@ -150,6 +150,14 @@ ATTRIBUTE_PARENTS = {
     "aws_s3_bucket_public_access_block": "object_store",
     "aws_s3_bucket_policy": "object_store",
     "aws_cloudfront_response_headers_policy": "cdn_distribution",
+    # The edge function that maps directory URLs to their index page, and the
+    # CloudFront standard-logging (v2) delivery that writes the edge access
+    # records (CDS-TRC-ACL; bootstrap/trust-access-logs.tf) are facets of the
+    # distribution they run on and log.
+    "aws_cloudfront_function": "cdn_distribution",
+    "aws_cloudwatch_log_delivery_source": "cdn_distribution",
+    "aws_cloudwatch_log_delivery_destination": "cdn_distribution",
+    "aws_cloudwatch_log_delivery": "cdn_distribution",
     # API Gateway sub-resources fold into the api_gateway component so a consumer
     # sees one interface with its route/integration/stage config, not four things.
     "aws_apigatewayv2_integration": "api_gateway",
@@ -164,6 +172,30 @@ ATTRIBUTE_PARENTS = {
     # The topic's access policy is a facet of the topic.
     "aws_sns_topic_policy": "notification_topic",
 }
+
+# Terraform resource types declared under infrastructure/ that are neither a
+# component (TYPE_BY_TF_TYPE) nor folded into one (ATTRIBUTE_PARENTS), each with
+# the reason. tests/test_inventory_types.py fails when a type declared in the
+# Terraform is in none of the three, so a new resource cannot be silently
+# dropped from the inventory.
+NOT_INVENTORIED = {
+    "aws_cloudfront_origin_access_control": "The signing configuration CloudFront uses to read the site bucket; the distribution's origin settings and the bucket policy that admits only it are inventoried with those components.",
+    "aws_cloudwatch_event_target": "Binds an EventBridge rule to the Lambda it invokes; both are components, and the boundary map draws the binding as an edge (scripts/build-boundary-graph.py CONNECTOR_TYPES).",
+    "aws_cloudwatch_log_resource_policy": "Lets a service write to a log group; the log group is a component and the boundary map draws the binding as an edge.",
+    "aws_iam_account_password_policy": "An account-level IAM setting, not a resource that holds or moves data; the live value is compared with the Secure Configuration Guide on every deploy (aws-account.password-policy).",
+    "aws_iam_user_group_membership": "Places the operator user in its group; the group is a component, and user names are never published.",
+    "aws_kms_alias": "A name for a KMS key; the key is the component, and the boundary map uses the alias only to resolve references to it.",
+    "aws_lambda_permission": "Lets a service invoke a Lambda; both are components, and the boundary map draws the grant as an edge.",
+    "aws_route53_hosted_zone_dnssec": "The zone's DNSSEC signing switch; the zone is a component and its signing status is read live by the runtime emitter (dnssec_not_signing).",
+    "aws_route53_key_signing_key": "The zone's DNSSEC key-signing key binding; the KMS key behind it (dnssec_ksk) is the component.",
+    "aws_route53_query_log": "Connects the zone to its query-log group; both are components, and the boundary map draws the binding as an edge.",
+    "aws_route53_record": "DNS records of the inventoried zone; they hold no data and the boundary map uses them only to connect the zone to what they point at.",
+    "aws_s3_bucket_lifecycle_configuration": "A bucket setting (object expiry); each data store's retention is stated and checked in data/minimum-assessment-scope.json.",
+    "aws_s3_bucket_logging": "Connects the site bucket to the access-log bucket; both are components, and the boundary map and the MAS flows show the connection.",
+    "aws_s3_bucket_ownership_controls": "A bucket setting (object ownership enforced); the bucket is the component.",
+    "terraform_data": "A Terraform-internal value with no cloud resource behind it.",
+}
+
 
 # =============================================================================
 # MAS (Minimum Assessment Scope) attributes per component type
@@ -567,6 +599,9 @@ IIW_OVERRIDES = {
     },
     ("iam_role", "incident_reports"): {
         "function": "Incident reports workflow role (unattended IIR/OIR/FIR publication)",
+    },
+    ("iam_role", "package_maintenance"): {
+        "function": "Certification package maintenance workflow role (unattended SDR, CPO and OCR publication)",
     },
     ("object_store", "logs"): {
         "function": "Access-log bucket for the site bucket and CDN",
@@ -1171,6 +1206,13 @@ def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
         seen = by_native.get(c.get("native_id")) or by_cid.get(c.get("component_id"))
         if seen is not None:
             seen.setdefault("attributes", {})["managed_by"] = "bootstrap"
+            # Facets folded in from the managing stack (the distribution's edge
+            # function and access-log delivery are declared in bootstrap).
+            folded = (c.get("attributes") or {}).get("config") or {}
+            if folded:
+                cfg = seen["attributes"].setdefault("config", {})
+                for k, v in folded.items():
+                    cfg.setdefault(k, v)
             continue
         c.setdefault("attributes", {})["tf_module"] = "bootstrap"
         fresh.append(c)

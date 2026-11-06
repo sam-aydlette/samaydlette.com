@@ -178,6 +178,11 @@ jobs:
         if grep -q -- '--require-two-methods' ../scripts/build-sdr.py; then
           VVK="--vdr-bundle vdr-report.bundle --vdr-identity $ID_DEPLOY --vdr-identity $ID_NIGHTLY --require-two-methods"
         fi
+        # The runtime method counts only when the runtime signal re-validated
+        # the deployed inventory (the same binding the deploy applies).
+        if grep -q -- '--runtime-commit' ../scripts/build-sdr.py; then
+          VVK="$VVK --runtime-commit $SIGNAL_COMMIT"
+        fi
         cp "$W/ksi-signal.json" "$W/vdr-report.json" "$W/vdr-report.bundle" .
         [ -f "$W/ksi-signal-runtime.json" ] && cp "$W/ksi-signal-runtime.json" .
         python3 ../scripts/build-sdr.py \
@@ -223,6 +228,16 @@ jobs:
           --vdr vdr-report.json --ksi-signal ksi-signal.json
         cat out/issued.txt
 
+    # CDS-CSO-CBF: the complete human-readable view of each JSON republished
+    # below, parsed back and required to reproduce it, so the views the deploy
+    # published never drift from the JSON this run replaces.
+    - name: Rebuild the human-readable views (format parity)
+      working-directory: infrastructure/out
+      run: >-
+        python3 ../../scripts/build-human-views.py
+        security-decision-record.json certification-package-overview.json ongoing-certification-report.json
+        ocr-issues.json
+
     - name: Gates (FedRAMP ID, redaction)
       working-directory: infrastructure/out
       run: |
@@ -230,11 +245,15 @@ jobs:
         python3 ../../scripts/check-fedramp-id.py security-decision-record.json \
           certification-package-overview.json ongoing-certification-report.json ocr-issues.json \
           $(grep -E '^(ocr-issue-.*\.json|snapshot-.*\.json)$' issued.txt || true)
+        # Every issued file, the snapshot copies under snapshots/<date>/ included.
+        # Signatures are Sigstore's output and are not scanned (as in the deploy).
         # shellcheck disable=SC2046
         python3 ../../scripts/check-published-redaction.py security-decision-record.json security-decision-record.md \
           certification-package-overview.json certification-package-overview.md \
           ongoing-certification-report.json ongoing-certification-report.md ocr-issues.json quarterly-review.ics \
-          $(grep -E '^(ocr-issue-|snapshot-)' issued.txt || true)
+          security-decision-record.view.md certification-package-overview.view.md \
+          ongoing-certification-report.view.md ocr-issues.view.md \
+          $(grep -E '^(ocr-issue-|snapshot-|snapshots/)' issued.txt | grep -vE '\.(bundle|intoto\.jsonl)$' || true)
 
     - name: Sign the issue index and new issues; attest the SDR
       working-directory: infrastructure/out
@@ -294,11 +313,13 @@ jobs:
         while read -r f; do [ -n "$f" ] && put "$f" "$(ctype "$f")"; done < issued.txt
         for a in security-decision-record certification-package-overview ongoing-certification-report; do
           put "$a.md" "text/markdown; charset=utf-8"
+          put "$a.view.md" "text/markdown; charset=utf-8"
           put "$a.bundle" application/json
           put "$a.json" application/json
         done
         put security-decision-record.json.intoto.jsonl application/json
         put quarterly-review.ics "text/calendar; charset=utf-8"
+        put ocr-issues.view.md "text/markdown; charset=utf-8"
         put ocr-issues.bundle application/json
         put ocr-issues.json application/json
 

@@ -2,7 +2,7 @@
   "schema": "secure-configuration/1",
   "$comment": "The Secure Configuration Guide's single source (SCG-CSO-RSC, SCG-ENH-MRG). scripts/build-scg.py publishes it as /.well-known/secure-configuration-guide.json and .md; scripts/check-secure-config.py compares the live settings with `recommended` on every deploy (SCG-ENH-CMP/EXP). Changing a recommended default needs a new version and a changelog entry carrying the new defaults_sha256 (SCG-ENH-VRH); the builder and tests/test_secure_configuration.py fail otherwise. AI-drafted 2026-11-05 from the repository and read-only reads of the live account; for the operator's review.",
   "title": "Secure Configuration Guide: samaydlette.com",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "obtain_and_use": [
     "Obtain: the guide is public. Human-readable: https://samaydlette.com/.well-known/secure-configuration-guide.md. Machine-readable: https://samaydlette.com/.well-known/secure-configuration-guide.json, signed (secure-configuration-guide.bundle; verify with cosign verify-blob against the deploy workflow's identity, as https://samaydlette.com/trust/ shows). No account or request is needed.",
     "Use: each setting names the account that operates it, the recommended value, why it matters, and the API or CLI call that reads and changes it. Compare a system's live values with `recommended`; the operator's own comparison, run on every deploy, is published at https://samaydlette.com/.well-known/security-settings.json (current values, the result per setting, and the decision record that covers any accepted deviation).",
@@ -42,11 +42,11 @@
     {
       "id": "ci-roles",
       "level": "privileged",
-      "name": "CI roles (deploy, plan, nightly)",
-      "how_named": "Three IAM roles that GitHub Actions assumes through OIDC: the deploy role (aws_iam_role.deploy), the plan role (aws_iam_role.plan) and the nightly evidence role (aws_iam_role.evidence_nightly), all in infrastructure/bootstrap. No long-lived credential exists for any of them.",
+      "name": "CI roles (deploy, plan, nightly, package maintenance, incident reports)",
+      "how_named": "Five IAM roles that GitHub Actions assumes through OIDC: the deploy role (aws_iam_role.deploy), the plan role (aws_iam_role.plan), the nightly evidence role (aws_iam_role.evidence_nightly), the package maintenance role (aws_iam_role.package_maintenance) and the incident reports role (aws_iam_role.incident_reports), all in infrastructure/bootstrap. No long-lived credential exists for any of them.",
       "access": "Only through GitHub's OIDC token, and only for the workflow subjects in each role's trust policy.",
       "configure": "infrastructure/bootstrap (operator-applied, reviewed). The settings below under ci-roles.",
-      "operate": "The deploy role exists only inside an approved prod deploy; the plan role is read-only; the nightly role writes only .well-known/vdr-* objects.",
+      "operate": "The deploy role exists only inside an approved prod deploy; the plan role is read-only; the nightly role writes only .well-known/vdr-* objects; the package maintenance role writes only the certification package objects; the incident reports role writes only .well-known/incident-* objects.",
       "decommission": "Delete the roles and the OIDC provider from infrastructure/bootstrap and apply."
     },
     {
@@ -254,6 +254,64 @@
       "check": "role-trust-nightly"
     },
     {
+      "id": "ci-roles.maintenance-trust",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The package maintenance role trusts only this repository's package-maintenance environment",
+      "recommended": [
+        "repo:sam-aydlette/samaydlette.com:environment:package-maintenance"
+      ],
+      "implication": "The unattended package write path stays limited to the one environment that deploys only from main.",
+      "read": "aws iam get-role (AssumeRolePolicyDocument)",
+      "change": "infrastructure/bootstrap/package-maintenance.tf; operator-applied",
+      "check": "role-trust-maintenance"
+    },
+    {
+      "id": "ci-roles.incident-trust",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The incident reports role trusts only this repository's incident-reports environment",
+      "recommended": [
+        "repo:sam-aydlette/samaydlette.com:environment:incident-reports"
+      ],
+      "implication": "The unattended incident write path stays limited to the one environment that deploys only from main.",
+      "read": "aws iam get-role (AssumeRolePolicyDocument)",
+      "change": "infrastructure/bootstrap/incident-reports.tf; operator-applied",
+      "check": "role-trust-incident"
+    },
+    {
+      "id": "ci-roles.maintenance-publish-scope",
+      "account": "ci-roles",
+      "operable_by": "aws-operator-user (bootstrap apply)",
+      "setting": "The package maintenance role may put exactly the certification package objects its workflow publishes",
+      "recommended": [
+        ".well-known/certification-package-overview.bundle",
+        ".well-known/certification-package-overview.json",
+        ".well-known/certification-package-overview.md",
+        ".well-known/certification-package-overview.view.md",
+        ".well-known/ocr-issue-*",
+        ".well-known/ocr-issues.bundle",
+        ".well-known/ocr-issues.json",
+        ".well-known/ocr-issues.view.md",
+        ".well-known/ongoing-certification-report.bundle",
+        ".well-known/ongoing-certification-report.json",
+        ".well-known/ongoing-certification-report.md",
+        ".well-known/ongoing-certification-report.view.md",
+        ".well-known/quarterly-review.ics",
+        ".well-known/security-decision-record.bundle",
+        ".well-known/security-decision-record.json",
+        ".well-known/security-decision-record.json.intoto.jsonl",
+        ".well-known/security-decision-record.md",
+        ".well-known/security-decision-record.view.md",
+        ".well-known/snapshot-*",
+        ".well-known/snapshots/*"
+      ],
+      "implication": "The unattended maintainer can write nothing else, and it can write every file it republishes, readable views included, so a run never fails half-published.",
+      "read": "aws iam get-role-policy (package-maintenance-publish; s3:PutObject resources, bucket removed)",
+      "change": "infrastructure/bootstrap/package-maintenance.tf, local.package_maintenance_keys; operator-applied",
+      "check": "role-scope-maintenance"
+    },
+    {
       "id": "cognito-admin.sign-in-policy",
       "account": "cognito-admin",
       "operable_by": "ci-roles (Terraform) and aws-operator-user",
@@ -278,6 +336,15 @@
         "Added the account-level settings, the operator user, the CI roles and the user-pool administration, each with the call that reads and changes it."
       ],
       "defaults_sha256": "a21ebfa28dc9e0b8b12a2f0029e163d782d92848c422b85702bec6de65352727"
-    }
+    },
+  {
+    "version": "2.1.0",
+    "date": "2026-11-06",
+    "changes": [
+      "Added the trust settings of the package maintenance and incident reports roles, compared on every deploy like the other CI roles.",
+      "Added the package maintenance role's write scope: exactly the objects its workflow publishes, the readable views included."
+    ],
+    "defaults_sha256": "618446a636af38bffa65e47384bc28faf6439f2f8a0588329bea676dbfbbf668"
+  }
   ]
 }

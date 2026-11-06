@@ -11,7 +11,7 @@ The source is [`data/secure-configuration.json`](../../data/secure-configuration
 ## What the guide covers
 
 - **Top-level administrative accounts:** the AWS root user and the GitHub repository owner: how each is named, and how to securely access, configure, operate and decommission it; the settings only those accounts can operate and what each means for security.
-- **Privileged accounts:** the operator IAM user, the three CI roles GitHub Actions assumes through OIDC (deploy, plan, nightly), and administration of the Silk Reeling user pool.
+- **Privileged accounts:** the operator IAM user, the five CI roles GitHub Actions assumes through OIDC (deploy, plan, nightly, package maintenance, incident reports), and administration of the Silk Reeling user pool.
 - **For every setting:** the recommended secure default, its security implication, and the API or CLI call that reads and changes it.
 - **Versioning:** a version number and a release history of the recommended defaults; each release records a digest of the defaults it fixes.
 - **Cryptographic modules:** the module each service uses to protect data, with its CMVP certificate where AWS publishes one, and the agency-tenant defaults.

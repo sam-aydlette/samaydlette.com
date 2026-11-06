@@ -32,7 +32,8 @@ set -euo pipefail
 
 BASE="${1:-https://samaydlette.com/.well-known}"
 IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main'
-# The VDR — and only the VDR — has a second legitimate publisher. The deploy
+# The VDR has a second legitimate publisher (and so do the certification
+# package and the incident reports, below). The deploy
 # workflow cannot run unattended (it applies Terraform and is bound to a
 # reviewed environment), so the nightly refresh that keeps the vulnerability
 # report inside its 24-hour freshness policy runs as its own workflow and signs
@@ -42,14 +43,37 @@ IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/depl
 #
 # Both identities are workflows in THIS repository, on `main`, so the trust
 # claim is unchanged: the evidence was produced by this repo's pinned CI, not by
-# a person with a key. Everything else — the canonical inventory, the SDR —
-# still verifies against the deploy identity alone.
+# a person with a key. Everything not named in signers_for below — the
+# canonical inventory first among them — verifies against the deploy identity
+# alone.
 NIGHTLY_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main'
 # The certification package (SDR, CPO, OCR) has a second publisher for the same
 # reason: package-maintenance.yml rebuilds it daily at the deployed commit, so
 # it stays inside CPO-CSX-CPM's two-week window without a reviewed deploy.
 MAINT_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/package-maintenance.yml@refs/heads/main'
+# The incident log, delivery log and reports have a second publisher too:
+# incident-reports.yml republishes them twice a day and whenever the incident
+# register changes, so the reporting clocks run without a reviewed deploy.
+INCIDENT_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/incident-reports.yml@refs/heads/main'
+# The simulated assessor signs its own assessment; the deploy relays it.
+ASSESSOR_IDENTITY='https://github.com/sam-aydlette/samaydlette.com/.github/workflows/simulated-assessor.yml@refs/heads/main'
 ISSUER='https://token.actions.githubusercontent.com'
+
+# signers-begin: the identities allowed to sign each published file, i.e. the
+# workflows that write it (scripts/_signers.py; tests/test_publishers.py runs this
+# function and holds it equal to the workflows' publish steps).
+signers_for() {
+  case "$1" in
+    simulated-assessment*) echo "$ASSESSOR_IDENTITY" ;;
+    vdr-*) echo "$IDENTITY $NIGHTLY_IDENTITY" ;;
+    security-decision-record*|certification-package-overview*|ongoing-certification-report*)
+      echo "$IDENTITY $MAINT_IDENTITY" ;;
+    ocr-issue*|snapshot-*) echo "$MAINT_IDENTITY" ;;
+    incident-*) echo "$IDENTITY $INCIDENT_IDENTITY" ;;
+    *) echo "$IDENTITY" ;;
+  esac
+}
+# signers-end
 SCRIPTS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Verify a blob signature against any of the accepted publisher identities.
@@ -105,7 +129,9 @@ for f in ksi-signal.json ksi-signal.bundle \
          vdr-monthly.json vdr-monthly.bundle \
          boundary-map.json boundary-map.bundle \
          reconcile-report.json reconcile-report.bundle \
-         trust-center.json trust-center.bundle; do
+         trust-center.json trust-center.bundle \
+         incident-reports.json incident-reports.bundle \
+         incident-deliveries.json incident-deliveries.bundle; do
   if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f"; then
     echo "  got  $f ($(wc -c < "$work/$f") bytes)"
   else
@@ -115,14 +141,16 @@ done
 
 echo ""
 echo "== 1. Signatures + provenance (independent: Sigstore + pinned workflow identity) =="
-if verify_blob_any_identity "$work/ksi-signal.bundle" "$work/ksi-signal.json" "$IDENTITY"; then
+# shellcheck disable=SC2046  # signers_for prints a word list by design
+if verify_blob_any_identity "$work/ksi-signal.bundle" "$work/ksi-signal.json" $(signers_for ksi-signal.json); then
   ok "ksi-signal.json signed by the pinned workflow on main"
 else
   bad "ksi-signal.json signature"
 fi
 
+# shellcheck disable=SC2046
 if verify_attestation_any_identity "$work/security-decision-record.json.intoto.jsonl" \
-     "$work/security-decision-record.json" "$IDENTITY" "$MAINT_IDENTITY"; then
+     "$work/security-decision-record.json" $(signers_for security-decision-record.json.intoto.jsonl); then
   ok "security-decision-record.json attestation signed by the pinned workflow on main"
 else
   bad "security-decision-record.json attestation signature"
@@ -131,12 +159,8 @@ fi
 # The CR26 record (SDR, CPO) and the trust center's own data: the generated
 # boundary map, the gate's report and the trust center itself.
 for art in security-decision-record certification-package-overview boundary-map reconcile-report trust-center ongoing-certification-report; do
-  ids="$IDENTITY"
-  case "$art" in
-    security-decision-record|certification-package-overview|ongoing-certification-report) ids="$IDENTITY $MAINT_IDENTITY" ;;
-  esac
-  # shellcheck disable=SC2086  # a word list by design
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $ids; then
+  # shellcheck disable=SC2046  # a word list by design
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $(signers_for "$art.json"); then
     ok "$art.json signed by the pinned workflow on main"
   else
     bad "$art.json signature"
@@ -153,7 +177,9 @@ done
 # which may be an earlier one, so only its signature is checked here.
 if curl -fsS --max-time 30 -o "$work/boundary-corroboration.json" "$BASE/boundary-corroboration.json" \
    && curl -fsS --max-time 30 -o "$work/boundary-corroboration.bundle" "$BASE/boundary-corroboration.bundle"; then
-  if verify_blob_any_identity "$work/boundary-corroboration.bundle" "$work/boundary-corroboration.json" "$IDENTITY"; then
+  # shellcheck disable=SC2046
+  if verify_blob_any_identity "$work/boundary-corroboration.bundle" "$work/boundary-corroboration.json" \
+       $(signers_for boundary-corroboration.json); then
     ok "boundary-corroboration.json signed by the pinned workflow on main"
   else
     bad "boundary-corroboration.json signature"
@@ -163,8 +189,9 @@ else
 fi
 
 # The VDR is refreshed nightly, so either publisher identity is accepted here.
+# shellcheck disable=SC2046
 if verify_attestation_any_identity "$work/vdr-report.json.intoto.jsonl" "$work/vdr-report.json" \
-     "$IDENTITY" "$NIGHTLY_IDENTITY"; then
+     $(signers_for vdr-report.json.intoto.jsonl); then
   ok "vdr-report.json attestation signed by a pinned workflow on main"
 else
   bad "vdr-report.json attestation signature"
@@ -172,7 +199,8 @@ fi
 
 # The CR26 vulnerability reports are rebuilt with the VDR, so either identity too.
 for art in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY" "$NIGHTLY_IDENTITY"; then
+  # shellcheck disable=SC2046
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $(signers_for "$art.json"); then
     ok "$art.json signed by a pinned workflow on main"
   else
     bad "$art.json signature"
@@ -181,7 +209,18 @@ done
 # The non-machine V&V status (VDR-TFR-NMV) and the monthly activity report
 # (VER-TFR-MHR), republished with the VDR.
 for art in vdr-non-machine-vv vdr-monthly; do
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY" "$NIGHTLY_IDENTITY"; then
+  # shellcheck disable=SC2046
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $(signers_for "$art.json"); then
+    ok "$art.json signed by a pinned workflow on main"
+  else
+    bad "$art.json signature"
+  fi
+done
+# The incident log and delivery log (IEC-CSO-*): signed by the deploy or by the
+# unattended incident publisher, whichever wrote them last.
+for art in incident-reports incident-deliveries; do
+  # shellcheck disable=SC2046
+  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" $(signers_for "$art.json"); then
     ok "$art.json signed by a pinned workflow on main"
   else
     bad "$art.json signature"

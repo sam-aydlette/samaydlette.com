@@ -1,0 +1,28 @@
+{
+  "_note": "Known-bad: an assessor guide that accepts only the deploy's signature on the SDR, which package-maintenance.yml also writes and signs. tests/test_publishers.py must report exactly this artifact.",
+  "identities": {
+    "deploy": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml@refs/heads/main",
+    "nightly": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main",
+    "assessor": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/simulated-assessor.yml@refs/heads/main",
+    "oidc_issuer": "https://token.actions.githubusercontent.com"
+  },
+  "rules": [
+    {
+      "rule_id": "EXAMPLE-RULE",
+      "evidence": [
+        {"kind": "artifact", "ref": ".well-known/ksi-signal.json",
+         "check": {"artifact": {"url": "https://samaydlette.com/.well-known/ksi-signal.json",
+                                "bundle_url": "https://samaydlette.com/.well-known/ksi-signal.bundle",
+                                "identities": ["deploy"]}}},
+        {"kind": "artifact", "ref": ".well-known/vdr-report.json",
+         "check": {"artifact": {"url": "https://samaydlette.com/.well-known/vdr-report.json",
+                                "bundle_url": "https://samaydlette.com/.well-known/vdr-report.bundle",
+                                "identities": ["deploy", "nightly"]}}},
+        {"kind": "artifact", "ref": ".well-known/security-decision-record.json",
+         "check": {"artifact": {"url": "https://samaydlette.com/.well-known/security-decision-record.json",
+                                "bundle_url": "https://samaydlette.com/.well-known/security-decision-record.bundle",
+                                "identities": ["deploy"]}}}
+      ]
+    }
+  ]
+}

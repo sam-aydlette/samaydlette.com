@@ -20,7 +20,7 @@
     {"key": "audit", "zone": "system", "label": "Audit and shared keys",
      "match": ["aws::audit_log_trail::*", "aws::object_store::cloudtrail", "aws::kms_key::at_rest"]},
     {"key": "trust-root", "zone": "system", "label": "CI/CD trust root (operator-applied bootstrap stack)",
-     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::incident_reports", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
+     "match": ["aws::oidc_provider::*", "aws::iam_role::deploy", "aws::iam_role::evidence_nightly", "aws::iam_role::incident_reports", "aws::iam_role::package_maintenance", "aws::iam_role::plan", "aws::iam_group::*", "aws::iam_policy::*", "aws::object_store::tfstate", "aws::kv_table::*"]},
     {"key": "github", "zone": "external", "label": "GitHub repository, Actions and OIDC",
      "match": ["ext::github-repo", "ext::github-oidc"]},
     {"key": "sigstore", "zone": "external", "label": "Sigstore (Fulcio CA and Rekor log)",
@@ -80,6 +80,10 @@
      "protocol": "HTTPS 443 (TLS)", "auth": "Anonymous public GET", "encryption": "In transit: TLS", "data": "Pose-landmarker model file in; the request carries the user's IP address and user agent only"},
     {"id": "O", "label": "Site bucket → access-log bucket (S3 server access logs)", "path": [{"component": "aws::object_store::website"}, {"component": "aws::object_store::logs"}],
      "protocol": "AWS-internal (S3 log delivery)", "auth": "Log bucket policy admits only the S3 logging service", "encryption": "At rest: SSE-S3", "data": "Request records for origin reads: requester IP, user agent, key, status"},
+    {"id": "O2", "label": "CloudFront → access-log bucket (edge access records, 90 days)", "path": [{"component": "aws::cdn_distribution::website"}, {"component": "aws::object_store::logs"}],
+     "protocol": "AWS internal (CloudWatch vended-log delivery)", "auth": "Log delivery service, admitted by the log bucket policy for this account only", "encryption": "In transit TLS; at rest SSE-S3", "data": "Per request: date, time, edge location, country, method, path, status, bytes, cache result; no client IP, user agent, referrer, query string or cookie"},
+    {"id": "O3", "label": "Deploy → access-log bucket (reads edge access records)", "path": [{"component": "aws::iam_role::deploy"}, {"component": "aws::object_store::logs"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "Deploy role (GitHub OIDC); read-only on the CloudFront log prefixes", "encryption": "In transit TLS; at rest SSE-S3", "data": "Edge access records in; only aggregate monthly counts of /.well-known/ and /trust/ requests are published"},
     {"id": "P", "label": "CloudTrail → CloudTrail log bucket", "path": [{"component": "aws::audit_log_trail::management"}, {"component": "aws::object_store::cloudtrail"}],
      "protocol": "AWS-internal (CloudTrail delivery)", "auth": "Bucket policy admits only CloudTrail for this trail", "encryption": "At rest: SSE-S3; log-file validation on", "data": "Management events: API caller identity, source IP, action, parameters"},
     {"id": "Q", "label": "KSI emitter → its log group", "path": [{"component": "aws::function::opa_compliance"}, {"component": "aws::log_group::opa_compliance"}],
@@ -107,6 +111,8 @@
     {"id": "Y4", "label": "Deploy and nightly → Grype vulnerability database", "path": [{"component": "ext::github-repo"}, {"component": "ext::anchore-grype-db"}],
      "protocol": "HTTPS 443 (TLS)", "auth": "Anonymous public GET", "encryption": "In transit: TLS; checksum verified", "data": "Vulnerability database in (public)"},
     {"id": "Z", "label": "Incident Reports → S3 (.well-known/incident-*)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::incident_reports"}, {"component": "aws::object_store::website"}],
-     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/incident-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Incident log and IIR/OIR/FIR reports (Sigstore-signed)"}
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only .well-known/incident-* (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "Incident log and IIR/OIR/FIR reports (Sigstore-signed)"},
+    {"id": "Z2", "label": "Package Maintenance → S3 (certification package objects)", "path": [{"component": "ext::github-oidc"}, {"component": "aws::iam_role::package_maintenance"}, {"component": "aws::object_store::website"}],
+     "protocol": "HTTPS 443 (TLS 1.2+, SigV4)", "auth": "GitHub OIDC → STS; the role can write only the named certification package objects and the quarterly issue prefixes (unattended)", "encryption": "In transit TLS; at rest SSE-S3", "data": "SDR, CPO, OCR, their readable views, the quarterly issue index, issued reports and snapshots (Sigstore-signed)"}
   ]
 }
