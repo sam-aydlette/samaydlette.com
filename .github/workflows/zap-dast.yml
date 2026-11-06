@@ -125,7 +125,10 @@ jobs:
           SILK_DAST_USER_POOL_ID: ${{ secrets.SILK_DAST_USER_POOL_ID }}
         run: |
           set -euo pipefail
-          token=$(python3 scripts/dast-cognito-token.py token --auth-config silk-reeling-auth.json)
+          tokfile="${RUNNER_TEMP:?}/dast-token"
+          trap 'rm -f "$tokfile"' EXIT
+          python3 scripts/dast-cognito-token.py token --auth-config silk-reeling-auth.json --out "$tokfile"
+          token=$(cat "$tokfile")
           [ -n "$token" ] || { echo "::error::no access token"; exit 1; }
           echo "::add-mask::${token}"
           echo "ZAP_AUTH_HEADER_VALUE=Bearer ${token}" >> "$GITHUB_ENV"

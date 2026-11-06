@@ -16,17 +16,18 @@ No app-client flow is widened and no AWS credentials are used: InitiateAuth,
 RespondToAuthChallenge, AssociateSoftwareToken and VerifySoftwareToken are
 Cognito's public, unsigned user APIs.
 
-    token   (default) print the access token on stdout, nothing else
+    token   (default) write the access token to --out, nothing else
     enroll  one time, run by the operator after creating the user: answer the
             MFA_SETUP challenge by associating a new TOTP seed, verify it, and
-            print the seed on stdout (pipe it straight into `gh secret set`)
+            write the seed to --out (then feed that file to `gh secret set`)
 
 Environment: SILK_DAST_USERNAME, SILK_DAST_PASSWORD, SILK_DAST_USER_POOL_ID,
 SILK_DAST_TOTP_SECRET (token only), SILK_DAST_CLIENT_ID (else read from
 --auth-config, the published /.well-known/silk-reeling-auth.json).
 
-Nothing secret is ever printed except the one value asked for on stdout; error
-messages carry Cognito's error type and message only.
+Nothing secret is ever printed: the one value asked for goes to the --out file,
+created readable only by its owner (0600); error messages carry Cognito's error
+type and message only.
 """
 
 import argparse
@@ -259,6 +260,9 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mode", nargs="?", choices=("token", "enroll"), default="token")
     ap.add_argument("--auth-config", help="the published silk-reeling-auth.json (for the app client id)")
+    ap.add_argument("--out", required=True,
+                    help="file to write the token (or, for enroll, the seed) to, readable only by its owner; "
+                         "the secret never goes to stdout, where a log could capture it")
     args = ap.parse_args(argv)
     env = os.environ
     need = ["SILK_DAST_USERNAME", "SILK_DAST_PASSWORD", "SILK_DAST_USER_POOL_ID"]
@@ -281,8 +285,19 @@ def main(argv=None) -> int:
         detail = str(exc) if isinstance(exc, AuthError) else type(exc).__name__
         print(f"::error::Cognito sign-in failed: {detail.replace('::', ':')}", file=sys.stderr)
         return 1
-    sys.stdout.write(out + "\n")
+    write_secret(args.out, out)
     return 0
+
+
+def write_secret(path, value):
+    """Write a secret to a file readable only by its owner (0600, also when it
+    already existed), never to stdout."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.fchmod(fd, 0o600)
+        os.write(fd, value.encode("utf-8"))
+    finally:
+        os.close(fd)
 
 
 if __name__ == "__main__":

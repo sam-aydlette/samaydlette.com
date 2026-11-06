@@ -1639,6 +1639,33 @@
       "decided_on": "2026-11-05",
       "review_by": "2027-11-05",
       "point_of_contact": "Sam Aydlette (operator)"
+    },
+    {
+      "id": "DEC-193",
+      "title": "CodeQL py/weak-sensitive-data-hashing on the DAST scanner's Cognito SRP sign-in",
+      "disposition": "false-positive",
+      "status": "in-force",
+      "justification": "False positive. scripts/dast-cognito-token.py signs the DAST scanner user in to Cognito with SRP-6a, whose protocol fixes SHA-256 for the password-derived value x = H(salt | H(pool | user | ':' | password)). The hash is the protocol's computation, sent as a proof to Cognito; it is never stored, and a slow password hash would make Cognito reject the sign-in. Password storage is Cognito's. Decided by the operator 2026-11-06; wording AI-drafted.",
+      "controls": [
+        "ra-5",
+        "sa-11.1"
+      ],
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "codeql-py/weak-sensitive-data-hashing-107"
+        ],
+        "resources": [
+          "scripts/dast-cognito-token.py"
+        ]
+      },
+      "decided_by": "Sam Aydlette",
+      "decided_on": "2026-11-06",
+      "review_by": "2027-11-06",
+      "original_detection_date": "2026-11-06",
+      "source": {
+        "detector": "CodeQL (GitHub code scanning)"
+      }
     }
   ]
 }

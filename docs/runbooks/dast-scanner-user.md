@@ -49,18 +49,23 @@ printf '%s' "$PW"      | gh secret set SILK_DAST_PASSWORD -R "$REPO"
 printf '%s' "$POOL"    | gh secret set SILK_DAST_USER_POOL_ID -R "$REPO"
 
 # TOTP enrolment: answers the MFA_SETUP challenge with a new authenticator seed
-# (Cognito's public user APIs, no AWS credentials) and prints only that seed.
+# (Cognito's public user APIs, no AWS credentials) and writes only that seed,
+# to a file readable only by you.
 curl -sf https://samaydlette.com/.well-known/silk-reeling-auth.json > /tmp/silk-auth.json
-SEED=$(SILK_DAST_USERNAME="$SCANNER" SILK_DAST_PASSWORD="$PW" SILK_DAST_USER_POOL_ID="$POOL" \
-  python3 scripts/dast-cognito-token.py enroll --auth-config /tmp/silk-auth.json)
+SECRET_DIR=$(mktemp -d)
+SILK_DAST_USERNAME="$SCANNER" SILK_DAST_PASSWORD="$PW" SILK_DAST_USER_POOL_ID="$POOL" \
+  python3 scripts/dast-cognito-token.py enroll --auth-config /tmp/silk-auth.json --out "$SECRET_DIR/seed"
+SEED=$(cat "$SECRET_DIR/seed")
 printf '%s' "$SEED" | gh secret set SILK_DAST_TOTP_SECRET -R "$REPO"
 
-# Check: a full sign-in works (prints the token's length, not the token). The
+# Check: a full sign-in works (shows the token's length, not the token). The
 # wait moves past the enrolment's TOTP window: Cognito refuses a reused code.
 sleep 31
 SILK_DAST_USERNAME="$SCANNER" SILK_DAST_PASSWORD="$PW" SILK_DAST_USER_POOL_ID="$POOL" \
   SILK_DAST_TOTP_SECRET="$SEED" \
-  python3 scripts/dast-cognito-token.py token --auth-config /tmp/silk-auth.json | wc -c
+  python3 scripts/dast-cognito-token.py token --auth-config /tmp/silk-auth.json --out "$SECRET_DIR/token"
+wc -c < "$SECRET_DIR/token"
+rm -rf "${SECRET_DIR:?}"
 unset PW SEED
 ```
 
