@@ -37,7 +37,7 @@ MEDIA = {".json": "application/json", ".md": "text/markdown; charset=utf-8", ".c
          ".jsonl": "application/x-ndjson", ".gz": "application/gzip"}
 # Published by something other than the deploy, so not built here; shown
 # human-readably on the trust page, which renders them from the live JSON.
-LIVE_RENDERED = {"ksi-signal-runtime.json": "the runtime signal, published hourly by the runtime Lambda",
+LIVE_RENDERED = {"ksi-signal-runtime.json": "the runtime signal, published daily by the runtime Lambda",
                  "vdr-status.json": "the nightly evidence run's status beacon"}
 EXTERNAL = [{
     "name": "Independent availability status (CDS-CSO-AVR)",

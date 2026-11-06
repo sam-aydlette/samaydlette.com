@@ -10,7 +10,9 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
   `SCN-CSO-INF` fields, the dates the notice deadlines count from (`date_started`,
   `date_finished`, `verified_on`), and for transformative changes the plan, third-party-review and
   documentation-update fields. `scripts/_scn.py` validates it (`tests/test_scn.py`); a
-  routine-recurring row is refused (`SCN-RTR-NNR`).
+  routine-recurring row is refused (`SCN-RTR-NNR`). A change that ships with the deploy that publishes
+  its record has `status` `on-deploy` and no `date_finished`: the deploy's SCN build records it as
+  implemented on the date of the first deploy that publishes it (`resolve_on_deploy`).
 - **`SCN-<year>-<n>-<slug>.md`** — the human-readable record and copy of the security impact
   analysis for each change (`SCN-CSO-INF` item 9).
 - **[`evaluation-examples.md`](evaluation-examples.md)** — the evaluation format and one example
@@ -57,3 +59,4 @@ deploy that introduced it, after their deadlines, and the index says so.
 | [SCN-2026-004](SCN-2026-004-evidence-alerting.md) | Adaptive | Evidence SLA watchdog and operator email alerting (backfilled record) | Implemented + post-impl. verified 2026-09-25 |
 | [SCN-2026-005](SCN-2026-005-ci-identity-split.md) | Adaptive | CI identity split: read-only plan role; deploy role trusts only the prod environment | Implemented and verified 2026-09-28 |
 | [SCN-2026-006](SCN-2026-006-remove-anthropic-interconnection.md) | Adaptive | Remove the Anthropic API interconnection; LLM feedback customer-configurable, off | Implemented (2026-10-27) |
+| [SCN-2026-007](SCN-2026-007-fedramp-20x-rule-completeness.md) | Adaptive | FedRAMP 20x rule records and completeness gate; unattended publisher roles, edge access logging, DAST scanner user | Implemented on the first deploy that publishes it (`on-deploy`) |

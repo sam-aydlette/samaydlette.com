@@ -74,6 +74,12 @@ INF_REQUIRED = ("scn_id", "scn_type", "categorization_rationale", "short_descrip
                 "customer_impact", "plan_and_timeline", "sia_reference", "approver_name", "approver_title",
                 "status", "date_initiated")
 DATE_COLUMNS = ("date_initiated", "date_started", "date_finished", "verified_on", "docs_updated_on")
+# A record whose change ships with the deploy that publishes it says so with this
+# status and no finish date. The deploy's SCN build fills both in
+# (resolve_on_deploy): the index is published only by a deploy that succeeds,
+# so a published "Implemented" is true, and the record never publishes
+# "Planned" after its change is live.
+ON_DEPLOY = "on-deploy"
 YES_NO = ("yes", "no")
 
 
@@ -244,6 +250,9 @@ def validate_register(header, rows, root=REPO):
                 errors.append(f"{where} {c2} {d2} is before {c1} {d1}")
         if r["sia_reference"] and not (Path(root) / r["sia_reference"]).is_file():
             errors.append(f"{where} sia_reference {r['sia_reference']} does not exist")
+        if r["status"] == ON_DEPLOY and (r["date_finished"] or r["verified_on"]):
+            errors.append(f"{where} status {ON_DEPLOY} is filled in by the deploy: leave date_finished and "
+                          "verified_on empty")
         if r["emergency"] not in YES_NO:
             errors.append(f"{where} emergency must be yes or no")
         if r["emergency"] == "yes" and not r["evaluation_prs"]:
@@ -314,6 +323,22 @@ def notices_due(row):
             add("after-verification", "SCN-TRF-NAV",
                 _bizdays.add_business_days(verified, timeframe("SCN-TRF-NAV")), "by")
     return out
+
+
+def resolve_on_deploy(row, previous_doc, today):
+    """The row as the deploy publishes it. An on-deploy row becomes finished
+    on the date of the first deploy that published it (kept from the previous
+    published notification, so a later deploy never re-dates it); any other
+    row is returned unchanged."""
+    if row["status"] != ON_DEPLOY:
+        return row
+    prev = ((previous_doc or {}).get("additionalInformation") or {}).get("dateFinished")
+    # The previous index is fetched input: only a well-formed date not after
+    # today is carried; anything else is replaced by today's date.
+    prev_day = _date(prev) if isinstance(prev, str) else None
+    finished = (prev_day if prev_day and prev_day <= today else today).isoformat()
+    return {**row, "date_finished": finished,
+            "status": f"Implemented: deployed {finished} by the deploy that first published this notification."}
 
 
 def docs_update_deadline(row):

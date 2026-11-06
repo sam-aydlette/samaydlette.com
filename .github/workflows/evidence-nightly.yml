@@ -14,8 +14,11 @@
 # So this workflow does the one thing that genuinely needs a daily cadence and
 # needs no infrastructure change at all: re-run the dependency scan against a
 # freshly-pulled Grype database, rebuild the VDR and its trend ledger, put them
-# through the same vulnerability and reconciliation gates, and republish exactly
-# those five objects. No Terraform apply. No website sync. No write outside
+# through the same vulnerability and reconciliation gates, and republish the VDR
+# family (the report, the trend, FedRAMP's three vulnerability reports, the
+# monthly activity report and the non-machine V&V status, with their signatures,
+# readable views and the provenance attestation; the publish step lists each
+# object). No Terraform apply. No website sync. No write outside
 # `.well-known/vdr-*`. One more object in that prefix, vdr-status.json, is a
 # status beacon written on every run, pass or fail, for the evidence SLA
 # watchdog (infrastructure/watchdog.tf). It carries outcomes, not evidence.

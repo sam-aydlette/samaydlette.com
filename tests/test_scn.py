@@ -156,6 +156,7 @@ def test_the_committed_register_is_valid():
     ("register-transformative-incomplete.csv", "tpr_human_validation must be yes or no"),
     ("register-adaptive-no-risks.csv", "new_risks_summary is empty (SCN-ADP-NTF)"),
     ("register-dates-out-of-order.csv", "is before date_initiated"),
+    ("register-on-deploy-with-finish-date.csv", "status on-deploy is filled in by the deploy"),
 ])
 def test_each_known_bad_register_fails_for_its_reason(name, why):
     header, rows = _scn.read_register(FIX / "bad" / name)
@@ -242,6 +243,41 @@ def test_a_published_notice_keeps_its_first_publication_date(tmp_path):
     index = json.loads((tmp_path / "significant-change-notifications.json").read_text())
     n = index["notifications"][0]["notices"][0]
     assert n["publishedOn"] == "2026-06-15" and n["onTime"] is True
+
+
+def _notification(tmp_path, scn_id):
+    index = json.loads((tmp_path / "significant-change-notifications.json").read_text())
+    return next(d for d in index["notifications"] if d["scnId"] == scn_id)
+
+
+def test_an_on_deploy_record_is_published_implemented_on_the_deploy_date(tmp_path):
+    """A change that ships with the deploy that publishes its record never
+    publishes "Planned": the deploy records it implemented that day, and the
+    after-finish notice is published with it, on time."""
+    _, rows = _scn.read_register()
+    on_deploy = [r["scn_id"] for r in rows if r["status"] == _scn.ON_DEPLOY]
+    assert on_deploy == ["SCN-2026-007"]
+    assert _build(tmp_path) == 0
+    d = _notification(tmp_path, "SCN-2026-007")
+    today = build._today().isoformat()
+    assert d["additionalInformation"]["status"].startswith(f"Implemented: deployed {today}")
+    assert d["additionalInformation"]["dateFinished"] == today
+    assert d["planAndTimeline"]["plannedCompletion"] == today
+    assert [(n["stage"], n["publishedOn"], n["onTime"]) for n in d["notices"]] == [("after-finish", today, True)]
+    assert "Planned" not in json.dumps(d)
+
+
+def test_a_later_deploy_keeps_the_first_deploy_date(tmp_path):
+    prev = {"notifications": [{"scnId": "SCN-2026-007",
+                               "additionalInformation": {"dateFinished": "2026-11-02"},
+                               "notices": [{"stage": "after-finish", "rule": "SCN-ADP-NTF", "deadline": "2026-11-23",
+                                            "publishedOn": "2026-11-02", "onTime": True}]}]}
+    (tmp_path / "prev.json").write_text(json.dumps(prev))
+    assert _build(tmp_path, "--previous-index", str(tmp_path / "prev.json")) == 0
+    d = _notification(tmp_path, "SCN-2026-007")
+    assert d["additionalInformation"]["dateFinished"] == "2026-11-02"
+    assert d["additionalInformation"]["status"].startswith("Implemented: deployed 2026-11-02")
+    assert d["notices"][0]["publishedOn"] == "2026-11-02"
 
 
 def test_a_build_that_would_drop_a_published_notification_fails(tmp_path):
@@ -466,3 +502,10 @@ def test_the_deadline_cli(tmp_path):
     args = ["--index-file", str(tmp_path / "i.json"), "--log-file", str(tmp_path / "l.json")]
     assert deadlines.main([*args, "--today", "2026-11-17"]) == 0
     assert deadlines.main([*args, "--today", "2026-11-18"]) == 1
+
+
+@pytest.mark.parametrize("bad", [12345, "not-a-date", "2999-01-01", None])
+def test_known_bad_a_malformed_or_future_previous_finish_date_is_not_carried(bad):
+    row = {"status": _scn.ON_DEPLOY, "date_finished": ""}
+    out = _scn.resolve_on_deploy(row, {"additionalInformation": {"dateFinished": bad}}, date(2026, 11, 6))
+    assert out["date_finished"] == "2026-11-06" and out["status"].startswith("Implemented: deployed 2026-11-06")
