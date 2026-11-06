@@ -96,7 +96,7 @@ def test_the_sdr_builder_fails_closed_without_the_inventory(tmp_path):
 
 # --- the SSP is retired ------------------------------------------------------------
 
-CONSUMERS = ["build-sdr.py", "build-coverage.py", "build-cmmc.py", "inject-figures.py", "reconcile.py",
+CONSUMERS = ["build-sdr.py", "reconcile.py",
              "build-trust-center.py", "build-cpo.py", "build-ksi-signal.py", "_common.py", "verify-published.sh"]
 
 

@@ -23,8 +23,7 @@ import _common as c  # noqa: E402
 # ---------------------------------------------------------------------------
 # Status wins over origination: a control that is N/A or planned has no
 # inheritance story yet. Everything else projects the FedRAMP control-origination
-# onto the shared-responsibility vocabulary the CMMC SRM, coverage figures and
-# framework spokes all read.
+# onto the shared-responsibility vocabulary the published coverage figures read.
 @pytest.mark.parametrize("status,origination,expected", [
     # status short-circuits, whatever the origination says
     ("not-applicable", "inherited",           "not-applicable"),

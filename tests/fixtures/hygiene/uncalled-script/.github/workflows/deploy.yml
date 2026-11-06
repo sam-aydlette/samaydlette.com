@@ -1,0 +1,7 @@
+# Known-bad fixture workflow: runs build-used.py only.
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: python3 scripts/build-used.py

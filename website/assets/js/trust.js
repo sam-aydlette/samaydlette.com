@@ -34,10 +34,6 @@ const ARTIFACTS = [
 
 const FRAMEWORKS = [
     ['moderate_coverage', 'FedRAMP Rev 5 Moderate baseline'],
-    ['govramp_coverage', 'GovRAMP'],
-    ['txramp1_coverage', 'TX-RAMP Level 1'],
-    ['txramp2_coverage', 'TX-RAMP Level 2'],
-    ['cmmc_coverage', 'CMMC Level 2'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -422,7 +418,7 @@ function renderPosture(doc) {
     const rows = FRAMEWORKS.filter(([key]) => f[key]);
     if (rows.length) {
         host.append(
-            el('p', { text: 'Controls with an implementation statement in the System Security Plan, by framework. This measures documentation coverage, not an assessment result.' }),
+            el('p', { text: 'FedRAMP Rev 5 Moderate controls with an implementation statement in the Security Decision Record. This measures documentation coverage, not an assessment result.' }),
             el('dl', { class: 'tc-kv tc-kv-compact' }, ...rows.map(([key, label]) => el('div', {}, el('dt', { text: label }), el('dd', { text: f[key] })))));
         if (f.moderate_implemented) {
             host.append(el('p', { class: 'tc-check-meta', text: `Moderate baseline: ${f.moderate_implemented} implemented by this system, ${f.moderate_inherited} inherited from AWS, ${f.moderate_na} not applicable.` }));

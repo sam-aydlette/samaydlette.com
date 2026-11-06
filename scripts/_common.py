@@ -15,14 +15,13 @@
 #     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 #     from _common import classify, sha256_file
 #
-# The insert is __file__-relative, so it resolves from any cwd. Scripts under
-# scripts/staged/ insert the parent directory instead.
+# The insert is __file__-relative, so it resolves from any cwd.
 #
 # WHAT BELONGS HERE: only definitions that were already duplicated VERBATIM, and
 # only where divergence between the copies would be a bug rather than a choice.
-# The four copies of classify() were the case that mattered — it is a compliance
-# semantic that the CMMC projection, the coverage figures and the framework
-# spokes must all agree on, and nothing was keeping them in step.
+# The copies of classify() were the case that mattered — it is a compliance
+# semantic the published coverage figures and the per-control views must agree
+# on, and nothing was keeping them in step.
 #
 # WHAT DOES NOT BELONG HERE: same-named functions that do different things.
 # render_markdown() exists several times and renders a different artifact each
@@ -82,9 +81,9 @@ def classify(status, origination):
     """Project a control implemented-requirement onto the shared-responsibility
     vocabulary every downstream framework view uses.
 
-    This is the compliance semantic the downstream framework views have to agree
-    on — the CMMC SRM projection, the published coverage figures, and the
-    framework spokes. It lived as four verbatim copies, so a
+    This is the compliance semantic the downstream views have to agree on —
+    the trust center's Rev5 Moderate figures among them. It lived as four
+    verbatim copies, so a
     change to one would have silently split them apart while every gate stayed
     green: none of the invariants in reconcile.py compare these projections to
     each other.
