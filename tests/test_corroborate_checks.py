@@ -43,9 +43,27 @@ def test_signed_artifacts_come_from_the_governed_config_without_the_report_itsel
     assert all(a.get("bundle") for a in arts if a["kind"] == "bundle")
 
 
-def test_expected_identity_depends_on_cadence():
-    assert ck.expected_identity("deploy").endswith("/.github/workflows/deploy-with-opa.yml@refs/heads/main")
-    assert ck.expected_identity("nightly").endswith("/.github/workflows/evidence-nightly.yml@refs/heads/main")
+def test_expected_identities_are_the_files_writers_not_its_cadence():
+    """From scripts/_signers.py, which tests/test_publishers.py holds to the
+    workflows' publish steps."""
+    import _signers
+    wf = "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/"
+    assert ck.expected_identities(".well-known/ksi-signal.json") == [wf + "deploy-with-opa.yml@refs/heads/main"]
+    assert ck.expected_identities(".well-known/ocr-issues.json") == [wf + "package-maintenance.yml@refs/heads/main"]
+    assert ck.expected_identities(".well-known/vdr-report.json") == [wf + "deploy-with-opa.yml@refs/heads/main",
+                                                                    wf + "evidence-nightly.yml@refs/heads/main"]
+    arts = ck.signed_artifacts(json.loads((REPO / "infrastructure" / "schemas" / "freshness-config.json").read_text()))
+    for a in arts:
+        assert a["identities"] == [_signers.IDENTITIES[k] for k in _signers.signers(a["artifact"])], a["artifact"]
+
+
+def test_known_bad_a_file_signed_by_a_workflow_that_does_not_write_it_differs():
+    f = fx("signatures-by-writer.json")
+    s = ck.judge_signatures(f["facts"], f["artifacts"])
+    assert s["compared"] == 6
+    assert sorted((x["artifact"], x["problem"]) for x in s["findings"]) == [
+        ("ocr-issues.json", "signed by an unexpected identity"),
+        ("vdr-report.json", "signed by an unexpected identity")]
 
 
 def test_known_bad_signatures_differ_on_each_artifact():

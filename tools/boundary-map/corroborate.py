@@ -194,16 +194,22 @@ def cert_facts(bundle):
 for a in req["artifacts"]:
     f = {"artifact": a["artifact"]}
     try:
-        pol = v.GitHubWorkflowPolicy(oidc_issuer=req["issuer"], github_repository=req["repository"],
-                                     workflow_identity_uri=a["identity"])
+        # Any workflow allowed to write the file may have signed it; the first
+        # identity that verifies is the one reported.
+        for ident in a["identities"]:
+            pol = v.GitHubWorkflowPolicy(oidc_issuer=req["issuer"], github_repository=req["repository"],
+                                         workflow_identity_uri=ident)
+            if a["kind"] == "dsse":
+                r = v.verify_dsse_bundle(base64.b64decode(a["bundle_b64"]).strip(), policy=pol)
+            else:
+                r = v.verify_bundle(base64.b64decode(a["body_b64"]), base64.b64decode(a["bundle_b64"]), policy=pol)
+            if r.signature_verified:
+                break
         if a["kind"] == "dsse":
-            r = v.verify_dsse_bundle(base64.b64decode(a["bundle_b64"]).strip(), policy=pol)
             f["subject_sha256"] = hashlib.sha256(base64.b64decode(a["subject_b64"])).hexdigest()
             stmt = json.loads(r.payload) if r.payload else {}
             f["subjects"] = [{"name": s.get("name"), "sha256": (s.get("digest") or {}).get("sha256")}
                              for s in stmt.get("subject", [])]
-        else:
-            r = v.verify_bundle(base64.b64decode(a["body_b64"]), base64.b64decode(a["bundle_b64"]), policy=pol)
         f.update(verified=r.signature_verified, failure_code=r.failure_code or None, signed_by=r.signed_by or None,
                  issuer=r.signing_issuer or None, rekor_log_index=r.rekor_log_index or None)
         if r.parsed_bundle is not None:
@@ -529,7 +535,7 @@ def gather(container: str, signal: dict[str, Any], tap: dict[str, Any], workdir:
 
     for a in arts:
         try:
-            item = {"artifact": a["artifact"], "kind": a["kind"], "identity": checks.expected_identity(a["cadence"])}
+            item = {"artifact": a["artifact"], "kind": a["kind"], "identities": a["identities"]}
             if a["kind"] == "dsse":
                 item["bundle_b64"] = base64.b64encode(site(a["artifact"])).decode()
                 item["subject_b64"] = base64.b64encode(site(a["subject"])).decode()
