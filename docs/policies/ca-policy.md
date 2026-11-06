@@ -6,8 +6,8 @@ There is no formal authorization process or independent assessor in scope for th
 - The deploy-time OPA gate — every PR re-evaluates the Terraform plan, the website tree, and the IAM policy against in-house Rego.
 - The build-time VDR aggregator (see RA) — every CI run re-aggregates vulnerability state across SAST/SCA tools and blocks the build if any finding exceeds Class C remediation timeframes. The build is the report.
 
-**20x rule integration.** This family carries Vulnerability Detection and Response (VDR-*) and Collaborative Continuous Monitoring (CCM). VDR is satisfied as described above and in RA. CCM is satisfied by the public-by-default publication of all KSI/SSP/runtime/VDR artifacts at `/.well-known/`, signed via Sigstore, verifiable from anywhere — anyone can run continuous monitoring of this system without privileged access.
+**20x rule integration.** This family carries Vulnerability Detection and Response (VDR-*) and Collaborative Continuous Monitoring (CCM). VDR is satisfied as described above and in RA. CCM is satisfied by the public-by-default publication of all KSI, Security Decision Record, runtime and VDR artifacts at `/.well-known/`, signed via Sigstore, verifiable from anywhere — anyone can run continuous monitoring of this system without privileged access.
 
 The consolidated continuous-monitoring strategy (mechanisms, cadences, reporting, role mapping, NIST control coverage) is documented in [`docs/continuous-monitoring-plan.md`](../continuous-monitoring-plan.md), the document that backs CA-7 specifically.
 
-**Review cadence.** Continuous (automated); annual structural review.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

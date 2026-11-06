@@ -410,3 +410,63 @@ def test_the_output_records_the_governed_freshness_config():
     assert doc["freshness_windows_hours"]["corroboration"] == fc["windows_hours"][".well-known/boundary-corroboration.json"]
     sources = {t["name"]: t["source"] for t in doc["policy_catalog"]["thresholds"]["items"]}
     assert sources["Vulnerability evidence freshness"] == fc["source"]
+
+
+def test_the_trust_center_carries_the_offerings_fedramp_id():
+    import _offering
+    assert build()["fedRampId"] == _offering.fedramp_id()
+
+
+def test_the_trust_center_says_not_certified_like_the_cpo_and_sdr():
+    assert build()["certification"] == {"program": "FedRAMP 20x, Program path, Class C",
+                                        "status": "not certified (proof of concept)"}
+    js = (REPO / "website" / "assets" / "js" / "trust.js").read_text()
+    assert "doc.certification?.status" in js and "'not certified (proof of concept)'" in js
+
+
+# --- the Rev5 Moderate view (moved from the retired scripts/inject-figures.py) ------
+# The figures come from the control projection (scripts/_controls.py) over the
+# committed fixture inventory, so they run everywhere; the deploy computes the
+# published ones from the real inventory.
+
+FIXTURE_SIGNAL = REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json"
+
+
+def _projection():
+    import _controls
+    return _controls.load(FIXTURE_SIGNAL)
+
+
+def test_the_moderate_view_is_measured_against_the_published_baseline():
+    f = btc.framework_figures(_projection())
+    assert f["moderate_baseline"] == "323" and f["moderate_coverage"] == "323/323"
+    # controls FedRAMP's KSI mappings reach beyond Moderate (2026-10-13 revision)
+    assert f["moderate_beyond"] == "59"
+    total = int(f["moderate_baseline"]) + int(f["moderate_beyond"])
+    assert int(f["moderate_implemented"]) + int(f["moderate_inherited"]) + int(f["moderate_na"]) == total
+
+
+def test_a_baseline_control_missing_from_the_projection_lowers_coverage():
+    """Coverage is measured, not assumed: drop one baseline control from the
+    projection and the figure falls below N/N instead of staying green."""
+    import _controls
+    irs = _projection()
+    irs.remove(next(ir for ir in irs if ir["control-id"] in _controls.BASELINE_CONTROLS))
+    assert btc.framework_figures(irs)["moderate_coverage"] == "322/323"
+
+
+def test_only_the_rev5_moderate_view_is_published():
+    """CMMC, GovRAMP and TX-RAMP figures are retired; the posture carries the
+    Rev5 Moderate view the SDR derives, and nothing else."""
+    assert set(btc.framework_figures(_projection())) == {
+        "moderate_coverage", "moderate_baseline", "moderate_beyond",
+        "moderate_implemented", "moderate_inherited", "moderate_na"}
+    trust_js = (REPO / "website" / "assets" / "js" / "trust.js").read_text()
+    for retired in ("govramp", "txramp", "cmmc"):
+        assert retired not in trust_js.lower()
+
+
+def test_the_moderate_view_fails_closed_without_the_inventory(tmp_path):
+    import _controls
+    with pytest.raises(SystemExit, match="fail-closed"):
+        btc.framework_figures(_controls.load(tmp_path / "absent.json"))

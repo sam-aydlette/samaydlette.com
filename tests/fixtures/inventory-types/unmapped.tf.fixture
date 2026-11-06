@@ -1,0 +1,9 @@
+# Known-bad: a resource type the inventory builder neither maps, folds nor
+# excludes with a reason. tests/test_inventory_types.py must report exactly it.
+resource "aws_s3_bucket" "fine" {
+  bucket = "example"
+}
+
+resource "aws_elasticache_cluster" "forgotten" {
+  cluster_id = "example"
+}

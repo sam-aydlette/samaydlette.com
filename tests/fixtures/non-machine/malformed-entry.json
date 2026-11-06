@@ -1,0 +1,19 @@
+{
+  "$comment": "Known-bad: an entry still carrying a manual attestation (last_verified); verification is machine checks only.",
+  "schema": "non-machine-resources/2",
+  "max_age_days": 92,
+  "resources": [
+    {
+      "id": "NMR-POL-AC",
+      "path": "docs/policies/ac-policy.md",
+      "kind": "policy",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks",
+      "last_verified": {
+        "on": "2026-11-05",
+        "decision": "DEC-190"
+      }
+    }
+  ]
+}

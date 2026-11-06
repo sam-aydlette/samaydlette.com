@@ -23,7 +23,7 @@ const ARTIFACTS = [
     ['boundary-map.json', 'The authorization boundary map'],
     ['reconcile-report.json', 'The reconciliation gate’s report for this deploy'],
     ['ksi-signal.json', 'The canonical inventory and KSI results'],
-    ['security-decision-record.json', 'Security Decision Record: how each KSI and each Rev5 control is met (replaces the SSP)'],
+    ['security-decision-record.json', 'Security Decision Record: every applicable FedRAMP rule, KSI and Rev5 Moderate control, with status and evidence'],
     ['certification-package-overview.json', 'Certification Package Overview'],
     ['vdr-report.json', 'Vulnerability Detection and Response report'],
     ['vdr-detail-report.json', 'Vulnerability Detail Report (CR26 VER-RPT-VDT): findings not accepted'],
@@ -34,10 +34,6 @@ const ARTIFACTS = [
 
 const FRAMEWORKS = [
     ['moderate_coverage', 'FedRAMP Rev 5 Moderate baseline'],
-    ['govramp_coverage', 'GovRAMP'],
-    ['txramp1_coverage', 'TX-RAMP Level 1'],
-    ['txramp2_coverage', 'TX-RAMP Level 2'],
-    ['cmmc_coverage', 'CMMC Level 2'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -157,7 +153,9 @@ function statusChip(status) {
 function renderFacts(doc) {
     const dl = slot('facts');
     const add = (k, v) => dl.append(el('div', {}, el('dt', { text: k }), el('dd', {}, v)));
-    add('Program', el('span', {}, 'FedRAMP 20x Class C', el('span', { class: 'tc-fact-note', text: 'Adheres to; not certified' })));
+    // Status from trust-center.json (one source with the CPO and SDR); the fallback says the same.
+    const status = doc.certification?.status || 'not certified (proof of concept)';
+    add('Program', el('span', {}, 'FedRAMP 20x Class C', el('span', { class: 'tc-fact-note', text: `Adheres to; ${status}` })));
     add('Impact level', (doc.system?.impact_level || 'unknown').replace(/^./, (c) => c.toUpperCase()));
     add('Published', when(doc.generated_at) || 'unknown');
     add('Build', doc.commit ? el('a', { href: `${REPO}/commit/${doc.commit}` }, el('code', { text: doc.commit.slice(0, 7) })) : 'unknown');
@@ -422,7 +420,7 @@ function renderPosture(doc) {
     const rows = FRAMEWORKS.filter(([key]) => f[key]);
     if (rows.length) {
         host.append(
-            el('p', { text: 'Controls with an implementation statement in the System Security Plan, by framework. This measures documentation coverage, not an assessment result.' }),
+            el('p', { text: 'FedRAMP Rev 5 Moderate controls with an implementation statement in the Security Decision Record. This measures documentation coverage, not an assessment result.' }),
             el('dl', { class: 'tc-kv tc-kv-compact' }, ...rows.map(([key, label]) => el('div', {}, el('dt', { text: label }), el('dd', { text: f[key] })))));
         if (f.moderate_implemented) {
             host.append(el('p', { class: 'tc-check-meta', text: `Moderate baseline: ${f.moderate_implemented} implemented by this system, ${f.moderate_inherited} inherited from AWS, ${f.moderate_na} not applicable.` }));

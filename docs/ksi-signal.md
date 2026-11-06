@@ -94,7 +94,6 @@ These queries are the actual job of an Authorizing Official, an SRE handling a C
 "provenance": {
   "builder": {
     "id": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/deploy-with-opa.yml",
-    "run_id": "<github actions run id>",
     "version": "github-actions"
   },
   "source": {
@@ -163,7 +162,7 @@ It yields one entry per control in scope (the FedRAMP Rev 5 Moderate baseline, t
 - an implementation statement naming the contributing KSIs;
 - the FedRAMP-defined parameter values from the vendored Moderate profile.
 
-The projection is published in the CR26 **Security Decision Record** (`/.well-known/security-decision-record.json`, built by [`scripts/build-sdr.py`](../scripts/build-sdr.py)): `rule_records` summarize each KSI (`SDR-CSX-KSI`) and `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`). The same projection feeds the framework coverage figures and the CMMC projection. The SDR carries `ksi_signal_id`, and reconciliation invariant (e) fails the deploy if it names a different inventory than the signal. Until 2026-11-05 this view was published as an OSCAL Rev 5 SSP (`oscal-ssp.json`); CR26 retired the SSP and the deploy deleted it.
+The projection is published in the CR26 **Security Decision Record** (`/.well-known/security-decision-record.json`, built by [`scripts/build-sdr.py`](../scripts/build-sdr.py)): `rule_records` summarize each KSI (`SDR-CSX-KSI`) and `rev5_controls` summarize each applicable Rev5 control (`SDR-CSF-CTF`). The same projection feeds the trust center's Rev5 Moderate figures. The SDR carries `ksi_signal_id`, and reconciliation invariant (e) fails the deploy if it names a different inventory than the signal. Until 2026-11-05 this view was published as an OSCAL Rev 5 SSP (`oscal-ssp.json`); CR26 retired the SSP and the deploy deleted it.
 
 ```bash
 # Fetch and inspect the per-control record at any time:

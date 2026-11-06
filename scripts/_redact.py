@@ -50,6 +50,47 @@ def redact(value):
     return value
 
 
+# An IAM user name is never published: the decision register names users as
+# `aws-iam-user::<name>`, and a published copy carries the kind, not the name.
+IAM_USER = re.compile(r"aws-iam-user::(?!NAME-WITHHELD(?![\w+=,.@-]))[\w+=,.@-]+")
+IAM_USER_WITHHELD = "aws-iam-user::NAME-WITHHELD"
+
+
+def withhold_iam_users(resources):
+    """A copy of a list of resource names with every IAM user's name withheld."""
+    return [IAM_USER.sub(IAM_USER_WITHHELD, r) if isinstance(r, str) else r for r in resources or []]
+
+
+def find_iam_users(text):
+    """The count of IAM user names left in `text` (the names are not returned)."""
+    return len(IAM_USER.findall(text))
+
+
+# A GitHub Actions run, by URL or as a run_id value. Published output names a
+# build by its commit and workflow instead.
+GITHUB_RUN = re.compile(r"actions/runs/[0-9]+|\"run_id\"\s*:\s*\"?[0-9]{5,}")
+
+
+def find_github_runs(text):
+    """The count of GitHub run IDs or run URLs in `text` (not returned)."""
+    return len(GITHUB_RUN.findall(text))
+
+
+# An email address. Published output may name only the site's own domain (an
+# address under samaydlette.com); any other address, a personal mailbox above
+# all, is withheld. Domain labels start with a letter, so a package version such
+# as `name@1.0.0-beta.alpha` is not read as an address.
+SITE_DOMAIN = "samaydlette.com"
+EMAIL = re.compile(r"(?<![\w.%+-])[\w.%+-]+@((?:[A-Za-z][A-Za-z0-9-]*\.)+[A-Za-z]{2,})(?![A-Za-z0-9-])")
+
+
+def find_foreign_emails(text):
+    """The count of email addresses in `text` not at the site's own domain (the
+    addresses are not returned, so a gate never prints one)."""
+    return sum(1 for m in EMAIL.finditer(text)
+               if not (m.group(1).lower() == SITE_DOMAIN or m.group(1).lower().endswith("." + SITE_DOMAIN)))
+
+
 def find(text):
     """The twelve-digit numbers in `text`, in order (empty when clean)."""
     return ACCOUNT_ID.findall(text)

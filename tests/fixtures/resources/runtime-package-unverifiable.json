@@ -1,0 +1,13 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "note": "No inventoried hash: integrity is unassessed (category input)"
+  },
+  "resource": {
+    "type": "lambda_deployment_package",
+    "name": "opa_compliance",
+    "values": {
+      "code_sha256": "bmV3"
+    }
+  }
+}

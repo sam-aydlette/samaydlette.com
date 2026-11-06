@@ -1,0 +1,10 @@
+name: known-bad
+on: workflow_dispatch
+jobs:
+  assess:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install the assessor's tools
+      run: python3 -m pip install --user pytest
+    - name: Assess
+      run: python3 tools/simulated-assessor/assess.py --guide g.json

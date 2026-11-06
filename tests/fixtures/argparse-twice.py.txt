@@ -1,0 +1,6 @@
+import argparse
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--incidents", default="../data/incidents.json")
+ap.add_argument("--incidents", default="data/incidents.json")
+ap.parse_args()

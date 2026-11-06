@@ -76,3 +76,12 @@ def test_security_txt_is_published_with_the_content_type_rfc9116_requires():
     body = sync_step_body()
     assert ".well-known/security.txt" in body
     assert "text/plain" in body, "RFC 9116 requires security.txt to be served as text/plain"
+
+
+def test_no_personal_email_is_published_as_a_contact():
+    """The published contact is the operator's LinkedIn profile, not a personal mailbox."""
+    txt = (WELL_KNOWN / "security.txt").read_text()
+    contacts = [l.split(":", 1)[1].strip() for l in txt.splitlines() if l.startswith("Contact:")]
+    assert contacts == ["https://www.linkedin.com/in/sa2/"]
+    signal_src = (REPO / "scripts" / "build-ksi-signal.py").read_text()
+    assert "@gmail.com" not in txt and "@gmail.com" not in signal_src

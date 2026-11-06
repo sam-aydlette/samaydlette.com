@@ -1,0 +1,275 @@
+{
+ "$comment": "Fake read-only AWS responses for tests/test_secure_configuration.py: every setting matches the guide, and root and operator MFA are virtual TOTP (the deviation DEC-150 accepts). Account number is AWS's documentation example.",
+ "responses": {
+  "iam get-role-policy --role-name github-actions-evidence-nightly-oidc --policy-name evidence-nightly-audit-log-review": {
+   "PolicyDocument": {"Version": "2012-10-17", "Statement": [{"Sid": "AuditLogReviewReads", "Effect": "Allow", "Action": "cloudtrail:LookupEvents", "Resource": "*"}]}
+  },
+  "iam get-account-summary": {
+   "SummaryMap": {
+    "AccountMFAEnabled": 1,
+    "AccountAccessKeysPresent": 0
+   }
+  },
+  "iam list-virtual-mfa-devices --assignment-status Assigned": {
+   "VirtualMFADevices": [
+    {
+     "User": {
+      "Arn": "arn:aws:iam::123456789012:root"
+     }
+    },
+    {
+     "User": {
+      "Arn": "arn:aws:iam::123456789012:user/op-user-not-for-publication"
+     }
+    }
+   ]
+  },
+  "iam get-account-password-policy": {
+   "PasswordPolicy": {
+    "MinimumPasswordLength": 14,
+    "RequireSymbols": true,
+    "RequireNumbers": true,
+    "RequireUppercaseCharacters": true,
+    "RequireLowercaseCharacters": true,
+    "PasswordReusePrevention": 24,
+    "MaxPasswordAge": 90
+   }
+  },
+  "sts get-caller-identity": {
+   "Account": "123456789012"
+  },
+  "s3control get-public-access-block --account-id 123456789012": {
+   "PublicAccessBlockConfiguration": {
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+   }
+  },
+  "iam list-users": {
+   "Users": [
+    {
+     "UserName": "op-user-not-for-publication"
+    },
+    {
+     "UserName": "collector"
+    },
+    {
+     "UserName": "inert"
+    }
+   ]
+  },
+  "iam list-groups-for-user --user-name op-user-not-for-publication": {
+   "Groups": [
+    {
+     "GroupName": "operators"
+    }
+   ]
+  },
+  "iam list-groups-for-user --user-name collector": {
+   "Groups": [
+    {
+     "GroupName": "read-only"
+    }
+   ]
+  },
+  "iam list-groups-for-user --user-name inert": {
+   "Groups": []
+  },
+  "iam get-login-profile --user-name collector": {
+   "error": "NoSuchEntity"
+  },
+  "iam get-login-profile --user-name inert": {
+   "error": "NoSuchEntity"
+  },
+  "iam get-login-profile --user-name op-user-not-for-publication": {
+   "error": "NoSuchEntity"
+  },
+  "iam list-attached-user-policies --user-name collector": {
+   "AttachedPolicies": [
+    {
+     "PolicyName": "SecurityAudit"
+    }
+   ]
+  },
+  "iam list-user-policies --user-name collector": {
+   "PolicyNames": [
+    "supplement"
+   ]
+  },
+  "iam get-user-policy --user-name collector --policy-name supplement": {
+   "PolicyDocument": {
+    "Statement": [
+     {
+      "Effect": "Allow",
+      "Action": [
+       "kms:List*",
+       "apigateway:GET",
+       "cognito-idp:Describe*"
+      ],
+      "Resource": "*"
+     }
+    ]
+   }
+  },
+  "iam list-attached-group-policies --group-name read-only": {
+   "AttachedPolicies": [
+    {
+     "PolicyName": "ReadOnlyAccess"
+    }
+   ]
+  },
+  "iam list-group-policies --group-name read-only": {
+   "PolicyNames": [
+    "deny-secrets"
+   ]
+  },
+  "iam get-group-policy --group-name read-only --policy-name deny-secrets": {
+   "PolicyDocument": {
+    "Statement": [
+     {
+      "Effect": "Deny",
+      "Action": [
+       "secretsmanager:GetSecretValue",
+       "kms:Decrypt"
+      ],
+      "Resource": "*"
+     }
+    ]
+   }
+  },
+  "iam list-attached-user-policies --user-name inert": {
+   "AttachedPolicies": []
+  },
+  "iam list-user-policies --user-name inert": {
+   "PolicyNames": []
+  },
+  "iam list-mfa-devices --user-name op-user-not-for-publication": {
+   "MFADevices": [
+    {
+     "SerialNumber": "x"
+    }
+   ]
+  },
+  "iam list-access-keys --user-name op-user-not-for-publication": {
+   "AccessKeyMetadata": [
+    {
+     "Status": "Active",
+     "CreateDate": "2026-10-01T00:00:00Z"
+    },
+    {
+     "Status": "Inactive",
+     "CreateDate": "2025-01-01T00:00:00Z"
+    }
+   ]
+  },
+  "iam get-role --role-name github-actions-deploy-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringLike": {
+         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:prod"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role --role-name github-actions-plan-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringLike": {
+         "token.actions.githubusercontent.com:sub": [
+          "repo:sam-aydlette/samaydlette.com:pull_request",
+          "repo:sam-aydlette/samaydlette.com:ref:refs/heads/main"
+         ]
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role --role-name github-actions-evidence-nightly-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringEquals": {
+         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:evidence-nightly"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role --role-name github-actions-package-maintenance-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringEquals": {
+         "token.actions.githubusercontent.com:sub": "repo:sam-aydlette/samaydlette.com:environment:package-maintenance"
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role --role-name github-actions-incident-reports-oidc": {
+   "Role": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Condition": {
+        "StringEquals": {
+         "token.actions.githubusercontent.com:sub": ["repo:sam-aydlette/samaydlette.com:environment:incident-reports", "repo:sam-aydlette/samaydlette.com:environment:prod"]
+        }
+       }
+      }
+     ]
+    }
+   }
+  },
+  "iam get-role-policy --role-name github-actions-package-maintenance-oidc --policy-name package-maintenance-publish": {
+   "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+     {
+      "Sid": "PublishCertificationPackageOnly",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": ["arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.bundle", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.md", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.view.md", "arn:aws:s3:::samaydlette.com/.well-known/security-decision-record.json.intoto.jsonl", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.json", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.bundle", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.md", "arn:aws:s3:::samaydlette.com/.well-known/certification-package-overview.view.md", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.json", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.bundle", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.md", "arn:aws:s3:::samaydlette.com/.well-known/ongoing-certification-report.view.md", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-review.ics", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.json", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.view.md", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issues.bundle", "arn:aws:s3:::samaydlette.com/.well-known/ocr-issue-*", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.json", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.view.md", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-reviews.bundle", "arn:aws:s3:::samaydlette.com/.well-known/quarterly-review-*", "arn:aws:s3:::samaydlette.com/.well-known/security-reviews.json", "arn:aws:s3:::samaydlette.com/.well-known/security-reviews.view.md", "arn:aws:s3:::samaydlette.com/.well-known/security-reviews.bundle", "arn:aws:s3:::samaydlette.com/.well-known/security-review-*", "arn:aws:s3:::samaydlette.com/.well-known/snapshot-*", "arn:aws:s3:::samaydlette.com/.well-known/snapshots/*"]
+     }
+    ]
+   }
+  },
+  "cognito-idp describe-user-pool --region us-east-2 --user-pool-id pool-1": {
+   "UserPool": {
+    "MfaConfiguration": "ON",
+    "AdminCreateUserConfig": {
+     "AllowAdminCreateUserOnly": true
+    },
+    "Policies": {
+     "PasswordPolicy": {
+      "MinimumLength": 14,
+      "RequireUppercase": true,
+      "RequireLowercase": true,
+      "RequireNumbers": true,
+      "RequireSymbols": true
+     }
+    }
+   }
+  }
+ }
+}

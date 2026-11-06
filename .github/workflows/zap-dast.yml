@@ -1,43 +1,78 @@
 # =============================================================================
-# ZAP DAST Scan  (SA-11(8) Dynamic Code Analysis)
+# ZAP DAST Scan  (SA-11(8) Dynamic Code Analysis; VDR-CSO-DAC, VDR-TFR-PSD)
 # =============================================================================
-# Weekly OWASP ZAP baseline scan against the live site, in CI. This mechanizes
-# SA-11(8): a dynamic analysis tool runs on a schedule and its findings are
-# documented (the ZAP action maintains a tracking issue, which the operator
-# records as decisions in data/decisions.json). SAST (Checkov, tfsec) and SCA (Syft, Grype) run on
-# every deploy in deploy-with-opa.yml; this adds the dynamic layer.
+# Two OWASP ZAP scans of the live system, in one run:
 #
-# Weekly, so the latest report is always inside the VDR builder's 14-day DAST
-# window (--zap-max-age-days, the Class C drift-detection cadence). The report is
-# uploaded as the `zap-dast-report` artifact, for the VDR builds to read from
-# the latest successful main-branch run (wired in a follow-up change).
+#   zap_baseline  unauthenticated baseline of the site (passive rules), artifact
+#                 `zap-dast-report`, read by the VDR build's --zap.
+#   zap_api       AUTHENTICATED ZAP API scan of the Silk Reeling API, driven by
+#                 the API's own OpenAPI document (the routes the deployed app
+#                 actually serves), signed in as a dedicated Cognito scanner user
+#                 so the requests pass the API Gateway JWT authorizer and reach the
+#                 code behind /api. Artifact `zap-api-report`, read by --zap-api.
+#
+# When: daily, and after every successful deploy to main (workflow_run), so a
+# changed running surface is dynamically tested right after it ships (DAC) and
+# the latest scan is never more than a day old against the 3-day Class C sample
+# cadence (PSD). The VDR builds take both reports from the latest SUCCESSFUL run
+# on main, whatever triggered it (scripts/fetch-detection-feeds.sh); a run
+# succeeds only when both scans did. A missed scan stops the VDR build: the
+# baseline via --zap-max-age-days 3 (detection.zap.stale), the API scan after 72
+# hours (detection.zap-api, infrastructure/schemas/detection-feeds.json).
+#
+# The scanner user's credentials are repository secrets (SILK_DAST_USERNAME,
+# SILK_DAST_PASSWORD, SILK_DAST_TOTP_SECRET, SILK_DAST_USER_POOL_ID); the user is
+# created by the operator (docs/runbooks/dast-scanner-user.md). The sign-in is
+# SRP + TOTP through the app client's existing flows (scripts/dast-cognito-token.py);
+# no app-client flow is widened. The access token is masked before it is written
+# anywhere and ZAP sends it only to samaydlette.com (ZAP_AUTH_HEADER_SITE).
 #
 # The issue title is plain words: the action finds its tracking issue with an
 # unquoted GitHub search query (`is:issue state:open repo:... <title>`), so
 # search syntax in the title breaks it. Parentheses in the title made every run since July
 # fail with "The search query contains invalid syntax" before the artifact was
 # uploaded.
-#
-# Phase 1 (here): UNAUTHENTICATED scan of the public/static surface, which
-# already satisfies "employ a dynamic analysis tool." Phase 2 (tracked
-# follow-up): authenticated coverage of the Basic-Auth-gated taiji application
-# via a ZAP context + credentials, for full URL coverage.
 # =============================================================================
 name: ZAP DAST Scan
 
 on:
   schedule:
-    - cron: '23 7 * * 1'   # 07:23 UTC every Monday
+    - cron: '23 7 * * *'   # 07:23 UTC daily
   workflow_dispatch:        # allow on-demand runs
+  # After every deploy to main: the run uses this file from main and scans what
+  # was just deployed. The job conditions drop deploy runs that did not succeed
+  # or came from a pull request (a fork's branch named `main` passes the
+  # `branches` filter alone).
+  workflow_run:
+    workflows: [Deploy Website with OPA Compliance]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
-  issues: write             # ZAP maintains one tracking issue for triage
+
+# One scan run at a time against the live site; a queued one still runs.
+concurrency:
+  group: zap-dast
+  cancel-in-progress: false
+
+env:
+  SITE: https://samaydlette.com
+  # The API scan's image, pinned by digest (its container receives a live access
+  # token). 2.17.0 is ZAP's current release; refresh the pin with each release.
+  ZAP_IMAGE: 'ghcr.io/zaproxy/zaproxy:2.17.0@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af'
 
 jobs:
   zap_baseline:
     name: OWASP ZAP Baseline (unauthenticated)
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write         # ZAP maintains one tracking issue for triage
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,3 +86,90 @@ jobs:
           allow_issue_writing: true
           issue_title: 'ZAP DAST findings for SA-11.8'
           artifact_name: 'zap-dast-report'
+
+  zap_api:
+    name: OWASP ZAP API Scan (authenticated, Silk Reeling API)
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The routes come from the app itself: FastAPI publishes the OpenAPI
+      # document of exactly the routes it serves. It names no server, so the
+      # scan's base (the CloudFront path the API is served under) is set here.
+      - name: Fetch the API definition and app client config
+        run: |
+          set -euo pipefail
+          curl -sfL --retry 3 --retry-delay 2 -o silk-openapi.raw.json "${SITE}/silk-reeling/openapi.json"
+          curl -sfL --retry 3 --retry-delay 2 -o silk-reeling-auth.json "${SITE}/.well-known/silk-reeling-auth.json"
+          jq --arg base "${SITE}/silk-reeling" '.servers = [{url: $base}]' silk-openapi.raw.json > silk-openapi.json
+          jq -e '.paths | keys | any(startswith("/api/"))' silk-openapi.json > /dev/null \
+            || { echo "::error::the API definition lists no /api/ routes"; exit 1; }
+          echo "API routes in scope: $(jq -r '.paths | keys | join(", ")' silk-openapi.json)"
+
+      # The token is masked before it is written anywhere, and reaches ZAP only
+      # through the environment.
+      - name: Sign in the DAST scanner user (Cognito SRP + TOTP)
+        env:
+          SILK_DAST_USERNAME: ${{ secrets.SILK_DAST_USERNAME }}
+          SILK_DAST_PASSWORD: ${{ secrets.SILK_DAST_PASSWORD }}
+          SILK_DAST_TOTP_SECRET: ${{ secrets.SILK_DAST_TOTP_SECRET }}
+          SILK_DAST_USER_POOL_ID: ${{ secrets.SILK_DAST_USER_POOL_ID }}
+        run: |
+          set -euo pipefail
+          tokfile="${RUNNER_TEMP:?}/dast-token"
+          trap 'rm -f "$tokfile"' EXIT
+          python3 scripts/dast-cognito-token.py token --auth-config silk-reeling-auth.json --out "$tokfile"
+          token=$(cat "$tokfile")
+          [ -n "$token" ] || { echo "::error::no access token"; exit 1; }
+          echo "::add-mask::${token}"
+          echo "ZAP_AUTH_HEADER_VALUE=Bearer ${token}" >> "$GITHUB_ENV"
+
+      # Proof the scan is authenticated and the boundary holds: with the token an
+      # /api route answers 200, without it the gateway refuses.
+      - name: Verify the token is accepted and the API refuses without it
+        run: |
+          set -euo pipefail
+          with=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: ${ZAP_AUTH_HEADER_VALUE}" "${SITE}/silk-reeling/api/exercises")
+          without=$(curl -s -o /dev/null -w '%{http_code}' "${SITE}/silk-reeling/api/exercises")
+          echo "GET /api/exercises: ${with} with the scanner token, ${without} without"
+          [ "$with" = 200 ] || { echo "::error::the scanner token was not accepted (${with})"; exit 1; }
+          [ "$without" = 401 ] || { echo "::error::the API answered ${without} without a token"; exit 1; }
+
+      - name: ZAP API Scan (authenticated)
+        uses: zaproxy/action-api-scan@5158fe4d9d8fcc75ea204db81317cce7f9e5453d # v0.10.0
+        env:
+          ZAP_AUTH_HEADER: Authorization
+          ZAP_AUTH_HEADER_SITE: samaydlette.com
+        with:
+          docker_name: ${{ env.ZAP_IMAGE }}
+          target: '/zap/wrk/silk-openapi.json'
+          format: openapi
+          # Gentle on a production API behind a 20 rps stage throttle, and capped
+          # well inside the token's 60-minute lifetime.
+          cmd_options: '-a -z "-config scanner.threadPerHost=2 -config scanner.maxScanDurationInMins=20"'
+          fail_action: false           # informational here; the VDR build and vulnerability gate decide
+          allow_issue_writing: false   # findings reach the VDR; no second public tracking issue
+          artifact_name: 'zap-api-report'
+
+      # The token outlived the scan, so every request in it was authenticated.
+      - name: Verify the token still held after the scan
+        run: |
+          set -euo pipefail
+          with=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: ${ZAP_AUTH_HEADER_VALUE}" "${SITE}/silk-reeling/api/exercises")
+          [ "$with" = 200 ] || { echo "::error::the scanner token expired or was refused during the scan (${with})"; exit 1; }
+
+      - name: Check the API report exists
+        run: |
+          set -euo pipefail
+          jq -e '(.site | type == "array") and (.site | length > 0)' report_json.json > /dev/null \
+            || { echo "::error::the API scan produced no report"; exit 1; }
+          echo "API scan: $(jq '[.site[].alerts[]?] | length' report_json.json) alert type(s); generated $(jq -r '."@generated"' report_json.json)"

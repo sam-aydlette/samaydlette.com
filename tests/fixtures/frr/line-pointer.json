@@ -1,0 +1,8 @@
+{
+  "$comment": "Known-bad: record text that points at a line number. Line numbers move with every edit, so a record must name the function, step or resource instead (tests/test_frr_records.py::test_known_bad_a_line_number_pointer_is_found).",
+  "records": [
+    {"frr_id": "VDR-CSO-ADT", "implementation": "The runtime emitter runs on an EventBridge schedule (infrastructure/main.tf:809)."},
+    {"frr_id": "FRC-APP-FCP", "implementation": "Package artifacts regenerate on every deploy (deploy-with-opa.yml build steps ~L1558-1600)."},
+    {"frr_id": "VER-EVA-EFP", "implementation": "triage.rego:262 record_status rejects a false positive that names a control."}
+  ]
+}

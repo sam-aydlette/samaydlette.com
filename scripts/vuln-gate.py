@@ -57,7 +57,7 @@ PASS_DISPOSITIONS = {"false-positive", "operational-requirement", "accepted",
 
 # Sources that produce vulnerabilities (gated here). Config scanners
 # (opa/checkov/tfsec) are governed separately via .checkov.yaml + the VDR maps.
-VULN_SOURCES = {"grype", "zap", "dependabot"}
+VULN_SOURCES = {"grype", "zap", "dependabot", "codeql"}
 
 # The scanner fix state a vendor dependency needs: no fix yet. "wont-fix" (none
 # coming) is not a vendor dependency. Mirrors policies/triage.rego.

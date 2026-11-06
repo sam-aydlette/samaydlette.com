@@ -1,0 +1,7 @@
+{
+  "_comment": "Known-bad: the repository variable AWS_INCIDENT_REPORTS_ROLE_ARN is unset; the environment is correct. check-incident-publisher.py must fail for the variable alone.",
+  "role_arn": "",
+  "env_state": "ok",
+  "environment": {"name": "incident-reports", "deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}},
+  "branch_policies": ["main"]
+}

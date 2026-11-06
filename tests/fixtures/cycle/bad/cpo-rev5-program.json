@@ -1,0 +1,76 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-certification-package-overview-schema-2026-06-24.json",
+  "serviceIdentification": {
+    "providerName": "Example Provider",
+    "serviceName": "Example Docs",
+    "serviceAcronym": "EXD",
+    "serviceDescription": "A document service.",
+    "certificationType": "Rev5",
+    "fedRampPackageId": "Example Provider (EXD)",
+    "website": "https://example.com",
+    "logo": "https://example.com/logo.png"
+  },
+  "serviceProperties": {
+    "serviceType": [
+      "SaaS"
+    ],
+    "deploymentModel": "Public Cloud",
+    "businessCategory": [
+      "Collaboration"
+    ],
+    "trustCenter": {
+      "repositoryType": [
+        "Trust Center"
+      ],
+      "url": "https://example.com/trust",
+      "repositoryDescription": "All certification data.",
+      "authenticationRequired": false
+    },
+    "nextOngoingCertificationReportDate": "2027-02-01",
+    "secureConfigurationGuidance": {
+      "repositoryType": [
+        "Secure Configuration Guidance"
+      ],
+      "url": "https://example.com/scg",
+      "repositoryDescription": "The secure configuration guide.",
+      "authenticationRequired": false
+    }
+  },
+  "contactInformation": [
+    {
+      "contactType": "Security",
+      "contactName": "Sec Team",
+      "contactEmail": "security@example.com"
+    },
+    {
+      "contactType": "Sales",
+      "contactName": "Sales Team"
+    }
+  ],
+  "certifiedServices": [
+    {
+      "serviceName": "File preview",
+      "serviceDescription": "Renders uploads."
+    }
+  ],
+  "thirdPartyInformationResources": {
+    "nonCertified": [
+      {
+        "name": "Example CDN",
+        "provider": "Example Co",
+        "useCase": "Serves static files."
+      }
+    ]
+  },
+  "providerExtensions": {
+    "fedRampId": "Example Provider (EXD)",
+    "contentSha256": "98b0de339ac1bf2eae4bc307716cd57c3078aaf9cfbc8e23fb3c966323ac3366",
+    "independentAssessment": {
+      "overallSummary": {
+        "record_id": "X-SUMMARY",
+        "kind": "summary",
+        "text": "Overall summary (simulated)."
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "_note": "Known-bad: a record that says exploitation of its findings cannot be automated, with no evidence. VER-EVA-AIA assumes automatable unless there is evidence otherwise; the build stops.",
+  "schema": "decisions/1",
+  "decisions": [
+    {
+      "id": "DEC-001",
+      "title": "fixture",
+      "status": "in-force",
+      "disposition": "accepted",
+      "justification": "fixture",
+      "decided_by": "Fixture",
+      "decided_on": "2026-01-01", "confirmed_on": "2026-01-01",
+      "review_by": "2027-01-01",
+      "applies_to": {
+        "check_ids": [],
+        "vuln_ids": [
+          "CVE-2099-0001"
+        ],
+        "resources": []
+      },
+      "automatable": {
+        "value": "no"
+      }
+    }
+  ]
+}

@@ -44,6 +44,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _freshness import load_freshness_config  # noqa: E402
 import _decisions  # noqa: E402
 import _gates  # noqa: E402
+import _offering  # noqa: E402
+import _redact  # noqa: E402
 
 FRESHNESS: dict[str, Any] = load_freshness_config(os.environ.get("FRESHNESS_CONFIG") or None)
 VDR_MAX_AGE_HOURS = FRESHNESS["windows"][".well-known/vdr-report.json"]
@@ -202,6 +204,14 @@ def _props(item: dict[str, Any]) -> dict[str, str]:
     return {p["name"]: p["value"] for p in item.get("props", []) if "name" in p}
 
 
+def _published_scope(applies_to: dict[str, Any] | None) -> dict[str, Any]:
+    """A decision's scope as published: IAM user names withheld."""
+    scope = dict(applies_to or {})
+    if "resources" in scope:
+        scope["resources"] = _redact.withhold_iam_users(scope["resources"])
+    return scope
+
+
 def register_items(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """The decision register's records (data/decisions.json), flattened for the
     queue, the precedent count and the decision log. In force reads as open."""
@@ -212,7 +222,7 @@ def register_items(decisions: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "description": r.get("justification", ""),
             "status": "open" if r.get("status") == "in-force" else "closed", "disposition": r.get("disposition"),
             "scheduled_completion": r.get("planned_completion"),
-            "applies_to": r.get("applies_to") or {},
+            "applies_to": _published_scope(r.get("applies_to")),
             "decided_by": r.get("decided_by"), "decided_on": r.get("decided_on"), "review_by": r.get("review_by"),
         })
     return out
@@ -749,6 +759,30 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
     return out
 
 
+def framework_figures(irs: list[dict[str, Any]]) -> dict[str, str]:
+    """The Rev5 Moderate view of the control projection (scripts/_controls.py):
+    baseline coverage, measured rather than assumed (the projection's controls
+    inside the FedRAMP Moderate baseline over the baseline's size, so a baseline
+    control missing from the projection lowers it), and the projection's
+    responsibility split. The SDR publishes the same projection per control."""
+    import _common
+    import _controls
+    baseline = set(_controls.BASELINE_CONTROLS)
+    control_ids = {ir["control-id"] for ir in irs}
+    stack: dict[str, int] = {}
+    for ir in irs:
+        cls = _common.classify(_common.prop(ir, "implementation-status"), _common.prop(ir, "control-origination"))
+        stack[cls] = stack.get(cls, 0) + 1
+    return {
+        "moderate_coverage": f"{len(control_ids & baseline)}/{len(baseline)}",
+        "moderate_baseline": str(len(baseline)),
+        "moderate_beyond": str(len(control_ids - baseline)),
+        "moderate_implemented": str(stack.get("implemented", 0)),
+        "moderate_inherited": str(stack.get("fully-inherited", 0) + stack.get("partially-inherited", 0)),
+        "moderate_na": str(stack.get("not-applicable", 0)),
+    }
+
+
 def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
     ksis = inp["signal"].get("ksis", [])
     by_status: dict[str, int] = {}
@@ -768,10 +802,13 @@ def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
     pending = build_decisions_pending(inp, now, log, gaps)
     return {
         "schema": SCHEMA,
+        "fedRampId": _offering.fedramp_id(),
         "generated_at": now.isoformat(timespec="seconds"),
         "commit": commit,
         "ksi_signal_id": signal_id,
         "system": {"id": inp["signal"].get("system_id"), "impact_level": (inp["signal"].get("categorization") or {}).get("impact_level")},
+        # The program sought and that it is not held (scripts/_offering.py; the CPO and SDR carry the same).
+        "certification": _offering.certification(),
         "picture": build_picture(inp, now),
         # REQ-GOV-2: the profile and conformance results this build conforms to.
         "profile": (inp["vdr"].get("methodology") or {}).get("profile"),
@@ -838,7 +875,7 @@ def main() -> None:
     ap.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
     ap.add_argument("--checkov-config", default=str(REPO / ".checkov.yaml"))
     ap.add_argument("--scn-register", default=str(REPO / "docs" / "scn" / "scn-register.csv"))
-    ap.add_argument("--no-figures", action="store_true", help="skip framework coverage (needs the built inventory)")
+    ap.add_argument("--no-figures", action="store_true", help="skip the Rev5 Moderate figures (needs the built inventory)")
     ap.add_argument("--commit", default="")
     ap.add_argument("--output", default="trust-center.json")
     a = ap.parse_args()
@@ -859,7 +896,8 @@ def main() -> None:
     annotations = _load_module("check_policy_annotations", REPO / "scripts" / "check-policy-annotations.py")
     figures = None
     if not a.no_figures:
-        figures = _load_module("inject_figures", REPO / "scripts" / "inject-figures.py").compute_figures()
+        import _controls
+        figures = framework_figures(_controls.load(a.ksi_signal))
 
     inp = {
         "signal": load(a.ksi_signal), "vdr": load(a.vdr),

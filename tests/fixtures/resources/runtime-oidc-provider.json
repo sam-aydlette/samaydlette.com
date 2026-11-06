@@ -1,0 +1,15 @@
+{
+  "_fixture": {
+    "synthetic": true,
+    "note": "Compliant GitHub OIDC provider as read live"
+  },
+  "resource": {
+    "type": "aws_iam_openid_connect_provider",
+    "name": "github",
+    "values": {
+      "client_id_list": [
+        "sts.amazonaws.com"
+      ]
+    }
+  }
+}

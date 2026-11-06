@@ -61,7 +61,7 @@ The full procedure is bounded by AWS resource creation latency (CloudFront takes
 
 - **Source code:** Distributed across every git clone in existence. RPO is "the time since the last fetch on any clone," which in practice is minutes.
 - **Site content:** Source-controlled and additionally backed up in the S3 bucket itself, which has versioning enabled. Any object can be rolled back to a prior version within S3's standard retention.
-- **Infrastructure config:** Terraform configuration is in the repo. State for managed resources (Lambda, IAM role, EventBridge rule) is in `infrastructure/terraform.tfstate`; for a hard recovery into a new account it can be reconstructed via `terraform import` against the recreated resources.
+- **Infrastructure config:** Terraform configuration is in the repo. State for managed resources (Lambda, IAM role, EventBridge rule) is in the S3 backend (`infrastructure/backend.tf`: bucket samaydlette-com-tfstate, object key "infrastructure/terraform.tfstate"); for a hard recovery into a new account it can be reconstructed via `terraform import` against the recreated resources.
 - **Build artifacts (KSI signals, bundles):** Reproducible from any commit on `main` by re-running the pipeline. No backup required because they are deterministically regenerable.
 
 The 24-hour RPO is comfortably met. Any change committed to `main` reaches the bucket within the time of one CI run (~5 minutes). The data loss window in the worst case is "whatever is in flight in an open editor at the moment of catastrophe," which is upper-bounded by the operator's typing speed, not by any backup cadence.
@@ -70,17 +70,17 @@ The 24-hour RPO is comfortably met. Any change committed to `main` reaches the b
 
 KSI-RPL-TRC calls for persistent testing of recovery capability. The site's infrastructure was rebuilt from `terraform.tfvars.example` during the construction of this implementation; effective wall-clock time from "git clone" to "curl returns content" was under one hour, well inside RTO. That counts as a real recovery exercise with a much-larger-than-tabletop scope.
 
-A formal tabletop is run annually, recorded below using this template:
+Recovery is exercised by machine every month (DEC-195: nobody runs it by hand). `scripts/hold-recovery-exercise.py` runs in `evidence-nightly.yml` on the first of each month (first due 2026-11-01) and publishes `/.well-known/vdr-recovery-exercise-<date>.json`, signed, with the index `/.well-known/vdr-recovery-exercises.json`. Each exercise checks:
 
-```
-## YYYY-MM-DD: Recovery tabletop
+- **Restore point:** every file the deploy uploads is rebuilt from the deployed commit in git and compared byte for byte (sha256, the deploy's cache-busting query string aside) with what the site serves. The source of a restore and the live site are proved identical without writing to production.
+- **Configuration:** versioning on every bucket and point-in-time recovery on the state-lock table are re-validated by the signed runtime signal of the deployed commit.
+- **Tabletop (each November):** every in-scope loss scenario above is walked through with a simulated incident commander, Bea Kupp (simulated), and a simulated scenario injector, Dee Saster (simulated) (DEC-194); a scenario without a stated recovery, or a plan without its Recovery procedure section, fails the tabletop.
 
-- **Scenario:** <e.g., "S3 bucket deleted">
-- **Steps executed:** <what was actually done, in order>
-- **Wall-clock time to recover:** <duration>
-- **Issues found:** <gaps or surprises>
-- **Follow-up items:** <issues filed>
-```
+A failing exercise fails the nightly and is not published; it is held again on the next run once fixed. `scripts/check-scheduled-review.py` fails the nightly from the day after a due date with no exercise published.
+
+## History: recovery tests recorded by hand
+
+The entry below was written by hand before the exercise was automated, and is kept as a record.
 
 ### 2026-05-06: Initial implementation as recovery test
 

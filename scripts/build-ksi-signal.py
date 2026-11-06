@@ -39,6 +39,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import sha256_file  # noqa: E402
+import _offering  # noqa: E402
 import _redact  # noqa: E402
 
 # =============================================================================
@@ -70,6 +71,14 @@ TYPE_BY_TF_TYPE = {
     "aws_iam_role": "iam_role",
     "aws_iam_role_policy": "iam_policy",
     "aws_iam_policy": "iam_policy",  # managed policy (e.g., bootstrap assessment-readonly)
+    # The operators and read-only groups' inline policies, and the managed-policy
+    # attachments on the deploy/plan roles and the groups (bootstrap). Scanners
+    # name these blocks in findings, so they are components a finding resolves
+    # to. An attachment block is one component however many policies its
+    # for_each attaches: the finding names the block, not an instance.
+    "aws_iam_group_policy": "iam_policy",
+    "aws_iam_role_policy_attachment": "iam_policy",
+    "aws_iam_group_policy_attachment": "iam_policy",
     # CI/CD identity plane (infrastructure/bootstrap): the GitHub OIDC provider,
     # the deploy/assessment roles (aws_iam_role above), and the operators group.
     # These are the highest-privilege identities governing the production system,
@@ -141,6 +150,14 @@ ATTRIBUTE_PARENTS = {
     "aws_s3_bucket_public_access_block": "object_store",
     "aws_s3_bucket_policy": "object_store",
     "aws_cloudfront_response_headers_policy": "cdn_distribution",
+    # The edge function that maps directory URLs to their index page, and the
+    # CloudFront standard-logging (v2) delivery that writes the edge access
+    # records (CDS-TRC-ACL; bootstrap/trust-access-logs.tf) are facets of the
+    # distribution they run on and log.
+    "aws_cloudfront_function": "cdn_distribution",
+    "aws_cloudwatch_log_delivery_source": "cdn_distribution",
+    "aws_cloudwatch_log_delivery_destination": "cdn_distribution",
+    "aws_cloudwatch_log_delivery": "cdn_distribution",
     # API Gateway sub-resources fold into the api_gateway component so a consumer
     # sees one interface with its route/integration/stage config, not four things.
     "aws_apigatewayv2_integration": "api_gateway",
@@ -155,6 +172,30 @@ ATTRIBUTE_PARENTS = {
     # The topic's access policy is a facet of the topic.
     "aws_sns_topic_policy": "notification_topic",
 }
+
+# Terraform resource types declared under infrastructure/ that are neither a
+# component (TYPE_BY_TF_TYPE) nor folded into one (ATTRIBUTE_PARENTS), each with
+# the reason. tests/test_inventory_types.py fails when a type declared in the
+# Terraform is in none of the three, so a new resource cannot be silently
+# dropped from the inventory.
+NOT_INVENTORIED = {
+    "aws_cloudfront_origin_access_control": "The signing configuration CloudFront uses to read the site bucket; the distribution's origin settings and the bucket policy that admits only it are inventoried with those components.",
+    "aws_cloudwatch_event_target": "Binds an EventBridge rule to the Lambda it invokes; both are components, and the boundary map draws the binding as an edge (scripts/build-boundary-graph.py CONNECTOR_TYPES).",
+    "aws_cloudwatch_log_resource_policy": "Lets a service write to a log group; the log group is a component and the boundary map draws the binding as an edge.",
+    "aws_iam_account_password_policy": "An account-level IAM setting, not a resource that holds or moves data; the live value is compared with the Secure Configuration Guide on every deploy (aws-account.password-policy).",
+    "aws_iam_user_group_membership": "Places the operator user in its group; the group is a component, and user names are never published.",
+    "aws_kms_alias": "A name for a KMS key; the key is the component, and the boundary map uses the alias only to resolve references to it.",
+    "aws_lambda_permission": "Lets a service invoke a Lambda; both are components, and the boundary map draws the grant as an edge.",
+    "aws_route53_hosted_zone_dnssec": "The zone's DNSSEC signing switch; the zone is a component and its signing status is read live by the runtime emitter (dnssec_not_signing).",
+    "aws_route53_key_signing_key": "The zone's DNSSEC key-signing key binding; the KMS key behind it (dnssec_ksk) is the component.",
+    "aws_route53_query_log": "Connects the zone to its query-log group; both are components, and the boundary map draws the binding as an edge.",
+    "aws_route53_record": "DNS records of the inventoried zone; they hold no data and the boundary map uses them only to connect the zone to what they point at.",
+    "aws_s3_bucket_lifecycle_configuration": "A bucket setting (object expiry); each data store's retention is stated and checked in data/minimum-assessment-scope.json.",
+    "aws_s3_bucket_logging": "Connects the site bucket to the access-log bucket; both are components, and the boundary map and the MAS flows show the connection.",
+    "aws_s3_bucket_ownership_controls": "A bucket setting (object ownership enforced); the bucket is the component.",
+    "terraform_data": "A Terraform-internal value with no cloud resource behind it.",
+}
+
 
 # =============================================================================
 # MAS (Minimum Assessment Scope) attributes per component type
@@ -393,7 +434,7 @@ IIW_DEFAULTS = {
         "function": "Public TLS certificate for the CDN",
         "diagram_label": "ACM TLS certificate",
         "public": False,
-        "baseline_configuration": "AWS ACM-managed; auto-renewing; FIPS-validated cipher suites via CloudFront",
+        "baseline_configuration": "AWS ACM-managed; auto-renewing; TLS 1.2+ via CloudFront (TLSv1.2_2021)",
         "iiw_asset_type": "TLS Certificate (ACM)",
     },
     "event_schedule": {
@@ -555,6 +596,12 @@ IIW_OVERRIDES = {
     },
     ("iam_role", "evidence_nightly"): {
         "function": "Nightly evidence workflow role",
+    },
+    ("iam_role", "incident_reports"): {
+        "function": "Incident reports workflow role (unattended IIR/OIR/FIR publication)",
+    },
+    ("iam_role", "package_maintenance"): {
+        "function": "Certification package maintenance workflow role (unattended SDR, CPO and OCR publication)",
     },
     ("object_store", "logs"): {
         "function": "Access-log bucket for the site bucket and CDN",
@@ -905,6 +952,29 @@ def component_id_for_html(rel_path):
 # =============================================================================
 
 
+POLICY_ATTACHMENT_TYPES = ("aws_iam_role_policy_attachment", "aws_iam_group_policy_attachment")
+
+
+def _policy_holder(values):
+    """('role' | 'group', name) an attachment attaches its policy to."""
+    if values.get("group"):
+        return "group", values["group"]
+    return "role", values.get("role") or "unknown"
+
+
+def _add_attached_policy(component, values):
+    """Record an attached managed policy by name only (and whether AWS manages
+    it); its ARN carries the account ID, which is never published."""
+    arn = str(values.get("policy_arn") or "")
+    if not arn:
+        return
+    entry = {"policy_name": arn.rsplit("/", 1)[-1], "aws_managed": arn.startswith("arn:aws:iam::aws:")}
+    attached = component.setdefault("attributes", {}).setdefault("attached_policies", [])
+    if entry not in attached:
+        attached.append(entry)
+        attached.sort(key=lambda e: (e["policy_name"], e["aws_managed"]))
+
+
 def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main.tf"):
     """Walk Terraform state into normalized cloud components.
 
@@ -937,9 +1007,17 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         # name; the key keeps their ids distinct. count indexes (int) stay out
         # of the id so existing component ids do not change.
         tf_index = r.get("index")
+        values = r.get("values", {}) or {}
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            # One component per attachment block; each instance adds the
+            # attached policy's name (never its ARN: it carries the account ID).
+            cid = component_id_for_cloud(tf_name, normalized)
+            if cid in components_by_id:
+                _add_attached_policy(components_by_id[cid], values)
+                continue
+            tf_index = None
         id_name = f"{tf_name}[{tf_index}]" if isinstance(tf_index, str) else tf_name
         cid = component_id_for_cloud(id_name, normalized)
-        values = r.get("values", {}) or {}
 
         attrs = {
             "tf_address": r.get("address"),
@@ -948,10 +1026,19 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         }
         if isinstance(tf_index, str):
             attrs["tf_index"] = tf_index
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            attrs["tf_address"] = re.sub(r"\[[^\]]*\]$", "", str(r.get("address") or f"{tf_type}.{tf_name}"))
         # Pull a few common, non-sensitive identifying attributes if present.
         for key in ("region", "runtime", "function_name", "id", "domain_name"):
             if key in values and values[key] is not None:
                 attrs[key] = values[key]
+        # The deployed code's hash as AWS reported it at apply. The runtime
+        # emitter compares the live CodeSha256 with it daily, so code changed
+        # outside the deploy (and never inventoried or scanned) is detected.
+        if normalized == "function":
+            code_hash = values.get("code_sha256") or values.get("source_code_hash")
+            if code_hash:
+                attrs["code_sha256"] = code_hash
 
         # Per-resource ARN first: each resource's identity comes from its OWN
         # state block (values["arn"]), never from a shared whole-stack output —
@@ -979,6 +1066,12 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
             # role-name plus policy-name pair so the component is addressable.
             if values.get("arn"):
                 native_id = values["arn"]
+            elif tf_type in POLICY_ATTACHMENT_TYPES:
+                kind, holder = _policy_holder(values)
+                native_id = f"iam-{kind}-policy-attachment::{holder}/{tf_name}"
+            elif tf_type == "aws_iam_group_policy":
+                group_name = values.get("group") or "unknown"
+                native_id = f"iam-group-policy::{group_name}/{values.get('name') or 'inline'}"
             else:
                 role_name = values.get("role") or values.get("role_name") or "unknown"
                 policy_name = values.get("name") or "inline"
@@ -1013,7 +1106,20 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
                 attrs["policy_document_sha256"] = hashlib.sha256(_redact.redact_text(body_str).encode()).hexdigest()
             attrs["policy_name"] = values.get("name")
             attrs["attached_to_role"] = values.get("role") or values.get("role_name")
-            if attrs["attached_to_role"]:
+            if values.get("group"):
+                attrs["attached_to_group"] = values["group"]
+            if tf_type in POLICY_ATTACHMENT_TYPES:
+                kind, holder = _policy_holder(values)
+                attrs["policy_name"] = None
+                attrs["attached_policies"] = []
+                derived_text = {"function": f"Managed policies attached to {kind} {holder}",
+                                "baseline_configuration": f"Managed-policy attachment to {kind} {holder}; "
+                                                          f"policy names in attributes (block in {module_dir})"}
+            elif attrs.get("attached_to_group"):
+                derived_text = {"function": f"Inline policy on group {attrs['attached_to_group']}",
+                                "baseline_configuration": f"Inline policy on group {attrs['attached_to_group']}; "
+                                                          f"body hashed in attributes (body in {module_dir})"}
+            elif attrs["attached_to_role"]:
                 derived_text = {"function": f"Inline policy on role {attrs['attached_to_role']}",
                                 "baseline_configuration": f"Inline policy on role {attrs['attached_to_role']}; body "
                                                           f"hashed in attributes (body in {module_dir})"}
@@ -1031,6 +1137,8 @@ def build_cloud_components(tf_state, tf_outputs, module_dir="infrastructure/main
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
         components_by_id[cid] = component
+        if tf_type in POLICY_ATTACHMENT_TYPES:
+            _add_attached_policy(component, values)
 
     # Second pass: fold attribute resources into their parent.
     for r in state_resources:
@@ -1098,6 +1206,13 @@ def build_bootstrap_components(existing=(), bootstrap_dir="bootstrap"):
         seen = by_native.get(c.get("native_id")) or by_cid.get(c.get("component_id"))
         if seen is not None:
             seen.setdefault("attributes", {})["managed_by"] = "bootstrap"
+            # Facets folded in from the managing stack (the distribution's edge
+            # function and access-log delivery are declared in bootstrap).
+            folded = (c.get("attributes") or {}).get("config") or {}
+            if folded:
+                cfg = seen["attributes"].setdefault("config", {})
+                for k, v in folded.items():
+                    cfg.setdefault(k, v)
             continue
         c.setdefault("attributes", {})["tf_module"] = "bootstrap"
         fresh.append(c)
@@ -1170,7 +1285,7 @@ def build_live_log_groups(existing_components, region="us-east-2"):
 
 
 def build_npm_components(lock_path, function=None, lifecycle="runtime",
-                         existing_components=None):
+                         existing_components=None, deployed_in=None):
     """Read package-lock.json (lockfileVersion 3) and emit npm components.
 
     lifecycle distinguishes what a package is doing here. "runtime" means it
@@ -1186,6 +1301,10 @@ def build_npm_components(lock_path, function=None, lifecycle="runtime",
     package@version can appear in more than one lockfile and the inventory holds
     one component per PURL. Earlier callers win, so a package that is both
     shipped and used at build time keeps its runtime classification.
+
+    deployed_in names the function component whose deployment package holds
+    this tree, so the runtime emitter's package-integrity check can name the
+    packages it vouches for.
     """
     if not lock_path.exists():
         return []
@@ -1232,11 +1351,13 @@ def build_npm_components(lock_path, function=None, lifecycle="runtime",
         component["attributes"]["lifecycle"] = lifecycle
         if function:
             component["attributes"]["function"] = function
+        if deployed_in:
+            component["attributes"]["deployed_in"] = deployed_in
         components.append(component)
     return components
 
 
-def build_sbom_components(sbom_path, existing_components=None):
+def build_sbom_components(sbom_path, existing_components=None, deployed_in=None):
     """Read a CycloneDX JSON SBOM and emit software components for the inventory.
 
     Used to ingest the Silk Reeling app's dependency trees — the Python (PyPI)
@@ -1316,6 +1437,8 @@ def build_sbom_components(sbom_path, existing_components=None):
                 "function": role,
             },
         }
+        if deployed_in:
+            component["attributes"]["deployed_in"] = deployed_in
         apply_mas_defaults(component)
         apply_iiw_defaults(component)
         apply_classification_defaults(component)
@@ -1326,6 +1449,9 @@ def build_sbom_components(sbom_path, existing_components=None):
 THIRD_PARTY_PATH = Path(__file__).resolve().parent.parent / "data" / "third-party-components.json"
 NOT_RECORDED = "not recorded"
 TPR_FIELDS = ("upstream_offering", "upstream_component_id", "responsibility_split")
+# MAS-CSO-TPR: what FedRAMP requires documented about each third-party
+# information resource. A decided record must carry every one.
+MAS_TPR_FIELDS = ("usage_and_configuration", "justification", "mitigations", "compensating_controls")
 
 
 def load_third_party_records(path, known_ids):
@@ -1347,18 +1473,24 @@ def load_third_party_records(path, known_ids):
         split = rec.get("responsibility_split")
         if split is not None and not (isinstance(split, dict) and split.get("upstream_runs") and split.get("provider_configures")):
             raise SystemExit(f"::error::third-party record for {cid}: responsibility_split needs upstream_runs and provider_configures")
+        if rec.get("decided_by") and rec.get("decided_on"):
+            missing = [f for f in MAS_TPR_FIELDS if not (isinstance(rec.get(f), str) and rec[f].strip())]
+            if missing:
+                raise SystemExit(f"::error::third-party record for {cid} is decided but lacks {', '.join(missing)} "
+                                 "(MAS-CSO-TPR)")
     return recs
 
 
 def third_party_attributes(rec):
     """The TPR-1 fields for one component. A record without a decision
     (decided_by and decided_on) publishes every field as "not recorded"."""
+    fields = (*TPR_FIELDS, *MAS_TPR_FIELDS)
     if rec is None:
-        return {**{f: NOT_RECORDED for f in TPR_FIELDS}, "third_party_record": {"status": "no record"}}
+        return {**{f: NOT_RECORDED for f in fields}, "third_party_record": {"status": "no record"}}
     if not (rec.get("decided_by") and rec.get("decided_on")):
-        return {**{f: NOT_RECORDED for f in TPR_FIELDS},
+        return {**{f: NOT_RECORDED for f in fields},
                 "third_party_record": {"status": "drafted; no decision recorded"}}
-    out = {f: rec.get(f) or NOT_RECORDED for f in TPR_FIELDS}
+    out = {f: rec.get(f) or NOT_RECORDED for f in fields}
     out["third_party_record"] = {"status": "decided", "decided_by": rec["decided_by"],
                                  "decided_on": rec["decided_on"]}
     return out
@@ -1370,8 +1502,8 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
     These services aren't in Terraform state (they're upstream public services
     or operator-account scaffolding); they're declared here so the canonical
     inventory matches the Authorization Boundary Diagram. Identifiers are the
-    public service URLs where applicable; for Duo specifically the identifier
-    is opaque (no tenant ID exposed).
+    public service URLs where applicable; for the operator's TOTP authenticator
+    the identifier is opaque (it has no tenant).
     """
     services = [
         {
@@ -1413,10 +1545,13 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
         {
             "id": "ext::duo-mfa",
             "native_id": "duo:operator-mfa",
-            "name": "Duo (operator MFA)",
-            "purpose": "Multi-factor authentication for AWS root and the GitHub account",
+            "name": "Duo Mobile (operator TOTP authenticator)",
+            "purpose": "Authenticator app that generates the virtual TOTP codes used as the second factor on the AWS "
+                       "root user, the operator IAM user and the GitHub account (DEC-025, DEC-150). AWS and GitHub "
+                       "enforce the MFA; the app only generates codes",
             "cia_impact": "privileged-account authentication",
-            "verification": "Operator-side configuration; tenant identifier intentionally not published in this inventory.",
+            "verification": "The deploy reads the root user's and the operator user's MFA on every run "
+                            "(scripts/check-secure-config.py); the app holds no tenant identifier to publish.",
             "fedramp_status": "external; no separate FedRAMP authorization",
         },
         {
@@ -1436,6 +1571,47 @@ def build_external_components(third_party_path=THIRD_PARTY_PATH):
             "cia_impact": "VDR ingest accuracy",
             "verification": "U.S. federal government source",
             "fedramp_status": "external; U.S. federal government source",
+        },
+        # MAS-CSO-IIR: the vulnerability-data feeds the VDR build also reads
+        # (scripts/fetch-detection-feeds.sh, evidence-nightly.yml's grype scan).
+        {
+            "id": "ext::first-epss",
+            "native_id": "https://epss.cyentia.com/epss_scores-current.csv.gz",
+            "name": "FIRST Exploit Prediction Scoring System (EPSS) scores",
+            "purpose": "Daily exploit-likelihood scores the VDR uses to rate findings",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "Public feed; a failed fetch fails the detection gate (G7) rather than scoring with no data",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::anchore-grype-db",
+            "native_id": "https://grype.anchore.io/databases",
+            "name": "Grype vulnerability database (Anchore)",
+            "purpose": "The vulnerability database Grype matches the SBOMs against on every deploy and nightly scan",
+            "cia_impact": "VDR ingest accuracy",
+            "verification": "Grype verifies the database checksum on download; findings are corroborated against Dependabot and CISA KEV",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        # MAS-CSO-IIR: origins the Silk Reeling app loads code or data from in the
+        # user's browser, next to the camera feed (the app's CSP in
+        # infrastructure/bootstrap/cloudfront.tf allows exactly these).
+        {
+            "id": "ext::jsdelivr",
+            "native_id": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/",
+            "name": "jsDelivr CDN (MediaPipe Tasks Vision runtime)",
+            "purpose": "Serves the MediaPipe pose-estimation JavaScript and WebAssembly the app runs in the browser",
+            "cia_impact": "code executed next to the camera feed in the user's browser",
+            "verification": "Version pinned in the app bundle and in the CSP script-src path; the CSP allows no other jsDelivr path",
+            "fedramp_status": "external; no separate FedRAMP authorization",
+        },
+        {
+            "id": "ext::google-cloud-storage",
+            "native_id": "https://storage.googleapis.com/mediapipe-models/",
+            "name": "Google Cloud Storage (MediaPipe model bucket)",
+            "purpose": "Serves the pose-landmarker model file the MediaPipe runtime loads in the browser",
+            "cia_impact": "model integrity for the pose scores the app computes",
+            "verification": "CSP connect-src limited to the mediapipe-models path; the model runs in the browser and returns landmarks only",
+            "fedramp_status": "external; no separate FedRAMP authorization",
         },
     ]
     tpr = load_third_party_records(third_party_path, {s["id"] for s in services})
@@ -1508,11 +1684,39 @@ def build_validations(validations_doc, components):
         if c["type"] == "html_artifact"
     }
     by_cloud_name = {}
+    names_seen = set()
     for c in components:
-        if c["type"] in {"object_store", "cdn_distribution", "function"}:
+        if c["type"] in PLAN_VALIDATED_TYPES:
             tf_name = c.get("attributes", {}).get("tf_name")
             if tf_name:
-                by_cloud_name[(c["type"], tf_name)] = c["component_id"]
+                key = (c["type"], tf_name)
+                if key in names_seen:
+                    # Two components share a type and Terraform name (e.g. one
+                    # from each stack): a plan result cannot be attributed to
+                    # either, so neither is credited.
+                    by_cloud_name.pop(key, None)
+                    continue
+                names_seen.add(key)
+                by_cloud_name[key] = c["component_id"]
+    by_type = {}
+    for c in components:
+        by_type.setdefault(c["type"], []).append(c["component_id"])
+    # The plan address (e.g. aws_cloudwatch_metric_alarm.evidence["vdr-age"])
+    # names one instance exactly, where the Terraform name alone is shared by
+    # every count/for_each instance. Ambiguous addresses are not credited.
+    by_address = {}
+    addresses_seen = set()
+    for c in components:
+        if c["type"] not in PLAN_VALIDATED_TYPES:
+            continue
+        addr = c.get("attributes", {}).get("tf_address")
+        if not addr:
+            continue
+        if addr in addresses_seen:
+            by_address.pop(addr, None)
+            continue
+        addresses_seen.add(addr)
+        by_address[addr] = c["component_id"]
 
     validations = []
     skipped = 0
@@ -1528,11 +1732,25 @@ def build_validations(validations_doc, components):
             tf_name = result.get("resource_name")
             normalized = TYPE_BY_TF_TYPE.get(tf_type)
             if normalized:
-                cid = by_cloud_name.get((normalized, tf_name))
+                address = result.get("address")
+                if address and address in by_address:
+                    cid = by_address[address]
+                else:
+                    cid = by_cloud_name.get((normalized, tf_name))
                 if cid:
                     refs = [cid]
-            # Resources outside the schema's component vocabulary (IAM, log
-            # groups, attribute-only resources) are intentionally skipped.
+            elif tf_type in PLAN_VALIDATED_CHILD_TYPES:
+                # A sub-resource the policy evaluates (an API stage or route)
+                # is evidence about the component it folds into: the parent of
+                # the same Terraform name, else the only parent of that type.
+                parent = PLAN_VALIDATED_CHILD_TYPES[tf_type]
+                cid = by_cloud_name.get((parent, tf_name))
+                if not cid and len(by_type.get(parent, [])) == 1:
+                    cid = by_type[parent][0]
+                if cid:
+                    refs = [cid]
+            # Results no component can be credited with (types no rule
+            # evaluates, attribute-only resources, ambiguous names) are skipped.
             if not refs:
                 skipped += 1
                 continue
@@ -1581,6 +1799,27 @@ def build_validations(validations_doc, components):
     return validations
 
 
+# Component types whose plan results become validations. Only types at least
+# one policy rule evaluates are listed, so a "pass" always means a rule looked
+# (tests/test_validation_mapping.py checks each against infrastructure/policy).
+# The remaining cloud types (DNS zone, certificate, groups, OIDC provider, the
+# lock table) are bootstrap resources or data sources with no plan-time rule;
+# the runtime emitter validates them live.
+PLAN_VALIDATED_TYPES = {
+    "object_store", "cdn_distribution", "function", "iam_role", "iam_policy",
+    "log_group", "api_gateway", "secrets_manager", "kms_key", "identity_provider",
+    "notification_topic", "metric_alarm", "message_queue", "event_schedule",
+    "audit_log_trail",
+}
+
+# Sub-resources the policy evaluates, credited to the component they fold into
+# (ATTRIBUTE_PARENTS).
+PLAN_VALIDATED_CHILD_TYPES = {
+    "aws_apigatewayv2_stage": "api_gateway",
+    "aws_apigatewayv2_route": "api_gateway",
+}
+
+
 # KSI family (the middle token of KSI-XXX-YYY) → the inventory component types
 # whose policy validations evidence that family's indicators. A consistent,
 # catalog-derived rule for all in-scope KSIs (assessment Task 4): a KSI's status
@@ -1595,7 +1834,8 @@ KSI_FAMILY_EVIDENCE_TYPES = {
             "dns_zone", "tls_certificate", "secrets_manager", "identity_provider", "kms_key"},
     "IAM": {"iam_role", "iam_policy", "iam_group", "oidc_provider", "identity_provider", "secrets_manager"},
     "INR": {"log_group", "function", "notification_topic", "metric_alarm"},
-    "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue"},
+    "MLA": {"log_group", "function", "cdn_distribution", "notification_topic", "metric_alarm", "message_queue",
+            "audit_log_trail"},
     "PIY": None,  # policy & inventory — whole inventory is the evidence
     "RPL": {"object_store"},
     "SCR": {"npm_package", "pypi_package", "external_service"},
@@ -1671,7 +1911,8 @@ def build_provenance():
     # certificate SAN. GITHUB_WORKFLOW (the display name, with spaces) is NOT a
     # valid SAN, so builder.id must be built from WORKFLOW_REF.
     workflow_ref = os.environ.get("GITHUB_WORKFLOW_REF")
-    run_id = os.environ.get("GITHUB_RUN_ID")
+    # No run ID: published output never names a GitHub run. The commit
+    # (source.commit) and the workflow (builder.id) identify the build.
     sha = os.environ.get("GITHUB_SHA")
     ref = os.environ.get("GITHUB_REF")
 
@@ -1680,7 +1921,6 @@ def build_provenance():
         provenance = {
             "builder": {
                 "id": builder_id,
-                "run_id": run_id or "unknown",
                 "version": "github-actions",
             },
             "source": {
@@ -1719,7 +1959,6 @@ def build_provenance():
     return {
         "builder": {
             "id": "local",
-            "run_id": "local",
             "version": "local",
         },
         "source": {
@@ -1771,7 +2010,10 @@ def main():
     # reconciliation gate's live completeness check enforces nothing else is
     # missed.
     components.extend(build_live_log_groups(components))
-    components.extend(build_npm_components(lambda_lock))
+    # The compliance Lambda's zip is `npm ci --omit=dev` of this lockfile, and
+    # the Silk Reeling zip is the Python tree Syft read (sbom-python.json); the
+    # SPA's npm tree is a build input bundled into JS, so it is not linked.
+    components.extend(build_npm_components(lambda_lock, deployed_in="aws::function::opa_compliance"))
     # The accessibility scanner is build tooling: it never deploys and holds no
     # data. It is inventoried anyway because it is not inert. Its own manifest
     # calls it a "fact-producer for the OPA gate" — pa11y emits the facts that
@@ -1789,7 +2031,8 @@ def main():
     # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and
     # SPA (npm) packages, not just the compliance Lambda's npm packages. Each
     # call dedupes by PURL against components already collected.
-    components.extend(build_sbom_components(sbom_python, components))
+    components.extend(build_sbom_components(sbom_python, components,
+                                            deployed_in="aws::function::silk_reeling"))
     components.extend(build_sbom_components(sbom_js, components))
     components.extend(build_html_components(website_root))
     components.extend(build_external_components())
@@ -1848,7 +2091,7 @@ def main():
         "ownership": {
             "system_owner": "Sam Aydlette",
             "application_owner": "Sam Aydlette",
-            "operator_contact": "sam.aydlette@gmail.com",
+            "operator_contact": "https://www.linkedin.com/in/sa2/",
         },
         "disclosure": {
             "authorization_status": "self-attested-proof-of-concept",
@@ -1877,6 +2120,9 @@ def main():
     # configuration value is published with ACCOUNT in its place, and the
     # publication gate fails the deploy on any twelve-digit number that remains.
     signal = _redact.redact(signal)
+    # CDS-CSO-FID: the offering's FedRAMP ID; the runtime emitter copies it
+    # from this signal into the runtime signal.
+    signal = _offering.stamp_fedramp_id(signal)
     output_path.write_text(json.dumps(signal, indent=2) + "\n")
     print(
         f"Wrote {output_path} "

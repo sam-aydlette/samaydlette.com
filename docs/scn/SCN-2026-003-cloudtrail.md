@@ -38,8 +38,9 @@ lower edge of Adaptive: purely internal detective tooling).
 Strictly additive detective coverage. Tamper resistance: log-file validation;
 the deploy role cannot stop or delete the trail. Residuals (documented as
 inline checkov-skip rationales): SSE-S3 rather than a CMK (POAM-029-consistent),
-no CloudWatch Logs integration or SNS notifications (quarterly review reads the
-bucket; KSI-MLA-RVL).
+no CloudWatch Logs integration or SNS notifications (KSI-MLA-RVL: at the time a
+quarterly manual review of the bucket; since replaced by the nightly automated
+audit-log review, `scripts/audit-log-review.py`, under SCN-2026-007).
 
 ### Verification plan (post-implementation)
 

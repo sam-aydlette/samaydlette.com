@@ -26,6 +26,11 @@ import yaml
 REPO = Path(__file__).resolve().parent.parent
 FIX_SIGNAL = REPO / "tests" / "fixtures" / "clean" / "ksi-signal.json"
 CATALOG = REPO / "infrastructure" / "schemas" / "ksi-catalog.json"
+# The KSI catalog as it stood when the SSP was retired (FedRAMP's mappings before
+# its 2026-10-13 revision). The parity test runs the projection on it, so the
+# projection's code stays pinned to the SSP it replaced; the current catalog is
+# FedRAMP's current mapping (tests/test_ksi_catalog_corpus.py).
+CATALOG_AT_RETIREMENT = REPO / "tests" / "fixtures" / "migration" / "ksi-catalog-2026-11-05.json"
 FROZEN = REPO / "tests" / "fixtures" / "migration" / "ssp-control-status-2026-11-05.json"
 
 sys.path.insert(0, str(REPO / "scripts"))
@@ -48,7 +53,7 @@ def _projection():
 
 def test_the_projection_matches_the_last_ssp_control_for_control():
     frozen = json.loads(FROZEN.read_text())
-    irs = _projection()
+    irs = _controls.load(FIX_SIGNAL, CATALOG_AT_RETIREMENT)
     assert len(irs) == frozen["implemented_requirements"] == 333
     got = {cid: list(v) for cid, v in _controls.status_map(irs).items()}
     assert got == frozen["controls"]
@@ -78,34 +83,7 @@ def test_a_failing_contributing_ksi_downgrades_its_controls():
     assert status == "partial"
 
 
-# --- the SDR carries the per-control record (SDR-CSF-CTF) ---------------------------
-
-def test_the_sdr_summarizes_every_projected_control():
-    sdr = _load("build_sdr", "build-sdr.py")
-    irs = _projection()
-    rows = sdr.build_rev5_controls(irs, json.loads(CATALOG.read_text()))
-    assert [r["control_id"] for r in rows] == [ir["control-id"] for ir in irs]
-    vocab = {"Implemented", "Partially Implemented", "Planned", "Alternative Implementation", "Not Applicable"}
-    for r, ir in zip(rows, irs, strict=True):
-        assert r["implementation_status"] in vocab, r["control_id"]
-        assert r["mechanisms"].startswith(ir["statements"][0]["remarks"])
-        assert r["parameters"] == [{"param_id": sp["param-id"], "values": sp.get("values", [])}
-                                   for sp in ir.get("set-parameters", [])]
-        for k in ("verification", "validation", "independent_verification", "independent_validation"):
-            assert r[k].strip(), (r["control_id"], k)
-    # Parameter values the FedRAMP profile sets are carried, not dropped.
-    assert sum(len(r["parameters"]) for r in rows) > 200
-
-
-def test_sdr_verification_points_at_the_contributing_ksis():
-    sdr = _load("build_sdr2", "build-sdr.py")
-    rows = sdr.build_rev5_controls(_projection(), json.loads(CATALOG.read_text()))
-    claimed = [r for r in rows if r["contributing_ksis"] and r["implementation_status"] != "Not Applicable"
-               and r["origination"] != "inherited"]
-    assert claimed
-    for r in claimed:
-        assert all(k in r["verification"] for k in r["contributing_ksis"]), r["control_id"]
-
+# --- the SDR carries the per-control record: tests/test_sdr.py ----------------------
 
 def test_the_sdr_builder_fails_closed_without_the_inventory(tmp_path):
     r = subprocess.run([sys.executable, str(REPO / "scripts" / "build-sdr.py"),
@@ -118,7 +96,7 @@ def test_the_sdr_builder_fails_closed_without_the_inventory(tmp_path):
 
 # --- the SSP is retired ------------------------------------------------------------
 
-CONSUMERS = ["build-sdr.py", "build-coverage.py", "build-cmmc.py", "inject-figures.py", "reconcile.py",
+CONSUMERS = ["build-sdr.py", "reconcile.py",
              "build-trust-center.py", "build-cpo.py", "build-ksi-signal.py", "_common.py", "verify-published.sh"]
 
 

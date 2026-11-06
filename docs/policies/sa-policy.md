@@ -6,4 +6,4 @@ The system has no acquisition relationships beyond AWS services and GitHub Actio
 
 **20x rule integration.** KSI-PIY-RSD (Reviewing Security in the SDLC) is satisfied by the OPA gate + threat model + signing chain combination. SCN evaluation (CM family) gates every code change before it reaches production.
 
-**Review cadence.** Annually with the [security review](../security-review.md); threat model revisited after Transformative changes.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; a Transformative change (SCN) revisits the threat model in the same pull request.

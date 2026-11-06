@@ -1,0 +1,15 @@
+{
+  "$comment": "Known-bad: a listed file that does not exist.",
+  "schema": "non-machine-resources/2",
+  "max_age_days": 92,
+  "resources": [
+    {
+      "id": "NMR-POL-AC",
+      "path": "docs/policies/no-such-policy.md",
+      "kind": "policy",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    }
+  ]
+}

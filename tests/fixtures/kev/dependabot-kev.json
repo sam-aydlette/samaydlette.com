@@ -1,0 +1,23 @@
+[
+  {
+    "_note": "Known-bad: an open Dependabot alert for a KEV CVE.",
+    "security_advisory": {
+      "cve_id": "CVE-2099-2222",
+      "identifiers": [
+        {
+          "type": "GHSA",
+          "value": "GHSA-aaaa"
+        },
+        {
+          "type": "CVE",
+          "value": "CVE-2099-2222"
+        }
+      ]
+    },
+    "dependency": {
+      "package": {
+        "name": "example-lib"
+      }
+    }
+  }
+]

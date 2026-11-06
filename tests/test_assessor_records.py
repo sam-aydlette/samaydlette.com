@@ -153,11 +153,25 @@ def test_t74_output_dropping_a_signed_record_fails(tmp_path):
 
 
 def test_sdr_markdown_states_no_assessor_record():
-    sdr = {"note": "n", "class": "C", "impact_level": "low", "ksi_signal_id": "s",
-           "metadata": {"version": "v", "last_updated": "t", "source_of_update": "s"},
-           "metrics": {"current": {"ksi_in_scope": 0, "controls_in_scope": 0, "signal_validations": 0,
-                                   "signal_failing": 0, "vdr_total": 0, "vdr_blocking": 0,
-                                   "vdr_accepted": 0, "vdr_kev": 0},
-                       "daily_metric_data": []},
-           "rule_records": [], "assessor_records": {"status": "no assessor record", "records": []}}
+    sdr = {"metadata": {"version": "1.0.0", "lastUpdated": "t", "updateSource": "s"},
+           "fedRampRequirements": [], "keySecurityIndicators": [], "securityControls": [],
+           "providerExtensions": {"certification": {"program": "c", "status": "s"}, "ksi_signal_id": "s",
+                                  "rules": {"version": "v", "commit": "0" * 40},
+                                  "summary": {"fedRampRequirements": {}, "keySecurityIndicators": {},
+                                              "securityControlsModerate": {}, "securityControlsBeyondModerate": {}},
+                                  "assessorRecords": {"status": "no assessor record", "records": []},
+                                  "assessorCommentResponses": {}}}
     assert "No assessor record" in sdr_mod.render_markdown(sdr)
+
+
+def test_t74_reads_the_schema_shaped_sdr(tmp_path):
+    recs = _assessor.load_records(_dir_with(tmp_path, "genuine.json"), PIN)
+    rules = _rules("KSI-TEST-01")
+    block = _assessor.attach(rules, recs)
+    by_rule = {r["rule_id"]: r["assessor_comment_responses"] for r in rules if r["assessor_comment_responses"]}
+    sdr = {"providerExtensions": {"assessorRecords": block, "assessorCommentResponses": by_rule}}
+    _assessor.verify_output(sdr, recs)
+    bad = copy.deepcopy(sdr)
+    next(iter(bad["providerExtensions"]["assessorCommentResponses"].values()))[0]["text"] = "Softened."
+    with pytest.raises(SystemExit):
+        _assessor.verify_output(bad, recs)

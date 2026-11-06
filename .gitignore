@@ -42,15 +42,17 @@ website/.well-known/iiw.csv
 infrastructure/iiw.csv
 infrastructure/oscal-ssp.json
 infrastructure/ksi-signal.json
-infrastructure/cmmc-out.json
 # CR26 certification-data artifacts (built in CI from the canonical inventory, signed
 # and published to /.well-known/; never committed — same policy as the OSCAL artifacts above)
 infrastructure/ongoing-certification-report.json
 infrastructure/ongoing-certification-report.md
-infrastructure/certification-overview-package.json
-infrastructure/certification-overview-package.md
 infrastructure/certification-package-overview.json
 infrastructure/certification-package-overview.md
+infrastructure/quarterly-review.ics
+infrastructure/ocr-issues.json
+infrastructure/fedramp-certification-reports.json
+infrastructure/fedramp-certification-reports/
+infrastructure/package-submission-log.json
 infrastructure/security-decision-record.json
 infrastructure/security-decision-record.md
 infrastructure/availability.json
@@ -153,6 +155,8 @@ tests/__pycache__/
 # (Python's venv also writes its own .venv/.gitignore, but that only covers the
 # .venv name; these cover the other conventional ones.)
 .venv/
+# A worktree may symlink its venv; a symlink does not match the directory pattern.
+.venv
 venv/
 env/
 .mypy_cache/

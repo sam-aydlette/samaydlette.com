@@ -1,0 +1,320 @@
+{
+  "$schema": "../infrastructure/schemas/non-machine-resources.schema.json",
+  "schema": "non-machine-resources/2",
+  "$comment": "VDR-TFR-NMV: the non-machine information resources (policies, procedures, plans, the operator role, records and registers). Nobody verifies them by hand: scripts/_nonmachine.py runs machine checks on each (the file exists; every path and DEC ID it cites resolves; it names no retired mechanism; every tagged count matches the code; a register validates), and scripts/check-non-machine-vv.py runs them on every deploy (failing it) and every night, publishing the status as /.well-known/vdr-non-machine-vv.json. A policy or runbook without an entry fails too. Replaces the operator attestation of DEC-190.",
+  "max_age_days": 92,
+  "resources": [
+    {
+      "id": "NMR-POL-AC",
+      "path": "docs/policies/ac-policy.md",
+      "kind": "policy",
+      "title": "AC — Access Control",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-AT",
+      "path": "docs/policies/at-policy.md",
+      "kind": "policy",
+      "title": "AT — Awareness and Training",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-AU",
+      "path": "docs/policies/au-policy.md",
+      "kind": "policy",
+      "title": "AU — Audit and Accountability",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-CA",
+      "path": "docs/policies/ca-policy.md",
+      "kind": "policy",
+      "title": "CA — Assessment, Authorization, and Monitoring",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-CM",
+      "path": "docs/policies/cm-policy.md",
+      "kind": "policy",
+      "title": "CM — Configuration Management",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-CP",
+      "path": "docs/policies/cp-policy.md",
+      "kind": "policy",
+      "title": "CP — Contingency Planning",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-IA",
+      "path": "docs/policies/ia-policy.md",
+      "kind": "policy",
+      "title": "IA — Identification and Authentication",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-IR",
+      "path": "docs/policies/ir-policy.md",
+      "kind": "policy",
+      "title": "IR — Incident Response",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-MA",
+      "path": "docs/policies/ma-policy.md",
+      "kind": "policy",
+      "title": "MA — Maintenance",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-MP",
+      "path": "docs/policies/mp-policy.md",
+      "kind": "policy",
+      "title": "MP — Media Protection",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-PE",
+      "path": "docs/policies/pe-policy.md",
+      "kind": "policy",
+      "title": "PE — Physical and Environmental Protection",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-PL",
+      "path": "docs/policies/pl-policy.md",
+      "kind": "policy",
+      "title": "PL — Planning",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-PS",
+      "path": "docs/policies/ps-policy.md",
+      "kind": "policy",
+      "title": "PS — Personnel Security",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-PT",
+      "path": "docs/policies/pt-policy.md",
+      "kind": "policy",
+      "title": "PT — PII Processing and Transparency",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-RA",
+      "path": "docs/policies/ra-policy.md",
+      "kind": "policy",
+      "title": "RA — Risk Assessment",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-RESOURCE-TAGGING-STANDARD",
+      "path": "docs/policies/resource-tagging-standard.md",
+      "kind": "policy",
+      "title": "Resource Tagging Standard",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-SA",
+      "path": "docs/policies/sa-policy.md",
+      "kind": "policy",
+      "title": "SA — System and Services Acquisition",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-SC",
+      "path": "docs/policies/sc-policy.md",
+      "kind": "policy",
+      "title": "SC — System and Communications Protection",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-SECURE-CONFIGURATION-GUIDE",
+      "path": "docs/policies/secure-configuration-guide.md",
+      "kind": "policy",
+      "title": "Secure Configuration Guide (FedRAMP 20x SCG)",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-SI",
+      "path": "docs/policies/si-policy.md",
+      "kind": "policy",
+      "title": "SI — System and Information Integrity",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-POL-SR",
+      "path": "docs/policies/sr-policy.md",
+      "kind": "policy",
+      "title": "SR — Supply Chain Risk Management",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-RUN-EVIDENCE-SLA-ALARM",
+      "path": "docs/runbooks/evidence-sla-alarm.md",
+      "kind": "procedure",
+      "title": "Runbook: an evidence SLA alarm fired",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-RUN-VULN-GATE-FAILURE",
+      "path": "docs/runbooks/vuln-gate-failure.md",
+      "kind": "procedure",
+      "title": "Runbook: the vulnerability gate failed",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-RUN-DAST-SCANNER-USER",
+      "path": "docs/runbooks/dast-scanner-user.md",
+      "kind": "procedure",
+      "title": "Runbook: the authenticated DAST scanner user and its secrets",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-RUN-FEDRAMP-SECURITY-INBOX",
+      "path": "docs/runbooks/fedramp-security-inbox.md",
+      "kind": "procedure",
+      "title": "Runbook: the FedRAMP Security Inbox (simulated)",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-IR",
+      "path": "docs/incident-response.md",
+      "kind": "procedure",
+      "title": "Incident Response Runbook",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PLAN-RECOVERY",
+      "path": "docs/recovery-plan.md",
+      "kind": "plan",
+      "title": "Recovery Plan",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PLAN-CONMON",
+      "path": "docs/continuous-monitoring-plan.md",
+      "kind": "plan",
+      "title": "Continuous Monitoring Plan",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-ROLE-OPERATOR",
+      "path": "docs/continuous-monitoring-plan.md",
+      "kind": "role",
+      "title": "Operator role (sole operator)",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-ROB",
+      "path": "docs/rules-of-behavior.md",
+      "kind": "procedure",
+      "title": "Rules of Behavior",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-REC-TRAINING",
+      "path": "docs/training-log.md",
+      "kind": "record",
+      "title": "Training Log",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-SUPPLY",
+      "path": "docs/supply-chain.md",
+      "kind": "procedure",
+      "title": "Supply Chain Risk Management",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-SCN",
+      "path": "docs/scn/README.md",
+      "kind": "procedure",
+      "title": "Significant Change Notification (SCN) records",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-REC-PTA",
+      "path": "docs/privacy-threshold-analysis.md",
+      "kind": "record",
+      "title": "Privacy Threshold Analysis (PTA)",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-REG-DECISIONS",
+      "path": "data/decisions.json",
+      "kind": "register",
+      "title": "Decision register",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine check: the register loads under its own validator (the decision register under scripts/_decisions.py) or parses as JSON."
+    },
+    {
+      "id": "NMR-REG-GOVERNANCE",
+      "path": "docs/governance/domains.json",
+      "kind": "register",
+      "title": "Governance domain registry",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine check: the register loads under its own validator (the decision register under scripts/_decisions.py) or parses as JSON."
+    },
+    {
+      "id": "NMR-PROC-AGENCY-ACCESS",
+      "path": "docs/procedures/agency-access.md",
+      "kind": "procedure",
+      "title": "Agency Access to the Certification Package",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-PROC-INFO-SHARING",
+      "path": "docs/procedures/information-sharing.md",
+      "kind": "procedure",
+      "title": "Information Sharing and Disclosure Standard",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    },
+    {
+      "id": "NMR-REC-SECURITY-REVIEW",
+      "path": "docs/security-review.md",
+      "kind": "record",
+      "title": "Annual Security Review: how it is generated (scripts/hold-security-review.py), and its history",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "Machine checks: the file exists, every repository path and DEC ID it cites resolves, it names no retired mechanism, and every tagged count matches the code."
+    }
+  ]
+}

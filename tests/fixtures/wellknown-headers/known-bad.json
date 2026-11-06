@@ -1,0 +1,4 @@
+{
+  "ksi-signal.json": {"Content-Type": "application/json", "X-Content-Type-Options": "nosniff"},
+  "security-decision-record.json": {"Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-Content-Type-Options": "nosniff"}
+}

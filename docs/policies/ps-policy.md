@@ -4,4 +4,4 @@ Personnel screening, position-risk designation, separation-of-duty, and terminat
 
 **20x rule integration.** No 20x rule maps to PS specifically.
 
-**Review cadence.** Annually with the [security review](../security-review.md).
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request.

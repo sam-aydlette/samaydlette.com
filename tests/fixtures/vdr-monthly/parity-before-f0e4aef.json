@@ -1,0 +1,320 @@
+{
+ "generatedAt": "2026-11-20T12:00:00+00:00",
+ "overview": [
+  {
+   "failedRuns": 0,
+   "lastRun": "2026-11-20T06:00:00+00:00",
+   "runsInPeriod": 1,
+   "summary": "1 in period",
+   "title": "Software composition analysis (Grype over every dependency tree; Dependabot alerts)",
+   "type": "sca"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": "2026-11-20T06:00:00+00:00",
+   "runsInPeriod": 1,
+   "summary": "1 in period",
+   "title": "Infrastructure-as-code static analysis (Checkov, tfsec)",
+   "type": "iac-sast"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Code static analysis (CodeQL)",
+   "type": "code-sast"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Dynamic scan of the public site (OWASP ZAP)",
+   "type": "dast-site"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Authenticated dynamic scan of the Silk Reeling API",
+   "type": "dast-api"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": "2026-11-19T20:00:00+00:00",
+   "runsInPeriod": 1,
+   "summary": "1 in period",
+   "title": "Known-exploited and exploit-prediction feeds (CISA KEV, FIRST EPSS)",
+   "type": "threat-intel"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Runtime verification and validation of machine resources",
+   "type": "runtime-vv"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": "2026-11-05T07:00:00+00:00",
+   "runsInPeriod": 1,
+   "summary": "1 in period",
+   "title": "Verification and validation of non-machine resources (machine checks, nightly)",
+   "type": "non-machine-vv"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "program": {
+    "active": true,
+    "note": "reports to the contact in /.well-known/security.txt"
+   },
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Vulnerability disclosure program: reports received",
+   "type": "vdp"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "program": {
+    "active": false,
+    "note": "no bug bounty program"
+   },
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Bug bounty program",
+   "type": "bug-bounty"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "program": {
+    "active": false,
+    "note": "no penetration test has been performed or scheduled"
+   },
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Penetration testing",
+   "type": "pentest"
+  },
+  {
+   "failedRuns": 0,
+   "lastRun": null,
+   "runsInPeriod": 0,
+   "summary": "none this period",
+   "title": "Assessments",
+   "type": "assessment"
+  }
+ ],
+ "period": {
+  "from": "2026-11-01T00:00:00+00:00",
+  "month": "2026-11",
+  "to": "2026-11-20T12:00:00+00:00"
+ },
+ "previousMonths": [],
+ "response": {
+  "counts": {
+   "decisionsClosed": 2,
+   "decisionsRecorded": 25,
+   "detections": 0,
+   "evaluations": 0,
+   "noLongerReported": 0,
+   "ratingChanges": 0,
+   "reductions": 0,
+   "remediations": 2,
+   "runtimeFailuresInPeriod": 0,
+   "runtimeRunsInPeriod": 0,
+   "scansInPeriod": 3
+  },
+  "decisionsClosed": [
+   {
+    "decisionId": "DEC-034",
+    "disposition": "remediated",
+    "on": "2026-11-03"
+   },
+   {
+    "decisionId": "DEC-035",
+    "disposition": "remediated",
+    "on": "2026-11-03"
+   }
+  ],
+  "decisionsRecorded": [
+   {
+    "decisionId": "DEC-039",
+    "disposition": "false-positive",
+    "on": "2026-11-04"
+   },
+   {
+    "decisionId": "DEC-040",
+    "disposition": "false-positive",
+    "on": "2026-11-04"
+   },
+   {
+    "decisionId": "DEC-100",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-101",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-102",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-103",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-104",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-105",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-106",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-107",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-150",
+    "disposition": "accepted",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-151",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-152",
+    "disposition": "accepted",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-160",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-165",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-166",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-167",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-180",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-181",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-182",
+    "disposition": "operational-requirement",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-190",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-191",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-192",
+    "disposition": "superseded",
+    "on": "2026-11-05"
+   },
+   {
+    "decisionId": "DEC-193",
+    "disposition": "false-positive",
+    "on": "2026-11-06"
+   },
+   {
+    "decisionId": "DEC-194",
+    "disposition": "operational-requirement",
+    "on": "2026-11-06"
+   }
+  ],
+  "remediations": [
+   "DEC-034",
+   "DEC-035"
+  ]
+ },
+ "rules": [
+  "VER-TFR-MHR",
+  "VER-RPT-HLO",
+  "VER-RPT-PER"
+ ],
+ "runs": [
+  {
+   "at": "2026-11-20T06:00:00+00:00",
+   "count": 3,
+   "source": "checkov (checkov-results.sarif)",
+   "status": "ok",
+   "type": "iac-sast"
+  },
+  {
+   "at": "2026-11-05T07:00:00+00:00",
+   "count": 1,
+   "source": "machine checks (1 resources)",
+   "status": "ok",
+   "type": "non-machine-vv"
+  },
+  {
+   "at": "2026-11-20T06:00:00+00:00",
+   "count": 0,
+   "source": "grype (grype-python.json)",
+   "status": "ok",
+   "type": "sca"
+  },
+  {
+   "at": "2026-11-19T20:00:00+00:00",
+   "count": 9,
+   "source": "kev (kev-catalog.json)",
+   "status": "ok",
+   "type": "threat-intel"
+  }
+ ],
+ "runtimeRunsBasis": "latest run only: the runtime emitter publishes only its latest run, so a run replaced between two nightly builds is not counted; the VDR build recorded no verified runtime run",
+ "schema": "vdr-monthly/1",
+ "source": {
+  "activities": "data/vdr-activities.json",
+  "ksiSignalId": "k1",
+  "nonMachine": "vdr-non-machine-vv.json",
+  "vdrReportId": "r1"
+ }
+}

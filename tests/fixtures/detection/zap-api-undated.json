@@ -1,0 +1,10 @@
+{
+ "@version": "2.17.0",
+ "site": [
+  {
+   "@name": "https://samaydlette.com",
+   "@host": "samaydlette.com",
+   "alerts": []
+  }
+ ]
+}

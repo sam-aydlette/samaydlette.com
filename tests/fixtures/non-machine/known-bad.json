@@ -1,0 +1,95 @@
+{
+  "$comment": "Known-bad: the copies of each document as they stood before the machine checks (each fails for the reason tests/test_non_machine_vv.py names), plus a document citing an unknown decision and two with a wrong or unstated tagged count.",
+  "schema": "non-machine-resources/2",
+  "max_age_days": 92,
+  "resources": [
+    {
+      "id": "NMR-KB-ROB",
+      "path": "tests/fixtures/non-machine/known-bad/rules-of-behavior.md",
+      "kind": "procedure",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-IA",
+      "path": "tests/fixtures/non-machine/known-bad/ia-policy.md",
+      "kind": "policy",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-SLA",
+      "path": "tests/fixtures/non-machine/known-bad/evidence-sla-alarm.md",
+      "kind": "procedure",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-CONMON",
+      "path": "tests/fixtures/non-machine/known-bad/continuous-monitoring-plan.md",
+      "kind": "plan",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-PTA",
+      "path": "tests/fixtures/non-machine/known-bad/privacy-threshold-analysis.md",
+      "kind": "record",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-CA",
+      "path": "tests/fixtures/non-machine/known-bad/ca-policy.md",
+      "kind": "policy",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-RECOVERY",
+      "path": "tests/fixtures/non-machine/known-bad/recovery-plan.md",
+      "kind": "plan",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-PL",
+      "path": "tests/fixtures/non-machine/known-bad/pl-policy.md",
+      "kind": "policy",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-DEC",
+      "path": "tests/fixtures/non-machine/known-bad/unknown-decision.md",
+      "kind": "procedure",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-COUNT",
+      "path": "tests/fixtures/non-machine/known-bad/wrong-count.md",
+      "kind": "procedure",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    },
+    {
+      "id": "NMR-KB-UNSTATED",
+      "path": "tests/fixtures/non-machine/known-bad/unstated-count.md",
+      "kind": "procedure",
+      "title": "t",
+      "owner": "Sam Aydlette (operator)",
+      "verifies": "machine checks"
+    }
+  ]
+}

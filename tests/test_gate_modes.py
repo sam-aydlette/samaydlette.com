@@ -272,3 +272,19 @@ def test_event_detail_cannot_forge_a_workflow_command(tmp_path, monkeypatch, cap
     err = capsys.readouterr().err
     assert err.count("\n") == 1 and "::error::forged" not in err
     assert "\n" not in _gates.read_events(tmp_path / "e.jsonl")[0]["detail"]
+
+
+def test_known_bad_a_gate_mode_the_operator_has_not_confirmed_fails():
+    """One marking format, as for decisions: confirmed_on, never a note in the text."""
+    with pytest.raises(SystemExit, match=r"vdr.kev: unknown keys \[\], missing keys \['confirmed_on'\]"):
+        _gates.load_gate_modes(FIX / "gate-modes-unconfirmed.json", today=TODAY)
+
+
+def test_known_bad_a_confirmation_note_in_the_reason_fails():
+    with pytest.raises(SystemExit, match="vdr.kev"):
+        _gates.load_gate_modes(FIX / "gate-modes-marking.json", today=TODAY)
+
+
+def test_every_committed_gate_mode_is_confirmed():
+    for e in good()["checks"]:
+        assert e["confirmed_on"] >= e["decided_on"] and e["decided_by"] == "Sam Aydlette", e["check"]

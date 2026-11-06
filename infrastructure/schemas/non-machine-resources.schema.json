@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Non-machine information resources and their verification (VDR-TFR-NMV)",
+  "description": "Validated in code by scripts/_nonmachine.py (the deploy installs no jsonschema). Each resource is verified by machine checks on every deploy and every night; there is no manual attestation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "max_age_days",
+    "resources"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "$comment": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "non-machine-resources/2"
+    },
+    "max_age_days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 92
+    },
+    "resources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "path",
+          "kind",
+          "title",
+          "owner",
+          "verifies"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^NMR-[A-Z0-9-]+$"
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "policy",
+              "procedure",
+              "plan",
+              "role",
+              "record",
+              "register"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verifies": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "assessor": "Totally Real Assessment Services, LLC (simulated)",
+  "key_id": "sigstore-keyless:simulated-assessor.yml",
+  "algorithm": "SIGSTORE_KEYLESS",
+  "certificate_identity": "https://github.com/sam-aydlette/samaydlette.com/.github/workflows/simulated-assessor.yml@refs/heads/main",
+  "certificate_oidc_issuer": "https://token.actions.githubusercontent.com",
+  "pinned_on": "2026-11-05",
+  "simulated": true,
+  "note": "SIMULATED assessor. Its signing identity is the simulated-assessor.yml workflow in this repository (called by the deploy as a reusable workflow, so its Sigstore certificate names that workflow, not the deploy). It is not independent of the provider, not a FedRAMP Recognized independent assessment service, and has no FedRAMP assessor ID. Replacing it with a real assessor means pinning that assessor's own identity here in a reviewed change."
+}

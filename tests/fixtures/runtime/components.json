@@ -1,0 +1,258 @@
+[
+ {
+  "component_id": "aws::iam_role::lambda_opa",
+  "type": "iam_role",
+  "attributes": {
+   "tf_type": "aws_iam_role",
+   "tf_name": "lambda_opa",
+   "id": "samaydlette-com-lambda-opa-role"
+  },
+  "native_id": "arn:aws:iam::ACCOUNT:role/samaydlette-com-lambda-opa-role"
+ },
+ {
+  "component_id": "aws::iam_role::deploy",
+  "type": "iam_role",
+  "attributes": {
+   "tf_type": "aws_iam_role",
+   "tf_name": "deploy",
+   "id": "github-actions-deploy-oidc"
+  },
+  "native_id": "arn:aws:iam::ACCOUNT:role/github-actions-deploy-oidc"
+ },
+ {
+  "component_id": "aws::iam_policy::lambda_opa",
+  "type": "iam_policy",
+  "attributes": {
+   "tf_type": "aws_iam_role_policy",
+   "tf_name": "lambda_opa",
+   "id": "samaydlette-com-lambda-opa-role:samaydlette-com-lambda-opa-policy"
+  },
+  "native_id": "iam-role-policy::samaydlette-com-lambda-opa-role/samaydlette-com-lambda-opa-policy"
+ },
+ {
+  "component_id": "aws::iam_group::operators",
+  "type": "iam_group",
+  "attributes": {
+   "tf_type": "aws_iam_group",
+   "tf_name": "operators",
+   "id": "operators"
+  },
+  "native_id": "arn:aws:iam::ACCOUNT:group/operators"
+ },
+ {
+  "component_id": "aws::iam_policy::operators_s3_bucket",
+  "type": "iam_policy",
+  "attributes": {
+   "tf_type": "aws_iam_group_policy",
+   "tf_name": "operators_s3_bucket",
+   "id": "operators:s3-bucket",
+   "policy_name": "s3-bucket",
+   "attached_to_group": "operators"
+  },
+  "native_id": "iam-group-policy::operators/s3-bucket"
+ },
+ {
+  "component_id": "aws::iam_policy::legacy",
+  "type": "iam_policy",
+  "attributes": {
+   "tf_type": "aws_iam_role_policy_attachment",
+   "tf_name": "legacy",
+   "id": "github-actions-deploy-oidc-20260101",
+   "attached_to_role": "github-actions-deploy-oidc",
+   "attached_policies": [
+    {
+     "policy_name": "github-actions-deploy",
+     "aws_managed": false
+    }
+   ]
+  },
+  "native_id": "iam-role-policy-attachment::github-actions-deploy-oidc/legacy"
+ },
+ {
+  "component_id": "aws::iam_policy::operators",
+  "type": "iam_policy",
+  "attributes": {
+   "tf_type": "aws_iam_group_policy_attachment",
+   "tf_name": "operators",
+   "id": "operators-20260101",
+   "attached_to_group": "operators",
+   "attached_policies": [
+    {
+     "policy_name": "IAMFullAccess",
+     "aws_managed": true
+    }
+   ]
+  },
+  "native_id": "iam-group-policy-attachment::operators/operators"
+ },
+ {
+  "component_id": "aws::oidc_provider::github",
+  "type": "oidc_provider",
+  "attributes": {
+   "tf_type": "aws_iam_openid_connect_provider",
+   "tf_name": "github",
+   "id": "arn:aws:iam::ACCOUNT:oidc-provider/token.actions.githubusercontent.com"
+  },
+  "native_id": "arn:aws:iam::ACCOUNT:oidc-provider/token.actions.githubusercontent.com"
+ },
+ {
+  "component_id": "aws::function::opa_compliance",
+  "type": "function",
+  "attributes": {
+   "tf_type": "aws_lambda_function",
+   "tf_name": "opa_compliance",
+   "id": "samaydlette-com-opa-compliance",
+   "function_name": "samaydlette-com-opa-compliance",
+   "code_sha256": "Y29kZS1oYXNo"
+  },
+  "native_id": "arn:aws:lambda:us-east-2:ACCOUNT:function:samaydlette-com-opa-compliance"
+ },
+ {
+  "component_id": "npm::@open-policy-agent/opa-wasm@1.9.0",
+  "type": "npm_package",
+  "attributes": {
+   "name": "@open-policy-agent/opa-wasm",
+   "version": "1.9.0",
+   "deployed_in": "aws::function::opa_compliance"
+  }
+ },
+ {
+  "component_id": "npm::pa11y@9.0.0",
+  "type": "npm_package",
+  "attributes": {
+   "name": "pa11y",
+   "version": "9.0.0",
+   "lifecycle": "build-time"
+  }
+ },
+ {
+  "component_id": "aws::log_group::opa_compliance",
+  "type": "log_group",
+  "attributes": {
+   "tf_type": "aws_cloudwatch_log_group",
+   "tf_name": "opa_compliance",
+   "id": "/aws/lambda/samaydlette-com-opa-compliance"
+  },
+  "native_id": "arn:aws:logs:us-east-2:ACCOUNT:log-group:/aws/lambda/samaydlette-com-opa-compliance"
+ },
+ {
+  "component_id": "aws::audit_log_trail::management",
+  "type": "audit_log_trail",
+  "attributes": {
+   "tf_type": "aws_cloudtrail",
+   "tf_name": "management",
+   "id": "arn:aws:cloudtrail:us-east-2:ACCOUNT:trail/samaydlette-com-management"
+  },
+  "native_id": "arn:aws:cloudtrail:us-east-2:ACCOUNT:trail/samaydlette-com-management"
+ },
+ {
+  "component_id": "aws::metric_alarm::evidence[vdr-age]",
+  "type": "metric_alarm",
+  "attributes": {
+   "tf_type": "aws_cloudwatch_metric_alarm",
+   "tf_name": "evidence",
+   "id": "samaydlette-com-evidence-watchdog-vdr-age"
+  },
+  "native_id": "arn:aws:cloudwatch:us-east-2:ACCOUNT:alarm:samaydlette-com-evidence-watchdog-vdr-age"
+ },
+ {
+  "component_id": "aws::event_schedule::opa_compliance",
+  "type": "event_schedule",
+  "attributes": {
+   "tf_type": "aws_cloudwatch_event_rule",
+   "tf_name": "opa_compliance",
+   "id": "samaydlette-com-opa-compliance"
+  },
+  "native_id": "arn:aws:events:us-east-2:ACCOUNT:rule/samaydlette-com-opa-compliance"
+ },
+ {
+  "component_id": "aws::notification_topic::evidence_alerts",
+  "type": "notification_topic",
+  "attributes": {
+   "tf_type": "aws_sns_topic",
+   "tf_name": "evidence_alerts",
+   "id": "arn:aws:sns:us-east-2:ACCOUNT:samaydlette-com-evidence-alerts"
+  },
+  "native_id": "arn:aws:sns:us-east-2:ACCOUNT:samaydlette-com-evidence-alerts"
+ },
+ {
+  "component_id": "aws::message_queue::compliance_dlq",
+  "type": "message_queue",
+  "attributes": {
+   "tf_type": "aws_sqs_queue",
+   "tf_name": "compliance_dlq",
+   "id": "https://sqs.us-east-2.amazonaws.com/ACCOUNT/samaydlette-com-opa-compliance-dlq"
+  },
+  "native_id": "arn:aws:sqs:us-east-2:ACCOUNT:samaydlette-com-opa-compliance-dlq"
+ },
+ {
+  "component_id": "aws::kv_table::tflock",
+  "type": "kv_table",
+  "attributes": {
+   "tf_type": "aws_dynamodb_table",
+   "tf_name": "tflock",
+   "id": "samaydlette-com-tflock"
+  },
+  "native_id": "arn:aws:dynamodb:us-east-2:ACCOUNT:table/samaydlette-com-tflock"
+ },
+ {
+  "component_id": "aws::identity_provider::silk_reeling",
+  "type": "identity_provider",
+  "attributes": {
+   "tf_type": "aws_cognito_user_pool",
+   "tf_name": "silk_reeling",
+   "id": "us-east-2_EXAMPLE"
+  },
+  "native_id": "arn:aws:cognito-idp:us-east-2:ACCOUNT:userpool/us-east-2_EXAMPLE"
+ },
+ {
+  "component_id": "aws::kms_key::at_rest",
+  "type": "kms_key",
+  "attributes": {
+   "tf_type": "aws_kms_key",
+   "tf_name": "at_rest",
+   "id": "11111111-2222-3333-4444-555555555555"
+  },
+  "native_id": "arn:aws:kms:us-east-2:ACCOUNT:key/11111111-2222-3333-4444-555555555555"
+ },
+ {
+  "component_id": "aws::kms_key::dnssec_ksk",
+  "type": "kms_key",
+  "attributes": {
+   "tf_type": "aws_kms_key",
+   "tf_name": "dnssec_ksk",
+   "id": "66666666-7777-8888-9999-000000000000"
+  },
+  "native_id": "arn:aws:kms:us-east-1:ACCOUNT:key/66666666-7777-8888-9999-000000000000"
+ },
+ {
+  "component_id": "aws::api_gateway::silk_reeling",
+  "type": "api_gateway",
+  "attributes": {
+   "tf_type": "aws_apigatewayv2_api",
+   "tf_name": "silk_reeling",
+   "id": "abc123"
+  },
+  "native_id": "arn:aws:apigateway:us-east-2::/apis/abc123"
+ },
+ {
+  "component_id": "aws::dns_zone::website",
+  "type": "dns_zone",
+  "attributes": {
+   "tf_type": "aws_route53_zone",
+   "tf_name": "website",
+   "id": "Z0EXAMPLE"
+  },
+  "native_id": "arn:aws:route53:::hostedzone/Z0EXAMPLE"
+ },
+ {
+  "component_id": "aws::tls_certificate::website",
+  "type": "tls_certificate",
+  "attributes": {
+   "tf_type": "aws_acm_certificate",
+   "tf_name": "website",
+   "id": "arn:aws:acm:us-east-1:ACCOUNT:certificate/cert-1"
+  },
+  "native_id": "arn:aws:acm:us-east-1:ACCOUNT:certificate/cert-1"
+ }
+]

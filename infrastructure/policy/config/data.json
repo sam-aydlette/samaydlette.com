@@ -54,11 +54,27 @@
         "TLSv1.2_2018",
         "TLSv1.2_2019",
         "TLSv1.2_2021"
-      ]
+      ],
+      "min_days_to_expiry": 30
     },
     "accessibility": {
       "fail_on": [
         "error"
+      ]
+    },
+    "iam": {
+      "github_oidc_audience": "sts.amazonaws.com",
+      "github_oidc_subject_prefix": "repo:sam-aydlette/samaydlette.com:"
+    },
+    "identity": {
+      "min_password_length": 14
+    },
+    "logging": {
+      "min_retention_days": 365
+    },
+    "api": {
+      "protected_route_prefixes": [
+        "/api"
       ]
     }
   }

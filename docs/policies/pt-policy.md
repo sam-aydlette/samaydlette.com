@@ -4,6 +4,6 @@ The system processes no personally identifiable information. There are no end us
 
 All PT controls in the Moderate baseline are therefore not-applicable as scoped, with this policy doc itself satisfying PT-1. The formal Privacy Threshold Analysis with the negative determination is recorded in [`docs/privacy-threshold-analysis.md`](../privacy-threshold-analysis.md). If the system's data-processing posture ever changes (forms, accounts, analytics that collect PII), the PT family is reactivated, the PTA is re-determined, a full PIA is produced, and this doc is rewritten before the change is deployed.
 
-**20x rule integration.** None directly. Operator awareness of PII obligations is part of the annual training reading-list under AT.
+**20x rule integration.** None directly. PII obligations are part of the generated training packet's fixed core under AT (`scripts/_training.py`).
 
-**Review cadence.** Annually; review whether the system's data processing posture has changed.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; a change to the system's data processing revisits it, and the privacy threshold analysis, in the same pull request.

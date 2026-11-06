@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/schemas/frr-records.schema.json",
+  "title": "FedRAMP rule records (SDR-CSO-FRR)",
+  "description": "One record per FedRAMP rule applicable to 20x Program Class C. scripts/_frr.py enforces this shape and what a schema cannot: the record set equals the applicable rules in the pinned corpus, every evidence reference resolves, and 'optional' is used only for MAY rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "basis", "records"],
+  "properties": {
+    "$comment": {"type": "string"},
+    "schema": {"const": "frr-records/1"},
+    "basis": {"type": "string", "minLength": 1},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["frr_id", "status", "implementation"],
+        "properties": {
+          "frr_id": {"type": "string", "pattern": "^[A-Z]{3}-[A-Z]{3}-[A-Z]{3}$"},
+          "status": {"enum": ["Implemented", "Partially Implemented", "Not Implemented", "Not Applicable"]},
+          "implementation": {"type": "string", "minLength": 1},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ref"],
+              "properties": {
+                "kind": {"enum": ["test", "step", "artifact", "decision"]},
+                "ref": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          "gap": {"type": "string", "minLength": 1},
+          "not_applicable": {"type": "string", "minLength": 1, "description": "Why the rule does not apply: FedRAMP scopes it to a step the provider is not taking, or it is a MAY permission not exercised."},
+          "may_rationale": {"type": "string", "minLength": 1, "description": "Required on, and only on, MAY rules: why the provider did or didn't exercise the permission."},
+          "simulated": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["counterparty", "how"],
+            "description": "The outside party this proof of concept simulates; Implemented records only, with deploy-time evidence.",
+            "properties": {
+              "counterparty": {"enum": ["assessor", "fedramp", "agency", "incident-recipient", "mail", "sam-gov", "personnel"]},
+              "how": {"type": "string", "minLength": 1}
+            }
+          },
+          "closes_with": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"enum": ["W2", "W3", "W4", "W5", "W6", "W7", "W8", "W9", "W10", "sam"]}
+          }
+        },
+        "if": {"properties": {"status": {"const": "Implemented"}}},
+        "then": {
+          "required": ["evidence"],
+          "properties": {"evidence": {"minItems": 1}},
+          "not": {"anyOf": [{"required": ["gap"]}, {"required": ["closes_with"]}]}
+        },
+        "else": {
+          "if": {"properties": {"status": {"const": "Not Applicable"}}},
+          "then": {"required": ["not_applicable"], "not": {"anyOf": [{"required": ["gap"]}, {"required": ["closes_with"]}, {"required": ["simulated"]}]}},
+          "else": {"required": ["gap", "closes_with"], "not": {"anyOf": [{"required": ["not_applicable"]}, {"required": ["simulated"]}]}}
+        }
+      }
+    }
+  }
+}

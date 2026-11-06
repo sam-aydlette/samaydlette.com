@@ -1,0 +1,36 @@
+{
+  "genesis_commit": "1111111111111111111111111111111111111111",
+  "entries": [
+    {
+      "commit": "1111111111111111111111111111111111111111",
+      "merged_on": "2026-11-06",
+      "pull_request": 501,
+      "evaluator": "sam-aydlette",
+      "scn_type": "not-significant",
+      "rationale": "compliance-process change; no component, boundary or access change.",
+      "scn_record": null,
+      "problem": null
+    },
+    {
+      "commit": "2222222222222222222222222222222222222222",
+      "merged_on": "2026-11-09",
+      "pull_request": 502,
+      "evaluator": "sam-aydlette",
+      "scn_type": "routine-recurring",
+      "rationale": "adds a new internal alarm with no new ingress or egress.",
+      "scn_record": null,
+      "problem": null
+    },
+    {
+      "commit": "3333333333333333333333333333333333333333",
+      "merged_on": "2026-11-10",
+      "pull_request": 503,
+      "evaluator": "sam-aydlette",
+      "scn_type": "not-significant",
+      "rationale": "content-only change to a public page.",
+      "scn_record": null,
+      "problem": null
+    }
+  ],
+  "$comment": "Known-bad: rewrites entry 1 of log-previous.json (adaptive -> routine-recurring). The append-only check must fail."
+}

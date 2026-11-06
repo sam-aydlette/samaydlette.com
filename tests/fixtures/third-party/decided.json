@@ -1,8 +1,22 @@
-{"_note": "test fixture", "components": {
+{
+ "_note": "test fixture",
+ "components": {
   "ext::cisa-kev": {
-    "upstream_offering": "CISA Known Exploited Vulnerabilities catalog (JSON feed)",
-    "upstream_component_id": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
-    "responsibility_split": {"upstream_runs": "the catalog and its feed", "provider_configures": "the fetch and its failure handling"},
-    "evidence": ["test fixture"],
-    "decided_by": "Operator", "decided_on": "2026-11-03"}
-}}
+   "upstream_offering": "CISA Known Exploited Vulnerabilities catalog (JSON feed)",
+   "upstream_component_id": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+   "responsibility_split": {
+    "upstream_runs": "the catalog and its feed",
+    "provider_configures": "the fetch and its failure handling"
+   },
+   "evidence": [
+    "test fixture"
+   ],
+   "decided_by": "Operator",
+   "decided_on": "2026-11-03",
+   "usage_and_configuration": "fixture usage",
+   "justification": "fixture justification",
+   "mitigations": "fixture mitigations",
+   "compensating_controls": "fixture compensating controls"
+  }
+ }
+}

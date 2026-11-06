@@ -3,7 +3,7 @@
   "schema": "decisions/1",
   "decisions": [
     {"id": "DEC-003", "title": "fixture", "status": "in-force", "disposition": "false-positive", "justification": "fixture",
-     "decided_by": "Fixture", "decided_on": "2025-01-01", "review_by": "2026-01-01",
+     "decided_by": "Fixture", "decided_on": "2025-01-01", "confirmed_on": "2025-01-01", "review_by": "2026-01-01",
      "applies_to": {"check_ids": [], "vuln_ids": ["CVE-0000-0200"], "resources": []}}
   ]
 }

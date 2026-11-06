@@ -1,0 +1,2326 @@
+{
+ "_note": "test fixture: the non-package components of the 2026-11-05 inventory plus the external services this change adds, attributes trimmed; one package and one page keep their types represented",
+ "signal_id": "fixture",
+ "components": [
+  {
+   "component_id": "aws::tls_certificate::website",
+   "type": "tls_certificate",
+   "security_category": {
+    "confidentiality": "not-applicable",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-1",
+    "function": "Public TLS certificate for the CDN"
+   }
+  },
+  {
+   "component_id": "aws::cdn_distribution::website",
+   "type": "cdn_distribution",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Public content delivery (TLS 1.2+, OAC to origin)"
+   }
+  },
+  {
+   "component_id": "aws::dns_zone::website",
+   "type": "dns_zone",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Authoritative DNS for the public domain"
+   }
+  },
+  {
+   "component_id": "aws::object_store::website",
+   "type": "object_store",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Origin storage for static site content and /.well-known/ artifacts"
+   }
+  },
+  {
+   "component_id": "aws::api_gateway::silk_reeling",
+   "type": "api_gateway",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "HTTP API fronting the Silk Reeling app Lambda (TLS termination, request routing, throttling)"
+   }
+  },
+  {
+   "component_id": "aws::audit_log_trail::management",
+   "type": "audit_log_trail",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Account-wide management-event audit (CloudTrail)"
+   }
+  },
+  {
+   "component_id": "aws::event_schedule::evidence_watchdog",
+   "type": "event_schedule",
+   "security_category": {
+    "confidentiality": "not-applicable",
+    "integrity": "low",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Hourly trigger for the evidence SLA watchdog Lambda"
+   }
+  },
+  {
+   "component_id": "aws::event_schedule::opa_compliance",
+   "type": "event_schedule",
+   "security_category": {
+    "confidentiality": "not-applicable",
+    "integrity": "low",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Daily trigger for the runtime KSI emitter Lambda"
+   }
+  },
+  {
+   "component_id": "aws::log_group::evidence_watchdog",
+   "type": "log_group",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "CloudWatch log group for Lambda execution / Route 53 query logs"
+   }
+  },
+  {
+   "component_id": "aws::log_group::opa_compliance",
+   "type": "log_group",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "CloudWatch log group for Lambda execution / Route 53 query logs"
+   }
+  },
+  {
+   "component_id": "aws::log_group::silk_apigw",
+   "type": "log_group",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "CloudWatch log group for the Silk Reeling API Gateway access logs"
+   }
+  },
+  {
+   "component_id": "aws::log_group::silk_reeling",
+   "type": "log_group",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "CloudWatch log group for Lambda execution / Route 53 query logs"
+   }
+  },
+  {
+   "component_id": "aws::metric_alarm::evidence[artifact-stale]",
+   "type": "metric_alarm",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Evidence SLA alarm on a watchdog metric (VDR age, runtime-signal age, nightly result)"
+   }
+  },
+  {
+   "component_id": "aws::metric_alarm::evidence[nightly-failed]",
+   "type": "metric_alarm",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Evidence SLA alarm on a watchdog metric (VDR age, runtime-signal age, nightly result)"
+   }
+  },
+  {
+   "component_id": "aws::metric_alarm::evidence[runtime-age]",
+   "type": "metric_alarm",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Evidence SLA alarm on a watchdog metric (VDR age, runtime-signal age, nightly result)"
+   }
+  },
+  {
+   "component_id": "aws::metric_alarm::evidence[vdr-age]",
+   "type": "metric_alarm",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Evidence SLA alarm on a watchdog metric (VDR age, runtime-signal age, nightly result)"
+   }
+  },
+  {
+   "component_id": "aws::identity_provider::silk_reeling",
+   "type": "identity_provider",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Cognito user pool gating the Silk Reeling app (admin-create users, required TOTP MFA, OAuth2 PKCE Hosted UI; issues the JWTs the API Gateway authorizer validates)"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::evidence_watchdog",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "IAM role assumed by the evidence SLA watchdog Lambda"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::lambda_opa",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "IAM role assumed by the runtime KSI emitter Lambda"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::silk_reeling",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "IAM role assumed by the Silk Reeling app Lambda"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::evidence_watchdog",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role samaydlette-com-evidence-watchdog-role"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::lambda_opa",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role samaydlette-com-lambda-opa-role"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::silk_reeling",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role samaydlette-com-silk-reeling-role"
+   }
+  },
+  {
+   "component_id": "aws::kms_key::at_rest",
+   "type": "kms_key",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Customer-managed KMS key for at-rest encryption / asymmetric signing"
+   }
+  },
+  {
+   "component_id": "aws::kms_key::dnssec_ksk",
+   "type": "kms_key",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-1",
+    "function": "Customer-managed KMS key for at-rest encryption / asymmetric signing"
+   }
+  },
+  {
+   "component_id": "aws::kms_key::runtime_signing",
+   "type": "kms_key",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Customer-managed KMS key for at-rest encryption / asymmetric signing"
+   }
+  },
+  {
+   "component_id": "aws::kms_key::silk_reeling",
+   "type": "kms_key",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Customer-managed KMS key for at-rest encryption / asymmetric signing"
+   }
+  },
+  {
+   "component_id": "aws::function::evidence_watchdog",
+   "type": "function",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Hourly evidence SLA watchdog; publishes evidence-age and nightly-result metrics for the alarms"
+   }
+  },
+  {
+   "component_id": "aws::function::opa_compliance",
+   "type": "function",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Daily runtime KSI emitter; revalidates live AWS configuration"
+   }
+  },
+  {
+   "component_id": "aws::function::silk_reeling",
+   "type": "function",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Silk Reeling Mirror application backend (Cognito-gated Tai Chi coaching API)"
+   }
+  },
+  {
+   "component_id": "aws::object_store::cloudtrail",
+   "type": "object_store",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Delivery bucket for the account's CloudTrail management-event trail"
+   }
+  },
+  {
+   "component_id": "aws::object_store::logs",
+   "type": "object_store",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Access-log bucket for the site bucket and CDN"
+   }
+  },
+  {
+   "component_id": "aws::notification_topic::evidence_alerts",
+   "type": "notification_topic",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Evidence-alert topic: delivers CloudWatch alarm state changes to the operator by email"
+   }
+  },
+  {
+   "component_id": "aws::message_queue::compliance_dlq",
+   "type": "message_queue",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Dead-letter queue for failed asynchronous invocations of the compliance and watchdog Lambdas"
+   }
+  },
+  {
+   "component_id": "aws::kv_table::tflock",
+   "type": "kv_table",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Terraform state lock for the application and bootstrap stacks (one lock item per run; no state contents)"
+   }
+  },
+  {
+   "component_id": "aws::iam_group::operators",
+   "type": "iam_group",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "IAM group for the human operator(s); holds IAM administration privileges (POAM-026)"
+   }
+  },
+  {
+   "component_id": "aws::iam_group::read_only",
+   "type": "iam_group",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "IAM group granting read-only access (ReadOnlyAccess, with denies on secret values and CMK decryption)"
+   }
+  },
+  {
+   "component_id": "aws::oidc_provider::github",
+   "type": "oidc_provider",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "GitHub Actions OIDC identity provider trusted by the CI/CD deploy role (workload identity; replaced long-lived keys per POAM-001)"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::deploy",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "CI deploy role (reviewer-gated prod environment)"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::evidence_nightly",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Nightly evidence workflow role"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::plan",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Read-only plan role for pull-request and main-branch checks"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::cloudtrail_management",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::cognito_management",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::compliance_dlq",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::compliance_kms",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::compliance_logs",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::dnssec_management",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::evidence_nightly_cdn",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-evidence-nightly-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::evidence_nightly_publish",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-evidence-nightly-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::evidence_nightly_reconcile_reads",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-evidence-nightly-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::incident_reports",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Incident reports workflow role (unattended IIR/OIR/FIR publication)"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::incident_reports_cdn",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-incident-reports-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::incident_reports_publish",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-incident-reports-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::package_maintenance",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Certification package maintenance workflow role (unattended SDR, CPO and OCR publication)"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::package_maintenance_cdn",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-package-maintenance-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::package_maintenance_publish",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-package-maintenance-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::evidence_watchdog_management",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::log_bucket_management",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::plan_access",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-plan-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::reconcile_reads",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::iam_policy::tfstate_backend",
+   "type": "iam_policy",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Inline policy on role github-actions-deploy-oidc"
+   }
+  },
+  {
+   "component_id": "aws::object_store::tfstate",
+   "type": "object_store",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Remote Terraform state for the application and bootstrap stacks"
+   }
+  },
+  {
+   "component_id": "ext::sigstore-fulcio",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "Sigstore Fulcio"
+   }
+  },
+  {
+   "component_id": "ext::sigstore-rekor",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "Sigstore Rekor"
+   }
+  },
+  {
+   "component_id": "ext::github-oidc",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "GitHub Actions OIDC token issuer"
+   }
+  },
+  {
+   "component_id": "ext::github-repo",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "GitHub repository + Actions"
+   }
+  },
+  {
+   "component_id": "ext::duo-mfa",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "Duo (operator MFA)"
+   }
+  },
+  {
+   "component_id": "ext::github-advisory-db",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "GitHub Advisory Database"
+   }
+  },
+  {
+   "component_id": "ext::cisa-kev",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "CISA Known Exploited Vulnerabilities catalog"
+   }
+  },
+  {
+   "component_id": "ext::first-epss",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "FIRST Exploit Prediction Scoring System (EPSS) scores"
+   }
+  },
+  {
+   "component_id": "ext::anchore-grype-db",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "Grype vulnerability database (Anchore)"
+   }
+  },
+  {
+   "component_id": "ext::jsdelivr",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "jsDelivr CDN (MediaPipe Tasks Vision runtime)"
+   }
+  },
+  {
+   "component_id": "ext::google-cloud-storage",
+   "type": "external_service",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "External service in boundary per ROT #2 (affects CIA without separate FedRAMP ATO)",
+    "name": "Google Cloud Storage (MediaPipe model bucket)"
+   }
+  },
+  {
+   "component_id": "npm::@aws-sdk/checksums@3.1001.6",
+   "type": "npm_package",
+   "security_category": {
+    "confidentiality": "not-applicable",
+    "integrity": "moderate",
+    "availability": "not-applicable"
+   },
+   "attributes": {
+    "function": "Runtime dependency of the compliance/KSI Lambda (npm)",
+    "name": "@aws-sdk/checksums"
+   }
+  },
+  {
+   "component_id": "pypi::annotated-doc@0.0.5",
+   "type": "pypi_package",
+   "security_category": {
+    "confidentiality": "not-applicable",
+    "integrity": "moderate",
+    "availability": "not-applicable"
+   },
+   "attributes": {
+    "function": "Dependency of the Silk Reeling application Lambda (PyPI)",
+    "name": "annotated-doc"
+   }
+  },
+  {
+   "component_id": "html::404.html",
+   "type": "html_artifact",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Public site content"
+   }
+  }
+ ],
+ "ksis": [
+  {
+   "id": "KSI-CED-RAT",
+   "method": "documentation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": []
+   }
+  },
+  {
+   "id": "KSI-CMT-LMC",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::cdn_distribution::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CMT-RMV",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::cdn_distribution::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CMT-RVP",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::cdn_distribution::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CMT-VTD",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::cdn_distribution::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-DFP",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-EIS",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-IBP",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-MAT",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-OFA",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-RNT",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-RVP",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-CNA-ULN",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::identity_provider::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::dns_zone::website"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-AAM",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-APM",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-ELP",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-JIT",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-SNU",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-IAM-SUS",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::identity_provider::silk_reeling",
+     "aws::oidc_provider::github",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only"
+    ]
+   }
+  },
+  {
+   "id": "KSI-INR-AAR",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::notification_topic::evidence_alerts"
+    ]
+   }
+  },
+  {
+   "id": "KSI-INR-RIR",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::notification_topic::evidence_alerts"
+    ]
+   }
+  },
+  {
+   "id": "KSI-INR-RPI",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::notification_topic::evidence_alerts"
+    ]
+   }
+  },
+  {
+   "id": "KSI-MLA-ALA",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::message_queue::compliance_dlq",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::cdn_distribution::website",
+     "aws::notification_topic::evidence_alerts",
+     "aws::audit_log_trail::management"
+    ]
+   }
+  },
+  {
+   "id": "KSI-MLA-EVC",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::message_queue::compliance_dlq",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::cdn_distribution::website",
+     "aws::notification_topic::evidence_alerts",
+     "aws::audit_log_trail::management"
+    ]
+   }
+  },
+  {
+   "id": "KSI-MLA-LET",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::message_queue::compliance_dlq",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::cdn_distribution::website",
+     "aws::notification_topic::evidence_alerts",
+     "aws::audit_log_trail::management"
+    ]
+   }
+  },
+  {
+   "id": "KSI-MLA-OSM",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::message_queue::compliance_dlq",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::cdn_distribution::website",
+     "aws::notification_topic::evidence_alerts",
+     "aws::audit_log_trail::management"
+    ]
+   }
+  },
+  {
+   "id": "KSI-MLA-RVL",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::message_queue::compliance_dlq",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::cdn_distribution::website",
+     "aws::notification_topic::evidence_alerts",
+     "aws::audit_log_trail::management"
+    ]
+   }
+  },
+  {
+   "id": "KSI-PIY-GIV",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::tls_certificate::website",
+     "aws::cdn_distribution::website",
+     "aws::dns_zone::website",
+     "aws::object_store::website",
+     "aws::api_gateway::silk_reeling",
+     "aws::audit_log_trail::management",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::identity_provider::silk_reeling",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::notification_topic::evidence_alerts",
+     "aws::message_queue::compliance_dlq",
+     "aws::kv_table::tflock",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only",
+     "aws::oidc_provider::github",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::object_store::tfstate",
+     "npm::@aws-sdk/checksums@3.1001.6",
+     "pypi::annotated-doc@0.0.5",
+     "html::404.html",
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage"
+    ]
+   }
+  },
+  {
+   "id": "KSI-PIY-RES",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::tls_certificate::website",
+     "aws::cdn_distribution::website",
+     "aws::dns_zone::website",
+     "aws::object_store::website",
+     "aws::api_gateway::silk_reeling",
+     "aws::audit_log_trail::management",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::identity_provider::silk_reeling",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::notification_topic::evidence_alerts",
+     "aws::message_queue::compliance_dlq",
+     "aws::kv_table::tflock",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only",
+     "aws::oidc_provider::github",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::object_store::tfstate",
+     "npm::@aws-sdk/checksums@3.1001.6",
+     "pypi::annotated-doc@0.0.5",
+     "html::404.html",
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage"
+    ]
+   }
+  },
+  {
+   "id": "KSI-PIY-RIS",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::tls_certificate::website",
+     "aws::cdn_distribution::website",
+     "aws::dns_zone::website",
+     "aws::object_store::website",
+     "aws::api_gateway::silk_reeling",
+     "aws::audit_log_trail::management",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::identity_provider::silk_reeling",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::notification_topic::evidence_alerts",
+     "aws::message_queue::compliance_dlq",
+     "aws::kv_table::tflock",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only",
+     "aws::oidc_provider::github",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::object_store::tfstate",
+     "npm::@aws-sdk/checksums@3.1001.6",
+     "pypi::annotated-doc@0.0.5",
+     "html::404.html",
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage"
+    ]
+   }
+  },
+  {
+   "id": "KSI-PIY-RSD",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::tls_certificate::website",
+     "aws::cdn_distribution::website",
+     "aws::dns_zone::website",
+     "aws::object_store::website",
+     "aws::api_gateway::silk_reeling",
+     "aws::audit_log_trail::management",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::identity_provider::silk_reeling",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::notification_topic::evidence_alerts",
+     "aws::message_queue::compliance_dlq",
+     "aws::kv_table::tflock",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only",
+     "aws::oidc_provider::github",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::object_store::tfstate",
+     "npm::@aws-sdk/checksums@3.1001.6",
+     "pypi::annotated-doc@0.0.5",
+     "html::404.html",
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage"
+    ]
+   }
+  },
+  {
+   "id": "KSI-PIY-RVD",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::tls_certificate::website",
+     "aws::cdn_distribution::website",
+     "aws::dns_zone::website",
+     "aws::object_store::website",
+     "aws::api_gateway::silk_reeling",
+     "aws::audit_log_trail::management",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::log_group::evidence_watchdog",
+     "aws::log_group::opa_compliance",
+     "aws::log_group::silk_apigw",
+     "aws::log_group::silk_reeling",
+     "aws::metric_alarm::evidence[artifact-stale]",
+     "aws::metric_alarm::evidence[nightly-failed]",
+     "aws::metric_alarm::evidence[runtime-age]",
+     "aws::metric_alarm::evidence[vdr-age]",
+     "aws::identity_provider::silk_reeling",
+     "aws::iam_role::evidence_watchdog",
+     "aws::iam_role::lambda_opa",
+     "aws::iam_role::silk_reeling",
+     "aws::iam_policy::evidence_watchdog",
+     "aws::iam_policy::lambda_opa",
+     "aws::iam_policy::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::notification_topic::evidence_alerts",
+     "aws::message_queue::compliance_dlq",
+     "aws::kv_table::tflock",
+     "aws::iam_group::operators",
+     "aws::iam_group::read_only",
+     "aws::oidc_provider::github",
+     "aws::iam_role::deploy",
+     "aws::iam_role::evidence_nightly",
+     "aws::iam_role::plan",
+     "aws::iam_policy::cloudtrail_management",
+     "aws::iam_policy::cognito_management",
+     "aws::iam_policy::compliance_dlq",
+     "aws::iam_policy::compliance_kms",
+     "aws::iam_policy::compliance_logs",
+     "aws::iam_policy::dnssec_management",
+     "aws::iam_policy::evidence_nightly_cdn",
+     "aws::iam_policy::evidence_nightly_publish",
+     "aws::iam_policy::evidence_nightly_reconcile_reads",
+     "aws::iam_policy::evidence_watchdog_management",
+     "aws::iam_policy::log_bucket_management",
+     "aws::iam_policy::plan_access",
+     "aws::iam_policy::reconcile_reads",
+     "aws::iam_policy::tfstate_backend",
+     "aws::object_store::tfstate",
+     "npm::@aws-sdk/checksums@3.1001.6",
+     "pypi::annotated-doc@0.0.5",
+     "html::404.html",
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage"
+    ]
+   }
+  },
+  {
+   "id": "KSI-RPL-ABO",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate"
+    ]
+   }
+  },
+  {
+   "id": "KSI-RPL-ARP",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate"
+    ]
+   }
+  },
+  {
+   "id": "KSI-RPL-RRO",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate"
+    ]
+   }
+  },
+  {
+   "id": "KSI-RPL-TRC",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SCR-MIT",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage",
+     "pypi::annotated-doc@0.0.5",
+     "npm::@aws-sdk/checksums@3.1001.6"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SCR-MON",
+   "method": "inventory-attestation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "ext::sigstore-fulcio",
+     "ext::sigstore-rekor",
+     "ext::github-oidc",
+     "ext::github-repo",
+     "ext::duo-mfa",
+     "ext::github-advisory-db",
+     "ext::cisa-kev",
+     "ext::first-epss",
+     "ext::anchore-grype-db",
+     "ext::jsdelivr",
+     "ext::google-cloud-storage",
+     "pypi::annotated-doc@0.0.5",
+     "npm::@aws-sdk/checksums@3.1001.6"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-ACM",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-ASM",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-EIS",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-PRR",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-RUD",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-SIN",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-VCM",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  },
+  {
+   "id": "KSI-SVC-VRI",
+   "method": "policy-validation",
+   "status": "pass",
+   "evidence": {
+    "component_refs": [
+     "aws::api_gateway::silk_reeling",
+     "aws::cdn_distribution::website",
+     "aws::tls_certificate::website",
+     "aws::event_schedule::evidence_watchdog",
+     "aws::event_schedule::opa_compliance",
+     "aws::object_store::website",
+     "aws::object_store::cloudtrail",
+     "aws::object_store::logs",
+     "aws::object_store::tfstate",
+     "aws::function::evidence_watchdog",
+     "aws::function::opa_compliance",
+     "aws::function::silk_reeling",
+     "aws::kms_key::at_rest",
+     "aws::kms_key::dnssec_ksk",
+     "aws::kms_key::runtime_signing",
+     "aws::kms_key::silk_reeling"
+    ]
+   }
+  }
+ ]
+}

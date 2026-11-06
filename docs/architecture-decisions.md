@@ -8,7 +8,7 @@ Change management is GitOps, full stop. Every change to infrastructure or conten
 
 There is no separate change-management ticketing system because there is no separate change-management team. The PR is the change request, the review (when applicable), and the approval. For solo work, the diff itself serves all three roles.
 
-**Effectiveness review:** monthly, by checking that no commits have reached `main` outside the workflow. The git log makes this trivial; the runtime KSI signal makes drift detectable.
+**Effectiveness check:** automated, every night. The audit-log review (`scripts/audit-log-review.py`, published as `/.well-known/vdr-audit-log-review.json`) lists every commit on `main` since the previous run and flags any without a merged pull request, any workflow change outside one, and any ruleset or environment changed in the window; the runtime KSI signal makes drift detectable.
 
 ## Ingress and egress restriction (KSI-CNA-RNT)
 
@@ -27,7 +27,7 @@ The system has three logical paths: viewer→CloudFront→S3 (read-only, all vie
 
 CloudFront includes AWS Shield Standard at no cost; this is the baseline protection. AWS WAF was evaluated and consciously excluded as a cost trade-off (~$120/year) documented in the README and POAM-007. Since the Silk Reeling app was added, the system does have an authentication endpoint and an API — those are protected by API Gateway stage throttling (20 req/s, burst 10), Cognito account lockout, and Shield Standard, which together cover the SC-5 cases at this scale. POAM-023's closure keeps a standing trigger: credential-guessing evidence in the app's logs forces the WAF rate-rule immediately.
 
-**Effectiveness review:** annually (see [`security-review.md`](security-review.md)). If traffic patterns change or the threat profile shifts (e.g., the site starts serving forms or APIs), the WAF decision is revisited.
+**Effectiveness check:** the Annual Security Review (`scripts/hold-security-review.py`, [`security-review.md`](security-review.md)) fails when a component type added since the previous review, such as a new form or API, is not named in this section or the threat model, so a change in the threat profile reopens the WAF decision through a reviewed pull request.
 
 ## High availability (KSI-CNA-OFA)
 
@@ -61,15 +61,16 @@ cannot silence the audit record.
 
 Alerting today is scoped to evidence freshness: the evidence SLA watchdog (`infrastructure/watchdog.tf`) pages the operator by email when published reporting goes stale or the nightly refresh fails. If the system grew to require true SIEM features (correlation rules, alerting on control-plane events, longer retention), the next step would be Amazon Security Lake or a third-party SIEM ingesting from CloudWatch. Out of scope today.
 
-## Audit log review cadence (KSI-MLA-RVL)
+## Audit log review (KSI-MLA-RVL)
 
-Quarterly. Specifically:
+Automated, every night: `scripts/audit-log-review.py` runs in `evidence-nightly.yml` and publishes `/.well-known/vdr-audit-log-review.json`, signed. It:
 
-- Review CloudTrail records for any unexpected API calls, especially IAM and CloudFront writes from non-CI principals (capture depth is documented in the SIEM section above)
-- Review Lambda execution logs for runtime KSI emitter failures
-- Review GitHub Actions workflow run history for unexpected workflow modifications
+- reads CloudTrail's event history (`cloudtrail:LookupEvents`, write events only, in us-east-1 and us-east-2) for IAM, CloudFront, KMS, Lambda, Cognito, CloudTrail and S3 bucket-policy or public-access writes, and flags any whose principal is not one of the five CI roles, AWS itself, or a Cognito app user's own sign-in (capture depth is documented in the SIEM section above);
+- reads GitHub's record of `main` (commits and their merged pull requests, workflow changes, rulesets and environments) and flags any change outside a merged pull request;
+- evaluates each flagged event by rule (IEC-CSO-EFR): one that stops or reconfigures the trail, creates long-lived credentials or a user, disables a key or removes a public access block is a possible FedRAMP Reportable Incident and fails the nightly; any other is a process finding in the VDR (gate check `audit-log.unexpected`);
+- plants two events from a plainly simulated intruder, Mallory McHypothetical (simulated), on every run and fails unless both are caught and evaluated reportable.
 
-A no-finding review does not require a commit. Anomalies are recorded in [`security-review.md`](security-review.md) with a date and disposition.
+The emitter's failures are covered by the evidence watchdog and the runtime signal's freshness, not by reading its logs. Nobody reads the logs by hand.
 
 ## Log access scoping (KSI-MLA-ALA)
 
@@ -92,7 +93,7 @@ The CISA Secure-by-Design pledge has 7 goals; this system addresses or trivially
 
 Continuous improvement is mechanized through the runtime KSI signal. Drift between the deploy-time signal and the runtime signal is the primary improvement signal. Each detected drift event triggers a fix in the policy or the implementation, recorded in the git log.
 
-The annual security review (see [`security-review.md`](security-review.md)) is the human-layer continuous improvement loop.
+The Annual Security Review (`scripts/hold-security-review.py`, see [`security-review.md`](security-review.md)) is the yearly loop: it re-checks every document, the component types against the threat model, decisions, findings, incident patterns and recurring cost, and a failing item fails the run until a pull request fixes it.
 
 ## Secret management (KSI-SVC-ASM)
 
@@ -137,7 +138,7 @@ Token threat model, sized to the system's actual blast radius. Methodology: STRI
 - Side-channel attacks on the underlying AWS infrastructure (inherited from AWS authorization)
 - Insider threat on the operator's personal endpoints (operator's laptop is outside system boundary)
 
-**Vulnerability analysis** is automated through the SAST/SCA tools described under SA-11 (Checkov, tfsec, Dependabot). Annual review of the threat model occurs in [`security-review.md`](security-review.md).
+**Vulnerability analysis** is automated through the SAST/SCA tools described under SA-11 (Checkov, tfsec, Dependabot). The Annual Security Review (`scripts/hold-security-review.py`) fails when a component type added since the previous review is not named in this threat model, so the model is kept current through pull requests ([`security-review.md`](security-review.md)).
 
 ## Communication integrity (KSI-SVC-VCM, mod-only)
 

@@ -1,0 +1,4 @@
+{"$comment": "Known-bad: a cost line whose source is neither a repository path nor external:<what>.",
+ "schema": "recurring-costs/1", "status": "AI-drafted estimate; operator to correct",
+ "lines": [{"id": "COST-MYSTERY", "item": "Something that bills", "source": "somewhere/that-does-not-exist.tf",
+            "estimate_usd_per_year": 1, "estimate": "about $1", "basis": "a guess"}]}

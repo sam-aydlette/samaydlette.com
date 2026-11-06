@@ -1,0 +1,106 @@
+{
+  "assessment_type": "simulated-independent-assessment",
+  "schema_version": "1",
+  "simulated": true,
+  "fedramp_recognized": false,
+  "assessor_id": "NOT-A-REAL-ASSESSOR-ID",
+  "disclaimer": "SIMULATED. Totally Real Assessment Services, LLC is a GitHub Actions workflow in the provider's own repository, wearing a lanyard. It is not independent, it is not a FedRAMP Recognized independent assessment service, its assessor ID is NOT-A-REAL-ASSESSOR-ID, and nothing here is a FedRAMP independent assessment. It exists to show the assessor port working end to end. Our rates are very competitive: free.",
+  "assessor": {
+    "organization": "Totally Real Assessment Services, LLC (simulated)",
+    "key_id": "sigstore-keyless:simulated-assessor.yml"
+  },
+  "issued_at": "2026-11-05T12:00:00+00:00",
+  "subject": {
+    "site": "https://samaydlette.com",
+    "phase": "pre-deploy",
+    "commit": "0000000000000000000000000000000000000000",
+    "signal_id": "00000000-0000-4000-8000-000000000001",
+    "signal_commit": "ffffffffffffffffffffffffffffffffffffffff",
+    "assessor_guide_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  },
+  "results": {
+    "rules": {
+      "pass": 1,
+      "observation": 1,
+      "fail": 0
+    },
+    "ksis": {
+      "pass": 1,
+      "observation": 0,
+      "fail": 0
+    }
+  },
+  "records": [
+    {
+      "record_type": "assessor-record",
+      "schema_version": "1",
+      "record_id": "TRAS-20261105T120000Z-SDR-CSO-FRR",
+      "assessor": {
+        "organization": "Totally Real Assessment Services, LLC (simulated)",
+        "key_id": "sigstore-keyless:simulated-assessor.yml"
+      },
+      "issued_at": "2026-11-05T12:00:00+00:00",
+      "kind": "finding",
+      "text": "SIMULATED assessment of rule SDR-CSO-FRR, not a FedRAMP Recognized assessment. Result: Pass. Independent verification: test tests/test_sdr.py::test_every_applicable_rule_is_listed_once passed (re-run by the assessor). Independent validation: security-decision-record.json served; signature verified (deploy identity); 3h old (window 720h).",
+      "rule_id": "SDR-CSO-FRR",
+      "signature": {
+        "algorithm": "SIGSTORE_KEYLESS_SET",
+        "value": "632106e406c8aed713dee1a91fc1b2c0053eeb8b280866b7fe72e3f6ba741358",
+        "signed_set": "simulated-assessment.json"
+      }
+    },
+    {
+      "record_type": "assessor-record",
+      "schema_version": "1",
+      "record_id": "TRAS-20261105T120000Z-CDS-CSO-RPS",
+      "assessor": {
+        "organization": "Totally Real Assessment Services, LLC (simulated)",
+        "key_id": "sigstore-keyless:simulated-assessor.yml"
+      },
+      "issued_at": "2026-11-05T12:00:00+00:00",
+      "kind": "finding",
+      "text": "SIMULATED assessment of rule CDS-CSO-RPS, not a FedRAMP Recognized assessment. Result: Pass with observation. Independent verification: Not Applicable (MAY): example. Independent validation: policy-index.json is not yet published; it is first published by the deploy under assessment, and validated at the next assessment.",
+      "rule_id": "CDS-CSO-RPS",
+      "signature": {
+        "algorithm": "SIGSTORE_KEYLESS_SET",
+        "value": "7c82618e3c8f080db94cf5a0f9e77efa81b7276bf634add6294c121a72107dbd",
+        "signed_set": "simulated-assessment.json"
+      }
+    },
+    {
+      "record_type": "assessor-record",
+      "schema_version": "1",
+      "record_id": "TRAS-20261105T120000Z-KSI-CED-RAT",
+      "assessor": {
+        "organization": "Totally Real Assessment Services, LLC (simulated)",
+        "key_id": "sigstore-keyless:simulated-assessor.yml"
+      },
+      "issued_at": "2026-11-05T12:00:00+00:00",
+      "kind": "finding",
+      "text": "SIMULATED assessment of KSI KSI-CED-RAT, not a FedRAMP Recognized assessment. Result: Pass. Independent verification: in the published signal sig-1 with status pass by method documentation. Independent validation: KSI signal served and its signature verified (deploy identity).",
+      "rule_id": "KSI-CED-RAT",
+      "signature": {
+        "algorithm": "SIGSTORE_KEYLESS_SET",
+        "value": "5f529cd3c3f006eac63f176f1e8baac1ce8cc23cae3dbd413ede1b76eb606fdd",
+        "signed_set": "simulated-assessment.json"
+      }
+    },
+    {
+      "record_type": "assessor-record",
+      "schema_version": "1",
+      "record_id": "TRAS-20261105T120000Z-SUMMARY",
+      "assessor": {
+        "organization": "Totally Real Assessment Services, LLC (simulated)",
+        "key_id": "sigstore-keyless:simulated-assessor.yml"
+      },
+      "issued_at": "2026-11-05T12:00:00+00:00",
+      "kind": "summary",
+      "text": "Overall summary (IVV-IAS-OSA), SIMULATED. Totally Real Assessment Services, LLC (simulated) verified and validated all 2 applicable FedRAMP rules and all 1 Key Security Indicators for commit 0000000000000000000000000000000000000000: rules 1 pass, 1 pass with observation, 0 fail; KSIs 1 pass, 0 pass with observation, 0 fail. Failures: none. Areas of dispute: none. Observations: CDS-CSO-RPS: policy-index.json is not yet published; it is first published by the deploy under assessment, and validated at the next assessment. SIMULATED. Totally Real Assessment Services, LLC is a GitHub Actions workflow in the provider's own repository, wearing a lanyard. It is not independent, it is not a FedRAMP Recognized independent assessment service, its assessor ID is NOT-A-REAL-ASSESSOR-ID, and nothing here is a FedRAMP independent assessment. It exists to show the assessor port working end to end. Our rates are very competitive: free.",
+      "signature": {
+        "algorithm": "SIGSTORE_KEYLESS_SET",
+        "value": "807d840be4064f51bc9ab05e8d6814b0611981b42d1fb37b5ba86d78b927b136",
+        "signed_set": "simulated-assessment.json"
+      }
+    }
+  ]
+}

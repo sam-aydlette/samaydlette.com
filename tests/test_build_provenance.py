@@ -74,4 +74,6 @@ def test_builder_id_single_sourced_and_pinned(tmp_path, monkeypatch):
     assert bid == EXPECTED_BUILDER          # derived from WORKFLOW_REF, not hardcoded drift
     assert " " not in bid                   # never the spaced display name
     assert not bid.endswith("@*")           # never a wildcard ref
-    assert "/actions/runs/42" in pred["runDetails"]["metadata"]["invocationId"]
+    # No run ID is published (SLSA v1.0: BuildMetadata has no required field).
+    assert "metadata" not in pred["runDetails"]
+    assert "actions/runs" not in json.dumps(pred) and '"42"' not in json.dumps(pred)

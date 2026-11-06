@@ -1,0 +1,6 @@
+{"_note": "Known-bad: flow X names a component the inventory does not have; the log group is in no flow.",
+ "declared": [{"key": "operator", "label": "Operator", "zone": "outside", "kind": "actor"}],
+ "flows": [
+  {"id": "X", "label": "Operator → a ghost", "path": [{"declared": "operator"}, {"component": "aws::function::ghost"}]},
+  {"id": "Y", "label": "Operator → app", "path": [{"declared": "operator"}, {"component": "aws::function::app"}]}
+ ]}

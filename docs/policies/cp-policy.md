@@ -6,4 +6,4 @@ CP enhancements covering alternate processing site, alternate storage site, and 
 
 **20x rule integration.** Aligns with KSI-CPL (Recovery Planning). Plan exercise cadence is in [`security-review.md`](../security-review.md).
 
-**Review cadence.** Annually, plus after any Transformative change per SCN.
+**Verification.** Machine-checked on every deploy and every night (`scripts/check-non-machine-vv.py`), and re-checked, with its sha256, in each Annual Security Review (`scripts/hold-security-review.py`); a change is a reviewed pull request; a Transformative change (SCN) revisits it in the same pull request.

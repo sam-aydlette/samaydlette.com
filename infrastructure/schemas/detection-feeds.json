@@ -1,11 +1,11 @@
 {
   "$schema": "./detection-feeds.schema.json",
-  "version": "2026-11-04.1",
+  "version": "2026-11-05.1",
   "description": "What G7 (detection) requires of every input the VDR build reads: present, well-formed and, where the source dates itself, no older than max_age_hours. Read by scripts/detection-gate.py, which fails closed on a missing or invalid file. Each feed's mode (block or detect-and-recover) is in gate-modes.json under detection.<feed>.",
   "decided_by": "Sam Aydlette",
-  "decided_on": "2026-11-04",
-  "review_by": "2027-11-04",
-  "rationale": "KEV: CISA releases the catalog on weekdays when entries change, not daily; 14 days tolerates quiet periods without missing a release cycle. EPSS: FIRST publishes daily; 3 days tolerates a missed publication. Grype DB: Anchore builds daily; 5 days matches Grype's own default maximum database age. The remaining feeds carry no source date and must simply be present and well-formed; DAST's 14-day window is the builder's --zap-max-age-days.",
+  "decided_on": "2026-11-05",
+  "review_by": "2027-11-05",
+  "rationale": "KEV: CISA releases the catalog on weekdays when entries change, not daily; 14 days tolerates quiet periods without missing a release cycle. EPSS: FIRST publishes daily; 3 days tolerates a missed publication. Grype DB: Anchore builds daily; 5 days matches Grype's own default maximum database age. The remaining feeds carry no source date and must simply be present and well-formed; the site DAST window is the builder's --zap-max-age-days (3 days, VDR-TFR-PSD Class C). CodeQL: analysed on every push and PR to main, after every deploy and daily; 72 hours is the Class C 3-day sample-detection cadence (VDR-TFR-PSD), and every listed category (this repository's Python, JavaScript and Actions code, and the Silk Reeling app's Python and JavaScript) must have been analysed in it. ZAP API: the authenticated scan of the Silk Reeling API runs daily and after every deploy; 72 hours is the same 3-day cadence.",
   "feeds": {
     "kev": {"max_age_hours": 336, "source_date": "dateReleased"},
     "epss": {"max_age_hours": 72, "source_date": "score_date in the file's header line"},
@@ -13,6 +13,10 @@
     "dependabot": {"source_date": null},
     "previous-vdr": {"source_date": null},
     "checkov": {"source_date": null},
-    "tfsec": {"source_date": null}
+    "tfsec": {"source_date": null},
+    "codeql": {"max_age_hours": 72, "source_date": "created_at of the newest analysis on main of each required category",
+               "categories": ["/language:python", "/language:javascript-typescript", "/language:actions",
+                              "/silk-reeling/language:python", "/silk-reeling/language:javascript-typescript"]},
+    "zap-api": {"max_age_hours": 72, "source_date": "@generated in the authenticated API scan report"}
   }
 }

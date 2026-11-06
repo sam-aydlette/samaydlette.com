@@ -1,0 +1,12 @@
+[
+ {"EventName": "UpdateDistribution", "EventSource": "cloudfront.amazonaws.com", "EventTime": "2026-11-06T03:00:00Z", "region": "us-east-1",
+  "userIdentity": {"type": "AssumedRole", "sessionContext": {"sessionIssuer": {"userName": "github-actions-deploy-oidc"}}}},
+ {"EventName": "PutBucketPolicy", "EventSource": "s3.amazonaws.com", "EventTime": "2026-11-06T03:01:00Z", "region": "us-east-2",
+  "userIdentity": {"type": "AssumedRole", "sessionContext": {"sessionIssuer": {"userName": "github-actions-deploy-oidc"}}}},
+ {"EventName": "Encrypt", "EventSource": "kms.amazonaws.com", "EventTime": "2026-11-06T03:02:00Z", "region": "us-east-2",
+  "userIdentity": {"type": "AWSService"}},
+ {"EventName": "InitiateAuth", "EventSource": "cognito-idp.amazonaws.com", "EventTime": "2026-11-06T03:03:00Z", "region": "us-east-2",
+  "userIdentity": {"type": "Unknown"}},
+ {"EventName": "PutObject", "EventSource": "s3.amazonaws.com", "EventTime": "2026-11-06T03:04:00Z", "region": "us-east-2",
+  "userIdentity": {"type": "IAMUser", "userName": "not-watched"}}
+]

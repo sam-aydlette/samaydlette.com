@@ -18,7 +18,9 @@
 # cannot sync the website, and it cannot write a single object outside
 # `.well-known/vdr-*`. Everything else it can do is read-only.
 #
-# The scope below is the whole permission set, and it is short on purpose. If a
+# The scope below is the whole permission set, and it is short on purpose. The
+# one read added since (cloudtrail:LookupEvents, for the automated audit-log
+# review) is a read on the unattended path and adds no write. If a
 # future change to the nightly workflow needs a permission that is not here,
 # that is a signal to re-examine whether the work belongs on the unattended path
 # at all — not to widen this policy.
@@ -166,6 +168,33 @@ resource "aws_iam_role_policy" "evidence_nightly_reconcile_reads" {
   name   = "evidence-nightly-reconcile-readonly"
   role   = aws_iam_role.evidence_nightly.id
   policy = data.aws_iam_policy_document.evidence_nightly_reconcile_reads.json
+}
+
+# -----------------------------------------------------------------------------
+# READ: the audit-log review's CloudTrail event history
+# -----------------------------------------------------------------------------
+# scripts/audit-log-review.py reads the write events of the last window with
+# cloudtrail:LookupEvents (DEC-195: nobody reviews the logs by hand). Read-only;
+# the action does not support resource-level scoping, so Resource is "*". It
+# adds no write: the review publishes under .well-known/vdr-*, inside the
+# existing PutObject scope. The deploy reads this policy and compares its
+# actions with the Secure Configuration Guide (role-reads-nightly), so a deploy
+# fails before the SDR is built while it is not applied.
+data "aws_iam_policy_document" "evidence_nightly_audit_reads" {
+  # checkov:skip=CKV_AWS_356:cloudtrail:LookupEvents cannot be resource-scoped; a single read-only action.
+  statement {
+    sid       = "AuditLogReviewReads"
+    effect    = "Allow"
+    actions   = ["cloudtrail:LookupEvents"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "evidence_nightly_audit_reads" {
+  # checkov:skip=CKV_AWS_356:cloudtrail:LookupEvents cannot be resource-scoped; a single read-only action. Documented exception.
+  name   = "evidence-nightly-audit-log-review"
+  role   = aws_iam_role.evidence_nightly.id
+  policy = data.aws_iam_policy_document.evidence_nightly_audit_reads.json
 }
 
 output "evidence_nightly_role_arn" {

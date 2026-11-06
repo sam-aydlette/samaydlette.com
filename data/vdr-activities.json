@@ -1,0 +1,40 @@
+{
+  "$schema": "../infrastructure/schemas/vdr-activities.schema.json",
+  "schema": "vdr-activities/1",
+  "$comment": "Historical vulnerability detection and response activity from outside the pipeline (VER-RPT-HLO), kept as a record; nothing is added here by hand. The month's activities are generated from run records by scripts/build-vdr-monthly.py (generated_runs): the scans and feeds the VDR build read, the runtime runs, the non-machine verification, the simulated assessor's runs, and the incident, inbox and recovery exercises and the audit-log review's planted intruder, all with simulated participants (DEC-194, DEC-195). It states 'none this period' for each kind with no run. The two entries below were AI-drafted from the repository on 2026-11-05 (docs/security-review.md; DEC-039 and DEC-040) and are history: no confirmation is pending.",
+  "programs": {
+    "vdp": {
+      "active": true,
+      "note": "reports to the contact in /.well-known/security.txt"
+    },
+    "bug-bounty": {
+      "active": false,
+      "note": "no bug bounty program"
+    },
+    "penetration-testing": {
+      "active": false,
+      "note": "no penetration test has been performed or scheduled"
+    }
+  },
+  "activities": [
+    {
+      "id": "ACT-001",
+      "kind": "assessment",
+      "date": "2026-05-08",
+      "performed_by": "Sam Aydlette (operator; self-performed)",
+      "summary": "Independent-assessment-style external assessment, self-performed; findings SAR-001 to SAR-009",
+      "evidence": "docs/security-review.md (History: the 2026-Q2 entry)",
+      "recorded_by": "AI-drafted from the repository, 2026-11-05; historical record (no confirmation pending)"
+    },
+    {
+      "id": "ACT-002",
+      "kind": "manual-scan",
+      "date": "2026-10-26",
+      "end_date": "2026-10-27",
+      "performed_by": "Sam Aydlette (operator)",
+      "summary": "Manual OWASP ZAP scans of https://samaydlette.com; alerts 10099 and 10036-2 assessed as false positives",
+      "evidence": "data/decisions.json DEC-039, DEC-040 (original_detection_date 2026-10-26)",
+      "recorded_by": "AI-drafted from the repository, 2026-11-05; historical record (no confirmation pending)"
+    }
+  ]
+}

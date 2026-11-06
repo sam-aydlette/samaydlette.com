@@ -1,0 +1,88 @@
+# =============================================================================
+# Availability probe  (CDS-CSO-AVR, CDS-TRC-USH)
+# =============================================================================
+# An availability monitor on infrastructure independent of the offering: it
+# runs on GitHub Actions, not AWS, probes the core services over HTTPS every 15
+# minutes (scripts/availability-probe.py), keeps 35 days of history, derives
+# availability incidents, and publishes JSON + Markdown to the repository's
+# `availability-status` branch. GitHub serves that branch, so the status stays
+# readable when the offering's CloudFront or S3 is down:
+#   https://raw.githubusercontent.com/sam-aydlette/samaydlette.com/availability-status/availability-status.json
+#   https://github.com/sam-aydlette/samaydlette.com/blob/availability-status/availability-status.md
+#
+# The branch holds one commit, replaced on every run (history lives in the
+# JSON), so the repository does not grow by a commit every 15 minutes. The
+# workflow's token can write contents (no narrower scope exists); the job only
+# ever pushes refs/heads/availability-status, and main is protected by its own
+# branch rules. The deploy reads this feed and fails when it is missing or more
+# than 2 hours old, so the published package never cites a monitor that has
+# stopped (scripts/availability-probe.py --check-fresh).
+#
+# Caveats stated in the feed: history begins at the first run; GitHub may delay
+# a scheduled run under load, and disables schedules on a repository with no
+# activity for 60 days (the deploy's freshness check then fails).
+# =============================================================================
+name: Availability probe
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: availability-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe the core services from outside AWS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write   # push the status branch; nothing else
+    steps:
+      - name: Checkout the probe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Read the previous status feed
+        run: |
+          set -euo pipefail
+          # Public repository: an anonymous fetch. No branch yet means a first run.
+          if git fetch --depth 1 --quiet origin availability-status 2>/dev/null; then
+            git show FETCH_HEAD:availability-status.json > previous-status.json || echo '{}' > previous-status.json
+          else
+            echo '{}' > previous-status.json
+          fi
+
+      - name: Probe the core services
+        run: python3 scripts/availability-probe.py --previous previous-status.json --out-dir status-out
+
+      - name: Publish the status feed to the availability-status branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          cd status-out
+          git init --quiet
+          git checkout --quiet --orphan availability-status
+          git add availability-status.json availability-status.md
+          git -c user.name="availability-probe" -c user.email="availability-probe@users.noreply.github.com" \
+            commit --quiet -m "Availability status $(jq -r .generated_at availability-status.json)"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c http.extraheader="AUTHORIZATION: basic $auth" \
+            push --quiet --force "https://github.com/${REPO}.git" HEAD:refs/heads/availability-status
+
+      # After publishing: an ongoing incident fails the run, and GitHub notifies
+      # the operator of the failed scheduled run (email). The status is already
+      # published either way.
+      - name: Alert on an ongoing availability incident
+        run: python3 scripts/availability-probe.py --fail-on-incident status-out/availability-status.json

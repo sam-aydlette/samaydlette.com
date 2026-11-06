@@ -1,0 +1,7 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-incident-report-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "reportType": "Initial",
+  "providerTrackingId": "INC-0000-000",
+  "providerExtensions": {"note": "Known bad (CDS-CSO-FID): a report in a FedRAMP schema without providerExtensions.fedRampId."}
+}

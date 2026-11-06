@@ -9,6 +9,7 @@ no build.
 
 import hashlib
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -130,3 +131,141 @@ def evaluation_days(rules_dir=RULES_DIR):
     """VER-TFR-EVU: days from detection within which every vulnerability is evaluated."""
     rules, _ = load_rules(rules_dir)
     return _class_c_or_flat(_rule(rules, "VER", "VER-TFR-EVU"), "VER-TFR-EVU")
+
+
+# The certification this system builds toward: FedRAMP 20x, Program path, Class C.
+CERT_TYPE = "20x"
+CERT_PATH = "Program"
+_SCOPES = ("all", "20x")  # rule sections that can apply to a 20x certification
+
+
+def _subset_applicability(family, scope, subset):
+    """A subset's applicability block. Subsets of the 20x section are described
+    in info["20x"].subsets where the family has one (CPO, FRC, IVV, SDR), and
+    otherwise, like the cross-program section's, in info.subsets (VDR)."""
+    info = family.get("info") or {}
+    sections = [(info.get(scope) or {}).get("subsets")] if scope != "all" else []
+    for where in [*sections, info.get("subsets")]:
+        app = ((where or {}).get(subset) or {}).get("applicability")
+        if isinstance(app, dict):
+            return app
+    return None
+
+
+def applicable_provider_rules(rules_dir=RULES_DIR):
+    """{rule ID: {"family", "name", "statement", "force"}} for every FedRAMP rule
+    a provider must address for a 20x Program Class C certification (SDR-CSO-FRR).
+
+    Applicability is read from the corpus's own subset metadata (types, paths,
+    classes, affects), never from a list kept here, so a re-pinned corpus that
+    adds or retires a rule changes the set. A subset in a 20x-relevant section
+    with no applicability block fails closed: it can't be decided either way."""
+    rules, _ = load_rules(rules_dir)
+    frr = rules.get("FRR")
+    if not isinstance(frr, dict) or not frr:
+        _fail("no FRR section")
+    out = {}
+    for fam_id, family in sorted(frr.items()):
+        for scope in _SCOPES:
+            for subset, members in sorted(((family.get("data") or {}).get(scope) or {}).items()):
+                app = _subset_applicability(family, scope, subset)
+                if app is None:
+                    _fail(f"FRR/{fam_id}/{scope}/{subset} has no applicability metadata")
+                if not (CERT_TYPE in app.get("types", []) and CERT_PATH in app.get("paths", [])
+                        and CERT_CLASS.upper() in app.get("classes", [])
+                        and "Providers" in app.get("affects", [])):
+                    continue
+                for rid, rule in members.items():
+                    if "Providers" not in (rule.get("affects") or []):
+                        continue
+                    cell = (rule.get("varies_by_class") or {}).get(CERT_CLASS, rule)
+                    force, statement = cell.get("force"), cell.get("statement")
+                    if not isinstance(force, str) or not isinstance(statement, str):
+                        _fail(f"{rid} has no Class {CERT_CLASS.upper()} statement and force")
+                    if rid in out:
+                        _fail(f"{rid} appears twice in the corpus")
+                    out[rid] = {"family": fam_id, "subset": subset, "name": rule.get("name", ""),
+                                "statement": statement, "force": force}
+    if not out:
+        _fail("no provider rules apply; the applicability metadata has changed shape")
+    return out
+
+
+# ---- Incident Evaluation and Communication (IEC), Class C ---------------------
+# The report clocks and the Incident Rating scale are FedRAMP's, read here from
+# the pinned corpus like the remediation matrix above, never typed in.
+
+INCIDENT_REPORTS = {"iir": "IEC-CSO-IIR", "oir": "IEC-CSO-OIR", "fir": "IEC-CSO-FIR"}
+_CLOCK_UNITS = ("hours", "bizdays")
+
+
+def _iec(rules, rule_id):
+    try:
+        return rules["FRR"]["IEC"]["data"]["all"]["CSO"][rule_id]
+    except (KeyError, TypeError):
+        _fail(f"{rule_id} not found at FRR/IEC/data/all/CSO")
+
+
+def incident_report_timeframes(rules_dir=RULES_DIR):
+    """{"iir"|"oir"|"fir": {1..5: (unit, n)}} for Class C, unit "hours" or
+    "bizdays". Every impact level must carry every clock: a report with no
+    deadline cannot be alarmed."""
+    rules, _ = load_rules(rules_dir)
+    out = {}
+    for kind, rid in INCIDENT_REPORTS.items():
+        try:
+            table = _iec(rules, rid)["varies_by_class"][CERT_CLASS]["pain_timeframes"]
+        except (KeyError, TypeError):
+            _fail(f"{rid} has no Class {CERT_CLASS.upper()} pain_timeframes")
+        clocks = {}
+        for n in ("1", "2", "3", "4", "5"):
+            cell = (table.get(n) or {}).get(kind)
+            if not isinstance(cell, dict) or cell.get("timeframe_type") not in _CLOCK_UNITS \
+                    or not isinstance(cell.get("timeframe_num"), int) or isinstance(cell["timeframe_num"], bool) \
+                    or cell["timeframe_num"] <= 0:
+                _fail(f"{rid} Class C N{n} {kind} is not a positive number of hours or business days")
+            clocks[int(n)] = (cell["timeframe_type"], cell["timeframe_num"])
+        out[kind] = clocks
+    return out
+
+
+_RATING_RE = re.compile(r"^\*\*N([1-5])\*\* for (.+)\.$")
+_CLAUSE_RE = re.compile(r"likely (minimal|narrow|disruptive|debilitating) customer effect on "
+                        r"(1 or more agencies|more than 1 agency|1 agency)")
+_SCOPES_BY_TEXT = {"1 or more agencies": ("single", "multiple"), "1 agency": ("single",),
+                   "more than 1 agency": ("multiple",)}
+
+
+def incident_rating_rubric(rules_dir=RULES_DIR):
+    """{(customer effect, "single"|"multiple" agencies): N-rating 1..5} from the
+    IEC-CSO-EFI bullets. Every (effect, scope) pair must be rated exactly once,
+    or the text has changed shape and the rubric is not trusted."""
+    rules, _ = load_rules(rules_dir)
+    bullets = _iec(rules, "IEC-CSO-EFI").get("following_information_bullets")
+    if not isinstance(bullets, list) or not bullets:
+        _fail("IEC-CSO-EFI has no rating bullets")
+    out = {}
+    for b in bullets:
+        m = _RATING_RE.match(b) if isinstance(b, str) else None
+        clauses = _CLAUSE_RE.findall(m.group(2)) if m else []
+        if not clauses:
+            _fail(f"IEC-CSO-EFI bullet {b!r} is not in the expected form")
+        for effect, scope_text in clauses:
+            for scope in _SCOPES_BY_TEXT[scope_text]:
+                if (effect, scope) in out:
+                    _fail(f"IEC-CSO-EFI rates {effect}/{scope} twice")
+                out[(effect, scope)] = int(m.group(1))
+    effects = ("minimal", "narrow", "disruptive", "debilitating")
+    if set(out) != {(e, s) for e in effects for s in ("single", "multiple")}:
+        _fail("IEC-CSO-EFI does not rate every customer effect for one and for several agencies")
+    return out
+
+
+def default_incident_rating(rules_dir=RULES_DIR):
+    """IEC-CSO-DPR: the N-rating a FedRAMP Reportable Incident has until it is estimated."""
+    rules, _ = load_rules(rules_dir)
+    stmt = _iec(rules, "IEC-CSO-DPR").get("statement", "")
+    m = re.search(r"\(PAIN\) of ([1-5])\b", stmt)
+    if not m:
+        _fail("IEC-CSO-DPR no longer states a default PAIN rating")
+    return int(m.group(1))

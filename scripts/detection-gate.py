@@ -14,6 +14,9 @@ input it is given:
     previous-vdr  the published VDR (the first-detected ledger): an object with findings[]
     checkov       Checkov SARIF: runs[] present, not the old empty "fallback" document
     tfsec         tfsec JSON: an object with a results key
+    codeql        CodeQL code-scanning alerts on main: alerts[] present, and every required
+                  analysis category analysed without error within the window
+    zap-api       the authenticated ZAP API scan report: site[] present, @generated within the window
 
 A fetch step that fails writes `<file>.error` instead of a substitute, and that
 text is carried into the failure. The windows come from the governed
@@ -38,7 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _gates  # noqa: E402
 
 DEFAULT_CONFIG = Path(__file__).resolve().parent.parent / "infrastructure" / "schemas" / "detection-feeds.json"
-FEEDS = ("kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec")
+FEEDS = ("kev", "epss", "grype", "dependabot", "previous-vdr", "checkov", "tfsec", "codeql", "zap-api")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -64,10 +67,13 @@ def load_config(path=None):
     feeds = cfg.get("feeds")
     if not isinstance(feeds, dict) or set(feeds) != set(FEEDS):
         _fail(p, f"feeds must list exactly {list(FEEDS)}")
-    for name in ("kev", "epss", "grype"):
+    for name in ("kev", "epss", "grype", "codeql", "zap-api"):
         w = feeds[name].get("max_age_hours")
         if isinstance(w, bool) or not isinstance(w, (int, float)) or not 0 < w <= 8760:
             _fail(p, f"{name}.max_age_hours must be a number in (0, 8760]")
+    cats = feeds["codeql"].get("categories")
+    if not isinstance(cats, list) or not cats or not all(isinstance(c, str) and c for c in cats):
+        _fail(p, "codeql.categories must be a non-empty list of analysis categories")
     cfg["sha256"] = hashlib.sha256(raw).hexdigest()
     return cfg
 
@@ -216,6 +222,61 @@ def check_tfsec(path):
     return {**r, "count": len(doc["results"] or [])}
 
 
+def check_codeql(path, cfg, now):
+    """Open CodeQL alerts on main, with the analyses that produced them. An
+    empty alerts list means nothing only when every required category was
+    analysed, without error, inside the window; a category never analysed (or
+    analysed a week ago) would otherwise read as clean code."""
+    doc, problem = _load_json(path)
+    r = {"feed": "codeql", "file": str(path)}
+    if problem:
+        return {**r, "problem": problem}
+    if not isinstance(doc, dict) or not isinstance(doc.get("alerts"), list) \
+            or not isinstance(doc.get("analyses"), list):
+        return {**r, "problem": "no alerts[] and analyses[]"}
+    r["count"] = len(doc["alerts"])
+    latest = {}
+    for a in doc["analyses"]:
+        if not isinstance(a, dict):
+            continue
+        t = _parse_time(a.get("created_at"))
+        cat = a.get("category")
+        if t is not None and isinstance(cat, str) and (cat not in latest or t > latest[cat][0]):
+            latest[cat] = (t, a)
+    feed = cfg["feeds"]["codeql"]
+    missing = [c for c in feed["categories"] if c not in latest]
+    if missing:
+        return {**r, "problem": f"no analysis on main for {', '.join(missing)}"}
+    errored = [c for c in feed["categories"] if latest[c][1].get("error")]
+    if errored:
+        return {**r, "problem": f"the latest analysis for {', '.join(errored)} reported an error"}
+    oldest = min(latest[c][0] for c in feed["categories"])
+    return _windowed(r, oldest, feed["max_age_hours"], now, "oldest required analysis")
+
+
+def _zap_time(value):
+    """ZAP's '@generated' header (UTC on the runner), as an aware time."""
+    stamp = str(value or "").strip()
+    for fmt in ("%a, %d %b %Y %H:%M:%S", "%a, %d %b %Y %H:%M:%S %Z", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(stamp, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
+
+
+def check_zap_api(path, cfg, now):
+    doc, problem = _load_json(path)
+    r = {"feed": "zap-api", "file": str(path)}
+    if problem:
+        return {**r, "problem": problem}
+    if not isinstance(doc, dict) or not isinstance(doc.get("site"), list) or not doc["site"]:
+        return {**r, "problem": "no site[] (the scan did not reach its target)"}
+    r["count"] = sum(len(s.get("alerts") or []) for s in doc["site"] if isinstance(s, dict))
+    return _windowed(r, _zap_time(doc.get("@generated")), cfg["feeds"]["zap-api"]["max_age_hours"], now,
+                     "@generated")
+
+
 def evaluate(args, cfg, now):
     results = []
     if args.kev:
@@ -232,6 +293,10 @@ def evaluate(args, cfg, now):
         results.append(check_checkov(args.checkov))
     if args.tfsec:
         results.append(check_tfsec(args.tfsec))
+    if args.codeql:
+        results.append(check_codeql(args.codeql, cfg, now))
+    if args.zap_api:
+        results.append(check_zap_api(args.zap_api, cfg, now))
     return results
 
 
@@ -244,6 +309,8 @@ def main(argv=None):
     ap.add_argument("--previous-vdr")
     ap.add_argument("--checkov")
     ap.add_argument("--tfsec")
+    ap.add_argument("--codeql", help="CodeQL alerts and analyses (scripts/fetch-detection-feeds.sh)")
+    ap.add_argument("--zap-api", help="the authenticated ZAP API scan report")
     ap.add_argument("--config", default=None, help="detection feed requirements (default: the governed file)")
     ap.add_argument("--output", default="detection.json")
     ap.add_argument("--now", default=None, help="ISO time to evaluate at (tests)")

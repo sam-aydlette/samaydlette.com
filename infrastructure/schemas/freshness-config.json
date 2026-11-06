@@ -76,6 +76,30 @@
       "note": "CR26 historical vulnerability activity (VER-TFR-MRH; Class C SHOULD update at least every 14 days), rebuilt from every VDR report."
     },
     {
+      "path": ".well-known/vdr-monthly.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "generatedAt"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-monthly.bundle",
+      "note": "Monthly vulnerability detection and response activity report, month to date (VER-TFR-MHR, VER-RPT-HLO, VER-RPT-PER), rebuilt from every VDR report."
+    },
+    {
+      "path": ".well-known/vdr-non-machine-vv.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "verifiedAt"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-non-machine-vv.bundle",
+      "note": "Non-machine verification and validation (VDR-TFR-NMV): machine checks of every resource in data/non-machine-resources.json (scripts/_nonmachine.py), run by the deploy (enforced) and the evidence nightly (twice a day). verifiedAt is the run's time when every check passes and the epoch when any fails, so a failing check turns this window red at once; 26 hours means nightly runs have been missed. No verification is manual."
+    },
+    {
       "path": ".well-known/vdr-status.json",
       "cadence": "nightly",
       "max_age_hours": 26,
@@ -85,6 +109,30 @@
       },
       "signed": false,
       "note": "The nightly's status beacon. Unsigned and not evidence; listed because the watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
+    },
+    {
+      "path": ".well-known/incident-reports.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-reports.bundle",
+      "note": "The incident log (IEC-CSO-EFR) and, through it, every incident report it lists with its sha256. Rebuilt by .github/workflows/incident-reports.yml on every change to data/incidents.json and twice a day, and by every deploy. The report deadlines themselves are hours, so the watchdog also pages on each listed report past its deadline (IncidentReportsOverdue)."
+    },
+    {
+      "path": ".well-known/incident-deliveries.json",
+      "cadence": "nightly",
+      "max_age_hours": 24,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/incident-deliveries.bundle",
+      "note": "SIMULATION: the delivery log of every incident report to a simulated FedRAMP and agency recipient; nothing is sent. Rebuilt with the incident log by every deploy and by .github/workflows/incident-reports.yml."
     },
     {
       "path": ".well-known/ksi-signal-runtime.json",
@@ -149,24 +197,14 @@
     {
       "path": ".well-known/ongoing-certification-report.json",
       "cadence": "deploy",
-      "max_age_hours": 720,
+      "max_age_hours": 336,
       "timestamp": {
         "source": "json",
-        "field": "emitted_at"
+        "field": "metadata.lastUpdated"
       },
       "signed": true,
-      "signature": ".well-known/ongoing-certification-report.bundle"
-    },
-    {
-      "path": ".well-known/certification-overview-package.json",
-      "cadence": "deploy",
-      "max_age_hours": 720,
-      "timestamp": {
-        "source": "json",
-        "field": "emitted_at"
-      },
-      "signed": true,
-      "signature": ".well-known/certification-overview-package.bundle"
+      "signature": ".well-known/ongoing-certification-report.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
     },
     {
       "path": ".well-known/availability.json",
@@ -190,15 +228,27 @@
       "signature": ".well-known/policy-index.bundle"
     },
     {
-      "path": ".well-known/security-decision-record.json",
+      "path": ".well-known/minimum-assessment-scope.json",
       "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
         "source": "json",
-        "field": "metadata.last_updated"
+        "field": "generated_at"
       },
       "signed": true,
-      "signature": ".well-known/security-decision-record.bundle"
+      "signature": ".well-known/minimum-assessment-scope.bundle"
+    },
+    {
+      "path": ".well-known/security-decision-record.json",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.lastUpdated"
+      },
+      "signed": true,
+      "signature": ".well-known/security-decision-record.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
     },
     {
       "path": ".well-known/security-decision-record.json.intoto.jsonl",
@@ -212,13 +262,130 @@
     {
       "path": ".well-known/certification-package-overview.json",
       "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "metadata.lastUpdated"
+      },
+      "signed": true,
+      "signature": ".well-known/certification-package-overview.bundle",
+      "note": "Rebuilt on every deploy and daily by package-maintenance.yml at the deployed commit; 14 days is CPO-CSX-CPM's Class C maximum, so the watchdog pages before the package falls out of date."
+    },
+    {
+      "path": ".well-known/ocr-issues.json",
+      "cadence": "nightly",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/ocr-issues.bundle",
+      "note": "Index of the issued Ongoing Certification Reports and their snapshots (CCM-OCR-AVL, CDS-CSO-HAD). Only package-maintenance.yml writes it, on its daily schedule and when every deploy calls it (job package-maintainer); cadence 'nightly', the scheduled unattended run, because the maintainer is what writes it. The issues (ocr-issue-<date>.*) and snapshots (snapshot-<date>.json, snapshots/<date>/) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256."
+    },
+    {
+      "path": ".well-known/vdr-audit-log-review.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-audit-log-review.bundle",
+      "note": "The automated audit-log review (KSI-MLA-RVL, KSI-CMT-RVP; DEC-195): CloudTrail write events and GitHub's record of main since the previous review, judged by rule, with a planted simulated intruder caught every run (scripts/audit-log-review.py). Written by evidence-nightly.yml, its only writer, twice a day; 26 hours means nightly runs have been missed."
+    },
+    {
+      "path": ".well-known/vdr-recovery-exercises.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-recovery-exercises.bundle",
+      "note": "Index of the monthly recovery exercises (KSI-RPL-TRC; DEC-195), rewritten on every evidence nightly run (scripts/hold-recovery-exercise.py), its only writer. Each exercise (vdr-recovery-exercise-<date>.*) is immutable and listed with its sha256, so it carries no window; the nightly and the deploy fail from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/security-reviews.json",
+      "cadence": "nightly",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/security-reviews.bundle",
+      "note": "Index of the Annual Security Reviews (KSI-PIY-RIS/RES, KSI-SVC-EIS, KSI-INR-RPI; DEC-195) and the rules-of-behavior acknowledgements (PL-4), rewritten daily by package-maintenance.yml (its only writer, so cadence 'nightly', the scheduled unattended run), with the same 14-day window as the package it maintains. Each review (security-review-<date>.*) is immutable and listed with its sha256. The deploy and the evidence nightly fail from the day after a due date with no review in it (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/quarterly-reviews.json",
+      "cadence": "nightly",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/quarterly-reviews.bundle",
+      "note": "Index of the Quarterly Reviews held with simulated attendees (CCM-QTR-MTG, CCM-QTR-RTR; DEC-194), rewritten daily by package-maintenance.yml (its only writer, so cadence 'nightly', the scheduled unattended run) from the first review date on. The reviews (quarterly-review-<date>.*) it lists are immutable by design, so they carry no freshness window: the index records each one's sha256. The deploy and the evidence nightly fail when a review date has passed with no review in it (scripts/check-quarterly-review.py)."
+    },
+    {
+      "path": ".well-known/quarterly-review.ics",
+      "cadence": "deploy",
+      "max_age_hours": 336,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": false,
+      "note": "Quarterly Review calendar file (CCM-QTR-REG), from the CCM calendar; written by the deploy and daily by package-maintenance.yml. Not signed: the same dates are in the signed CPO and OCR."
+    },
+    {
+      "path": ".well-known/fedramp-certification-reports.json",
+      "cadence": "deploy",
       "max_age_hours": 720,
       "timestamp": {
         "source": "json",
-        "field": "metadata.last_updated"
+        "field": "generated_at"
       },
       "signed": true,
-      "signature": ".well-known/certification-package-overview.bundle"
+      "signature": ".well-known/fedramp-certification-reports.bundle",
+      "note": "Index of FedRAMP Certification Reports published unmodified (CDS-CSO-FRC). FedRAMP is simulated: the one report is a stand-in."
+    },
+    {
+      "path": ".well-known/package-submission-log.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/package-submission-log.bundle",
+      "note": "Log of the simulated submission of the certification package to FedRAMP on each deploy (FRC-CSO-PKG). Nothing is sent."
+    },
+    {
+      "path": ".well-known/secure-configuration-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/secure-configuration-guide.bundle"
+    },
+    {
+      "path": ".well-known/security-settings.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/security-settings.bundle"
     },
     {
       "path": ".well-known/boundary-map.json",
@@ -276,6 +443,125 @@
       "signed": true,
       "signature": ".well-known/conformance-results.bundle",
       "note": "The conformance suite's results for the method profile (REQ-GOV-2), run, signed and published by the deploy."
+    },
+    {
+      "path": ".well-known/access-summary.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/access-summary.bundle",
+      "note": "Monthly aggregate counts of access to the certification data (CDS-TRC-ACL), rebuilt from the CloudFront access records on every deploy."
+    },
+    {
+      "path": ".well-known/assessor-guide.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/assessor-guide.bundle",
+      "note": "How to verify and validate each FedRAMP rule and KSI, generated from the rule records on every deploy (IVV-CSO-STE, IVV-CSO-DUS); the simulated assessor runs its checks."
+    },
+    {
+      "path": ".well-known/simulated-assessment.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "issued_at"
+      },
+      "signed": true,
+      "signature": ".well-known/simulated-assessment.bundle",
+      "note": "The simulated assessor's signed result set (not a FedRAMP Recognized assessment), produced on every deploy and signed by the simulated-assessor.yml workflow identity, not the deploy's."
+    },
+    {
+      "path": ".well-known/frr-evidence.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/frr-evidence.bundle",
+      "note": "Per rule record, whether each test it cites passed in the build that published it (FRC-CSX-VVR)."
+    },
+    {
+      "path": ".well-known/agency-access-exercise.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/agency-access-exercise.bundle",
+      "note": "The agency access procedure run on every deploy against fictional agencies, including the 5-business-day denial clock (CDS-TRC-AAI, CDS-UTC-AAD)."
+    },
+    {
+      "path": ".well-known/trust-manifest.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/trust-manifest.bundle",
+      "note": "The signed index of all certification data with media types, signatures and human-readable forms (CDS-TRC-PAC)."
+    },
+    {
+      "path": ".well-known/fedramp-inbox-simulation.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "emitted_at"
+      },
+      "signed": true,
+      "signature": ".well-known/fedramp-inbox-simulation.bundle",
+      "note": "SIMULATION: the FedRAMP Security Inbox is simulated for this proof of concept; this is the deploy's run of the inbox logic over synthetic messages."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.bundle",
+      "note": "Significant Change Notifications index (SCN-CSO-HIS/HRM/NOM), rebuilt every deploy from docs/scn/scn-register.csv; never pruned."
+    },
+    {
+      "path": ".well-known/significant-change-notifications.atom",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "last_modified"
+      },
+      "signed": true,
+      "signature": ".well-known/significant-change-notifications.atom.bundle",
+      "note": "Atom feed of the SCN notices (SCN-CSO-NOM); its <updated> is the last notice's date, so the object's last-modified time is used."
+    },
+    {
+      "path": ".well-known/scn-evaluations.json",
+      "cadence": "deploy",
+      "max_age_hours": 720,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/scn-evaluations.bundle",
+      "note": "Append-only significant-change evaluation log (SCN-CSO-MAR), one entry per change merged to main."
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://fedramp.gov/schemas/fedramp-ongoing-certification-report-schema-2026-06-24.json",
+  "certificationPackageOverviewUri": "https://samaydlette.com/.well-known/certification-package-overview.json",
+  "reportPeriod": {
+    "from": "2026-08-01",
+    "to": "2026-10-31"
+  },
+  "certificationDataChanges": [],
+  "plannedCertificationDataChanges": {
+    "planningHorizonThrough": "2027-01-31",
+    "changes": []
+  },
+  "acceptedVulnerabilities": "None.",
+  "transformativeChanges": [],
+  "updatedRecommendations": [],
+  "activeAgencies": [],
+  "reportableIncidents": {
+    "incidents": []
+  },
+  "providerExtensions": {
+    "fedRampId": "Example Provider (EXD)",
+    "contentSha256": "1541eb3e8db587c701aef2b148933e3581f89a91b4142ec2e422675e01ed2efd"
+  }
+}

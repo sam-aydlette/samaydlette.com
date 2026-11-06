@@ -1,0 +1,23 @@
+{
+ "schema": "manual-settings/1",
+ "checks": [
+  {
+   "id": "github_settings",
+   "status": "ok",
+   "detail": "",
+   "facts": {
+    "prod_required_reviewers": 1,
+    "evidence_nightly_branches": [
+     "main"
+    ],
+    "main_required_checks": [
+     "OPA Compliance Check",
+     "Security Scan",
+     "Unit tests (pytest + opa test)",
+     "scn-tag"
+    ],
+    "main_checks_enforced_for": "everyone"
+   }
+  }
+ ]
+}

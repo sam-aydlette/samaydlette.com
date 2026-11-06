@@ -122,6 +122,12 @@ check-full: check require-artifacts
 	@$(MAKE) --no-print-directory reconcile
 	@echo "✅ check-full: PASS"
 
+# The completeness gate the deploy runs before anything is applied: every
+# applicable FedRAMP rule Implemented or Not Applicable (scripts/_frr.py).
+# Not part of `check`: work toward it lands on branches that are not yet complete.
+check-complete:
+	python3 scripts/_frr.py --complete
+
 require-artifacts:
 	@missing=""; \
 	for f in ksi-signal.json vdr-report.json security-decision-record.json certification-package-overview.json; do \
