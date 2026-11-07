@@ -237,14 +237,13 @@ The pipeline produces five artifacts at `/.well-known/` — the FedRAMP 20x KSI 
 │   ├── build-sdr.py build-cpo.py build-ocr.py ...
 │   ├── reconcile.py                # the fail-closed reconciliation gate
 │   ├── vuln-gate.py check-exceptions.py check-policy-annotations.py check-wasm-safe.py
-│   ├── verify-published.sh         # verify the LIVE evidence, no AWS needed
-│   └── staged/                     # NOT wired into the pipeline — see its README
+│   └── verify-published.sh         # verify the LIVE evidence, no AWS needed
 ├── website/                        # static site; every *.html is hashed into the inventory
 │   ├── index.html trust/ pages/ assets/
 │   ├── research/                   # methodology + scope docs; read these for the "why"
 │   └── .well-known/security.txt    # RFC 9116 (generated artifacts are NOT committed)
-├── data/                           # vendored NIST/FedRAMP source data + PROVENANCE.md
-│   ├── catalogs/ profiles/ mappings/ baselines/ schemas/oscal/
+├── data/                           # registers + vendored NIST/FedRAMP source data (PROVENANCE.md)
+│   ├── catalogs/ profiles/         # 800-53 Rev5 catalog, FedRAMP Rev5 Moderate baseline
 ├── policies/triage.rego            # vulnerability triage policy
 ├── docs/                           # policies/, scn/, runbooks/, assessment/
 ├── tools/                          # both are CI gates, not optional tooling
@@ -391,6 +390,11 @@ same way.
 
 There is no local publish target, by design.
 
+Cache busting: just before the website sync, the deploy runs
+`node update-cache-version.js` (also `npm run cache-bust`), which stamps a fresh
+`?v=<timestamp>` on every CSS and JS reference in `website/**/*.html`, so visitors
+never get a stale asset. The rewritten values need not be committed.
+
 ### Local: infrastructure and the offline gates
 ```bash
 cd infrastructure
@@ -468,14 +472,6 @@ aws s3 sync . s3://samaydlette.com/ --exclude "*.tf" --exclude ".terraform/*" --
 
 # Invalidate CloudFront cache:
 aws cloudfront create-invalidation --distribution-id E1234567890123 --paths "/*"
-```
-
-### Debug Mode (When You're Really Stuck)
-
-```bash
-export TF_LOG=DEBUG
-export AWS_CLI_FILE_ENCODING=UTF-8
-./deploy.sh
 ```
 
 **Pro Tip:** Most compliance automation failures happen during policy development, not in production. Test extensively with sample data before going live.

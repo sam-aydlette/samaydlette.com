@@ -749,6 +749,30 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
     return out
 
 
+def framework_figures(irs: list[dict[str, Any]]) -> dict[str, str]:
+    """The Rev5 Moderate view of the control projection (scripts/_controls.py):
+    baseline coverage, measured rather than assumed (the projection's controls
+    inside the FedRAMP Moderate baseline over the baseline's size, so a baseline
+    control missing from the projection lowers it), and the projection's
+    responsibility split. The SDR publishes the same projection per control."""
+    import _common
+    import _controls
+    baseline = set(_controls.BASELINE_CONTROLS)
+    control_ids = {ir["control-id"] for ir in irs}
+    stack: dict[str, int] = {}
+    for ir in irs:
+        cls = _common.classify(_common.prop(ir, "implementation-status"), _common.prop(ir, "control-origination"))
+        stack[cls] = stack.get(cls, 0) + 1
+    return {
+        "moderate_coverage": f"{len(control_ids & baseline)}/{len(baseline)}",
+        "moderate_baseline": str(len(baseline)),
+        "moderate_beyond": str(len(control_ids - baseline)),
+        "moderate_implemented": str(stack.get("implemented", 0)),
+        "moderate_inherited": str(stack.get("fully-inherited", 0) + stack.get("partially-inherited", 0)),
+        "moderate_na": str(stack.get("not-applicable", 0)),
+    }
+
+
 def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
     ksis = inp["signal"].get("ksis", [])
     by_status: dict[str, int] = {}
@@ -838,7 +862,7 @@ def main() -> None:
     ap.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
     ap.add_argument("--checkov-config", default=str(REPO / ".checkov.yaml"))
     ap.add_argument("--scn-register", default=str(REPO / "docs" / "scn" / "scn-register.csv"))
-    ap.add_argument("--no-figures", action="store_true", help="skip framework coverage (needs the built inventory)")
+    ap.add_argument("--no-figures", action="store_true", help="skip the Rev5 Moderate figures (needs the built inventory)")
     ap.add_argument("--commit", default="")
     ap.add_argument("--output", default="trust-center.json")
     a = ap.parse_args()
@@ -859,7 +883,8 @@ def main() -> None:
     annotations = _load_module("check_policy_annotations", REPO / "scripts" / "check-policy-annotations.py")
     figures = None
     if not a.no_figures:
-        figures = _load_module("inject_figures", REPO / "scripts" / "inject-figures.py").compute_figures()
+        import _controls
+        figures = framework_figures(_controls.load(a.ksi_signal))
 
     inp = {
         "signal": load(a.ksi_signal), "vdr": load(a.vdr),
