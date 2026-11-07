@@ -598,8 +598,11 @@ def ksi_text(kid, cat, k, rules, comps, plan_rules, rt_rules, runtime_reason, nv
     for m in counted:
         if m["key"] in ("plan", "runtime"):
             continue
+        proof = m.get("stand_in_proof")
         val.append(f"{m['mechanism']}: {m['measure']}"
                    + (" Runs on a labelled stand-in input." if m["input"] == "stand-in" else "")
+                   + (f" Stand-in proof: a bad stand-in changes the result (`{proof['bad_input']}`); replaceable: "
+                      f"{proof['replaceable']['statement']}" if proof else "")
                    + (" Its verified result is current and passing." if m["counted"] else
                       f" Not counted for this build: {m['reason']}."))
     n = sum(1 for m in counted if m["counted"])
@@ -664,7 +667,8 @@ def build_ksis(catalog, signal, rules_by_ksi, runtime, runtime_reason, assessor_
         for m in table.get(kid, []):
             ok, why = results.get(m["key"], NOT_EVALUATED)
             counted.append({"key": m["key"], "mechanism": m["mechanism"], "measure": m["measure"],
-                            "input": m["input"], "counted": bool(ok), "reason": why})
+                            "input": m["input"], "counted": bool(ok), "reason": why,
+                            **({"stand_in_proof": m["stand_in_proof"]} if m.get("stand_in_proof") else {})})
         methods = sum(1 for m in counted if m["counted"])
         real = sum(1 for m in counted if m["counted"] and m["input"] == "real")
         st = ksi_status(k, real, methods)

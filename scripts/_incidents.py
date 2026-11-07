@@ -12,6 +12,13 @@ FedRAMP Incident Evaluation and Communication rules ask for:
 - reports      the Initial, Ongoing and Final reports, each with when it was
                issued and what it set; a report restates everything set before
 - resolved_at / recovery_complete_at, which start the Final report's clock
+- pattern      {root_cause, component}: what the incident shares with others
+               (KSI-INR-RPI); `patterns()` groups real incidents by it, and a
+               pattern seen twice in 12 months is a recurrence
+- lessons_learned  [{lesson, link}] (KSI-INR-AAR): each lesson links to the
+               change that incorporated it, a commit, a decision (DEC-NNN) or a
+               test (tests/<file>.py::<test>); `lessons_check()` requires lessons
+               on every resolved incident, each link resolving
 
 The clocks (when each report is due) come from FedRAMP's Class C timeframes
 through scripts/_rules.py, never from this file. scripts/build-incident-report.py
@@ -59,7 +66,10 @@ TOP_KEYS = {"$comment", "schema", "policy", "incidents"}
 POLICY_KEYS = {"federal_incident_coordinator", "notification", "notification_text", "adopted_vulnerability_rules",
                "federal_customer_data", "decided_by", "decided_on", "review_by"}
 INCIDENT_KEYS = {"id", "title", "exercise", "started_at", "detected_at", "detection_source", "evaluation",
-                 "findings", "estimates", "reports", "resolved_at", "recovery_complete_at"}
+                 "findings", "estimates", "reports", "resolved_at", "recovery_complete_at", "pattern",
+                 "lessons_learned"}
+PATTERN_KEYS = {"root_cause", "component"}
+LESSON_KEYS = {"lesson", "link"}
 EVALUATION_KEYS = {"evaluated_at", "reportable", "basis", "reason", "federal_customer_data_considered"}
 ESTIMATE_KEYS = {"estimated_at", "rating", "customer_effect", "agencies", "reason"}
 REPORT_KEYS = {"type", "at", "set"}
@@ -189,6 +199,20 @@ def _validate_incident(inc, where, policy, rubric, now):
     _text(inc["detection_source"], f"{where}.detection_source")
     if not isinstance(inc["exercise"], bool):
         _fail(f"{where}.exercise must be true or false")
+    if "pattern" in inc:
+        pat = inc["pattern"]
+        if not isinstance(pat, dict) or set(pat) != PATTERN_KEYS:
+            _fail(f"{where}.pattern must have exactly {sorted(PATTERN_KEYS)}")
+        for k in PATTERN_KEYS:
+            _text(pat[k], f"{where}.pattern.{k}")
+    if "lessons_learned" in inc:
+        if not isinstance(inc["lessons_learned"], list):
+            _fail(f"{where}.lessons_learned must be a list")
+        for i, x in enumerate(inc["lessons_learned"]):
+            if not isinstance(x, dict) or set(x) != LESSON_KEYS:
+                _fail(f"{where}.lessons_learned[{i}] must have exactly {sorted(LESSON_KEYS)}")
+            _text(x["lesson"], f"{where}.lessons_learned[{i}].lesson")
+            _text(x["link"], f"{where}.lessons_learned[{i}].link")
     started = parse_ts(inc["started_at"], f"{where}.started_at")
     detected = parse_ts(inc["detected_at"], f"{where}.detected_at")
     if detected < started:
@@ -410,3 +434,127 @@ def open_findings(reg, include_exercises=False):
             for f in inc.get("findings", []):
                 out[f] = inc["id"]
     return out
+
+
+# ---- lessons learned (KSI-INR-AAR) --------------------------------------------
+# A lesson is incorporated when it links to the change that carries it: a
+# commit, a decision record or a test, each of which must exist. The same check
+# runs over the register and over every after-action report a drill writes
+# (scripts/_drills.py), and a planted orphan lesson is fed through it on every
+# run and must be caught.
+COMMIT_RE = re.compile(r"^[0-9a-f]{7,40}$")
+DEC_RE = re.compile(r"^DEC-\d{3,}$")
+PLANTED_ORPHAN = {"lesson": "Never let the cache go stale again (planted orphan lesson, simulated)",
+                  "link": "DEC-000"}
+
+
+def link_problem(link, decisions, repo=REPO):
+    """None when a lesson's link resolves, else why not."""
+    import subprocess  # noqa: PLC0415  (only this check runs git)
+
+    import _frr  # noqa: PLC0415  (its test resolver; _frr does not import this module)
+    if not isinstance(link, str) or not link.strip():
+        return "has no link"
+    if DEC_RE.match(link):
+        return None if link in decisions else f"{link} is not in the decision register"
+    if link.startswith("tests/"):
+        why = _frr._resolve_test(link, Path(repo))
+        return None if why is None else f"{link} {why}"
+    if COMMIT_RE.match(link):
+        try:
+            subprocess.run(["git", "-C", str(repo), "cat-file", "-e", f"{link}^{{commit}}"],  # nosec B603 B607
+                           check=True, capture_output=True, timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return f"commit {link} does not exist in this repository"
+        return None
+    return f"{link!r} is not a commit, a decision (DEC-NNN) or a test (tests/<file>.py::<test>)"
+
+
+def lesson_problems(lessons, decisions, repo=REPO):
+    """[problem] for one after-action list of lessons: none at all, or a link that does not resolve."""
+    if not lessons:
+        return ["no lessons learned recorded"]
+    out = []
+    for x in lessons:
+        why = link_problem(x.get("link"), decisions, repo)
+        if why:
+            out.append(f"lesson {x.get('lesson', '')[:60]!r}: {why}")
+    return out
+
+
+def lessons_check(reg, decisions, repo=REPO):
+    """The register's after-action check: every resolved incident (exercises
+    included: they are walked like real ones) has lessons, each incorporated,
+    and the planted orphan lesson is caught."""
+    rows = []
+    for inc in reg["incidents"]:
+        if "resolved_at" not in inc:
+            continue
+        probs = lesson_problems(inc.get("lessons_learned") or [], decisions, repo)
+        rows.append({"incident": inc["id"], "exercise": inc["exercise"],
+                     "lessons": len(inc.get("lessons_learned") or []), "problems": probs})
+    planted = lesson_problems([PLANTED_ORPHAN], decisions, repo)
+    caught = len(planted) == 1
+    bad = [r["incident"] for r in rows if r["problems"]]
+    return {"check": "Every resolved incident has lessons learned, each linking to a commit, decision or test "
+                     "that exists (KSI-INR-AAR)",
+            "result": "pass" if not bad and caught else "fail",
+            "resolved": len(rows), "failing": bad, "incidents": rows,
+            "planted": {"lesson": PLANTED_ORPHAN, "caught": caught, "problems": planted}}
+
+
+# ---- Groundhog Day: recurring incident patterns (KSI-INR-RPI) ------------------
+# Real incidents (exercises are not real) grouped by root cause and component;
+# a pattern seen RECURRENCE_MIN times within RECURRENCE_DAYS is a recurrence,
+# which the VDR builder opens as a process finding (VDR-CSO-FAV). The seeded
+# scenario below, three of the same incident, is fed through the same function
+# on every run and must be flagged.
+RECURRENCE_DAYS = 365
+RECURRENCE_MIN = 2
+SEEDED_SCENARIO = "The Cache Was Stale Again (simulated)"
+SEEDED_PATTERN = {"root_cause": "stale CloudFront cache after a deploy", "component": "cdn"}
+
+
+def seeded_incidents(today):
+    """Three simulated incidents with one root cause, a month apart, ending yesterday."""
+    out = []
+    for n in range(3):
+        at = datetime(today.year, today.month, today.day, 9, tzinfo=timezone.utc) - timedelta(days=1 + 30 * n)
+        out.append({"id": f"SEED-{3 - n}", "title": f"{SEEDED_SCENARIO}, episode {3 - n}", "exercise": False,
+                    "detected_at": at.isoformat(), "pattern": dict(SEEDED_PATTERN)})
+    return out
+
+
+def patterns(incidents, today):
+    """{groups: [{root_cause, component, incidents}], recurring: [...], unclassified: [ids]}
+    over the real incidents detected within RECURRENCE_DAYS of `today`."""
+    since = today - timedelta(days=RECURRENCE_DAYS)
+    groups, unclassified = {}, []
+    for inc in incidents:
+        if inc.get("exercise"):
+            continue
+        detected = parse_ts(inc["detected_at"], f"{inc['id']}.detected_at").date()
+        if not since <= detected <= today:
+            continue
+        pat = inc.get("pattern")
+        if not pat:
+            unclassified.append(inc["id"])
+            continue
+        groups.setdefault((pat["root_cause"], pat["component"]), []).append((inc["detected_at"], inc["id"]))
+    rows = [{"root_cause": rc, "component": comp, "incidents": sorted(i for _, i in hits),
+             "lastDetectedAt": max(hits)[0]} for (rc, comp), hits in sorted(groups.items())]
+    return {"windowDays": RECURRENCE_DAYS, "groups": rows,
+            "recurring": [r for r in rows if len(r["incidents"]) >= RECURRENCE_MIN],
+            "unclassified": sorted(unclassified)}
+
+
+def groundhog_day(reg, today):
+    """The pattern review published with the incident log: the register's real
+    incidents, and the seeded scenario, which must be flagged."""
+    real = patterns(reg["incidents"], today)
+    seeded = patterns(seeded_incidents(today), today)
+    caught = [r for r in seeded["recurring"] if r["root_cause"] == SEEDED_PATTERN["root_cause"]]
+    return {"check": "Past incidents are grouped by root cause and component; a pattern seen twice in 12 months "
+                     "is a recurrence and opens a VDR process finding (KSI-INR-RPI)",
+            "result": "pass" if caught else "fail", **real,
+            "planted": {"scenario": SEEDED_SCENARIO, "incidents": 3, "caught": bool(caught)}}

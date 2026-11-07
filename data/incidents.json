@@ -1,5 +1,5 @@
 {
-  "$comment": "The incident register (IEC-CSO-EFR/DPR/EFI/IIR/OIR/FIR). Every incident is recorded here once, with its FedRAMP reportability evaluation and reason; a reportable one carries its Incident Rating estimates and the Initial, Ongoing and Final reports issued, each with when it was issued and what it set. scripts/_incidents.py validates it (fail-closed) and scripts/build-incident-report.py renders the reports and the incident log; .github/workflows/incident-reports.yml publishes them on every change to this file. The report clocks are FedRAMP's Class C timeframes, read from the pinned rules, never set here. Everything in this file is published. Exercises are marked exercise: true. Shape: infrastructure/schemas/incidents.schema.json.",
+  "$comment": "The incident register (IEC-CSO-EFR/DPR/EFI/IIR/OIR/FIR). Every incident is recorded here once, with its FedRAMP reportability evaluation and reason; a reportable one carries its Incident Rating estimates and the Initial, Ongoing and Final reports issued, each with when it was issued and what it set. scripts/_incidents.py validates it (fail-closed) and scripts/build-incident-report.py renders the reports and the incident log; .github/workflows/incident-reports.yml publishes them on every change to this file. The report clocks are FedRAMP's Class C timeframes, read from the pinned rules, never set here. Everything in this file is published. Exercises are marked exercise: true. Each resolved incident carries its lessons learned, each linking to the commit, decision or test that incorporated it (KSI-INR-AAR), and a pattern (root cause, component) that scripts/_incidents.py patterns() groups for recurrences (KSI-INR-RPI). Shape: infrastructure/schemas/incidents.schema.json.",
   "schema": "incidents/1",
   "policy": {
     "federal_incident_coordinator": "Sam Aydlette, System Owner and incident response lead; contact through https://samaydlette.com/.well-known/security.txt",
@@ -84,7 +84,12 @@
         }
       ],
       "resolved_at": "2026-11-05T16:30:00Z",
-      "recovery_complete_at": "2026-11-05T17:00:00Z"
+      "recovery_complete_at": "2026-11-05T17:00:00Z",
+      "pattern": {"root_cause": "vulnerable release of a request-parsing dependency (simulated)", "component": "silk-reeling-api"},
+      "lessons_learned": [
+        {"lesson": "An internet-reachable, likely exploitable vulnerability is an incident from its first evaluation, rated N5 until estimated, so its Initial report clock starts at once (AI-drafted).", "link": "tests/test_incidents.py::test_an_unrated_incident_is_n5_and_its_initial_report_is_due_in_an_hour"},
+        {"lesson": "A partial mitigation to N3 or below ends the incident treatment of the vulnerability; the pipeline recognises it without a person (AI-drafted).", "link": "tests/test_incidents.py::test_a_partially_mitigated_finding_at_n3_is_no_longer_an_incident"}
+      ]
     },
     {
       "id": "INC-2026-002",
@@ -103,7 +108,12 @@
       "estimates": [],
       "reports": [],
       "resolved_at": "2026-11-05T11:30:00Z",
-      "recovery_complete_at": "2026-11-05T11:45:00Z"
+      "recovery_complete_at": "2026-11-05T11:45:00Z",
+      "pattern": {"root_cause": "unauthorized change to public site content (simulated)", "component": "static-site"},
+      "lessons_learned": [
+        {"lesson": "A page that changes between the deploy-time and runtime signals is drift, and drift is reported as a regression, never hidden by a read failure (AI-drafted).", "link": "tests/test_divergence.py::test_read_failure_never_masks_real_drift"},
+        {"lesson": "Public site content is not federal customer data, so the change is evaluated not reportable and the reason is recorded (AI-drafted).", "link": "tests/test_incidents.py::test_exercise_logs_a_not_reportable_evaluation_with_its_reason"}
+      ]
     }
   ]
 }

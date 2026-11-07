@@ -64,7 +64,18 @@
     },
     "iam": {
       "github_oidc_audience": "sts.amazonaws.com",
-      "github_oidc_subject_prefix": "repo:sam-aydlette/samaydlette.com:"
+      "github_oidc_subject_prefix": "repo:sam-aydlette/samaydlette.com:",
+      "attachable_policies": [
+        "arn:aws:iam::aws:policy/AWSDenyAll"
+      ],
+      "trust_root_roles": [
+        "github-actions-deploy-oidc",
+        "github-actions-plan-oidc",
+        "github-actions-evidence-nightly-oidc",
+        "github-actions-package-maintenance-oidc",
+        "github-actions-incident-reports-oidc",
+        "github-actions-quarantine-responder-oidc"
+      ]
     },
     "identity": {
       "min_password_length": 14

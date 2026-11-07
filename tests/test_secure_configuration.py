@@ -299,7 +299,8 @@ def test_every_ci_role_in_bootstrap_has_its_trust_compared():
     publishers' roles included, and the deploy role may read each one."""
     roles = set()
     for tf in (REPO / "infrastructure" / "bootstrap").glob("*.tf"):
-        roles |= set(re.findall(r'resource "aws_iam_role" "\w+" \{\s*name\s*=\s*"([\w-]+)"', tf.read_text()))
+        roles |= {n.replace("${local.domain_dashed}", "samaydlette-com") for n in re.findall(
+            r'resource "aws_iam_role" "\w+" \{\s*name\s*=\s*"([\w${}.-]+)"', tf.read_text())}
     assert roles and roles == set(chk.ROLES.values())
     reads = (REPO / "infrastructure" / "bootstrap" / "deploy-config-reads.tf").read_text()
     for res in ("deploy", "plan", "evidence_nightly", "package_maintenance", "incident_reports"):
@@ -401,3 +402,58 @@ def test_the_nightly_read_grant_unapplied_fails_the_deploy():
 def test_the_nightly_read_check_publishes_actions_only():
     assert chk._allowed_actions(json.loads((FIX / "aws-good.json").read_text())["responses"][NIGHTLY_READS]["PolicyDocument"]) == \
         ["cloudtrail:LookupEvents"]
+
+
+# --- the quarantine responder and the recovery-drill grant (KSI-IAM-SUS, KSI-RPL-TRC) ----
+
+RESPONDER_POLICY = ("iam get-role-policy --role-name github-actions-quarantine-responder-oidc "
+                    "--policy-name quarantine-responder")
+DRILL_GRANT = ("iam get-role-policy --role-name github-actions-evidence-nightly-oidc "
+               "--policy-name evidence-nightly-recovery-drill")
+
+
+def test_known_bad_a_responder_that_can_attach_any_policy_fails_the_deploy():
+    """Without iam:PolicyARN the responder could attach AdministratorAccess anywhere."""
+    assert _merged("aws-responder-unconditioned.json") == {"ci-roles.responder-scope": "deviation"}
+
+
+def test_known_bad_a_responder_not_denied_the_operator_fails_the_deploy():
+    """Without the Deny on the operator identities, IAM alone would let the responder quarantine a person."""
+    assert _merged("aws-responder-may-quarantine-operator.json") == {"ci-roles.responder-scope": "deviation"}
+
+
+def test_known_bad_a_drill_grant_on_the_site_bucket_fails_the_deploy():
+    assert _merged("aws-nightly-drill-on-site-bucket.json") == {"ci-roles.nightly-recovery-drill-scope": "deviation"}
+
+
+def test_the_responder_and_drill_unapplied_fail_the_deploy():
+    """Before the bootstrap apply the reads are denied; the deploy stops before the SDR."""
+    drop = [RESPONDER_POLICY, DRILL_GRANT, "iam get-role --role-name github-actions-quarantine-responder-oidc",
+            "iam get-role --role-name samaydlette-com-quarantine-target"]
+    assert _merged(drop=drop) == {"ci-roles.responder-scope": "not-read", "ci-roles.nightly-recovery-drill-scope":
+                                  "not-read", "ci-roles.responder-trust": "not-read",
+                                  "ci-roles.quarantine-target-trust": "not-read"}
+
+
+def test_the_responder_scope_publishes_no_role_name_or_account():
+    by = {r["id"]: r for r in _compare("aws-good.json")["settings"]}
+    cur = by["ci-roles.responder-scope"]["current"]
+    assert cur["attach_only"] == ["arn:aws:iam::aws:policy/AWSDenyAll"] and cur["trust_root_denied"] == 6
+    assert cur["operator_users_denied"] == 1
+    text = json.dumps([by[k]["current"] for k in ("ci-roles.responder-scope", "ci-roles.nightly-recovery-drill-scope")])
+    assert "123456789012" not in text and "github-actions" not in text and "placeholder-operator" not in text
+
+
+def test_the_recommended_scopes_are_the_bootstrap_terraform():
+    """The guide's recommended values name exactly what bootstrap grants."""
+    src = {s["check"]: s for s in json.loads(SOURCE.read_text())["settings"]}
+    drill = (REPO / "infrastructure" / "bootstrap" / "recovery-drill.tf").read_text()
+    granted = set(re.findall(r'"(s3:\w+)"', drill.split('data "aws_iam_policy_document" "evidence_nightly_recovery_drill"')[1]))
+    assert {g.split()[0] for g in src["role-scope-nightly-drill"]["recommended"]} == granted
+    tf = (REPO / "infrastructure" / "bootstrap" / "quarantine-responder.tf").read_text()
+    for a in src["role-actions-responder"]["recommended"]["allow"]:
+        assert f'"{a}"' in tf, a
+    assert 'variable = "iam:PolicyARN"' in tf and "arn:aws:iam::aws:policy/AWSDenyAll" in tf
+    assert 'for u in local.operator_identities' in tf and "data/operator-identities.json" in tf
+    reads = (REPO / "infrastructure" / "bootstrap" / "deploy-config-reads.tf").read_text()
+    assert "aws_iam_role.quarantine_responder.arn" in reads and "aws_iam_role.quarantine_target.arn" in reads

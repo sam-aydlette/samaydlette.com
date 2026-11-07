@@ -38,14 +38,22 @@ def test_the_committed_table_is_valid_and_matches_its_schema():
 
 
 def test_the_table_lists_only_the_reviewed_mechanisms():
-    """The mechanisms the strict-count review judged genuine, and no other
-    (no mechanism is added to satisfy a gate)."""
+    """The mechanisms the strict-count review judged genuine, plus the drills
+    the operator chose on 2026-11-06 (night), and no other (no mechanism is
+    added to satisfy a gate)."""
     assert set(km.by_key(km.load())) == {
         "audit-log-review", "recovery-rebuild", "recovery-backup-read", "grype", "dependabot", "codeql", "zap",
         "checkov-tfsec", "security-settings", "runtime-divergence", "reconcile", "plan-gate", "conformance",
-        "inbox-simulation", "training", "availability"}
+        "inbox-simulation", "training", "availability",
+        # the drills plan (2026-11-06, night)
+        "scn-evaluations", "security-review", "board-meeting", "cfo-review", "groundhog-day", "incident-lessons",
+        "tabletop", "disclosure-drill", "security-txt", "phishing-drill",
+        # the live drills (PR C3 of the same plan)
+        "quarantine-drill", "chaos-gremlin", "availability-rto"}
     stand_in = {m["key"] for m in km.load()["methods"] if m["input"] == "stand-in"}
-    assert stand_in == {"inbox-simulation", "training"}
+    assert stand_in == {"inbox-simulation", "training", "security-review", "board-meeting", "groundhog-day",
+                        "incident-lessons", "tabletop", "disclosure-drill", "phishing-drill", "quarantine-drill"}
+    assert all(m.get("stand_in_proof") for m in km.load()["methods"] if m["input"] == "stand-in")
 
 
 def _mutate(case):

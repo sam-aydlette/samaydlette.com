@@ -130,7 +130,7 @@ def test_each_counted_method_adds_one_for_exactly_its_ksis():
             if k in want:
                 want[k] += 1
     assert m == want
-    assert m["KSI-SCR-MON"] == 2 and m["KSI-SVC-EIS"] == 2 and m["KSI-CNA-IBP"] == 2
+    assert m["KSI-SCR-MON"] == 2 and m["KSI-SVC-EIS"] == 3 and m["KSI-CNA-IBP"] == 2
 
 
 def test_known_bad_a_method_that_did_not_verify_counts_nothing_and_says_why():
@@ -143,9 +143,13 @@ def test_known_bad_a_method_that_did_not_verify_counts_nothing_and_says_why():
 
 
 def test_a_mechanism_counts_once_per_ksi():
-    """Recovery-rebuild publishes many exercises; it is one method."""
-    assert sum(1 for m in METHODS["methods"] if "KSI-RPL-TRC" in m["ksis"]) == 1
-    assert _ext(_build(_all_pass()))["KSI-RPL-TRC"]["automatedMethods"] == 1
+    """Recovery-rebuild publishes many exercises; it is one method (and the
+    Chaos Gremlin drill, a distinct mechanism, is the other)."""
+    assert sorted(m["key"] for m in METHODS["methods"] if "KSI-RPL-TRC" in m["ksis"]) == \
+        ["chaos-gremlin", "recovery-rebuild"]
+    assert _ext(_build(_all_pass()))["KSI-RPL-TRC"]["automatedMethods"] == 2
+    one = {**_all_pass(), "chaos-gremlin": (False, "not published yet")}
+    assert _ext(_build(one))["KSI-RPL-TRC"]["automatedMethods"] == 1
 
 
 def test_a_ksi_reaching_two_only_with_a_stand_in_is_simulated():
@@ -160,8 +164,11 @@ def test_a_ksi_reaching_two_only_with_a_stand_in_is_simulated():
 def test_the_committed_training_is_one_stand_in_method():
     t = sdr.training_result(_training())
     assert t == (True, None)
-    x = _ext(_build({**_all_pass(), "training": t}))["KSI-CED-RAT"]
+    x = _ext(_build({**_all_pass(), "training": t, "phishing-drill": (False, "not published")}))["KSI-CED-RAT"]
     assert x["automatedMethods"] == 1 and x["realInputMethods"] == 0 and x["status"] == "Not Demonstrated"
+    # With the phishing drill (also a stand-in) it reaches two, and is Simulated, never Implemented.
+    x = _ext(_build({**_all_pass(), "training": t}))["KSI-CED-RAT"]
+    assert x["automatedMethods"] == 2 and x["realInputMethods"] == 0 and x["status"] == "Simulated"
     assert sdr.training_result(sdr.NO_TRAINING) == (False, "training currency: not evaluated in this build")
 
 
@@ -237,7 +244,7 @@ def test_the_committed_vvk_record_states_not_demonstrated_and_passes_the_claim_c
 def test_known_bad_vvk_implemented_while_a_ksi_is_short_fails():
     doc = _build(_all_pass())
     why = sdr.vvk_claim(doc, _records_with_vvk("Implemented", **IMPLEMENTED_VVK))
-    assert len(why) == 1 and "is recorded Implemented but" in why[0] and "KSI-IAM-SUS" in why[0]
+    assert len(why) == 1 and "is recorded Implemented but" in why[0] and "KSI-MLA-ALA" in why[0]
 
 
 def test_vvk_implemented_is_supported_when_every_ksi_has_two():

@@ -1,0 +1,10 @@
+{
+  "$schema": "../infrastructure/schemas/operator-identities.schema.json",
+  "schema": "operator-identities/1",
+  "version": "2026-11-06.1",
+  "description": "The IAM identities of the people who operate this system. The quarantine responder (scripts/_quarantine.py) never quarantines them: a reportable finding that names one is paged about only. infrastructure/bootstrap/quarantine-responder.tf reads this same file into the responder's explicit IAM Deny, so a code bug cannot reach them either. Not published: user names never appear in /.well-known, the SDR, views or drill records.",
+  "users": [
+    {"name": "saydlette-dev", "kind": "iam-user", "source": "infrastructure/bootstrap/main.tf variable operator_user_name (its default)"}
+  ],
+  "rationale": "AI-drafted (Claude, 2026-11-06) for the operator's review. Who is an operator is listed, not inferred: the operator's user has no console login profile, so a login-profile test would treat it as a machine user, and anyone holding its key could delete a login profile anyway. The list holds the operator user the bootstrap stack already names; add any other person's IAM user here, and the Deny follows on the next bootstrap apply."
+}

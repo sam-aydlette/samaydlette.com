@@ -183,9 +183,14 @@ def run_nightly(tmp_path):
     d = _tree(tmp_path, "infrastructure")
     names = [f"{a}.json" for a in ("vdr-report", "vdr-trend", "vdr-detail-report", "vdr-accepted-vulnerabilities",
                                    "vdr-history", "vdr-non-machine-vv", "vdr-monthly", "vdr-audit-log-review",
-                                   "vdr-recovery-exercises", "vdr-recovery-exercise-2026-12-01")]
+                                   "vdr-recovery-exercises", "vdr-recovery-exercise-2026-12-01",
+                                   "vdr-drill-board-meetings", "vdr-drill-cfo-reviews", "vdr-drill-tabletops",
+                                   "vdr-drill-disclosures", "vdr-drill-phishing", "vdr-drill-tabletop-2026-12-01",
+                                   "vdr-drill-chaos-gremlins", "vdr-drill-chaos-gremlin-2026-12-01")]
     _fill(d, names)
     (d / "recovery-new.txt").write_text("vdr-recovery-exercise-2026-12-01.json\n")
+    (d / "drills-new.txt").write_text("vdr-drill-tabletop-2026-12-01.json\n")
+    (d / "gremlin-new.txt").write_text("vdr-drill-chaos-gremlin-2026-12-01.json\n")
     puts, gated = tmp_path / "puts.txt", tmp_path / "gated.txt"
     for name in ("Rebuild the human-readable views (format parity)", "Publish VDR + trend to /.well-known/"):
         _run(_script(_step(text, name)), d, puts, gated)

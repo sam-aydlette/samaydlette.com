@@ -23,8 +23,12 @@ strict count, operator's decision of 2026-11-06). Two kinds of method exist:
     plan-gate           the signed KSI signal of this deploy carries its plan-gate run;
     training            scripts/_training.py's currency and completion checks.
 
-A mechanism counts once per KSI however many records it publishes. Stdlib only,
-fail-closed.
+A mechanism counts once per KSI however many records it publishes. A
+mechanism whose input is a stand-in carries `stand_in_proof` (CLAUDE.md,
+proof-of-concept latitude): `bad_input`, a test that feeds it a bad stand-in
+and asserts a different result, and `replaceable` {statement: how a real input
+would replace the stand-in and what would have to change, test: one that shows
+it, where one exists}; each test named must exist. Stdlib only, fail-closed.
 """
 
 import json
@@ -35,6 +39,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _freshness  # noqa: E402
+import _frr  # noqa: E402
+import _recovery_objectives  # noqa: E402
 import _scheduled_review as _sched  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
@@ -42,6 +48,8 @@ DEFAULT_PATH = REPO / "infrastructure" / "schemas" / "ksi-methods.json"
 CATALOG_PATH = REPO / "infrastructure" / "schemas" / "ksi-catalog.json"
 TOP_KEYS = {"$schema", "schema", "version", "description", "rationale", "methods"}
 METHOD_KEYS = {"key", "mechanism", "measure", "ksis", "input", "verifier"}
+OPTIONAL_METHOD_KEYS = {"stand_in_proof"}
+REPLACEABLE_KEYS = {"statement", "test"}
 INPUTS = ("real", "stand-in")
 FEEDS = ("grype", "dependabot", "checkov", "tfsec", "codeql", "zap-api")
 SIMPLE_KINDS = ("runtime-divergence", "plan-gate", "training")
@@ -116,10 +124,81 @@ def _check_availability(doc, now):
     return True, None
 
 
+def _check_scn_evaluations(doc, now):
+    entries = doc.get("entries") if isinstance(doc, dict) else None
+    if not isinstance(entries, list) or not entries or not isinstance(doc.get("unrecorded"), int):
+        return False, "the record is not an SCN evaluation log with entries"
+    problems = [e for e in entries if not isinstance(e, dict) or e.get("problem")]
+    if problems or doc["unrecorded"]:
+        return False, (f"{max(len(problems), doc['unrecorded'])} merged change(s) carry no valid significant-change "
+                       "evaluation")
+    return True, None
+
+
+def _scheduled(key):
+    def chk(doc, now):
+        return _sched.method_status(key, doc, now)
+    chk.__name__ = f"_check_{key.replace('-', '_')}"
+    return chk
+
+
+def _incident_log(section):
+    def chk(doc, now):
+        if not isinstance(doc, dict) or doc.get("schema") != "incident-reports/1":
+            return False, "the record is not an incident-reports/1 log"
+        sec = doc.get(section)
+        if not isinstance(sec, dict):
+            return False, f"the incident log carries no {section} check"
+        if not (sec.get("planted") or {}).get("caught"):
+            return False, f"the {section} check's planted case was not caught"
+        if sec.get("result") != "pass":
+            return False, f"the {section} check did not pass"
+        return True, None
+    chk.__name__ = f"_check_incident_{section}"
+    return chk
+
+
+def _check_security_txt(doc, now):
+    st = doc.get("securityTxt") if isinstance(doc, dict) else None
+    if not isinstance(st, dict) or not st.get("checks"):
+        return False, "the security settings record carries no security.txt check"
+    if st.get("result") != "pass":
+        return False, "security.txt is not valid: " + "; ".join(c["id"] for c in st["checks"] if not c.get("ok"))
+    return True, None
+
+
+def _check_availability_rto(doc, now):
+    """Every availability incident in the measurement, an ongoing one measured to
+    now, lasted no longer than the recovery time objective
+    (data/recovery-objectives.json)."""
+    ok, why = _check_availability(doc, now)
+    if not ok:
+        return ok, why
+    incidents = doc.get("incidents")
+    if not isinstance(incidents, list):
+        return False, "the record carries no incident list"
+    rto = _recovery_objectives.rto_hours()
+    for i in incidents:
+        start = _ts(i.get("start")) if isinstance(i, dict) else None
+        end = (_ts(i["end"]) if i.get("end") else now) if start is not None else None
+        if start is None or end is None or end < start:
+            return False, "an availability incident carries no readable start and end"
+        if (end - start).total_seconds() > rto * 3600:
+            return False, (f"an availability incident of {i.get('service', 'a service')} lasted longer than the "
+                           f"recovery time objective ({rto} hours)")
+    return True, None
+
+
 CHECKS = {"audit-log-review": _check_audit_log, "recovery-exercise": _check_recovery,
           "reconcile": _check_reconcile, "security-settings": _check_security_settings,
           "conformance": _check_conformance, "inbox-simulation": _check_inbox,
-          "availability": _check_availability}
+          "availability": _check_availability, "scn-evaluations": _check_scn_evaluations,
+          "security-review": _scheduled("security-review"), "board-meeting": _scheduled("board-meeting"),
+          "cfo-review": _scheduled("cfo-review"), "tabletop": _scheduled("tabletop"),
+          "disclosure-drill": _scheduled("disclosure-drill"), "phishing-drill": _scheduled("phishing-drill"),
+          "incident-lessons": _incident_log("lessons_learned"), "incident-patterns": _incident_log("patterns"),
+          "security-txt": _check_security_txt, "quarantine-drill": _scheduled("quarantine-drill"),
+          "chaos-gremlin": _scheduled("chaos-gremlin"), "availability-rto": _check_availability_rto}
 
 
 # --- the table ------------------------------------------------------------------------------
@@ -134,7 +213,26 @@ def _text(v, where):
         _fail(f"{where} must be a non-empty string")
 
 
-def validate(doc, known, published, where="infrastructure/schemas/ksi-methods.json"):
+def _stand_in_proof(m, key, repo):
+    proof = m.get("stand_in_proof")
+    if m["input"] != "stand-in":
+        if proof is not None:
+            _fail(f"{key}: stand_in_proof is for a method whose input is a stand-in")
+        return
+    if not isinstance(proof, dict) or set(proof) != {"bad_input", "replaceable"} \
+            or not isinstance(proof.get("replaceable"), dict) or "statement" not in proof["replaceable"] \
+            or set(proof["replaceable"]) - REPLACEABLE_KEYS:
+        _fail(f"{key}: a stand-in method needs stand_in_proof {{bad_input, replaceable: {{statement, test?}}}}")
+    _text(proof["replaceable"]["statement"], f"{key}: stand_in_proof.replaceable.statement")
+    for ref in (proof["bad_input"], proof["replaceable"].get("test")):
+        if ref is None:
+            continue
+        why = _frr._resolve_test(ref, repo) if isinstance(ref, str) else "is not a test node id"
+        if why:
+            _fail(f"{key}: stand_in_proof test {ref!r} {why}")
+
+
+def validate(doc, known, published, where="infrastructure/schemas/ksi-methods.json", repo=REPO):
     """`known` is the catalog's KSI IDs; `published` the freshness-governed paths."""
     if not isinstance(doc, dict) or doc.get("schema") != "ksi-methods/1":
         _fail(f"{where} is not a ksi-methods/1 document")
@@ -153,8 +251,8 @@ def validate(doc, known, published, where="infrastructure/schemas/ksi-methods.js
         if key in seen:
             _fail(f"duplicate method {key}")
         seen.add(key)
-        if set(m) != METHOD_KEYS:
-            _fail(f"{key}: fields must be exactly {sorted(METHOD_KEYS)}")
+        if set(m) - OPTIONAL_METHOD_KEYS != METHOD_KEYS:
+            _fail(f"{key}: fields must be exactly {sorted(METHOD_KEYS)}, and stand_in_proof for a stand-in")
         _text(m["mechanism"], f"{key}: mechanism")
         _text(m["measure"], f"{key}: measure")
         ksis = m["ksis"]
@@ -165,6 +263,7 @@ def validate(doc, known, published, where="infrastructure/schemas/ksi-methods.js
             _fail(f"{key}: {', '.join(unknown)} not in the KSI catalog")
         if m["input"] not in INPUTS:
             _fail(f"{key}: input must be one of {list(INPUTS)}")
+        _stand_in_proof(m, key, Path(repo))
         v = m["verifier"]
         kind = v.get("kind") if isinstance(v, dict) else None
         if kind == "published":

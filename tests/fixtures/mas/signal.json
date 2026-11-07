@@ -774,6 +774,43 @@
    }
   },
   {
+   "component_id": "aws::object_store::recovery_drill",
+   "type": "object_store",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "region": "us-east-2",
+    "function": "Chaos Gremlin restore drill scratch bucket (copies of public pages, seven-day expiry)"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::quarantine_responder",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Quarantine responder role (attach or detach deny-all only)"
+   }
+  },
+  {
+   "component_id": "aws::iam_role::quarantine_target",
+   "type": "iam_role",
+   "security_category": {
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+   },
+   "attributes": {
+    "function": "Quarantine drill stand-in role (no permissions)"
+   }
+  },
+  {
    "component_id": "ext::sigstore-fulcio",
    "type": "external_service",
    "security_category": {

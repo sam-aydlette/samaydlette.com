@@ -1,0 +1,29 @@
+{
+ "$comment": "Known-bad: the evidence nightly's recovery-drill grant pointed at the production site bucket instead of the scratch bucket, which would let the unattended nightly delete published content. Merged over aws-good.json; ci-roles.nightly-recovery-drill-scope must be a deviation.",
+ "responses": {
+  "iam get-role-policy --role-name github-actions-evidence-nightly-oidc --policy-name evidence-nightly-recovery-drill": {
+   "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+     {
+      "Sid": "ListDrillVersions",
+      "Effect": "Allow",
+      "Action": "s3:ListBucketVersions",
+      "Resource": "arn:aws:s3:::samaydlette.com"
+     },
+     {
+      "Sid": "DrillObjects",
+      "Effect": "Allow",
+      "Action": [
+       "s3:PutObject",
+       "s3:GetObject",
+       "s3:GetObjectVersion",
+       "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::samaydlette.com/*"
+     }
+    ]
+   }
+  }
+ }
+}

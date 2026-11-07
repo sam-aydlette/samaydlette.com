@@ -1,0 +1,3 @@
+Summary: The 404 page is too polite.
+Affected: https://samaydlette.com/missing
+Impact: Attackers feel welcome.

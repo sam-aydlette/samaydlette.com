@@ -308,6 +308,63 @@
       "note": "Index of the monthly recovery exercises (KSI-RPL-TRC; DEC-195), rewritten on every evidence nightly run (scripts/hold-recovery-exercise.py), its only writer. Each exercise (vdr-recovery-exercise-<date>.*) is immutable and listed with its sha256, so it carries no window; the nightly and the deploy fail from the day after a due date with none published (scripts/check-scheduled-review.py)."
     },
     {
+      "path": ".well-known/vdr-drill-board-meetings.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {"source": "json", "field": "generated_at"},
+      "signed": true,
+      "signature": ".well-known/vdr-drill-board-meetings.bundle",
+      "note": "Index of the Board of Sam's quarterly meetings (KSI-PIY-RES), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/vdr-drill-cfo-reviews.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {"source": "json", "field": "generated_at"},
+      "signed": true,
+      "signature": ".well-known/vdr-drill-cfo-reviews.bundle",
+      "note": "Index of the CFO's quarterly budget reviews (KSI-PIY-RIS), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/vdr-drill-tabletops.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {"source": "json", "field": "generated_at"},
+      "signed": true,
+      "signature": ".well-known/vdr-drill-tabletops.bundle",
+      "note": "Index of the monthly Choose-Your-Own-Disaster tabletops (KSI-INR-RIR, KSI-RPL-ARP, KSI-INR-AAR), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/vdr-drill-disclosures.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {"source": "json", "field": "generated_at"},
+      "signed": true,
+      "signature": ".well-known/vdr-drill-disclosures.bundle",
+      "note": "Index of the monthly vulnerability disclosure drills (KSI-PIY-RVD), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/vdr-drill-phishing.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {"source": "json", "field": "generated_at"},
+      "signed": true,
+      "signature": ".well-known/vdr-drill-phishing.bundle",
+      "note": "Index of the monthly phishing drills (KSI-CED-RAT), simulated participants (DEC-194, DEC-195), rewritten on every evidence nightly run (scripts/hold-drill.py), its only writer. Each drill (under the same name with -<date>) is immutable and listed with its sha256; the nightly fails from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
+      "path": ".well-known/vdr-drill-chaos-gremlins.json",
+      "cadence": "nightly",
+      "max_age_hours": 26,
+      "timestamp": {
+        "source": "json",
+        "field": "generated_at"
+      },
+      "signed": true,
+      "signature": ".well-known/vdr-drill-chaos-gremlins.bundle",
+      "note": "Index of the monthly Chaos Gremlin restore drills (KSI-RPL-TRC, KSI-RPL-RRO; DEC-195), rewritten on every evidence nightly run (scripts/hold-chaos-gremlin.py), its only writer. Each drill (vdr-drill-chaos-gremlin-<date>.*) is immutable and listed with its sha256, so it carries no window; the nightly and the deploy fail from the day after a due date with none published (scripts/check-scheduled-review.py)."
+    },
+    {
       "path": ".well-known/security-reviews.json",
       "cadence": "nightly",
       "max_age_hours": 336,

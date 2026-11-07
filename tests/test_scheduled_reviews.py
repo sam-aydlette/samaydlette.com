@@ -92,8 +92,27 @@ def test_known_bad_the_current_rules_of_behavior_unacknowledged_fails(tmp_path):
 
 # --- the audit-log review ------------------------------------------------------------------
 
+class _Iam:
+    """A quarantine responder that works (tests/test_quarantine_responder.py tests it properly)."""
+
+    def __init__(self):
+        self.on = set()
+
+    def attach(self, kind, name):
+        self.on.add(name)
+
+    def detach(self, kind, name):
+        self.on.discard(name)
+
+    def attached(self, kind, name):
+        return ["arn:aws:iam::aws:policy/AWSDenyAll"] if name in self.on else []
+
+    def page(self, subject, message):
+        pass
+
+
 def _review(events="cloudtrail-expected.json", gh="github-clean.json"):
-    return alr.build(_json(events), _json(gh), START, NOW, "FR-TEST")
+    return alr.build(_json(events), _json(gh), START, NOW, "FR-TEST", (), _Iam(), sleep=lambda s: None)
 
 
 def test_ci_roles_aws_and_app_users_are_expected_and_unwatched_writes_ignored():

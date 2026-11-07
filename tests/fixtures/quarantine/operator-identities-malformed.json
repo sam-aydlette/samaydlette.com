@@ -1,0 +1,7 @@
+{
+  "schema": "operator-identities/1",
+  "version": "known-bad",
+  "description": "Known-bad: an operator list whose user has no kind or source. The responder must not load it, and must then page about every user and attach nothing (tests/test_quarantine_responder.py).",
+  "users": [{"name": "placeholder-operator"}],
+  "rationale": "Fixture."
+}

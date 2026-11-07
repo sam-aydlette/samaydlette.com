@@ -92,6 +92,78 @@
         }
       },
       "expect": null
+    },
+    {
+      "case": "an SCN evaluation log with every change evaluated",
+      "method": "scn-evaluations",
+      "doc": {
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "entries": [
+          {
+            "commit": "a",
+            "problem": null
+          }
+        ],
+        "unrecorded": 0
+      },
+      "expect": null
+    },
+    {
+      "case": "a phishing drill index with this month's drill passing",
+      "method": "phishing-drill",
+      "doc": {
+        "schema": "scheduled-reviews/1",
+        "review": "phishing-drill",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "reviews": [
+          {
+            "dueDate": "2026-11-01",
+            "result": "pass",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "expect": null
+    },
+    {
+      "case": "an incident log whose lessons check passed and caught its planted orphan",
+      "method": "incident-lessons",
+      "doc": {
+        "schema": "incident-reports/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "lessons_learned": {
+          "result": "pass",
+          "planted": {
+            "caught": true
+          }
+        },
+        "patterns": {
+          "result": "pass",
+          "planted": {
+            "caught": true
+          }
+        }
+      },
+      "expect": null
+    },
+    {
+      "case": "a security-settings record with a valid security.txt",
+      "method": "security-txt",
+      "doc": {
+        "schema": "security-settings/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "settings": [],
+        "securityTxt": {
+          "result": "pass",
+          "checks": [
+            {
+              "id": "expires",
+              "ok": true
+            }
+          ]
+        }
+      },
+      "expect": null
     }
   ],
   "bad": [
@@ -245,6 +317,99 @@
         }
       },
       "expect": "the planted simulated intruder was not caught"
+    },
+    {
+      "case": "an SCN evaluation log with a change merged without an evaluation",
+      "method": "scn-evaluations",
+      "doc": {
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "entries": [
+          {
+            "commit": "a",
+            "problem": "no valid evaluation: missing SCN-Type"
+          }
+        ],
+        "unrecorded": 1
+      },
+      "expect": "carry no valid significant-change evaluation"
+    },
+    {
+      "case": "a phishing drill index whose last drill failed",
+      "method": "phishing-drill",
+      "doc": {
+        "schema": "scheduled-reviews/1",
+        "review": "phishing-drill",
+        "generated_at": "2026-11-05T06:00:00+00:00",
+        "reviews": [
+          {
+            "dueDate": "2026-11-01",
+            "result": "fail",
+            "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        ]
+      },
+      "expect": "did not pass"
+    },
+    {
+      "case": "an incident log whose planted orphan lesson was missed",
+      "method": "incident-lessons",
+      "doc": {
+        "schema": "incident-reports/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "lessons_learned": {
+          "result": "pass",
+          "planted": {
+            "caught": false
+          }
+        },
+        "patterns": {
+          "result": "pass",
+          "planted": {
+            "caught": true
+          }
+        }
+      },
+      "expect": "planted case was not caught"
+    },
+    {
+      "case": "an incident log whose pattern review did not pass",
+      "method": "groundhog-day",
+      "doc": {
+        "schema": "incident-reports/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "lessons_learned": {
+          "result": "pass",
+          "planted": {
+            "caught": true
+          }
+        },
+        "patterns": {
+          "result": "fail",
+          "planted": {
+            "caught": true
+          }
+        }
+      },
+      "expect": "the patterns check did not pass"
+    },
+    {
+      "case": "a security-settings record with an expired security.txt",
+      "method": "security-txt",
+      "doc": {
+        "schema": "security-settings/1",
+        "emitted_at": "2026-11-05T06:00:00+00:00",
+        "settings": [],
+        "securityTxt": {
+          "result": "fail",
+          "checks": [
+            {
+              "id": "expires",
+              "ok": false
+            }
+          ]
+        }
+      },
+      "expect": "security.txt is not valid: expires"
     }
   ]
 }

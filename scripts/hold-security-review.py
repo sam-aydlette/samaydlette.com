@@ -69,6 +69,9 @@ TYPE_TERMS = {
     "pypi_package": ("PyPI", "Python", "dependenc"), "tls_certificate": ("TLS", "ACM"),
 }
 COST_KEYS = {"id", "item", "source", "estimate_usd_per_year", "estimate", "basis"}
+# Optional on a line: `funds`, the automated methods (infrastructure/schemas/ksi-methods.json
+# keys) it pays for, which the CFO's budget review checks (scripts/_drills.py).
+COST_OPTIONAL = {"funds"}
 WINDOW_DAYS = 365
 STATUS = "AI-drafted estimate; operator to correct"
 
@@ -179,8 +182,12 @@ def validate_costs(doc, repo=REPO):
         _fail("data/recurring-costs.json has no lines")
     seen = set()
     for x in lines:
-        if not isinstance(x, dict) or set(x) != COST_KEYS or x["id"] in seen:
-            _fail(f"a cost line must have exactly {sorted(COST_KEYS)} and a unique id: {x!r}"[:200])
+        if not isinstance(x, dict) or set(x) - COST_OPTIONAL != COST_KEYS or x["id"] in seen:
+            _fail(f"a cost line must have exactly {sorted(COST_KEYS)} (and optionally funds) and a unique id: "
+                  f"{x!r}"[:200])
+        funds = x.get("funds", [])
+        if not isinstance(funds, list) or not all(isinstance(k, str) and k for k in funds):
+            _fail(f"{x['id']}: funds must be a list of method keys")
         seen.add(x["id"])
         src = str(x["source"])
         if not src.startswith("external:") and not (repo / src.split("#", 1)[0]).exists():

@@ -1,0 +1,9 @@
+# Known-bad (tests/test_disposition_coverage.py): a Checkov skip citing a
+# decision that does not name the resource it sits on, and one citing a
+# decision that does not claim the check. Never applied; not under
+# infrastructure/, and not named .tf, so no scanner reads it as Terraform.
+resource "aws_s3_bucket" "unnamed" {
+  bucket = "${local.domain_dashed}-not-named-anywhere"
+  # checkov:skip=CKV_AWS_145:SSE-S3 at rest; CMK declined (DEC-029).
+  # checkov:skip=CKV_AWS_21:Versioning declined (DEC-004).
+}

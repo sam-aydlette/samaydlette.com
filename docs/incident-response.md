@@ -36,6 +36,7 @@ Active detection sources:
 2. **Record and evaluate FedRAMP reportability (IEC-CSO-EFR).** Add the incident to [`data/incidents.json`](../data/incidents.json) with `detected_at`, `detection_source` and an `evaluation`: when it was evaluated, `reportable` true or false, the `basis` (`IEC-CSO-EFR`, or `VER-TFR-IRI` / `VER-TFR-NRI` for a vulnerability), the `reason`, and the federal customer data considered. Does it affect, or is it likely to affect, the confidentiality or integrity of federal customer data (data an agency or its users supply to the service, not account information or telemetry)? If yes it is a FedRAMP Reportable Incident: continue with [Reporting](#reporting-fedramp-reportable-incidents-iec) in parallel with containment. Push the record; the incident log republishes within minutes.
 3. **Contain.**
    - **Credential compromise (AWS):** rotate the operator IAM user's access keys via the IAM console and revoke the CI roles' active sessions. CI authenticates through OIDC and holds no stored AWS keys, so there is no GitHub secret to rotate.
+   - **Automatic quarantine (KSI-IAM-SUS).** _AI-drafted (2026-11-06); for the operator's review._ When the nightly audit-log review evaluates an unexpected CloudTrail write as a possible FedRAMP Reportable Incident and the event names an IAM role or user, the quarantine responder (`scripts/_quarantine.py`, role in `infrastructure/bootstrap/quarantine-responder.tf`) has already attached AWS's managed `AWSDenyAll` policy to that principal and paged the operator on the evidence-alerts topic before anyone reads the page. It never quarantines an operator: the users in [`data/operator-identities.json`](../data/operator-identities.json) are only paged about, in code and by an explicit IAM Deny read from the same file (if the list cannot be loaded, every user is only paged about). The operator's own access is never cut off by the responder, so no root sign-in is needed to recover from it; containing an operator's account stays with this procedure. Add any new operator's IAM user to that list before it is used. It never touches the CI/CD trust root (the five CI roles and itself): those are refused and paged for a person to decide. Nothing removes a real quarantine automatically. After this procedure, remove it with operator credentials: `aws iam detach-role-policy --role-name <role> --policy-arn arn:aws:iam::aws:policy/AWSDenyAll` (or `detach-user-policy --user-name <user>` for a user). The nightly drill quarantines and releases only its permissionless stand-in role, and its published record (`/.well-known/vdr-audit-log-review.json`, `quarantine`) names no principal.
    - **Credential compromise (GitHub):** revoke any compromised PATs; rotate the workflow's `GITHUB_TOKEN` is automatic per-run; reset OAuth grants if external apps are involved.
    - **Content compromise:** revert via `git`, push to `main`, and approve the `prod` deploy. S3 versioning preserves the prior state; CloudFront invalidation refreshes the edge.
    - **Supply-chain compromise:** pin the offending dependency to a known-good version, redeploy, and file a Dependabot suppression if the alert source is the GitHub Advisory Database.
@@ -126,6 +127,21 @@ CR26 `SCN-CSO-EMG` permits the operator to execute significant changes — inclu
 ## Pattern review (KSI-INR-RPI)
 
 KSI-INR-RPI calls for persistent review of past incidents for patterns. It is generated: the Annual Security Review (`scripts/hold-security-review.py`, [`security-review.md`](security-review.md)) groups the incidents of the last 12 months by their evaluation basis, exercises excluded, and fails when a basis recurs, so a systemic cause is fixed in a pull request rather than noted in a meeting. Each incident's own after-action record is written when it closes.
+
+Each incident in the register also carries a `pattern` (root cause and component). On every build of the incident log, "Groundhog Day" (`scripts/_incidents.py` `patterns()`) groups the real incidents of the last 12 months by it, and a pattern seen twice becomes a VDR process finding (`scripts/build-vdr-report.py`) until it stops recurring. A seeded simulated scenario, The Cache Was Stale Again (three of the same incident), goes through the same function on every build and must be flagged; the incident log publishes that it was. Each resolved incident's `lessons_learned` link to the commit, decision or test that incorporated them, and the incident log publishes the check that they resolve (KSI-INR-AAR).
+
+## Vulnerability disclosure intake (KSI-PIY-RVD)
+
+_AI-drafted; the operator to review._ A report sent to the contact in [`security.txt`](../website/.well-known/security.txt) is read in this format, one field per line, a field running on until the next:
+
+```
+Summary: <one line>
+Affected: <the https URL on samaydlette.com>
+Steps to reproduce: <the steps>
+Impact: <what an attacker gains>
+```
+
+The intake (`scripts/_drills.py` `intake()`) parses it, triages it (accepted, needs-info when a field is missing, or out-of-scope when the URL is not this system's), opens a finding for an accepted report, and computes an acknowledgement deadline 3 business days after receipt. It drafts the reply; nothing is sent automatically. Each month the evidence nightly runs the disclosure drill through the same intake: Ima Finder (simulated) reports that the favicon is insufficiently threatening, and a planted report with no reproduction steps must be triaged to needs-info (`vdr-drill-disclosures.json`). Every deploy also checks that `security.txt` is valid (Contact, Policy, Canonical, and an Expires date in the future and no more than a year away) and publishes the result in `security-settings.json`.
 
 ## Escalation
 

@@ -13,14 +13,23 @@ published comparison is then never stale or partial.
 
 Published values are counts, booleans and policy values only: never an account
 ID, an ARN, an IAM user or role name, or an email address.
+
+It also checks the security.txt the deploy publishes (KSI-PIY-RVD, RFC 9116):
+a Contact, a Policy, the Canonical URL, and an Expires date in the future and
+no more than a year away. The result is `securityTxt` in the same record. An
+invalid file is a warning, not a failure: the deploy does not stop on a date,
+so nobody is committed to renewing the file by hand; the KSI method that reads
+this result (infrastructure/schemas/ksi-methods.json, security-txt) stops
+counting instead, and the Security Decision Record says why.
 """
 
 import argparse
 import importlib.util
 import json
+import re
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,6 +38,8 @@ import _decisions  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 SOURCE = REPO / "data" / "secure-configuration.json"
+SECURITY_TXT = REPO / "website" / ".well-known" / "security.txt"
+SECURITY_TXT_CANONICAL = "https://samaydlette.com/.well-known/security.txt"
 SCHEMA = "security-settings/1"
 REGION = "us-east-2"
 OPERATOR_GROUP = "operators"
@@ -37,7 +48,9 @@ ROLES = {"role-trust-deploy": "github-actions-deploy-oidc",
          "role-trust-plan": "github-actions-plan-oidc",
          "role-trust-nightly": "github-actions-evidence-nightly-oidc",
          "role-trust-maintenance": "github-actions-package-maintenance-oidc",
-         "role-trust-incident": "github-actions-incident-reports-oidc"}
+         "role-trust-incident": "github-actions-incident-reports-oidc",
+         "role-trust-responder": "github-actions-quarantine-responder-oidc",
+         "role-trust-quarantine-target": "samaydlette-com-quarantine-target"}
 # The unattended roles' write scope: {check id: (role, inline policy name)}. The
 # value compared is the object keys each may put (the bucket part of the S3 ARN
 # removed), so a grant the deploy's publishers need but bootstrap does not yet
@@ -47,6 +60,13 @@ ROLE_SCOPES = {"role-scope-maintenance": ("github-actions-package-maintenance-oi
 # inline policy name)}. The nightly's audit-log review needs cloudtrail:LookupEvents;
 # a deploy whose bootstrap lacks it stops before the SDR is built.
 ROLE_READS = {"role-reads-nightly": ("github-actions-evidence-nightly-oidc", "evidence-nightly-audit-log-review")}
+# The quarantine responder's one policy: the actions it allows and the only
+# managed policy its attach and detach may name (iam:PolicyARN), compared whole.
+ROLE_RESPONDER = {"role-actions-responder": ("github-actions-quarantine-responder-oidc", "quarantine-responder")}
+# The nightly's recovery-drill grant: "<action> <bucket>[/<key pattern>]" for
+# every S3 grant in it, so a grant on any other bucket is a deviation. S3 ARNs
+# carry no account, so the value is publishable.
+ROLE_S3_GRANTS = {"role-scope-nightly-drill": ("github-actions-evidence-nightly-oidc", "evidence-nightly-recovery-drill")}
 SUB_KEY = "token.actions.githubusercontent.com:sub"
 READ_ONLY_MANAGED = {"ReadOnlyAccess", "SecurityAudit", "ViewOnlyAccess"}
 READ_VERBS = ("Get", "List", "Describe", "Search", "BatchGet", "Lookup", "View")
@@ -210,6 +230,12 @@ def read_aws(call, pool_id, now=None):
     for check, (role, name) in ROLE_READS.items():
         out[check] = _guard(lambda role=role, name=name: _allowed_actions(call(
             ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
+    for check, (role, name) in ROLE_RESPONDER.items():
+        out[check] = _guard(lambda role=role, name=name: _responder_scope(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
+    for check, (role, name) in ROLE_S3_GRANTS.items():
+        out[check] = _guard(lambda role=role, name=name: _s3_grants(call(
+            ["iam", "get-role-policy", "--role-name", role, "--policy-name", name])["PolicyDocument"]))
 
     def cognito():
         if not pool_id:
@@ -287,6 +313,58 @@ def _allowed_actions(raw):
     return sorted(out)
 
 
+def _statements(doc):
+    sts = doc.get("Statement", [])
+    return [sts] if isinstance(sts, dict) else sts
+
+
+def _list(v):
+    return [v] if isinstance(v, str) else list(v or [])
+
+
+ATTACH_ACTIONS = {"iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:AttachUserPolicy", "iam:DetachUserPolicy"}
+
+
+def _responder_scope(raw):
+    """{allow, attach_only, trust_root_denied, operator_users_denied}: the actions
+    allowed; the managed policy ARNs every attach/detach grant is conditioned
+    to (an unconditioned grant reads as ["*"]); how many trust-root roles the
+    explicit Deny names; and how many users, by name, a Deny of user attach,
+    detach and put names (data/operator-identities.json). Counts: names are
+    not published."""
+    doc = _policy_doc(raw)
+    allow, only, denied, operators = set(), set(), set(), set()
+    for st in _statements(doc):
+        acts = set(_list(st.get("Action", [])))
+        if st.get("Effect") == "Allow":
+            allow |= acts
+            if acts & ATTACH_ACTIONS:
+                arns = set()
+                for test, block in (st.get("Condition") or {}).items():
+                    if test in ("ArnEquals", "StringEquals"):
+                        arns |= set(_list(block.get("iam:PolicyARN", [])))
+                only |= arns or {"*"}
+        elif st.get("Effect") == "Deny" and ATTACH_ACTIONS <= acts:
+            denied |= {r.rsplit("/", 1)[-1] for r in _list(st.get("Resource", [])) if ":role/" in r and "*" not in r}
+        if st.get("Effect") == "Deny" and {"iam:AttachUserPolicy", "iam:DetachUserPolicy", "iam:PutUserPolicy"} <= acts:
+            operators |= {r.rsplit("/", 1)[-1] for r in _list(st.get("Resource", [])) if ":user/" in r and "*" not in r}
+    return {"allow": sorted(allow), "attach_only": sorted(only), "trust_root_denied": len(denied),
+            "operator_users_denied": len(operators)}
+
+
+def _s3_grants(raw):
+    """Sorted "<action> <bucket>[/<key>]" for every Allow in an S3-only policy."""
+    out = set()
+    for st in _statements(_policy_doc(raw)):
+        if st.get("Effect") != "Allow":
+            continue
+        for r in _list(st.get("Resource", [])):
+            if not r.startswith("arn:aws:s3:::"):
+                raise ValueError("a grant in the recovery-drill policy is not on an S3 resource")
+            out |= {f"{a} {r[len('arn:aws:s3:::'):]}" for a in _list(st.get("Action", []))}
+    return sorted(out)
+
+
 def _trust_subjects(role):
     doc = _policy_doc(role["AssumeRolePolicyDocument"])
     subs = []
@@ -329,9 +407,37 @@ def _manual_settings():
     return m
 
 
+# --- security.txt (KSI-PIY-RVD) -------------------------------------------------------
+
+def security_txt(text, now):
+    """RFC 9116 validity of the published security.txt: {file, checks, result}."""
+    fields = {}
+    for k, v in re.findall(r"^([A-Za-z-]+):\s*(\S.*?)\s*$", text or "", re.M):
+        fields.setdefault(k.lower(), []).append(v)
+    expires = (fields.get("expires") or [None])[0]
+    try:
+        exp = datetime.fromisoformat(expires.replace("Z", "+00:00")) if expires else None
+    except ValueError:
+        exp = None
+    checks = [
+        {"id": "contact", "ok": bool(fields.get("contact")) and all(v.startswith(("https://", "mailto:"))
+                                                                 for v in fields.get("contact", [])),
+         "detail": "Contact is an https: or mailto: URI"},
+        {"id": "policy", "ok": all(v.startswith("https://") for v in fields.get("policy", [])) and
+         bool(fields.get("policy")), "detail": "Policy names the disclosure policy over https"},
+        {"id": "canonical", "ok": SECURITY_TXT_CANONICAL in fields.get("canonical", []),
+         "detail": f"Canonical is {SECURITY_TXT_CANONICAL}"},
+        {"id": "expires", "ok": exp is not None and len(fields.get("expires", [])) == 1
+         and now < exp <= now + timedelta(days=366),
+         "detail": f"exactly one Expires, in the future and no more than a year away ({expires or 'none'})"},
+    ]
+    return {"file": "website/.well-known/security.txt", "rfc": "RFC 9116", "checks": checks,
+            "result": "pass" if all(c["ok"] for c in checks) else "fail"}
+
+
 # --- output ---------------------------------------------------------------------------
 
-def build(src, results, now):
+def build(src, results, now, security_txt_result=None):
     tally = {}
     for r in results:
         tally[r["result"]] = tally.get(r["result"], 0) + 1
@@ -341,7 +447,8 @@ def build(src, results, now):
             "description": "Every security setting of the top-level administrative and privileged accounts, read live "
                            "during the deploy and compared with the Secure Configuration Guide's recommended defaults "
                            "(SCG-ENH-CMP); this file is the machine-readable export of those settings (SCG-ENH-EXP).",
-            "summary": dict(sorted(tally.items())), "settings": results}
+            "summary": dict(sorted(tally.items())), "settings": results,
+            **({"securityTxt": security_txt_result} if security_txt_result else {})}
 
 
 def failures(doc):
@@ -362,6 +469,10 @@ def render_markdown(doc):
         cur = "—" if r["current"] is None else _v(r["current"])
         out.append(f"| `{r['id']}` | {r['account']} | `{_v(r['recommended'])}` | `{cur}` | {r['result']} | "
                    f"{r.get('decision', '—')} |")
+    st = doc.get("securityTxt")
+    if st:
+        out += ["", f"**security.txt ({st['rfc']}):** {st['result']}: "
+                + ", ".join(f"{c['id']} {'ok' if c['ok'] else 'FAILS'}" for c in st["checks"])]
     out += ["", "---", "_Source of truth: the signed `security-settings.json`._"]
     return "\n".join(out)
 
@@ -375,6 +486,7 @@ def main(argv=None):
                     help="a check-manual-settings.py output to take the GitHub facts from (default: read GitHub now)")
     ap.add_argument("--account", action="append", default=None,
                     help="compare only the settings of this account (repeatable); the nightly compares github-owner")
+    ap.add_argument("--security-txt", default=str(SECURITY_TXT), help="the security.txt the deploy publishes")
     ap.add_argument("--output", default="security-settings.json")
     ap.add_argument("--md-output", default="security-settings.md")
     a = ap.parse_args(argv)
@@ -390,14 +502,19 @@ def main(argv=None):
     aws_needed = any(not s["account"].startswith("github") for s in src["settings"])
     current = {**(read_aws(aws, a.cognito_pool_id) if aws_needed else {}), **read_github(github),
                **read_repository(_manual_settings().check_repository())}
-    doc = _offering.stamp_fedramp_id(build(src, compare(src, current, in_force), datetime.now(timezone.utc)))
+    now = datetime.now(timezone.utc)
+    sec_txt = security_txt(Path(a.security_txt).read_text(encoding="utf-8"), now)
+    doc = _offering.stamp_fedramp_id(build(src, compare(src, current, in_force), now, sec_txt))
     Path(a.output).write_text(json.dumps(doc, indent=2) + "\n")
     Path(a.md_output).write_text(render_markdown(doc) + "\n")
     bad = failures(doc)
     for r in bad:
         print(f"::error::secure configuration: {r['id']} is {r['result']}"
               + (f" ({r['detail']})" if r.get("detail") else ""))
-    print(f"security-settings: {doc['summary']}")
+    for c in sec_txt["checks"]:
+        if not c["ok"]:
+            print(f"::warning::security.txt: {c['id']} fails: {c['detail']} (KSI-PIY-RVD method not counted)")
+    print(f"security-settings: {doc['summary']}; security.txt {sec_txt['result']}")
     return 1 if bad else 0
 
 

@@ -56,18 +56,22 @@ data "aws_iam_policy_document" "deploy_config_reads" {
       aws_iam_role.evidence_nightly.arn,
       aws_iam_role.package_maintenance.arn,
       aws_iam_role.incident_reports.arn,
+      aws_iam_role.quarantine_responder.arn,
+      aws_iam_role.quarantine_target.arn,
     ]
   }
   # The package maintainer's write scope (ci-roles.maintenance-publish-scope):
   # its one publish policy, read to confirm it covers every object the workflow
   # puts. And the nightly's audit-log read (ci-roles.nightly-audit-reads): its
-  # cloudtrail:LookupEvents policy. Until these are applied, the comparison
+  # cloudtrail:LookupEvents policy; its recovery-drill grant
+  # (ci-roles.nightly-recovery-drill-scope); and the quarantine responder's one
+  # policy (ci-roles.responder-scope). Until these are applied, the comparison
   # fails the deploy before the SDR is built.
   statement {
     sid       = "MaintainerScopeRead"
     effect    = "Allow"
     actions   = ["iam:GetRolePolicy"]
-    resources = [aws_iam_role.package_maintenance.arn, aws_iam_role.evidence_nightly.arn]
+    resources = [aws_iam_role.package_maintenance.arn, aws_iam_role.evidence_nightly.arn, aws_iam_role.quarantine_responder.arn]
   }
 }
 

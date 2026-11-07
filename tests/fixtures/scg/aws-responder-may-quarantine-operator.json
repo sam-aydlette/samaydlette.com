@@ -1,0 +1,90 @@
+{
+ "$comment": "Known-bad: the quarantine responder's policy without its Deny on the operator identities (data/operator-identities.json), so IAM alone would let it attach deny-all to an operator's user if the code's check had a bug. Merged over aws-good.json; ci-roles.responder-scope must be a deviation.",
+ "responses": {
+  "iam get-role-policy --role-name github-actions-quarantine-responder-oidc --policy-name quarantine-responder": {
+   "PolicyDocument": {
+    "Version": "2012-10-17",
+    "Statement": [
+     {
+      "Sid": "QuarantineWithDenyAllOnly",
+      "Effect": "Allow",
+      "Action": [
+       "iam:AttachRolePolicy",
+       "iam:DetachRolePolicy",
+       "iam:AttachUserPolicy",
+       "iam:DetachUserPolicy"
+      ],
+      "Resource": [
+       "arn:aws:iam::123456789012:role/*",
+       "arn:aws:iam::123456789012:user/*"
+      ],
+      "Condition": {
+       "ArnEquals": {
+        "iam:PolicyARN": "arn:aws:iam::aws:policy/AWSDenyAll"
+       }
+      }
+     },
+     {
+      "Sid": "ReadQuarantineBack",
+      "Effect": "Allow",
+      "Action": [
+       "iam:ListAttachedRolePolicies",
+       "iam:ListAttachedUserPolicies"
+      ],
+      "Resource": [
+       "arn:aws:iam::123456789012:role/*",
+       "arn:aws:iam::123456789012:user/*"
+      ]
+     },
+     {
+      "Sid": "PageOperator",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "arn:aws:sns:us-east-2:123456789012:samaydlette-com-evidence-alerts"
+     },
+     {
+      "Sid": "PageThroughEncryptedTopic",
+      "Effect": "Allow",
+      "Action": [
+       "kms:GenerateDataKey",
+       "kms:Decrypt"
+      ],
+      "Resource": "arn:aws:kms:us-east-2:123456789012:key/*"
+     },
+     {
+      "Sid": "NeverTheTrustRoot",
+      "Effect": "Deny",
+      "Action": [
+       "iam:AttachRolePolicy",
+       "iam:DetachRolePolicy",
+       "iam:AttachUserPolicy",
+       "iam:DetachUserPolicy"
+      ],
+      "Resource": [
+       "arn:aws:iam::123456789012:role/github-actions-quarantine-responder-oidc",
+       "arn:aws:iam::123456789012:role/github-actions-deploy-oidc",
+       "arn:aws:iam::123456789012:role/github-actions-plan-oidc",
+       "arn:aws:iam::123456789012:role/github-actions-evidence-nightly-oidc",
+       "arn:aws:iam::123456789012:role/github-actions-package-maintenance-oidc",
+       "arn:aws:iam::123456789012:role/github-actions-incident-reports-oidc"
+      ]
+     },
+     {
+      "Sid": "OnlyRolesAndUsers",
+      "Effect": "Deny",
+      "Action": [
+       "iam:AttachRolePolicy",
+       "iam:DetachRolePolicy",
+       "iam:AttachUserPolicy",
+       "iam:DetachUserPolicy"
+      ],
+      "NotResource": [
+       "arn:aws:iam::123456789012:role/*",
+       "arn:aws:iam::123456789012:user/*"
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
