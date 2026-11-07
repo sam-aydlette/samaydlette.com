@@ -1,0 +1,49 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(terraform destroy *)",
+      "Bash(terraform * destroy *)",
+      "Bash(make destroy *)",
+      "Bash(make -C infrastructure destroy *)",
+      "Bash(git push *--force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push * -f *)",
+      "Bash(aws s3 rm *)"
+    ],
+    "ask": [
+      "Bash(terraform apply *)",
+      "Bash(terraform * apply *)",
+      "Bash(make apply-infra *)",
+      "Bash(make pipeline *)",
+      "Bash(make -C infrastructure apply-infra *)",
+      "Bash(make -C infrastructure pipeline *)",
+      "Bash(git push * main)",
+      "Bash(git push * HEAD:main)",
+      "Bash(gh pr merge *)",
+      "Bash(aws iam create-*)",
+      "Bash(aws iam put-*)",
+      "Bash(aws iam attach-*)",
+      "Bash(aws iam detach-*)",
+      "Bash(aws iam update-*)",
+      "Bash(aws iam delete-*)",
+      "Bash(aws s3 cp *)",
+      "Bash(aws s3 mv *)",
+      "Bash(aws s3 sync *)",
+      "Bash(aws s3api put-*)",
+      "Bash(aws s3api delete-*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
