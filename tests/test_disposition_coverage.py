@@ -8,9 +8,10 @@ resource type alone, "aws-s3-bucket", or the type and its name,
 text never considered.
 
 KNOWN_UNCOVERED lists the dispositions that were already uncovered when this
-check was added (2026-11-06, #526); they are for the operator to settle (widen
-the decision or record a new one). The list can only shrink: an entry that
-becomes covered fails the test until it is removed.
+check was added (2026-11-06, #526) and that their cited decision's reason does
+not fit, so the decision was not widened to them; they are for the operator to
+settle (record a new decision or change the resource). The list can only
+shrink: an entry that becomes covered fails the test until it is removed.
 """
 
 import re
@@ -27,13 +28,11 @@ REF = re.compile(r"\b(DEC|POAM)-(\d{3})((?:/\d{3})*)")
 DOMAIN = "samaydlette-com"
 
 # (file, terraform address, check, cited) already uncovered on 2026-11-06.
+# DEC-028's reason is that a log-target bucket logging to itself would recurse;
+# neither of these buckets is the access-log target, so it does not hold.
 KNOWN_UNCOVERED = {
     ("infrastructure/bootstrap/tf-state-backend.tf", "aws_s3_bucket.tfstate", "CKV_AWS_18", "POAM-028"),
-    ("infrastructure/bootstrap/tf-state-backend.tf", "aws_s3_bucket.tfstate", "CKV2_AWS_62", "POAM-004"),
     ("infrastructure/cloudtrail.tf", "aws_s3_bucket.cloudtrail", "CKV_AWS_18", "POAM-028"),
-    ("infrastructure/cloudtrail.tf", "aws_s3_bucket.cloudtrail", "CKV_AWS_145", "POAM-029"),
-    ("infrastructure/cloudtrail.tf", "aws_cloudtrail.management", "CKV_AWS_35", "POAM-029"),
-    ("infrastructure/logging.tf", "aws_s3_bucket.logs", "CKV2_AWS_62", "POAM-004"),
 }
 
 

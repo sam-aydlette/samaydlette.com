@@ -181,6 +181,10 @@ AMENDED_SINCE_MIGRATION = {
     # check ID can be claimed by one in-force record only, so these two cover it.
     ("POAM-004", "justification"), ("POAM-004", "resources"),
     ("POAM-029", "justification"), ("POAM-029", "resources"),
+    # Same PR: DEC-004 and DEC-029 also name the pre-existing dispositions that
+    # cite them, and DEC-028 and DEC-029 name the access-log bucket by its real
+    # name, samaydlette-com-logs (each with source.reworded).
+    ("POAM-028", "justification"), ("POAM-028", "resources"),
 }
 
 
