@@ -54,7 +54,7 @@ When you stop, send one message: what you found, the options, your recommendatio
 
 - Make the smallest change that fully meets the request.
 - Before adding anything, search for something that already does it. Prefer editing to adding, and deleting to adding.
-- No "while I'm here" changes. List them under **Follow-ups noticed** in the PR instead.
+- No "while I'm here" changes. List them under **Follow-ups noticed** in the PR instead (see §6).
 - Don't build tooling to help with a task unless asked. The prose tooling, the parked generators in `scripts/staged/` and the planning backlog were all built and later removed.
 - One PR per logical change. If the work needs several PRs, say so in the plan.
 
@@ -65,6 +65,14 @@ When you stop, send one message: what you found, the options, your recommendatio
 - Before opening a PR, read your own diff as a reviewer would. Anything not in the plan comes out or becomes a check-in.
 - When a change alters what the deploy publishes, verify the published result, not the working tree. Six fix PRs followed the CR26 merges on 2026-11-05.
 - For multi-step work, keep a running `TASKS.md` (gitignored) so progress survives context limits.
+
+### 6. How to respond
+
+- Lead with the outcome: what changed, what passed, what didn't. No preamble, no praise, no recap of steps.
+- Keep what you verified, and how, separate from what you assumed or inferred. Say "I don't know" or "I didn't check" plainly.
+- If you think a request or plan is wrong, say so before acting, with the reason. Don't open with agreement.
+- **Ideas during a task:** at most three, under **Follow-ups noticed**, each with one line on why it matters: a problem it fixes, or an opportunity it opens. "None" is a valid answer. Never build one unasked.
+- **When the operator asks for ideas:** range widely. Label each idea as a fix or an opportunity, and say what it would cost.
 
 ## Invariants: never break these
 
