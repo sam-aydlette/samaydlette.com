@@ -92,6 +92,7 @@ make_violation(meta, resource, address, message) := {
 #   severity: HIGH
 #   nist_controls: [si-10]
 #   ksi_ids: [KSI-PIY-RSD]
+#   resource_types: []
 violations contains violation if {
 	not valid_input
 	violation := make_violation(
@@ -130,6 +131,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [cm-6, ca-7]
 #   ksi_ids: [KSI-MLA-EVC]
+#   resource_types: []
 violations contains violation if {
 	not data.config
 	violation := make_violation(
@@ -149,6 +151,7 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [cm-6, ca-7]
 #   ksi_ids: [KSI-MLA-EVC]
+#   resource_types: []
 violations contains violation if {
 	some config_path in required_config_paths
 	object.get(data.config, config_path, null) == null
@@ -199,6 +202,8 @@ violations contains violation if {
 #   severity: HIGH
 #   nist_controls: [cm-6, ca-7]
 #   ksi_ids: [KSI-MLA-EVC]
+#   resource_types: ["*"]
+#   runtime_only: true
 violations contains violation if {
 	some r in resources
 	some attr in read_errors_of(r)

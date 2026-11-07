@@ -13,7 +13,9 @@ annotation drifts from the catalog:
   3. a rule declaring nist_controls must declare at least one ksi_id (no
      orphan control claims) — rules tracing to another framework entirely
      (e.g. Section 508) declare `framework:` and leave both lists empty;
-  4. every rule-scoped annotation on a `violations` rule must carry the
+  4. a rule declaring ksi_ids must declare custom.resource_types (the
+     Terraform types it evaluates, or ["*"]) for the KSI method count;
+  5. every rule-scoped annotation on a `violations` rule must carry the
      required custom fields (id, category, severity).
 
 Usage: python3 scripts/check-policy-annotations.py [--policy-dir DIR]
@@ -109,6 +111,16 @@ def main():
             errors.append(f"{where}: declares nist_controls without any ksi_ids "
                           "— control claims must trace through a KSI")
             continue
+
+        # The KSI method count (policies/compliance/ksi.rego) credits a rule
+        # only where a resource of these types was evaluated.
+        types = custom.get("resource_types")
+        if ksi_ids and (not isinstance(types, list)
+                        or not all(isinstance(t, str) and (t == "*" or t.startswith("aws_")) for t in types)):
+            errors.append(f"{where}: declares ksi_ids without custom.resource_types "
+                          "(a list of Terraform types, or [\"*\"])")
+        if "runtime_only" in custom and not isinstance(custom["runtime_only"], bool):
+            errors.append(f"{where}: custom.runtime_only must be true or false")
 
         unknown = [k for k in ksi_ids if k not in controls_by_ksi]
         if unknown:

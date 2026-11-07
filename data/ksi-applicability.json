@@ -1,0 +1,19 @@
+{
+  "schema": "ksi-applicability/2",
+  "$comment": "Key Security Indicators that do not apply to this system: the missing trigger, who proposed it and the operator's approval. Read by scripts/_ksi_methods.py; policies/compliance/ksi.rego treats only an approved entry as Not Applicable. Every other KSI's status is computed from its methods, never written here.",
+  "ksis": [
+    {
+      "ksi_id": "KSI-SVC-RUD",
+      "status": "Not Applicable",
+      "not_applicable": "The system holds no federal customer data and has no agency customer, so there is no customer data an agency could ask to have removed.",
+      "proposal": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-06"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-06"
+      }
+    }
+  ]
+}
