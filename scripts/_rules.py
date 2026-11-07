@@ -130,3 +130,61 @@ def evaluation_days(rules_dir=RULES_DIR):
     """VER-TFR-EVU: days from detection within which every vulnerability is evaluated."""
     rules, _ = load_rules(rules_dir)
     return _class_c_or_flat(_rule(rules, "VER", "VER-TFR-EVU"), "VER-TFR-EVU")
+
+
+# The certification this system builds toward: FedRAMP 20x, Program path, Class C.
+CERT_TYPE = "20x"
+CERT_PATH = "Program"
+_SCOPES = ("all", "20x")  # rule sections that can apply to a 20x certification
+
+
+def _subset_applicability(family, scope, subset):
+    """A subset's applicability block. Subsets of the 20x section are described
+    in info["20x"].subsets where the family has one (CPO, FRC, IVV, SDR), and
+    otherwise, like the cross-program section's, in info.subsets (VDR)."""
+    info = family.get("info") or {}
+    sections = [(info.get(scope) or {}).get("subsets")] if scope != "all" else []
+    for where in [*sections, info.get("subsets")]:
+        app = ((where or {}).get(subset) or {}).get("applicability")
+        if isinstance(app, dict):
+            return app
+    return None
+
+
+def applicable_provider_rules(rules_dir=RULES_DIR):
+    """{rule ID: {"family", "name", "statement", "force"}} for every FedRAMP rule
+    a provider must address for a 20x Program Class C certification (SDR-CSO-FRR).
+
+    Applicability is read from the corpus's own subset metadata (types, paths,
+    classes, affects), never from a list kept here, so a re-pinned corpus that
+    adds or retires a rule changes the set. A subset in a 20x-relevant section
+    with no applicability block fails closed: it can't be decided either way."""
+    rules, _ = load_rules(rules_dir)
+    frr = rules.get("FRR")
+    if not isinstance(frr, dict) or not frr:
+        _fail("no FRR section")
+    out = {}
+    for fam_id, family in sorted(frr.items()):
+        for scope in _SCOPES:
+            for subset, members in sorted(((family.get("data") or {}).get(scope) or {}).items()):
+                app = _subset_applicability(family, scope, subset)
+                if app is None:
+                    _fail(f"FRR/{fam_id}/{scope}/{subset} has no applicability metadata")
+                if not (CERT_TYPE in app.get("types", []) and CERT_PATH in app.get("paths", [])
+                        and CERT_CLASS.upper() in app.get("classes", [])
+                        and "Providers" in app.get("affects", [])):
+                    continue
+                for rid, rule in members.items():
+                    if "Providers" not in (rule.get("affects") or []):
+                        continue
+                    cell = (rule.get("varies_by_class") or {}).get(CERT_CLASS, rule)
+                    force, statement = cell.get("force"), cell.get("statement")
+                    if not isinstance(force, str) or not isinstance(statement, str):
+                        _fail(f"{rid} has no Class {CERT_CLASS.upper()} statement and force")
+                    if rid in out:
+                        _fail(f"{rid} appears twice in the corpus")
+                    out[rid] = {"family": fam_id, "subset": subset, "name": rule.get("name", ""),
+                                "statement": statement, "force": force}
+    if not out:
+        _fail("no provider rules apply; the applicability metadata has changed shape")
+    return out
