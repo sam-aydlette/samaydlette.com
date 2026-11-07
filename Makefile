@@ -32,7 +32,7 @@
 # =============================================================================
 
 .PHONY: help dev-setup check check-full test lint typecheck fmt test-policies \
-        reconcile essay-check preview require-tools require-artifacts
+        reconcile essay-check preview require-tools require-artifacts check-claims
 
 VENV     := .venv
 VENV_PY  := $(VENV)/bin/python
@@ -60,6 +60,8 @@ help:
 	@echo "                     hermetic (no AWS/network/artifacts). exit 0 = shippable."
 	@echo "  make check-full  - check + reconcile"
 	@echo "                     needs generated artifacts (see 'make check-full')"
+	@echo "  make check-claims - the deploy's rule-claims gate: fails while a record"
+	@echo "                     claims more than its fields support (incl. unapproved)"
 	@echo "  make test        - Python unit/integration suite (tests/)"
 	@echo "  make lint        - ruff check scripts/ tests/"
 	@echo "  make typecheck   - mypy scripts/"
@@ -121,6 +123,12 @@ check: require-tools
 check-full: check require-artifacts
 	@$(MAKE) --no-print-directory reconcile
 	@echo "✅ check-full: PASS"
+
+# The deploy's claims gate (policies/compliance/claims.rego), run locally.
+# Not part of `check`: an Impractical or Not Applicable record waiting on the
+# operator's approval fails it, and that is a decision, not a build error.
+check-claims:
+	$(PY) scripts/_frr.py --claims
 
 require-artifacts:
 	@missing=""; \

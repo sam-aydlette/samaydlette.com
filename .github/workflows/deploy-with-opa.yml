@@ -1587,12 +1587,27 @@ jobs:
         echo "Building Security Decision Record (SDR-CSO-FRR per KSI, SDR-CSF-CTF per Rev5 control) from the control projection..."
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
           || echo '{}' > previous-sdr.json
+        # The nightly beacon: a nightly-stage KSI method counts only while it is
+        # inside its freshness window. The runtime signal fetched above counts
+        # only when its signature verifies. Either missing earns no credit.
+        curl -fsS --max-time 20 -o vdr-status-nightly.json "https://samaydlette.com/.well-known/vdr-status.json" \
+          || { rm -f vdr-status-nightly.json; echo "note: no nightly beacon; nightly methods earn no credit"; }
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
-          --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json
+          --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
+          --runtime-signal ksi-signal-runtime.json --vdr-status vdr-status-nightly.json \
+          --ksi-short-output ksi-short.json
         # REQ-ASR-1 / T74: re-read the written SDR and fail if any assessor text
         # differs from the assessor's signed record, or a signed record is missing.
         python3 ../scripts/_assessor.py --sdr security-decision-record.json
+
+    # The rule register may claim only what its fields support
+    # (policies/compliance/claims.rego): resolving evidence, an Impractical
+    # record's reasons, the operator's approval of every stand-in and scope cut,
+    # and FRC-CSX-VVK checked against this build's KSI method count.
+    - name: FedRAMP rule claims supported by evidence
+      working-directory: infrastructure
+      run: python3 ../scripts/_frr.py --claims --ksi-short ksi-short.json
 
     - name: Build Certification Package Overview (CPO)
       working-directory: infrastructure
@@ -1676,7 +1691,7 @@ jobs:
         python3 ../scripts/build-trust-center.py \
           --runtime runtime-observed.json --vdr-status vdr-status-observed.json \
           --previous trust-center-previous.json --manual-settings manual-settings.json \
-          --corroboration boundary-corroboration.json \
+          --corroboration boundary-corroboration.json --sdr security-decision-record.json \
           --commit "$GITHUB_SHA" --output trust-center.json
 
     - name: Sign Ongoing Certification Report

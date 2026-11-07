@@ -159,5 +159,7 @@ def test_sdr_markdown_states_no_assessor_record():
                                    "signal_failing": 0, "vdr_total": 0, "vdr_blocking": 0,
                                    "vdr_accepted": 0, "vdr_kev": 0},
                        "daily_metric_data": []},
+           "status_summary": {"rules": {"rules": 0, "by_status": {}, "awaiting_approval": 0},
+                              "ksis": {"total": 0, "by_status": {}}},
            "rule_records": [], "assessor_records": {"status": "no assessor record", "records": []}}
     assert "No assessor record" in sdr_mod.render_markdown(sdr)

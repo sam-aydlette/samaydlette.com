@@ -774,12 +774,16 @@ def framework_figures(irs: list[dict[str, Any]]) -> dict[str, str]:
 
 
 def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
-    ksis = inp["signal"].get("ksis", [])
-    by_status: dict[str, int] = {}
-    for k in ksis:
-        by_status[k.get("status", "unknown")] = by_status.get(k.get("status", "unknown"), 0) + 1
-    return {"ksis": {"total": len(ksis), "by_status": dict(sorted(by_status.items()))},
-            "frameworks": inp.get("figures") or {}}
+    """Rule and KSI statuses from this build's SDR (decided by the Rego in
+    policies/compliance/), bound to the same inventory. Only Implemented
+    counts as met; the signal's per-KSI pass/fail is not a status."""
+    sdr = inp.get("sdr") or {}
+    summary = sdr.get("status_summary")
+    if not summary:
+        sys.exit("build-trust-center: the SDR carries no status_summary (fail-closed)")
+    if sdr.get("ksi_signal_id") != inp["signal"].get("signal_id"):
+        sys.exit("build-trust-center: the SDR is bound to another inventory (fail-closed)")
+    return {"rules": summary["rules"], "ksis": summary["ksis"], "frameworks": inp.get("figures") or {}}
 
 
 def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
@@ -854,6 +858,7 @@ def main() -> None:
     ap.add_argument("--runtime", default="ksi-signal-runtime.json", help="the published runtime signal (optional)")
     ap.add_argument("--vdr-status", default="vdr-status.json", help="the nightly status beacon (optional)")
     ap.add_argument("--manual-settings", default="manual-settings.json", help="scripts/check-manual-settings.py output (optional)")
+    ap.add_argument("--sdr", default="security-decision-record.json", help="this build's SDR (its status_summary)")
     ap.add_argument("--corroboration", default="boundary-corroboration.json", help="tools/boundary-map/corroborate.py output (optional)")
     ap.add_argument("--previous", default="trust-center-previous.json", help="the last published trust center (optional)")
     ap.add_argument("--decisions", default=str(DECISIONS_PATH))
@@ -901,6 +906,7 @@ def main() -> None:
         "scn_register": read_scn_register(Path(a.scn_register)),
         "checkov_skips": read_checkov_skips(Path(a.checkov_config)),
         "figures": figures,
+        "sdr": load(a.sdr),
     }
     doc = build(inp, a.commit, datetime.now(timezone.utc))
     text = json.dumps(doc, indent=2, sort_keys=False) + "\n"

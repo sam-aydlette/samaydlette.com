@@ -77,6 +77,9 @@ def inputs(**overrides):
         ],
         "checkov_skips": ["CKV_AWS_144"],
         "figures": {"moderate_coverage": "323/323"},
+        "sdr": {"ksi_signal_id": SIG, "status_summary": {
+            "rules": {"rules": 2, "by_status": {"Implemented": 1, "Not Demonstrated": 1}, "awaiting_approval": 0},
+            "ksis": {"total": 2, "by_status": {"Implemented": 1, "Not Demonstrated": 1}, "short_of_two_methods": ["KSI-B"]}}},
     }
     inp.update(overrides)
     return inp
@@ -185,8 +188,16 @@ def test_catalog_and_posture_come_from_their_sources():
     assert cat["immutable"]["rules"][0]["id"] == "versioning_disabled"
     assert {r["name"]: r["entries"] for r in cat["precedent"]["registers"]}["Checkov suppressions"] == 1
     assert any(t["value"] == "TLSv1.2_2021" for t in cat["thresholds"]["items"])
-    assert doc["posture"]["ksis"] == {"total": 2, "by_status": {"fail": 1, "pass": 1}}
+    assert doc["posture"]["ksis"]["by_status"] == {"Implemented": 1, "Not Demonstrated": 1}
+    assert doc["posture"]["rules"]["by_status"] == {"Implemented": 1, "Not Demonstrated": 1}
     assert doc["posture"]["frameworks"]["moderate_coverage"] == "323/323"
+
+
+def test_posture_needs_this_builds_sdr():
+    with pytest.raises(SystemExit, match="status_summary"):
+        build(sdr=None)
+    with pytest.raises(SystemExit, match="another inventory"):
+        build(sdr={**inputs()["sdr"], "ksi_signal_id": "other"})
 
 
 def test_redaction_fails_closed():
