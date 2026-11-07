@@ -81,6 +81,14 @@ When you stop, send one message: what you found, the options, your recommendatio
 - **Claims must be true.** Narrative in docs, pages and the trust center must match deployed config. Never assert any service's FedRAMP status without a current source. Never fabricate compliance: a control that isn't met is documented as a residual, and a dismissed scanner finding is a false positive (with justification) or risk-accepted, never silently dropped.
 - **The opinions on the site are the operator's.** Claude may draft; it never supplies a position (see `site-content`).
 
+## Enforced by Claude Code, not by this file
+
+- **Permission rules** (`.claude/settings.json`) block force-pushes, `terraform destroy` and `aws s3 rm`. They ask the operator before `terraform apply`, `apply-infra` or `pipeline`, a push to `main`, `gh pr merge`, IAM writes and S3 writes. They match the command as written, so they are a guardrail, not a security boundary. The `prod` approval is the boundary.
+- **A Stop hook** (`.claude/hooks/stop-check.sh`) runs `make check` whenever the working tree has changes, and won't let a turn end while it fails. Fix the cause, never the gate.
+- **Tests keep the hand-maintained copies honest:** `tests/test_sitemap.py`, `tests/test_homepage_recent_articles.py`, and `tests/test_agent_context_paths.py`, which checks that every path named here and in the skills exists.
+
+When a rule in this file keeps being broken, move it into one of these mechanisms and delete it from the prose.
+
 ## Pull requests
 
 - Before opening a PR, run CodeGuard (`/codeguard`, Agent Skill `software-security`) on the diff. Address its findings or record why one doesn't apply, and note in the PR that it ran.
@@ -98,7 +106,7 @@ Confirm against the working tree, and fix this table when it is wrong.
 |---|---|---|
 | `website/pages/`, `website/research/`, `website/index.html` | Articles, section pages, long-form research pages and redirect stubs | site-content |
 | `website/assets/` | CSS, JS modules, images, fonts, vendored libraries | site-content |
-| `website/feed.xml`, `website/sitemap.xml` | Feed (generated from `pages/articles.html`) and sitemap (hand-maintained) | site-content |
+| `website/feed.xml`, `website/sitemap.xml` | Feed (generated from `pages/articles.html`) and sitemap (hand-maintained, checked by `tests/test_sitemap.py`) | site-content |
 | `website/trust/`, `website/assets/js/trust.js` | Trust Center: a shell over `/.well-known/trust-center.json` | compliance-pipeline |
 | `website/.well-known/` | Published artifacts. Git tracks only `security.txt` and `vdr-trend.json`; the rest is gitignored build output | compliance-pipeline |
 | `scripts/` | Artifact generators and gates. `scripts/staged/` is parked and not wired in | compliance-pipeline |

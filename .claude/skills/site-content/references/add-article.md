@@ -33,11 +33,12 @@ A small task (CLAUDE.md §1). Do these steps and nothing else. Copy markup from 
 
 - It shows exactly three cards, newest first. The first is `article-card featured`, with an extra `div.article-content` wrapper and a `.read-more` link that has `aria-label="Read full article: <Title>"` and the text `Read Article`.
 - Add the new article as the featured card. Turn the previous featured card into a regular card (drop `featured` and the wrapper), and remove the third card.
+- `tests/test_homepage_recent_articles.py` fails until these match the first three index entries.
 
 ## 5. The sitemap: `website/sitemap.xml`
 
 - Add a `<url>` above the newest article entry: `<loc>https://samaydlette.com/pages/article-N.html</loc>`, `<lastmod>` with the publish date (`YYYY-MM-DD`), `<changefreq>monthly</changefreq>`, `<priority>0.8</priority>`.
-- Nothing checks this file. Don't fix other gaps in it as a side effect; list them under **Follow-ups noticed**.
+- `tests/test_sitemap.py` fails until the new page is listed.
 
 ## 6. Series (only if the article belongs to one)
 

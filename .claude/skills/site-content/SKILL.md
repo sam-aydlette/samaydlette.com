@@ -42,7 +42,7 @@ Follow the article-23 precedent (#341). Keep the URL alive; don't delete the fil
 
 1. Replace the page with a redirect stub: `<link rel="canonical">`, `<meta name="robots" content="noindex">`, a one-line "superseded by" link, and `<meta http-equiv="refresh">` with a **relative** URL. A root-relative URL resolves to a missing path under `file://`, which is how the accessibility scanner renders pages, and the resulting error page fails the gate. Copy `pages/article-23.html`.
 2. Remove the page from `pages/articles.html` and regenerate the feed.
-3. Remove it from `index.html` and `sitemap.xml` if it is listed there.
+3. Remove it from `index.html` and `sitemap.xml`. `tests/test_sitemap.py` fails while a stub is still listed.
 4. Delete assets that nothing else references.
 5. Fix links to it from other articles.
 
