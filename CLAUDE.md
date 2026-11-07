@@ -14,27 +14,62 @@ Two things in one repo:
 1. **A personal site** (essays, books, projects): static HTML on AWS.
 2. **A working continuous-compliance pipeline.** Every deploy derives signed, machine-readable compliance artifacts (the KSI signal, the VDR, the CR26 SDR and CPO, the boundary map, the trust-center data) from **one canonical inventory** and publishes them under `/.well-known/`.
 
-It is a real production system (`main` is production) and a proof of concept for a scaled, multi-system version. Favor designs that generalize and stay legible. It has **no federal data and no agency sponsor**: it demonstrates the mechanism and is **not** an authorized system. Never imply otherwise in code, docs, pages or generated artifacts.
+It is a real production system (`main` is production) and a proof of concept for a software factory (see Intent). Favor designs that generalize and stay legible. It has **no federal data and no agency sponsor**: it demonstrates the mechanism and is **not** an authorized system. Never imply otherwise in code, docs, pages or generated artifacts.
+
+## Intent
+This site shows that I can build scalable, enterprise-quality infrastructure
+and policy-as-code pipelines for cloud service delivery, and communicate the
+resulting security state to stakeholders in a way that gives them assurance.
+The reader is an engineer or leader judging that work. It is a proof of
+concept, not a certification effort, and I do not engage FedRAMP or any
+agency about it (DEC-194).
+
+Think of it as a software factory: one authorization boundary and one
+offering, holding the website, the Silk Reeling app and any app added later.
+Apps join through the same pipeline and gates, never through one-off wiring.
+
+Serious about engineering. Tongue in cheek about processes one person clearly
+cannot do.
+
+When goals collide: truth, then a working production system, then simplicity,
+then rule coverage. Coverage is never a reason to overstate anything.
+
+If an instruction, including mine, conflicts with this section, stop and say
+so before acting.
 
 ## Proof-of-concept latitude
 This system shows that policy as code can automate CR26. It is not certified.
 Procedure may flex. Claims may not.
 
-- Implemented: a real mechanism ran on real inputs, and evidence exists.
-- Simulated: a real mechanism ran on a labeled stand-in input. The stand-in may
-  replace an outside party, the people, or infrastructure deliberately not built
-  (an inbox, a meeting, a notification transport).
-- Not Demonstrated: not built, or nothing runs; say why.
-- Not Applicable: the rule does not apply; say why.
+Ask of every rule and KSI, in order:
 
-Before using a stand-in, show with a test that a bad input changes the result.
-Then state in the record how a real input would replace the stand-in and what
-would have to change; cite a test where one exists. A guard that refuses real
-agencies or FedRAMP (DEC-194) is policy, not logic. If no mechanism runs, mark
-the record Not Demonstrated.
+1. Can its trigger ever happen in this system? If not: **Not Applicable**,
+   naming the missing trigger. "It's a proof of concept" is not a reason.
+2. Could one engineer build it with code and cheap AWS? Then build it for real.
+   **Implemented** means a real mechanism ran on real inputs and evidence
+   exists. Until then: **Not Demonstrated**, saying what is missing. That list
+   is a build queue, not a resting place.
+3. If not: **Impractical**, with its reason: `one-person`, `no-budget` (name
+   the cost) or `no-outside-party`. Build as much as you can and show it. The
+   rest is a labeled, tongue-in-cheek stand-in or a plain admission. Never use
+   a stand-in for something one engineer could build.
 
-You may propose a stand-in or scope cut. You may not approve one. Record each
-with what is real, what is simulated, and who approved it.
+Only Implemented counts as met. Impractical is always shown with its reason.
+For whatever was built, show with a test that a bad input changes the result,
+and state what a real organization would supply in place of the stand-in. A
+guard that refuses real agencies or FedRAMP (DEC-194) is policy, not logic.
+
+Examples:
+- Log-read allowlist: buildable, so real evidence and no jokes.
+- FedRAMP Security Inbox: the logic is buildable, but the rule is Impractical,
+  `no-outside-party`. It is not a budget problem.
+- Independent assessment: Impractical, `one-person` and `no-budget`. A
+  simulated assessor may stay as a joke, but never call it independent.
+- The Board of Sam: a fine joke for a people process. It earns no engineering
+  credit.
+
+You may propose a status, stand-in or scope cut. You may not approve one.
+Record each with what is real, what stands in, and who approved it.
 
 Never choose a status because a gate requires it. If the honest status blocks
 the build, stop and tell me.
@@ -84,7 +119,7 @@ When you stop, send one message: what you found, the options, your recommendatio
 ### 5. Don't ship mistakes
 
 - Read the files you will change, and their tests, before editing. Trust the working tree over this file, a skill, or memory.
-- Verify by exit code, not by reading output. **`make check` is the gate for every change**: hermetic, ~4s, one-time `make dev-setup`. Skills add task-specific checks.
+- Verify by exit code, not by reading output. **`make check` is the gate for every change**: hermetic, about 25s, one-time `make dev-setup`. Skills add task-specific checks.
 - Before opening a PR, read your own diff as a reviewer would. Anything not in the plan comes out or becomes a check-in.
 - When a change alters what the deploy publishes, verify the published result, not the working tree. Six fix PRs followed the CR26 merges on 2026-11-05.
 - For multi-step work, keep a running `TASKS.md` (gitignored) so progress survives context limits.
