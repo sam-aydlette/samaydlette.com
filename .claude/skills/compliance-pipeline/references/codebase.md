@@ -13,7 +13,6 @@ Confirm against the working tree on first use, and correct this file in the same
 - `scripts/_controls.py` holds the control projection: status, origination and statement per NIST 800-53 control, computed in memory from the inventory and the KSI catalog. It replaced the OSCAL SSP, which was retired under CR26 on 2026-11-05.
 - `scripts/_decisions.py` reads the decision register `data/decisions.json`. Under CR26 the register replaced the POA&M. The VDR builder, the vulnerability gate, reconciliation and the trust center all read it.
 - `scripts/_common.py` holds the shared helpers: `classify` (the inheritance rule that four artifacts must agree on), `sha256_file`, `prop`, `load_hub`, `sid`.
-- `scripts/staged/` is parked and not wired into anything; see its README. Never assume a script there runs.
 
 ## Gates
 

@@ -58,7 +58,7 @@ A bootstrap apply is a production step. It must be named in the approved plan.
 
 ### Touch `evidence-nightly.yml` or its role
 
-It runs twice a day, plus once after every successful deploy to `main`, with **no reviewer**. That is acceptable only because its OIDC role (`infrastructure/bootstrap/evidence-nightly.tf`) is narrow. It can write only `.well-known/vdr-*`, invalidate CloudFront, and make the read-only calls the `--live` reconciliation needs. It cannot apply Terraform, sync the website, delete an object or write anywhere else.
+It runs twice a day, plus once after every successful deploy to `main`, with **no reviewer**. That is acceptable only because its OIDC role (`infrastructure/bootstrap/evidence-nightly.tf`) is narrow. It can write only the object keys its role policy lists, invalidate CloudFront, and make the read-only calls the `--live` reconciliation needs. It cannot apply Terraform, sync the website, delete an object or write anywhere else.
 
 - "The nightly needs one more permission" means: ask whether that work belongs on the unattended path at all. Don't widen the role; check in.
 - It refreshes the VDR only, and binds to the **published** inventory. It fetches `/.well-known/ksi-signal.json` and verifies its Sigstore bundle against the deploy workflow's pinned identity. It fetches and verifies the SDR and CPO **as gate inputs only**: never re-signed, never re-published. A changed inventory means changed infrastructure, which belongs on the reviewed deploy path.

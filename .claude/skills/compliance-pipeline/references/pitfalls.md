@@ -35,5 +35,5 @@ Each entry: what went wrong, and the rule that now prevents it. Check your plan 
 
 - **WAF is intentionally declined.** SC-7 and SC-5 are met through managed interfaces (CloudFront and API Gateway), AWS Shield Standard and throttling. A WAF's incremental layer-7 filtering is documented as the residual. Don't re-add it.
 - **CI proves compliance, not article content.** The prose checks were removed from CI (#356). The long-form checks in `tools/essay/` stay local-only.
-- **`scripts/staged/` is parked.** Don't wire a staged generator in as a side effect of another change.
+- **Parked code doesn't come back as a side effect.** Don't revive a removed generator while doing another change.
 - More settled decisions live in `docs/architecture-decisions.md`. Read the relevant section before proposing a change to the same area.

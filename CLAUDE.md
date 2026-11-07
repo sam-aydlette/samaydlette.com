@@ -16,6 +16,29 @@ Two things in one repo:
 
 It is a real production system (`main` is production) and a proof of concept for a scaled, multi-system version. Favor designs that generalize and stay legible. It has **no federal data and no agency sponsor**: it demonstrates the mechanism and is **not** an authorized system. Never imply otherwise in code, docs, pages or generated artifacts.
 
+## Proof-of-concept latitude
+This system shows that policy as code can automate CR26. It is not certified.
+Procedure may flex. Claims may not.
+
+- Implemented: a real mechanism ran on real inputs, and evidence exists.
+- Simulated: a real mechanism ran on a labeled stand-in input. The stand-in may
+  replace an outside party, the people, or infrastructure deliberately not built
+  (an inbox, a meeting, a notification transport).
+- Not Demonstrated: not built, or nothing runs; say why.
+- Not Applicable: the rule does not apply; say why.
+
+Before using a stand-in, show with a test that a bad input changes the result.
+Then state in the record how a real input would replace the stand-in and what
+would have to change; cite a test where one exists. A guard that refuses real
+agencies or FedRAMP (DEC-194) is policy, not logic. If no mechanism runs, mark
+the record Not Demonstrated.
+
+You may propose a stand-in or scope cut. You may not approve one. Record each
+with what is real, what is simulated, and who approved it.
+
+Never choose a status because a gate requires it. If the honest status blocks
+the build, stop and tell me.
+
 ## How much to do on your own
 
 The two recurring failures here are **overbuilding** and **mistakes that ship inside large changes**. These rules trade a little speed for fewer of both.
@@ -55,7 +78,7 @@ When you stop, send one message: what you found, the options, your recommendatio
 - Make the smallest change that fully meets the request.
 - Before adding anything, search for something that already does it. Prefer editing to adding, and deleting to adding.
 - No "while I'm here" changes. List them under **Follow-ups noticed** in the PR instead (see §6).
-- Don't build tooling to help with a task unless asked. The prose tooling, the parked generators in `scripts/staged/` and the planning backlog were all built and later removed.
+- Don't build tooling to help with a task unless asked. The prose tooling, the parked generators that sat in `scripts/` and the planning backlog were all built and later removed.
 - One PR per logical change. If the work needs several PRs, say so in the plan.
 
 ### 5. Don't ship mistakes
@@ -81,7 +104,7 @@ When you stop, send one message: what you found, the options, your recommendatio
 - **Never disable, weaken or bypass the reconciliation gate, the OPA gate or any other gate** to make a build pass. Fix the cause or raise it.
 - **Site content is inventoried content.** Every `*.html` under `website/` is hashed into the inventory, so editing or adding a page is a pipeline change. The pipeline handles it; never hand-add an inventory entry.
 - **A decision about a finding lives only in `data/decisions.json`**, referenced by its `DEC-NNN` ID.
-- **Deploys are human-approved.** Merging to `main` does not deploy: the `deploy` job waits for a reviewer on the `prod` environment. The one unattended production write is `evidence-nightly.yml`; never widen its role (the trade-off is spelled out in `compliance-pipeline`).
+- **Deploys are human-approved.** Merging to `main` does not deploy: the `deploy` job waits for a reviewer on the `prod` environment. The unattended production writes are the scheduled evidence workflows (`evidence-nightly.yml` and any added later), each with its own narrow role; never widen one (the trade-off is spelled out in `compliance-pipeline`).
 - **There is no local publish path.** `make -C infrastructure deploy` refuses by design. `make -C infrastructure pipeline` runs `terraform apply` against production: never run it to "check" anything.
 - **Impact level is FIPS-199 Moderate / FedRAMP 20x Class C** everywhere. Never relabel it down.
 - **Least privilege.** Never broaden IAM to make something work.
@@ -101,7 +124,7 @@ When a rule in this file keeps being broken, move it into one of these mechanism
 
 - Before opening a PR, run CodeGuard (`/codeguard`, Agent Skill `software-security`) on the diff. Address its findings or record why one doesn't apply, and note in the PR that it ran.
 - One PR per logical change. The title references the relevant finding or `DEC-NNN` IDs, if any.
-- Body: **Changed** (what and why) · **Verified** (what you ran and the outcome) · **Residual / needs human** · **Couldn't verify** · **Follow-ups noticed**.
+- Body: start with `SCN-Type:` and `SCN-Rationale:` (one line each), plus `SCN-Record:` naming the open SCN the change joins when it is not `not-significant`. A change to the compliance engine (gates, assessor, reconciliation, generators that decide or publish compliance status) is `adaptive` by default. Then **Changed** (what and why) · **Effect** (what changes on the live site after deploy, including record counts before and after) · **Verified** (what you ran and the outcome) · **Residual / needs human** · **Couldn't verify** · **Follow-ups noticed**.
 - **The repo is public.** Titles, bodies and commit messages are world-readable. No chat transcript or debugging narrative. No account IDs, ARNs, key IDs, role or secret names, raw IAM policy text, or error dumps that carry them. Refer to resources by Terraform address or role, and state verification outcomes, not live values.
 - If something needs a human (a permission, a registrar step, a console-only action), ask the operator directly and now, with the exact action and identifier. Don't leave it as a vague line in the PR.
 - Open PRs for review. Don't merge your own unless told to.
@@ -117,7 +140,7 @@ Confirm against the working tree, and fix this table when it is wrong.
 | `website/feed.xml`, `website/sitemap.xml` | Feed (generated from `pages/articles.html`) and sitemap (hand-maintained, checked by `tests/test_sitemap.py`) | site-content |
 | `website/trust/`, `website/assets/js/trust.js` | Trust Center: a shell over `/.well-known/trust-center.json` | compliance-pipeline |
 | `website/.well-known/` | Published artifacts. Git tracks only `security.txt` and `vdr-trend.json`; the rest is gitignored build output | compliance-pipeline |
-| `scripts/` | Artifact generators and gates. `scripts/staged/` is parked and not wired in | compliance-pipeline |
+| `scripts/` | Artifact generators and gates | compliance-pipeline |
 | `data/` | Registers: `decisions.json`, mappings, profiles, third-party components | compliance-pipeline |
 | `infrastructure/` | Terraform, OPA policies, schemas, Lambdas. `bootstrap/` is operator-applied | compliance-pipeline |
 | `.github/workflows/` | `deploy-with-opa.yml` (gated deploy), `evidence-nightly.yml` (unattended VDR refresh), ZAP, SCN tagging | compliance-pipeline |
