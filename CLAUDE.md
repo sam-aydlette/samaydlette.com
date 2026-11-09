@@ -37,6 +37,20 @@ then rule coverage. Coverage is never a reason to overstate anything.
 If an instruction, including mine, conflicts with this section, stop and say
 so before acting.
 
+## Design principles
+These describe the target. Where the system falls short, say so; never claim one is met because it is listed here. The procedures live in `compliance-pipeline`.
+
+1. Keep recorded intent, enforcement and verification separate, so a change or failure in one doesn't break the others.
+2. Record intent in version control as readable requirements with stable IDs, requirement levels and mappings to FedRAMP rules, KSIs and 800-53. Review and attribute every change.
+3. Make each automatable requirement a tested check that cites its ID. Every other requirement carries a status and its reason (Proof-of-concept latitude), so every report accounts for every requirement in scope. A manual step one engineer could automate is Not Demonstrated.
+4. Verify in stages: capture live state as data with the least privilege the system allows, then evaluate and report from that data, so each stage can be rerun or replaced alone.
+5. Validate before deployment whenever a change passes through code. Always validate running systems through their own interfaces, on a schedule and after every deployment.
+6. Declare baselines centrally and publish them as versioned releases. Each app in the factory applies them as published, may add stricter rules or local values, and weakens them only through an approved exception.
+7. Make every exception explicit, justified, approved at a level that matches its risk, and given an expiry or review date.
+8. Never report anything unverified as compliant. Checks that errored, stale results and inventory gaps are findings.
+9. Compare each assessment with the previous one, and route every regression to an owner to fix or explicitly accept.
+10. Produce evidence on every run: tamper-evident, traceable to the versions of the baseline, checks, tool and configuration behind it, and reported to the baseline's owner.
+
 ## Proof-of-concept latitude
 This system shows that policy as code can automate CR26. It is not certified.
 Procedure may flex. Claims may not.
