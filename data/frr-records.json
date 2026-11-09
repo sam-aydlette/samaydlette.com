@@ -2,21 +2,12 @@
   "$schema": "../infrastructure/schemas/frr-records.schema.json",
   "schema": "frr-records/2",
   "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Shape: scripts/_frr.py; claims: policies/compliance/claims.rego.",
-  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable are AI-drafted proposals awaiting the operator's approval.",
+  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable records are AI-drafted proposals, each approved by the operator as its approval field records.",
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Impractical",
-      "impractical": {
-        "reasons": [
-          "no-outside-party"
-        ],
-        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
-      },
-      "proposal": {
-        "by": "AI-drafted",
-        "on": "2026-11-07"
-      }
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: the logic that acknowledges messages to a FedRAMP Security Inbox."
     },
     {
       "frr_id": "AFC-CSO-CRA",
@@ -30,6 +21,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -44,6 +39,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -58,6 +57,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -72,6 +75,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -86,6 +93,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -100,6 +111,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -114,6 +129,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -134,6 +153,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -159,6 +182,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -222,6 +249,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -236,6 +267,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -250,6 +285,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -275,6 +314,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -289,6 +332,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -303,6 +350,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -335,7 +386,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Exercised: each review's transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package."
+      "may_rationale": "Exercised: each review's transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-AVR",
@@ -370,6 +425,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -396,7 +455,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence."
+      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-PUB",
@@ -420,6 +483,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -487,6 +554,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -501,6 +572,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -525,6 +600,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -554,6 +633,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -568,6 +651,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -623,6 +710,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -654,57 +745,81 @@
     {
       "frr_id": "FRC-APP-AFC",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
       "frr_id": "FRC-APP-FCP",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
       "frr_id": "FRC-APP-FIA",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
       "frr_id": "FRC-APP-MLF",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
       "frr_id": "FRC-APP-NTP",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
       "frr_id": "FRC-APP-USA",
       "status": "Not Applicable",
-      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made (operator's decision of 2026-11-05: build to apply, don't apply); the rule applies from the day one is.",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen."
+      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSO-FCP",
@@ -749,6 +864,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -783,6 +902,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -812,6 +935,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -826,6 +953,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -840,6 +971,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -860,6 +995,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -885,6 +1024,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -895,7 +1038,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept."
+      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "IVV-CSO-SEE",
@@ -920,6 +1067,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -945,6 +1096,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -960,7 +1115,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample."
+      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "IVV-CSX-AIA",
@@ -975,6 +1134,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -1012,7 +1175,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources."
+      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "MAS-CSO-TPR",
@@ -1026,6 +1193,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -1035,6 +1206,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {
@@ -1167,14 +1342,7 @@
     },
     {
       "frr_id": "SDR-CSO-FRR",
-      "status": "Impractical",
-      "impractical": {
-        "reasons": [
-          "one-person",
-          "no-budget"
-        ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
-      },
+      "status": "Not Demonstrated",
       "evidence": [
         {
           "kind": "step",
@@ -1185,10 +1353,7 @@
           "ref": ".well-known/security-decision-record.json"
         }
       ],
-      "proposal": {
-        "by": "AI-drafted",
-        "on": "2026-11-07"
-      }
+      "not_demonstrated": "The record is published in JSON for all 154 rules, but it does not yet hold everything this rule lists. Missing: per-rule entries in the human-readable record; the resulting risk to customers for each rule not followed; acceptance by a senior official of the reason for each Not Demonstrated rule. Independent verification and validation are recorded as none performed, at a cost of $0."
     },
     {
       "frr_id": "SDR-CSO-MTD",
@@ -1373,7 +1538,11 @@
         "by": "AI-drafted",
         "on": "2026-11-07"
       },
-      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain."
+      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-KEV",
@@ -1724,6 +1893,10 @@
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
       }
     },
     {

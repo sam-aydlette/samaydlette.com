@@ -84,7 +84,7 @@
         "field": "finished_at"
       },
       "signed": false,
-      "note": "The nightly's status beacon. Unsigned and not evidence; listed because the watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
+      "note": "The nightly's status beacon. Unsigned. It earns nightly KSI method credit only by the operator's decision of 2026-11-09, until the nightly's status is signed. The watchdog pages on its age. The nightly runs twice a day, so 26 hours means runs have been missed."
     },
     {
       "path": ".well-known/ksi-signal-runtime.json",
