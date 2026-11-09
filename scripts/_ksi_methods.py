@@ -170,24 +170,33 @@ def _feeds(detection, names):
 
 def check_runs(methods, *, deploy_signal, vdr, beacon, runtime_signal, beacon_fresh, runtime_fresh):
     out = []
+    plan = gate_observations(deploy_signal, "plan")
     for m in methods:
         obs = m["observe"]
         for stage in m["stages"]:
             ran = passed = False
-            if obs["kind"] == "detection-feed" and stage == "deploy":
-                ran, passed = _feeds(((vdr or {}).get("methodology") or {}).get("detection"), obs["feeds"])
-            elif obs["kind"] == "detection-feed" and stage == "nightly" and beacon_fresh:
-                ran, passed = _feeds((beacon or {}).get("detection"), obs["feeds"])
-            elif obs["kind"] == "beacon" and stage == "nightly" and beacon_fresh:
+            why = ""
+            if stage == "nightly" and not beacon_fresh:
+                why = "the nightly beacon is missing or outside its freshness window"
+            elif stage == "live" and not runtime_fresh:
+                why = "the runtime signal is missing, unverified or outside its freshness window"
+            elif obs["kind"] == "detection-feed":
+                detection = ((vdr or {}).get("methodology") or {}).get("detection") if stage == "deploy" \
+                    else (beacon or {}).get("detection")
+                ran, passed = _feeds(detection, obs["feeds"])
+                why = "" if ran else f"the detection record lists no {'/'.join(obs['feeds'])} feed"
+            elif obs["kind"] == "beacon":
                 ran = obs["field"] in (beacon or {})
                 passed = ran and beacon[obs["field"]] == "success"
-            elif obs["kind"] == "runtime-divergence" and stage == "live" and runtime_fresh:
+                why = "" if ran else f"the nightly beacon has no {obs['field']} result"
+            elif obs["kind"] == "runtime-divergence":
                 status = ((runtime_signal or {}).get("divergence") or {}).get("status")
                 ran, passed = status is not None, status == "converged"
-            elif obs["kind"] == "plan-gate" and stage == "deploy":
-                plan = gate_observations(deploy_signal, "plan")
+                why = "" if ran else "the runtime signal reports no divergence result"
+            elif obs["kind"] == "plan-gate":
                 ran, passed = bool(plan), bool(plan) and not any(o["violation_ids"] for o in plan)
-            out.append({"key": m["key"], "ksis": m["ksis"], "stage": stage, "ran": ran, "passed": passed})
+                why = "" if ran else "this deploy's signal carries no gate results"
+            out.append({"key": m["key"], "ksis": m["ksis"], "stage": stage, "ran": ran, "passed": passed, "why": why})
     return out
 
 
@@ -212,7 +221,7 @@ def facts(*, deploy_signal, vdr, beacon, runtime_signal, now=None, cfg=None, met
 
 
 def decide(fact_doc, policy=POLICY):
-    """{"ksis": {id: {status, methods, passing, failing}}, "short": [...]}."""
+    """{"ksis": {id: {status, methods, passing, failing}}, "short": [...], "findings": [...]}."""
     out = _triage.evaluate("data.compliance.ksi.result", fact_doc, policy=policy)
     if not isinstance(out, dict) or set(out.get("ksis") or {}) != set(fact_doc["ksis"]):
         _fail("the KSI policy did not return a status for every KSI")

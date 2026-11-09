@@ -232,7 +232,10 @@ def status_summary(frr_doc, applicable, ksi_result):
         by[v["status"]] = by.get(v["status"], 0) + 1
     return {"rules": _frr.summary(frr_doc, applicable),
             "ksis": {"total": len(ksi_result["ksis"]), "by_status": dict(sorted(by.items())),
-                     "short_of_two_methods": ksi_result["short"]}}
+                     "short_of_two_methods": ksi_result["short"],
+                     # Anything not verified is a finding (a check that did not
+                     # run, a rule with nothing to evaluate, a failed method).
+                     "findings": ksi_result["findings"]}}
 
 
 def build_metrics(records, controls_in_scope, vdr, signal, history, now):
@@ -413,7 +416,8 @@ def _status_lines(sdr):
             + f"; {rules['awaiting_approval']} awaiting the operator's approval",
             f"- Key Security Indicators ({ksis['total']}): "
             + ", ".join(f"{n} {k}" for k, n in ksis["by_status"].items())
-            + ". Only Implemented counts as met."]
+            + ". Only Implemented counts as met.",
+            *([f"- Unverified or failed methods (findings): {len(ksis['findings'])}"] if ksis.get("findings") else [])]
 
 
 def render_markdown(sdr):

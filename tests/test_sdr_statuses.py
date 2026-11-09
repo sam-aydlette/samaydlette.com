@@ -32,7 +32,7 @@ def inputs():
     ksis["KSI-CNA-ULN"] = _ksi("Not Demonstrated", 1)
     ksis["KSI-SVC-SIN"] = _ksi("Not Demonstrated", 1, ["opa:weak_tls@live"])
     ksis["KSI-SVC-RUD"] = _ksi("Not Applicable", 0)
-    return _frr.load(), _rules.applicable_provider_rules(), {"ksis": ksis, "short": []}, \
+    return _frr.load(), _rules.applicable_provider_rules(), {"ksis": ksis, "short": [], "findings": []}, \
         _ksi_methods.load_methods()
 
 

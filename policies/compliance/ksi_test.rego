@@ -79,3 +79,30 @@ test_only_an_approved_scope_cut_is_not_applicable if {
 	r.ksis["KSI-B"].status == "Not Demonstrated"
 	r.short == ["KSI-B", "KSI-C"]
 }
+
+kinds(r) := {[f.kind, f.method, f.stage] | some f in r.findings}
+
+test_a_check_that_did_not_run_is_a_finding if {
+	r := run({"checks": [{"key": "a", "ksis": ["KSI-C"], "stage": "nightly", "ran": false, "passed": false, "why": "stale"}]})
+	r.findings == [{"kind": "not-run", "method": "check:a", "stage": "nightly", "ksis": ["KSI-C"], "why": "stale"}]
+}
+
+test_a_rule_with_nothing_to_evaluate_is_a_finding if {
+	r := run({"rules": [s3_rule], "observations": [obs("plan", "aws_s3_bucket", [])]})
+	kinds(r) == {["no-evaluation", "opa:versioning_disabled", "live"]}
+}
+
+test_a_failed_method_is_a_finding if {
+	r := run({"rules": [s3_rule], "observations": [obs("plan", "aws_s3_bucket", ["versioning_disabled"]), obs("live", "aws_s3_bucket", [])]})
+	kinds(r) == {["failed", "opa:versioning_disabled", "plan"]}
+}
+
+test_a_rule_that_governs_no_resource_type_is_not_a_gap if {
+	r := run({"rules": [{"id": "input_error", "ksi_ids": ["KSI-A"], "resource_types": []}]})
+	r.findings == []
+}
+
+test_everything_verified_has_no_findings if {
+	r := run({"rules": [s3_rule], "observations": [obs("plan", "aws_s3_bucket", []), obs("live", "aws_s3_bucket", [])]})
+	r.findings == []
+}

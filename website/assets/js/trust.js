@@ -422,6 +422,9 @@ function renderPosture(doc) {
         el('p', {}, el('strong', { text: `${kb.Implemented || 0} of ${k.total || 0}` }),
             ' Key Security Indicators have at least two passing automated methods',
             k.total ? ` (${breakdown(kb)})` : '', '.'),
+        ...((k.findings || []).length ? [
+            el('p', {}, el('strong', { text: String(k.findings.length) }), ' checks could not be verified or did not pass. These are findings, not passes.'),
+            el('ul', {}, ...k.findings.map((f) => el('li', { text: `${f.method} at ${f.stage}: ${f.why}` })))] : []),
         el('p', { class: 'tc-check-meta', text: 'Only Implemented counts as met. Not Demonstrated is buildable and not built yet. Impractical means one engineer on a small AWS bill cannot meet it (one-person, no-budget or no-outside-party). Not Applicable means the rule\'s trigger cannot happen here. Each rule and KSI, with its evidence, is in the Security Decision Record.' }));
     const f = doc.posture?.frameworks || {};
     const rows = FRAMEWORKS.filter(([key]) => f[key]);

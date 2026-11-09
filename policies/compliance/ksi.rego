@@ -21,7 +21,8 @@
 #   Implemented       two or more passing methods and none failing
 #   Not Demonstrated  otherwise; `failing` lists any method that ran and failed
 #
-# Entry point: data.compliance.ksi.result = {"ksis": {id: {...}}, "short": [...]}
+# Entry point: data.compliance.ksi.result = {"ksis": {id: {...}}, "short": [...],
+# "findings": [...]}
 # =============================================================================
 
 package compliance.ksi
@@ -124,4 +125,48 @@ short := sort([id |
 	passing(id) < 2
 ])
 
-result := {"ksis": ksis, "short": short}
+# Anything that could not be verified is a finding, never a quiet loss of
+# credit: a check that did not run, a rule with nothing to evaluate at a stage
+# (an inventory gap), and a method that ran and failed.
+findings contains {
+	"kind": "not-run",
+	"method": sprintf("check:%s", [c.key]),
+	"stage": c.stage,
+	"ksis": c.ksis,
+	"why": object.get(c, "why", "did not run"),
+} if {
+	some c in input.checks
+	not c.ran
+}
+
+findings contains {
+	"kind": "no-evaluation",
+	"method": sprintf("opa:%s", [rule.id]),
+	"stage": stage,
+	"ksis": rule.ksi_ids,
+	"why": "no resource of its types was evaluated at this stage",
+} if {
+	some rule in input.rules
+	count(rule.resource_types) > 0
+	some stage in rule_stages(rule)
+	not evaluated(rule, stage)
+}
+
+findings contains {
+	"kind": "failed",
+	"method": m.method,
+	"stage": m.stage,
+	"ksis": m.ksis,
+	"why": "ran and did not pass",
+} if {
+	some m in methods
+	not m.passed
+}
+
+evaluated(rule, stage) if {
+	some o in input.observations
+	o.stage == stage
+	types_match(rule, o.tf_type)
+}
+
+result := {"ksis": ksis, "short": short, "findings": sort(findings)}

@@ -108,6 +108,12 @@ def test_a_stale_beacon_earns_no_nightly_credit():
     assert (fresh["passing"], stale["passing"]) == (2, 1)
 
 
+def test_a_stale_input_is_a_finding_that_says_why():
+    out = _status(beacon={**_inputs()["beacon"], "finished_at": _iso(30)})
+    found = [f for f in out["findings"] if f["method"] == "check:grype" and f["stage"] == "nightly"]
+    assert [f["kind"] for f in found] == ["not-run"] and "freshness window" in found[0]["why"]
+
+
 def test_a_failing_feed_fails_its_method():
     feeds = [dict(f, status="stale") if f["feed"] == "grype" else f for f in FEEDS]
     out = _status(vdr={"methodology": {"detection": {"feeds": feeds}}})["ksis"]["KSI-SCR-MIT"]
