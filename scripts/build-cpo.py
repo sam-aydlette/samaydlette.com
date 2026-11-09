@@ -41,6 +41,10 @@ PACKAGE_CONTENTS = [
 BASE = "https://samaydlette.com/.well-known/"
 
 
+NO_INDEPENDENT_ASSESSMENT = ("None performed. Independent assessment is Impractical here: one-person, no-budget. "
+                             "Provider-side verification and validation are in the Security Decision Record.")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--offering", default="../data/cds/offering.json")
@@ -95,9 +99,7 @@ def main():
             "reference": "CMU-CSO-CMD; full narrative in the authorization-boundary FIPS section",
         },
         "independent_assessment": {                              # IVV-CSO-ICP
-            "status": "N/A — no FedRAMP Recognized independent assessment service engaged "
-                      "(self-attested PoC). Provider-side verification and validation are in "
-                      "the Security Decision Record; the independent half is unmet by design.",
+            "status": NO_INDEPENDENT_ASSESSMENT,
             "current_service": off.get("current_independent_assessment_service"),
         },
         "package_contents": [

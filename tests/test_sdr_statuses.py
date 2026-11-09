@@ -17,6 +17,11 @@ assert _spec and _spec.loader
 sdr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(sdr)
 
+_cpo_spec = importlib.util.spec_from_file_location("build_cpo", REPO / "scripts" / "build-cpo.py")
+assert _cpo_spec and _cpo_spec.loader
+cpo = importlib.util.module_from_spec(_cpo_spec)
+_cpo_spec.loader.exec_module(cpo)
+
 
 def _ksi(status, passing, failing=()):
     methods = [{"method": "opa:versioning_disabled", "stage": "plan", "passed": True}][:passing]
@@ -101,6 +106,13 @@ def test_the_control_record_gives_the_registers_reason_for_no_independent_work(i
     assert ivv["status"] == "Impractical"
     assert ", ".join(ivv["impractical"]["reasons"]) in sdr.NO_IVV
     assert "not applicable" not in sdr.NO_IVV.lower()
+
+
+def test_the_package_overview_gives_the_registers_reason_for_no_independent_assessment(inputs):
+    icp = next(r for r in inputs[0]["records"] if r["frr_id"] == "IVV-CSO-ICP")
+    assert icp["status"] == "Impractical"
+    assert ", ".join(icp["impractical"]["reasons"]) in cpo.NO_INDEPENDENT_ASSESSMENT
+    assert "n/a" not in cpo.NO_INDEPENDENT_ASSESSMENT.lower()
 
 
 def test_the_readable_record_has_a_row_per_rule(inputs):
