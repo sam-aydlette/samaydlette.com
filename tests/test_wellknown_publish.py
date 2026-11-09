@@ -13,6 +13,7 @@ genuinely served from .well-known/ must be published by an explicit step, and
 forgetting one would silently stop serving it. This file is that guard.
 """
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -86,3 +87,22 @@ def test_website_files_publish_only_after_every_gate():
     gates = [i for i, st in enumerate(steps)
              if "gate" in (st.get("name") or "").lower() or "rule claims" in (st.get("name") or "").lower()]
     assert gates and max(gates) < sync
+
+
+@pytest.mark.parametrize("verifies", [True, False])
+def test_the_deploy_keeps_the_nightly_beacon_only_if_its_signature_verifies(tmp_path, verifies):
+    text = workflow_text()
+    start = text.index("rm -f vdr-status-nightly.json vdr-status-nightly.bundle")
+    end = text.index("        fi\n", start) + len("        fi\n")
+    script = "\n".join(line[8:] if line.startswith(" " * 8) else line
+                       for line in ("        " + text[start:end]).splitlines())
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    fakes = {"curl": 'while [ $# -gt 0 ]; do [ "$1" = -o ] && touch "$2"; shift; done',
+             "cosign": "exit 0" if verifies else "exit 1"}
+    for name, body in fakes.items():
+        (bin_dir / name).write_text(f"#!/bin/bash\n{body}\n")
+        (bin_dir / name).chmod(0o755)
+    subprocess.run(["bash", "-euo", "pipefail", "-c", script], cwd=tmp_path,
+                   env={"PATH": f"{bin_dir}:/usr/bin:/bin"}, check=True)
+    assert (tmp_path / "vdr-status-nightly.json").exists() is verifies

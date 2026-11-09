@@ -40,9 +40,11 @@ import _fedramp_schema  # noqa: E402
 import _frr  # noqa: E402
 import _ksi_methods  # noqa: E402
 import _rules  # noqa: E402
+import _triage  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
+REGRESSION_POLICY = Path(__file__).resolve().parent.parent / "policies" / "compliance" / "regression.rego"
 NO_IVV = "None performed. Independent verification and validation are Impractical here: one-person, no-budget."
 
 
@@ -252,6 +254,24 @@ def status_summary(frr_doc, applicable, ksi_result):
                      "findings": ksi_result["findings"]}}
 
 
+def _statuses(doc):
+    """{"rule": {id: status}, "ksi": {id: status}} from an SDR's FedRAMP section."""
+    return {"rule": {i["frrID"]: (i.get("statusDetail") or {}).get("status") for i in doc.get("fedRampRequirements") or []},
+            "ksi": {i["ksiId"]: (i.get("statusDetail") or {}).get("status") for i in doc.get("keySecurityIndicators") or []}}
+
+
+def compare_statuses(previous, fedramp):
+    """Regressions since the previous SDR (policies/compliance/regression.rego).
+    A previous record that cannot be compared is reported, never read as clean."""
+    previous = previous if isinstance(previous, dict) else {}
+    prev = _statuses(previous)
+    if not prev["rule"] and not prev["ksi"]:
+        return {"compared": False, "why": "no previous record with statuses to compare", "compared_with": None, "items": []}
+    out = _triage.evaluate("data.compliance.regression.result", {"previous": prev, "current": _statuses(fedramp)},
+                           policy=REGRESSION_POLICY)
+    return {"compared": True, "compared_with": (previous.get("metadata") or {}).get("last_updated"), "items": out["items"]}
+
+
 def build_metrics(records, controls_in_scope, vdr, signal, history, now):
     """SDR-CSX-KMT: metric snapshot + appended daily history (toward one year)."""
     sig_vals = signal.get("validations", []) if signal else []
@@ -383,7 +403,8 @@ def main():
         # CR26 statuses: every applicable rule (data/frr-records.json, claims
         # decided by policies/compliance/claims.rego) and every KSI (methods
         # counted by policies/compliance/ksi.rego).
-        "status_summary": status_summary(frr_doc, applicable, ksi_result),
+        "status_summary": {**status_summary(frr_doc, applicable, ksi_result),
+                           "regressions": compare_statuses(_optional(a.previous_sdr) if a.previous_sdr else None, fedramp)},
         "certificationPackageOverviewUri": fedramp["certificationPackageOverviewUri"],
         "fedRampRequirements": fedramp["fedRampRequirements"],
         "keySecurityIndicators": fedramp["keySecurityIndicators"],

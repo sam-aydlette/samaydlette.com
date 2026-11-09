@@ -108,6 +108,12 @@ def test_a_stale_beacon_earns_no_nightly_credit():
     assert (fresh["passing"], stale["passing"]) == (2, 1)
 
 
+def test_a_beacon_dropped_for_a_bad_signature_earns_no_nightly_credit():
+    fresh = _status()["ksis"]["KSI-SCR-MIT"]
+    dropped = _status(beacon=None)["ksis"]["KSI-SCR-MIT"]
+    assert (fresh["passing"], dropped["passing"]) == (2, 1)
+
+
 def test_a_stale_input_is_a_finding_that_says_why():
     out = _status(beacon={**_inputs()["beacon"], "finished_at": _iso(30)})
     found = [f for f in out["findings"] if f["method"] == "check:grype" and f["stage"] == "nightly"]
