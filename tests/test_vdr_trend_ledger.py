@@ -11,8 +11,8 @@ Two guards here:
 
   1. The builder genuinely accumulates (so a regression in the upsert is caught
      directly rather than inferred from the published file months later).
-  2. The workflow excludes the ledger from the content sync, and the sync still
-     precedes the trend build, which is what makes the exclusion necessary.
+  2. The workflow excludes the ledger from the content sync, which runs after
+     the ledger is published and would otherwise overwrite it with the seed.
 """
 
 import json
@@ -105,14 +105,3 @@ def test_content_sync_excludes_the_accumulating_ledger():
         "published object is the source of truth for this file and the sync "
         "would otherwise overwrite it with the committed seed."
     )
-
-
-def test_sync_still_precedes_the_trend_build():
-    """The exclusion matters only because the sync runs first; pin that order.
-
-    If the trend build ever moves ahead of the sync this test still passes and
-    the exclusion becomes harmless -- but if someone removes the exclusion
-    believing order protects them, the test above fails and says why.
-    """
-    text = WORKFLOW.read_text()
-    assert text.index("aws s3 sync website/") < text.index("build-vdr-trend.py")
