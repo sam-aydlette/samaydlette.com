@@ -93,7 +93,7 @@ def render_markdown(p):
     out.append(f"- **Business category:** {p['business_category']}")
     out.append(f"- **Product website:** {p['product_website']}")
     sc = p["security_contact"]
-    out.append(f"- **Security contact:** {sc.get('name')} ({sc.get('email')})")
+    out.append(f"- **Security contact:** {sc.get('name')} ({sc.get('url')})")
     out.append(f"- **Sales contact:** {p['sales_contact'].get('name')} ({p['sales_contact'].get('url')})")
     out.append(f"- **Secure Configuration Guidance:** {p['secure_configuration_guidance_url']}")
     out.append(f"- **Documentation overview:** {p['documentation_overview_url']}")

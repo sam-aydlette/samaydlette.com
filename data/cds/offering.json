@@ -6,7 +6,7 @@
   "business_category": "Personal demonstration / compliance-automation reference architecture",
   "uei": "<not assigned — no SAM.gov registration>",
   "sales_contact": { "name": "Sam Aydlette", "url": "https://samaydlette.com/pages/contact.html" },
-  "security_contact": { "name": "Sam Aydlette", "email": "sam.aydlette@gmail.com", "source": "/.well-known/security.txt" },
+  "security_contact": { "name": "Sam Aydlette", "url": "https://www.linkedin.com/in/sa2/", "source": "/.well-known/security.txt" },
   "product_website": "https://samaydlette.com",
   "logo_url": "https://samaydlette.com/assets/images/brand/logo.png",
   "service_description": "A static personal website on AWS that doubles as a working continuous-compliance pipeline: every deploy derives signed, machine-readable compliance artifacts from one canonical inventory and publishes them under /.well-known/. Includes the Silk Reeling Mirror application, a Cognito-gated Tai Chi coaching API.",
@@ -16,7 +16,7 @@
   "accountable_official": {
     "name": "Sam Aydlette",
     "title": "System Owner / Authorizing Operator",
-    "contact": "sam.aydlette@gmail.com"
+    "contact": "https://www.linkedin.com/in/sa2/"
   },
   "cryptographic_modules": [
     { "module": "AWS KMS", "validation": "FIPS 140-3 (CMVP, HSM-backed)", "role": "key store for all four customer-managed CMKs: at-rest (the compliance and watchdog Lambdas' environments and log groups, the DNS query log, the alert topic), runtime signing (the runtime signal), DNSSEC KSK, and the Silk Reeling app (its Lambda environment and log groups; the app holds no secrets since SCN-2026-006)", "inherited": true },

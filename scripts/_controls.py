@@ -1,9 +1,8 @@
 """The control projection: one implemented-requirement per NIST 800-53 Rev5
 control, with its implementation status, origination and statement.
 
-This is the control hub that every framework view projects from: the SDR's
-per-control status, the published coverage figures, the CMMC projection and the
-trust center's framework figures. It used to live inside the OSCAL SSP builder
+This is the control hub the SDR's per-control status and the trust center's
+Rev5 Moderate figures project from. It used to live inside the OSCAL SSP builder
 (scripts/build-oscal-ssp.py), and consumers read it back out of the generated
 oscal-ssp.json. The SSP was retired under CR26 (the SDR and CPO replace it), so
 the projection now lives here and consumers compute it in memory from the same

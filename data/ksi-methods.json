@@ -1,0 +1,18 @@
+{
+  "schema": "ksi-methods/2",
+  "$comment": "The mechanisms, other than OPA rules, that count as an automated method for a Key Security Indicator (FRC-CSX-VVK), and the stages at which scripts/_ksi_methods.py observes them. An OPA rule counts through its own annotations (custom.ksi_ids, custom.resource_types), never through this table. Each entry is one of the mechanisms the strict review of 2026-11-06 judged to test the KSI's measures and that runs in this repository today; the rest of that review's table (audit-log review, recovery exercise, CodeQL and ZAP clocks, conformance, availability, the inbox, training) waits until its mechanism is built. policies/compliance/ksi.rego decides the count.",
+  "methods": [
+    {"key": "grype", "ksis": ["KSI-SCR-MIT", "KSI-SCR-MON"], "observe": {"kind": "detection-feed", "feeds": ["grype"]}, "stages": ["deploy", "nightly"],
+     "measure": "Every package in this inventory's SBOM is scanned against a fresh vulnerability database and the scan passes the detection gate."},
+    {"key": "dependabot", "ksis": ["KSI-SCR-MON"], "observe": {"kind": "detection-feed", "feeds": ["dependabot"]}, "stages": ["deploy", "nightly"],
+     "measure": "GitHub's dependency advisories for this repository are read and pass the detection gate."},
+    {"key": "checkov-tfsec", "ksis": ["KSI-CNA-IBP"], "observe": {"kind": "detection-feed", "feeds": ["checkov", "tfsec"]}, "stages": ["deploy", "nightly"],
+     "measure": "The Terraform is scanned by Checkov and tfsec and both results pass the detection gate."},
+    {"key": "runtime-divergence", "ksis": ["KSI-CMT-RMV", "KSI-SVC-ACM"], "observe": {"kind": "runtime-divergence"}, "stages": ["live"],
+     "measure": "The daily runtime re-validation of live configuration reports no divergence from the deployed inventory."},
+    {"key": "reconcile", "ksis": ["KSI-SVC-ACM", "KSI-SVC-PRR"], "observe": {"kind": "beacon", "field": "reconcile"}, "stages": ["nightly"],
+     "measure": "Live AWS is enumerated and reconciled against the published inventory; any unlisted or drifted resource fails."},
+    {"key": "plan-gate", "ksis": ["KSI-CMT-VTD"], "observe": {"kind": "plan-gate"}, "stages": ["deploy"],
+     "measure": "Every Terraform change is evaluated by the OPA gate before it is applied, and this deploy's signal carries the passing run."}
+  ]
+}

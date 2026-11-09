@@ -34,10 +34,6 @@ const ARTIFACTS = [
 
 const FRAMEWORKS = [
     ['moderate_coverage', 'FedRAMP Rev 5 Moderate baseline'],
-    ['govramp_coverage', 'GovRAMP'],
-    ['txramp1_coverage', 'TX-RAMP Level 1'],
-    ['txramp2_coverage', 'TX-RAMP Level 2'],
-    ['cmmc_coverage', 'CMMC Level 2'],
 ];
 
 // ---------------------------------------------------------------------------
@@ -412,17 +408,29 @@ function renderRecord(doc) {
 
 function renderPosture(doc) {
     const host = slot('posture');
+    const STATUSES = ['Implemented', 'Not Demonstrated', 'Impractical', 'Not Applicable'];
+    const breakdown = (by) => STATUSES.filter((s) => by[s]).map((s) => `${by[s]} ${s}`).join(', ');
+    const r = doc.posture?.rules || {};
+    const rb = r.by_status || {};
     const k = doc.posture?.ksis || {};
-    const by = k.by_status || {};
-    host.append(el('p', {}, el('strong', { text: `${by.pass || 0} of ${k.total || 0}` }),
-        ' Key Security Indicators pass at deploy time',
-        Object.keys(by).filter((s) => s !== 'pass').length ? ` (${Object.entries(by).filter(([s]) => s !== 'pass').map(([s, n]) => `${n} ${s}`).join(', ')})` : '',
-        '. The runtime check above re-validates them against the live system every day.'));
+    const kb = k.by_status || {};
+    host.append(
+        el('p', {}, el('strong', { text: `${rb.Implemented || 0} of ${r.rules || 0}` }),
+            ' applicable FedRAMP 20x Class C rules are Implemented',
+            r.rules ? ` (${breakdown(rb)})` : '', '.',
+            r.awaiting_approval ? ` ${r.awaiting_approval} Impractical or Not Applicable proposals await the operator's approval.` : ''),
+        el('p', {}, el('strong', { text: `${kb.Implemented || 0} of ${k.total || 0}` }),
+            ' Key Security Indicators have at least two passing automated methods',
+            k.total ? ` (${breakdown(kb)})` : '', '.'),
+        ...((k.findings || []).length ? [
+            el('p', {}, el('strong', { text: String(k.findings.length) }), ' checks could not be verified or did not pass. These are findings, not passes.'),
+            el('ul', {}, ...k.findings.map((f) => el('li', { text: `${f.method} at ${f.stage}: ${f.why}` })))] : []),
+        el('p', { class: 'tc-check-meta', text: 'Only Implemented counts as met. Not Demonstrated is buildable and not built yet. Impractical means one engineer on a small AWS bill cannot meet it (one-person, no-budget or no-outside-party). Not Applicable means the rule\'s trigger cannot happen here. Each rule and KSI, with its evidence, is in the Security Decision Record.' }));
     const f = doc.posture?.frameworks || {};
     const rows = FRAMEWORKS.filter(([key]) => f[key]);
     if (rows.length) {
         host.append(
-            el('p', { text: 'Controls with an implementation statement in the System Security Plan, by framework. This measures documentation coverage, not an assessment result.' }),
+            el('p', { text: 'FedRAMP Rev 5 Moderate controls with an implementation statement in the Security Decision Record. This measures documentation coverage, not an assessment result.' }),
             el('dl', { class: 'tc-kv tc-kv-compact' }, ...rows.map(([key, label]) => el('div', {}, el('dt', { text: label }), el('dd', { text: f[key] })))));
         if (f.moderate_implemented) {
             host.append(el('p', { class: 'tc-check-meta', text: `Moderate baseline: ${f.moderate_implemented} implemented by this system, ${f.moderate_inherited} inherited from AWS, ${f.moderate_na} not applicable.` }));

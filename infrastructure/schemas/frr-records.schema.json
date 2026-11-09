@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://samaydlette.com/schemas/frr-records.schema.json",
+  "title": "FedRAMP rule records (SDR-CSO-FRR)",
+  "description": "One record per FedRAMP rule applicable to 20x Program Class C, with one of four statuses. scripts/_frr.py enforces this shape and what a schema cannot (the record set equals the applicable rules in the pinned corpus; a status's field appears only on that status). policies/compliance/claims.rego decides which records claim more than their fields support (evidence that resolves, the reasons and cost of an Impractical record, the operator's approval of every stand-in and scope cut), which this schema leaves optional so that an unapproved proposal can be recorded and reviewed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "basis", "records"],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "signoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["by", "on"],
+      "properties": {
+        "by": {"$ref": "#/$defs/text"},
+        "on": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+      }
+    }
+  },
+  "properties": {
+    "$schema": {"type": "string"},
+    "$comment": {"type": "string"},
+    "schema": {"const": "frr-records/2"},
+    "basis": {"$ref": "#/$defs/text"},
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["frr_id", "status"],
+        "properties": {
+          "frr_id": {"type": "string", "pattern": "^[A-Z]{3}-[A-Z]{3}-[A-Z]{3}$"},
+          "status": {"enum": ["Implemented", "Not Demonstrated", "Impractical", "Not Applicable"]},
+          "implementation": {"$ref": "#/$defs/text", "description": "Implemented: what runs, on what, and where its evidence is."},
+          "not_demonstrated": {"$ref": "#/$defs/text", "description": "What is missing."},
+          "not_applicable": {"$ref": "#/$defs/text", "description": "The trigger that cannot happen in this system."},
+          "impractical": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "reasons": {"type": "array", "items": {"enum": ["one-person", "no-budget", "no-outside-party"]}},
+              "why": {"$ref": "#/$defs/text"},
+              "cost": {"$ref": "#/$defs/text", "description": "Required with no-budget: what meeting the rule would cost."},
+              "built": {"$ref": "#/$defs/text", "description": "What was built anyway."}
+            }
+          },
+          "may_rationale": {"$ref": "#/$defs/text"},
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["kind", "ref"],
+              "properties": {
+                "kind": {"enum": ["test", "step", "artifact", "decision"]},
+                "ref": {"$ref": "#/$defs/text"}
+              }
+            }
+          },
+          "proposal": {"$ref": "#/$defs/signoff"},
+          "approval": {"$ref": "#/$defs/signoff"},
+          "acceptance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["by", "on", "review_by"],
+            "description": "Not Demonstrated: a senior official accepts the gap until it is built. It does not make the rule met.",
+            "properties": {
+              "by": {"$ref": "#/$defs/text"},
+              "on": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+              "review_by": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+            }
+          }
+        }
+      }
+    }
+  }
+}

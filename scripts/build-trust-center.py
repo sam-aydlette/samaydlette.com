@@ -749,13 +749,41 @@ def escalation_by_kind(inp: dict[str, Any], pending: list[dict[str, Any]]) -> di
     return out
 
 
+def framework_figures(irs: list[dict[str, Any]]) -> dict[str, str]:
+    """The Rev5 Moderate view of the control projection (scripts/_controls.py):
+    baseline coverage, measured rather than assumed (the projection's controls
+    inside the FedRAMP Moderate baseline over the baseline's size, so a baseline
+    control missing from the projection lowers it), and the projection's
+    responsibility split. The SDR publishes the same projection per control."""
+    import _common
+    import _controls
+    baseline = set(_controls.BASELINE_CONTROLS)
+    control_ids = {ir["control-id"] for ir in irs}
+    stack: dict[str, int] = {}
+    for ir in irs:
+        cls = _common.classify(_common.prop(ir, "implementation-status"), _common.prop(ir, "control-origination"))
+        stack[cls] = stack.get(cls, 0) + 1
+    return {
+        "moderate_coverage": f"{len(control_ids & baseline)}/{len(baseline)}",
+        "moderate_baseline": str(len(baseline)),
+        "moderate_beyond": str(len(control_ids - baseline)),
+        "moderate_implemented": str(stack.get("implemented", 0)),
+        "moderate_inherited": str(stack.get("fully-inherited", 0) + stack.get("partially-inherited", 0)),
+        "moderate_na": str(stack.get("not-applicable", 0)),
+    }
+
+
 def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
-    ksis = inp["signal"].get("ksis", [])
-    by_status: dict[str, int] = {}
-    for k in ksis:
-        by_status[k.get("status", "unknown")] = by_status.get(k.get("status", "unknown"), 0) + 1
-    return {"ksis": {"total": len(ksis), "by_status": dict(sorted(by_status.items()))},
-            "frameworks": inp.get("figures") or {}}
+    """Rule and KSI statuses from this build's SDR (decided by the Rego in
+    policies/compliance/), bound to the same inventory. Only Implemented
+    counts as met; the signal's per-KSI pass/fail is not a status."""
+    sdr = inp.get("sdr") or {}
+    summary = sdr.get("status_summary")
+    if not summary:
+        sys.exit("build-trust-center: the SDR carries no status_summary (fail-closed)")
+    if sdr.get("ksi_signal_id") != inp["signal"].get("signal_id"):
+        sys.exit("build-trust-center: the SDR is bound to another inventory (fail-closed)")
+    return {"rules": summary["rules"], "ksis": summary["ksis"], "frameworks": inp.get("figures") or {}}
 
 
 def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:
@@ -830,6 +858,7 @@ def main() -> None:
     ap.add_argument("--runtime", default="ksi-signal-runtime.json", help="the published runtime signal (optional)")
     ap.add_argument("--vdr-status", default="vdr-status.json", help="the nightly status beacon (optional)")
     ap.add_argument("--manual-settings", default="manual-settings.json", help="scripts/check-manual-settings.py output (optional)")
+    ap.add_argument("--sdr", default="security-decision-record.json", help="this build's SDR (its status_summary)")
     ap.add_argument("--corroboration", default="boundary-corroboration.json", help="tools/boundary-map/corroborate.py output (optional)")
     ap.add_argument("--previous", default="trust-center-previous.json", help="the last published trust center (optional)")
     ap.add_argument("--decisions", default=str(DECISIONS_PATH))
@@ -838,7 +867,7 @@ def main() -> None:
     ap.add_argument("--policy-dir", default=str(REPO / "infrastructure" / "policy"))
     ap.add_argument("--checkov-config", default=str(REPO / ".checkov.yaml"))
     ap.add_argument("--scn-register", default=str(REPO / "docs" / "scn" / "scn-register.csv"))
-    ap.add_argument("--no-figures", action="store_true", help="skip framework coverage (needs the built inventory)")
+    ap.add_argument("--no-figures", action="store_true", help="skip the Rev5 Moderate figures (needs the built inventory)")
     ap.add_argument("--commit", default="")
     ap.add_argument("--output", default="trust-center.json")
     a = ap.parse_args()
@@ -859,7 +888,8 @@ def main() -> None:
     annotations = _load_module("check_policy_annotations", REPO / "scripts" / "check-policy-annotations.py")
     figures = None
     if not a.no_figures:
-        figures = _load_module("inject_figures", REPO / "scripts" / "inject-figures.py").compute_figures()
+        import _controls
+        figures = framework_figures(_controls.load(a.ksi_signal))
 
     inp = {
         "signal": load(a.ksi_signal), "vdr": load(a.vdr),
@@ -876,6 +906,7 @@ def main() -> None:
         "scn_register": read_scn_register(Path(a.scn_register)),
         "checkov_skips": read_checkov_skips(Path(a.checkov_config)),
         "figures": figures,
+        "sdr": load(a.sdr),
     }
     doc = build(inp, a.commit, datetime.now(timezone.utc))
     text = json.dumps(doc, indent=2, sort_keys=False) + "\n"

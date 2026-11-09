@@ -1,0 +1,2573 @@
+{
+  "$schema": "../infrastructure/schemas/frr-records.schema.json",
+  "schema": "frr-records/2",
+  "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Shape: scripts/_frr.py; claims: policies/compliance/claims.rego.",
+  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable records are AI-drafted proposals, each approved by the operator as its approval field records. Each Not Demonstrated record's reason is accepted by the senior official as a known gap queued to be built, as its acceptance field records; acceptance does not make a rule met.",
+  "records": [
+    {
+      "frr_id": "AFC-CSO-ACK",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-CRA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-EMR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-IMA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-INB",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-NOC",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-RCV",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "AFC-CSO-TFG",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-AFS",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-AVL",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-FBM",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-LSI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Ongoing Certification Report (CCM)"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-NRD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-RPS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 1 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-OCR-SOR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-ACT",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-MTG",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-NID",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-NRD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 1 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-REG",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-RTP",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-RTR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-SAR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-SCR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101.",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ongoing-certification-report.json"
+        }
+      ],
+      "may_rationale": "Exercised: content prepared for each Quarterly Review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CCM-QTR-SRR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Exercised: each review's transcript is published after all agency comments, questions and names are removed, so the review is as open as the rest of the package.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-AVR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step availability-probe.yml#Probe the core services; step availability-probe.yml#Publish the status feed to the availability-status branch; step deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale); 3 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-CBF",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); step evidence-nightly.yml#Rebuild the human-readable views (format parity); 7 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-FID",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-100; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-FRC",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-HAD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-IRP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar); 6 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/policy-index.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-PSM",
+      "status": "Not Applicable",
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised. The two services (the website and Silk Reeling) share one boundary, one inventory and one pipeline; separate per-service packages would repeat the same evidence.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-PUB",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs a SAM.gov registration made for a federal engagement, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-RIS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; decision DEC-166.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_published_redaction.py::test_gate_fails_the_known_bad_fixture_without_printing_the_number"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Publication redaction gate (no AWS account ID)"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-RPS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-166; 1 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/policy-index.json"
+        }
+      ],
+      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is DEC-166, published with the sharing statement.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-SVC",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-CSO-UTC",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/trust-center.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-AAI",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-ACL",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-HMR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 6 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-PAC",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-SSM",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-TRC-USH",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step availability-probe.yml#Alert on an ongoing availability incident; step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); step deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale); 1 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/availability.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-009"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-UTC-AAD",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CDS-UTC-AGA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CMU-CSO-CAT",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CMU-CSO-CMD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CMU-CSO-UVM",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CPO-CSO-MTD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CPO-CSO-OSA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "CPO-CSO-OVR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 4 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Certification Package Overview (CPO)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "CPO-CSX-CPM",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Package maintainer preflight; step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/certification-package-overview.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-AFC",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-FCP",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-FIA",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-MLF",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-NTP",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-APP-USA",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the application rules to providers who have met all other relevant rules and are ready to apply. No application is made; the rule applies from the day one is.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised: no initial independent assessment exists, so there is nothing stale to freshen.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSO-FCP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP rule claims supported by evidence"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSO-JSN",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); 11 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSO-MRA",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent); 3 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Reconciliation gate (fail closed on drift)"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSO-PKG",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSO-POP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-107; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSX-MAS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSX-VVK",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not every applicable KSI has two automated methods that test its measures. Each deploy counts them and the Security Decision Record publishes the count per KSI.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "FRC-CSX-VVR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/frr-evidence.json; step deploy-with-opa.yml#FedRAMP rule evidence passed (cited tests); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-AIR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-DPR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-EFI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-EFR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-FIR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-IIR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IEC-CSO-OIR",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-DUS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; decision DEC-167; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-FIA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-ICP",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-RAA",
+      "status": "Not Applicable",
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised: the simulated assessor reports results and gives no advice to accept, and no FedRAMP Recognized assessor is engaged for this proof of concept.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-SEE",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-SEI",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-STE",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; step deploy-with-opa.yml#Build the assessor guide; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSO-USR",
+      "status": "Not Applicable",
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised. The system is small enough to verify and validate every resource, and full coverage is a stronger claim than a sample.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "IVV-CSX-AIA",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person",
+          "no-budget"
+        ],
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "MAS-CSO-FLO",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/boundary-map.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "MAS-CSO-IIR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "MAS-CSO-MDI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "MAS-CSO-SUP",
+      "status": "Not Applicable",
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised. The package covers only the offering. The other-framework views on the trust page are derived from the same controls and evidence, not separate resources.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "MAS-CSO-TPR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "MKT-CSO-MLR",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "MKT-CSO-PML",
+      "status": "Not Applicable",
+      "not_applicable": "FedRAMP scopes the Marketplace rules to providers seeking a listing in the FedRAMP Marketplace. No listing is sought, by statutory scope: the offering has no agency use case within 44 USC § 3506, which MKT-IIP-AGU requires, so it is outside FedRAMP's scope and no listing request is made (docs/cr26-applicability.md). The rule would apply from the day a listing were sought.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-CSO-AUP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-CSO-PUB",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-CSO-RSC",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-CSO-SDF",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-150; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-ENH-API",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-ENH-CMP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-151; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-ENH-EXP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-ENH-MRG",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCG-ENH-VRH",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-ADP-NTF",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; step scn-deadlines.yml#Check SCN deadlines; 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-ARI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 1 test(s).",
+      "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-EMG",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s).",
+      "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-EVA",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-HIS",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-HRM",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; artifact .well-known/significant-change-notifications.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-INF",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-MAR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-CSO-NOM",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.atom; 2 test(s).",
+      "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-RTR-NNR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-NAF",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-NAV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-NFP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-NIP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-TPR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SCN-TRF-UPD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SDR-CSO-FRR",
+      "status": "Implemented",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_statuses.py::test_every_rule_not_followed_states_its_risk_and_acceptance"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_statuses.py::test_the_readable_record_has_a_row_per_rule"
+        }
+      ],
+      "implementation": "Every deploy builds the Security Decision Record in JSON and human-readable form with an entry for each applicable rule: how it is followed or the reason and resulting risk for not following it, its verification and validation or a senior official's acceptance of the reason, and any artifacts. Independent verification and validation are recorded as none performed, at a cost of $0, so there are no assessor comments to respond to."
+    },
+    {
+      "frr_id": "SDR-CSO-MTD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SDR-CSX-KMT",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 3 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "SDR-CSX-KSI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build Security Decision Record (SDR — 20x SSP replacement)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/security-decision-record.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-ADT",
+      "status": "Implemented",
+      "implementation": "Automated on schedules and triggers: evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *', plus once after every successful deploy), deploy-with-opa.yml (every push to main, behind the prod approval), zap-dast.yml (weekly, cron '23 7 * * 1'), the runtime emitter on its EventBridge schedule (aws_cloudwatch_event_rule.opa_compliance in infrastructure/main.tf, rate(1 day) from var.compliance_check_schedule) and the evidence watchdog (aws_cloudwatch_event_rule.evidence_watchdog in infrastructure/watchdog.tf, rate(1 hour)). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; the nightly publishes its outcome on every run in vdr-status.json.",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-status.json"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-CSO-AKE",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-DAC",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step codeql.yml#Analyze; step zap-dast.yml#ZAP API Scan (authenticated); 3 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "zap-dast.yml#ZAP Baseline Scan"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-DET",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step codeql.yml#Analyze; step zap-dast.yml#ZAP API Scan (authenticated); 5 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-DFR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Run OPA Compliance Check"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Policy parity test (CLI vs Wasm)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-FAV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Collect failed pipeline runs (VDR-CSO-FAV); step evidence-nightly.yml#Collect failed pipeline runs (VDR-CSO-FAV); 5 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-MSP",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: the authenticated scan's sign-in (scripts/dast-cognito-token.py) and the scanner-user runbook it relies on.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_zap_allowlist.py::test_allowlist_entry_without_a_decision_fails_closed"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_zap_allowlist.py::test_allowlist_status_is_published_in_the_report"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-RES",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-181; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-CSO-SIR",
+      "status": "Not Applicable",
+      "not_applicable": "A MAY permission that is not exercised; see the rationale.",
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "may_rationale": "Not exercised. Every resource is scanned individually; the inventory is small and sampling would reduce assurance for no gain.",
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-KEV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-MVX",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-NMV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-non-machine-vv.json; step deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV); step evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-PCD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-PDD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-PSD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Detection gate (G7)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Reconciliation gate (fail closed on drift)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/ksi-signal-runtime.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VDR-TFR-PVR",
+      "status": "Implemented",
+      "implementation": "policies/triage.rego timeframe() reads the Class C matrix from the pinned FedRAMP rules (data.rules ... VDR-TFR-PVR.varies_by_class.c, hash-checked by scripts/_rules.py) by PAIN x IRV x LEV; the deadline runs from the finding's clock start (triage.rego deadline(), item.clock.start_ns), which only a verified mitigation moves (scripts/build-vdr-report.py clock_facts()); re-evaluation re-selects the timeframe; G3 'vdr.past-deadline' blocks publication (gate-modes.json mode block); likely-overdue margin (vdr-pain-config.json). The published vdr-report.json carries remediation_due_at per finding.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_timeframe_comes_from_data_rules"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_rules_missing_a_timeframe_cell_fail_closed"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ]
+    },
+    {
+      "frr_id": "VDR-TFR-RMN",
+      "status": "Implemented",
+      "implementation": "N1 findings get no timeframe (policies/triage.rego timeframe(): 'null for a level with no timeframe (N1: routine operations)'), yet scripts/vuln-gate.py and reconcile.py invariant (h) still need every finding fixed or dispositioned by an in-force decision with review_by. Both N1 findings (tfsec-AVD-AWS-0162, zap-10036-2) carry decisions DEC-032/DEC-040.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_rules_as_data.py::test_t19_n1_has_no_timeframe"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vuln_gate.py::test_remediate_disposition_does_not_pass"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Vulnerability gate (fix or categorize every vuln)"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-040"
+        }
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-AIA",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-EVA-EFA",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 1 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_triage_policy.py::test_golden_report_is_unchanged"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-EVA-EFP",
+      "status": "Implemented",
+      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: in-force false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version'); policies/triage.rego record_status() rejects a false positive that names a control (it must be 'mitigated') and lapses it at review_by; every VDR finding whose final disposition is false-positive carries its decision_id.",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_dispositions_mitigations.py::test_t15_false_positive_naming_a_control_is_refused"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_vuln_gate.py::test_false_positive_passes"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-039"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-040"
+        }
+      ]
+    },
+    {
+      "frr_id": "VER-EVA-EIR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_resolution_identity.py::test_t7_unresolved_finding_is_irv_failsafe_and_flagged"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-EVA-ELX",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_figure7_lev.py::test_in_force_vector_is_applied_and_drives_lev_and_pain"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-EVA-EPA",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_dispositions_mitigations.py::test_t15_control_protected_finding_is_fully_mitigated_at_the_lowest_level"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-EVA-GRV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-AVI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 1 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        },
+        {
+          "kind": "decision",
+          "ref": "DEC-010"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-HLO",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-NID",
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "one-person"
+        ],
+        "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
+      },
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-PER",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 5 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-RPD",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-182; 2 test(s).",
+      "evidence": [
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-RPT-VDT",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_outputs_validate_and_name_their_schema"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-detail-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-EVU",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-IRI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-MAV",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_clock.py::test_t14_past_maximum_period_is_reported_accepted_with_unrecorded_explanation"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build VDR Report (FedRAMP 20x Class C)"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-report.json"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-accepted-vulnerabilities.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-MHR",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-MRH",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
+      "evidence": [
+        {
+          "kind": "test",
+          "ref": "tests/test_cr26_vdr.py::test_history_keeps_a_finding_that_left_the_vdr_then_drops_it_after_a_year"
+        },
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#Build CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "step",
+          "ref": "evidence-nightly.yml#Build and sign CR26 vulnerability reports (VDT, AVI, history)"
+        },
+        {
+          "kind": "artifact",
+          "ref": ".well-known/vdr-history.json"
+        }
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    },
+    {
+      "frr_id": "VER-TFR-NRI",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
+      "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
+    }
+  ]
+}

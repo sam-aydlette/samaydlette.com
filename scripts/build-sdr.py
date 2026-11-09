@@ -23,6 +23,7 @@
 # =============================================================================
 
 import argparse
+import importlib.util
 import json
 import os
 import sys
@@ -35,10 +36,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import prop  # noqa: E402
 import _assessor  # noqa: E402
 import _controls  # noqa: E402
+import _fedramp_schema  # noqa: E402
+import _frr  # noqa: E402
+import _ksi_methods  # noqa: E402
+import _rules  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
-NA = "N/A — self-attested proof of concept; no FedRAMP Recognized independent assessment service engaged (IVV is not applicable to an unsponsored system)."
+NO_IVV = "None performed. Independent verification and validation are Impractical here: one-person, no-budget."
 
 
 def _control_map(irs):
@@ -72,12 +77,12 @@ def build_records(catalog, cmap):
                 else:
                     impl += 1
             if controls:
-                expl = (f"Satisfied through {len(controls)} NIST 800-53 control(s) "
+                expl = (f"Maps to {len(controls)} NIST 800-53 control(s) "
                         f"({impl} system-implemented, {inh} inherited/shared, {na} not-applicable); "
                         f"see rev5_controls in this record for each control's implementation statement.")
             else:
                 expl = ("Process/organizational indicator with no direct 800-53 control mapping; "
-                        "satisfied at the operator level and documented in the linked policy.")
+                        "its status is in keySecurityIndicators.")
             records.append({
                 "rule_id": ind["id"],
                 "statement": ind.get("statement", ""),
@@ -88,8 +93,8 @@ def build_records(catalog, cmap):
                                  "re-validates the live configuration against the same compiled policy."),
                 "validation": ("Effectiveness reviewed continuously by the daily runtime revalidation "
                                "(drift detector) and annually by the structural security review."),
-                "independent_verification": NA,
-                "independent_validation": NA,
+                "independent_verification": NO_IVV,
+                "independent_validation": NO_IVV,
                 "assessor_comment_responses": [],
                 "artifacts": ["/.well-known/ksi-signal.json", "/.well-known/security-decision-record.json"],
             })
@@ -141,12 +146,110 @@ def build_rev5_controls(irs, catalog):
             "contributing_ksis": ksis,
             "verification": verification,
             "validation": validation,
-            "independent_verification": NA,
-            "independent_validation": NA,
+            "independent_verification": NO_IVV,
+            "independent_validation": NO_IVV,
             "assessor_comment_responses": [],
             "artifacts": [lk["href"] for lk in ir.get("links", [])],
         })
     return out
+
+
+SITE = "https://samaydlette.com"
+# The FedRAMP status enum has no Not Applicable; our status rides along in
+# `statusDetail` on every item (the schema allows the extension).
+FRR_FEDRAMP_STATUS = {"Implemented": "Implemented", "Not Demonstrated": "Not Implemented",
+                      "Impractical": "Not Implemented"}
+STAGE_SOURCE = {"plan": "/.well-known/ksi-signal.json", "deploy": "/.well-known/ksi-signal.json",
+                "live": "/.well-known/ksi-signal-runtime.json", "nightly": "/.well-known/vdr-status.json"}
+
+
+NOT_FOLLOWED_RISK = ("Resulting risk to customers: this system has no agency customers or federal data, so no agency "
+                     "carries this risk. A real customer would lose the assurance this rule provides.")
+NOT_APPLICABLE_RISK = "Resulting risk to customers: none, because the rule's trigger cannot happen in this system."
+NO_INDEPENDENT_WORK = ("No independent verification or validation was performed (cost $0), so there are no assessor "
+                       "comments to respond to.")
+
+
+def _frr_item(rec, rule):
+    st = rec["status"]
+    if st == "Implemented":
+        text = rec["implementation"]
+    elif st == "Not Demonstrated":
+        text = f"Not Demonstrated: {rec['not_demonstrated']}"
+    elif st == "Impractical":
+        imp = rec["impractical"]
+        text = (f"Impractical ({', '.join(imp.get('reasons', []))}): {imp.get('why', '')}"
+                + (f" Cost: {imp['cost']}" if imp.get("cost") else "")
+                + (f" Built anyway: {imp['built']}" if imp.get("built") else ""))
+    else:
+        text = f"Not Applicable: {rec['not_applicable']}"
+    if st != "Implemented":
+        text += f" {NOT_APPLICABLE_RISK if st == 'Not Applicable' else NOT_FOLLOWED_RISK}"
+    accepted = rec.get("approval") or rec.get("acceptance")
+    item = {"frrID": rec["frr_id"], "frrImplementation": [text],
+            "frrValidation": [f"{e['kind']}: {e['ref']}" for e in rec.get("evidence", [])]
+            + ([] if st == "Implemented" else
+               [f"Reason accepted by a senior official: {accepted['by']}, {accepted['on']}." if accepted
+                else "The reason has not been accepted by a senior official."]),
+            "frrAssessment": [NO_INDEPENDENT_WORK],
+            "statusDetail": {"status": st, "force": rule["force"],
+                             "approved": bool(rec.get("approval")) if st in ("Impractical", "Not Applicable") else None}}
+    if st in FRR_FEDRAMP_STATUS:
+        item["frrImplementationStatus"] = FRR_FEDRAMP_STATUS[st]
+    return item
+
+
+def _ksi_item(kid, res, methods_by_key):
+    st = res["status"]
+    item = {"ksiId": kid, "ksiImplementation": [], "ksiValidation": [], "ksiAssessment": [
+                "No independent assessment: this system has no assessor."],
+            "ksiTests": [f"{m['method']}@{m['stage']}" for m in res["methods"]],
+            "ksiEvidence": [{"evidenceType": "Report", "evidenceLocation": SITE + loc,
+                             "evidenceDescription": "Published results this KSI's methods are counted from"}
+                            for loc in sorted({STAGE_SOURCE[m["stage"]] for m in res["methods"]})],
+            "statusDetail": {"status": st, "passing": res["passing"], "failing": res["failing"]}}
+    if st == "Not Applicable":
+        item["ksiImplementation"].append("Not Applicable (approved by the operator); see data/ksi-applicability.json.")
+        return item
+    n = res["passing"]
+    item["ksiImplementationStatus"] = ("Implemented" if st == "Implemented"
+                                       else "Partially Implemented" if n == 1 and not res["failing"] else "Not Implemented")
+    item["ksiImplementation"].append(
+        f"{n} passing automated method(s); Class C needs two (FRC-CSX-VVK)."
+        + (f" Failing: {', '.join(res['failing'])}." if res["failing"] else ""))
+    for m in res["methods"]:
+        key = m["method"].split(":", 1)[1]
+        what = (methods_by_key[key]["measure"] if m["method"].startswith("check:") and key in methods_by_key
+                else f"OPA rule {key} evaluated the resources it governs")
+        item["ksiValidation"].append(f"{m['method']}@{m['stage']} ({'pass' if m['passed'] else 'FAIL'}): {what}")
+    return item
+
+
+def build_fedramp(frr_doc, applicable, ksi_result, methods):
+    """The FedRAMP-shaped part of the SDR, validated against FedRAMP's schema."""
+    by_key = {m["key"]: m for m in methods}
+    doc = {
+        "$schema": _fedramp_schema.BASES[0] + _fedramp_schema.SCHEMAS["sdr"],
+        "certificationPackageOverviewUri": _fedramp_schema.CPO_URI,
+        "fedRampRequirements": [_frr_item(r, applicable[r["frr_id"]]) for r in frr_doc["records"]],
+        "keySecurityIndicators": [_ksi_item(k, v, by_key) for k, v in sorted(ksi_result["ksis"].items())],
+    }
+    errors = _fedramp_schema.validate(doc, "sdr")
+    if errors:
+        sys.exit("build-sdr: the FedRAMP section does not match FedRAMP's schema: " + "; ".join(errors[:10]))
+    return doc
+
+
+def status_summary(frr_doc, applicable, ksi_result):
+    by = {}
+    for v in ksi_result["ksis"].values():
+        by[v["status"]] = by.get(v["status"], 0) + 1
+    return {"rules": _frr.summary(frr_doc, applicable),
+            "ksis": {"total": len(ksi_result["ksis"]), "by_status": dict(sorted(by.items())),
+                     "short_of_two_methods": ksi_result["short"],
+                     # Anything not verified is a finding (a check that did not
+                     # run, a rule with nothing to evaluate, a failed method).
+                     "findings": ksi_result["findings"]}}
 
 
 def build_metrics(records, controls_in_scope, vdr, signal, history, now):
@@ -198,6 +301,13 @@ def main():
     ap.add_argument("--previous-sdr", default=None)
     ap.add_argument("--output", default="security-decision-record.json")
     ap.add_argument("--md-output", default="security-decision-record.md")
+    ap.add_argument("--runtime-signal", default="ksi-signal-runtime.json",
+                    help="the published runtime signal (optional: absent or stale earns no live credit)")
+    ap.add_argument("--vdr-status", default="vdr-status.json",
+                    help="the nightly status beacon (optional: absent or stale earns no nightly credit)")
+    ap.add_argument("--frr-records", default=str(_frr.DEFAULT_PATH))
+    ap.add_argument("--ksi-short-output", default="ksi-short.json",
+                    help="KSIs short of two methods, for the claims gate (_frr.py --claims --ksi-short)")
     ap.add_argument("--assessor-records", default=str(_assessor.RECORDS_DIR),
                     help="directory of signed assessor records (REQ-ASR-1); empty = no assessor record")
     ap.add_argument("--assessor-identity", default=str(_assessor.IDENTITY_PATH),
@@ -227,6 +337,35 @@ def main():
     assessor_block = _assessor.attach(records, assessor_records)
     metrics = build_metrics(records, len(cmap), vdr, signal, history, now)
 
+    def _optional(path):
+        try:
+            return json.loads(Path(path).read_text())
+        except (OSError, json.JSONDecodeError):
+            return None
+    def _verified_runtime(path):
+        """The runtime signal only when its signature verifies against the
+        pinned key (the VDR builder's check); otherwise no live credit."""
+        spec = importlib.util.spec_from_file_location(
+            "build_vdr_report", Path(__file__).resolve().parent / "build-vdr-report.py")
+        assert spec and spec.loader
+        vdr_mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(vdr_mod)
+        check = vdr_mod.load_runtime_signal(path, now=now)
+        if not check["verified"]:
+            print(f"note: no live KSI credit: {check['reason']}")
+            return None
+        return _optional(path)
+    frr_doc = _frr.load(a.frr_records)
+    applicable = _rules.applicable_provider_rules()
+    methods = _ksi_methods.load_methods()
+    ksi_result = _ksi_methods.decide(_ksi_methods.facts(
+        deploy_signal=signal, vdr=vdr, beacon=_optional(a.vdr_status),
+        runtime_signal=_verified_runtime(a.runtime_signal), now=now, methods=methods))
+    fedramp = build_fedramp(frr_doc, applicable, ksi_result, methods)
+    for r in records:
+        r["ksi_status"] = ksi_result["ksis"].get(r["rule_id"], {}).get("status")
+    Path(a.ksi_short_output).write_text(json.dumps(ksi_result["short"]) + "\n")
+
     sdr = {
         "record_type": "security-decision-record",
         "schema": "fedramp-security-decision-record-schema-2026-06-24.json",
@@ -241,6 +380,13 @@ def main():
         "class": prof.get("fedramp_class"),
         "impact_level": prof.get("impact_level"),
         "ksi_signal_id": (signal or {}).get("signal_id"),
+        # CR26 statuses: every applicable rule (data/frr-records.json, claims
+        # decided by policies/compliance/claims.rego) and every KSI (methods
+        # counted by policies/compliance/ksi.rego).
+        "status_summary": status_summary(frr_doc, applicable, ksi_result),
+        "certificationPackageOverviewUri": fedramp["certificationPackageOverviewUri"],
+        "fedRampRequirements": fedramp["fedRampRequirements"],
+        "keySecurityIndicators": fedramp["keySecurityIndicators"],
         "rule_records": records,                 # SDR-CSO-FRR + SDR-CSX-KSI
         "rev5_controls": build_rev5_controls(irs, catalog),   # SDR-CSF-CTF
         "metrics": metrics,                      # SDR-CSX-KMT
@@ -275,6 +421,30 @@ def _assessor_lines(sdr):
     return out
 
 
+def _status_lines(sdr):
+    s = sdr["status_summary"]
+    rules, ksis = s["rules"], s["ksis"]
+    return ["## Status", "",
+            f"- FedRAMP rules ({rules['rules']}): "
+            + ", ".join(f"{n} {k}" for k, n in rules["by_status"].items())
+            + f"; {rules['awaiting_approval']} awaiting the operator's approval",
+            f"- Key Security Indicators ({ksis['total']}): "
+            + ", ".join(f"{n} {k}" for k, n in ksis["by_status"].items())
+            + ". Only Implemented counts as met.",
+            *([f"- Unverified or failed methods (findings): {len(ksis['findings'])}"] if ksis.get("findings") else [])]
+
+
+def _rule_lines(sdr):
+    def cell(parts):
+        return " ".join(parts).replace("|", "\\|").replace("\n", " ") or "None recorded."
+    out = ["## FedRAMP rules (SDR-CSO-FRR)", "", "| Rule | Status | Explanation | Verification and validation | Independent |",
+           "|---|---|---|---|---|"]
+    for i in sdr.get("fedRampRequirements", []):
+        out.append(f"| `{i['frrID']}` | {i['statusDetail']['status']} | {cell(i['frrImplementation'])} | "
+                   f"{cell(i['frrValidation'])} | {cell(i['frrAssessment'])} |")
+    return out
+
+
 def render_markdown(sdr):
     m = sdr["metadata"]
     cur = sdr["metrics"]["current"]
@@ -293,7 +463,9 @@ def render_markdown(sdr):
            f"- Daily metric history: {len(sdr['metrics']['daily_metric_data'])} day(s) on record "
            "(builds toward one year)",
            "",
-           "## Per-rule records (SDR-CSO-FRR / SDR-CSX-KSI)", "",
+           *_status_lines(sdr), "",
+           *_rule_lines(sdr), "",
+           "## Per-KSI records (SDR-CSX-KSI)", "",
            "Independent verification and validation are N/A for this self-attested system "
            "(no FedRAMP Recognized assessor). Verification and validation below are the "
            "provider-side evidence an assessor would consume.", "",
