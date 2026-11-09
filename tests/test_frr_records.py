@@ -2,6 +2,7 @@
 
 import copy
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -191,3 +192,10 @@ def test_the_cli_claim_gate_exit_code(tmp_path, committed):
     p.write_text(json.dumps(good))
     assert _frr.main(["--records", str(p), "--claims"]) == 1
     assert _frr.main(["--records", str(p)]) == 0
+
+
+def test_every_decision_the_register_cites_is_a_decision_record():
+    doc = json.loads((REPO / "data" / "decisions.json").read_text())
+    records = doc if isinstance(doc, list) else doc.get("decisions") or doc["records"]
+    cited = set(re.findall(r"DEC-\d+", (REPO / "data" / "frr-records.json").read_text()))
+    assert cited <= {r["id"] for r in records}

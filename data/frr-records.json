@@ -209,7 +209,7 @@
     {
       "frr_id": "CCM-OCR-LSI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -245,14 +245,14 @@
     {
       "frr_id": "CCM-OCR-RPS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 1 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
         }
       ],
-      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101).",
+      "may_rationale": "Planned. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is to be published in full, with each report recording the no-adverse-effect determination.",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -412,14 +412,14 @@
     {
       "frr_id": "CCM-QTR-SCR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101.",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision.",
       "evidence": [
         {
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
         }
       ],
-      "may_rationale": "Exercised: content prepared for each Quarterly Review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101).",
+      "may_rationale": "Planned: content prepared for each Quarterly Review is to be published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check.",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -474,7 +474,7 @@
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-100; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -570,7 +570,7 @@
     {
       "frr_id": "CDS-CSO-RIS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; decision DEC-166.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; a recorded decision.",
       "evidence": [
         {
           "kind": "test",
@@ -590,14 +590,14 @@
     {
       "frr_id": "CDS-CSO-RPS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-166; 1 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
           "ref": ".well-known/policy-index.json"
         }
       ],
-      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is DEC-166, published with the sharing statement.",
+      "may_rationale": "Planned. The whole package is to be public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is to be published with the sharing statement.",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -773,7 +773,7 @@
     {
       "frr_id": "CMU-CSO-CAT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 1 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; a recorded decision; 1 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -793,7 +793,7 @@
     {
       "frr_id": "CMU-CSO-UVM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; a recorded decision; 2 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1032,7 +1032,7 @@
     {
       "frr_id": "FRC-CSO-POP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-107; 3 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 3 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1174,7 +1174,7 @@
     {
       "frr_id": "IVV-CSO-DUS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; decision DEC-167; 1 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; a recorded decision; 1 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1474,7 +1474,7 @@
     {
       "frr_id": "SCG-CSO-SDF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-150; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; a recorded decision; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1494,7 +1494,7 @@
     {
       "frr_id": "SCG-ENH-CMP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-151; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; a recorded decision; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1917,7 +1917,7 @@
     {
       "frr_id": "VDR-CSO-RES",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-181; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -2230,7 +2230,7 @@
     {
       "frr_id": "VER-EVA-ELX",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -2258,7 +2258,7 @@
     {
       "frr_id": "VER-EVA-EPA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -2408,7 +2408,7 @@
     {
       "frr_id": "VER-RPT-RPD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-182; 2 test(s).",
+      "not_demonstrated": "Not built in this repository yet. Missing: a recorded decision; 2 test(s).",
       "evidence": [
         {
           "kind": "artifact",
