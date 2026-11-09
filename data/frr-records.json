@@ -6,8 +6,21 @@
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: the logic that acknowledges messages to a FedRAMP Security Inbox."
+      "status": "Impractical",
+      "impractical": {
+        "reasons": [
+          "no-outside-party"
+        ],
+        "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
+      },
+      "proposal": {
+        "by": "AI-drafted",
+        "on": "2026-11-07"
+      },
+      "approval": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09"
+      }
     },
     {
       "frr_id": "AFC-CSO-CRA",
@@ -695,7 +708,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "evidence": [
         {
@@ -990,7 +1004,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "proposal": {
         "by": "AI-drafted",
@@ -1009,7 +1024,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "evidence": [
         {
@@ -1052,7 +1068,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "evidence": [
         {
@@ -1081,7 +1098,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "evidence": [
         {
@@ -1129,7 +1147,8 @@
           "one-person",
           "no-budget"
         ],
-        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
+        "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement.",
+        "cost": "A paid engagement with an independent assessor. Not estimated: the price varies widely with scope and assessor."
       },
       "proposal": {
         "by": "AI-drafted",
@@ -1353,7 +1372,7 @@
           "ref": ".well-known/security-decision-record.json"
         }
       ],
-      "not_demonstrated": "The record is published in JSON for all 154 rules, but it does not yet hold everything this rule lists. Missing: per-rule entries in the human-readable record; the resulting risk to customers for each rule not followed; acceptance by a senior official of the reason for each Not Demonstrated rule. Independent verification and validation are recorded as none performed, at a cost of $0."
+      "not_demonstrated": "The record is published in JSON and human-readable form for all 154 rules. Missing: acceptance by a senior official of the reason for each Not Demonstrated rule. Independent verification and validation are recorded as none performed, at a cost of $0."
     },
     {
       "frr_id": "SDR-CSO-MTD",

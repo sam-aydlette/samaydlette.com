@@ -163,6 +163,13 @@ STAGE_SOURCE = {"plan": "/.well-known/ksi-signal.json", "deploy": "/.well-known/
                 "live": "/.well-known/ksi-signal-runtime.json", "nightly": "/.well-known/vdr-status.json"}
 
 
+NOT_FOLLOWED_RISK = ("Resulting risk to customers: this system has no agency customers or federal data, so no agency "
+                     "carries this risk. A real customer would lose the assurance this rule provides.")
+NOT_APPLICABLE_RISK = "Resulting risk to customers: none, because the rule's trigger cannot happen in this system."
+NO_INDEPENDENT_WORK = ("No independent verification or validation was performed (cost $0), so there are no assessor "
+                       "comments to respond to.")
+
+
 def _frr_item(rec, rule):
     st = rec["status"]
     if st == "Implemented":
@@ -176,8 +183,15 @@ def _frr_item(rec, rule):
                 + (f" Built anyway: {imp['built']}" if imp.get("built") else ""))
     else:
         text = f"Not Applicable: {rec['not_applicable']}"
+    if st != "Implemented":
+        text += f" {NOT_APPLICABLE_RISK if st == 'Not Applicable' else NOT_FOLLOWED_RISK}"
+    accepted = rec.get("approval")
     item = {"frrID": rec["frr_id"], "frrImplementation": [text],
-            "frrValidation": [f"{e['kind']}: {e['ref']}" for e in rec.get("evidence", [])],
+            "frrValidation": [f"{e['kind']}: {e['ref']}" for e in rec.get("evidence", [])]
+            + ([] if st == "Implemented" else
+               [f"Reason accepted by a senior official: {accepted['by']}, {accepted['on']}." if accepted
+                else "The reason has not been accepted by a senior official."]),
+            "frrAssessment": [NO_INDEPENDENT_WORK],
             "statusDetail": {"status": st, "force": rule["force"],
                              "approved": bool(rec.get("approval")) if st in ("Impractical", "Not Applicable") else None}}
     if st in FRR_FEDRAMP_STATUS:
@@ -420,6 +434,17 @@ def _status_lines(sdr):
             *([f"- Unverified or failed methods (findings): {len(ksis['findings'])}"] if ksis.get("findings") else [])]
 
 
+def _rule_lines(sdr):
+    def cell(parts):
+        return " ".join(parts).replace("|", "\\|").replace("\n", " ") or "None recorded."
+    out = ["## FedRAMP rules (SDR-CSO-FRR)", "", "| Rule | Status | Explanation | Verification and validation | Independent |",
+           "|---|---|---|---|---|"]
+    for i in sdr.get("fedRampRequirements", []):
+        out.append(f"| `{i['frrID']}` | {i['statusDetail']['status']} | {cell(i['frrImplementation'])} | "
+                   f"{cell(i['frrValidation'])} | {cell(i['frrAssessment'])} |")
+    return out
+
+
 def render_markdown(sdr):
     m = sdr["metadata"]
     cur = sdr["metrics"]["current"]
@@ -439,7 +464,8 @@ def render_markdown(sdr):
            "(builds toward one year)",
            "",
            *_status_lines(sdr), "",
-           "## Per-rule records (SDR-CSO-FRR / SDR-CSX-KSI)", "",
+           *_rule_lines(sdr), "",
+           "## Per-KSI records (SDR-CSX-KSI)", "",
            "Independent verification and validation are N/A for this self-attested system "
            "(no FedRAMP Recognized assessor). Verification and validation below are the "
            "provider-side evidence an assessor would consume.", "",

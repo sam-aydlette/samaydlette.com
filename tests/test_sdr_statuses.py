@@ -79,3 +79,23 @@ def test_the_summary_counts_every_rule_and_ksi(inputs):
     assert s["rules"]["rules"] == 154
     assert s["ksis"]["total"] == 46
     assert s["ksis"]["by_status"]["Implemented"] == 1
+
+
+def test_every_rule_not_followed_states_its_risk_and_acceptance(inputs):
+    items = {i["frrID"]: i for i in sdr.build_fedramp(*inputs)["fedRampRequirements"]}
+    for rec in inputs[0]["records"]:
+        item = items[rec["frr_id"]]
+        assert item["frrAssessment"] == [sdr.NO_INDEPENDENT_WORK]
+        accepted = [v for v in item["frrValidation"] if "senior official" in v]
+        if rec["status"] == "Implemented":
+            assert not accepted and "Resulting risk" not in item["frrImplementation"][0]
+        else:
+            assert "Resulting risk" in item["frrImplementation"][0]
+            assert accepted == ([f"Reason accepted by a senior official: {rec['approval']['by']}, {rec['approval']['on']}."]
+                                if rec.get("approval") else ["The reason has not been accepted by a senior official."])
+
+
+def test_the_readable_record_has_a_row_per_rule(inputs):
+    doc = sdr.build_fedramp(*inputs)
+    lines = sdr._rule_lines(doc)
+    assert sum(1 for x in lines if x.startswith("| `")) == 154
