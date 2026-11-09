@@ -237,6 +237,27 @@ def test_nightly_gates_exactly_what_it_publishes_and_redacts_the_beacon():
     assert beacon.index("_redact.py vdr-status.json") < beacon.index("cat vdr-status.json")
 
 
+@pytest.mark.parametrize("signs", [True, False])
+def test_the_beacon_publishes_whether_or_not_it_can_be_signed(tmp_path, signs):
+    text = (REPO / ".github" / "workflows" / "evidence-nightly.yml").read_text()
+    start = text.index("rm -f vdr-status.bundle", text.index("- name: Write status beacon"))
+    end = text.index("        fi\n", start) + len("        fi\n")
+    script = "\n".join(line[8:] if line.startswith(" " * 8) else line
+                       for line in ("        " + text[start:end]).splitlines())
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    cosign = 'touch vdr-status.bundle' if signs else 'exit 1'
+    for name, body in (("cosign", cosign), ("aws", 'echo "$4" >> uploads')):
+        (bin_dir / name).write_text(f"#!/bin/bash\n{body}\n")
+        (bin_dir / name).chmod(0o755)
+    (tmp_path / "vdr-status.bundle").write_text("left by an earlier step")
+    env = {"PATH": f"{bin_dir}:/usr/bin:/bin", "SITE_BUCKET": "b"}
+    subprocess.run(["bash", "-euo", "pipefail", "-c", script], cwd=tmp_path, env=env, check=True)
+    uploaded = (tmp_path / "uploads").read_text().split()
+    assert uploaded[0] == "s3://b/.well-known/vdr-status.json"
+    assert ("s3://b/.well-known/vdr-status.bundle" in uploaded) is signs
+
+
 def test_verify_published_runs_the_same_gate():
     text = (REPO / "scripts" / "verify-published.sh").read_text()
     assert "check-published-redaction.py\" --root \"$work/scan\"" in text

@@ -783,8 +783,10 @@ jobs:
     # The evidence SLA watchdog (infrastructure/watchdog.tf) reads this hourly
     # from the bucket and pages the operator when the last run failed, or when
     # no run has reported in 26 hours (a disabled or stuck cron). It records
-    # outcomes only: no finding ids, no scanner output. It is not evidence and
-    # is neither signed nor attested; nothing but the watchdog consumes it.
+    # outcomes only: no finding ids, no scanner output. The watchdog reads it, and
+    # the deploy counts a nightly KSI method only from a beacon whose signature
+    # verifies. A signing failure must not stop the beacon, so it leaves no new
+    # bundle: the old one no longer matches and the nightly earns no credit.
     #
     # Written under .well-known/vdr-*, inside the scope this workflow's role
     # already has, so the beacon needs no new permission. If credentials were
@@ -829,8 +831,15 @@ jobs:
         # failed AWS call's text can name the account (scripts/_redact.py).
         python3 ../scripts/_redact.py vdr-status.json
         cat vdr-status.json
+        rm -f vdr-status.bundle
+        cosign sign-blob --yes --new-bundle-format --bundle vdr-status.bundle vdr-status.json \
+          || { echo "::warning::could not sign the status beacon; nightly methods earn no credit"; rm -f vdr-status.bundle; }
         aws s3 cp vdr-status.json "s3://${SITE_BUCKET}/.well-known/vdr-status.json" \
           --content-type application/json --cache-control "no-cache"
+        if [ -f vdr-status.bundle ]; then
+          aws s3 cp vdr-status.bundle "s3://${SITE_BUCKET}/.well-known/vdr-status.bundle" \
+            --content-type application/json --cache-control "no-cache"
+        fi
 
   # ===========================================================================
   # JOB 3: ALERT — the job that has to work
