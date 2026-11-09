@@ -43,7 +43,7 @@ import _rules  # noqa: E402
 
 HISTORY_DAYS = 366  # SDR-CSX-KMT: all daily metric data up to the past year
 
-NA = "N/A — self-attested proof of concept; no FedRAMP Recognized independent assessment service engaged (IVV is not applicable to an unsponsored system)."
+NO_IVV = "None performed. Independent verification and validation are Impractical here: one-person, no-budget."
 
 
 def _control_map(irs):
@@ -93,8 +93,8 @@ def build_records(catalog, cmap):
                                  "re-validates the live configuration against the same compiled policy."),
                 "validation": ("Effectiveness reviewed continuously by the daily runtime revalidation "
                                "(drift detector) and annually by the structural security review."),
-                "independent_verification": NA,
-                "independent_validation": NA,
+                "independent_verification": NO_IVV,
+                "independent_validation": NO_IVV,
                 "assessor_comment_responses": [],
                 "artifacts": ["/.well-known/ksi-signal.json", "/.well-known/security-decision-record.json"],
             })
@@ -146,8 +146,8 @@ def build_rev5_controls(irs, catalog):
             "contributing_ksis": ksis,
             "verification": verification,
             "validation": validation,
-            "independent_verification": NA,
-            "independent_validation": NA,
+            "independent_verification": NO_IVV,
+            "independent_validation": NO_IVV,
             "assessor_comment_responses": [],
             "artifacts": [lk["href"] for lk in ir.get("links", [])],
         })

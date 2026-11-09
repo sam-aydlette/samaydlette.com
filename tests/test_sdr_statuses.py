@@ -96,6 +96,13 @@ def test_every_rule_not_followed_states_its_risk_and_acceptance(inputs):
                                 if signed else ["The reason has not been accepted by a senior official."])
 
 
+def test_the_control_record_gives_the_registers_reason_for_no_independent_work(inputs):
+    ivv = next(r for r in inputs[0]["records"] if r["frr_id"] == "IVV-CSO-FIA")
+    assert ivv["status"] == "Impractical"
+    assert ", ".join(ivv["impractical"]["reasons"]) in sdr.NO_IVV
+    assert "not applicable" not in sdr.NO_IVV.lower()
+
+
 def test_the_readable_record_has_a_row_per_rule(inputs):
     doc = sdr.build_fedramp(*inputs)
     lines = sdr._rule_lines(doc)
