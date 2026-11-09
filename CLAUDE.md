@@ -22,7 +22,7 @@ and policy-as-code pipelines for cloud service delivery, and communicate the
 resulting security state to stakeholders in a way that gives them assurance.
 The reader is an engineer or leader judging that work. It is a proof of
 concept, not a certification effort, and I do not engage FedRAMP or any
-agency about it (DEC-194).
+agency about it.
 
 Think of it as a software factory: one authorization boundary and one
 offering, holding the website, the Silk Reeling app and any app added later.
@@ -57,7 +57,7 @@ Ask of every rule and KSI, in order:
 Only Implemented counts as met. Impractical is always shown with its reason.
 For whatever was built, show with a test that a bad input changes the result,
 and state what a real organization would supply in place of the stand-in. A
-guard that refuses real agencies or FedRAMP (DEC-194) is policy, not logic.
+guard that refuses real agencies or FedRAMP is policy, not logic.
 
 Examples:
 - Log-read allowlist: buildable, so real evidence and no jokes.
