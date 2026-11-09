@@ -59,7 +59,18 @@
             }
           },
           "proposal": {"$ref": "#/$defs/signoff"},
-          "approval": {"$ref": "#/$defs/signoff"}
+          "approval": {"$ref": "#/$defs/signoff"},
+          "acceptance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["by", "on", "review_by"],
+            "description": "Not Demonstrated: a senior official accepts the gap until it is built. It does not make the rule met.",
+            "properties": {
+              "by": {"$ref": "#/$defs/text"},
+              "on": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+              "review_by": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"}
+            }
+          }
         }
       }
     }

@@ -2,7 +2,7 @@
   "$schema": "../infrastructure/schemas/frr-records.schema.json",
   "schema": "frr-records/2",
   "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Shape: scripts/_frr.py; claims: policies/compliance/claims.rego.",
-  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable records are AI-drafted proposals, each approved by the operator as its approval field records.",
+  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable records are AI-drafted proposals, each approved by the operator as its approval field records. Each Not Demonstrated record's reason is accepted by the senior official as a known gap queued to be built, as its acceptance field records; acceptance does not make a rule met.",
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
@@ -175,7 +175,12 @@
     {
       "frr_id": "CCM-OCR-AVL",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-OCR-FBM",
@@ -210,7 +215,12 @@
           "kind": "step",
           "ref": "deploy-with-opa.yml#Build Ongoing Certification Report (CCM)"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-OCR-NRD",
@@ -225,7 +235,12 @@
           "kind": "artifact",
           "ref": ".well-known/ongoing-certification-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-OCR-RPS",
@@ -237,12 +252,22 @@
           "ref": ".well-known/ongoing-certification-report.json"
         }
       ],
-      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101)."
+      "may_rationale": "Exercised. The system exists to demonstrate FedRAMP 20x in the open, and the OCR carries no federal customer or agency data, so it is published in full, and each report records the no-adverse-effect determination (DEC-101).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-OCR-SOR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-QTR-ACT",
@@ -313,7 +338,12 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-QTR-REG",
@@ -372,7 +402,12 @@
     {
       "frr_id": "CCM-QTR-SAR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-QTR-SCR",
@@ -384,7 +419,12 @@
           "ref": ".well-known/ongoing-certification-report.json"
         }
       ],
-      "may_rationale": "Exercised: content prepared for each Quarterly Review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101)."
+      "may_rationale": "Exercised: content prepared for each Quarterly Review is published with that quarter's OCR, for the same reason the OCR is public, after the same no-adverse-effect check (DEC-101).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CCM-QTR-SRR",
@@ -414,17 +454,32 @@
           "kind": "artifact",
           "ref": ".well-known/availability.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-CBF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); step evidence-nightly.yml#Rebuild the human-readable views (format parity); 7 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); step evidence-nightly.yml#Rebuild the human-readable views (format parity); 7 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-100; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-100; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-FRC",
@@ -447,7 +502,12 @@
     {
       "frr_id": "CDS-CSO-HAD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-IRP",
@@ -458,7 +518,12 @@
           "kind": "artifact",
           "ref": ".well-known/policy-index.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-PSM",
@@ -515,7 +580,12 @@
           "kind": "step",
           "ref": "deploy-with-opa.yml#Publication redaction gate (no AWS account ID)"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-RPS",
@@ -527,7 +597,12 @@
           "ref": ".well-known/policy-index.json"
         }
       ],
-      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is DEC-166, published with the sharing statement."
+      "may_rationale": "Exercised. The whole package is public: the system demonstrates 20x openly and holds no federal customer data. The determination that public sharing will not likely harm the offering is DEC-166, published with the sharing statement.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-SVC",
@@ -542,7 +617,12 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-CSO-UTC",
@@ -553,7 +633,12 @@
           "kind": "artifact",
           "ref": ".well-known/trust-center.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-TRC-AAI",
@@ -594,12 +679,22 @@
     {
       "frr_id": "CDS-TRC-HMR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 6 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 6 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-TRC-PAC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-TRC-SSM",
@@ -632,7 +727,12 @@
           "kind": "decision",
           "ref": "DEC-009"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CDS-UTC-AAD",
@@ -673,17 +773,32 @@
     {
       "frr_id": "CMU-CSO-CAT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CMU-CSO-CMD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CMU-CSO-UVM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CPO-CSO-MTD",
@@ -698,7 +813,12 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CPO-CSO-OSA",
@@ -743,7 +863,12 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "CPO-CSX-CPM",
@@ -754,7 +879,12 @@
           "kind": "artifact",
           "ref": ".well-known/certification-package-overview.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-APP-AFC",
@@ -848,12 +978,22 @@
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSO-JSN",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); 11 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); 11 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSO-MRA",
@@ -864,7 +1004,12 @@
           "kind": "step",
           "ref": "deploy-with-opa.yml#Reconciliation gate (fail closed on drift)"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSO-PKG",
@@ -887,22 +1032,42 @@
     {
       "frr_id": "FRC-CSO-POP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-107; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-107; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSX-MAS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSX-VVK",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not every applicable KSI has two automated methods that test its measures. Each deploy counts them and the Security Decision Record publishes the count per KSI."
+      "not_demonstrated": "Not every applicable KSI has two automated methods that test its measures. Each deploy counts them and the Security Decision Record publishes the count per KSI.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "FRC-CSX-VVR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/frr-evidence.json; step deploy-with-opa.yml#FedRAMP rule evidence passed (cited tests); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/frr-evidence.json; step deploy-with-opa.yml#FedRAMP rule evidence passed (cited tests); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IEC-CSO-AIR",
@@ -925,17 +1090,32 @@
     {
       "frr_id": "IEC-CSO-DPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IEC-CSO-EFI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IEC-CSO-EFR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IEC-CSO-FIR",
@@ -994,7 +1174,12 @@
     {
       "frr_id": "IVV-CSO-DUS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; decision DEC-167; 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; decision DEC-167; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IVV-CSO-FIA",
@@ -1123,7 +1308,12 @@
     {
       "frr_id": "IVV-CSO-STE",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; step deploy-with-opa.yml#Build the assessor guide; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; step deploy-with-opa.yml#Build the assessor guide; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "IVV-CSO-USR",
@@ -1168,7 +1358,12 @@
           "kind": "artifact",
           "ref": ".well-known/boundary-map.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "MAS-CSO-IIR",
@@ -1179,12 +1374,22 @@
           "kind": "artifact",
           "ref": ".well-known/ksi-signal.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "MAS-CSO-MDI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "MAS-CSO-SUP",
@@ -1203,7 +1408,12 @@
     {
       "frr_id": "MAS-CSO-TPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 5 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "MKT-CSO-MLR",
@@ -1234,134 +1444,259 @@
     {
       "frr_id": "SCG-CSO-AUP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-CSO-PUB",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-CSO-RSC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-CSO-SDF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-150; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-150; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-ENH-API",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-ENH-CMP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-151; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-151; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-ENH-EXP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-ENH-MRG",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCG-ENH-VRH",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-ADP-NTF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; step scn-deadlines.yml#Check SCN deadlines; 4 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; step scn-deadlines.yml#Check SCN deadlines; 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-ARI",
       "status": "Not Demonstrated",
       "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 1 test(s).",
-      "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
+      "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-EMG",
       "status": "Not Demonstrated",
       "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s).",
-      "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
+      "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-EVA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 5 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-HIS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-HRM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; artifact .well-known/significant-change-notifications.json; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; artifact .well-known/significant-change-notifications.json; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-INF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-MAR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; 5 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; 5 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-CSO-NOM",
       "status": "Not Demonstrated",
       "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.atom; 2 test(s).",
-      "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
+      "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-RTR-NNR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-NAF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-NAV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-NFP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-NIP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 4 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-TPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SCN-TRF-UPD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 1 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 1 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SDR-CSO-FRR",
-      "status": "Not Demonstrated",
+      "status": "Implemented",
       "evidence": [
         {
           "kind": "step",
@@ -1370,9 +1705,17 @@
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_statuses.py::test_every_rule_not_followed_states_its_risk_and_acceptance"
+        },
+        {
+          "kind": "test",
+          "ref": "tests/test_sdr_statuses.py::test_the_readable_record_has_a_row_per_rule"
         }
       ],
-      "not_demonstrated": "The record is published in JSON and human-readable form for all 154 rules. Missing: acceptance by a senior official of the reason for each Not Demonstrated rule. Independent verification and validation are recorded as none performed, at a cost of $0."
+      "implementation": "Every deploy builds the Security Decision Record in JSON and human-readable form with an entry for each applicable rule: how it is followed or the reason and resulting risk for not following it, its verification and validation or a senior official's acceptance of the reason, and any artifacts. Independent verification and validation are recorded as none performed, at a cost of $0, so there are no assessor comments to respond to."
     },
     {
       "frr_id": "SDR-CSO-MTD",
@@ -1387,7 +1730,12 @@
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SDR-CSX-KMT",
@@ -1398,7 +1746,12 @@
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "SDR-CSX-KSI",
@@ -1413,7 +1766,12 @@
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-ADT",
@@ -1441,7 +1799,12 @@
     {
       "frr_id": "VDR-CSO-AKE",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE); 4 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-DAC",
@@ -1460,7 +1823,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-DET",
@@ -1479,7 +1847,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-DFR",
@@ -1498,7 +1871,12 @@
           "kind": "artifact",
           "ref": ".well-known/ksi-signal.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-FAV",
@@ -1509,7 +1887,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-MSP",
@@ -1524,7 +1907,12 @@
           "kind": "test",
           "ref": "tests/test_zap_allowlist.py::test_allowlist_status_is_published_in_the_report"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-RES",
@@ -1547,7 +1935,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-CSO-SIR",
@@ -1584,7 +1977,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-detail-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-MVX",
@@ -1599,12 +1997,22 @@
           "kind": "artifact",
           "ref": ".well-known/ksi-signal-runtime.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-NMV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-non-machine-vv.json; step deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV); step evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV); 4 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-non-machine-vv.json; step deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV); step evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV); 4 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-PCD",
@@ -1623,7 +2031,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-PDD",
@@ -1638,7 +2051,12 @@
           "kind": "artifact",
           "ref": ".well-known/ksi-signal-runtime.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-PSD",
@@ -1657,7 +2075,12 @@
           "kind": "artifact",
           "ref": ".well-known/ksi-signal-runtime.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VDR-TFR-PVR",
@@ -1714,7 +2137,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-EVA-EFA",
@@ -1741,7 +2169,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-detail-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-EVA-EFP",
@@ -1787,7 +2220,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-EVA-ELX",
@@ -1810,7 +2248,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-EVA-EPA",
@@ -1837,7 +2280,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-detail-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-EVA-GRV",
@@ -1856,7 +2304,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-RPT-AVI",
@@ -1883,12 +2336,22 @@
           "kind": "decision",
           "ref": "DEC-010"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-RPT-HLO",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 2 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 2 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-RPT-NID",
@@ -1935,7 +2398,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-detail-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-RPT-RPD",
@@ -1951,7 +2419,12 @@
           "ref": ".well-known/vdr-detail-report.json"
         }
       ],
-      "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation."
+      "may_rationale": "Exercised. Vulnerability reports are public to demonstrate the method; detail that could enable exploitation is withheld by a recorded disclosure policy until remediation.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-RPT-VDT",
@@ -1974,7 +2447,12 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-detail-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-EVU",
@@ -1993,12 +2471,22 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-report.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-IRI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-MAV",
@@ -2025,12 +2513,22 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-accepted-vulnerabilities.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-MHR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 3 test(s)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 3 test(s).",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-MRH",
@@ -2053,13 +2551,23 @@
           "kind": "artifact",
           "ref": ".well-known/vdr-history.json"
         }
-      ]
+      ],
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     },
     {
       "frr_id": "VER-TFR-NRI",
       "status": "Not Demonstrated",
       "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
-      "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
+      "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale.",
+      "acceptance": {
+        "by": "Sam Aydlette",
+        "on": "2026-11-09",
+        "review_by": "2027-11-09"
+      }
     }
   ]
 }

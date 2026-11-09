@@ -87,12 +87,13 @@ def test_every_rule_not_followed_states_its_risk_and_acceptance(inputs):
         item = items[rec["frr_id"]]
         assert item["frrAssessment"] == [sdr.NO_INDEPENDENT_WORK]
         accepted = [v for v in item["frrValidation"] if "senior official" in v]
+        signed = rec.get("approval") or rec.get("acceptance")
         if rec["status"] == "Implemented":
             assert not accepted and "Resulting risk" not in item["frrImplementation"][0]
         else:
             assert "Resulting risk" in item["frrImplementation"][0]
-            assert accepted == ([f"Reason accepted by a senior official: {rec['approval']['by']}, {rec['approval']['on']}."]
-                                if rec.get("approval") else ["The reason has not been accepted by a senior official."])
+            assert accepted == ([f"Reason accepted by a senior official: {signed['by']}, {signed['on']}."]
+                                if signed else ["The reason has not been accepted by a senior official."])
 
 
 def test_the_readable_record_has_a_row_per_rule(inputs):

@@ -5,7 +5,8 @@ Class C), with one of four statuses (CLAUDE.md, proof-of-concept latitude):
 
   Implemented       a real mechanism ran on real inputs, and evidence exists;
   Not Demonstrated  buildable and not built yet; `not_demonstrated` says what
-                    is missing;
+                    is missing; `acceptance` records a senior official's
+                    acceptance of that gap, which does not make the rule met;
   Impractical       one engineer with cheap AWS cannot meet it; `impractical`
                     names the reasons (one-person, no-budget with its cost,
                     no-outside-party), why, and what was built anyway;
@@ -53,12 +54,13 @@ STATUSES = ("Implemented", "Not Demonstrated", "Impractical", "Not Applicable")
 OPERATOR = "Sam Aydlette"
 EVIDENCE_KINDS = ("test", "step", "artifact", "decision")
 SIGNOFF_KEYS = {"by", "on"}
+ACCEPTANCE_KEYS = {"by", "on", "review_by"}
 IMPRACTICAL_KEYS = {"reasons", "why", "cost", "built"}
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 TOP_KEYS = {"$schema", "$comment", "schema", "basis", "records"}
 RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "may_rationale", "not_applicable",
-               "not_demonstrated", "impractical", "proposal", "approval"}
+               "not_demonstrated", "impractical", "proposal", "approval", "acceptance"}
 # The field each status explains itself with; a field for another status is refused.
 STATUS_FIELD = {"Implemented": "implementation", "Not Demonstrated": "not_demonstrated",
                 "Impractical": "impractical", "Not Applicable": "not_applicable"}
@@ -231,6 +233,11 @@ def validate(doc, applicable, where="data/frr-records.json"):
         for k in ("proposal", "approval"):
             if k in rec:
                 _signoff(rec[k], f"{rid} {k}")
+        if "acceptance" in rec:
+            acc = rec["acceptance"]
+            if not isinstance(acc, dict) or set(acc) != ACCEPTANCE_KEYS or not DATE_RE.match(str(acc.get("review_by"))):
+                _fail(f"{rid} acceptance must be {{by, on, review_by}}")
+            _signoff({"by": acc["by"], "on": acc["on"]}, f"{rid} acceptance")
     missing = sorted(set(applicable) - seen)
     if missing:
         _fail(f"no record for {len(missing)} applicable rule(s): {', '.join(missing)}")

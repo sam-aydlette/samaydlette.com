@@ -185,7 +185,7 @@ def _frr_item(rec, rule):
         text = f"Not Applicable: {rec['not_applicable']}"
     if st != "Implemented":
         text += f" {NOT_APPLICABLE_RISK if st == 'Not Applicable' else NOT_FOLLOWED_RISK}"
-    accepted = rec.get("approval")
+    accepted = rec.get("approval") or rec.get("acceptance")
     item = {"frrID": rec["frr_id"], "frrImplementation": [text],
             "frrValidation": [f"{e['kind']}: {e['ref']}" for e in rec.get("evidence", [])]
             + ([] if st == "Implemented" else

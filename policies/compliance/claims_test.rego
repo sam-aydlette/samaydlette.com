@@ -114,3 +114,17 @@ test_approved_by_someone_else if {
 test_approval_on_an_implemented_record if {
 	"an approval on a record whose status is Implemented" in denies({"frr_id": "A", "status": "Implemented", "evidence": [ok_ev], "approval": signoff})
 }
+
+acc := {"by": op, "on": "2026-11-09", "review_by": "2027-11-09"}
+
+test_an_accepted_gap_is_supported if {
+	count(denies({"frr_id": "A", "status": "Not Demonstrated", "not_demonstrated": "x", "acceptance": acc})) == 0
+}
+
+test_only_the_operator_accepts_a_gap if {
+	"accepted by \"An Agent\": only the operator accepts a gap" in denies({"frr_id": "A", "status": "Not Demonstrated", "not_demonstrated": "x", "acceptance": object.union(acc, {"by": "An Agent"})})
+}
+
+test_acceptance_is_for_not_demonstrated_only if {
+	"an acceptance on a record whose status is Implemented" in denies({"frr_id": "A", "status": "Implemented", "evidence": [ok_ev], "acceptance": acc})
+}

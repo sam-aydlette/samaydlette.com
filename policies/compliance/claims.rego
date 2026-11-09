@@ -158,3 +158,16 @@ deny contains {"frr_id": r.frr_id, "why": sprintf("an approval on a record whose
 	r.approval
 	not r.status in needs_approval
 }
+
+# --- accepting a known gap ----------------------------------------------------
+
+deny contains {"frr_id": r.frr_id, "why": sprintf("accepted by %q: only the operator accepts a gap", [r.acceptance.by])} if {
+	some r in input.records
+	r.acceptance.by != input.operator
+}
+
+deny contains {"frr_id": r.frr_id, "why": sprintf("an acceptance on a record whose status is %s", [r.status])} if {
+	some r in input.records
+	r.acceptance
+	r.status != "Not Demonstrated"
+}

@@ -6,7 +6,7 @@
 | **SCN ID** | SCN-2026-008 |
 | **System** | samaydlette.com (FedRAMP 20x Class C proof of concept; not an authorized system) |
 | **SCN type** | **Adaptive** (`SCN-ADP`) |
-| **Status** | **Proposed; awaiting the operator's approval and the gated deploy.** The deploy's claims gate fails until the operator approves or rejects each Impractical and Not Applicable proposal. |
+| **Status** | **Awaiting the gated deploy.** The operator recorded a decision on every Impractical and Not Applicable proposal on 2026-11-09. |
 | **Date initiated** | 2026-11-09 |
 | **Approver** | Sam Aydlette — System Owner / Authorizing Operator |
 | **Authoritative source** | FedRAMP Consolidated Rules 2026.11.02.01 (`infrastructure/schemas/fedramp-rules/`) |
@@ -61,8 +61,7 @@ It is not Transformative:
 
 ### Verification plan (post-implementation)
 
-1. The deploy passes the claims gate after the operator's approvals are
-   recorded.
+1. The deploy passes the claims gate.
 2. The published SDR carries `fedRampRequirements` (154) and
    `keySecurityIndicators` (46), and its status counts match the trust center.
 3. `security.txt` serves the LinkedIn profile as its contact.
