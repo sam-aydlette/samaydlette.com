@@ -76,3 +76,13 @@ def test_security_txt_is_published_with_the_content_type_rfc9116_requires():
     body = sync_step_body()
     assert ".well-known/security.txt" in body
     assert "text/plain" in body, "RFC 9116 requires security.txt to be served as text/plain"
+
+
+def test_website_files_publish_only_after_every_gate():
+    """A failed gate must leave the pages and their evidence from the same deploy."""
+    wf = yaml.safe_load(workflow_text())
+    steps = wf["jobs"]["deploy"]["steps"]
+    sync = next(i for i, st in enumerate(steps) if "aws s3 sync website/" in (st.get("run") or ""))
+    gates = [i for i, st in enumerate(steps)
+             if "gate" in (st.get("name") or "").lower() or "rule claims" in (st.get("name") or "").lower()]
+    assert gates and max(gates) < sync
