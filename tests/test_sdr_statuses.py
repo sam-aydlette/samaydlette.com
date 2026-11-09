@@ -1,5 +1,6 @@
 """The SDR's FedRAMP-shaped statuses (scripts/build-sdr.py: build_fedramp, status_summary)."""
 
+import copy
 import importlib.util
 import sys
 from pathlib import Path
@@ -113,6 +114,22 @@ def test_the_package_overview_gives_the_registers_reason_for_no_independent_asse
     assert icp["status"] == "Impractical"
     assert ", ".join(icp["impractical"]["reasons"]) in cpo.NO_INDEPENDENT_ASSESSMENT
     assert "n/a" not in cpo.NO_INDEPENDENT_ASSESSMENT.lower()
+
+
+def test_a_downgraded_status_is_a_regression(inputs):
+    doc = sdr.build_fedramp(*inputs)
+    previous = {"metadata": {"last_updated": "2026-11-08"}, **doc}
+    assert sdr.compare_statuses(previous, doc) == {"compared": True, "compared_with": "2026-11-08", "items": []}
+    worse = copy.deepcopy(doc)
+    next(i for i in worse["keySecurityIndicators"] if i["ksiId"] == "KSI-RPL-ABO")["statusDetail"]["status"] = "Not Demonstrated"
+    assert sdr.compare_statuses(previous, worse)["items"] == [
+        {"kind": "ksi", "id": "KSI-RPL-ABO", "from": "Implemented", "to": "Not Demonstrated"}]
+
+
+@pytest.mark.parametrize("previous", [None, {}, [], {"fedRampRequirements": []}])
+def test_no_previous_statuses_is_reported_not_read_as_clean(inputs, previous):
+    out = sdr.compare_statuses(previous, sdr.build_fedramp(*inputs))
+    assert out["compared"] is False and out["why"] and out["items"] == []
 
 
 def test_the_readable_record_has_a_row_per_rule(inputs):

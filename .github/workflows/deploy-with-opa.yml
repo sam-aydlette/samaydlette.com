@@ -1523,10 +1523,20 @@ jobs:
         curl -sfL -o previous-sdr.json "https://samaydlette.com/.well-known/security-decision-record.json" \
           || echo '{}' > previous-sdr.json
         # The nightly beacon: a nightly-stage KSI method counts only while it is
-        # inside its freshness window. The runtime signal fetched above counts
-        # only when its signature verifies. Either missing earns no credit.
-        curl -fsS --max-time 20 -o vdr-status-nightly.json "https://samaydlette.com/.well-known/vdr-status.json" \
-          || { rm -f vdr-status-nightly.json; echo "note: no nightly beacon; nightly methods earn no credit"; }
+        # inside its freshness window and its signature verifies against the
+        # nightly workflow. The runtime signal fetched above counts only when its
+        # signature verifies. Anything else earns no credit.
+        rm -f vdr-status-nightly.json vdr-status-nightly.bundle
+        if curl -fsS --max-time 20 -o vdr-status-nightly.json "https://samaydlette.com/.well-known/vdr-status.json" \
+          && curl -fsS --max-time 20 -o vdr-status-nightly.bundle "https://samaydlette.com/.well-known/vdr-status.bundle" \
+          && cosign verify-blob --bundle vdr-status-nightly.bundle \
+            --certificate-identity 'https://github.com/sam-aydlette/samaydlette.com/.github/workflows/evidence-nightly.yml@refs/heads/main' \
+            --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' vdr-status-nightly.json; then
+          echo "Nightly beacon signature verified"
+        else
+          rm -f vdr-status-nightly.json
+          echo "note: no verified nightly beacon; nightly methods earn no credit"
+        fi
         python3 ../scripts/build-sdr.py \
           --catalog schemas/ksi-catalog.json --ksi-signal ksi-signal.json \
           --vdr vdr-report.json --profile ../data/system-profile.json --previous-sdr previous-sdr.json \
@@ -2080,6 +2090,39 @@ jobs:
 
     # The bootstrap state snapshot (read once by "Read the trust-root state")
     # can hold secret values. Delete it whatever happened above.
+    # Design principle 9: each regression goes to an owner to fix or explicitly
+    # accept. It never blocks the deploy that reports it. One issue, reused.
+    - name: Raise an issue for status regressions
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      with:
+        script: |
+          const fs = require('fs');
+          const sdr = JSON.parse(fs.readFileSync('infrastructure/security-decision-record.json', 'utf8'));
+          const items = (sdr.status_summary.regressions || {}).items || [];
+          if (!items.length) { core.notice('No status regressions'); return; }
+          const TITLE = 'Status regressions to fix or accept';
+          const body = [
+            `Commit ${context.sha} moved ${items.length} item(s) away from Implemented:`,
+            '',
+            ...items.map((x) => `- \`${x.id}\` (${x.kind}): ${x.from} to ${x.to}`),
+            '',
+            'Fix each one, or record its acceptance, then close this issue.',
+          ].join('\n');
+          const open = await github.paginate(github.rest.issues.listForRepo, {
+            owner: context.repo.owner, repo: context.repo.repo, state: 'open', per_page: 100,
+          });
+          const match = open.find((i) => i.title === TITLE && !i.pull_request);
+          if (match) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number: match.number, body,
+            });
+          } else {
+            await github.rest.issues.create({
+              owner: context.repo.owner, repo: context.repo.repo, title: TITLE, body,
+              assignees: [context.repo.owner],
+            });
+          }
+
     - name: Remove the trust-root state snapshot
       if: always()
       run: rm -f infrastructure/tfstate-bootstrap.json

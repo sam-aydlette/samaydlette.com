@@ -783,7 +783,8 @@ def build_posture(inp: dict[str, Any]) -> dict[str, Any]:
         sys.exit("build-trust-center: the SDR carries no status_summary (fail-closed)")
     if sdr.get("ksi_signal_id") != inp["signal"].get("signal_id"):
         sys.exit("build-trust-center: the SDR is bound to another inventory (fail-closed)")
-    return {"rules": summary["rules"], "ksis": summary["ksis"], "frameworks": inp.get("figures") or {}}
+    return {"rules": summary["rules"], "ksis": summary["ksis"], "regressions": summary.get("regressions"),
+            "frameworks": inp.get("figures") or {}}
 
 
 def build(inp: dict[str, Any], commit: str, now: datetime) -> dict[str, Any]:

@@ -414,6 +414,7 @@ function renderPosture(doc) {
     const rb = r.by_status || {};
     const k = doc.posture?.ksis || {};
     const kb = k.by_status || {};
+    const reg = doc.posture?.regressions || {};
     host.append(
         el('p', {}, el('strong', { text: `${rb.Implemented || 0} of ${r.rules || 0}` }),
             ' applicable FedRAMP 20x Class C rules are Implemented',
@@ -425,6 +426,10 @@ function renderPosture(doc) {
         ...((k.findings || []).length ? [
             el('p', {}, el('strong', { text: String(k.findings.length) }), ' checks could not be verified or did not pass. These are findings, not passes.'),
             el('ul', {}, ...k.findings.map((f) => el('li', { text: `${f.method} at ${f.stage}: ${f.why}` })))] : []),
+        ...(reg.compared === false ? [el('p', { text: `The statuses were not compared with the last deploy: ${reg.why}.` })] : []),
+        ...((reg.items || []).length ? [
+            el('p', {}, el('strong', { text: String(reg.items.length) }), ' statuses got worse since the last deploy.'),
+            el('ul', {}, ...reg.items.map((x) => el('li', { text: `${x.id} (${x.kind}): ${x.from} to ${x.to}` })))] : []),
         el('p', { class: 'tc-check-meta', text: 'Only Implemented counts as met. Not Demonstrated is buildable and not built yet. Impractical means one engineer on a small AWS bill cannot meet it (one-person, no-budget or no-outside-party). Not Applicable means the rule\'s trigger cannot happen here. Each rule and KSI, with its evidence, is in the Security Decision Record.' }));
     const f = doc.posture?.frameworks || {};
     const rows = FRAMEWORKS.filter(([key]) => f[key]);

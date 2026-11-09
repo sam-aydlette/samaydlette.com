@@ -93,6 +93,7 @@ for f in ksi-signal.json ksi-signal.bundle \
          security-decision-record.json.intoto.jsonl \
          certification-package-overview.json certification-package-overview.bundle \
          vdr-report.json vdr-report.json.intoto.jsonl \
+         vdr-status.json vdr-status.bundle \
          vdr-detail-report.json vdr-detail-report.bundle \
          vdr-accepted-vulnerabilities.json vdr-accepted-vulnerabilities.bundle \
          vdr-history.json vdr-history.bundle \
@@ -148,6 +149,13 @@ if curl -fsS --max-time 30 -o "$work/boundary-corroboration.json" "$BASE/boundar
   fi
 else
   echo "  SKIP  boundary-corroboration.json (not published)"
+fi
+
+# The nightly beacon earns KSI credit, so only the nightly's identity may sign it.
+if verify_blob_any_identity "$work/vdr-status.bundle" "$work/vdr-status.json" "$NIGHTLY_IDENTITY"; then
+  ok "vdr-status.json signed by the pinned nightly workflow on main"
+else
+  bad "vdr-status.json signature"
 fi
 
 # The VDR is refreshed nightly, so either publisher identity is accepted here.
