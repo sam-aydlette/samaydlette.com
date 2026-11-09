@@ -33,7 +33,6 @@
           "frr_id": {"type": "string", "pattern": "^[A-Z]{3}-[A-Z]{3}-[A-Z]{3}$"},
           "status": {"enum": ["Implemented", "Not Demonstrated", "Impractical", "Not Applicable"]},
           "implementation": {"$ref": "#/$defs/text", "description": "Implemented: what runs, on what, and where its evidence is."},
-          "planned": {"$ref": "#/$defs/text", "description": "Not Demonstrated or Impractical: what Implemented would look like (the build target)."},
           "not_demonstrated": {"$ref": "#/$defs/text", "description": "What is missing."},
           "not_applicable": {"$ref": "#/$defs/text", "description": "The trigger that cannot happen in this system."},
           "impractical": {

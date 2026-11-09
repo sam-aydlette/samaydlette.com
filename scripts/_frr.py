@@ -5,7 +5,7 @@ Class C), with one of four statuses (CLAUDE.md, proof-of-concept latitude):
 
   Implemented       a real mechanism ran on real inputs, and evidence exists;
   Not Demonstrated  buildable and not built yet; `not_demonstrated` says what
-                    is missing and `planned` what Implemented will look like;
+                    is missing;
   Impractical       one engineer with cheap AWS cannot meet it; `impractical`
                     names the reasons (one-person, no-budget with its cost,
                     no-outside-party), why, and what was built anyway;
@@ -57,7 +57,7 @@ IMPRACTICAL_KEYS = {"reasons", "why", "cost", "built"}
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 TOP_KEYS = {"$schema", "$comment", "schema", "basis", "records"}
-RECORD_KEYS = {"frr_id", "status", "implementation", "planned", "evidence", "may_rationale", "not_applicable",
+RECORD_KEYS = {"frr_id", "status", "implementation", "evidence", "may_rationale", "not_applicable",
                "not_demonstrated", "impractical", "proposal", "approval"}
 # The field each status explains itself with; a field for another status is refused.
 STATUS_FIELD = {"Implemented": "implementation", "Not Demonstrated": "not_demonstrated",
@@ -213,7 +213,6 @@ def validate(doc, applicable, where="data/frr-records.json"):
                 _fail(f"{rid}: {field} is for {st} records only")
         if status == "Implemented":
             _text(rec, "implementation", rid)
-        _text(rec, "planned", rid, required=False)
         for k in ("not_demonstrated", "not_applicable"):
             _text(rec, k, rid, required=False)
         if "impractical" in rec:

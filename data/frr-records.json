@@ -2,7 +2,7 @@
   "$schema": "../infrastructure/schemas/frr-records.schema.json",
   "schema": "frr-records/2",
   "$comment": "One record per FedRAMP rule applicable to 20x Program Class C. Shape: scripts/_frr.py; claims: policies/compliance/claims.rego.",
-  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated with its mechanism kept as planned. Impractical and Not Applicable are AI-drafted proposals awaiting the operator's approval.",
+  "basis": "Recomputed 2026-11-07 against this repository from the rule-by-rule assessment of 2026-11-05/06. A record is Implemented only when every piece of evidence it cites resolves here; otherwise it is Not Demonstrated and says what is missing. Impractical and Not Applicable are AI-drafted proposals awaiting the operator's approval.",
   "records": [
     {
       "frr_id": "AFC-CSO-ACK",
@@ -13,7 +13,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The acknowledgement logic (scripts/_fsi.py, build_ack and receive) acknowledges each FedRAMP message once, even when it is redelivered, with headers inbound content cannot inject, and never to auto-replies, bulk mail, bounces, mail without a From address, or mail failing SPF/DKIM/DMARC (FedRAMP's own mail passes them, AFC-FRP-VRE; this keeps a forged sender from using the inbox as a reflector; such mail is still registered and paged). In the simulation each acknowledgement is built and checked for header safety, then filed nowhere. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -28,7 +27,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Emergency and Emergency Test messages (subject designator, AFC-FRP-CDS) get a register item with a deadline: by default 3:00 p.m. ET on the 2nd business day (AFC-FRP-ERT, Class C; the receipt day counts and holidays are not skipped, both erring earlier), replaced at triage by the timeframe the message states; the register reports an item past its deadline until it is closed (scripts/_fsi.py, deadlines, triage, close, overdue). In the simulation the Emergency Test received on a Friday is due 3:00 p.m. ET the following Monday, is reported once that passes, and stops being reported when closed. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -43,7 +41,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Every FedRAMP message, Emergency-designated ones included, produces a page to the senior security official (the accountable official named in the CPO, the operator) naming the designation and the sender's domain (scripts/_fsi.py, receive and page_subject); an Emergency from an address other than FedRAMP's designated Emergency senders (AFC-FRP-UFS) is flagged, not demoted. In the simulation the page is recorded, not delivered: the operator's phone stays blissfully quiet. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -58,7 +55,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Important-designated messages open a register item that cannot be triaged without recording the timeframe the message states; the register reports it while untriaged after 24 hours, triaged without a timeframe, or past that timeframe and not closed (scripts/_fsi.py, triage and overdue). The simulation checks each of these. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -73,7 +69,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The published FedRAMP Security Inbox contact (data/cds/offering.json, fedramp_security_inbox.contact, published in the CPO's certification_data) says, plainly, that the inbox does not exist and to hit the operator up on LinkedIn. The logic a real inbox would run receives, classifies, registers, acknowledges and pages. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -88,7 +83,6 @@
         ],
         "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and the published contact points to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). The contact has one source (data/cds/offering.json, fedramp_security_inbox.contact) with an append-only history; each change is a history entry dated by since. scripts/check-fsi-notice.py, in the unit-test job on every pull request and push, fails a changed contact without a new dated history entry, a hand-recorded notice, or a rewritten history against the merge base. On every deploy, scripts/submit-package.py files a change notice with the simulated FedRAMP for every change not yet filed (an entry in changeNotices of the signed /.well-known/package-submission-log.json, with the simulated FedRAMP's receipt; nothing is sent), carries earlier notices over unchanged, and fails the deploy unless every notice is filed within one business day of the deploy that first published the changed contact. A change takes effect when it is published, so the clock runs from that deploy (recorded in the log's inboxContact and on each notice as publishedOn and publishedIn): the deploy that first publishes a new contact files its notice the same day, a change merged but not yet deployed cannot go stale, and a failed deploy, which publishes nothing, cannot make the next one late. A notice filed later than one business day after the publishing deploy still fails. The contact was established 2026-11-05 with no earlier contact to change from, so no notice has been filed yet. Procedure: docs/runbooks/fedramp-security-inbox.md.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -103,7 +97,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Nothing in the inbox logic asks anything of FedRAMP or drops FedRAMP mail: every FedRAMP message is registered and paged whatever its verdicts (the simulation fails the deploy otherwise), a failed acknowledgement is recorded, reported overdue and sent once on retry, and overdue items are reported by the register (scripts/_fsi.py, receive and overdue). Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -118,7 +111,6 @@
         ],
         "why": "The rule needs FedRAMP sending and receiving security mail, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "SIMULATED FOR THIS PROOF OF CONCEPT: there is no FedRAMP Security Inbox, no mail is received or sent, and FedRAMP is directed to the operator on LinkedIn (https://www.linkedin.com/in/sa2/). Classification (scripts/_fsi.py, classify): a message whose From address or envelope sender is exactly @fedramp.gov or @gsa.gov is FedRAMP, whatever its spam verdict or SPF/DKIM/DMARC result; look-alike domains and display-name spoofs are not; failed authentication is recorded so the operator can confirm the sender, never used to filter. The simulation includes a forged @gsa.gov message (still FedRAMP), a FedRAMP envelope sender behind an unreadable From (still FedRAMP), a look-alike domain and a display-name spoof (neither is FedRAMP). Automated validation of the configuration is the deploy-time simulation itself. Every deploy runs this logic (scripts/_fsi.py) over committed synthetic messages (data/fsi-simulation/messages.json) in the step 'FedRAMP Security Inbox simulation', fails the deploy if any outcome differs from the expected one, and publishes the signed, dated result, labelled as a simulation, as /.well-known/fedramp-inbox-simulation.json.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -133,7 +125,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "Each OCR carries an anonymized, desensitized summary of the questions and answers on the previous issued report (providerExtensions.feedback.summaryOfPreviousReport), built by the same function (scripts/_quarterly_review.py, qa_summary) that writes it into that report's Quarterly Review, once the review date has passed; before then it says the summary appears once the review is held. Submissions carry no party, name or agency into the summary, and the summary passes the OCR's sensitivity screen.",
       "evidence": [
         {
           "kind": "artifact",
@@ -148,8 +139,7 @@
     {
       "frr_id": "CCM-OCR-AVL",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "On each calendar issue date the maintainer issues the OCR covering the period since the previous issue: frozen ocr-issue-<date>.json and .md, signed, never rewritten, listed with its sha256 in /.well-known/ocr-issues.json. The rolling OCR between issues carries all eight summaries, the incidents from the incident register (or an attestation of none), and the review schedule."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
     },
     {
       "frr_id": "CCM-OCR-FBM",
@@ -160,7 +150,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "Each OCR names its asynchronous feedback intake (providerExtensions.feedback.channel): a submission names the report's issue date and a question, is validated (it must be about that report and from a party marked simulated), screened, and answered by rule, and the Q&A is published with that report's Quarterly Review. No form or channel is offered to real parties (DEC-194).",
       "evidence": [
         {
           "kind": "artifact",
@@ -175,8 +164,7 @@
     {
       "frr_id": "CCM-OCR-LSI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "Before the OCR is written, every string in it passes a sensitivity screen (account IDs, email addresses outside the system's and FedRAMP's domains, IP addresses, AWS keys, tokens and private keys, @handles); a hit fails the build. The publication redaction gate checks it again before publishing. The public-release determination is DEC-101.",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -187,8 +175,7 @@
     {
       "frr_id": "CCM-OCR-NRD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The next OCR date comes from the fixed CCM calendar (infrastructure/schemas/ccm-calendar.json), stays the same between issues, and is published in the OCR, the CPO (serviceProperties.nextOngoingCertificationReportDate) and the issue index.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -203,8 +190,7 @@
     {
       "frr_id": "CCM-OCR-RPS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Exercised: each OCR is published in full and records the public-release determination (providerExtensions.publicRelease, DEC-101) after passing the sensitivity screen.",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101; 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -216,8 +202,7 @@
     {
       "frr_id": "CCM-OCR-SOR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The OCR is issued on a regular 3-month cycle of fixed dates set in the CCM calendar, each a business day placed away from the beginning, middle and end of its quarter (late in the second month); the calendar is validated on every build and must keep two dates ahead."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 2 test(s)."
     },
     {
       "frr_id": "CCM-QTR-ACT",
@@ -228,7 +213,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "Each Quarterly Review's agenda (scripts/_quarterly_review.py, agenda) is filled from the issued report: its changes, transformative changes and incidents, plus standing agency-relevant items (KSI results and trend, accepted vulnerabilities and trend, the next quarter's planned changes) and the intake's questions. The OCR publishes the standing agenda and the review publishes the filled one.",
       "evidence": [
         {
           "kind": "artifact",
@@ -249,7 +233,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "A Quarterly Review is held 5 business days after each OCR issue: package-maintenance.yml, which runs daily and after every deploy, holds it on its date with simulated attendees (scripts/hold-quarterly-review.py), reading the frozen report whose sha256 the verified issue index records, and publishes /.well-known/quarterly-review-<date>.json and .md (signed, never rewritten) and the index quarterly-reviews.json. The maintainer (called by every deploy) and the evidence nightly fail when a review date has passed with no review published (scripts/check-quarterly-review.py). The schedule is the published calendar file and appears in the OCR and CPO.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -264,7 +247,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "Everything a Quarterly Review shows is generated: the agenda from the issued report (which passed the OCR's sensitivity screen), the scripted transcript and the screened Q&A. The whole review document passes the same sensitivity screen (scripts/_sensitivity.py) before it is written, and the build fails on a hit.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -273,8 +255,7 @@
     {
       "frr_id": "CCM-QTR-NRD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "The next Quarterly Review date is the latest issue's review date from the CCM calendar (issue + 5 business days, holiday-aware), stable between issues, published in the OCR, the CPO and the calendar file.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -291,7 +272,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "/.well-known/quarterly-review.ics (RFC 5545, one event per review) is built from the CCM calendar on every deploy and maintenance run; each event carries the meeting information and links the report and the review as published once held. The simulated attendees take their meeting information from it; it invites no real party and says so (DEC-194).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -306,7 +286,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "The attendee policy is enforced in code (scripts/_quarterly_review.py, check_roster): simulated agencies, the simulated FedRAMP and the simulated assessor attend by default; any other attendee needs its specific relevance recorded, and every attendee must be marked simulated, or the review is not held.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -321,7 +300,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "Each Quarterly Review is transcribed (a scripted transcript) and supplied to every attendee, all simulated, as a log entry: the review records the sha256 of the full transcript and the attendees it is supplied to. Nothing is sent to anyone (DEC-194).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -330,14 +308,12 @@
     {
       "frr_id": "CCM-QTR-SAR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Each review is scheduled 5 business days after its OCR issue, counting only weekdays that are not federal holidays; the calendar rejects an offset outside 3 to 10 business days."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/quarterly-review.ics; 2 test(s)."
     },
     {
       "frr_id": "CCM-QTR-SCR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 1 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "Exercised: the content prepared for each review (its agenda and the report it reviews) is published with the OCR after the no-adverse-effect determination (DEC-101).",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-101.",
       "evidence": [
         {
           "kind": "artifact",
@@ -355,7 +331,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "Exercised: each review's transcript is published with every agency comment, question and name removed (scripts/_quarterly_review.py, public_transcript and public_roster), after the sensitivity screen.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -365,8 +340,7 @@
     {
       "frr_id": "CDS-CSO-AVR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 6 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "An availability monitor on GitHub Actions, independent of AWS (.github/workflows/availability-probe.yml, scripts/availability-probe.py), probes the website, the trust center, the certification data under /.well-known/, the Silk Reeling application and its Cognito sign-in every 15 minutes, keeps 35 days of history, and derives availability incidents (two or more consecutive failed probes of a service: start, end, failing check). It publishes JSON and a human-readable page to the repository's availability-status branch, served by GitHub, so the status stays readable when the offering is down; an ongoing incident fails the run, which notifies the operator. The deploy fails when that feed is missing or more than 2 hours old, and republishes it signed as /.well-known/availability.json with a Markdown twin (scripts/build-availability.py), which no longer records deploys as availability. History begins at the monitor's first run.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step availability-probe.yml#Probe the core services; step availability-probe.yml#Publish the status feed to the availability-status branch; step deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale); 3 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -377,14 +351,12 @@
     {
       "frr_id": "CDS-CSO-CBF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 10 of 10 pieces of evidence it cites do not resolve.",
-      "planned": "Every JSON and CSV file any workflow publishes under /.well-known/ gets a complete human-readable view, <name>.view.md, beside it, giving every value under its JSON Pointer path (scripts/build-human-views.py): the deploy for everything it publishes (the freshness-config list, every incident report, the inventory's JSON Schema and every certification report), the evidence nightly for the VDR files, the package maintainer for the package it rewrites and every issued report, snapshot and Quarterly Review, and the incident publisher for the incident logs and every report. Each build parses each view back and fails unless it reproduces the JSON exactly, before anything is signed or published, and each workflow's redaction gate scans the views it puts. tests/test_human_views_published.py runs each workflow's view, gate and publish steps and fails if any JSON or CSV is put without its view. The curated .md summaries are written from the same in-memory data in the same run. The policies are published as the Markdown documents themselves, indexed by the machine-readable policy index."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); step evidence-nightly.yml#Rebuild the human-readable views (format parity); 7 test(s)."
     },
     {
       "frr_id": "CDS-CSO-FID",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 14 of 14 pieces of evidence it cites do not resolve.",
-      "planned": "data/cds/offering.json is the one source of the FedRAMP ID (scripts/_offering.py). No ID is assigned, so it is FedRAMP's fallback, the provider name and acronym, suffixed so it cannot be mistaken for a real one, and flagged simulated (DEC-100). Every builder that publishes certification data stamps it through scripts/_offering.stamp_fedramp_id: under providerExtensions.fedRampId in reports in a FedRAMP schema (the SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history; each Significant Change Notification; each Initial, Ongoing and Final incident report), in serviceIdentification.fedRampPackageId in the CPO, and as a top-level fedRampId in every other published JSON file (the VDR report, trend, monthly report and non-machine V&V status; the KSI signal, which the runtime emitter copies into the runtime signal; the SCN index and evaluation log; the incident log and simulated delivery log; the simulated inbox run; the trust center, manifest, scope, configuration, boundary, reconciliation, conformance, access, assessor and agency files; the issue index, snapshots, FedRAMP Certification Reports index and package submission log). The SCN Atom feed carries it in its subtitle. The gate scripts/check-fedramp-id.py fails the run when a file it is given lacks the ID or carries another: the deploy runs it over its REPORTS list before anything is published, and the nightly, the incident publisher and the package maintainer run it over what each republishes. A test holds every freshness-governed JSON artifact to be in REPORTS or listed in the gate's EXEMPT map with its reason: the runtime signal (written by the Lambda, copied from the checked KSI signal), the nightly's status beacon (stamped where it is written), the issue index (checked by the package maintainer) and the independent boundary corroboration (another party's record, published unmodified)."
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-100; step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step evidence-nightly.yml#FedRAMP ID in every republished report (CDS-CSO-FID); step incident-reports.yml#FedRAMP ID in every incident report (CDS-CSO-FID); 10 test(s)."
     },
     {
       "frr_id": "CDS-CSO-FRC",
@@ -395,7 +367,6 @@
         ],
         "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "FedRAMP is simulated, and the system is not certified. The simulated FedRAMP issues a stand-in certification report only in response to a simulated package submission (scripts/submit-package.py): for the first submission, then after any adaptive or transformative Significant Change Notification no earlier report covered, and once a year; an ordinary deploy issues none. Each report is logged verbatim, with the date received and its sha256, in its submission's entry of the append-only /.well-known/package-submission-log.json. On every deploy scripts/publish-certification-reports.py publishes every logged report byte-identical under /.well-known/fedramp-certification-reports/ (an edited report fails the deploy), keeps each report's first publication date from the previously published index, and fails the deploy if a report would be first published more than 2 weeks after receipt. The previous log and index are fetched fail-closed: anything but a 404 fails the deploy rather than restarting either history. Every report's title and first line say it is a simulated report NOT ISSUED BY FEDRAMP and that the system is not certified, and one that does not is never published; the CPO and the SDR both state providerExtensions.certification.status 'not certified (proof of concept)', from one source (scripts/_offering.py), and a package without it is never submitted.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -404,14 +375,12 @@
     {
       "frr_id": "CDS-CSO-HAD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "On each OCR issue date the maintainer snapshots the certification data as published (with signatures) to /.well-known/snapshots/<date>/ and writes a signed manifest of sha256s, listed in /.well-known/ocr-issues.json with an explanation of access; an issue fails if the core files are missing. The publishing role cannot delete, issued files are never overwritten, and the website sync excludes /.well-known/, so snapshots stay for the duration of certification."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/ocr-issues.json; step package-maintenance.yml#Issue the quarterly report when due (frozen, with a snapshot); 3 test(s)."
     },
     {
       "frr_id": "CDS-CSO-IRP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "policy-index.json and policy-index.md under /.well-known/ (scripts/build-policy-index.py) list every policy (docs/policies) and procedure (docs/procedures, docs/runbooks, the verification and deploy procedures) with its name, file and URL, summary, word count, version (git:<commit>) and date of last update from its own last commit (a shallow checkout is refused), and related FedRAMP practices as concrete rule and KSI IDs from the pinned corpus and KSI catalog (a mapping that matches nothing fails the build). The documents themselves are published beside the index under /.well-known/policies/, and the index states how to access them.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Build CDS certification-data artifacts (availability, policy index, review calendar); 6 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -438,7 +407,6 @@
         ],
         "why": "The rule needs a SAM.gov registration made for a federal engagement, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "The CPO (JSON and Markdown, public under /.well-known/) publishes every listed item that applies: the FedRAMP ID (FedRAMP's fallback, flagged simulated), service and deployment model, business categories, a UEI (simulated, flagged sam-gov: no SAM.gov registration), sales and security contacts (the contact page and security.txt; no email address), the product website, the logo, the description, each service with its security category, the secure configuration guidance link, the documentation overview, the trust center landing page (https://samaydlette.com/trust/index.html) with access instructions, the next OCR date from the fixed calendar, and the current independent assessment service: none FedRAMP Recognized, stated as such, with the simulated assessor named. It is rebuilt on every deploy and daily by the package maintainer.",
       "evidence": [
         {
           "kind": "step",
@@ -457,8 +425,7 @@
     {
       "frr_id": "CDS-CSO-RIS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "Sufficiency: the package carries the SDR with every applicable rule and KSI and the simulated assessor's independent results, the CPO, the boundary map, inventory, vulnerability reports and the policies, indexed in the signed trust manifest. Sensitivity: the information sharing and disclosure standard (docs/procedures/information-sharing.md, DEC-166) says what is never published (account IDs, secrets, personal email addresses, IAM user names, raw logs, requester identities), what is published on purpose and why that is not likely to enable an attacker. The publication redaction gate fails the deploy on an AWS account ID in anything published, including the views and the policy documents.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; decision DEC-166.",
       "evidence": [
         {
           "kind": "test",
@@ -473,8 +440,7 @@
     {
       "frr_id": "CDS-CSO-RPS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "The whole package is public. The information sharing and disclosure standard (docs/procedures/information-sharing.md, published under /.well-known/policies/) explains what is shared, with whom (everyone, by HTTPS GET), and records the operator's determination (DEC-166) that public sharing will not likely have an adverse effect on the offering. The trust page links it.",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-166; 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -486,8 +452,7 @@
     {
       "frr_id": "CDS-CSO-SVC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The CPO lists each service (certifiedServices) with its own FIPS 199 category, high-water mark and rationale, and the boundary groups it is made of (providerExtensions.services), plus an explicit list of what is not included (providerExtensions.notIncluded); its Markdown rendering shows the same table. The builder fails when a service's category exceeds the system's or names a boundary group that is not in the boundary classification.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -502,8 +467,7 @@
     {
       "frr_id": "CDS-CSO-UTC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The trust center is https://samaydlette.com/trust/index.html with the certification data under /.well-known/. It is the single definitive source: the signed trust manifest (trust-manifest.json, generated from the governed artifact list on every deploy) lists every artifact with URL, media type, cadence, signature and signer and its human-readable forms, plus every policy and procedure, served from the same site. It meets the trust-center rules recorded here: agency access inventory (CDS-TRC-AAI), access logging with summaries (CDS-TRC-ACL), human-readable and machine-readable formats (CDS-TRC-HMR), documented programmatic access (CDS-TRC-PAC), self-service access (CDS-TRC-SSM) and uptime reported from outside AWS (CDS-TRC-USH).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -520,7 +484,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "data/agency-access.json is the append-only register of agency access requests, grants, denials and withdrawals, naming agencies and systems, never people (a record with an email address fails). scripts/agency-access.py derives the inventory and the full history from it; every deploy validates it and fails on an overdue denial notice or on any entry not marked simulated for an agency named '(simulated)' (DEC-194). It is empty. The inventory and history are exercised on every deploy over the simulated scenario, whose inventory request from the simulated FedRAMP is answered in the published log (procedure: docs/procedures/agency-access.md, DEC-165).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -535,7 +498,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "CloudFront standard logging (v2) records every request to the site with a field allowlist that excludes IP address, forwarded-for, port, cookies, query string, user agent and referrer (infrastructure/bootstrap/trust-access-logs.tf). Records go to the encrypted, non-public access-log bucket and expire after 90 days (infrastructure/logging.tf). On every deploy, scripts/check-edge-access-logging.py fails the deploy unless that delivery exists and logs only allowlisted fields, and scripts/build-access-summary.py counts the requests to /.well-known/ and /trust/ (CloudFront cannot limit logging by path, so the limit is applied here and every other record is discarded) into monthly summaries per artifact, response class and country, published signed at /.well-known/access-summary.json with a Markdown twin and carried forward for 13 months. The lookup of a party's own records, by the times and paths it gives (no requester identity is logged), is built into scripts/build-access-summary.py and exercised on every deploy against a simulated requester: it must find exactly the known answer in fixed synthetic records or the deploy fails, and the count it finds in the real records is logged in the summary (ownRecordsExercise). Nothing is delivered and no real request is answered (DEC-160, DEC-194); the trust page's privacy notice says so.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -544,14 +506,12 @@
     {
       "frr_id": "CDS-TRC-HMR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 8 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "Every JSON and CSV file any workflow publishes has a complete human-readable view (.view.md, checked to reproduce the JSON, published by the same workflows that publish the file), most have a curated .md summary, and the policies and procedures are published as Markdown. The trust manifest lists both formats for each artifact, the view from the publisher table in scripts/_signers.py (so a file only the package maintainer writes lists its view too), and fails the build if a JSON built without its view and the trust page links the manifest; everything can be viewed in a browser and downloaded with a GET. The runtime signal and the nightly beacon, published outside the deploy, are rendered human-readably by the trust page from the live JSON."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 6 test(s)."
     },
     {
       "frr_id": "CDS-TRC-PAC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The signed trust manifest (/.well-known/trust-manifest.json and .md) is the documented programmatic index of all certification data: each artifact's URL, media type, cadence, schema, signature bundle and signing identity, its human-readable forms, every policy and procedure (Markdown under /.well-known/policies/), and how to fetch and verify (HTTPS GET with read-only CORS; cosign verify-blob against the named identity). The assessor guide gives the command for each piece of evidence."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; artifact .well-known/trust-manifest.json; step deploy-with-opa.yml#Build the human-readable views and the trust manifest (format parity); 2 test(s)."
     },
     {
       "frr_id": "CDS-TRC-SSM",
@@ -562,7 +522,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "Parties provision their own access directly: all data is public, so a user or service needs no account or key (the trust manifest documents how to fetch and verify). Requests and withdrawals are processed without a person: scripts/agency-access.py decides each request by fixed rules and records it; the trust page's Access section says so (docs/procedures/agency-access.md, DEC-165). No real agency request is taken (DEC-194).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -571,8 +530,7 @@
     {
       "frr_id": "CDS-TRC-USH",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "The certification data is static, signed files under /.well-known/ served from the CloudFront edge (cached, with AWS Shield Standard), readable as plain JSON and Markdown without JavaScript and, since the deploy checks it, with CORS for programs on any origin. Interruptions are measured from outside AWS every 15 minutes, and an ongoing one fails the monitor's run, which notifies the operator (CDS-CSO-AVR); the status itself is served by GitHub, so it stays available during an outage. The single origin without failover is an accepted risk (DEC-009).",
+      "not_demonstrated": "Not built in this repository yet. Missing: step availability-probe.yml#Alert on an ongoing availability incident; step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); step deploy-with-opa.yml#Read the independent availability feed (fails when missing or stale); 1 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -593,7 +551,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "When a request is denied (by rule), the automated notifier writes a notice to the simulated FedRAMP as a log entry, and the clock requires it within 5 business days of the denial (docs/procedures/agency-access.md, DEC-165). scripts/agency-access.py computes each deadline (weekends and US federal holidays skipped) and every deploy fails when a notice is late or overdue. The clock and the notifier, with a simulated outage, are exercised on every deploy.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -608,7 +565,6 @@
         ],
         "why": "The rule needs an agency customer, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "Agencies get the whole package without asking, since it is public. Access requests are decided by fixed rules in scripts/agency-access.py (granted unless they ask for write access, delivery other than HTTPS, data beyond the public package, or come from an agency that cannot be verified); the trust page's Access section says what is provided and links the procedure (DEC-165) and the sharing standard that explains how sharing is decided (DEC-166). No real agency request is taken (DEC-194).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -617,26 +573,22 @@
     {
       "frr_id": "CMU-CSO-CAT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "The app's tenants (Silk Reeling users) get validated cryptography by default where AWS offers it, set in Terraform: the app's Lambda environment and every app log group are encrypted with a customer-managed key on the AWS KMS HSM (CMVP #4884) with rotation on, and viewer and origin TLS are fixed at TLS 1.2 or later. AWS offers no validated-module option for a distribution's viewer TLS, an HTTP API's endpoint or the Cognito Hosted UI (DEC-152). The published module list marks each service's agency-tenant default."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 1 test(s)."
     },
     {
       "frr_id": "CMU-CSO-CMD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The Secure Configuration Guide publishes the cryptographic module used by each service (CloudFront and API Gateway TLS, Cognito, KMS, Lambda, CloudWatch Logs, SNS, Secrets Manager, S3, SQS, DynamoDB, CloudTrail, Route 53 DNSSEC, the IAM OIDC provider, Sigstore signing), with the CMVP certificate and its status where AWS publishes one (the AWS KMS HSM, FIPS 140-3 Level 3, certificate #4884, read from NIST's CMVP page) and says plainly where AWS publishes none. The list is generated each deploy from data/crypto-modules.json joined with the inventory; the build fails when the inventory holds a component type with no module mapping."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s)."
     },
     {
       "frr_id": "CMU-CSO-UVM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "Where a validated module is available for data the app holds, it is used: the app's Lambda environment and log groups, the alert topic and the signing keys are protected by customer-managed keys on the AWS KMS HSM (CMVP #4884, FIPS 140-3 Level 3). The paths where AWS publishes no CMVP module (viewer TLS on CloudFront, the HTTP API, the Cognito Hosted UI; SSE-S3, SSE-SQS and AWS-owned keys on stores that hold no customer data; the Lambda runtime's outbound TLS) are listed per service and accepted by decision (DEC-152). The system holds no federal customer data."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; decision DEC-152; 2 test(s)."
     },
     {
       "frr_id": "CPO-CSO-MTD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The CPO carries metadata.accountableOfficial (name, title, contact), metadata.version (semver: unchanged content keeps its version, changed content bumps it, judged by a sha256 of the content), metadata.lastUpdated and metadata.updateSource.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -658,7 +610,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "The CPO (certification-package-overview.json and .md) carries the assessor's overall summary (IVV-IAS-OSA) under providerExtensions.independentAssessment.overallSummary, quoted verbatim from the signed assessment set: rule and KSI pass, observation and fail counts, failures, areas of dispute and observations. scripts/build-cpo.py requires the set, verifies it (scripts/_assessor.load_assessment) and fails without a summary; the daily package maintainer rebuilds the CPO from the same published set. The schema's `assessor` object is left out because the simulated assessor has no FedRAMP assessor ID, and none is invented.",
       "evidence": [
         {
           "kind": "step",
@@ -677,8 +628,7 @@
     {
       "frr_id": "CPO-CSO-OVR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "scripts/build-cpo.py writes the CPO in FedRAMP's 2026-06-24 schema through write_validated, with JSON and Markdown from the same data, carrying what each listed rule requires: metadata (CPO-CSO-MTD); the public information (CDS-CSO-PUB) including the trust center and secure configuration guidance; each service and its security category (CDS-CSO-SVC); the policy and procedure index (CDS-CSO-IRP), the KSI signal inventory and the Minimum Assessment Scope (MAS-CSO-IIR, MAS-CSO-FLO) as repositories; thirdPartyInformationResources (MAS-CSO-TPR); the cryptographic modules (CMU-CSO-CMD); and the assessment results with the assessor's overall summary (IVV-CSO-ICP, CPO-CSO-OSA). The simulated package submission refuses a CPO missing the trust center, secure configuration guidance, third-party resources or assessor summary.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 4 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -693,8 +643,7 @@
     {
       "frr_id": "CPO-CSX-CPM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "package-maintenance.yml runs daily, unattended, in its own environment: it fetches the published package and its inputs, verifies their signatures (fail closed), rebuilds the SDR, OCR and CPO at the deployed commit, signs and publishes them with a role that may write only those objects, and checks the edge serves them. Every deploy also runs it. The deploy's preflight fails if the role variable or environment is missing. The SDR, CPO and OCR have 14-day freshness windows (metadata.lastUpdated), alarmed by the evidence watchdog.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Package maintainer preflight; step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 2 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -760,9 +709,12 @@
     {
       "frr_id": "FRC-CSO-FCP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The target profile is identified: FedRAMP 20x, Program path, Class C, Moderate (data/system-profile.json; the CPO's certificationType and providerExtensions). Every applicable rule has a record in data/frr-records.json with one of four statuses (Implemented, Simulated, Not Demonstrated, Not Applicable), and the deploy's claim gate stops every deploy unless each record's fields support its status and the operator has approved every stand-in and scope cut, so a deployed system publishes which relevant FedRAMP practices it applies, on what inputs, and which it does not.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
+        {
+          "kind": "step",
+          "ref": "deploy-with-opa.yml#FedRAMP rule claims supported by evidence"
+        },
         {
           "kind": "artifact",
           "ref": ".well-known/security-decision-record.json"
@@ -772,14 +724,12 @@
     {
       "frr_id": "FRC-CSO-JSN",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 12 of 12 pieces of evidence it cites do not resolve.",
-      "planned": "Every JSON document this offering supplies under a FedRAMP JSON schema (CPO, SDR, OCR and issued OCRs; the VDT, AVI and vulnerability history) is written through scripts/_fedramp_schema.write_validated against the vendored 2026-06-24 schemas: a document that fails is not written and the deploy stops, and the package submission re-validates the CPO, SDR and OCR. Public JSON under /.well-known/ is served by a CloudFront response-headers policy with read-only CORS (Access-Control-Allow-Origin: *, GET/HEAD/OPTIONS), Content-Type application/json and X-Content-Type-Options: nosniff (infrastructure/bootstrap/cloudfront.tf); every deploy checks those headers live and fails, before the SDR is built, when any is missing. Significant Change Notifications (scripts/build-scn.py, the SCN schema) and incident reports (scripts/build-incident-report.py, the incident schema) are written the same way: a notification or report that fails its schema is not written and the build stops."
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Check /.well-known/ JSON response headers (CORS, Content-Type, nosniff); 11 test(s)."
     },
     {
       "frr_id": "FRC-CSO-MRA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "The operator keeps the package accurate with gates that fail the deploy: schema validation of the CPO, SDR and OCR; the reconciliation gate (one impact level and one inventory binding across the CPO, SDR, VDR and signal); one FedRAMP ID across the reports (check-fedramp-id.py); the package submission's completeness check (every applicable rule exactly once, one program); the FedRAMP Certification Reports' recorded sha256s; and a test that every link the CPO and OCR give resolves to something this repository publishes. The CCM calendar is validated on every build. Third-party-supplied records stay 'not recorded' until the operator decides them.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#FedRAMP ID in every FedRAMP report (CDS-CSO-FID); step deploy-with-opa.yml#Simulated package submission to FedRAMP (nothing is sent); 3 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -796,7 +746,6 @@
         ],
         "why": "The rule needs FedRAMP as a counterparty, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "scripts/submit-package.py checks the package on every deploy: the CPO (complete per CPO-CSO-OVR, including the trust center, secure configuration guidance, third-party resources and assessor summary), the SDR with every applicable rule exactly once, and the OCR, each valid against FedRAMP's schema, one FedRAMP ID across them and certificationType 20x. It then supplies the package to a simulated FedRAMP intake and appends a signed entry to /.well-known/package-submission-log.json for each content change. Nothing is sent.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -805,14 +754,12 @@
     {
       "frr_id": "FRC-CSO-POP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The offering seeks FedRAMP 20x Program Certification only (DEC-107). The CPO states certificationType 20x; the package submission refuses any other; no label in the CPO or OCR names Rev5 as a program (the SDR's Rev5 view is the Moderate control baseline the 20x evidence maps onto)."
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-107; 3 test(s)."
     },
     {
       "frr_id": "FRC-CSX-MAS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "Every KSI is applied to the whole Minimum Assessment Scope. The inventory now includes the external services the app and the VDR depend on (MAS-CSO-IIR), and each KSI's evidence domain names the component types it covers. KSIs with a per-component domain apply to every component of those types; inventory and documentation KSIs (PIY, CED) apply over the whole set. scripts/build-mas.py publishes the application per KSI and per component type in .well-known/minimum-assessment-scope.json, and fails the deploy when a component type is in no KSI's per-component domain and has no stated whole-set reason (static pages and the state lock table carry one)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s)."
     },
     {
       "frr_id": "FRC-CSX-VVK",
@@ -822,8 +769,7 @@
     {
       "frr_id": "FRC-CSX-VVR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "scripts/_frr.py validates the rule records on every build (set matches the pinned corpus, every cited piece of evidence resolves). In addition the unit-test job runs pytest with JUnit output and scripts/check-frr-evidence.py fails the deploy unless every test cited as evidence for a rule passed (a skipped or missing cited test is not a pass), and publishes the result per record (frr-evidence.json). The simulated assessor then re-runs the cited tests and re-checks every step, decision and artifact independently."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/frr-evidence.json; step deploy-with-opa.yml#FedRAMP rule evidence passed (cited tests); 3 test(s)."
     },
     {
       "frr_id": "IEC-CSO-AIR",
@@ -834,7 +780,6 @@
         ],
         "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": ".github/workflows/incident-reports.yml runs on every push of data/incidents.json to main, by hand, twice a day and after each nightly VDR refresh: it validates the register, verifies the published VDR, builds every report against FedRAMP's schema, signs, redaction-gates and publishes under /.well-known/incident-* with its own least-privilege role (infrastructure/bootstrap/incident-reports.tf), and fails with a GitHub issue when a report is overdue; the evidence watchdog pages on the same deadlines hourly. A person records the facts in the register; nothing else is done by hand. Every deploy checks the publisher's prerequisites before it applies anything (scripts/check-incident-publisher.py: the role variable names the bootstrap role and the incident-reports environment deploys only from main), assumes the publisher's role from the deploy job before the SDR is built (scripts/check-incident-role.py, step 'Incident report publisher role can be assumed'), so a deploy whose publisher role does not work stops before anything is published, and after the deploy job runs this workflow on its own role (job incident-publisher). Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -843,20 +788,17 @@
     {
       "frr_id": "IEC-CSO-DPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A reportable incident is rated at the default the IEC-CSO-DPR text states (N5, read from the rule) until an IEC-CSO-EFI estimate record exists, and the report clocks use the rating in force at each start time. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. "
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s)."
     },
     {
       "frr_id": "IEC-CSO-EFI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). An estimate record carries rating, customer effect (minimal/narrow/disruptive/debilitating), one or several agencies, reason and time; the loader refuses a rating that is not the one the IEC-CSO-EFI bullets give for that effect and agency count (the rubric is parsed from the rule text). Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. "
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s)."
     },
     {
       "frr_id": "IEC-CSO-EFR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Every incident record must carry an evaluation (evaluated_at, reportable true/false, basis, reason, the federal customer data considered); a record without one does not load. docs/incident-response.md triage now evaluates reportability before containment. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. The published incident log is the artifact the rule asks for."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s)."
     },
     {
       "frr_id": "IEC-CSO-FIR",
@@ -867,7 +809,6 @@
         ],
         "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). A Final report is allowed only after resolved_at and recovery_complete_at, restates final values for every earlier item, carries resolvedAt, and is due an FIR period after recovery (6 hours at N3-N5, 1 business day at N1-N2); overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -882,7 +823,6 @@
         ],
         "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). The Initial report carries all eight items (coordinator, tracking ID, description, timeline with start/detection/evaluation/milestones, historical and current rating with the EFI explanation, functional impact, recovery plan, likely affected agencies). Its clock (1 hour at N3-N5, 24 hours at N2, 1 business day at N1) runs from the evaluation; the incident-reports workflow fails and the evidence watchdog pages (IncidentReportsOverdue) once it passes. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -897,7 +837,6 @@
         ],
         "why": "The rule needs agencies and FedRAMP receiving incident reports, and the operator does not engage FedRAMP or any federal agency about this system."
       },
-      "planned": "data/incidents.json (the incident register; shape infrastructure/schemas/incidents.schema.json) is read through scripts/_incidents.py, which fails closed. scripts/build-incident-report.py renders the Initial, Ongoing and Final reports in FedRAMP's 2026-06-24 incident report schema (validated before write) and the incident log, published signed as /.well-known/incident-reports.json by every deploy and by .github/workflows/incident-reports.yml on every change to the register. Class C report clocks and the Incident Rating scale are read from the pinned rules (scripts/_rules.py). Each Ongoing report restates every earlier item with its latest value and marks each 'updated' or 'no update', and adds observed activity, indicators of compromise, related CVEs, root cause and response/recovery activities. The next one is due an OIR period (6 hours at N3-N5, 24 at N2, 1 business day at N1) after the previous report until the incident is resolved; overdue fails the workflow and pages. Exercised once, 2026-11-05: INC-2026-001 (simulated, exercise: true) runs IIR, two OIRs and an FIR on a simulated timeline, all inside their clocks; INC-2026-002 (simulated) is evaluated not reportable with its reason. Delivery is SIMULATED: on every deploy and every unattended publish, scripts/deliver-incident-reports.py reads back each report the incident log lists, checks it against the published sha256 and FedRAMP's incident report schema, and 'delivers' it to a simulated FedRAMP recipient ('FedRAMP Incident Desk (simulated)') and to each affected agency, also simulated; a delivery that fails stops publication. The signed delivery log is /.well-known/incident-deliveries.json. Nothing is sent to FedRAMP or to any agency: there is no FedRAMP certification and no agency customer to send to.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -906,8 +845,7 @@
     {
       "frr_id": "IVV-CSO-DUS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "No representative samples are used: every check runs over its full population, and the assessor guide states this with what each population is (the sampling section). The operator's decision DEC-167 records it, and requires the guide and this record to change before any sampling is introduced."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; decision DEC-167; 1 test(s)."
     },
     {
       "frr_id": "IVV-CSO-FIA",
@@ -919,7 +857,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "Every deploy is independently verified and validated, across all applicable rules and KSIs, twice by the simulated assessor workflow; the cadence is far more frequent than once a year. Before the deploy (a gate): it verifies the repository at the commit being deployed and validates the published state that commit replaces, and its signed set names that commit and the KSI signal it validated. The deploy reads the live KSI signal itself (signature verified against the deploy identity), scripts/_assessor.load_assessment refuses a set covering any other commit or signal, the deploy does not proceed on any failed check, and the SDR states which commit and signal the assessment covered (providerExtensions.assessmentCoverage). After the deploy has published, and the unattended package and incident publishers have run, the same assessor assesses the just-published state, which must carry the deployed commit; its set must verify against the pinned assessor identity and cover this commit and the KSI signal this deploy published. A failure there fails the run and raises the deployment-failure issue; what was published is not withdrawn. The pre-deploy set (simulated-assessment.json) is published and its per-rule results are carried in the SDR; the post-deploy set is kept with the run. The assessor is simulated: no FedRAMP Recognized assessment service is engaged (operator's decision of 2026-11-05).",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -935,7 +872,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "The assessment results are published unmodified: the signed pre-deploy set itself (simulated-assessment.json with its cosign bundle), and in the SDR, where scripts/_assessor.py admits the set only if its keyless signature verifies against the pinned assessor identity, every record's hash matches, and the set covers the commit being deployed and the published KSI signal the deploy itself read; it carries each record verbatim, and verify_output fails the build if the SDR's copy differs in any byte. The SDR states which commit and signal the carried results covered (providerExtensions.assessmentCoverage).",
       "evidence": [
         {
           "kind": "step",
@@ -971,7 +907,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "Every rule record in the SDR states, for each piece of evidence, how it validates the measure and on what cycle (a test on every pull request and deploy, a workflow step each run, a published artifact on its freshness cadence with the watchdog's alarm window, or a decision record with its review date); every KSI states its deploy-time validations and failures and its daily runtime re-validation. The SDR is signed and published, so an assessor reads it without a request.",
       "evidence": [
         {
           "kind": "step",
@@ -997,7 +932,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "Every rule record in the SDR names the test, workflow step, published artifact or decision record that verifies its implementation, and every KSI names its measures (the OPA rules annotated to it, by file and rule), the components they cover, how the annotations and the automation are verified, or why there is no measure and the risk. The SDR is signed and published with verification instructions (docs/verification.md, scripts/verify-published.sh).",
       "evidence": [
         {
           "kind": "step",
@@ -1016,8 +950,7 @@
     {
       "frr_id": "IVV-CSO-STE",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The assessor guide (assessor-guide.json and .md, built on every deploy from the rule records) gives, for every applicable rule and KSI, the rule text, the provider's explanation, and for each piece of evidence a command that reproduces it plus the same check in machine form (pytest node, workflow step, artifact URL with its signature bundle, signing identity and maximum age, or decision ID). The simulated assessor runs exactly these checks. Demonstrations are offered through the security contact."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/assessor-guide.json; step deploy-with-opa.yml#Build the assessor guide; 3 test(s)."
     },
     {
       "frr_id": "IVV-CSO-USR",
@@ -1039,7 +972,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "The simulated assessor checks every Key Security Indicator in the catalog alongside every rule, twice on every deploy: it fetches the published KSI signal, verifies its signature against the deploy identity, and fails a KSI the signal does not report passing (before the deploy, one missing from the signal is an observation). Before the deploy the signal is the published one the deploy replaces; its signal_id is bound into the signed set, the deploy refuses a set naming any other, and the SDR states it. After publish the check runs again on the just-published signal, which must carry the deployed commit and be the signal this deploy published; a failure fails the run and raises the deployment-failure issue. The pre-deploy result per KSI is carried verbatim in the SDR.",
       "proposal": {
         "by": "AI-drafted",
         "on": "2026-11-07"
@@ -1048,8 +980,7 @@
     {
       "frr_id": "MAS-CSO-FLO",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "The boundary classification's data-flow table (docs/boundary/boundary-classification.json) covers every external service and every data store or log in the inventory, including sign-in to the Cognito Hosted UI, the browser loads from jsDelivr and Google Cloud Storage, log delivery to the access-log and CloudTrail buckets and the log groups, the dead-letter queue, operator administration with MFA, Terraform state and lock, and the vulnerability feeds. scripts/build-mas.py resolves each flow against this build's inventory, gives each the high-water mark of its endpoints' FIPS 199 security categories, and fails the deploy when a flow names a component the inventory lacks or an external service or data store is in no flow. Published in .well-known/minimum-assessment-scope.json (flows with categories, protocol, authentication, encryption and data) and drawn on the boundary map.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1060,8 +991,7 @@
     {
       "frr_id": "MAS-CSO-IIR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "Every deploy publishes the set of information resources that make up the offering: the canonical inventory (.well-known/ksi-signal.json, derived from Terraform state, the SBOMs, the site's HTML and the declared external services; reconcile invariant (a) holds every live in-boundary resource to it) and its summary in .well-known/minimum-assessment-scope.json with a human-readable twin and the derivation. The external services include every origin the Silk Reeling app loads code or data from in the user's browser (jsDelivr for the MediaPipe runtime, Google Cloud Storage for the pose model) and every vulnerability feed the VDR reads (GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database). scripts/build-mas.py parses the Content Security Policies the edge serves (infrastructure/bootstrap/cloudfront.tf) and fails the deploy, before the SDR is built, when an allowed off-origin host is neither an inventoried component nor out of scope with a stated reason; the podcast audio hosts (media only, no code or data from this system) are out of scope with that reason.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 3 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1072,8 +1002,7 @@
     {
       "frr_id": "MAS-CSO-MDI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "The metadata the offering collects is in scope and inventoried: every data store and log in the inventory (buckets, log groups, the CloudTrail trail, the state lock table, the dead-letter queue, the Cognito user pool, the alert topic) and the request metadata third parties see when the app loads code or models (jsDelivr, Google Cloud Storage) has an entry stating what it holds, which personal data (for example IP addresses, user agents, the app users' email addresses), its retention and its location. scripts/build-mas.py joins data/minimum-assessment-scope.json with this build's inventory and fails the deploy when a data store or log has no entry; a test holds each stated retention equal to the Terraform. Published, with the explanation of its derivation, in .well-known/minimum-assessment-scope.json and its Markdown twin."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 2 test(s)."
     },
     {
       "frr_id": "MAS-CSO-SUP",
@@ -1088,8 +1017,7 @@
     {
       "frr_id": "MAS-CSO-TPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Each of the 11 third-party information resources (Sigstore Fulcio and Rekor, GitHub repository and Actions, GitHub OIDC, the operator's MFA authenticator, the GitHub Advisory Database, CISA KEV, FIRST EPSS, the Grype database, jsDelivr, Google Cloud Storage) has a decided record in data/third-party-components.json with its general usage and configuration, justification for use, mitigation measures and compensating controls. The inventory builder fails when a decided record lacks any of the four, and scripts/build-mas.py fails the deploy when an inventoried external service has no decided record. Machine-readable output: the external_service components in .well-known/ksi-signal.json and the third-party section of .well-known/minimum-assessment-scope.json; the human-readable derivation is in its Markdown twin; the code is scripts/build-ksi-signal.py and scripts/build-mas.py. The CPO lists each, none FedRAMP certified, in thirdPartyInformationResources.nonCertified (scripts/_tpr.py)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/minimum-assessment-scope.json; step deploy-with-opa.yml#Build the Minimum Assessment Scope; 5 test(s)."
     },
     {
       "frr_id": "MKT-CSO-MLR",
@@ -1112,155 +1040,130 @@
     {
       "frr_id": "SCG-CSO-AUP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "The certification package explains how to obtain and use the Secure Configuration Guide: the guide itself opens with obtain, use and change instructions (where it is, that it is public and signed, how to compare a system's values with it, and that the operator's own comparison is published at /.well-known/security-settings.json), and the policy index lists it with its URL. Every deploy builds it from data/secure-configuration.json (scripts/build-scg.py) and publishes it signed at https://samaydlette.com/.well-known/secure-configuration-guide.json and .md."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 1 test(s)."
     },
     {
       "frr_id": "SCG-CSO-PUB",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "The Secure Configuration Guide is public, with no account or request: human-readable at https://samaydlette.com/.well-known/secure-configuration-guide.md and machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json, signed with the deploy's keyless identity, rebuilt and republished on every deploy."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules)."
     },
     {
       "frr_id": "SCG-CSO-RSC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The Secure Configuration Guide (one source, data/secure-configuration.json; published at https://samaydlette.com/.well-known/secure-configuration-guide.md and .json) names each top-level administrative account (the AWS root user, the GitHub repository owner) and privileged account (the operator IAM user, the five CI roles, user-pool administration), says how each is named, and gives secure access, configuration, operation and decommissioning instructions for each. For every security setting it states who can operate it (root-only and owner-only settings marked), the recommended value and its security implication. It states the system as it is (virtual TOTP MFA on root and the operator user, an accepted finding, DEC-150); the build fails if the guide names a retired mechanism (the old shared app credential, a deployer access key, Duo-enforced root MFA)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Build the secure configuration guide (SCG, cryptographic modules); 3 test(s)."
     },
     {
       "frr_id": "SCG-CSO-SDF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "Privileged accounts created by code start in their recommended state: the CI roles' trust policies (infrastructure/bootstrap) and the Silk Reeling user pool (MFA required, admin-created users only, 14-character passwords; infrastructure/cognito.tf). The accounts not created by code (the AWS root user, the GitHub owner, the operator IAM user) are read on every deploy and compared with the guide's defaults (scripts/check-secure-config.py); the deploy fails on any deviation no decision covers. The one deviation is the MFA type on root and the operator user: virtual TOTP rather than the phishing-resistant default, an accepted finding (DEC-150, extending DEC-025), published against that record in /.well-known/security-settings.json."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-150; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 2 test(s)."
     },
     {
       "frr_id": "SCG-ENH-API",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Every setting in the Secure Configuration Guide names the API or CLI call that reads it and the one that changes it (AWS IAM, S3 Control, Cognito and STS APIs; GitHub's REST API), and the deploy uses those read calls itself to compare the live settings. Changes go through Terraform or the repository settings in reviewed pull requests."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s)."
     },
     {
       "frr_id": "SCG-ENH-CMP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 8 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "Every deploy reads the current settings of the top-level administrative and privileged accounts (root MFA and access keys, MFA type, account password policy, account-level S3 Block Public Access, other IAM users' permissions, the operator user's MFA, console password and access-key age, the CI roles' trust subjects, the user-pool sign-in policy, and the GitHub environment and branch settings) and compares each with the guide's recommended default (scripts/check-secure-config.py). A deviation no in-force decision covers, or a setting that cannot be read, fails the deploy before the SDR is built. The repository settings the workflow token can read (rulesets and their bypass actors, Dependabot alerts, Dependabot version updates, and every workflow's top-level token permissions) are compared on every deploy and every night (evidence-nightly.yml). The GitHub owner's two-factor setting and personal access tokens, which no token the pipeline holds can read, are a one-time configuration fact with no recurring review (DEC-151, amended). The comparison is published at /.well-known/security-settings.json and .md."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; decision DEC-151; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; step evidence-nightly.yml#Compare repository settings with the secure configuration guide (SCG-ENH-CMP); 4 test(s)."
     },
     {
       "frr_id": "SCG-ENH-EXP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Every deploy exports the current security settings of the top-level administrative and privileged accounts as signed JSON at /.well-known/security-settings.json (with a Markdown view): each setting's current value, recommended value and result. Values only: no account ID, ARN, IAM user or role name."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/security-settings.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide; 1 test(s)."
     },
     {
       "frr_id": "SCG-ENH-MRG",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "The Secure Configuration Guide is machine-readable at https://samaydlette.com/.well-known/secure-configuration-guide.json: per setting, an ID, the account, who can operate it, the recommended value (literal or bound), the implication, the read and change calls and the check ID. The deploy's own comparison consumes it."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; step deploy-with-opa.yml#Compare live security settings with the secure configuration guide."
     },
     {
       "frr_id": "SCG-ENH-VRH",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "The recommended defaults carry a version and a release history (the guide's release_history). Each release records a digest of the defaults it fixes; the build fails when a default changes without a new version and a changelog entry carrying the new digest."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/secure-configuration-guide.json; 2 test(s)."
     },
     {
       "frr_id": "SCN-ADP-NTF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Each adaptive record's notice, carrying its new-risks summary (required by the register), is due 10 business days after date_finished, counted with US federal holidays (scripts/_bizdays.py). It is given by publication in the certification data, the method FedRAMP's rules name; nothing is sent to FedRAMP or anyone else. Every deploy builds and publishes all notices (a build or publish failure fails the deploy, and the post-publish round-trip compares the served index and feed), and the index records each notice's deadline and the date it was first published. The scheduled SCN deadline check fails and raises an issue when a notice is unpublished past its deadline. History: the six adaptive notices were first published by the deploy that introduced this mechanism. SCN-2026-001, SCN-2026-002, SCN-2026-003, SCN-2026-004 and SCN-2026-005 were published after their deadlines (2026-06-22, 2026-07-07, 2026-07-23, 2026-10-09, 2026-10-13) and are marked late (onTime false, lateNotices). SCN-2026-006 (deadline 2026-11-10) is on time only if that deploy ran by its deadline; the published index records which."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; step scn-deadlines.yml#Check SCN deadlines; 4 test(s)."
     },
     {
       "frr_id": "SCN-CSO-ARI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "Each published notification adds, beyond the required items, the change's status, initiation/finish/verification dates, the pull requests that made it, the new-risks summary, its notices with deadlines and publication dates, and a link to the full record (boundary change, impact by control family, verification result).",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 1 test(s).",
       "may_rationale": "Exercised. Change records add the boundary change, the security impact by control family and the verification result, so a reviewer can see why a change was classified as it was."
     },
     {
       "frr_id": "SCN-CSO-EMG",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "docs/incident-response.md (Emergency-change procedure), linked from the Certification Package Overview: an emergency change carries SCN-Type emergency with its SCN-Record; the gate accepts it and states the record is due; the retroactive register row (emergency = yes) is due within 5 business days of the change merging, enforced by the scheduled SCN deadline check, and the published notification marks each retroactive notice against that deadline. Notification is publication. Not yet invoked.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s).",
       "may_rationale": "Kept available for emergencies: a security fix may need to ship before notice can be given. When it is used, the retroactive records the rule requires are produced within its timeframe."
     },
     {
       "frr_id": "SCN-CSO-EVA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 6 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "Every pull request (or direct push) must carry SCN-Type (not-significant, routine-recurring, adaptive, transformative, emergency, class-change), a one-line SCN-Rationale and, for adaptive/transformative/emergency, the SCN-Record that will document it; the required scn-tag check (scripts/scn-evaluate.py, rules in scripts/_scn.py) fails a change without them, with no default, and always fails class-change. A change named adaptive, transformative or emergency whose record is not in the register by its deadline fails the scheduled SCN deadline check. docs/scn/evaluation-examples.md gives one example per type (real for adaptive, fictitious otherwise), each checked against the gate. Changes merged before this gate mostly carry no evaluation; the evaluation log starts at the change that introduced it. SCN-2026-001's categorization (adaptive, at the upper edge, for a new external interconnection since removed by SCN-2026-006) is unchanged and left to the operator's review."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 5 test(s)."
     },
     {
       "frr_id": "SCN-CSO-HIS",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "Every notification is published with the certification data at /.well-known/significant-change-notifications.json (+ .md, Atom feed), listed in the Certification Package Overview, and never pruned: a deploy that would drop a published notification or re-date a notice fails (retention exceeds 12 months). The register rows are never deleted."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s)."
     },
     {
       "frr_id": "SCN-CSO-HRM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "Notifications are published in JSON (FedRAMP SCN schema) and as a Markdown view; the related audit records (the evaluation log) likewise in JSON and Markdown. The index and the Certification Package Overview state that everything is public with no request needed, and how sharing is decided (everything is shared: no federal data, no agency customer)."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; artifact .well-known/significant-change-notifications.json; 2 test(s)."
     },
     {
       "frr_id": "SCN-CSO-INF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "docs/scn/scn-register.csv carries the ten items for every record and scripts/_scn.py refuses a row missing one; each deploy writes every row as a notification in FedRAMP's SCN schema (scripts/build-scn.py via _fedramp_schema.write_validated) inside /.well-known/significant-change-notifications.json, with the security impact analysis linked. The Service Offering FedRAMP ID is published as not assigned, with the reason (the offering is not certified). SCN-2026-006's verification is recorded (2026-10-27). Older records' plans name artifacts since retired (the OSCAL SSP/POA&M); they describe the plan as it was."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.json; 3 test(s)."
     },
     {
       "frr_id": "SCN-CSO-MAR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Each deploy appends the evaluation of every first-parent commit on main since the last entry (commit, merge date, pull request, SCN type, rationale, record, who merged it) to /.well-known/scn-evaluations.json (+ .md), signed with Sigstore and freshness-governed. The log is append-only against the previous published version: a build that would drop or rewrite an entry, or whose last entry has left main's history, fails. A change merged without a valid evaluation is logged with the problem, not skipped. The Certification Package Overview states how to obtain the records (public, no request needed). The log starts at the change that introduced it; earlier evaluations exist only for the six records in docs/scn."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/scn-evaluations.json; step deploy-with-opa.yml#Build Significant Change Notifications and the evaluation log; 5 test(s)."
     },
     {
       "frr_id": "SCN-CSO-NOM",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Mechanisms: an Atom feed (/.well-known/significant-change-notifications.atom, one entry per notice, subscribable with any feed reader), the signed JSON index and its Markdown view. They are listed, with how to obtain the evaluation records, in the Certification Package Overview's significant_change_notifications section. Notification is publication only, the method FedRAMP's rules name (an update to the Certification Data); nothing is sent to FedRAMP or anyone else.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/significant-change-notifications.atom; 2 test(s).",
       "may_rationale": "Exercised. Notice is given by a published, signed feed rather than email, because there are no agency customers to address; the mechanism is documented in the certification package."
     },
     {
       "frr_id": "SCN-RTR-NNR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "No formal notification for routine recurring changes: the register refuses a routine-recurring (or not-significant) row, and the evaluation gate refuses an SCN-Record on a routine-recurring or not-significant change."
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s)."
     },
     {
       "frr_id": "SCN-TRF-NAF",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "date_finished adds the after-finish notice, due 5 business days later and published with the record's current information; the scheduled SCN deadline check fails while it is unpublished past the deadline. No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 2 test(s)."
     },
     {
       "frr_id": "SCN-TRF-NAV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "verified_on adds the after-verification notice, due 5 business days later; the register requires the new-risks summary and sar_reference (the assessment report, or why there is none) once verified_on is set; the scheduled SCN deadline check fails while the notice is unpublished past the deadline. No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 3 test(s)."
     },
     {
       "frr_id": "SCN-TRF-NFP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "plan_final = yes publishes the final-plan notice, which carries the record's current information (every notice republishes all of it). The evaluation gate blocks the merge until it has been published at least 10 business days. No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 3 test(s)."
     },
     {
       "frr_id": "SCN-TRF-NIP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "A transformative record (docs/scn/TEMPLATE-transformative.md) requires its planned start and a summary of likely security impacts; its initial-plan notice is published with the next deploy and dated. The evaluation gate blocks the merge of the transformative change until the initial-plan notice has been published at least 30 business days (read from the published index; fails closed when the index cannot be read). No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 4 test(s)."
     },
     {
       "frr_id": "SCN-TRF-TPR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "A transformative record must state whether the change needs human validation (tpr_human_validation) and name the third-party assessor engaged or why none was (tpr_assessor_or_reason); the register refuses a transformative row without them, and the published notification carries both. No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s)."
     },
     {
       "frr_id": "SCN-TRF-UPD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 2 pieces of evidence it cites do not resolve.",
-      "planned": "A finished transformative record must list the service documentation to update (docs_to_update) or say how it was determined none was needed; the published notification carries the 30-business-day deadline and docs_updated_on, and the scheduled SCN deadline check fails when the deadline passes without an update. No transformative change has occurred."
+      "not_demonstrated": "Not built in this repository yet. Missing: step scn-deadlines.yml#Check SCN deadlines; 1 test(s)."
     },
     {
       "frr_id": "SDR-CSO-FRR",
@@ -1272,7 +1175,6 @@
         ],
         "why": "The rule needs an independent assessor: someone other than the operator, under a paid engagement."
       },
-      "planned": "data/frr-records.json holds one record per applicable rule (154, derived from the pinned corpus's applicability metadata); scripts/_frr.py fails the build on a missing or extra record, an Implemented record without evidence, or evidence that does not resolve. The published SDR carries every record in fedRampRequirements with its status, implementation, evidence and gap. Each rule's independent verification and validation (frrAssessment) is the simulated assessor's signed pre-deploy result for it, carried verbatim. The SDR states which commit and published KSI signal that assessment covered (providerExtensions.assessmentCoverage): the commit the SDR was built from, and the published state that commit replaced; a set covering anything else is refused. The post-deploy assessment of the just-published state runs after publish and fails the run on any failure. The human-readable form is the SDR's .md summary and its complete .view.md.",
       "evidence": [
         {
           "kind": "step",
@@ -1291,8 +1193,7 @@
     {
       "frr_id": "SDR-CSO-MTD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The SDR carries metadata.version, metadata.lastUpdated and metadata.updateSource in FedRAMP's schema. The version is semver: unchanged content keeps the previous version and a content change bumps it, judged by a sha256 of the content excluding metadata.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1307,8 +1208,7 @@
     {
       "frr_id": "SDR-CSX-KMT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The SDR's daily metric data carries, for every KSI, its status, deploy-time validations and failures, automated methods and whether the runtime signal re-validated it, carried forward from the published SDR for up to a year; per KSI it summarizes the past 30 days and up to the past year. The unattended maintainer rebuilds the SDR daily, so there is a point for every day, not only deploy days.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step package-maintenance.yml#Rebuild the SDR, OCR and CPO at the deployed commit; 3 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1319,8 +1219,7 @@
     {
       "frr_id": "SDR-CSX-KSI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "Each KSI in the SDR has its own statement, built from its own measures and results: the measures (OPA rules annotated to it) and their objective, or the reason there are none and the risk to customers; their cycle (every deploy against the plan, daily at runtime where re-validated); verification that the measures demonstrate the KSI (the annotation check) and that the automation is accurate (the rules' own tests with a coverage floor and the CLI/Wasm parity test), or that the reason for no measure is not accepted; and validation that they are in place (this deploy's validations and failures, the runtime re-validation).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1335,7 +1234,7 @@
     {
       "frr_id": "VDR-CSO-ADT",
       "status": "Implemented",
-      "implementation": "Automated on schedules and triggers: evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *', plus once after every successful deploy), deploy-with-opa.yml (every push to main, behind the prod approval), zap-dast.yml (daily, cron '23 7 * * *', plus after every successful deploy to main), the runtime emitter on its EventBridge schedule (aws_cloudwatch_event_rule.opa_compliance in infrastructure/main.tf, rate(1 day) from var.compliance_check_schedule) and the evidence watchdog (aws_cloudwatch_event_rule.evidence_watchdog in infrastructure/watchdog.tf, rate(1 hour)). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; the nightly publishes its outcome on every run in vdr-status.json.",
+      "implementation": "Automated on schedules and triggers: evidence-nightly.yml (cron '17 7 * * *' and '17 19 * * *', plus once after every successful deploy), deploy-with-opa.yml (every push to main, behind the prod approval), zap-dast.yml (weekly, cron '23 7 * * 1'), the runtime emitter on its EventBridge schedule (aws_cloudwatch_event_rule.opa_compliance in infrastructure/main.tf, rate(1 day) from var.compliance_check_schedule) and the evidence watchdog (aws_cloudwatch_event_rule.evidence_watchdog in infrastructure/watchdog.tf, rate(1 hour)). Detection, evaluation (policies/triage.rego via OPA), gating, signing and publication are all automated; the nightly publishes its outcome on every run in vdr-status.json.",
       "evidence": [
         {
           "kind": "step",
@@ -1358,14 +1257,12 @@
     {
       "frr_id": "VDR-CSO-AKE",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "scripts/kev-gate.py runs in the deploy after the detection gate and before the Terraform plan, apply and website sync: it intersects every Grype scan (Python, JS, the Lambda package, a11y tooling) and the open Dependabot alerts with the CISA KEV catalog and stops the deploy on any match, naming the catalog due date, under the governed mode of G1's check vdr.kev (block). A missing or unreadable input stops it. G1 in the VDR build still blocks any KEV finding afterwards."
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#KEV gate before apply (VDR-CSO-AKE); 4 test(s)."
     },
     {
       "frr_id": "VDR-CSO-DAC",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "Every change is scanned when it lands: the deploy runs IaC static analysis (Checkov, tfsec), Grype over every dependency tree and the KEV gate before apply, and the detection gate (G7) requires fresh CodeQL and DAST results; CodeQL (.github/workflows/codeql.yml) analyzes this repository's code and the Silk Reeling application on push and after each deploy; the ZAP baseline scan of the site and the authenticated ZAP scan of the Silk Reeling API (a dedicated Cognito scanner user, credentials in repository secrets, the deploy fails when they are missing) run after each successful deploy.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step codeql.yml#Analyze; step zap-dast.yml#ZAP API Scan (authenticated); 3 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1384,8 +1281,7 @@
     {
       "frr_id": "VDR-CSO-DET",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 10 pieces of evidence it cites do not resolve.",
-      "planned": "Detection uses scanning (Grype over every dependency tree and Dependabot, twice daily; Checkov and tfsec over all Terraform; CodeQL over this repository and the Silk Reeling application; the ZAP site scan and an authenticated ZAP scan of the Silk Reeling API, daily and after each deploy), threat intelligence (CISA KEV, FIRST EPSS), a vulnerability disclosure mechanism (/.well-known/security.txt), automated control testing (the OPA plan gate, reconciliation --live) and supply-chain monitoring (Dependabot, package integrity at runtime). Persistent verification and validation: every machine component re-validated live daily (VDR-TFR-MVX) and non-machine resources on every deploy and every night (VDR-TFR-NMV). The detection gate (G7) fails the run when a feed is missing or stale, coverage is published per component (VDR-TFR-PCD) and gaps become process findings (VDR-CSO-FAV). No penetration test or cloud-native threat detection service is used; the rule lists these as examples, not requirements.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step codeql.yml#Analyze; step zap-dast.yml#ZAP API Scan (authenticated); 5 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1404,8 +1300,7 @@
     {
       "frr_id": "VDR-CSO-DFR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "Architecture: static content on private S3 behind CloudFront (infrastructure/main.tf, infrastructure/bootstrap/cloudfront.tf), serverless Silk Reeling (API Gateway -> Lambda, Cognito-gated; infrastructure/silk-reeling.tf, cognito.tf); no servers or operating systems to patch, so detection is SCA, IaC analysis, DAST and CodeQL, with no host scanning; all infrastructure is Terraform, gated by OPA at plan time (deploy-with-opa.yml 'Run OPA Compliance Check'), and the same Rego re-validates the deployed system as Wasm (the policy parity test, and the runtime readers for every machine type). The published inventory (ksi-signal.json) has no compute instances or containers. The residual risks this design leaves are accepted separately and are not evidence for this rule (DEC-007 WAF, DEC-009 origin failover, DEC-026 operator IAM privileges).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1424,8 +1319,7 @@
     {
       "frr_id": "VDR-CSO-FAV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "A detect-and-recover failure recorded in the run (e.g. runtime-divergence.observer-fault), a detection coverage gap (vdr.coverage), a finding that resolves to no component (vdr.unresolved-component) and a finding still on a default after the VER-TFR-EVU window each become a VDR finding with source 'process': tracking ID, clock from the failure, rating (severity proxy N2), Class C deadline, disposition and VDT record, remediated when the check passes. A block-mode failure stops the run (and the deploy opens an issue); each stopped run of the deploy, nightly or ZAP workflow on main is listed in the next report's process_failures with its times, from the 'Collect failed pipeline runs' step. scripts/build-vdr-report.py with scripts/_evaluation.py.",
+      "not_demonstrated": "Not built in this repository yet. Missing: step deploy-with-opa.yml#Collect failed pipeline runs (VDR-CSO-FAV); step evidence-nightly.yml#Collect failed pipeline runs (VDR-CSO-FAV); 5 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1435,8 +1329,8 @@
     },
     {
       "frr_id": "VDR-CSO-MSP",
-      "status": "Implemented",
-      "implementation": "security/zap/allowlist.json has no entries: no edge allowlist exists for the scanner, and the VDR builder flags any DAST finding observed only at allowlisted URLs (scripts/build-vdr-report.py load_zap_allowlist and _zap_location, REQ-IRV-11). The nightly's AWS access for the reconciliation sweep is read-only (infrastructure/bootstrap/evidence-nightly.tf, policy document evidence_nightly_reconcile_reads: List, Describe and GET calls only; the audit-log review's separate grant, evidence_nightly_audit_reads, is cloudtrail:LookupEvents only). ZAP runs two scans of production (zap-dast.yml): an unauthenticated baseline of the site, as a stranger sees it, and an authenticated scan of the Silk Reeling API signed in as a dedicated, standing Cognito scanner user. That user is an ordinary user of the pool, created like every other user and holding the TOTP MFA the pool requires; it signs in with the flows the app client already allows (scripts/dast-cognito-token.py, docs/runbooks/dast-scanner-user.md). No app-client flow, authorizer or edge control was widened, disabled or opened for scanning.",
+      "status": "Not Demonstrated",
+      "not_demonstrated": "Not built in this repository yet. Missing: the authenticated scan's sign-in (scripts/dast-cognito-token.py) and the scanner-user runbook it relies on.",
       "evidence": [
         {
           "kind": "test",
@@ -1451,8 +1345,7 @@
     {
       "frr_id": "VDR-CSO-RES",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Each VDR build tracks every finding through the ledger (detection, evaluation, clock, rating history), evaluates it in policies/triage.rego (IRV, LEV, PAIN, group, deadline, acceptance, blocking), verifies mitigations against the signed runtime signal, forces fix-or-decide (vuln-gate.py, decision register) and reports it (VDR, VDT, AVI, MRH, monthly report). Exploitation is assessed per finding under DEC-181: evaluation.exploitation is active when the source reports it or an incident record names the finding or its CVE, otherwise none observed, with its basis and time; exploitation elsewhere is read from KEV and EPSS. No person reviews logs for this assessment (DEC-181).",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-181; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1485,8 +1378,7 @@
     {
       "frr_id": "VDR-TFR-KEV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "The VDR keeps each KEV entry's dueDate and dateAdded: a KEV finding's remediation deadline is the earlier of the Class C deadline and the catalog's due date, even when fully mitigated, and it is overdue once the catalog date passes; kev_due_at, kev_date_added and kev_overdue are published per finding and in the VDT's providerExtensions (kevDueAt, kevDateAdded, kevOverdue). A KEV blocks before activation (VDR-CSO-AKE) and in the VDR build (G1).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1509,8 +1401,7 @@
     {
       "frr_id": "VDR-TFR-MVX",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "The runtime emitter (infrastructure/lambda, daily, signed with a KMS ECDSA key) re-validates every machine-based component live against the same gate policy the deploy enforces: live readers for each of the 20 machine types in infrastructure/schemas/runtime-vv-config.json (IAM roles, groups and the OIDC provider, Lambda, API Gateway, Cognito, KMS, log groups, SNS, SQS, alarms, rules, CloudTrail, DynamoDB, Route 53, ACM, S3, CloudFront), with read-only grants scoped by ARN. Reconciliation invariant (n) in the nightly fails closed unless every machine component was validated by a verified runtime run within 72 hours (Class C: 3 days); a denied read is unassessed, never a pass. Packages, static content and external services are excluded with their reasons (scans, content hashing, outside the boundary).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1525,14 +1416,12 @@
     {
       "frr_id": "VDR-TFR-NMV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "data/non-machine-resources.json registers every non-machine resource (policies and standards, runbooks, procedures, incident response, recovery, the continuous monitoring plan, the operator role and training record, rules of behavior, supply chain and significant change procedures, the PTA, the security review record, the decision register and the governance registry). Nobody verifies them by hand: scripts/_nonmachine.py runs machine checks on each (the file exists; every repository path and DEC ID it cites resolves; it names no retired mechanism such as the POA&M, the SSP or Basic Auth; every tagged count matches the code; a register validates). scripts/check-non-machine-vv.py runs them on every deploy, failing it, and every night, publishing the record (.well-known/vdr-non-machine-vv.json): verifiedAt is the run's time when everything passes and the epoch when anything fails, so the 26-hour freshness window the watchdog reads turns red at once. A policy, runbook or procedure without an entry fails too."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-non-machine-vv.json; step deploy-with-opa.yml#Non-machine verification and validation (VDR-TFR-NMV); step evidence-nightly.yml#Non-machine verification and validation status (VDR-TFR-NMV); 4 test(s)."
     },
     {
       "frr_id": "VDR-TFR-PCD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "The VDR publishes coverage: each inventory component, the detection techniques that reach it (IaC SAST for every Terraform resource, SCA for every package and function, the ZAP site scan for every page, the authenticated API scan and CodeQL for the API and functions) and when each last ran. A component no technique reached in a month is recorded as vdr.coverage and becomes a process finding (VDR-CSO-FAV). The 11 external services the inventory declares (the ext:: components from scripts/build-ksi-signal.py build_external_components) are listed as the third party's to detect. Non-machine resources are verified on every deploy and every night (VDR-TFR-NMV).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1551,8 +1440,7 @@
     {
       "frr_id": "VDR-TFR-PDD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "infrastructure/schemas/runtime-vv-config.json marks each machine type likely_to_drift or not, with the reason, and sets drift_window_days 14. Every machine type, drifting or not, is re-validated live daily by the runtime emitter, and invariant (n) fails the nightly when any machine component goes 72 hours without a verified run; dependency trees are scanned twice daily and IaC on every change. A config that would weaken the window is rejected.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 3 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1567,8 +1455,7 @@
     {
       "frr_id": "VDR-TFR-PSD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "Similar machine-based resources are sampled well inside 3 days: the runtime emitter re-validates every machine component daily (not a sample: all of them), invariant (n) enforces 72 hours; CodeQL and the authenticated ZAP API scan run daily and after each deploy and the detection gate fails the run when either is older than 72 hours; the ZAP site scan is held to 3 days (--zap-max-age-days 3, fractional days).",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1633,8 +1520,7 @@
     {
       "frr_id": "VER-EVA-AIA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "Every finding's evaluation record carries automatable (VER-EVA-AIA): yes by default; no only from a decision record carrying the evidence (decisions.schema.json 'automatable', and _decisions.py refuses 'no' without evidence) or a CVSS 4.0 AU:N. Figure 7's floor reads the vector as the automatable proxy, and a finding with no prediction score is LEV, as the method states; an EPSS score below the governed threshold (published with its rationale, REQ-LEV-2) is the method's evidence for NLEV.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1645,8 +1531,7 @@
     {
       "frr_id": "VER-EVA-EFA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 1 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "Each finding carries an evaluation record with every factor VER-EVA-EFA names, each with its basis: criticality (the component's classification, which PAIN is computed from), reachability (IRV and basis), exploitability (LEV and basis), detectability (outside-in, public advisory, public source), prevalence (findings and components in its group, share of the inventory), privilege (CVSS PR/S and identity or key components), proximate vulnerabilities (other findings and verified mitigations on the component, read with the group) and known threats (KEV, EPSS). The VDR methodology publishes what each factor means (methodology.evaluation_factors). The factors are recorded, not fed into the global impact tables (REQ-PAI-4); grouping feeds the policy.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 1 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1673,7 +1558,7 @@
     {
       "frr_id": "VER-EVA-EFP",
       "status": "Implemented",
-      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: 14 in-force false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version', DEC-193 CodeQL on the SRP sign-in); policies/triage.rego record_status() rejects a false positive that names a control (it must be 'mitigated') and lapses it at review_by; every VDR finding whose final disposition is false-positive carries its decision_id.",
+      "implementation": "False-positive is a governed disposition: decision records with justification, decided_by/on, review_by (data/decisions.json: in-force false-positive records, e.g. DEC-039 ZAP 10099 'pattern matched prose', DEC-040 'Server: AmazonS3 carries no version'); policies/triage.rego record_status() rejects a false positive that names a control (it must be 'mitigated') and lapses it at review_by; every VDR finding whose final disposition is false-positive carries its decision_id.",
       "evidence": [
         {
           "kind": "test",
@@ -1696,8 +1581,7 @@
     {
       "frr_id": "VER-EVA-EIR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "policies/triage.rego decides IRV from an outside-in observation, the resolved inventory component's declared internet_reachable, or a verified not-reachable mitigation, with irv_basis per finding. Suppressions resolve to the resources their decision names, a site-root DAST finding resolves to its page, and a finding that still resolves to no component is rated at the method's fail-safe (IRV) and recorded as vdr.unresolved-component, a process finding with a deadline until it resolves.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1720,8 +1604,7 @@
     {
       "frr_id": "VER-EVA-ELX",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Figure 7 in policies/triage.rego, first match deciding, with lev_basis per finding. Configuration checks carry no CVE, so each recurring check has a governed CVSS vector (infrastructure/schemas/check-vectors.json) adopted by decision record DEC-180; a decided vector whose record is not in force stops the build. The vector drives the floor and the no-direct-impact rule, so LEV reflects what exploiting the misconfiguration needs in this system; DAST findings are evaluated by their decision records (DEC-039, DEC-040); anything unevaluated keeps the default (LEV).",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1744,8 +1627,7 @@
     {
       "frr_id": "VER-EVA-EPA",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "PAIN is computed by the CVSS-Environmental derivation from the vector (the advisory's, or the governed check vector adopted by DEC-180) and the component's classification, onto the rules' scale; a fully mitigated finding takes N0, read from VER-EVA-EPA in the rules. Each finding states its likely agency effect and what the rating rests on (impact_rationale), which the VDT carries as potentialAgencyImpact.",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-180; 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1772,8 +1654,7 @@
     {
       "frr_id": "VER-EVA-GRV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "Each finding belongs to a group: its CVE, else the decision record that decided it, else its check. policies/triage.rego evaluates the group at its most exposed open member (highest PAIN, LEV or IRV if any member is) with the clock of its earliest member, and the group's deadline binds every open member, so a new instance of an old group does not get a new clock. The VDR publishes groups[] (members, components, rating, deadline) and each finding's group; the VDT carries groupId and groupDueAt.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1792,8 +1673,7 @@
     {
       "frr_id": "VER-RPT-AVI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 1 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "vdr-accepted-vulnerabilities.json and .md under /.well-known/ (scripts/build-cr26-vdr.py): each accepted vulnerability's detail and acceptance rationale from its decision record (the build fails if a rationale is missing), supplementary information from the decision, and its detection time. A .checkov.yaml suppression resolves to the resources its decision names, so its IRV is decided from the inventory: DEC-010 (CKV_AWS_117) names the three Lambda components it covers and resolves; DEC-007, DEC-009 and DEC-010 record their original detection date (2025-06-14, from git history; AI-drafted for Sam's confirmation). Early acceptance (VER-TFR-MAV 'will not be') is included with its basis.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 1 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1820,8 +1700,7 @@
     {
       "frr_id": "VER-RPT-HLO",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "scripts/build-vdr-monthly.py publishes .well-known/vdr-monthly.json and .md for the calendar month to date (and the last 12 finished months): an overview of every activity type (software composition analysis, IaC static analysis, CodeQL, the ZAP site scan and the authenticated API scan, KEV and EPSS feeds, runtime verification, non-machine V&V, the vulnerability disclosure program, bug bounty, penetration testing and assessments), each with its runs and counts or an explicit 'none this period'. Activities outside the pipeline come from data/vdr-activities.json, which the operator records (seeded with the 2026-05-08 self-assessment and the 2026-10-26/27 manual ZAP scans). The VDT and AVI also carry the period's activity summary."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 2 test(s)."
     },
     {
       "frr_id": "VER-RPT-NID",
@@ -1832,7 +1711,6 @@
         ],
         "why": "The rule describes a process run by several people (attendees, reviewers, a trainee); this system has one operator."
       },
-      "planned": "Disclosure policy DEC-182: each finding carries public_disclosure (full or summary, with reason). An open finding that is IRV, LEV and N3 or above is published in summary until remediated, fully mitigated or dispositioned: ID, ratings, dates, deadline and status stay public (sufficient for a risk-based decision); description, observed locations, fixed versions and supplementary detail are withheld from the VDR and every report built from it. The path by which a necessary party would receive the withheld detail is exercised on every VDR build against a simulated requester (vdr-report.json withheld_detail_exercise): it logs, per withheld finding, the field names and a sha256 of the detail, never the detail, and a canned simulated finding keeps the path running when nothing is withheld. No real party receives anything (DEC-194). All published artifacts also pass the account-ID redaction gate.",
       "evidence": [
         {
           "kind": "step",
@@ -1851,8 +1729,7 @@
     {
       "frr_id": "VER-RPT-PER",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 7 of 10 pieces of evidence it cites do not resolve.",
-      "planned": "Reports are refreshed by every deploy and twice-daily nightly and each summarizes all activity since the previous report: the VDT and AVI carry providerExtensions.activitySummary for their period (detections, evaluations, rating changes, reductions, records no longer reported, remediations, decisions, every scan and feed run), and the monthly report covers the month. Runtime V&V runs are all counted: the emitter signs a bounded run history into its signal, carried forward only from a previous signal that verifies, and the VDR passes it to the period reports. Activities outside the pipeline (VDP reports, penetration tests, assessments) come from data/vdr-activities.json, with 'none this period' when none.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 5 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1871,8 +1748,7 @@
     {
       "frr_id": "VER-RPT-RPD",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 5 pieces of evidence it cites do not resolve.",
-      "planned": "The provider discloses its vulnerability reports publicly and records, per finding, the determination that doing so will not likely lead to exploitation (public_disclosure, under policy DEC-182); a finding where it would is published in summary until it is not.",
+      "not_demonstrated": "Not built in this repository yet. Missing: decision DEC-182; 2 test(s).",
       "evidence": [
         {
           "kind": "artifact",
@@ -1888,8 +1764,7 @@
     {
       "frr_id": "VER-RPT-VDT",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 5 of 9 pieces of evidence it cites do not resolve.",
-      "planned": "vdr-detail-report.json and .md under /.well-known/ (scripts/build-cr26-vdr.py), validated against the vendored VDT schema before writing: tracking ID; detection time (the earliest evidence: the scanner's first report, or the original_detection_date of a decision naming that record, e.g. DEC-039/040 for the manual ZAP scans) and source; evaluation time; IRV; LEV; current rating, with the historical rating and full rating history under providerExtensions (the schema has no field for them); PAIN reductions; projected next reduction from the decision's planned_reduction, else the remediation deadline; overdue status whose explanation explains the overdue status (and likely-to-become-overdue); supplementary information from the decision (justification, dates, resources, plan, mitigation); final disposition. Each report carries an activity summary for its period.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 5 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1912,8 +1787,7 @@
     {
       "frr_id": "VER-TFR-EVU",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "policies/triage.rego reads the evaluation window from the rules (scripts/_rules.py evaluation_days(), passed in by the builder) and flags each finding evaluated more than 5 days after the source detected it (a decision made earlier counts as the evaluation), or still resting on a default 5 days after detection (evaluation_late, published per finding and in the VDT). A finding still on a default becomes a process finding (VDR-CSO-FAV). Feeds are fetched twice daily, so first evaluation follows detection within a day.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
       "evidence": [
         {
           "kind": "step",
@@ -1932,14 +1806,12 @@
     {
       "frr_id": "VER-TFR-IRI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 4 pieces of evidence it cites do not resolve.",
-      "planned": "policies/triage.rego (incident_triggers) names every VDR finding that is internet-reachable, likely exploitable and above the N-rating the VER-TFR-IRI Class C text states (read from the rule; a changed text fails closed), unless it is a false positive or fully mitigated; once partially mitigated to N3 or below it no longer triggers. scripts/build-incident-report.py publishes each trigger in the incident log and, while no unresolved incident in data/incidents.json names it, puts an Initial report due from the finding's first evaluation at the default N5 clock: the incident-reports workflow fails and the evidence watchdog pages when that passes. Opening the incident record is the operator's act; its reports then follow IEC-CSO-IIR/OIR/FIR. Reconciliation invariant (m) fails a build whose open incident names a finding the VDR does not carry. Adopted in data/incidents.json policy.adopted_vulnerability_rules."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 3 test(s)."
     },
     {
       "frr_id": "VER-TFR-MAV",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 2 of 7 pieces of evidence it cites do not resolve.",
-      "planned": "policies/triage.rego marks a finding accepted once 192 days (VER-TFR-MAV, from the rules) have passed since its first evaluation, with no reset, and also as soon as its projected remediation (a decision's planned reduction to N0) falls after that day ('will not be'); accepted_basis is published, the acceptance explanation is the decision's justification, and the AVI reports it. A closed finding is never accepted.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 2 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1966,14 +1838,12 @@
     {
       "frr_id": "VER-TFR-MHR",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 6 of 6 pieces of evidence it cites do not resolve.",
-      "planned": "A consistent, human-readable monthly activity report: .well-known/vdr-monthly.md (with .json), rebuilt and signed by every deploy and nightly, covers the calendar month to date and keeps the previous 12 months: detections, evaluations, rating changes, reductions, remediations, decisions, every scan and feed run, runtime verification runs, non-machine V&V and the non-pipeline activities. The current-state vdr-report.md, vdr-detail-report.md and vdr-accepted-vulnerabilities.md are published beside it."
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/vdr-monthly.json; step deploy-with-opa.yml#Build monthly VDR activity report (VER-TFR-MHR); step evidence-nightly.yml#Build monthly VDR activity report (VER-TFR-MHR); 3 test(s)."
     },
     {
       "frr_id": "VER-TFR-MRH",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 4 of 8 pieces of evidence it cites do not resolve.",
-      "planned": "vdr-history.json under /.well-known/ in FedRAMP's history schema (scripts/build-cr26-vdr.py), rebuilt twice daily with 366-day retention, alongside vdr-report.json and vdr-trend.json. A record that leaves the VDR keeps the time it stopped being reported and gets a final disposition only from evidence (a closed decision, a false-positive suppression of its check, or its scanner running again over the same scope without reporting it), recorded in providerExtensions.dispositionBasis; otherwise noLongerReportedReason says why (suppressed, reported again, or unknown) and no final disposition is given. An unsupported Remediated carried from an earlier history is withdrawn. Closed (remediated) decisions from data/decisions.json are carried as history records (backfilledFromDecision) for 366 days from closing.",
+      "not_demonstrated": "Not built in this repository yet. Missing: 4 test(s).",
       "evidence": [
         {
           "kind": "test",
@@ -1996,8 +1866,7 @@
     {
       "frr_id": "VER-TFR-NRI",
       "status": "Not Demonstrated",
-      "not_demonstrated": "The mechanism described in planned is not yet in this repository: 3 of 3 pieces of evidence it cites do not resolve.",
-      "planned": "Adopted (docs/policies/ir-policy.md; data/incidents.json policy.adopted_vulnerability_rules). policies/triage.rego names every likely exploitable, not internet-reachable VDR finding at the N-rating the VER-TFR-NRI Class C text states (N5), until partially mitigated to N4 or below; the incident log and clocks treat it exactly as VER-TFR-IRI does. An unadopted rule's triggers are still shown but start no clock.",
+      "not_demonstrated": "Not built in this repository yet. Missing: artifact .well-known/incident-reports.json; 2 test(s).",
       "may_rationale": "Adopted, as the incident response policy states: treating a likely exploitable, non-internet-reachable N5 vulnerability as reportable is stricter than required and costs little at this scale."
     }
   ]

@@ -168,7 +168,7 @@ def _frr_item(rec, rule):
     if st == "Implemented":
         text = rec["implementation"]
     elif st == "Not Demonstrated":
-        text = f"Not Demonstrated: {rec['not_demonstrated']}" + (f" Planned: {rec['planned']}" if rec.get("planned") else "")
+        text = f"Not Demonstrated: {rec['not_demonstrated']}"
     elif st == "Impractical":
         imp = rec["impractical"]
         text = (f"Impractical ({', '.join(imp.get('reasons', []))}): {imp.get('why', '')}"
