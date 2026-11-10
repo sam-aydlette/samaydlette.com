@@ -125,31 +125,42 @@ def _published(workflow, step_name, signatures=False):
             names |= {item + tmpl for item in items.split()}
     names |= set(re.findall(r"\.well-known/([A-Za-z0-9][\w.-]*)(?![\w.*-])", step))
     names |= {m for m in re.findall(r"^\s*put ([\w.-]+)\s", step, re.M)}
+    for items, body in re.findall(r"for (?:\w+) in ([^;\n]+); do(.*?)\n\s*done", step, re.S):
+        for suffix in re.findall(r'put "\$\w+(\.[\w.]+)"', body):
+            names |= {i + suffix for i in items.split()}
     if signatures:
         return {n for n in names if n.endswith(".bundle")}
     return {n for n in names if not n.endswith((".bundle", ".md", ".schema.json"))}
 
 
 def test_every_artifact_the_pipelines_publish_has_a_governed_window():
-    listed = {a["path"].removeprefix(".well-known/") for a in good()["artifacts"]}
-    deploy = _published("deploy-with-opa.yml", "Publish all signed artifacts to /.well-known/")
-    attest = {f"{a}.intoto.jsonl" for a in re.findall(
-        r"^\s*attest (\S+)\s+scripts/", (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text(), re.M)}
+    """The deploy publishes only what the config lists (tests/test_published_set.py
+    runs its steps); the nightly keeps an explicit put list that mirrors its
+    role's grant, so its steps are read here."""
+    cfg = good()
+    listed = {a["path"].removeprefix(".well-known/") for a in cfg["artifacts"]}
+    deploy_text = (REPO / ".github" / "workflows" / "deploy-with-opa.yml").read_text()
+    for step in ("Publication redaction gate (no AWS account ID)", "Publish all signed artifacts to /.well-known/",
+                 "Post-publish round-trip verify"):
+        body = deploy_text[deploy_text.index(f"- name: {step}"):]
+        body = body[:body.find("\n    - name:")]
+        assert "published-set.py" in body and "--by deploy" in body, step
     nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/") \
         | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog")
-    assert "ksi-signal.json" in deploy and "trust-center.json" in deploy and "vdr-report.json" in nightly
-    assert len(attest) == 4  # the POA&M attestation is retired
-    missing = (deploy | attest | nightly | {"ksi-signal-runtime.json"}) - listed
-    assert not missing, f"published without a governed freshness window: {sorted(missing)}"
+    assert "vdr-report.json" in nightly and "vdr-status.json" in nightly
+    assert not nightly - listed, f"published without a governed freshness window: {sorted(nightly - listed)}"
+    by_nightly = {a["path"].removeprefix(".well-known/") for a in cfg["artifacts"] if "nightly" in a["published_by"]}
+    assert nightly == by_nightly, "the nightly's put list and the config's published_by disagree"
 
 
 def test_every_listed_signature_is_published():
-    published = _published("deploy-with-opa.yml", "Publish all signed artifacts to /.well-known/", signatures=True) \
-        | _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/", signatures=True)
+    nightly = _published("evidence-nightly.yml", "Publish VDR + trend to /.well-known/", signatures=True) \
+        | _published("evidence-nightly.yml", "Write status beacon for the evidence watchdog", signatures=True)
     for a in good()["artifacts"]:
         if "signature" in a:
             assert a["signed"], a["path"]
-            assert a["signature"].removeprefix(".well-known/") in published, a["path"]
+            if "nightly" in a["published_by"]:
+                assert a["signature"].removeprefix(".well-known/") in nightly, a["path"]
 
 
 def _btc():

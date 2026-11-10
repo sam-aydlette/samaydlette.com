@@ -146,66 +146,7 @@ def _step(text, name):
     return body[:body.find("\n    - name:")]
 
 
-def _expand(step, take):
-    """Basenames a step names, with `for a in x y; do ... "$a.json" ...; done`
-    loops expanded. `take(line)` returns the file token a line contributes."""
-    names = set()
-    loops = list(re.finditer(r"for (\w+) in ([^;\n]+); do(.*?)\n\s*done", step, re.S))
-    for var, items, body in (m.groups() for m in loops):
-        for line in body.splitlines():
-            tok = take(line)
-            if tok and f"${var}" in tok:
-                names |= {Path(tok.replace(f"${var}", i)).name for i in items.split()}
-    outside = step
-    for m in reversed(loops):
-        outside = outside[:m.start()] + outside[m.end():]
-    for line in outside.splitlines():
-        tok = take(line)
-        if tok and "$" not in tok:
-            names.add(Path(tok).name)
-    return names
-
-
-def _uploaded(line):
-    m = re.search(r"aws s3 cp \"?([^\s\"]+)\"?\s+\"?s3://", line)
-    return m.group(1) if m else None
-
-
-def _gate_files(step, cwd):
-    """Run the gate step's shell with the scanner replaced by `echo`, in `cwd`,
-    and return the basenames it would scan."""
-    lines = []
-    for line in step.split("run: |", 1)[1].splitlines()[1:]:
-        if line.strip() and not line.startswith(" " * 8):
-            break  # the block ends where its indentation does
-        lines.append(line[8:])
-    script = "\n".join(lines)
-    script = script.replace("python3 ../scripts/check-published-redaction.py", "echo")
-    out = subprocess.run(["bash", "-euo", "pipefail", "-c", script], cwd=cwd,
-                         capture_output=True, text=True, check=True).stdout
-    return {Path(t).name for t in out.split()}
-
-
-def test_deploy_gates_exactly_what_it_publishes(tmp_path):
-    names, text = _steps("deploy-with-opa.yml")
-    i = names.index("Publication redaction gate (no AWS account ID)")
-    assert names[i + 1] == "Publish all signed artifacts to /.well-known/"
-    publish = _expand(_step(text, "Publish all signed artifacts to /.well-known/"), _uploaded)
-    publish = {n for n in publish if not n.endswith((".bundle", ".tar.gz"))}
-    assert {"ksi-signal.json", "vdr-history.json", "trust-center.json", "iiw.csv"} <= publish
-    gate_step = _step(text, "Publication redaction gate (no AWS account ID)")
-    # Every optional artifact present: the gate scans everything the upload does.
-    optional = ("boundary-map", "reconcile-report", "trust-center", "conformance-results", "boundary-corroboration")
-    for a in optional:
-        (tmp_path / f"{a}.json").write_text("{}")
-    assert _gate_files(gate_step, tmp_path) == publish
-    # One absent (the operator-run corroboration): it is neither uploaded nor scanned.
-    (tmp_path / "boundary-corroboration.json").unlink()
-    assert _gate_files(gate_step, tmp_path) == publish - {"boundary-corroboration.json"}
-    # Never a directory scan: the deploy downloads live files it does not
-    # publish (the runtime signal), and a scan of its working directory read
-    # them as its own output and blocked the deploy that would fix them.
-    assert "--root" not in gate_step
+# The deploy's gate and upload read one list: tests/test_published_set.py.
 
 
 def test_an_input_the_deploy_downloaded_does_not_block_it(tmp_path):

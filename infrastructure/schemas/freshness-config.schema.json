@@ -52,7 +52,8 @@
           "cadence",
           "max_age_hours",
           "timestamp",
-          "signed"
+          "signed",
+          "published_by"
         ],
         "properties": {
           "path": {
@@ -111,6 +112,32 @@
           "signature": {
             "type": "string",
             "pattern": "^\\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "published_by": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "deploy",
+                "nightly",
+                "runtime"
+              ]
+            },
+            "description": "The workflows (or the runtime Lambda) that upload this artifact. scripts/published-set.py builds each workflow's publish list from it."
+          },
+          "markdown": {
+            "type": "boolean",
+            "description": "A human-readable <name>.md rendering is published beside this .json artifact."
+          },
+          "json_schema": {
+            "type": "string",
+            "pattern": "^schemas/[A-Za-z0-9][A-Za-z0-9._-]*\\.schema\\.json$",
+            "description": "Build-relative path of the JSON schema published beside this artifact under the same .well-known/ prefix."
+          },
+          "optional": {
+            "type": "boolean",
+            "description": "Published only when the run produced it (the operator-run corroboration). Every other listed artifact must exist, or its publisher fails."
           },
           "note": {
             "type": "string"

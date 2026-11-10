@@ -1673,19 +1673,12 @@ jobs:
     # It scans exactly what the next step uploads (bundles and the compiled
     # policy archive aside), never inputs this run downloaded: the live runtime
     # signal is read here but published by the runtime Lambda.
-    # tests/test_published_redaction.py holds this list equal to the upload step's.
+    # The list comes from the governed config (scripts/published-set.py), the
+    # same one the upload step reads, so the two cannot drift apart.
     - name: Publication redaction gate (no AWS account ID)
       working-directory: infrastructure
       run: |
-        files="ksi-signal.json schemas/ksi-signal.schema.json vdr-report.json vdr-report.md vdr-trend.json iiw.csv"
-        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do files="$files $a.json"; done
-        for a in vdr-detail-report vdr-accepted-vulnerabilities; do files="$files $a.md"; done
-        files="$files ongoing-certification-report.json ongoing-certification-report.md"
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do files="$files $a.json $a.md"; done
-        for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
-          [ -f "$a.json" ] || continue
-          files="$files $a.json"
-        done
+        files=$(python3 ../scripts/published-set.py scan --by deploy)
         # shellcheck disable=SC2086  # a word list by design
         python3 ../scripts/check-published-redaction.py $files
 
@@ -1696,32 +1689,14 @@ jobs:
       working-directory: infrastructure
       run: |
         BUCKET_NAME=$(terraform output -raw s3_bucket_name)
-        # KSI signal + bundle + schema
-        aws s3 cp ksi-signal.json "s3://$BUCKET_NAME/.well-known/ksi-signal.json" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp ksi-signal.bundle "s3://$BUCKET_NAME/.well-known/ksi-signal.bundle" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp schemas/ksi-signal.schema.json "s3://$BUCKET_NAME/.well-known/ksi-signal.schema.json" --content-type application/schema+json --cache-control "public, max-age=3600"
-        # Signed OPA policy bundle (S1): the compiled Wasm the gate + runtime use, plus its keyless signature.
-        aws s3 cp opa-policy-bundle.tar.gz "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz" --content-type application/gzip --cache-control "public, max-age=300"
-        aws s3 cp opa-policy-bundle.tar.gz.bundle "s3://$BUCKET_NAME/.well-known/opa-policy-bundle.tar.gz.bundle" --content-type application/json --cache-control "public, max-age=300"
-        # VDR report + trend
-        aws s3 cp vdr-report.json "s3://$BUCKET_NAME/.well-known/vdr-report.json" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp vdr-report.bundle "s3://$BUCKET_NAME/.well-known/vdr-report.bundle" --content-type application/json --cache-control "public, max-age=300"
-        # Human-readable VDR rendering (VER-TFR-MHR); derived from the signed JSON above.
-        aws s3 cp vdr-report.md "s3://$BUCKET_NAME/.well-known/vdr-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
-        aws s3 cp vdr-trend.json "s3://$BUCKET_NAME/.well-known/vdr-trend.json" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp vdr-trend.bundle "s3://$BUCKET_NAME/.well-known/vdr-trend.bundle" --content-type application/json --cache-control "public, max-age=300"
-        # CR26 vulnerability reports (VER-RPT-VDT, VER-RPT-AVI, VER-TFR-MRH) + bundles;
-        # human-readable renderings of the VDT and AVI.
-        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
-          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
-          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
-        done
-        for a in vdr-detail-report vdr-accepted-vulnerabilities; do
-          aws s3 cp "$a.md" "s3://$BUCKET_NAME/.well-known/$a.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
-        done
-        # IIW
-        aws s3 cp iiw.csv "s3://$BUCKET_NAME/.well-known/iiw.csv" --content-type text/csv --cache-control "public, max-age=300"
-        aws s3 cp iiw.bundle "s3://$BUCKET_NAME/.well-known/iiw.bundle" --content-type application/json --cache-control "public, max-age=300"
+        # Every artifact the governed config (infrastructure/schemas/
+        # freshness-config.json) says the deploy publishes, with its signature,
+        # Markdown rendering and schema. published-set.py fails if one was not
+        # built; the operator-run corroboration is the only optional one.
+        objects=$(python3 ../scripts/published-set.py upload --by deploy)
+        while IFS=$'\t' read -r file key type cache; do
+          aws s3 cp "$file" "s3://$BUCKET_NAME/$key" --content-type "$type" --cache-control "$cache" </dev/null
+        done <<< "$objects"
 
         # Retired artifacts (CR26): the OSCAL POA&M was replaced by the decision
         # register (data/decisions.json) on 2026-11-04, and the OSCAL SSP by the
@@ -1730,23 +1705,6 @@ jobs:
         # the round-trip step below asserts they are gone.
         for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
           aws s3 rm "s3://$BUCKET_NAME/.well-known/$retired"
-        done
-        # Ongoing Certification Report (CCM-OCR-AVL) + human-readable rendering
-        aws s3 cp ongoing-certification-report.json "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.json" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp ongoing-certification-report.bundle "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.bundle" --content-type application/json --cache-control "public, max-age=300"
-        aws s3 cp ongoing-certification-report.md "s3://$BUCKET_NAME/.well-known/ongoing-certification-report.md" --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
-        # CDS certification-data artifacts (overview package, availability feed, policy index) + bundles + human-readable
-        for a in certification-overview-package availability policy-index security-decision-record certification-package-overview; do
-          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
-          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
-          aws s3 cp "$a.md"     "s3://$BUCKET_NAME/.well-known/$a.md"     --content-type "text/markdown; charset=utf-8" --cache-control "public, max-age=300"
-        done
-        # Trust center: the generated boundary map, the gate's own report (it exists
-        # only because the gate above passed) and the trust center's data.
-        for a in boundary-map reconcile-report trust-center conformance-results boundary-corroboration; do
-          [ -f "$a.json" ] || continue
-          aws s3 cp "$a.json"   "s3://$BUCKET_NAME/.well-known/$a.json"   --content-type application/json --cache-control "public, max-age=300"
-          aws s3 cp "$a.bundle" "s3://$BUCKET_NAME/.well-known/$a.bundle" --content-type application/json --cache-control "public, max-age=300"
         done
         echo "✅ All signed artifacts published to /.well-known/ (post-gate)"
 
@@ -1890,28 +1848,11 @@ jobs:
             echo "ok: $2"
           fi
         }
-        check ksi-signal.json .well-known/ksi-signal.json
-        check opa-policy-bundle.tar.gz .well-known/opa-policy-bundle.tar.gz
-        check vdr-report.json .well-known/vdr-report.json
-        for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
-          check "$a.json" ".well-known/$a.json"
-        done
-        check ongoing-certification-report.json .well-known/ongoing-certification-report.json
-        check certification-overview-package.json .well-known/certification-overview-package.json
-        check availability.json .well-known/availability.json
-        check policy-index.json .well-known/policy-index.json
-        check security-decision-record.json .well-known/security-decision-record.json
-        check certification-package-overview.json .well-known/certification-package-overview.json
-        check iiw.csv .well-known/iiw.csv
-        check boundary-map.json .well-known/boundary-map.json
-        check reconcile-report.json .well-known/reconcile-report.json
-        check trust-center.json .well-known/trust-center.json
-        check conformance-results.json .well-known/conformance-results.json
-        if [ -f boundary-corroboration.json ]; then check boundary-corroboration.json .well-known/boundary-corroboration.json; fi
-        # SLSA/in-toto provenance attestations (S2/S3): served bytes match the build.
-        for a in ksi-signal.json security-decision-record.json vdr-report.json iiw.csv; do
-          check "$a.intoto.jsonl" ".well-known/$a.intoto.jsonl"
-        done
+        # Every object the upload and attest steps published, from the same list.
+        served=$(python3 ../scripts/published-set.py served --by deploy)
+        while IFS=$'\t' read -r file key; do
+          check "$file" "$key" </dev/null
+        done <<< "$served"
         # Retired artifacts must be gone from the origin. Only a 404 counts as
         # gone: any other error (e.g. AccessDenied) fails rather than passing.
         for retired in oscal-poam.json oscal-poam.bundle oscal-poam.json.intoto.jsonl oscal-ssp.json oscal-ssp.bundle oscal-ssp.json.intoto.jsonl; do
