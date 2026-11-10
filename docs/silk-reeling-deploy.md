@@ -4,6 +4,16 @@ The gated app deploys with the site (`create_silk_reeling = true`). This documen
 what it adds, how the compliance pipeline evaluates it, the findings, and the POA&M
 responses.
 
+## Releasing a new version
+
+The pipeline builds the app from the commit pinned in `data/apps.json`, never from
+a branch. A push to the app repository changes nothing in production. To ship it,
+open a pull request here that moves `source.commit` to the new commit; the
+security impact analysis classifies it and the deploy builds exactly that commit.
+`scripts/app-source.sh` checks the source out and fails if the commit does not
+match. The nightly scans the pin as of the deployed commit, so a merged bump is
+scanned only once it is deployed.
+
 ## What it adds (infrastructure)
 
 - `infrastructure/silk-reeling.tf` — the gated app:

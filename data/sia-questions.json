@@ -122,7 +122,7 @@
       "id": "pipeline",
       "question": "Does it change how the pipeline builds, signs, publishes or deploys?",
       "outcome": "adaptive",
-      "triggers": {"paths": [".github/workflows/deploy-with-opa.yml", ".github/workflows/evidence-nightly.yml", "infrastructure/schemas/freshness-config.json", "Makefile", "infrastructure/Makefile"]}
+      "triggers": {"paths": [".github/workflows/deploy-with-opa.yml", ".github/workflows/evidence-nightly.yml", "infrastructure/schemas/freshness-config.json", "Makefile", "infrastructure/Makefile", "data/apps.json", "scripts/app-source.sh"]}
     },
     {
       "id": "backup-recovery",
