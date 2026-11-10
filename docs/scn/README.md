@@ -14,11 +14,14 @@ per the SCN rules in the CR26 corpus (`providers/20x/rules/significant-change-no
 
 ## How this relates to the rest of the system
 
-- **Audit records (`SCN-CSO-MAR`):** the git history is the audit record of SCN
-  evaluation activity. Every commit to `main` carries an `SCN-Type:` categorization
-  validated by [`.github/workflows/scn-tag.yml`](../../.github/workflows/scn-tag.yml);
-  the default is `routine-recurring` per [`docs/policies/cm-policy.md`](../policies/cm-policy.md),
-  and the operator upgrades to `adaptive` / `transformative` / `emergency` explicitly.
+- **Evaluation (`SCN-CSO-EVA`):** every pull request into `main` carries a security
+  impact analysis, answers to [`data/sia-questions.json`](../../data/sia-questions.json),
+  and [`scripts/sia.py`](../../scripts/sia.py) derives the SCN type from it in the
+  rule's order. The `scn-tag` check fails when a question the diff touches is
+  unanswered or the declared `SCN-Type:` disagrees. See
+  [`docs/policies/cm-policy.md`](../policies/cm-policy.md).
+- **Audit records (`SCN-CSO-MAR`):** the pull requests, with their analyses and the
+  `scn-tag` check runs, are the audit record of SCN evaluation activity.
   The register and the per-change records here are the durable, structured complement to
   that history for Adaptive and Transformative changes (which produce a SIA).
 - **Historical notifications (`SCN-CSO-HIS`):** at least **12 months** of SCNs are kept

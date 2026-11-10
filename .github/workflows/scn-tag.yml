@@ -7,10 +7,15 @@
 # is the SCN audit record (SCN-CSO-MAR), and this gate ensures every entry in
 # that record carries a recognized SCN-Type categorization.
 #
-# Categorization defaults to routine-recurring per docs/policies/cm-policy.md
-# when no SCN-Type line is present. The validator only fails on a malformed
-# SCN-Type value; missing tags are treated as the default. Operators must
-# explicitly upgrade the categorization for Adaptive or Transformative changes.
+# On a pull request into main, "Validate the SCN evaluation" runs the security
+# impact analysis (scripts/sia.py over data/sia-questions.json): the questions
+# the diff touches must be answered in the PR description, the SCN type is
+# derived from the answers in SCN-CSO-EVA's order, and the declared SCN-Type
+# must equal it. A missing SCN-Type is allowed only when the analysis gives
+# routine-recurring or not-significant (docs/policies/cm-policy.md).
+#
+# On push events and pull requests into other branches, only the spelling of
+# the SCN-Type value is checked; changes reach main only through a pull request.
 # =============================================================================
 
 name: SCN Tag
@@ -47,7 +52,7 @@ jobs:
           # (Markdown heading) and case-insensitive 'SCN-Type:' prefix.
           tag=$(printf '%s\n' "${content}" | grep -iE '^[[:space:]]*##?[[:space:]]*SCN-Type:' | head -n1 | sed -E 's/^[[:space:]]*##?[[:space:]]*SCN-Type:[[:space:]]*//I' | tr -d '[:space:]' || true)
           case "${tag}" in
-            adaptive|routine-recurring|transformative)
+            adaptive|routine-recurring|transformative|not-significant)
               echo "SCN-Type: ${tag} (from ${source_label})"
               ;;
             emergency)
@@ -62,7 +67,26 @@ jobs:
               echo "::notice::No SCN-Type line in ${source_label}; defaulting to routine-recurring per docs/policies/cm-policy.md."
               ;;
             *)
-              echo "::error::SCN-Type '${tag}' in ${source_label} is not a recognized value. Must be one of: adaptive | routine-recurring | transformative | emergency. See SCN-CSO-EVA / SCN-CSO-EMG in docs/policies/cm-policy.md."
+              echo "::error::SCN-Type '${tag}' in ${source_label} is not a recognized value. Must be one of: adaptive | routine-recurring | transformative | not-significant | emergency. See SCN-CSO-EVA / SCN-CSO-EMG in docs/policies/cm-policy.md."
               exit 1
               ;;
           esac
+
+      # SCN-CSO-EVA: the security impact analysis decides the SCN type. The PR
+      # description is passed through the environment, never interpolated
+      # into the script.
+      - name: Check out the change
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate the SCN evaluation
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: python3 scripts/sia.py --base "$BASE_SHA" --head "$HEAD_SHA" --author "$PR_AUTHOR"
