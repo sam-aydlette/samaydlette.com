@@ -34,6 +34,7 @@ Each entry: what went wrong, and the rule that now prevents it. Check your plan 
 ## Settled decisions: don't "fix" these
 
 - **WAF is intentionally declined.** SC-7 and SC-5 are met through managed interfaces (CloudFront and API Gateway), AWS Shield Standard and throttling. A WAF's incremental layer-7 filtering is documented as the residual. Don't re-add it.
+- **Every deploy shows the Lambdas' `environment` block as changed (operator, 2026-11-10).** The variables are encrypted with the app CMKs, and on purpose neither the deploy role nor the plan role can decrypt them. Lambda then returns no variables, with `Environment.Error: AccessDeniedException`, so Terraform plans to add them and rewrites the same values. It is harmless: each deploy resets the live values from the code. Don't grant `kms:Decrypt` to silence it, and don't add `ignore_changes`, which would hide real changes. A changed `source_code_hash` is not expected: packages are built with `scripts/zip-deterministic.sh`.
 - **CI proves compliance, not article content.** The prose checks were removed from CI (#356). The long-form checks in `tools/essay/` stay local-only.
 - **Parked code doesn't come back as a side effect.** Don't revive a removed generator while doing another change.
 - More settled decisions live in `docs/architecture-decisions.md`. Read the relevant section before proposing a change to the same area.
