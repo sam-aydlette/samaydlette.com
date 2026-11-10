@@ -397,9 +397,7 @@ jobs:
         ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
-        cd lambda
-        zip -r ../opa-compliance.zip .
-        cd ..
+        ../scripts/zip-deterministic.sh lambda opa-compliance.zip
         echo "Zip file created:"
         ls -la opa-compliance.zip
 
@@ -715,9 +713,7 @@ jobs:
         ls -la lambda/policy.wasm lambda/policy-data.json
 
         echo "Creating Lambda deployment package..."
-        cd lambda
-        zip -r ../opa-compliance.zip .
-        cd ..
+        ../scripts/zip-deterministic.sh lambda opa-compliance.zip
         echo "Lambda package created:"
         ls -la opa-compliance.zip
 
@@ -967,7 +963,10 @@ jobs:
         # numpy/pydantic-core C-extension wheels match the runtime ABI regardless
         # of the runner's own Python (which may differ and would otherwise ship
         # cp312 .so files into a cp313 runtime -> Runtime.ImportModuleError).
-        python3 -m pip install --quiet --target _pkg \
+        # --no-compile: .pyc files are compiled by the runner's own Python and
+        # record build-time timestamps, so they changed the package hash every
+        # run; the runtime compiles what it imports.
+        python3 -m pip install --quiet --no-compile --target _pkg \
           --platform manylinux2014_x86_64 --python-version 3.13 \
           --implementation cp --only-binary=:all: \
           -r _silk_src/backend/requirements-lambda.txt
@@ -976,7 +975,7 @@ jobs:
         cp -r _silk_src/reference_data _pkg/reference_data
         cp -r _silk_src/frontend/dist _pkg/spa
         rm -rf _pkg/backend/__pycache__
-        ( cd _pkg && zip -qr ../silk-reeling.zip . )
+        ../scripts/zip-deterministic.sh _pkg silk-reeling.zip
         echo "silk-reeling.zip size: $(du -h silk-reeling.zip | cut -f1)"
 
     # -------------------------------------------------------------------------
