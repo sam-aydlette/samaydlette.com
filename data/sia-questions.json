@@ -1,0 +1,146 @@
+{
+  "version": "1.0",
+  "purpose": "Security impact analysis (SIA) for every change, per SCN-CSO-EVA. Each question is answered yes or no in the PR body. A yes forces at least the question's outcome. A question whose triggers match the diff must be answered explicitly, and a no needs a one-line reason. Path triggers apply anywhere; line patterns apply only to non-comment lines in line_scan_paths (configuration and infrastructure), not in code or comments that merely name the same things. Adapted from the security impact analysis template in NIST SP 800-128 to this system.",
+  "decided_by": "Sam Aydlette",
+  "decided_on": "2026-11-10",
+  "review_by": "2027-11-10",
+  "security_relevant_paths": ["scripts/**", "data/**", "infrastructure/**", "policies/**", ".github/**", "Makefile",
+                              "website/.well-known/**", "website/trust/**", "website/assets/js/trust.js", "docs/boundary/**",
+                              "tools/boundary-map/**"],
+  "line_scan_paths": ["infrastructure/**", ".github/**", "policies/**", "data/**", "docs/boundary/**", "Makefile"],
+  "line_scan_exclude": ["data/sia-questions.json"],
+  "outcomes": ["not-significant", "routine-recurring", "adaptive", "transformative", "class-change"],
+  "recurring_categories": {
+    "dependency-update": "A version change of a dependency, action or tool already in use, adding no new package or service.",
+    "vulnerability-remediation": "A fix, mitigation or decision record for a known vulnerability, through the existing VDR process.",
+    "evidence-refresh": "Regenerating or re-publishing evidence the pipeline already produces, with no change to how it is produced."
+  },
+  "questions": [
+    {
+      "id": "class-change",
+      "question": "Does the change alter the system's FIPS 199 impact level or its FedRAMP certification class?",
+      "outcome": "class-change",
+      "triggers": {"paths": ["data/system-profile.json"]}
+    },
+    {
+      "id": "customer-data-interconnection",
+      "question": "Does it add an external service or interconnection that would receive customer or federal data?",
+      "outcome": "transformative",
+      "triggers": {"paths": ["data/third-party-components.json"]}
+    },
+    {
+      "id": "customer-auth-model",
+      "question": "Does it change how customers or app users authenticate, or what customers must configure themselves?",
+      "outcome": "transformative",
+      "triggers": {"paths": ["infrastructure/cognito.tf"], "diff": ["aws_cognito_", "aws_apigatewayv2_authorizer", "(?i)authorization_type"]}
+    },
+    {
+      "id": "data-boundary",
+      "question": "Does it move system data into another authorization boundary, or out of this one?",
+      "outcome": "transformative",
+      "triggers": {"paths": ["docs/boundary/boundary-classification.json"], "diff": ["aws_s3_bucket_replication", "(?i)destination_bucket|cross_region"]}
+    },
+    {
+      "id": "privacy-data",
+      "question": "Does it introduce, collect or generate privacy-impacting data (PII or PHI)?",
+      "outcome": "transformative",
+      "triggers": {"paths": ["docs/privacy-threshold-analysis.md"], "diff": ["(?i)\\bpii\\b|\\bphi\\b|email|phone_number|(postal|street|home)_?address"]}
+    },
+    {
+      "id": "cloud-provider",
+      "question": "Does it change the cloud provider the system runs on?",
+      "outcome": "transformative",
+      "triggers": {"paths": ["infrastructure/backend.tf"], "diff": ["^\\s*provider\\s+\""]}
+    },
+    {
+      "id": "new-component",
+      "question": "Does it add a component, service, feature or app to the boundary?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["docs/boundary/boundary-classification.json"], "diff": ["^\\+\\s*resource\\s+\"", "^\\+\\s*module\\s+\""]}
+    },
+    {
+      "id": "remove-component",
+      "question": "Does it remove a component, service, feature or app?",
+      "outcome": "adaptive",
+      "triggers": {"diff": ["^-\\s*resource\\s+\"", "^-\\s*module\\s+\""]}
+    },
+    {
+      "id": "external-service",
+      "question": "Does it add or change an external service, interconnection or third-party component (whatever data it handles)?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["data/third-party-components.json", "website/assets/vendor/**"], "diff": ["^\\+\\s*uses:\\s"]}
+    },
+    {
+      "id": "security-controls",
+      "question": "Does it add, remove or weaken a security control, gate or compensating control?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["policies/**", "infrastructure/policy/**", "scripts/check-*", "scripts/reconcile*", ".checkov.yaml", "data/mitigations.json"]}
+    },
+    {
+      "id": "compliance-engine",
+      "question": "Does it change how compliance status is decided or published (gates, assessor, reconciliation, generators, rule statuses)?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["scripts/**", "tools/boundary-map/**", "data/frr-records.json", "data/sia-questions.json", "data/ksi-methods.json", "data/ksi-applicability.json", "infrastructure/schemas/**"]}
+    },
+    {
+      "id": "crypto",
+      "question": "Does it add or change a cryptographic module, key, algorithm, TLS setting or signing method?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["infrastructure/keys/**"], "diff": ["aws_kms_", "(?i)kms_key|cosign|sigstore|minimum_protocol_version|ssl_support|tls"]}
+    },
+    {
+      "id": "access",
+      "question": "Does it add or change an authentication mechanism or permissions for operators, CI or workloads (IAM, OIDC trust, workflow permissions)?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["infrastructure/bootstrap/**"], "diff": ["aws_iam_", "(?i)assume_role|\"Action\"|actions\\s*=|^\\+\\s*permissions:|id-token"]}
+    },
+    {
+      "id": "boundary-protection",
+      "question": "Does it add or change boundary protection or routing: ingress, egress, CloudFront behaviours, security headers, DNS or API routes?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["infrastructure/bootstrap/cloudfront.tf", "infrastructure/cloudfront/**", "infrastructure/dns.tf"], "diff": ["aws_apigatewayv2_route", "aws_security_group", "aws_route53_", "(?i)response_headers|origin_request|cache_behavior"]}
+    },
+    {
+      "id": "monitoring",
+      "question": "Does it add, replace or remove monitoring, logging or alerting?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["infrastructure/logging.tf", "infrastructure/cloudtrail.tf", "infrastructure/watchdog.tf", "infrastructure/watchdog/**"], "diff": ["aws_cloudwatch_", "aws_sns_", "aws_cloudtrail"]}
+    },
+    {
+      "id": "scanning",
+      "question": "Does it change a scanning tool or its configuration (SCA, SAST, DAST, IaC scanning)?",
+      "outcome": "adaptive",
+      "triggers": {"paths": [".github/workflows/zap-dast.yml", ".checkov.yaml"], "diff": ["(?i)\\b(grype|syft|checkov|tfsec|zap|semgrep)\\b"]}
+    },
+    {
+      "id": "runtime-upgrade",
+      "question": "Is it a major upgrade of an operating system, language runtime, policy engine or database?",
+      "outcome": "adaptive",
+      "triggers": {"diff": ["(?i)^[+-]\\s*runtime\\s*=", "(?i)python-version|node-version|OPA_VERSION|\\bruntime:\\s"]}
+    },
+    {
+      "id": "pipeline",
+      "question": "Does it change how the pipeline builds, signs, publishes or deploys?",
+      "outcome": "adaptive",
+      "triggers": {"paths": [".github/workflows/deploy-with-opa.yml", ".github/workflows/evidence-nightly.yml", "infrastructure/schemas/freshness-config.json", "Makefile", "infrastructure/Makefile"]}
+    },
+    {
+      "id": "backup-recovery",
+      "question": "Does it change backup, retention or recovery?",
+      "outcome": "adaptive",
+      "triggers": {"paths": ["docs/recovery-plan.md"], "diff": ["(?i)versioning|lifecycle_rule|aws_s3_bucket_lifecycle|retention_in_days|point_in_time|backup"]}
+    },
+    {
+      "id": "location",
+      "question": "Does it move the system or part of it to a new region or facility?",
+      "outcome": "adaptive",
+      "triggers": {"diff": ["(?i)^[+-]\\s*region\\s*=|aws_region"]}
+    },
+    {
+      "id": "data-handling",
+      "question": "Does it change what data the system stores or processes, or a component's data sensitivity or classification?",
+      "outcome": "adaptive",
+      "triggers": {"diff": ["(?i)datasensitivity|data_sensitivity|dataclassification|data_classification"]}
+    }
+  ]
+}

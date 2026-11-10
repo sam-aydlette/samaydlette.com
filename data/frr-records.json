@@ -1565,13 +1565,16 @@
     },
     {
       "frr_id": "SCN-CSO-EVA",
-      "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 5 test(s).",
-      "acceptance": {
-        "by": "Sam Aydlette",
-        "on": "2026-11-09",
-        "review_by": "2027-11-09"
-      }
+      "status": "Implemented",
+      "implementation": "Every pull request into main carries a security impact analysis: yes/no answers to the governed questions in data/sia-questions.json, adapted from the NIST SP 800-128 template. The scn-tag check reads the diff, requires an answer (and a reason for each no) to every question the diff touches, derives the type in this rule's order (class change, then routine recurring, transformative, adaptive; with not significant for changes that touch no security-relevant path) and fails when the declared SCN-Type disagrees or a class change is proposed. main requires the check on every pull request.",
+      "evidence": [
+        {"kind": "step", "ref": "scn-tag.yml#Validate the SCN evaluation"},
+        {"kind": "test", "ref": "tests/test_sia.py::test_a_question_the_diff_touches_must_be_answered_with_a_reason_for_no"},
+        {"kind": "test", "ref": "tests/test_sia.py::test_the_declared_type_must_equal_the_analysis"},
+        {"kind": "test", "ref": "tests/test_sia.py::test_a_class_change_cannot_ship_under_scn"},
+        {"kind": "test", "ref": "tests/test_sia.py::test_the_outcome_follows_scn_cso_eva"},
+        {"kind": "test", "ref": "tests/test_sia.py::test_the_script_reads_the_git_diff_between_base_and_head"}
+      ]
     },
     {
       "frr_id": "SCN-CSO-HIS",
@@ -1657,7 +1660,7 @@
     {
       "frr_id": "SCN-TRF-NFP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 3 test(s).",
+      "not_demonstrated": "The security impact analysis classifies a change as transformative (SCN-CSO-EVA), but nothing yet requires or checks notice of final plans at least 10 business days before starting the change. Missing: 3 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
@@ -1667,7 +1670,7 @@
     {
       "frr_id": "SCN-TRF-NIP",
       "status": "Not Demonstrated",
-      "not_demonstrated": "Not built in this repository yet. Missing: step scn-tag.yml#Validate the SCN evaluation; 4 test(s).",
+      "not_demonstrated": "The security impact analysis classifies a change as transformative (SCN-CSO-EVA), but nothing yet requires or checks notice of initial plans at least 30 business days before starting the change. Missing: 4 test(s).",
       "acceptance": {
         "by": "Sam Aydlette",
         "on": "2026-11-09",
