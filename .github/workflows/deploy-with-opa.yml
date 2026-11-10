@@ -947,6 +947,8 @@ jobs:
         rm -rf _silk_src _pkg silk-reeling.zip
         # The commit pinned in data/apps.json; a new app version ships by a PR moving it.
         ../scripts/app-source.sh silk-reeling _silk_src
+        # Only the checkout needs the token; the installs below run third-party scripts.
+        unset APP_REPO_TOKEN
         # Resolve the Cognito config (provisioned in Task 3 PR-1) so the SPA's
         # Hosted-UI login flow is wired at build time.
         SILK_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)

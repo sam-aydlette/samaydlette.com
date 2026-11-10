@@ -4,7 +4,8 @@
 # Usage: app-source.sh APP_ID DEST [MANIFEST]
 #
 # The commit is the only ref: a push to the app repository changes nothing here
-# until a reviewed pull request moves the pin. The token, if any, comes from
+# until a reviewed pull request moves the pin, and the pinned commit must be on
+# the app repository's named branch. The token, if any, comes from
 # APP_REPO_TOKEN and is passed to git as an HTTP header through the environment,
 # so it is neither on a command line nor written to DEST/.git/config.
 set -euo pipefail
@@ -18,8 +19,8 @@ dest="$2"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${3:-$here/../data/apps.json}"
 
-# Print "<repo> <commit>" for the app, or fail with the reason.
-read -r repo commit < <(python3 -I - "$manifest" "$app" <<'PY'
+# Print "<repo> <branch> <commit>" for the app, or fail with the reason.
+read -r repo branch commit < <(python3 -I - "$manifest" "$app" <<'PY'
 import json, re, sys
 path, app = sys.argv[1], sys.argv[2]
 try:
@@ -31,12 +32,14 @@ if app not in apps:
 src = apps[app].get("source")
 if not src:
     sys.exit(f"app-source: {app!r} builds from this repository; it has no source to check out")
-repo, commit = src.get("repo", ""), src.get("commit", "")
-if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
+repo, branch, commit = src.get("repo", ""), src.get("branch", ""), src.get("commit", "")
+if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*/[A-Za-z0-9_-][A-Za-z0-9_.-]*", repo):
     sys.exit(f"app-source: {app!r} has a malformed repo {repo!r}")
+if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_./-]*", branch) or ".." in branch:
+    sys.exit(f"app-source: {app!r} has a malformed branch {branch!r}")
 if not re.fullmatch(r"[0-9a-f]{40}", commit):
     sys.exit(f"app-source: {app!r} must pin a full 40-character commit, not {commit!r}")
-print(repo, commit)
+print(repo, branch, commit)
 PY
 ) || exit 1
 [ -n "${commit:-}" ] || exit 1
@@ -53,12 +56,21 @@ if [ -n "${APP_REPO_TOKEN:-}" ]; then
   export GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $auth"
 fi
 
+url="https://github.com/$repo.git"
 git init -q -- "$dest"
-git -C "$dest" fetch -q --depth 1 --end-of-options "https://github.com/$repo.git" "$commit"
+git -C "$dest" fetch -q --depth 1 --end-of-options "$url" "$commit"
 git -C "$dest" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
 got=$(git -C "$dest" rev-parse HEAD)
 if [ "$got" != "$commit" ]; then
   echo "app-source: checked out $got, expected $commit" >&2
   exit 1
 fi
-echo "$app source: $repo at $commit"
+# GitHub serves any commit in a repository's fork network through its URL, so
+# the pin alone does not prove the commit belongs to this repository. Require
+# it on the named branch. The branch history is fetched without file contents.
+git -C "$dest" fetch -q --filter=blob:none --end-of-options "$url" "refs/heads/$branch:refs/remotes/pin-check"
+if ! git -C "$dest" merge-base --is-ancestor "$commit" refs/remotes/pin-check; then
+  echo "app-source: $commit is not on $repo's $branch" >&2
+  exit 1
+fi
+echo "$app source: $repo at $commit (on $branch)"

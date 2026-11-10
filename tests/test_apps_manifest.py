@@ -94,8 +94,15 @@ def test_no_workflow_clones_app_source_by_branch():
     ("website", MANIFEST, "builds from this repository"),
     ("nope", MANIFEST, "no app 'nope'"),
     ("silk-reeling", BAD, "must pin a full 40-character commit"),
+    ("silk-reeling", {"repo": "../x"}, "malformed repo"),
+    ("silk-reeling", {"branch": "../main"}, "malformed branch"),
 ])
 def test_the_script_refuses_anything_but_a_pinned_commit(tmp_path, app, manifest, msg):
+    if isinstance(manifest, dict):
+        doc = json.loads(MANIFEST.read_text())
+        doc["apps"][1]["source"].update(manifest)
+        manifest = tmp_path / "apps.json"
+        manifest.write_text(json.dumps(doc))
     r = subprocess.run(["bash", str(SCRIPT), app, str(tmp_path / "src"), str(manifest)],
                        capture_output=True, text=True, check=False)
     assert r.returncode != 0 and msg in r.stderr, r.stderr
@@ -106,3 +113,13 @@ def test_the_nightly_scans_the_deployed_pin_not_mains():
     step = NIGHTLY.read_text().split("- name: Resolve Silk Reeling dependency trees", 1)[1].split("- name:", 1)[0]
     assert 'git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json' in step
     assert "app-source.sh silk-reeling _silk_src deployed-apps.json" in step
+    assert "cp ../data/apps.json" not in step, "no fallback to main's pin"
+
+
+def test_only_the_checkout_sees_the_repository_token():
+    for wf in (DEPLOY, NIGHTLY):
+        text = wf.read_text()
+        call = text.index("scripts/app-source.sh silk-reeling")
+        after = [ln.strip() for ln in text[call:].splitlines()[1:] if not ln.strip().startswith("#")]
+        assert after[0] == "unset APP_REPO_TOKEN", wf.name
+        assert text.index("unset APP_REPO_TOKEN") < text.index("npm ci", call), wf.name

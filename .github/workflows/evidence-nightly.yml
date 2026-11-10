@@ -374,14 +374,12 @@ jobs:
         rm -rf _silk_src _pkg
         # Scan the app version production runs: the pin in data/apps.json as of
         # the deployed commit, not main's, which may carry a bump not yet deployed.
-        # Only a deploy from before the manifest existed has no pin to read.
-        if git cat-file -e "${SIGNAL_COMMIT}:data/apps.json" 2>/dev/null; then
-          git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json
-        else
-          echo "::notice::the deployed commit predates data/apps.json; scanning main's pin"
-          cp ../data/apps.json deployed-apps.json
-        fi
+        # A deployed commit without the manifest has no pin to scan: fail rather
+        # than scan a version production may not run.
+        git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json
         ../scripts/app-source.sh silk-reeling _silk_src deployed-apps.json
+        # Only the checkout needs the token; the installs below run third-party scripts.
+        unset APP_REPO_TOKEN
         ( cd _silk_src/frontend && npm ci )
         mkdir -p _pkg
         # Same platform pins as the deploy build so the resolved wheel set — and

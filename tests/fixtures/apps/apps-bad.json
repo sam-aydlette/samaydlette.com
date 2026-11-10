@@ -22,6 +22,7 @@
       "component": "Silk Reeling Mirror application",
       "source": {
         "repo": "sam-aydlette/silk-reeling-mirror",
+        "branch": "main",
         "commit": "main"
       },
       "terraform_flag": "create_silk_reeling",
