@@ -158,8 +158,15 @@ def test_the_sdr_takes_the_ssps_provenance_attestation():
     attest = next(s for s in _steps() if "attest() {" in s.get("run", ""))["run"]
     assert "attest security-decision-record.json scripts/build-sdr.py" in attest
     assert "attest oscal-ssp" not in attest
-    check = next(s for s in _steps() if "retired artifact still published" in s.get("run", ""))["run"]
-    assert "for a in ksi-signal.json security-decision-record.json vdr-report.json iiw.csv; do" in check
+    # The round trip compares every object the config lists for the deploy
+    # (scripts/published-set.py; tests/test_published_set.py runs it).
+    import importlib.util
+    import _freshness
+    spec = importlib.util.spec_from_file_location("published_set", REPO / "scripts" / "published-set.py")
+    ps = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ps)
+    keys = {key for _, _, key in ps.objects(_freshness.load_freshness_config(), "deploy")}
+    assert ".well-known/security-decision-record.json.intoto.jsonl" in keys
 
 
 def test_the_nightly_verifies_the_published_sdr_and_cpo_before_reconciling():

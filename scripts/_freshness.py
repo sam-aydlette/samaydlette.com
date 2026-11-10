@@ -37,8 +37,11 @@ REQUIRED = (
 )
 
 TOP_KEYS = {"$schema", "version", "description", "decided_by", "decided_on", "review_by", "rationale", "artifacts"}
-ARTIFACT_KEYS = {"path", "cadence", "max_age_hours", "timestamp", "signed", "signature", "note"}
+ARTIFACT_KEYS = {"path", "cadence", "max_age_hours", "timestamp", "signed", "signature", "published_by",
+                 "markdown", "json_schema", "optional", "note"}
 CADENCES = {"nightly", "runtime", "deploy", "operator"}
+PUBLISHERS = {"deploy", "nightly", "runtime"}
+SCHEMA_RE = re.compile(r"^schemas/[A-Za-z0-9][A-Za-z0-9._-]*\.schema\.json$")
 PATH_RE = re.compile(r"^\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$")
 FIELD_RE = re.compile(r"^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -53,7 +56,7 @@ def _check_artifact(where, i, a):
     if not isinstance(a, dict):
         _fail(where, f"artifacts[{i}] is not an object")
     unknown = set(a) - ARTIFACT_KEYS
-    missing = {"path", "cadence", "max_age_hours", "timestamp", "signed"} - set(a)
+    missing = {"path", "cadence", "max_age_hours", "timestamp", "signed", "published_by"} - set(a)
     if unknown or missing:
         _fail(where, f"artifacts[{i}] unknown keys {sorted(unknown)}, missing keys {sorted(missing)}")
     path = a["path"]
@@ -68,6 +71,16 @@ def _check_artifact(where, i, a):
         _fail(where, f"{path}: max_age_hours must be a number in (0, {MAX_WINDOW_HOURS}], got {w!r}")
     if not isinstance(a["signed"], bool):
         _fail(where, f"{path}: signed must be true or false")
+    by = a["published_by"]
+    if not isinstance(by, list) or not by or len(set(by)) != len(by) or not set(by) <= PUBLISHERS:
+        _fail(where, f"{path}: published_by must be a non-empty list drawn from {sorted(PUBLISHERS)}")
+    for flag in ("markdown", "optional"):
+        if flag in a and not isinstance(a[flag], bool):
+            _fail(where, f"{path}: {flag} must be true or false")
+    if a.get("markdown") and not path.endswith(".json"):
+        _fail(where, f"{path}: only a .json artifact has a .md rendering")
+    if "json_schema" in a and (not isinstance(a["json_schema"], str) or not SCHEMA_RE.match(a["json_schema"])):
+        _fail(where, f"{path}: json_schema must be schemas/<name>.schema.json")
     ts = a["timestamp"]
     ok = isinstance(ts, dict) and (
         (ts.get("source") == "last_modified" and set(ts) == {"source"})

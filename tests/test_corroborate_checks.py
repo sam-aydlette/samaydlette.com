@@ -36,7 +36,9 @@ def test_signed_artifacts_come_from_the_governed_config_without_the_report_itsel
     paths = {a["artifact"] for a in arts}
     assert ".well-known/boundary-corroboration.json" not in paths   # would verify itself
     assert ".well-known/ksi-signal-runtime.json" not in paths       # KMS-signed; its own section
-    assert ".well-known/vdr-status.json" not in paths               # unsigned
+    # The nightly signs its beacon; the corroboration checks it like any other.
+    assert {"artifact": ".well-known/vdr-status.json", "kind": "bundle",
+            "bundle": ".well-known/vdr-status.bundle", "cadence": "nightly"} in arts
     assert {a["cadence"] for a in arts} == {"deploy", "nightly"}
     # The POA&M attestation is retired; the SDR's replaced the retired SSP's.
     assert sum(a["kind"] == "dsse" for a in arts) == 4

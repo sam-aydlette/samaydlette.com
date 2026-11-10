@@ -204,12 +204,13 @@ def test_each_publisher_verifies_the_previous_reports_before_carrying_them_forwa
 
 
 def test_the_deploy_publishes_and_round_trips_the_reports():
-    steps = _steps("deploy-with-opa.yml")
-    publish = next(s for s in steps if s.get("name") == "Publish all signed artifacts to /.well-known/")["run"]
-    rt = next(s for s in steps if s.get("name") == "Post-publish round-trip verify")["run"]
-    assert "for a in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do" in publish
-    assert '"$a.bundle"' in publish
-    assert 'check "$a.json" ".well-known/$a.json"' in rt
+    # The deploy uploads and round-trips what the config lists for it
+    # (scripts/published-set.py; tests/test_published_set.py runs both steps).
+    import _freshness
+    arts = {a["path"]: a for a in _freshness.load_freshness_config()["artifacts"]}
+    for name in (mod.VDT_OUT, mod.AVI_OUT, mod.MRH_OUT):
+        a = arts[f".well-known/{name}"]
+        assert "deploy" in a["published_by"] and a["signature"] == f".well-known/{name.removesuffix('.json')}.bundle"
 
 
 def test_the_nightly_publishes_them_under_its_vdr_prefix():
