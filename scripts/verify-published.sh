@@ -11,8 +11,9 @@
 #     scripts/verify-published.sh https://host/.well-known   # or another base
 #
 # What it checks, and how independent each layer is:
-#   1. Signatures / provenance — FULLY INDEPENDENT. cosign confirms each artifact
-#      was produced by THIS repo's pinned GitHub Actions workflow on `main`, via
+#   1. Signatures / provenance — FULLY INDEPENDENT. cosign confirms every signed
+#      artifact in the governed publish list was produced by THIS repo's pinned
+#      GitHub Actions workflow on `main` (the one that publishes it), via
 #      the public Sigstore/Rekor transparency log. The trust roots are Sigstore
 #      and a pinned public identity — not us, and not this script.
 #   2. Provenance claims — dependency-free. verify-attestation.py reads the
@@ -88,90 +89,65 @@ ok()  { echo "  PASS  $1"; }
 bad() { echo "  FAIL  $1"; fail=1; }
 
 echo "== Fetching published evidence from $BASE =="
-for f in ksi-signal.json ksi-signal.bundle \
-         security-decision-record.json security-decision-record.bundle \
-         security-decision-record.json.intoto.jsonl \
-         certification-package-overview.json certification-package-overview.bundle \
-         vdr-report.json vdr-report.json.intoto.jsonl \
-         vdr-status.json vdr-status.bundle \
-         vdr-detail-report.json vdr-detail-report.bundle \
-         vdr-accepted-vulnerabilities.json vdr-accepted-vulnerabilities.bundle \
-         vdr-history.json vdr-history.bundle \
-         boundary-map.json boundary-map.bundle \
-         reconcile-report.json reconcile-report.bundle \
-         trust-center.json trust-center.bundle; do
-  if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f"; then
-    echo "  got  $f ($(wc -c < "$work/$f") bytes)"
-  else
-    echo "verify-published: could not fetch $BASE/$f" >&2; exit 1
-  fi
-done
+# Every artifact a workflow signs, with its signature or attestation and the
+# workflows that may have signed it: the governed list the deploy publishes
+# from (infrastructure/schemas/freshness-config.json, via published-set.py).
+signed=$(python3 "$SCRIPTS/published-set.py" signed) \
+  || { echo "verify-published: could not read the governed publish list" >&2; exit 2; }
+skipped=" "
+while IFS=$'\t' read -r art sig _kind _signers need; do
+  for f in "$art" "$sig"; do
+    [ -f "$work/$f" ] && continue
+    if curl -fsS --max-time 30 -o "$work/$f" "$BASE/$f" </dev/null; then
+      echo "  got  $f ($(wc -c < "$work/$f") bytes)"
+    elif [ "$need" = optional ]; then
+      rm -f "$work/$art" "$work/$sig"; skipped="$skipped$art "; break
+    else
+      echo "verify-published: could not fetch $BASE/$f" >&2; exit 1
+    fi
+  done
+done <<< "$signed"
 
 echo ""
 echo "== 1. Signatures + provenance (independent: Sigstore + pinned workflow identity) =="
-if verify_blob_any_identity "$work/ksi-signal.bundle" "$work/ksi-signal.json" "$IDENTITY"; then
-  ok "ksi-signal.json signed by the pinned workflow on main"
-else
-  bad "ksi-signal.json signature"
-fi
-
-if verify_attestation_any_identity "$work/security-decision-record.json.intoto.jsonl" \
-     "$work/security-decision-record.json" "$IDENTITY"; then
-  ok "security-decision-record.json attestation signed by the pinned workflow on main"
-else
-  bad "security-decision-record.json attestation signature"
-fi
+# Each artifact must verify under an identity of a workflow that publishes it.
+# The deploy re-signs the VDR family that the nightly refreshes, so those
+# accept either workflow; everything else accepts exactly one. The nightly's
+# beacon earns KSI credit, so only the nightly may sign it.
+while IFS=$'\t' read -r art sig kind signers _need; do
+  case "$skipped" in *" $art "*) echo "  SKIP  $art (not published)"; continue ;; esac
+  ids=()
+  for s in ${signers//,/ }; do
+    case "$s" in
+      deploy) ids+=("$IDENTITY") ;;
+      nightly) ids+=("$NIGHTLY_IDENTITY") ;;
+    esac
+  done
+  who="the pinned ${signers//,/ or } workflow on main"
+  if [ "${#ids[@]}" -eq 0 ]; then
+    bad "$art names no workflow that may sign it"
+  elif [ "$kind" = dsse ]; then
+    if verify_attestation_any_identity "$work/$sig" "$work/$art" "${ids[@]}" </dev/null; then
+      ok "$art attestation signed by $who"
+    else
+      bad "$art attestation signature"
+    fi
+  elif verify_blob_any_identity "$work/$sig" "$work/$art" "${ids[@]}" </dev/null; then
+    ok "$art signed by $who"
+  else
+    bad "$art signature"
+  fi
+done <<< "$signed"
 
 # The CR26 record (SDR, CPO) and the trust center's own data: the generated
-# boundary map, the gate's report and the trust center itself.
+# boundary map, the gate's report and the trust center itself, each bound to
+# the published inventory. The operator-run corroboration names the inventory
+# it was compared against, which may be an earlier one, so it is not here.
 for art in security-decision-record certification-package-overview boundary-map reconcile-report trust-center; do
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY"; then
-    ok "$art.json signed by the pinned workflow on main"
-  else
-    bad "$art.json signature"
-  fi
   if [ "$(jq -r .ksi_signal_id "$work/$art.json")" = "$(jq -r .signal_id "$work/ksi-signal.json")" ]; then
     ok "$art.json is bound to the published inventory"
   else
     bad "$art.json names a different inventory than ksi-signal.json"
-  fi
-done
-
-# The independent corroboration (RAMPART on TAP) is optional, run by the operator
-# and published as committed. It names the inventory it was compared against,
-# which may be an earlier one, so only its signature is checked here.
-if curl -fsS --max-time 30 -o "$work/boundary-corroboration.json" "$BASE/boundary-corroboration.json" \
-   && curl -fsS --max-time 30 -o "$work/boundary-corroboration.bundle" "$BASE/boundary-corroboration.bundle"; then
-  if verify_blob_any_identity "$work/boundary-corroboration.bundle" "$work/boundary-corroboration.json" "$IDENTITY"; then
-    ok "boundary-corroboration.json signed by the pinned workflow on main"
-  else
-    bad "boundary-corroboration.json signature"
-  fi
-else
-  echo "  SKIP  boundary-corroboration.json (not published)"
-fi
-
-# The nightly beacon earns KSI credit, so only the nightly's identity may sign it.
-if verify_blob_any_identity "$work/vdr-status.bundle" "$work/vdr-status.json" "$NIGHTLY_IDENTITY"; then
-  ok "vdr-status.json signed by the pinned nightly workflow on main"
-else
-  bad "vdr-status.json signature"
-fi
-
-# The VDR is refreshed nightly, so either publisher identity is accepted here.
-if verify_attestation_any_identity "$work/vdr-report.json.intoto.jsonl" "$work/vdr-report.json" \
-     "$IDENTITY" "$NIGHTLY_IDENTITY"; then
-  ok "vdr-report.json attestation signed by a pinned workflow on main"
-else
-  bad "vdr-report.json attestation signature"
-fi
-
-# The CR26 vulnerability reports are rebuilt with the VDR, so either identity too.
-for art in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do
-  if verify_blob_any_identity "$work/$art.bundle" "$work/$art.json" "$IDENTITY" "$NIGHTLY_IDENTITY"; then
-    ok "$art.json signed by a pinned workflow on main"
-  else
-    bad "$art.json signature"
   fi
 done
 

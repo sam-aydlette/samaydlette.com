@@ -223,7 +223,7 @@ def test_the_nightly_publishes_them_under_its_vdr_prefix():
 
 def test_external_verification_checks_signature_and_schema():
     text = (REPO / "scripts" / "verify-published.sh").read_text()
-    assert "for art in vdr-detail-report vdr-accepted-vulnerabilities vdr-history; do" in text
+    assert 'published-set.py" signed' in text  # signatures: tests/test_verify_published.py
     assert "for pair in vdr-detail-report:vdt vdr-accepted-vulnerabilities:avi vdr-history:mrh; do" in text
     assert "fs.validate(" in text and "providerExtensions.vdrReportId" in text
 
