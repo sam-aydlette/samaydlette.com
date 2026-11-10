@@ -5,31 +5,31 @@
       "artifact": ".well-known/a.json",
       "kind": "bundle",
       "bundle": ".well-known/a.bundle",
-      "cadence": "deploy"
+      "signers": ["deploy"]
     },
     {
       "artifact": ".well-known/b.json",
       "kind": "bundle",
       "bundle": ".well-known/b.bundle",
-      "cadence": "deploy"
+      "signers": ["deploy"]
     },
     {
       "artifact": ".well-known/c.json.intoto.jsonl",
       "kind": "dsse",
       "subject": ".well-known/c.json",
-      "cadence": "deploy"
+      "signers": ["deploy"]
     },
     {
       "artifact": ".well-known/d.json",
       "kind": "bundle",
       "bundle": ".well-known/d.bundle",
-      "cadence": "deploy"
+      "signers": ["deploy"]
     },
     {
       "artifact": ".well-known/e.json",
       "kind": "bundle",
       "bundle": ".well-known/e.bundle",
-      "cadence": "deploy"
+      "signers": ["deploy"]
     }
   ],
   "facts": [

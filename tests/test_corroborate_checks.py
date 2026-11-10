@@ -15,6 +15,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO = Path(__file__).resolve().parents[1]
 FIX = REPO / "tests" / "fixtures" / "corroboration"
 sys.path.insert(0, str(REPO / "tools" / "boundary-map"))
@@ -38,16 +40,89 @@ def test_signed_artifacts_come_from_the_governed_config_without_the_report_itsel
     assert ".well-known/ksi-signal-runtime.json" not in paths       # KMS-signed; its own section
     # The nightly signs its beacon; the corroboration checks it like any other.
     assert {"artifact": ".well-known/vdr-status.json", "kind": "bundle",
-            "bundle": ".well-known/vdr-status.bundle", "cadence": "nightly"} in arts
-    assert {a["cadence"] for a in arts} == {"deploy", "nightly"}
+            "bundle": ".well-known/vdr-status.bundle", "signers": ["nightly"]} in arts
+    # The deploy re-signs what the nightly refreshes: either may have signed it last.
+    by = {a["artifact"].rsplit("/", 1)[-1]: a["signers"] for a in arts}
+    assert by["vdr-report.json"] == by["vdr-report.json.intoto.jsonl"] == ["deploy", "nightly"]
+    assert by["trust-center.json"] == ["deploy"]
     # The POA&M attestation is retired; the SDR's replaced the retired SSP's.
     assert sum(a["kind"] == "dsse" for a in arts) == 4
     assert all(a.get("bundle") for a in arts if a["kind"] == "bundle")
 
 
-def test_expected_identity_depends_on_cadence():
+def test_expected_identity_is_the_publishing_workflow():
     assert ck.expected_identity("deploy").endswith("/.github/workflows/deploy-with-opa.yml@refs/heads/main")
     assert ck.expected_identity("nightly").endswith("/.github/workflows/evidence-nightly.yml@refs/heads/main")
+
+
+def _verified_by(signer):
+    return {"verified": True, "signed_by": ck.expected_identity(signer), "issuer": ck.ISSUER,
+            "cert": {"ref": "refs/heads/main"}}
+
+
+@pytest.mark.parametrize("art, signers, signer, ok", [
+    ("vdr-report.json", ["deploy", "nightly"], "deploy", True),     # re-signed by the deploy
+    ("vdr-report.json", ["deploy", "nightly"], "nightly", True),    # refreshed by the nightly
+    ("vdr-status.json", ["nightly"], "deploy", False),              # the beacon: nightly only
+    ("trust-center.json", ["deploy"], "nightly", False),            # deploy only
+])
+def test_a_signature_is_accepted_only_from_a_workflow_that_publishes_it(art, signers, signer, ok):
+    a = {"artifact": f".well-known/{art}", "kind": "bundle", "bundle": "x", "signers": signers}
+    s = ck.judge_signatures([{"artifact": a["artifact"], **_verified_by(signer)}], [a])
+    assert (s["status"] == "agrees") is ok
+    if not ok:
+        assert [x["problem"] for x in s["findings"]] == ["signed by an unexpected identity"]
+
+
+def _read_signatures(artifacts, verifies_under):
+    """Run the signature half of the in-container script against a fake sigstore
+    verifier that verifies a bundle only under the identity in `verifies_under`."""
+    import io
+    import types
+    calls = []
+
+    class Policy:
+        def __init__(self, **kw):
+            self.identity = kw["workflow_identity_uri"]
+
+    def verify_bundle(body, bundle, policy):
+        calls.append(policy.identity)
+        good = verifies_under.get(bundle.decode()) == policy.identity
+        return types.SimpleNamespace(signature_verified=good, failure_code=None if good else "identity",
+                                     signed_by=policy.identity if good else None, signing_issuer=ck.ISSUER,
+                                     rekor_log_index=1, parsed_bundle=None)
+
+    fake = types.ModuleType("tap_plugin.sigstore_core.verify")
+    fake.GitHubWorkflowPolicy, fake.verify_bundle = Policy, verify_bundle
+    pkg = types.ModuleType("tap_plugin.sigstore_core")
+    pkg.verify = fake
+    req = {"issuer": ck.ISSUER, "repository": ck.REPOSITORY, "artifacts": artifacts}
+    old = {k: sys.modules.get(k) for k in ("tap_plugin", "tap_plugin.sigstore_core")}
+    sys.modules.update({"tap_plugin": types.ModuleType("tap_plugin"), "tap_plugin.sigstore_core": pkg})
+    stdin, sys.stdin = sys.stdin, io.StringIO(json.dumps(req))
+    try:
+        ns = {}
+        exec(corr.READ_FACTS.split("import boto3", 1)[0], ns)
+    finally:
+        sys.stdin = stdin
+        for k, m in old.items():
+            if m is None:
+                sys.modules.pop(k, None)
+    return ns["out"]["signatures"], calls
+
+
+def test_the_container_tries_each_allowed_identity_and_keeps_the_one_that_verifies():
+    deploy, nightly = ck.expected_identity("deploy"), ck.expected_identity("nightly")
+    b64 = lambda t: base64.b64encode(t.encode()).decode()  # noqa: E731
+    arts = [{"artifact": "r.json", "kind": "bundle", "body_b64": b64("{}"), "bundle_b64": b64("r"),
+             "identities": [deploy, nightly]},
+            {"artifact": "s.json", "kind": "bundle", "body_b64": b64("{}"), "bundle_b64": b64("s"),
+             "identities": [nightly]}]
+    facts, calls = _read_signatures(arts, {"r": nightly, "s": deploy})
+    r, s = facts
+    assert r["verified"] is True and r["signed_by"] == nightly       # found under the second identity
+    assert s["verified"] is False and s["failure_code"] == "identity"  # never tried under the deploy's
+    assert calls == [deploy, nightly, nightly]
 
 
 def test_known_bad_signatures_differ_on_each_artifact():

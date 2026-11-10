@@ -191,11 +191,11 @@ def cert_facts(bundle):
         if name:
             out[name] = der_utf8(getattr(e.value, "value", b""))
     return out
-for a in req["artifacts"]:
+def verify(a, identity):
     f = {"artifact": a["artifact"]}
     try:
         pol = v.GitHubWorkflowPolicy(oidc_issuer=req["issuer"], github_repository=req["repository"],
-                                     workflow_identity_uri=a["identity"])
+                                     workflow_identity_uri=identity)
         if a["kind"] == "dsse":
             r = v.verify_dsse_bundle(base64.b64decode(a["bundle_b64"]).strip(), policy=pol)
             f["subject_sha256"] = hashlib.sha256(base64.b64decode(a["subject_b64"])).hexdigest()
@@ -211,6 +211,13 @@ for a in req["artifacts"]:
             f["cert"]["workflow_path"] = (r.signed_by or "").split(req["repository"] + "/", 1)[-1].split("@", 1)[0] or None
     except Exception as exc:
         f.update(verified=False, failure_code=type(exc).__name__)
+    return f
+# Each allowed identity in turn, each pinned; the first that verifies stands.
+for a in req["artifacts"]:
+    for identity in a["identities"]:
+        f = verify(a, identity)
+        if f.get("verified") is True:
+            break
     out["signatures"].append(f)
 import boto3
 cred = json.load(open("/run/tap-secrets/aws_core/boto_collector.secret.json"))["data"]
@@ -529,7 +536,7 @@ def gather(container: str, signal: dict[str, Any], tap: dict[str, Any], workdir:
 
     for a in arts:
         try:
-            item = {"artifact": a["artifact"], "kind": a["kind"], "identity": checks.expected_identity(a["cadence"])}
+            item = {"artifact": a["artifact"], "kind": a["kind"], "identities": [checks.expected_identity(s) for s in a["signers"]]}
             if a["kind"] == "dsse":
                 item["bundle_b64"] = base64.b64encode(site(a["artifact"])).decode()
                 item["subject_b64"] = base64.b64encode(site(a["subject"])).decode()
