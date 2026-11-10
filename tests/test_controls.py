@@ -180,8 +180,13 @@ def test_the_nightly_verifies_the_published_sdr_and_cpo_before_reconciling():
 
 
 def test_external_verification_checks_the_sdr_and_cpo_in_the_ssps_place():
+    # Signatures and attestations come from the governed list (tests/test_verify_published.py).
+    signed = subprocess.run([sys.executable, str(REPO / "scripts" / "published-set.py"), "signed"],
+                            capture_output=True, text=True, check=True).stdout.splitlines()
+    assert "security-decision-record.json\tsecurity-decision-record.json.intoto.jsonl\tdsse\tdeploy\trequired" in signed
+    assert "certification-package-overview.json\tcertification-package-overview.bundle\tbundle\tdeploy\trequired" in signed
     text = (REPO / "scripts" / "verify-published.sh").read_text()
-    assert '"$work/security-decision-record.json.intoto.jsonl"' in text
+    assert 'published-set.py" signed' in text
     assert "for art in security-decision-record certification-package-overview boundary-map" in text
     assert "for art in security-decision-record.json vdr-report.json; do" in text
 

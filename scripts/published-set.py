@@ -11,12 +11,20 @@ the redaction gate, the upload and the round-trip check cannot drift apart:
     published-set.py scan   --by deploy   # files the redaction gate scans
     published-set.py upload --by deploy   # file, key, content type, cache control
     published-set.py served --by deploy   # file, key: every object to compare after upload
+    published-set.py signed               # artifact, signature, kind, signers, required|optional
 
 Columns are tab-separated. `upload` leaves out the in-toto attestations, which
 the attest step publishes after the upload; `served` includes them, because the
 round-trip check runs after both. `scan` leaves out signatures, attestations and
 the compiled policy archive, which are not our text (see
 check-published-redaction.py).
+
+`signed` is for a verifier rather than a publisher: every artifact a workflow
+signs, with its Sigstore bundle (kind `bundle`) or in-toto attestation (kind
+`dsse`), and the workflows whose identity may have signed it, from
+`published_by`. An artifact both workflows publish carries whichever signed it
+last. The runtime signal is left out: the runtime Lambda signs it with a KMS
+key, which is checked separately.
 
 Paths are relative to --root (default: the working directory), where the
 workflow built the artifacts. A required file that is absent fails the run
@@ -35,6 +43,7 @@ ATTESTATION = ".intoto.jsonl"
 NOT_SCANNED = (".bundle", ".tar.gz", ATTESTATION)
 SHORT_CACHE = "public, max-age=300"
 SCHEMA_CACHE = "public, max-age=3600"
+SIGNERS = ("deploy", "nightly")
 
 
 def content_type(name):
@@ -70,6 +79,23 @@ def objects(cfg, by):
     return out
 
 
+def signed(cfg):
+    """[(artifact, signature, kind, signers, optional)] for every workflow-signed artifact."""
+    out = []
+    for a in cfg["artifacts"]:
+        signers = [s for s in SIGNERS if s in a["published_by"]]
+        if not a["signed"] or not signers:
+            continue
+        name = a["path"].rsplit("/", 1)[-1]
+        if name.endswith(ATTESTATION):
+            out.append((name.removesuffix(ATTESTATION), name, "dsse", signers, bool(a.get("optional"))))
+        elif "signature" in a:
+            out.append((name, a["signature"].rsplit("/", 1)[-1], "bundle", signers, bool(a.get("optional"))))
+        else:
+            raise SystemExit(f"::error::published-set: {a['path']} is signed but names no signature (fail-closed)")
+    return out
+
+
 def select(cfg, by, mode, root):
     rows, missing = [], []
     for a, f, key in objects(cfg, by):
@@ -93,12 +119,19 @@ def select(cfg, by, mode, root):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("mode", choices=("scan", "upload", "served"))
-    ap.add_argument("--by", required=True, choices=sorted(_freshness.PUBLISHERS))
+    ap.add_argument("mode", choices=("scan", "upload", "served", "signed"))
+    ap.add_argument("--by", choices=sorted(_freshness.PUBLISHERS))
     ap.add_argument("--root", default=".", help="directory the artifacts were built in")
     ap.add_argument("--config", default=None, help="governed freshness config")
     args = ap.parse_args(argv)
-    rows = select(_freshness.load_freshness_config(args.config), args.by, args.mode, Path(args.root))
+    cfg = _freshness.load_freshness_config(args.config)
+    if args.mode == "signed":
+        for art, sig, kind, signers, optional in signed(cfg):
+            print(f"{art}\t{sig}\t{kind}\t{','.join(signers)}\t{'optional' if optional else 'required'}")
+        return 0
+    if not args.by:
+        ap.error(f"{args.mode} needs --by")
+    rows = select(cfg, args.by, args.mode, Path(args.root))
     for f, key in rows:
         if args.mode == "scan":
             print(f)
