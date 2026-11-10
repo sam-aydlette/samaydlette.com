@@ -71,6 +71,19 @@ def test_the_outcome_follows_scn_cso_eva(body, changes, outcome):
     assert r["outcome"] == outcome and r["errors"] == [], r["errors"]
 
 
+def test_a_new_workload_model_is_transformative():
+    host = {"infrastructure/game.tf": ['+resource "aws_instance" "game" {']}
+    assert "workload-model" in sia.triggered(DOC, host)
+    assert "workload-model" in sia.triggered(DOC, {"infrastructure/x.tf": ['+resource "aws_ecs_cluster" "c" {']})
+    # A Lambda is the existing model, not a new one.
+    assert "workload-model" not in sia.triggered(DOC, {"infrastructure/x.tf": ['+resource "aws_lambda_function" "f" {']})
+    yes = ev("SCN-Type: transformative\n\nSIA:\n- workload-model: yes\n- new-component: yes\n", host)
+    assert yes["outcome"] == "transformative" and yes["errors"] == [], yes["errors"]
+    # Declaring adaptive for a new host fails.
+    assert any("gives `transformative`" in e for e in
+               ev("SCN-Type: adaptive\n\nSIA:\n- workload-model: yes\n- new-component: yes\n", host)["errors"])
+
+
 def test_only_dependabot_version_changes_are_answered_automatically():
     bump = {".github/workflows/deploy-with-opa.yml": ["-      uses: actions/setup-node@aaa # v6", "+      uses: actions/setup-node@bbb # v7"],
             "infrastructure/lambda/package-lock.json": ['-  "version": "1.0.0"', '+  "version": "1.0.1"']}
