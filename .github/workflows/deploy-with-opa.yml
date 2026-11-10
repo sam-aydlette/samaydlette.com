@@ -941,13 +941,12 @@ jobs:
     - name: Build Silk Reeling app (frontend + slim Lambda zip)
       working-directory: infrastructure
       env:
-        SILK_REELING_REF: ${{ vars.SILK_REELING_REF || 'main' }}
-        SILK_REELING_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+        APP_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
       run: |
         set -euo pipefail
         rm -rf _silk_src _pkg silk-reeling.zip
-        git clone --depth 1 --branch "$SILK_REELING_REF" \
-          "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" _silk_src
+        # The commit pinned in data/apps.json; a new app version ships by a PR moving it.
+        ../scripts/app-source.sh silk-reeling _silk_src
         # Resolve the Cognito config (provisioned in Task 3 PR-1) so the SPA's
         # Hosted-UI login flow is wired at build time.
         SILK_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)

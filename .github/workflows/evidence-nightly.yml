@@ -368,13 +368,20 @@ jobs:
     - name: Resolve Silk Reeling dependency trees (scan input only)
       working-directory: infrastructure
       env:
-        SILK_REELING_REF: ${{ vars.SILK_REELING_REF || 'main' }}
-        SILK_REELING_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+        APP_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
       run: |
         set -euo pipefail
         rm -rf _silk_src _pkg
-        git clone --depth 1 --branch "$SILK_REELING_REF" \
-          "https://x-access-token:${SILK_REELING_REPO_TOKEN}@github.com/sam-aydlette/silk-reeling-mirror.git" _silk_src
+        # Scan the app version production runs: the pin in data/apps.json as of
+        # the deployed commit, not main's, which may carry a bump not yet deployed.
+        # Only a deploy from before the manifest existed has no pin to read.
+        if git cat-file -e "${SIGNAL_COMMIT}:data/apps.json" 2>/dev/null; then
+          git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json
+        else
+          echo "::notice::the deployed commit predates data/apps.json; scanning main's pin"
+          cp ../data/apps.json deployed-apps.json
+        fi
+        ../scripts/app-source.sh silk-reeling _silk_src deployed-apps.json
         ( cd _silk_src/frontend && npm ci )
         mkdir -p _pkg
         # Same platform pins as the deploy build so the resolved wheel set — and

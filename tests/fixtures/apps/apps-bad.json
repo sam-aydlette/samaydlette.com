@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "purpose": "The apps in the software factory: one authorization boundary and one offering. Each app names its governance domain and owner, its component in the offering, the Terraform flag that enables it, and, for an app built from another repository, the exact commit the pipeline builds. Changing the commit is how an app ships a new version, through a reviewed pull request here. tests/test_apps_manifest.py checks this file against the governance registry, the offering and both workflows; scripts/app-source.sh checks out an app's source at the pinned commit.",
+  "decided_by": "Sam Aydlette",
+  "decided_on": "2026-11-10",
+  "review_by": "2027-11-10",
+  "apps": [
+    {
+      "id": "website",
+      "domain": "website",
+      "owner_role": "role:website-owner",
+      "component": "samaydlette.com static website",
+      "source": null,
+      "terraform_flag": null,
+      "package_path": null,
+      "sbom_trees": []
+    },
+    {
+      "id": "silk-reeling",
+      "domain": "silk-reeling-app",
+      "owner_role": "role:silk-reeling-owner",
+      "component": "Silk Reeling Mirror application",
+      "source": {
+        "repo": "sam-aydlette/silk-reeling-mirror",
+        "commit": "main"
+      },
+      "terraform_flag": "create_silk_reeling",
+      "package_path": "./silk-reeling.zip",
+      "sbom_trees": [
+        "_pkg",
+        "_silk_src/frontend"
+      ]
+    }
+  ]
+}
