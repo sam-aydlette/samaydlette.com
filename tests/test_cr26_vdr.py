@@ -199,7 +199,7 @@ def test_each_publisher_verifies_the_previous_reports_before_carrying_them_forwa
     assert run.index("cosign verify-blob") < run.index('prev+=("$flag"')
     assert "--certificate-identity" in run and "refusing to carry it forward" in run and "exit 1" in run
     assert run.index("build-cr26-vdr.py") < run.index("cosign sign-blob")
-    vdr = next(s for s in steps if "scripts/build-vdr-report.py" in s.get("run", "") and "--output vdr-report.json" in s["run"])
+    vdr = next(s for s in steps if "scripts/run-gates.sh vdr" in s.get("run", ""))
     assert steps.index(vdr) < steps.index(build)
 
 

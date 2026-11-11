@@ -8,12 +8,15 @@ through scripts/app-source.sh at that commit.
 """
 
 import json
-import re
 import shutil
+import sys
 import subprocess
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+import _apps  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 MANIFEST = REPO / "data" / "apps.json"
@@ -27,17 +30,14 @@ NIGHTLY = REPO / ".github" / "workflows" / "evidence-nightly.yml"
 
 def problems(manifest_path):
     """Every way the manifest disagrees with the wiring it describes."""
-    doc = json.loads(manifest_path.read_text())
+    try:
+        doc = _apps.load(manifest_path)
+    except SystemExit as e:
+        return [str(e)]
     domains = {d["id"]: d for d in json.loads(DOMAINS.read_text())["domains"]}
     components = {c["name"] for c in json.loads(OFFERING.read_text())["services"]}
     deploy, nightly = DEPLOY.read_text(), NIGHTLY.read_text()
     out = []
-    for field in ("decided_by", "decided_on", "review_by"):
-        if not doc.get(field):
-            out.append(f"manifest has no {field}")
-    ids = [a["id"] for a in doc["apps"]]
-    if len(ids) != len(set(ids)):
-        out.append("duplicate app id")
     for a in doc["apps"]:
         i = a["id"]
         dom = domains.get(a["domain"])
@@ -47,10 +47,7 @@ def problems(manifest_path):
             out.append(f"{i}: owner {a['owner_role']!r} differs from the registry's {dom['owner_role']!r}")
         if a["component"] not in components:
             out.append(f"{i}: component {a['component']!r} is not in the offering")
-        src = a["source"]
-        if src is not None:
-            if not re.fullmatch(r"[0-9a-f]{40}", src.get("commit", "")):
-                out.append(f"{i}: source must pin a full commit")
+        if a["source"] is not None:
             if f"scripts/app-source.sh {i} " not in deploy or f"scripts/app-source.sh {i} " not in nightly:
                 out.append(f"{i}: both workflows must check its source out through app-source.sh")
         flag = a["terraform_flag"]
@@ -60,10 +57,6 @@ def problems(manifest_path):
                 out.append(f"{i}: {flag} is not set true in both tfvars blocks")
             if deploy.count(f'"{a["package_path"]}"') < 2:
                 out.append(f"{i}: package {a['package_path']!r} is not in both tfvars blocks")
-        for tree in a["sbom_trees"]:
-            for name, text in (("deploy", deploy), ("nightly", nightly)):
-                if f"syft dir:{tree} " not in text:
-                    out.append(f"{i}: the {name} workflow does not scan {tree}")
     return out
 
 
@@ -71,10 +64,14 @@ def test_the_manifest_agrees_with_the_registry_offering_and_workflows():
     assert problems(MANIFEST) == []
 
 
-def test_a_broken_manifest_fails():
-    found = problems(BAD)
-    assert any("'silk-reeling-app' is not in the governance registry" in p for p in found)
-    assert any("source must pin a full commit" in p for p in found)
+def test_a_broken_manifest_fails(tmp_path):
+    # The loader stops at the unpinned commit before anything else is read.
+    assert any("must pin a full 40-character commit" in p for p in problems(BAD))
+    doc = json.loads(BAD.read_text())
+    doc["apps"][1]["source"]["commit"] = "0" * 40
+    fixed = tmp_path / "apps.json"
+    fixed.write_text(json.dumps(doc))
+    assert any("'silk-reeling-app' is not in the governance registry" in p for p in problems(fixed))
 
 
 def test_every_offering_component_is_an_app():

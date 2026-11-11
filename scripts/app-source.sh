@@ -19,29 +19,8 @@ dest="$2"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 manifest="${3:-$here/../data/apps.json}"
 
-# Print "<repo> <branch> <commit>" for the app, or fail with the reason.
-read -r repo branch commit < <(python3 -I - "$manifest" "$app" <<'PY'
-import json, re, sys
-path, app = sys.argv[1], sys.argv[2]
-try:
-    apps = {a["id"]: a for a in json.load(open(path, encoding="utf-8"))["apps"]}
-except (OSError, ValueError, KeyError, TypeError) as e:
-    sys.exit(f"app-source: cannot read {path}: {e}")
-if app not in apps:
-    sys.exit(f"app-source: no app {app!r} in {path}")
-src = apps[app].get("source")
-if not src:
-    sys.exit(f"app-source: {app!r} builds from this repository; it has no source to check out")
-repo, branch, commit = src.get("repo", ""), src.get("branch", ""), src.get("commit", "")
-if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_.-]*/[A-Za-z0-9_-][A-Za-z0-9_.-]*", repo):
-    sys.exit(f"app-source: {app!r} has a malformed repo {repo!r}")
-if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9_./-]*", branch) or ".." in branch:
-    sys.exit(f"app-source: {app!r} has a malformed branch {branch!r}")
-if not re.fullmatch(r"[0-9a-f]{40}", commit):
-    sys.exit(f"app-source: {app!r} must pin a full 40-character commit, not {commit!r}")
-print(repo, branch, commit)
-PY
-) || exit 1
+# "<repo> <branch> <commit>" from the one manifest reader, which validates it.
+read -r repo branch commit < <(python3 -I "$here/_apps.py" --manifest "$manifest" source "$app") || exit 1
 [ -n "${commit:-}" ] || exit 1
 
 if [ -e "$dest" ]; then

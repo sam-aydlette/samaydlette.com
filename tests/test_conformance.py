@@ -139,8 +139,10 @@ def test_the_deploy_publishes_signed_results_and_both_workflows_pass_them_to_the
     assert "test" in jobs["deploy"]["needs"]
     assert steps["deploy"].index("Download the conformance results") < steps["deploy"].index(
         "Build VDR Report (FedRAMP 20x Class C)")
+    # Both build the VDR through run-gates.sh, which passes the results.
     for wf in (deploy, nightly):
-        assert "--conformance conformance-results.json" in wf
+        assert "bash ../scripts/run-gates.sh vdr" in wf
+    assert "--conformance conformance-results.json" in (REPO / "scripts" / "run-gates.sh").read_text()
     assert "verify-blob --bundle conformance-results.bundle" in nightly
     sys.path.insert(0, str(REPO / "scripts"))
     from _freshness import load_freshness_config

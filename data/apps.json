@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "purpose": "The apps in the software factory: one authorization boundary and one offering. Each app names its governance domain and owner, its component in the offering, the Terraform flag that enables it, and, for an app built from another repository, the exact commit the pipeline builds, which must be on the named branch of that repository. Changing the commit is how an app ships a new version, through a reviewed pull request here. tests/test_apps_manifest.py checks this file against the governance registry, the offering and both workflows; scripts/app-source.sh checks out an app's source at the pinned commit.",
+  "purpose": "The apps in the software factory: one authorization boundary and one offering. Each app names its governance domain and owner, its component in the offering, the Terraform flag that enables it, and, for an app built from another repository, the exact commit the pipeline builds, which must be on the named branch of that repository. Changing the commit is how an app ships a new version, through a reviewed pull request here. Each SCA tree names the directory scanned (relative to infrastructure/), the Syft cataloger and the SBOM file; platform_sbom_trees are the factory's own trees, scanned the same way. Everything reads this file through scripts/_apps.py: app-source.sh checks out an app at its pin, scan-sca.sh scans every tree, run-gates.sh passes each scan to the detection gate, and the inventory generator reads the app SBOMs. tests/test_apps_manifest.py checks it against the governance registry, the offering and both workflows.",
   "decided_by": "Sam Aydlette",
   "decided_on": "2026-11-10",
   "review_by": "2027-11-10",
@@ -20,10 +20,39 @@
       "domain": "silk-reeling",
       "owner_role": "role:silk-reeling-owner",
       "component": "Silk Reeling Mirror application",
-      "source": {"repo": "sam-aydlette/silk-reeling-mirror", "branch": "main", "commit": "ecb2450c1e935e11f2edbc85bca5333ccc3ec645"},
+      "source": {
+        "repo": "sam-aydlette/silk-reeling-mirror",
+        "branch": "main",
+        "commit": "ecb2450c1e935e11f2edbc85bca5333ccc3ec645"
+      },
       "terraform_flag": "create_silk_reeling",
       "package_path": "./silk-reeling.zip",
-      "sbom_trees": ["_pkg", "_silk_src/frontend"]
+      "sbom_trees": [
+        {
+          "dir": "_pkg",
+          "cataloger": "python",
+          "sbom": "sbom-python.json"
+        },
+        {
+          "dir": "_silk_src/frontend",
+          "cataloger": "javascript",
+          "sbom": "sbom-js.json"
+        }
+      ]
+    }
+  ],
+  "platform_sbom_trees": [
+    {
+      "dir": "lambda",
+      "cataloger": "javascript",
+      "sbom": "sbom-lambda.json",
+      "what": "The compliance Lambda's npm tree (installed with npm ci --omit=dev before the scan)."
+    },
+    {
+      "dir": "../tools/a11y",
+      "cataloger": "javascript",
+      "sbom": "sbom-a11y.json",
+      "what": "The accessibility scanner: build tooling whose output is policy input to the deploy gate."
     }
   ]
 }

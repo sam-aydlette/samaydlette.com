@@ -136,7 +136,7 @@ def test_the_workflows_no_longer_substitute_empty_documents():
                          "echo '{\"findings\":[]}'", "\"version\": \"fallback\"", "\"version\":\"fallback\"",
                          "echo '{\"results\": []}'", "> grype-python.json || true"):
             assert stand_in not in text, f"{wf} still writes {stand_in}"
-        assert "scripts/detection-gate.py" in text and "fetch-detection-feeds.sh" in text
+        assert "scripts/run-gates.sh detection" in text and "fetch-detection-feeds.sh" in text
 
 
 def test_the_deploy_checks_detection_before_it_applies():

@@ -93,11 +93,6 @@ permissions:
 env:
   AWS_REGION: us-east-2
   NODE_VERSION: 22
-  # Same pinned Anchore toolchain as the deploy path, so the nightly scan and the
-  # deploy scan inventory the same trees the same way. Refresh together with
-  # deploy-with-opa.yml or the two VDRs will disagree for tooling reasons.
-  SYFT_VERSION: v1.45.1
-  GRYPE_VERSION: v0.114.0
   # The VDR's decisions are made by policies/triage.rego, so the nightly runs the
   # same OPA as the deploy. Refresh together with deploy-with-opa.yml;
   # tests/test_triage_policy.py fails if the two pins differ.
@@ -398,31 +393,11 @@ jobs:
     # twelve days the deploy could not complete.
     - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
-      run: |
-        set +e   # neither findings nor a failed scan fail this step: the detection gate and the VDR gate do
-        curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
-          | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
-        curl -sSfL "https://raw.githubusercontent.com/anchore/grype/${GRYPE_VERSION}/install.sh" \
-          | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
-        syft version && grype version
-        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python
-        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript
-        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript
-        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript
-        grype sbom:sbom-python.json -o json > grype-python.json
-        grype sbom:sbom-js.json     -o json > grype-js.json
-        grype sbom:sbom-lambda.json -o json > grype-lambda.json
-        grype sbom:sbom-a11y.json   -o json > grype-a11y.json
-        # No empty stand-ins: a scan that failed leaves its file missing or
-        # without .matches, and the detection gate (G7) checks each per-tree
-        # file, including the database age Grype reports in it.
-        if jq -s '{matches: (map(.matches) | add)}' \
-            grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json 2>/dev/null; then
-          echo "grype.json: $(jq '.matches | length' grype.json) match(es)"
-        else
-          rm -f grype.json
-          echo "::warning::At least one Grype scan did not complete; the detection gate will fail the run."
-        fi
+      env:
+        # The trees production runs: the deployed commit's manifest.
+        APPS_MANIFEST: deployed-apps.json
+      # Neither findings nor a failed scan fail this step: the detection gate and the VDR gate do.
+      run: bash ../scripts/scan-sca.sh
 
     # -------------------------------------------------------------------------
     # DETECTION INPUTS AND G7
@@ -440,13 +415,9 @@ jobs:
     - name: Detection gate (G7)
       id: detection
       working-directory: infrastructure
-      run: |
-        python3 ../scripts/detection-gate.py \
-          --kev kev-catalog.json --epss epss-scores.csv.gz \
-          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
-          --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
-          --checkov checkov-results.sarif --tfsec tfsec-results.json \
-          --output detection.json
+      env:
+        APPS_MANIFEST: deployed-apps.json
+      run: bash ../scripts/run-gates.sh detection
 
     # -------------------------------------------------------------------------
     # GATE INPUTS — built, never signed, never published
@@ -525,21 +496,8 @@ jobs:
       working-directory: infrastructure
       run: |
         set -euo pipefail
-        python3 ../scripts/build-vdr-report.py \
-          --checkov checkov-results.sarif \
-          --tfsec tfsec-results.json \
-          --checkov-yaml ../.checkov.yaml \
-          --previous-vdr previous-vdr-report.json \
-          --dependabot dependabot-alerts.json \
-          --grype grype.json \
-          --zap zap-report.json \
-          --kev kev-catalog.json \
-          --epss epss-scores.csv.gz \
-          --detection detection.json \
-          --conformance conformance-results.json \
-          --ksi-signal ksi-signal.json \
-          --runtime-signal ksi-signal-runtime.json \
-          --output vdr-report.json
+        # The inputs both workflows share are in run-gates.sh; the nightly binds to the published inventory.
+        bash ../scripts/run-gates.sh vdr --ksi-signal ksi-signal.json
         jq '{summary, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
 
     # Unchanged gate, new schedule. Fails the build on any scanner-reported

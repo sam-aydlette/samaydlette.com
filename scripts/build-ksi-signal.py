@@ -39,6 +39,7 @@ from pathlib import Path
 # runnable standalone from any working directory (see scripts/_common.py).
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import sha256_file  # noqa: E402
+import _apps  # noqa: E402
 import _redact  # noqa: E402
 
 # =============================================================================
@@ -1741,11 +1742,10 @@ def main():
     website_root = repo_root / "website"
     lambda_lock = cwd / "lambda" / "package-lock.json"
     a11y_lock = repo_root / "tools" / "a11y" / "package-lock.json"
-    # CycloneDX SBOMs written by the deploy workflow's Syft SCA step (run from
-    # this same infrastructure/ directory) for the Silk Reeling app's dependency
-    # trees. Absent when that app wasn't built — build_sbom_components no-ops.
-    sbom_python = cwd / "sbom-python.json"
-    sbom_js = cwd / "sbom-js.json"
+    # CycloneDX SBOMs that scripts/scan-sca.sh writes (in this same
+    # infrastructure/ directory) for each app tree in data/apps.json. One that is
+    # absent because its app wasn't built is skipped by build_sbom_components.
+    app_sboms = [cwd / name for name in _apps.app_sboms(_apps.load())]
     validations_path = cwd / "validations.json"
     schema_id = "https://samaydlette.com/.well-known/ksi-signal.schema.json"
     output_path = cwd / "ksi-signal.json"
@@ -1785,12 +1785,12 @@ def main():
         function="Build-time dependency of the accessibility fact-producer (npm)",
         lifecycle="build-time",
         existing_components=components))
-    # Ingest the Silk Reeling app's resolved dependency trees from the Syft
-    # CycloneDX SBOMs so the canonical inventory covers its Python (PyPI) and
-    # SPA (npm) packages, not just the compliance Lambda's npm packages. Each
-    # call dedupes by PURL against components already collected.
-    components.extend(build_sbom_components(sbom_python, components))
-    components.extend(build_sbom_components(sbom_js, components))
+    # Ingest each app's resolved dependency trees from the Syft CycloneDX SBOMs
+    # (for Silk Reeling, its Python (PyPI) and SPA (npm) packages), so the
+    # canonical inventory covers more than the compliance Lambda's npm packages.
+    # Each call dedupes by PURL against components already collected.
+    for sbom in app_sboms:
+        components.extend(build_sbom_components(sbom, components))
     components.extend(build_html_components(website_root))
     components.extend(build_external_components())
 
