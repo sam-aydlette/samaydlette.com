@@ -85,12 +85,6 @@ env:
   # together; source: the release's checksums.txt on github.com/open-policy-agent/regal
   REGAL_SHA256: 6769dcd8e88bc5ba5ff4fac500e4a99d55b3eec3d1d0842833d84f6820a2a80f
   NODE_VERSION: 22
-  # Anchore Syft (SBOM) + Grype (SCA) for the Silk Reeling dependency scan. The
-  # tool version and the install.sh fetched to install it are pinned to the same
-  # git tag so the toolchain is reproducible. Refresh both together; source:
-  # https://github.com/anchore/syft/releases and https://github.com/anchore/grype/releases
-  SYFT_VERSION: v1.45.1
-  GRYPE_VERSION: v0.114.0
 
 # =============================================================================
 # WHAT THIS WORKFLOW CAN DO
@@ -1005,52 +999,9 @@ jobs:
     # -------------------------------------------------------------------------
     - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
       working-directory: infrastructure
-      run: |
-        set +e   # neither findings nor a failed scan fail this step: the detection gate (G7) and the VDR gate do
-        # Install Syft + Grype from the official anchore install.sh, pinned to the
-        # same tag as the tool version (mirrors the SHA/version-pinned OPA install).
-        curl -sSfL "https://raw.githubusercontent.com/anchore/syft/${SYFT_VERSION}/install.sh" \
-          | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
-        curl -sSfL "https://raw.githubusercontent.com/anchore/grype/${GRYPE_VERSION}/install.sh" \
-          | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
-        syft version && grype version
-        # Inventory both ecosystems separately: the installed Python deps live in
-        # _pkg (the Lambda zip staging dir); the JS resolved tree is in
-        # _silk_src/frontend (package-lock.json present after npm ci above).
-        # --select-catalogers restricts each scan to the ecosystem we actually
-        # ship, so Syft does NOT catalog build-tool native binaries (e.g.
-        # esbuild's embedded Go runtime under node_modules), which would
-        # otherwise flood the VDR and the inventory with out-of-boundary
-        # golang/stdlib findings that are in neither the Lambda nor the browser.
-        syft dir:_pkg               -o cyclonedx-json=sbom-python.json --select-catalogers python
-        syft dir:_silk_src/frontend -o cyclonedx-json=sbom-js.json     --select-catalogers javascript
-        # The compliance Lambda's own tree. node_modules is present because the
-        # "Install Lambda dependencies" step above ran `npm ci --omit=dev` in this
-        # same job. It has no devDependencies, so the installed tree and the
-        # lockfile the canonical inventory reads are the same set — the scan
-        # covers exactly the components the inventory names, not a superset.
-        syft dir:lambda             -o cyclonedx-json=sbom-lambda.json --select-catalogers javascript
-        # The accessibility scanner. Build tooling, so it never deploys, but its
-        # output is policy input to the deploy gate and it is inventoried as a
-        # build-time component — anything the inventory names should be scannable
-        # against the same database on the same day.
-        syft dir:../tools/a11y      -o cyclonedx-json=sbom-a11y.json   --select-catalogers javascript
-        # Grype each SBOM. A failed scan leaves its file missing or without
-        # .matches; the detection gate (G7) checks each file and the database age.
-        grype sbom:sbom-python.json -o json > grype-python.json
-        grype sbom:sbom-js.json     -o json > grype-js.json
-        grype sbom:sbom-lambda.json -o json > grype-lambda.json
-        grype sbom:sbom-a11y.json   -o json > grype-a11y.json
-        # Merge the scans into one grype.json (single .matches[] array) that
-        # --grype reads. No empty stand-ins: if any scan is missing or invalid the
-        # merge fails, and the detection gate names which one.
-        if jq -s '{matches: (map(.matches) | add)}' \
-            grype-python.json grype-js.json grype-lambda.json grype-a11y.json > grype.json 2>/dev/null; then
-          echo "grype.json: $(jq '.matches | length' grype.json) match(es) across Silk Reeling Python + JS and the compliance Lambda"
-        else
-          rm -f grype.json
-          echo "::warning::At least one Grype scan did not complete; the detection gate will fail the deploy."
-        fi
+      # Every tree in data/apps.json, at the scanner versions scan-sca.sh pins.
+      # Neither findings nor a failed scan fail this step: the detection gate (G7) and the VDR gate do.
+      run: bash ../scripts/scan-sca.sh
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
@@ -1160,13 +1111,7 @@ jobs:
 
     - name: Detection gate (G7)
       working-directory: infrastructure
-      run: |
-        python3 ../scripts/detection-gate.py \
-          --kev kev-catalog.json --epss epss-scores.csv.gz \
-          --grype grype-python.json grype-js.json grype-lambda.json grype-a11y.json \
-          --dependabot dependabot-alerts.json --previous-vdr previous-vdr-report.json \
-          --checkov checkov-results.sarif --tfsec tfsec-results.json \
-          --output detection.json
+      run: bash ../scripts/run-gates.sh detection
 
     - name: Generate fresh Terraform plan
       working-directory: infrastructure
@@ -1367,22 +1312,9 @@ jobs:
     - name: Build VDR Report (FedRAMP 20x Class C)
       working-directory: infrastructure
       run: |
-        echo "Building VDR report..."
-        python3 ../scripts/build-vdr-report.py \
-          --opa validations.json \
-          --checkov checkov-results.sarif \
-          --tfsec tfsec-results.json \
-          --checkov-yaml ../.checkov.yaml \
-          --previous-vdr previous-vdr-report.json \
-          --dependabot dependabot-alerts.json \
-          --grype grype.json \
-          --zap zap-report.json \
-          --kev kev-catalog.json \
-          --epss epss-scores.csv.gz \
-          --detection detection.json \
-          --conformance conformance-results.json \
-          --runtime-signal ksi-signal-runtime.json \
-          --output vdr-report.json
+        set -euo pipefail
+        # The inputs both workflows share are in run-gates.sh; the deploy adds its OPA results.
+        bash ../scripts/run-gates.sh vdr --opa validations.json
         echo "VDR summary:"
         jq '{summary, rules_reference, risk_accepted_count: (.risk_accepted | length)}' vdr-report.json
 
