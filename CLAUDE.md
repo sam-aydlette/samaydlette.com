@@ -120,7 +120,7 @@ Once the plan is approved, work inside it without asking.
 - the request can't be done as stated, or the plan turns out to be wrong. Report it; don't improvise a different solution;
 - you face a production or irreversible step the approved plan does not name, anything that widens IAM, recurring cost above ~$2/month, a genuine security concern, or an architecture decision (data model, trust boundary, vendor, region).
 
-When you stop, send one message: what you found, the options, your recommendation, and the exact action or identifier you need from the operator.
+When you stop, send one message: what you found, the options, your recommendation, and the exact action or identifier you need from the operator. This is the only mid-task interrupt (§6).
 
 ### 4. Don't overbuild
 
@@ -140,11 +140,26 @@ When you stop, send one message: what you found, the options, your recommendatio
 
 ### 6. How to respond
 
-- Lead with the outcome: what changed, what passed, what didn't. No preamble, no praise, no recap of steps.
-- Keep what you verified, and how, separate from what you assumed or inferred. Say "I don't know" or "I didn't check" plainly.
-- If you think a request or plan is wrong, say so before acting, with the reason. Don't open with agreement.
-- **Ideas during a task:** at most three, under **Follow-ups noticed**, each with one line on why it matters: a problem it fixes, or an opportunity it opens. "None" is a valid answer. Never build one unasked.
-- **When the operator asks for ideas:** range widely. Label each idea as a fix or an opportunity, and say what it would cost.
+**While working, stay silent.** Don't announce routine steps or explain tool calls. Interrupt mid-task only when:
+
+- you are blocked and cannot continue;
+- continuing would take an irreversible or destructive action; or
+- you are about to change the agreed approach (any §3 tripwire).
+
+An interrupt is the one message in §3: what you found, the options, your recommendation, and the exact action or identifier you need. Every other question waits for the end of the turn, batched.
+
+**End each turn with a summary sized to the change.** Its first line restates the session goal, so the goal survives context compaction. Cap: the goal line plus three points.
+
+- **Small change** (no behavior or plan change): one line. `Goal: <one line>. <what changed> in <where>.`
+- **Larger change:** `Goal: <one line>`, then up to three of **Did**, **Where**, **Impact**, **Toward the goal**. Leave out empty fields.
+- **Decided:** add this line whenever you made a judgment call or an assumption the operator didn't explicitly ask for, including anything you assumed rather than verified. It doesn't count toward the cap. Report decisions, not steps.
+- Then the batched questions, if any.
+
+Leave out anything that doesn't help the operator understand what changed, what you decided, and how it serves the goal: no preamble, praise or recap of steps. Say "I don't know" or "I didn't check" plainly.
+
+**Before acting:** if you think a request or plan is wrong, say so, with the reason. Don't open with agreement.
+
+**Ideas:** during a task, at most three go in the PR under **Follow-ups noticed**, each with one line on why it matters (a problem it fixes, or an opportunity it opens), never in the turn summary. "None" is a valid answer. Never build one unasked. When the operator asks for ideas, range widely, label each a fix or an opportunity, and say what it would cost.
 
 ## Invariants: never break these
 
@@ -175,7 +190,7 @@ When a rule in this file keeps being broken, move it into one of these mechanism
 - One PR per logical change. The title references the relevant finding or `DEC-NNN` IDs, if any.
 - Body: start with `SCN-Type:` and `SCN-Rationale:` (one line each), plus `SCN-Record:` naming the open SCN the change joins when it is `adaptive` or `transformative`, then an `SIA:` block answering the questions in `data/sia-questions.json` that the change touches (`- <id>: yes|no (reason)`). The `scn-tag` check derives the type from the answers and fails when they disagree; never pick a type the analysis does not give. Then **Changed** (what and why) · **Effect** (what changes on the live site after deploy, including record counts before and after) · **Verified** (what you ran and the outcome) · **Residual / needs human** · **Couldn't verify** · **Follow-ups noticed**.
 - **The repo is public.** Titles, bodies and commit messages are world-readable. No chat transcript or debugging narrative. No account IDs, ARNs, key IDs, role or secret names, raw IAM policy text, or error dumps that carry them. Refer to resources by Terraform address or role, and state verification outcomes, not live values.
-- If something needs a human (a permission, a registrar step, a console-only action), ask the operator directly and now, with the exact action and identifier. Don't leave it as a vague line in the PR.
+- If something needs a human (a permission, a registrar step, a console-only action), ask the operator in this turn's batched questions (or as an interrupt, if it blocks you), with the exact action and identifier. Don't leave it as a vague line in the PR.
 - Open PRs for review. Don't merge your own unless told to.
 
 ## Repo map
