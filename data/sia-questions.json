@@ -53,6 +53,12 @@
       "triggers": {"paths": ["infrastructure/backend.tf"], "diff": ["^\\s*provider\\s+\""]}
     },
     {
+      "id": "workload-model",
+      "question": "Does it change how workloads run, such as from serverless to virtual machines or containers, or by adding a long-lived host?",
+      "outcome": "transformative",
+      "triggers": {"diff": ["^\\+\\s*resource\\s+\"aws_(instance|launch_template|autoscaling_group|ecs_|eks_)"]}
+    },
+    {
       "id": "new-component",
       "question": "Does it add a component, service, feature or app to the boundary?",
       "outcome": "adaptive",
