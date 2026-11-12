@@ -49,6 +49,7 @@
         "additionalProperties": false,
         "required": [
           "path",
+          "generator",
           "cadence",
           "max_age_hours",
           "timestamp",
@@ -59,6 +60,10 @@
           "path": {
             "type": "string",
             "pattern": "^\\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "generator": {
+            "type": "string",
+            "pattern": "^(scripts/[A-Za-z0-9_-]+\\.(py|sh)|tools/[a-z0-9-]+/[A-Za-z0-9_-]+\\.py|infrastructure/lambda/[A-Za-z0-9_-]+\\.js|\\.github/workflows/[A-Za-z0-9_-]+\\.yml)$"
           },
           "cadence": {
             "enum": [

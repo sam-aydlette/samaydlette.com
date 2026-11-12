@@ -37,12 +37,15 @@ REQUIRED = (
 )
 
 TOP_KEYS = {"$schema", "version", "description", "decided_by", "decided_on", "review_by", "rationale", "artifacts"}
-ARTIFACT_KEYS = {"path", "cadence", "max_age_hours", "timestamp", "signed", "signature", "published_by",
+ARTIFACT_KEYS = {"path", "generator", "cadence", "max_age_hours", "timestamp", "signed", "signature", "published_by",
                  "markdown", "json_schema", "optional", "note"}
 CADENCES = {"nightly", "runtime", "deploy", "operator"}
 PUBLISHERS = {"deploy", "nightly", "runtime"}
 SCHEMA_RE = re.compile(r"^schemas/[A-Za-z0-9][A-Za-z0-9._-]*\.schema\.json$")
 PATH_RE = re.compile(r"^\.well-known/[A-Za-z0-9][A-Za-z0-9._-]*$")
+# The code that writes an artifact: a script, an operator tool, the runtime Lambda, or a
+# workflow whose own step writes it.
+GENERATOR_RE = re.compile(r"^(scripts/[A-Za-z0-9_-]+\.(py|sh)|tools/[a-z0-9-]+/[A-Za-z0-9_-]+\.py|infrastructure/lambda/[A-Za-z0-9_-]+\.js|\.github/workflows/[A-Za-z0-9_-]+\.yml)$")
 FIELD_RE = re.compile(r"^[A-Za-z0-9_-]+(\.[A-Za-z0-9_-]+)*$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MAX_WINDOW_HOURS = 8760
@@ -56,7 +59,7 @@ def _check_artifact(where, i, a):
     if not isinstance(a, dict):
         _fail(where, f"artifacts[{i}] is not an object")
     unknown = set(a) - ARTIFACT_KEYS
-    missing = {"path", "cadence", "max_age_hours", "timestamp", "signed", "published_by"} - set(a)
+    missing = {"path", "generator", "cadence", "max_age_hours", "timestamp", "signed", "published_by"} - set(a)
     if unknown or missing:
         _fail(where, f"artifacts[{i}] unknown keys {sorted(unknown)}, missing keys {sorted(missing)}")
     path = a["path"]
@@ -64,6 +67,9 @@ def _check_artifact(where, i, a):
         _fail(where, f"artifacts[{i}].path must be one object directly under .well-known/, got {path!r}")
     if "signature" in a and (not isinstance(a["signature"], str) or not PATH_RE.match(a["signature"]) or ".." in a["signature"]):
         _fail(where, f"{path}: signature must be one object directly under .well-known/")
+    g = a["generator"]
+    if not isinstance(g, str) or not GENERATOR_RE.match(g):
+        _fail(where, f"{path}: generator must be a script, tool, Lambda or workflow path in this repository, got {g!r}")
     if a["cadence"] not in CADENCES:
         _fail(where, f"{path}: cadence must be one of {sorted(CADENCES)}")
     w = a["max_age_hours"]
