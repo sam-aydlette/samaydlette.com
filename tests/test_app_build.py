@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "scripts"))
@@ -74,7 +75,8 @@ def build(tmp_path, *args, **env):
     log = tmp_path / "build.log"
     log.touch()
     e = {**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "BUILD_LOG": str(log),
-         "REAL_PYTHON": sys.executable, "APP_REPO_TOKEN": "secret-token", **env}
+         "REAL_PYTHON": sys.executable, "APP_REPO_TOKEN": "secret-token",
+         "SILK_COGNITO_CLIENT_ID": "abc123clientid", **env}
     r = subprocess.run(["bash", str(root / "scripts" / "build-apps.sh"), *args],
                        cwd=root / "infrastructure", env=e, capture_output=True, text=True, check=False)
     return r, log.read_text().splitlines(), root / "infrastructure"
@@ -95,7 +97,7 @@ def test_full_builds_the_package(tmp_path):
     r, log, infra = build(tmp_path, "full")
     assert r.returncode == 0, r.stderr
     assert (infra / "silk-reeling.zip").stat().st_size > 0
-    assert any(ln.startswith("aws cognito-idp") for ln in log)
+    assert not any(ln.startswith("aws") for ln in log), "the build needs no cloud credentials"
     assert "npm run build -- --base=/silk-reeling/ token=" in log
 
 
@@ -157,3 +159,70 @@ def test_a_manifest_with_nothing_to_build_builds_nothing(tmp_path):
     none.write_text(json.dumps(doc))
     r, log, _ = build(tmp_path, "deps", str(none))
     assert r.returncode == 0 and log == [] and "built 0 app(s)" in r.stdout
+
+
+@pytest.mark.parametrize("client_id", ["", "None x", "abc;rm -rf /", "a" * 129])
+def test_full_refuses_a_missing_or_malformed_client_id(tmp_path, client_id):
+    r, _, infra = build(tmp_path, "full", SILK_COGNITO_CLIENT_ID=client_id)
+    assert r.returncode != 0 and "SILK_COGNITO_CLIENT_ID" in r.stderr
+    assert not (infra / "silk-reeling.zip").exists()
+
+
+def test_deps_needs_no_client_id(tmp_path):
+    r, _, _ = build(tmp_path, "deps", SILK_COGNITO_CLIENT_ID="")
+    assert r.returncode == 0, r.stderr
+
+
+WF = REPO / ".github" / "workflows"
+
+
+def _on(doc):
+    # PyYAML reads the bare key `on` as True.
+    return doc.get("on", doc.get(True))
+
+
+def test_apps_build_and_scan_without_cloud_credentials():
+    doc = yaml.safe_load((WF / "app-build.yml").read_text())
+    assert doc["permissions"] == {"contents": "read"}
+    assert "workflow_call" in _on(doc)
+    for job in doc["jobs"].values():
+        assert job["permissions"] == {"contents": "read"}
+        assert "environment" not in job
+        uses = [st.get("uses", "") for st in job["steps"]]
+        assert not any("configure-aws-credentials" in u for u in uses)
+        checkout = next(st for st in job["steps"] if "actions/checkout" in st.get("uses", ""))
+        assert checkout["with"]["persist-credentials"] is False
+        runs = " ".join(st.get("run", "") for st in job["steps"])
+        assert "build-apps.sh" in runs and "scan-sca.sh" in runs and "aws " not in runs
+
+
+def test_app_build_uses_the_deploys_node_version():
+    deploy = yaml.safe_load((WF / "deploy-with-opa.yml").read_text())
+    job = yaml.safe_load((WF / "app-build.yml").read_text())["jobs"]["build"]
+    node = next(st for st in job["steps"] if "setup-node" in st.get("uses", ""))
+    assert str(node["with"]["node-version"]) == str(deploy["env"]["NODE_VERSION"])
+
+
+def test_the_deploy_ships_what_the_credential_free_job_built_and_scanned():
+    doc = yaml.safe_load((WF / "deploy-with-opa.yml").read_text())
+    jobs = doc["jobs"]
+    apps = jobs["apps"]
+    assert apps["uses"] == "./.github/workflows/app-build.yml"
+    assert apps["with"]["mode"] == "full" and apps["permissions"] == {"contents": "read"}
+    assert "compliance-check" in apps["needs"] and "steps.appcfg" in jobs["compliance-check"]["outputs"]["silk_cognito_client_id"]
+    assert apps["if"] == jobs["deploy"]["if"]
+    assert "apps" in jobs["deploy"]["needs"] and "apps" in jobs["notify"]["needs"]
+    steps = jobs["deploy"]["steps"]
+    names = [st.get("name", "") for st in steps]
+    runs = " ".join(st.get("run", "") for st in steps)
+    for direct in ("build-apps.sh", "scan-sca.sh", "app-source.sh", "npm run build"):
+        assert direct not in runs, f"the deploy job runs {direct} itself"
+    download = names.index("Download the app packages and scans")
+    # The artifact lands apart, and only the expected names are taken from it.
+    assert steps[download]["with"] == {"name": "app-build", "path": "infrastructure/_app-build"}
+    take = names.index("Take the expected app files")
+    assert "_apps.py trees" in steps[take]["run"] and "cp -r" not in steps[take]["run"]
+    assert "rm -rf _app-build" in steps[take]["run"]
+    assert download < take < names.index("Detection gate (G7)") < names.index("Terraform Apply")
+    app_build = (WF / "app-build.yml").read_text()
+    assert "infrastructure/*.zip" not in app_build, "upload only the packages the deploy ships"

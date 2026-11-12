@@ -7,11 +7,13 @@
 #         npm tree in SRC/frontend and the Lambda's Python tree in _pkg.
 #   full  deps, then build the SPA for /silk-reeling/, stage the backend and the
 #         SPA into _pkg, and write the deterministic silk-reeling.zip that
-#         Terraform deploys (silk_reeling_package_path). Needs AWS credentials
-#         for the Cognito lookups.
+#         Terraform deploys (silk_reeling_package_path). Needs
+#         SILK_COGNITO_CLIENT_ID, the SPA's public Cognito app client ID.
 #
 # The deploy runs full and the nightly deps. Both resolve the trees through the
-# same commands, so the nightly scans the dependency set production runs.
+# same commands, so the nightly scans the dependency set production runs. No
+# mode needs cloud credentials: the build runs third-party install scripts, so
+# it runs where there are none (.github/workflows/app-build.yml).
 set -euo pipefail
 
 if [ "$#" -ne 2 ] || { [ "$1" != full ] && [ "$1" != deps ]; }; then
@@ -44,9 +46,14 @@ if [ "$mode" = deps ]; then
   exit 0
 fi
 
-# The Cognito config wires the SPA's Hosted-UI login flow at build time.
-SILK_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)
-SILK_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$SILK_POOL_ID" --query "UserPoolClients[?ClientName=='samaydlette-com-silk-reeling-spa'].ClientId | [0]" --output text 2>/dev/null || true)
+# The Cognito config wires the SPA's Hosted-UI login flow at build time. The
+# client ID is read by the caller (the deploy's read-only plan job); without it
+# the SPA's sign-in could not work, so stop rather than build it.
+SILK_CLIENT_ID="${SILK_COGNITO_CLIENT_ID:-}"
+if ! [[ "$SILK_CLIENT_ID" =~ ^[A-Za-z0-9_+]{1,128}$ ]]; then
+  echo "silk-reeling build: SILK_COGNITO_CLIENT_ID is missing or malformed" >&2
+  exit 1
+fi
 ( cd "$src/frontend" && \
   VITE_API_BASE=/silk-reeling \
   VITE_COGNITO_DOMAIN="samaydlette-com-silk-reeling.auth.us-east-2.amazoncognito.com" \

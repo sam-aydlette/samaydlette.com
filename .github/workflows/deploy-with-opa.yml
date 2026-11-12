@@ -269,6 +269,7 @@ jobs:
     timeout-minutes: 25
     outputs:
       compliant: ${{ steps.compliance.outputs.compliant }}
+      silk_cognito_client_id: ${{ steps.appcfg.outputs.silk_cognito_client_id }}
 
     steps:
     # -------------------------------------------------------------------------
@@ -322,6 +323,22 @@ jobs:
         role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
         retry-max-attempts: 5
+
+    # The one live value the app build needs: the Silk Reeling SPA's Cognito app
+    # client ID, read here with the read-only plan role so the build itself runs
+    # with no credentials (app-build.yml). It is public: the SPA ships it to every
+    # browser. A missing value is passed on empty, and the build fails on it.
+    - name: Read the app build inputs
+      id: appcfg
+      run: |
+        set -uo pipefail
+        POOL=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?Name=='samaydlette-com-silk-reeling-users'].Id | [0]" --output text 2>/dev/null || true)
+        ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$POOL" --query "UserPoolClients[?ClientName=='samaydlette-com-silk-reeling-spa'].ClientId | [0]" --output text 2>/dev/null || true)
+        if [[ "$ID" =~ ^[A-Za-z0-9_+]{1,128}$ ]] && [ "$ID" != None ]; then
+          echo "silk_cognito_client_id=$ID" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::the Silk Reeling SPA client ID was not found; the app build will fail"
+        fi
 
     # -------------------------------------------------------------------------
     # CREATE CONFIGURATION FILE
@@ -560,6 +577,26 @@ jobs:
   # Only runs if security check passed. Builds the infrastructure,
   # uploads the website, and verifies everything works.
   # ===========================================================================
+  # ===========================================================================
+  # APPS: build and scan every app with no cloud credentials
+  # ===========================================================================
+  # npm install scripts and the scanners' installers are third-party code, so
+  # they run in a job that holds no AWS credentials, no OIDC token and no
+  # deployment environment (app-build.yml). The deploy job downloads the
+  # packages it ships and the scans of exactly those trees.
+  apps:
+    name: Apps
+    needs: [compliance-check]
+    if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/app-build.yml
+    with:
+      mode: full
+      silk-cognito-client-id: ${{ needs.compliance-check.outputs.silk_cognito_client_id }}
+    secrets:
+      app-repo-token: ${{ secrets.SILK_REELING_REPO_TOKEN }}
+
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
@@ -582,7 +619,7 @@ jobs:
     # appended here by scripts/_gates.py and published with this run's evidence.
     env:
       GATE_EVENTS_FILE: /tmp/gate-events.jsonl
-    needs: [test, compliance-check, security-scan]
+    needs: [test, compliance-check, security-scan, apps]
     # IMPORTANT: Only deploy if on main branch AND security check passed
     if: github.ref == 'refs/heads/main' && needs.compliance-check.outputs.compliant == 'true'
     environment: ${{ github.event.inputs.environment || 'prod' }}
@@ -927,48 +964,38 @@ jobs:
         fi
     
     # -------------------------------------------------------------------------
-    # BUILD THE APPS: every app in data/apps.json with a build, checked out at its
-    # pinned commit and built by its own scripts/apps/<id>/build.sh. For Silk
-    # Reeling: the SPA for the /silk-reeling/ path and a slim Lambda zip (the
-    # browser does the ML, so no OpenCV/MediaPipe), which Terraform picks up via
-    # silk_reeling_package_path (set in tfvars above).
+    # THE APP PACKAGES AND THEIR DEPENDENCY SCANS, from the apps job
     # -------------------------------------------------------------------------
-    - name: Build apps (Silk Reeling frontend + slim Lambda zip)
-      working-directory: infrastructure
-      env:
-        # build-apps.sh drops the token after the checkouts, before any build runs.
-        APP_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
-      run: bash ../scripts/build-apps.sh full
+    # Built and scanned without credentials (app-build.yml): each app's package
+    # (silk-reeling.zip, which Terraform picks up via silk_reeling_package_path)
+    # and, for every tree in data/apps.json, its SBOM and Grype result. The
+    # Grype results feed the detection gate (G7) and the VDR, the app SBOMs the
+    # inventory. A missing scan stays missing, and the detection gate fails on it.
+    #
+    # The artifact comes from a job that ran third-party code, so it lands in its
+    # own directory and only the file names this repository expects are taken:
+    # the package Terraform deploys and each manifest tree's SBOM and Grype result.
+    # Nothing else in it can replace a file this job built or reads.
+    - name: Download the app packages and scans
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: app-build
+        path: infrastructure/_app-build
 
-    # -------------------------------------------------------------------------
-    # SCAN SILK REELING DEPENDENCIES (Software Composition Analysis) — closes the
-    # Dependency SCA for everything that reaches production. Three trees, and
-    # they get here by different routes:
-    #
-    #   _pkg               Silk Reeling's Python deps, staged for its Lambda zip.
-    #   _silk_src/frontend Silk Reeling's SPA. Both manifests live in the separate
-    #                      silk-reeling-mirror repo, so Dependabot never sees them
-    #                      — this scan is the only CVE coverage they get.
-    #   lambda             The compliance/KSI Lambda's own npm tree. Dependabot
-    #                      DOES watch this manifest, but Dependabot alerts are not
-    #                      the VDR: until this scan existed, 106 of the inventory's
-    #                      140 dependency components were in the canonical
-    #                      inventory and in the authorization boundary while never
-    #                      being CVE-mapped into the published vulnerability
-    #                      report. The coverage table claimed Grype covered the
-    #                      dependency set; it covered 34 of it.
-    #
-    # Syft inventories each tree and Grype maps them to CVEs/GHSAs. The VDR
-    # aggregator (downstream) is what
-    # evaluates and enforces the Class C remediation SLAs, so this step never
-    # fails the build on findings — it only has to emit a valid grype.json.
-    # Runs unconditionally on the deploy path, mirroring the build step above.
-    # -------------------------------------------------------------------------
-    - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
+    - name: Take the expected app files
       working-directory: infrastructure
-      # Every tree in data/apps.json, at the scanner versions scan-sca.sh pins.
-      # Neither findings nor a failed scan fail this step: the detection gate (G7) and the VDR gate do.
-      run: bash ../scripts/scan-sca.sh
+      run: |
+        set -euo pipefail
+        cp -- _app-build/silk-reeling.zip silk-reeling.zip
+        expected=$(python3 -I ../scripts/_apps.py trees | cut -f3,4 | tr '\t' '\n')
+        for f in $expected grype.json; do
+          if [ -f "_app-build/$f" ]; then
+            cp -- "_app-build/$f" "$f"
+          else
+            echo "::warning::$f is missing from the app build; the detection gate will fail"
+          fi
+        done
+        rm -rf _app-build
 
     # -------------------------------------------------------------------------
     # IMPORT SILK REELING RESOURCES (if they exist) — local state isn't
@@ -2081,8 +2108,8 @@ jobs:
   notify:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [compliance-check, deploy]
-    if: always() && (needs.compliance-check.result == 'failure' || needs.deploy.result == 'failure')
+    needs: [compliance-check, apps, deploy]
+    if: always() && (needs.compliance-check.result == 'failure' || needs.apps.result == 'failure' || needs.deploy.result == 'failure')
     permissions:
       contents: read
       issues: write

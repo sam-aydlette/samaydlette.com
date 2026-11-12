@@ -1,0 +1,89 @@
+# =============================================================================
+# APP BUILD AND DEPENDENCY SCAN, WITHOUT CLOUD CREDENTIALS
+# =============================================================================
+# Builds every app in data/apps.json (scripts/build-apps.sh) and scans every
+# dependency tree it lists (scripts/scan-sca.sh), then hands the results to the
+# calling job as the `app-build` artifact. Building and scanning run
+# third-party code: npm install scripts and the scanners' installers. So they
+# run here, in a job with read access to this repository and nothing else: no
+# AWS credentials, no OIDC token, no deployment environment. The callers that
+# hold credentials only download the results.
+#
+#   mode: full  the deploy: each app's deployable package, plus the trees.
+#   mode: deps  only the dependency trees the scan reads.
+#
+# The artifact keeps a missing scan missing: scan-sca.sh never writes an empty
+# stand-in, and the caller's detection gate fails on what is absent.
+# =============================================================================
+name: App build and dependency scan
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "full (deployable packages) or deps (dependency trees only)"
+        required: true
+        type: string
+      silk-cognito-client-id:
+        description: "The Silk Reeling SPA's public Cognito app client ID (full mode)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      app-repo-token:
+        description: "Read access to the app repositories in data/apps.json"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and scan apps (no cloud credentials)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Setup Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22
+        cache: 'npm'
+        cache-dependency-path: infrastructure/lambda/package-lock.json
+
+    # The compliance Lambda's npm tree is one of the scanned trees.
+    - name: Install compliance Lambda dependencies
+      working-directory: infrastructure/lambda
+      run: npm ci --omit=dev
+
+    - name: Build apps
+      working-directory: infrastructure
+      env:
+        # build-apps.sh drops the token after the checkouts, before any build runs.
+        APP_REPO_TOKEN: ${{ secrets.app-repo-token }}
+        SILK_COGNITO_CLIENT_ID: ${{ inputs.silk-cognito-client-id }}
+        MODE: ${{ inputs.mode }}
+      run: bash ../scripts/build-apps.sh "$MODE"
+
+    - name: Scan application and Lambda dependencies (Syft SBOM + Grype)
+      working-directory: infrastructure
+      # Every tree in data/apps.json, at the scanner versions scan-sca.sh pins.
+      # Neither findings nor a failed scan fail this step: the caller's detection gate does.
+      run: bash ../scripts/scan-sca.sh
+
+    - name: Hand the packages and scan results to the caller
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: app-build
+        path: |
+          infrastructure/silk-reeling.zip
+          infrastructure/sbom-*.json
+          infrastructure/grype*.json
+        if-no-files-found: error
+        retention-days: 7

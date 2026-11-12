@@ -153,7 +153,10 @@ def test_the_loader_refuses_a_malformed_manifest(tmp_path, mutate, msg):
 @pytest.mark.parametrize("wf", WORKFLOWS, ids=lambda p: p.name)
 def test_the_workflows_scan_and_gate_only_through_the_shared_scripts(wf):
     text = wf.read_text()
-    assert "run: bash ../scripts/scan-sca.sh" in text
+    # The deploy scans in the credential-free app-build workflow it calls.
+    scans = (REPO / ".github" / "workflows" / "app-build.yml").read_text() if wf.name == "deploy-with-opa.yml" else text
+    assert "run: bash ../scripts/scan-sca.sh" in scans
+    assert ("scan-sca.sh" in text) == (wf.name != "deploy-with-opa.yml")
     assert "run: bash ../scripts/run-gates.sh detection" in text
     assert "bash ../scripts/run-gates.sh vdr" in text
     for direct in ("syft dir:", "grype sbom:", "SYFT_VERSION", "GRYPE_VERSION", "scripts/detection-gate.py",
