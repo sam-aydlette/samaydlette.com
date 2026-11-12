@@ -349,40 +349,27 @@ jobs:
     #   lambda             the compliance Lambda's own npm tree
     # plus ../tools/a11y, catalogued straight from its lockfile.
     #
-    # DELIBERATE DIVERGENCE FROM THE DEPLOY BUILD: this resolves the dependency
-    # trees but does not run the SPA's `npm run build`, does not stage the
-    # backend sources, and does not produce silk-reeling.zip — none of which the
-    # Syft catalogers read. The scanned component set is identical; the work that
-    # only exists to produce a deployable artifact is skipped, along with the
-    # Cognito lookups that only feed build-time SPA config. If the deploy job's
-    # build step changes what lands in these trees, change this one with it.
+    # The app trees come from the same build scripts the deploy runs, in deps
+    # mode (scripts/build-apps.sh deps): the same dependency installs, without
+    # the SPA build, the package or the Cognito lookups that only feed a
+    # deployable artifact, none of which the Syft catalogers read.
     - name: Install compliance Lambda dependencies
       working-directory: infrastructure/lambda
       run: npm ci --omit=dev
 
-    - name: Resolve Silk Reeling dependency trees (scan input only)
+    - name: Resolve app dependency trees (scan input only)
       working-directory: infrastructure
       env:
+        # build-apps.sh drops the token after the checkouts, before any build runs.
         APP_REPO_TOKEN: ${{ secrets.SILK_REELING_REPO_TOKEN }}
       run: |
         set -euo pipefail
-        rm -rf _silk_src _pkg
-        # Scan the app version production runs: the pin in data/apps.json as of
+        # Scan the app versions production runs: the pins in data/apps.json as of
         # the deployed commit, not main's, which may carry a bump not yet deployed.
         # A deployed commit without the manifest has no pin to scan: fail rather
         # than scan a version production may not run.
         git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json
-        ../scripts/app-source.sh silk-reeling _silk_src deployed-apps.json
-        # Only the checkout needs the token; the installs below run third-party scripts.
-        unset APP_REPO_TOKEN
-        ( cd _silk_src/frontend && npm ci )
-        mkdir -p _pkg
-        # Same platform pins as the deploy build so the resolved wheel set — and
-        # therefore the CVE match set — is the runtime's, not the runner's.
-        python3 -m pip install --quiet --target _pkg \
-          --platform manylinux2014_x86_64 --python-version 3.13 \
-          --implementation cp --only-binary=:all: \
-          -r _silk_src/backend/requirements-lambda.txt
+        bash ../scripts/build-apps.sh deps deployed-apps.json
 
     # -------------------------------------------------------------------------
     # THE POINT OF THE NIGHTLY: re-scan against today's vulnerability database

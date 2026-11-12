@@ -78,8 +78,11 @@ def test_a_missing_source_fails(tmp_path):
 def test_the_deploy_packages_every_lambda_it_builds_with_it():
     text = WORKFLOW.read_text()
     assert text.count("../scripts/zip-deterministic.sh lambda opa-compliance.zip") == 2
-    assert text.count("../scripts/zip-deterministic.sh _pkg silk-reeling.zip") == 1
+    # Silk Reeling's package is built by its own build script, which the deploy runs in full.
+    silk = (REPO / "scripts" / "apps" / "silk-reeling" / "build.sh").read_text()
+    assert silk.count('zip-deterministic.sh" _pkg silk-reeling.zip') == 1
+    assert "bash ../scripts/build-apps.sh full" in text
     assert "zip -r ../opa-compliance.zip" not in text
     # The one plain zip of silk-reeling.zip left is the plan-only placeholder, never applied.
     assert text.count("zip -qr ../silk-reeling.zip") == 1 and "( cd _silk_stub && zip -qr" in text
-    assert "--no-compile --target _pkg" in text
+    assert "--no-compile --target _pkg" in silk

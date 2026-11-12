@@ -3,8 +3,9 @@
 Each app in the factory names its governance domain, its service in the offering,
 the Terraform flag that enables it and, when it builds from another repository,
 the exact commit. The manifest must agree with the governance registry, the
-offering and both workflows, and the workflows check app source out only
-through scripts/app-source.sh at that commit.
+offering and both workflows, and the workflows build apps only through
+scripts/build-apps.sh, which checks each one out through scripts/app-source.sh
+at that commit.
 """
 
 import json
@@ -48,8 +49,12 @@ def problems(manifest_path):
         if a["component"] not in components:
             out.append(f"{i}: component {a['component']!r} is not in the offering")
         if a["source"] is not None:
-            if f"scripts/app-source.sh {i} " not in deploy or f"scripts/app-source.sh {i} " not in nightly:
-                out.append(f"{i}: both workflows must check its source out through app-source.sh")
+            # An app from another repository is checked out and built by build-apps.sh,
+            # which runs only the apps that name a build.
+            if not a.get("build"):
+                out.append(f"{i}: it has a source but no build, so no workflow would check it out")
+            elif not (REPO / a["build"]["script"]).is_file():
+                out.append(f"{i}: build script {a['build']['script']} does not exist")
         flag = a["terraform_flag"]
         if flag is not None:
             # The plan job and the deploy job each write a tfvars block; both must enable the app.
@@ -57,6 +62,8 @@ def problems(manifest_path):
                 out.append(f"{i}: {flag} is not set true in both tfvars blocks")
             if deploy.count(f'"{a["package_path"]}"') < 2:
                 out.append(f"{i}: package {a['package_path']!r} is not in both tfvars blocks")
+    if "scripts/build-apps.sh full" not in deploy or "scripts/build-apps.sh deps deployed-apps.json" not in nightly:
+        out.append("both workflows must build the apps through build-apps.sh")
     return out
 
 
@@ -107,16 +114,20 @@ def test_the_script_refuses_anything_but_a_pinned_commit(tmp_path, app, manifest
 
 
 def test_the_nightly_scans_the_deployed_pin_not_mains():
-    step = NIGHTLY.read_text().split("- name: Resolve Silk Reeling dependency trees", 1)[1].split("- name:", 1)[0]
+    step = NIGHTLY.read_text().split("- name: Resolve app dependency trees", 1)[1].split("- name:", 1)[0]
     assert 'git show "${SIGNAL_COMMIT}:data/apps.json" > deployed-apps.json' in step
-    assert "app-source.sh silk-reeling _silk_src deployed-apps.json" in step
+    assert "build-apps.sh deps deployed-apps.json" in step
     assert "cp ../data/apps.json" not in step, "no fallback to main's pin"
 
 
 def test_only_the_checkout_sees_the_repository_token():
+    # The workflows hand the token only to build-apps.sh, which drops it after the
+    # checkouts and before any build (tests/test_app_build.py runs it).
     for wf in (DEPLOY, NIGHTLY):
         text = wf.read_text()
-        call = text.index("scripts/app-source.sh silk-reeling")
-        after = [ln.strip() for ln in text[call:].splitlines()[1:] if not ln.strip().startswith("#")]
-        assert after[0] == "unset APP_REPO_TOKEN", wf.name
-        assert text.index("unset APP_REPO_TOKEN") < text.index("npm ci", call), wf.name
+        assert text.count("APP_REPO_TOKEN:") == 1, wf.name
+        step = "\n".join(ln for ln in text[text.index("APP_REPO_TOKEN:"):].split("- name:", 1)[0].splitlines()
+                         if not ln.strip().startswith("#"))
+        assert "scripts/build-apps.sh" in step and "npm " not in step and "pip " not in step, wf.name
+    script = (REPO / "scripts" / "build-apps.sh").read_text()
+    assert script.index("app-source.sh") < script.index("unset APP_REPO_TOKEN") < script.index('bash "$here/../$script"')
